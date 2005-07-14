@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://www.netbeans.org/ns/project/1">
+    <type xmlns="http://www.netbeans.org/ns/project/1">org.netbeans.modules.java.j2seproject</type>
+    <configuration xmlns="http://www.netbeans.org/ns/project/1">
+        <data xmlns="http://www.netbeans.org/ns/j2se-project/1">
+            <name xmlns="http://www.netbeans.org/ns/j2se-project/1">JOpenPlatform</name>
+            <minimum-ant-version xmlns="http://www.netbeans.org/ns/j2se-project/1">1.6</minimum-ant-version>
+            <explicit-platform explicit-source-supported="true"/>
+        </data>
+    </configuration>
+</project>
