@@ -1,0 +1,29 @@
+******************************************************
+Title    : JOpenPlatform
+Authors  : Karsten Ohme <karsten.ohme@inf.tu-dresden.de>
+License  : See file COPYING
+Requires : JOpenPlatform Wrapper
+******************************************************
+
+Directories:
+-----------------------------------------------------------
+src       : Sources
+nbproject : NetBeans specific files
+-----------------------------------------------------------
+
+This is a Java library for the OpenPlatform Library. It provides a
+access from Java application to the Open Platform API. You also need
+the JOpenPlatform Wrapper to use this library.
+
+Installation:
+
+This a NetBeans project. You must have installed NetBeans.
+You can also compile it on your own or import it to another IDE.
+The build.xml Ant build file is NetBeans specific.
+In NetBeans open the project (File->Open Project ...).
+In the Files window (Window->Files) search for the build.xml. Right click
+and select Run Target->jar. You will get a build directory containing
+the compiled classes and a dist directory containing JOpenPlatform.jar.
+Run Targte->javadoc to generate the documentation located in the
+directory dist.
+
