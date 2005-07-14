@@ -1,0 +1,70 @@
+# Require autoconf 2.53
+AC_PREREQ(2.53)
+
+AC_INIT(Open Platform, 1.0.0, karsten.ohme@inf.tu-dresden.de)
+AM_INIT_AUTOMAKE
+
+# check programs
+AC_PROG_CC
+AC_PROG_CPP
+AC_PROG_INSTALL
+AC_PROG_LIBTOOL
+
+# check header files
+AC_HEADER_STDC
+AC_CHECK_HEADER(stdio.h)
+
+# check library functions
+AC_FUNC_MALLOC
+AC_FUNC_VPRINTF
+AC_CHECK_FUNC(memcpy)
+
+AC_ARG_ENABLE(debug,
+[  --enable-debug          enable debug messages from the Open Platform library.],
+[ case "${enableval}" in
+  yes)
+    debug=true ;;
+  no)
+    debug=false ;;
+  *) AC_MSG_ERROR([bad value ${enableval} for --enable-debug]) ;;
+ esac], [debug=false])
+
+if test x${debug} = xtrue ; then
+  AC_DEFINE(DEBUG, 1, [enable full debug messaging.])
+fi
+
+dnl Check for pcsclite
+PKG_CHECK_MODULES(PCSCLITE, libpcsclite >= 1.2.9-beta7, [],
+        [ if test -f /usr/local/lib/pkgconfig/libpcsclite.pc ; then
+                AC_MSG_ERROR([install pkg-config or set PKG_CONFIG_PATH 
+to pkgconfig directory])
+          else
+                AC_MSG_WARN([install pcsc-lite 1.2.9-beta7 or later])
+          fi
+        ])
+
+AC_CHECK_LIB(pcsclite, SCardEstablishContext, [],
+        [AC_MSG_ERROR([SCardEstablishContext() not found, install 
+pcsc-lite 1.2.9-beta7 or later])])
+
+CFLAGS="$CFLAGS $PCSCLITE_CFLAGS"
+
+AC_CHECK_HEADER(winscard.h, [],
+        [AC_MSG_ERROR([winscard.h not found, install pcsc-lite
+1.2.9-beta7 or later, or use CFLAGS=... ./configure])])
+
+
+dnl Check for OpenSSL headers
+AC_CHECK_HEADERS(openssl/rand.h openssl/err.h openssl/evp.h openssl/pem.h, [],
+        [AC_MSG_ERROR([OpenSSL headers not found, install OpenSSL 
+0.9.7e or later, or use CFLAGS=... ./configure])])
+
+AC_CHECK_LIB(ssl, PEM_read_bio_PrivateKey, [],
+        [AC_MSG_ERROR([PEM_read_PrivateKey() not 
+found, install OpenSSL 0.9.7e or later])])
+
+
+AC_OUTPUT([
+Makefile
+])
+

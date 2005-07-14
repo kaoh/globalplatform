@@ -1,0 +1,46 @@
+******************************************************
+Title    : OpenPlatform
+Authors  : Karsten Ohme <karsten.ohme@inf.tu-dresden.de>
+License  : See file COPYING
+Requires : PC/SC Lite
+           OpenSSL
+******************************************************
+
+This is a library for providing access to Open Platform
+conforming smart cards.
+
+Installation:
+
+Generel install instructions are in the file INSTALL.
+Installation instruction for Windows are in the file Install.w32.
+
+./configure
+make
+make install
+
+If the configure file is not there you must run the script ./reconf
+
+make doc 
+
+generates the documentation in HTML and LaTeX. You must have Doxygen 
+www.doxygen.org/ and Graphviz http://www.graphviz.org/ installed. 
+You can generate PS or PDF from the LaTeX on you own.
+
+make install installs the package in the default prefix (/usr/local), so the resulting
+library is installed as /usr/local/lib.
+
+For compiling the library you must have pkg-config installed.
+Usually pkg-config looks in the /usr/local/lib/pkgconfig directory.
+There should placed a file libpcsclite.pc containing
+information
+about the required libraries, header files and other information.
+If pkgconfig fails and your pkgconfig directory is at a
+different location you have to set the environment variable
+PKG_CONFIG_PATH. E.g. the Debian path for pkgconfig is /usr/lib/pkgconfig.
+
+./configure --prefix=/usr Defines the installation target for everything to
+    start with /usr instead of the default /usr/local
+./configure --help gives you a help of possible options.
+./configure --enable-debug enables debugging output on stdout
+
+
