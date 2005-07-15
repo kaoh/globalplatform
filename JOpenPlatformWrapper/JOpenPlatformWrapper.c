@@ -1096,7 +1096,7 @@ JNIEXPORT void JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_putRs
 	}
 
 	result = put_rsa_key((OPSP_CARDHANDLE)cardHandle, &secInfo, cardInfo, (BYTE)keySetVersion,
-		(BYTE)keyIndex, (BYTE)newKeySetVersion, (char *)PEMKeyFileName, (char *)passPhrase);
+		(BYTE)keyIndex, (BYTE)newKeySetVersion, (OPSP_STRING)PEMKeyFileName, (char *)passPhrase);
 	setjsecInfo(env, jsecInfo, secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("putRsaKey"));
@@ -1692,7 +1692,7 @@ JNIEXPORT jbyteArray JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper
 						  jloadFileDAP == NULL ? NULL : loadFileDAP,
 						  (DWORD)nonVolatileCodeSpaceLimit, (DWORD)volatileDataSpaceLimit,
 						  (DWORD)nonVolatileDataSpaceLimit, loadToken,
-						  (char *)PEMKeyFileName, (char *)passPhrase);
+						  (OPSP_STRING)PEMKeyFileName, (char *)passPhrase);
 	if (jpassPhrase != NULL) {
 		(*env)->ReleaseStringUTFChars(env, jpassPhrase, passPhrase);
 	}
@@ -1785,7 +1785,7 @@ JNIEXPORT jbyteArray JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper
 		appletClassAIDLength, appletInstanceAID, appletInstanceAIDLength, (BYTE)appletPrivileges,
 		(DWORD)volatileDataSpaceLimit, (DWORD)nonVolatileDataSpaceLimit,
 		appletInstallParameters, (DWORD)appletInstallParametersLength,
-		installToken, (char *)PEMKeyFileName, (char *)passPhrase);
+		installToken, (OPSP_STRING)PEMKeyFileName, (char *)passPhrase);
 	if (jpassPhrase != NULL) {
 		(*env)->ReleaseStringUTFChars(env, jpassPhrase, passPhrase);
 	}

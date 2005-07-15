@@ -74,10 +74,10 @@ CPP=cl
 
 !IFDEF DEBUG
 CPPFLAGS=/Od /I "$(OP_INC)" /I "$(JAVA_INC_W32)" /I "$(JAVA_INC)" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_USRDLL" \
-/D "_UNICODE" /D "_WINDLL" /GZ /MD /Fo$(OUTDIR)/ /W3 /nologo /c /ZI /TP
+/D "_UNICODE" /D "_WINDLL" /GZ /MD /Fo$(OUTDIR)/ /W3 /nologo /c /ZI /TC
 !ELSE
 CPPFLAGS=/O2 /I "$(OP_INC)" /I "$(JAVA_INC_W32)" /I "$(JAVA_INC)" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_USRDLL" \
-/D "_UNICODE" /D "_WINDLL" /FD /MD /Fo$(OUTDIR)/ /W3 /nologo /c /Zi /TP
+/D "_UNICODE" /D "_WINDLL" /FD /MD /Fo$(OUTDIR)/ /W3 /nologo /c /Zi /TC
 !ENDIF
 
 LINK=link
