@@ -1,6 +1,6 @@
 # The "commitinfo" file is used to control pre-commit checks.
-# The filter on the right is invoked with the repository and a list 
-# of files to check.  A non-zero exit of the filter program will 
+# The filter on the right is invoked with the repository and a list
+# of files to check.  A non-zero exit of the filter program will
 # cause the commit to be aborted.
 #
 # The first entry on a line is a regular expression which is tested
@@ -13,3 +13,6 @@
 #
 # If the name "ALL" appears as a regular expression it is always used
 # in addition to the first matching regex or "DEFAULT".
+ALL /cvsroot/sitedocs/CVSROOT/cvstools/cvs_acls
+
+
