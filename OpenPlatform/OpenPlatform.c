@@ -157,7 +157,7 @@ static inline LONG readDAPBlock(PBYTE buf, PDWORD bufLength, OPSP_DAP_BLOCK dapB
 }
 
 /**
- * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by get_card_status().
+ * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
  * \param cardInfo OUT The OPSP_CARD_INFO containing mechanical card state, protocol information and the ATR.
  * \return OPSP_ERROR_SUCCESS if no error, error code else
  */
@@ -275,7 +275,7 @@ LONG card_connect(OPSP_CARDCONTEXT cardContext, OPSP_CSTRING readerName, OPSP_CA
 }
 
 /**
- * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by get_card_status().
+ * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
  * \return OPSP_ERROR_SUCCESS if no error, error code else.
  */
 LONG card_disconnect(OPSP_CARDHANDLE cardHandle) {
@@ -452,12 +452,12 @@ static LONG wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrapp
 }
 
 /**
- * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by get_card_status().
+ * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
  * \param capdu IN The command APDU.
  * \param capduLength IN The length of the command APDU.
  * \param rapdu OUT The response APDU.
  * \param rapduLength INOUT The length of the the response APDU.
- * \param cardInfo IN The OPSP_CARD_INFO structure returned by card_connect().
+ * \param cardInfo IN The OPSP_CARD_INFO structure returned by get_card_status().
  * \param *secInfo IN The pointer to the OPSP_SECURITY_INFO structure returned by mutual_authentication().
  * \return OPSP_ERROR_SUCCESS if no error, error code else.
  */
@@ -873,8 +873,8 @@ LONG send_APDU(OPSP_CARDHANDLE cardHandle, PBYTE capdu, DWORD capduLength, PBYTE
 }
 
 /**
- * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by get_card_status().
- * \param cardInfo IN The OPSP_CARD_INFO structure returned by card_connect().
+ * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
+ * \param cardInfo IN The OPSP_CARD_INFO structure returned by get_card_status().
  * \param AID IN The AID.
  * \param AIDLength IN The length of the AID.
  * \return OPSP_ERROR_SUCCESS if no error, error code else.
@@ -932,7 +932,7 @@ LONG select_application(OPSP_CARDHANDLE cardHandle, OPSP_CARD_INFO cardInfo, PBY
 }
 
 /**
- * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by get_card_status().
+ * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
  * \param attributeId IN The identifier for the requested attribute.
  <table>
  <tr>
@@ -1092,9 +1092,9 @@ LONG get_reader_capabilities(OPSP_CARDHANDLE cardHandle, DWORD attributeId, PBYT
  * Any other value between 0x01 and 0x7f must match an existing key set version.
  * The new key set version defines the key set version a new key belongs to.
  * This can be the same key version or a new not existing key set version.
- * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by get_card_status().
+ * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
  * \param *secInfo INOUT The pointer to the OPSP_SECURITY_INFO structure returned by mutual_authentication().
- * \param cardInfo IN The OPSP_CARD_INFO structure returned by card_connect().
+ * \param cardInfo IN The OPSP_CARD_INFO structure returned by get_card_status().
  * \param keySetVersion IN An existing key set version.
  * \param keyIndex IN The position of the key in the key set version.
  * \param newKeySetVersion IN The new key set version.
@@ -1193,9 +1193,9 @@ LONG put_rsa_key(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_C
  * Any other value between 0x01 and 0x7f must match an existing key set version.
  * The new key set version defines the key set version a new key belongs to.
  * This can be the same key version or a new not existing key set version.
- * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by get_card_status().
+ * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
  * \param *secInfo INOUT The pointer to the OPSP_SECURITY_INFO structure returned by mutual_authentication().
- * \param cardInfo IN The OPSP_CARD_INFO structure returned by card_connect().
+ * \param cardInfo IN The OPSP_CARD_INFO structure returned by get_card_status().
  * \param keySetVersion IN An existing key set version.
  * \param keyIndex IN The position of the key in the key set version.
  * \param newKeySetVersion IN The new key set version.
@@ -1273,9 +1273,9 @@ LONG put_3des_key(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_
  * Any other value between 0x01 and 0x7f must match an existing key set version.
  * The new key set version defines the key set version a the new secure channel keys belongs to.
  * This can be the same key version or a new not existing key set version.
- * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by get_card_status().
+ * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
  * \param *secInfo INOUT The pointer to the OPSP_SECURITY_INFO structure returned by mutual_authentication().
- * \param cardInfo IN The OPSP_CARD_INFO structure returned by card_connect().
+ * \param cardInfo IN The OPSP_CARD_INFO structure returned by get_card_status().
  * \param keySetVersion IN An existing key set version.
  * \param newKeySetVersion IN The new key set version.
  * \param new_enc_key IN The new Encryption key.
@@ -1397,9 +1397,9 @@ LONG put_secure_channel_keys(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *sec
  * Any other value between 0x01 and 0x7f must match an existing key set version.
  * The new key set version defines the key set version a the new secure channel keys belongs to.
  * This can be the same key version or a new not existing key set version.
- * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by get_card_status().
+ * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
  * \param *secInfo INOUT The pointer to the OPSP_SECURITY_INFO structure returned by mutual_authentication().
- * \param cardInfo IN The OPSP_CARD_INFO structure returned by card_connect().
+ * \param cardInfo IN The OPSP_CARD_INFO structure returned by get_card_status().
  * \param keySetVersion IN An existing key set version.
  * \param newKeySetVersion IN The new key set version.
  * \param PEMKeyFileName IN A PEM file name with the public RSA key.
@@ -1530,9 +1530,9 @@ LONG put_delegated_management_keys(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INF
 /**
  * If keyIndex is 0x00 all keys within a keySetVersion are deleted.
  * If keySetVersion is 0x00 all keys with the specified keyIndex are deleted.
- * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by get_card_status().
+ * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
  * \param *secInfo INOUT The pointer to the OPSP_SECURITY_INFO structure returned by mutual_authentication().
- * \param cardInfo IN The OPSP_CARD_INFO structure returned by card_connect().
+ * \param cardInfo IN The OPSP_CARD_INFO structure returned by get_card_status().
  * \param keySetVersion IN An existing key set version.
  * \param keyIndex IN An existing key index.
  * \return OPSP_ERROR_SUCCESS if no error, error code else.
@@ -1599,9 +1599,9 @@ LONG delete_key(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_CA
 }
 
 /**
- * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by get_card_status().
+ * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
  * \param *secInfo INOUT The pointer to the OPSP_SECURITY_INFO structure returned by mutual_authentication().
- * \param cardInfo IN The OPSP_CARD_INFO structure returned by card_connect().
+ * \param cardInfo IN The OPSP_CARD_INFO structure returned by get_card_status().
  * \param AIDs IN A pointer to the an array of OPSP_AID structures describing the applications and load files to delete.
  * \param AIDsLength IN The number of OPSP_AID structures.
  * \param **receiptData OUT A pointer to an OPSP_RECEIPT_DATA array. If the deletion is performed by a
@@ -1674,11 +1674,11 @@ LONG delete_applet(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP
  * Some cards do not provide some data objects. Some possible identifiers are predefined.
  * See OPSP_GET_DATA_ISSUER_BIN. For details about the coding of the dataObject see the programmer's manual
  * of your card.
- * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by get_card_status().
+ * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
  * \param identifier IN Two byte buffer with high and low order tag value for identifying card data object.
  * \param dataObject IN The coded data object.
  * \param dataObjectLength IN The length of the data object.
- * \param cardInfo IN The OPSP_CARD_INFO structure returned by card_connect().
+ * \param cardInfo IN The OPSP_CARD_INFO structure returned by get_card_status().
  * \param *secInfo INOUT The pointer to the OPSP_SECURITY_INFO structure returned by mutual_authentication().
  * \return OPSP_ERROR_SUCCESS if no error, error code else.
  */
@@ -1725,11 +1725,11 @@ LONG put_data(OPSP_CARDHANDLE cardHandle, BYTE identifier[2], PBYTE dataObject, 
  * of your card.
  * There is a convenience method get_key_information_templates() to get the key information template(s)
  * containing key set version, key index, key type and key length of the keys.
- * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by get_card_status().
+ * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
  * \param identifier IN Two byte buffer with high and low order tag value for identifying card data object.
  * \param recvBuffer IN The buffer for the card data object.
  * \param recvBufferLength IN The length of the received card data object.
- * \param cardInfo IN The OPSP_CARD_INFO structure returned by card_connect().
+ * \param cardInfo IN The OPSP_CARD_INFO structure returned by get_card_status().
  * \param *secInfo INOUT The pointer to the OPSP_SECURITY_INFO structure returned by mutual_authentication().
  * \return OPSP_ERROR_SUCCESS if no error, error code else.
  */
@@ -1775,9 +1775,9 @@ LONG get_data(OPSP_CARDHANDLE cardHandle, BYTE identifier[2], PBYTE recvBuffer, 
 
 /**
  * The card must support the optional report of key information templates.
- * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by get_card_status().
+ * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
  * \param *secInfo INOUT The pointer to the OPSP_SECURITY_INFO structure returned by mutual_authentication().
- * \param cardInfo IN The OPSP_CARD_INFO structure returned by card_connect().
+ * \param cardInfo IN The OPSP_CARD_INFO structure returned by get_card_status().
  * \param keyInformationTemplate IN The number of the key information template.
  * \param *keyInformation OUT A pointer to an array of OPSP_KEY_INFORMATION structures.
  * \param keyInformationLength INOUT The number of OPSP_KEY_INFORMATION structures.
@@ -1840,9 +1840,9 @@ LONG get_key_information_templates(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INF
 
 /**
  *
- * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by get_card_status().
+ * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
  * \param *secInfo INOUT The pointer to the OPSP_SECURITY_INFO structure returned by mutual_authentication().
- * \param cardInfo IN The OPSP_CARD_INFO structure returned by card_connect().
+ * \param cardInfo IN The OPSP_CARD_INFO structure returned by get_card_status().
  * \param cardElement IN Identifier for Load Files, Applications or the Card Manager.
  * \param AID IN The AID.
  * \param AIDLength IN The length of the AID.
@@ -1885,9 +1885,9 @@ LONG set_status(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_CA
 }
 
 /**
- * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by get_card_status().
+ * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
  * \param *secInfo INOUT The pointer to the OPSP_SECURITY_INFO structure returned by mutual_authentication().
- * \param cardInfo IN The OPSP_CARD_INFO structure returned by card_connect().
+ * \param cardInfo IN The OPSP_CARD_INFO structure returned by get_card_status().
  * \param cardElement IN Identifier to retrieve data for Load Files, Applications or the Card Manager.
  * \param *applData OUT The OPSP_APPLICATION_DATA structure containing AID, life cycle state and privileges.
  * \param applDataLength INOUT The number of OPSP_APPLICATION_DATA passed and returned.
@@ -1951,9 +1951,9 @@ LONG get_status(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_CA
  * An install_for_load() must precede.
  * The Load File Data Block DAP block(s) must be the same block(s) and in the same order like in calculate_load_file_DAP().
  * If no Load File Data Block DAP blocks are necessary the dapBlock must be NULL and the dapBlockLength 0.
- * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by get_card_status().
+ * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
  * \param *secInfo INOUT The pointer to the OPSP_SECURITY_INFO structure returned by mutual_authentication().
- * \param cardInfo IN The OPSP_CARD_INFO structure returned by card_connect().
+ * \param cardInfo IN The OPSP_CARD_INFO structure returned by get_card_status().
  * \param *dapBlock IN A pointer to OPSP_DAP_BLOCK structure(s).
  * \param dapBlockLength IN The number of OPSP_DAP_BLOCK structure(s).
  * \param CAPFileName IN The name of the CAP file to hash.
@@ -2277,9 +2277,9 @@ LONG load_applet(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_C
  * Otherwise loadToken must be NULL. See calculate_load_token().
  * The term package is equivalent to the Open Platform term Load File Data Block.
  * volatileDataSpaceLimit and nonVolatileDataSpaceLimit can be NULL, if the card does not need or support this tags.
- * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by get_card_status().
+ * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
  * \param *secInfo INOUT The pointer to the OPSP_SECURITY_INFO structure returned by mutual_authentication().
- * \param cardInfo IN The OPSP_CARD_INFO structure returned by card_connect().
+ * \param cardInfo IN The OPSP_CARD_INFO structure returned by get_card_status().
  * \param packageAID IN A buffer with AID of the package to INSTALL [for load].
  * \param packageAIDLength IN The length of the package AID.
  * \param securityDomainAID IN A buffer containing the AID of the intended associated Security Domain.
@@ -2356,9 +2356,9 @@ LONG install_for_load(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, O
  * If the tag for applet install parameters is mandatory for your card, but you have no install parameters
  * for the install() method of the applet anyway you have to use at least a dummy parameter.
  * If appletClassAID is NULL and appletClassAIDLength is NULL appletInstanceAID is assumed for appletClassAID.
- * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by get_card_status().
+ * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
  * \param *secInfo INOUT The pointer to the OPSP_SECURITY_INFO structure returned by mutual_authentication().
- * \param cardInfo IN The OPSP_CARD_INFO structure returned by card_connect().
+ * \param cardInfo IN The OPSP_CARD_INFO structure returned by get_card_status().
  * \param packageAID IN A buffer with AID of the package to INSTALL [for install].
  * \param packageAIDLength IN The length of the package AID.
  * \param appletClassAID IN The AID of the applet class in the package.
@@ -2448,9 +2448,9 @@ LONG install_for_install(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo
  * If the tag for applet install parameters is mandatory for your card, but you have no install parameters
  * for the install() method of the applet anyway you have to use at least a dummy parameter.
  * If appletClassAID is NULL and appletClassAIDLength is NULL appletInstanceAID is assumed for appletClassAID.
- * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by get_card_status().
+ * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
  * \param *secInfo INOUT The pointer to the OPSP_SECURITY_INFO structure returned by mutual_authentication().
- * \param cardInfo IN The OPSP_CARD_INFO structure returned by card_connect().
+ * \param cardInfo IN The OPSP_CARD_INFO structure returned by get_card_status().
  * \param packageAID IN A buffer with AID of the package to INSTALL [for install].
  * \param packageAIDLength IN The length of the package AID.
  * \param appletClassAID IN The AID of the applet class in the package.
@@ -2536,9 +2536,9 @@ LONG install_for_install_and_make_selectable(OPSP_CARDHANDLE cardHandle, OPSP_SE
  * In the case of delegated management an Install Token authorizing the INSTALL [for make selectable] must be included.
  * Otherwise installToken must be NULL.
  * For Security domains look in your manual what parameters are necessary.
- * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by get_card_status().
+ * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
  * \param *secInfo INOUT The pointer to the OPSP_SECURITY_INFO structure returned by mutual_authentication().
- * \param cardInfo IN The OPSP_CARD_INFO structure returned by card_connect().
+ * \param cardInfo IN The OPSP_CARD_INFO structure returned by get_card_status().
  * \param appletInstanceAID IN The AID of the installed applet or security domain.
  * \param appletInstanceAIDLength IN The length of the applet instance AID.
  * \param appletPrivileges IN The applet privileges. Can be an OR of multiple privileges. See OPSP_APPLICATION_PRIVILEGE_SECURITY_DOMAIN.
@@ -3742,12 +3742,12 @@ static LONG calculate_host_cryptogram(unsigned char session_enc_key[16], unsigne
 
 /**
  * A keySetVersion and keyIndex of 0x00 selects the first available key set version and key index.
- * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by get_card_status().
+ * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
  * \param enc_key IN The static encryption key.
  * \param mac_key IN The static MAC key.
  * \param keySetVersion IN The key set version on the card to use for mutual authentication.
  * \param keyIndex IN The key index of the encryption key in the key set version on the card to use for mutual authentication.
- * \param cardInfo IN The OPSP_CARD_INFO structure returned by card_connect().
+ * \param cardInfo IN The OPSP_CARD_INFO structure returned by get_card_status().
  * \param securityLevel IN The requested security level.
  * \param *secInfo OUT The returned OPSP_SECURITY_INFO structure.
  * \return OPSP_ERROR_SUCCESS if no error, error code else.
@@ -3937,9 +3937,9 @@ unsigned long get_last_OpenSSL_error_code(void) {
  * The tryLimit must be in the range of 0x03 and x0A.
  * The PIN must comprise at least 6 numbers and not exceeding 12 numbers.
  * To unblock the PIN use tryLimit with a value of 0x00. In this case newPIN buffer and newPINLength are ignored.
- * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by get_card_status().
+ * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
  * \param *secInfo INOUT The pointer to the OPSP_SECURITY_INFO structure returned by mutual_authentication().
- * \param cardInfo IN The OPSP_CARD_INFO structure returned by card_connect().
+ * \param cardInfo IN The OPSP_CARD_INFO structure returned by get_card_status().
  * \param tryLimit IN The try limit for the PIN.
  * \param newPIN IN The new PIN.
  * \param newPINLength IN The length of the new PIN.
