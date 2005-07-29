@@ -99,15 +99,7 @@ public class OPSPWrapper {
      * @return String representation of the error code.
      */
     public static native String stringifyError(int errorCode);
-    
-    /**
-     * Retrieves the capabilities of the card reader.
-     * @param cardHandle The card handle obtained by {@link #cardConnect(long, String, long) cardConnect}.
-     * @param attributeId The identifier for the requested attribute.
-     * @return The attribute information. See PC/SC documentation SCardGetAttrib() for details.
-     */
-    public static native byte[] getReaderCapabilities(long cardHandle, long attributeId) throws OPSPException;
-    
+       
     /**
      * Retrieves the card status.
      * @param cardHandle The card handle obtained by {@link #cardConnect(long, String, long) cardConnect}.
@@ -417,7 +409,7 @@ public class OPSPWrapper {
     /**
      * Open Platform: Installs an applet on the card.
      * the case of delegated management an Install Token authorizing the INSTALL [for install] must be included.
-     * Otherwise installToken must be null. See {@link #calculateInstallToken(byte[], byte[], byte[], byte, long, long, byte[], String, String) calculateInstallToken}.
+     * Otherwise installToken must be null. See {@link #calculateInstallToken(byte, byte[], byte[], byte[], byte, long, long, byte[], String, String) calculateInstallToken}.
      * volatileDataSpaceLimit and nonVolatileDataSpaceLimit can be null, if the card does not need or support this tag.
      * For Security domains look your manual what parameters are necessary.
      * If the tag for applet install parameters is mandatory for your card, but you have no install parameters

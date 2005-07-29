@@ -623,35 +623,6 @@ JNIEXPORT jstring JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_st
 }
 
 /*
- * Class:     org_dyndns_widerstand_OpenPlatform_OPSPWrapper
- * Method:    getReaderCapabilities
- * Signature: (JJ)[B
- */
-JNIEXPORT jbyteArray JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_getReaderCapabilities
-(JNIEnv *env, jclass cls, jlong cardHandle, jlong attributeID) {
-	LONG result;
-	PBYTE attribute;
-	DWORD attributeLength = 256;
-	jbyteArray jattribute = NULL;
-	attribute = (PBYTE)malloc(sizeof(BYTE)*attributeLength);
-	result = get_reader_capabilities((OPSP_CARDHANDLE)cardHandle, (DWORD)attributeID,
-		attribute, &attributeLength);
-	if (result != OPSP_ERROR_SUCCESS) {
-		free(attribute);
-		throwOPSPException(env, _T("getReaderCapabilities"), result);
-		return NULL;
-	}
-	jattribute = getjbyteArray(env, attribute, attributeLength);
-	if ((*env)->ExceptionOccurred(env) != NULL) {
-		free(attribute);
-		throwException(env, _T("getReaderCapabilities"));
-		return NULL;
-	}
-	free(attribute);
-	return jattribute;
-}
-
-/*
  * Returns a Java byte array from a native byte buffer.
  * \param *env JNI interface pointer.
  * \param array The native byte buffer.
