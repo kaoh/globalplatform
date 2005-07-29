@@ -76,3 +76,10 @@ library, then you also have to build a release version.
 
 6.	(optional)
 	Run nmake -f Makefile.mak clean to delete the Debug and Release directories.
+	
+If you need to get debugging output you must have built a debug version
+and enable the debugging by setting the environment variable
+OPENPLATFORM_DEBUG=1. If you explicitly set a log file with
+the environment variable OPENPLATFORM_LOGFILE, this log file will be used.
+The default log file is C:\Temp\OpenPlatform.log.
+

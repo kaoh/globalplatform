@@ -23,8 +23,8 @@ BEGIN
             VALUE "InternalName", OPSP_LIB_NAME
             VALUE "OriginalFilename", OPSP_LIB_NAME
             VALUE "CompanyName", "widerstand productions\0"
-            VALUE "LegalCopyright", "Copyright (C) Karsten Ohme 2004\0"
-            VALUE "Licence", "LGPL\0"
+            VALUE "LegalCopyright", "Copyright (C) Karsten Ohme 2005\0"
+            VALUE "Licence", "BSD\0"
             VALUE "Info", "Karsten.Ohme@inf.tu-dresden.de\0"
 	   		VALUE "Comment", "Library for accessing Open Platform 2.0.1' compliant smart cards with PC/SC\n"
         END
