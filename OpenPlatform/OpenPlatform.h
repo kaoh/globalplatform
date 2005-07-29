@@ -33,7 +33,11 @@ extern "C"
 {
 #endif
 
-#ifdef _WIN32
+#ifdef WIN32
+#include "stdafx.h"
+#endif
+
+#ifdef WIN32
 #ifdef OPSP_EXPORTS
 #define OPSP_API __declspec(dllexport)
 #else
@@ -43,26 +47,13 @@ extern "C"
 #define OPSP_API
 #endif
 
-#ifdef _WIN32
-	#ifndef _UNICODE
-	#define _UNICODE
-	#endif
-	#ifndef UNICODE
-	#define UNICODE
-	#endif
-#endif
-
-#ifdef _WIN32
-#include <tchar.h>
-#endif
-
 #ifndef max
 #define max(a,b) (((a)>(b))?(a):(b))
 #endif
 
 #include <winscard.h>
 
-#ifndef _WIN32
+#ifndef WIN32
 #define _tmain main
 #define _TCHAR char
 #define TCHAR char
@@ -84,6 +75,9 @@ typedef LPBYTE PBYTE; //!< A Microsoft/Muscle PC/SC LPBYTE, pointer to unsigned 
 typedef LPDWORD PDWORD; //!< A Microsoft LPDWORD/Muscle PC/SC, a pointer to a double word, pointer to unsigned long.
 #endif
 
+
+
+
 static const BYTE OPSP_CARD_MANAGER_AID[] = {0xA0, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00}; //!< The AID of the Card Manager defined by Open Platform specification.
 
 
@@ -91,83 +85,8 @@ static const BYTE OPSP_SECURITY_LEVEL_ENC_MAC = 0x03; //!< Command messages are 
 static const BYTE OPSP_SECURITY_LEVEL_MAC = 0x01; //!< Command messages are signed.
 static const BYTE OPSP_SECURITY_LEVEL_PLAIN = 0x00; //!< Command messages are plaintext.
 
-/**
- * The security information negotiated at mutual_authentication().
- */
-typedef struct {
-	BYTE security_level; //!< The security level.
-	BYTE session_mac_key[16]; //!< The MAC session key.
-	BYTE session_enc_key[16]; //!< The ENC session key.
-	BYTE last_mac[8]; //!< The last computed mac.
-} OPSP_SECURITY_INFO;
-
-
-/**
- * A structure describing a Load File Data Block DAP block according to the Open Platform specification 2.0.1'.
- * The structure comprises 3 Tag Length Value (TLV) fields after the ASN.1 specification.
- * The outer tag 0xE2 contains the two inner tags.
- */
-typedef struct {
-	BYTE DAPBlockLength; //!< The length of the DAP block. The length of all following fields.
-	BYTE securityDomainAIDLength; //!< The length of the Security Domain.
-	BYTE securityDomainAID[16]; //!< The AID of the Security Domain.
-	BYTE signatureLength; //!< The length of the signature. Can be 8 for a 3DES signature or 128 for a RSA signature.
-	BYTE signature[128]; //!< The signature.
-} OPSP_DAP_BLOCK, OPSP_RSA_DAP_BLOCK, OPSP_3DES_DAP_BLOCK;
-
-
-
-
-/**
- * A structure returned in DELETE, LOAD, INSTALL[for load], INSTALL[for install] with delegated management.
- */
-typedef struct {
-	BYTE receiptLength; //!< The length of the receipt DAP.
-	BYTE receipt[8]; //!< The receipt DAP.
-	BYTE confirmationCounterLength; //!< Length of the confirmation counter buffer.
-	BYTE confirmationCounter[2]; //!< The confirmation counter buffer.
-	BYTE cardUniqueDataLength; //!< The length of the card unique data buffer.
-	BYTE cardUniqueData[10]; //!< Card unique data buffer.
-} OPSP_RECEIPT_DATA;
-
-
-
-
 static const BYTE OPSP_KEY_TYPE_RSA = 0xA1; //!< RSA key
 static const BYTE OPSP_KEY_TYPE_3DES = 0x81; //!< 3DES key.
-
-/**
- * A structure containing key information. Key set version, key index, key type and key length.
- */
-typedef struct {
-	BYTE keySetVersion; //!< The key set version.
-	BYTE keyIndex; //!< The key index.
-	BYTE keyType; //!< The key type.
-	BYTE keyLength; //!< The key length.
-} OPSP_KEY_INFORMATION;
-
-
-
-/**
- * A structure describing an AID.
- */
-typedef struct {
-	BYTE AIDLength; //!< The length of the AID.
-	BYTE AID[16]; //!< The AID.
-} OPSP_AID;
-
-
-
-/**
- * The structure containing Card Manager, package and application life cycle states and privileges returned by get_status().
- */
-typedef struct {
-	BYTE AIDLength; //!< The length of the AID.
-	BYTE AID[16]; //!< The AID.
-	BYTE lifeCycleState; //!< The Card Manager, package or application life cycle state.
-	BYTE privileges; //!< The Card Manager or applet privileges.
-} OPSP_APPLICATION_DATA;
-
 static const BYTE OPSP_LIFE_CYCLE_LOAD_FILE_LOGICALLY_DELETED = 0x00; //!< Executable Load File is logically deleted.
 static const BYTE OPSP_LIFE_CYCLE_LOAD_FILE_LOADED = 0x01; //!< Executable Load File is loaded.
 static const BYTE OPSP_LIFE_CYCLE_CARD_MANAGER_OP_READY = 0x01; //!< Card is OP ready.
@@ -257,6 +176,84 @@ static const BYTE OPSP_GET_DATA_EF_PROD_DATA_PROFILE_WITH_PROFILE_VERSION[2] = {
 static const BYTE OPSP_GET_DATA_EF_PROD_DATA_LOCATION_MACHINE_DATE_TIME[2] = {0xDF, 0x7E}; //!< EF<sub>prod</sub> data location, machine number, date, time.
 
 static const BYTE OPSP_GET_DATA_WHOLE_EF_PROD[2] = {0xDF, 0x7F}; //!< Whole EF<sub>prod</sub> data block (39 Byte).
+
+
+
+
+/**
+ * The security information negotiated at mutual_authentication().
+ */
+typedef struct {
+	BYTE security_level; //!< The security level.
+	BYTE session_mac_key[16]; //!< The MAC session key.
+	BYTE session_enc_key[16]; //!< The ENC session key.
+	BYTE last_mac[8]; //!< The last computed mac.
+} OPSP_SECURITY_INFO;
+
+
+/**
+ * A structure describing a Load File Data Block DAP block according to the Open Platform specification 2.0.1'.
+ * The structure comprises 3 Tag Length Value (TLV) fields after the ASN.1 specification.
+ * The outer tag 0xE2 contains the two inner tags.
+ */
+typedef struct {
+	BYTE DAPBlockLength; //!< The length of the DAP block. The length of all following fields.
+	BYTE securityDomainAIDLength; //!< The length of the Security Domain.
+	BYTE securityDomainAID[16]; //!< The AID of the Security Domain.
+	BYTE signatureLength; //!< The length of the signature. Can be 8 for a 3DES signature or 128 for a RSA signature.
+	BYTE signature[128]; //!< The signature.
+} OPSP_DAP_BLOCK, OPSP_RSA_DAP_BLOCK, OPSP_3DES_DAP_BLOCK;
+
+
+
+
+/**
+ * A structure returned in DELETE, LOAD, INSTALL[for load], INSTALL[for install] with delegated management.
+ */
+typedef struct {
+	BYTE receiptLength; //!< The length of the receipt DAP.
+	BYTE receipt[8]; //!< The receipt DAP.
+	BYTE confirmationCounterLength; //!< Length of the confirmation counter buffer.
+	BYTE confirmationCounter[2]; //!< The confirmation counter buffer.
+	BYTE cardUniqueDataLength; //!< The length of the card unique data buffer.
+	BYTE cardUniqueData[10]; //!< Card unique data buffer.
+} OPSP_RECEIPT_DATA;
+
+
+
+
+/**
+ * A structure containing key information. Key set version, key index, key type and key length.
+ */
+typedef struct {
+	BYTE keySetVersion; //!< The key set version.
+	BYTE keyIndex; //!< The key index.
+	BYTE keyType; //!< The key type.
+	BYTE keyLength; //!< The key length.
+} OPSP_KEY_INFORMATION;
+
+
+
+/**
+ * A structure describing an AID.
+ */
+typedef struct {
+	BYTE AIDLength; //!< The length of the AID.
+	BYTE AID[16]; //!< The AID.
+} OPSP_AID;
+
+
+
+/**
+ * The structure containing Card Manager, package and application life cycle states and privileges returned by get_status().
+ */
+typedef struct {
+	BYTE AIDLength; //!< The length of the AID.
+	BYTE AID[16]; //!< The AID.
+	BYTE lifeCycleState; //!< The Card Manager, package or application life cycle state.
+	BYTE privileges; //!< The Card Manager or applet privileges.
+} OPSP_APPLICATION_DATA;
+
 
 
 
@@ -491,10 +488,6 @@ LONG set_status(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_CA
 //! \brief Formats an error code to a human readable string.
 OPSP_API
 OPSP_STRING stringify_error(DWORD errorCode);
-
-//! \brief Retrieves the capabilities of the card reader.
-OPSP_API
-LONG get_reader_capabilities(OPSP_CARDHANDLE cardHandle, DWORD attributeId, PBYTE attribute, PDWORD attributeLength);
 
 //! \brief Retrieves the card status.
 OPSP_API

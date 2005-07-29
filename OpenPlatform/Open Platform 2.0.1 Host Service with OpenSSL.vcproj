@@ -20,22 +20,22 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;E:\quarantine\openssl-0.9.7e\include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;OPSP_EXPORTS;_UNICODE"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;OPSP_EXPORTS;_UNICODE;UNICODE"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="TRUE"
-				UsePrecompiledHeader="3"
+				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
 				DebugInformationFormat="4"
-				CompileAs="2"/>
+				CompileAs="1"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="ssleay32.lib libeay32.lib winscard.lib"
-				OutputFile="$(OutDir)/OPSP.dll"
+				OutputFile="$(OutDir)/OpenPlatform.dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;E:\quarantine\openssl-0.9.7e\out32dll&quot;"
 				GenerateDebugInformation="TRUE"
@@ -45,8 +45,7 @@
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
-				Name="VCPostBuildEventTool"
-				CommandLine="copy .\Debug\OPSP.dll C:\Windows\System32\"/>
+				Name="VCPostBuildEventTool"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool
@@ -73,18 +72,19 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="&quot;E:\quarantine\openssl-0.9.7e\include&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;OPSP_EXPORTS;_UNICODE"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;OPSP_EXPORTS;_UNICODE;UNICODE"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="3"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="3"/>
+				DebugInformationFormat="3"
+				CompileAs="1"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="ssleay32.lib libeay32.lib winscard.lib"
-				OutputFile="$(OutDir)/OPSP.dll"
+				OutputFile="$(OutDir)/OpenPlatform.dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;E:\quarantine\openssl-0.9.7e\out32dll&quot;"
 				GenerateDebugInformation="FALSE"
@@ -123,6 +123,9 @@
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
 			<File
+				RelativePath=".\debug.c">
+			</File>
+			<File
 				RelativePath=".\DLLMain.c">
 			</File>
 			<File
@@ -136,6 +139,9 @@
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
+			<File
+				RelativePath=".\debug.h">
+			</File>
 			<File
 				RelativePath=".\OpenPlatform.h">
 			</File>

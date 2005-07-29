@@ -5,7 +5,7 @@
 
 #pragma once
 
-#ifdef _WIN32
+#ifdef WIN32
 	#include <windows.h>
 	#ifndef _UNICODE
 	#define _UNICODE

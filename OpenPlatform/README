@@ -20,10 +20,10 @@ make install
 
 If the configure file is not there you must run the script ./reconf
 
-make doc 
+make doc
 
-generates the documentation in HTML and LaTeX. You must have Doxygen 
-www.doxygen.org/ and Graphviz http://www.graphviz.org/ installed. 
+generates the documentation in HTML and LaTeX. You must have Doxygen
+www.doxygen.org/ and Graphviz http://www.graphviz.org/ installed.
 You can generate PS or PDF from the LaTeX on you own.
 
 make install installs the package in the default prefix (/usr/local), so the resulting
@@ -43,4 +43,10 @@ PKG_CONFIG_PATH. E.g. the Debian path for pkgconfig is /usr/lib/pkgconfig.
 ./configure --help gives you a help of possible options.
 ./configure --enable-debug enables debugging output on stdout
 
+If you need to get debugging output run configure with --enable-debug.
+You must enable the debugging by setting the environment variable
+OPENPLATFORM_DEBUG=1. If at configure time vsyslog support was detected,
+the debugging will be syslogged. If you explicitly set a log file with
+the environment variable OPENPLATFORM_LOGFILE, this log file will be used.
+If no vsyslog is available the default log file is /tmp/OpenPlatform.log.
 

@@ -35,7 +35,7 @@ OUTDIR=Debug
 OUTDIR=Release
 !ENDIF
 
-OBJS=$(OUTDIR)/stdafx.obj $(OUTDIR)/DLLMain.obj $(OUTDIR)/OpenPlatform.obj
+OBJS=$(OUTDIR)/stdafx.obj $(OUTDIR)/DLLMain.obj $(OUTDIR)/OpenPlatform.obj $(OUTDIR)/debug.obj
 
 # replace with the location of doxygen
 # or specify on command line
@@ -46,11 +46,11 @@ LIB_NAME=OpenPlatform # the name of the library
 CPP=cl
 
 !IFDEF DEBUG
-CPPFLAGS=/Od /I $(OPENSSL_INC) /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "OPSP_EXPORTS" /D "_UNICODE" \
-/D "_WINDLL" /D "UNICODE" /GZ /MD /Fo$(OUTDIR)/ /W3 /nologo /ZI /TP
+CPPFLAGS=/Od /I $(OPENSSL_INC) /D "WIN32" /D "_DEBUG" /D "DEBUG" /D "_CONSOLE" /D "OPSP_EXPORTS" /D "_UNICODE" \
+/D "_WINDLL" /D "UNICODE" /GZ /MD /Fo$(OUTDIR)/ /W3 /nologo /ZI /TC
 !ELSE
 CPPFLAGS=/O2 /I "$(OPENSSL_INC)" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "OPSP_EXPORTS" /D "_UNICODE" \
-/D "_WINDLL" /D "UNICODE" /FD /MD /Fo$(OUTDIR)/ /W3 /nologo /Zi /TP
+/D "_WINDLL" /D "UNICODE" /FD /MD /Fo$(OUTDIR)/ /W3 /nologo /Zi /TC
 !ENDIF
 
 LINK=link

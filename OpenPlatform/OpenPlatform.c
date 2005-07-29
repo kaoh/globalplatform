@@ -54,7 +54,10 @@
  * <li>
  * The term applet is also Java Card specific and is the same as a Open Platform application.
  * </li>
- *
+ * <p>
+ * Before you call a card related command make sure that the Card Manager or Security Domain you 
+ * want to use for the command is selected by select_application().
+ * </p>
  * </ul>
  *
  */
@@ -71,6 +74,7 @@
 #ifndef WIN32
 #include <sys/stat.h>
 #endif
+#include "debug.h"
 
 #define MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING 239
 
@@ -115,8 +119,9 @@ static LONG calculate_MAC_des_3des(unsigned char _3des_key[16], unsigned char *m
  * \param receiptData OUT The receipt data.
  * \return The number of bytes which were consumed while parsing the buffer.
  */
-static inline DWORD fillReceipt(PBYTE buf, OPSP_RECEIPT_DATA *receiptData) {
+static DWORD fillReceipt(PBYTE buf, OPSP_RECEIPT_DATA *receiptData) {
 	DWORD j = 0;
+	LOG_START(_T("fillReceipt"));
 	j++;
 	memcpy(receiptData->receipt, buf+j, 8);
 	j+=8;
@@ -128,6 +133,7 @@ static inline DWORD fillReceipt(PBYTE buf, OPSP_RECEIPT_DATA *receiptData) {
 	j++;
 	memcpy(receiptData->cardUniqueData, buf+j, receiptData->cardUniqueDataLength);
 	j+=receiptData->cardUniqueDataLength;
+	LOG_END(_T("fillReceipt"),j);
 	return j;
 }
 
@@ -138,8 +144,9 @@ static inline DWORD fillReceipt(PBYTE buf, OPSP_RECEIPT_DATA *receiptData) {
  * \param dapBlock IN The Load File Data Block DAP block.
  * \return OPSP_ERROR_SUCCESS if no error, error code else
  */
-static inline LONG readDAPBlock(PBYTE buf, PDWORD bufLength, OPSP_DAP_BLOCK dapBlock) {
+static LONG readDAPBlock(PBYTE buf, PDWORD bufLength, OPSP_DAP_BLOCK dapBlock) {
 	DWORD j=0;
+	LOG_START(_T("readDAPBlock"));
 	if ((DWORD)dapBlock.DAPBlockLength+1 > *bufLength) {
 		return OPSP_ERROR_INSUFFICIENT_BUFFER;
 	}
@@ -153,6 +160,7 @@ static inline LONG readDAPBlock(PBYTE buf, PDWORD bufLength, OPSP_DAP_BLOCK dapB
 	buf[j++] = dapBlock.signatureLength;
 	memcpy(buf+j, dapBlock.signature, dapBlock.signatureLength);
 	j+=dapBlock.signatureLength;
+	LOG_END(_T("readDAPBlock"), OPSP_ERROR_SUCCESS);
 	return OPSP_ERROR_SUCCESS;
 }
 
@@ -169,16 +177,20 @@ LONG get_card_status(OPSP_CARDHANDLE cardHandle, OPSP_CARD_INFO *cardInfo) {
 	DWORD protocol;
 	BYTE ATR[32];
 	DWORD ATRLength=32;
+	LOG_START(_T("get_card_status"));
 	readerName=(OPSP_STRING)malloc(sizeof(TCHAR)*readerNameLength);
 	result = SCardStatus(cardHandle, readerName, &readerNameLength, &state, &protocol, ATR, &ATRLength);
 	if ( SCARD_S_SUCCESS != result ) {
-		return result;
+		goto end;
 	}
 	memcpy(cardInfo->ATR, ATR, 32);
 	cardInfo->protocol = protocol;
 	cardInfo->ATRLength = ATRLength;
 	cardInfo->state = state;
-	return OPSP_ERROR_SUCCESS;
+	result = OPSP_ERROR_SUCCESS;
+end:
+	LOG_END(_T("get_card_status"), result);
+	return result;
 }
 
 /**
@@ -187,14 +199,18 @@ LONG get_card_status(OPSP_CARDHANDLE cardHandle, OPSP_CARD_INFO *cardInfo) {
  */
 LONG establish_context(OPSP_CARDCONTEXT *cardContext) {
 	LONG result;
+	LOG_START(_T("establish_context"));
 	result = SCardEstablishContext( SCARD_SCOPE_USER,
 									NULL,
 									NULL,
 									cardContext);
 	if ( SCARD_S_SUCCESS != result ) {
-		return result;
+		goto end;
 	}
-	return OPSP_ERROR_SUCCESS;
+	result = OPSP_ERROR_SUCCESS;
+end:
+	LOG_END(_T("establish_context"), result);
+	return result;
 }
 
 /**
@@ -203,11 +219,15 @@ LONG establish_context(OPSP_CARDCONTEXT *cardContext) {
  */
 LONG release_context(OPSP_CARDCONTEXT cardContext) {
 	LONG result;
+	LOG_START(_T("release_context"));
 	result = SCardReleaseContext(cardContext);
 	if ( SCARD_S_SUCCESS != result ) {
-		return result;
+		goto end;
 	}
-	return OPSP_ERROR_SUCCESS;
+	result = OPSP_ERROR_SUCCESS;
+end:
+	LOG_END(_T("release_context"), result);
+	return result;
 }
 
 /**
@@ -222,20 +242,21 @@ LONG release_context(OPSP_CARDCONTEXT cardContext) {
 LONG list_readers(OPSP_CARDCONTEXT cardContext, OPSP_STRING readerNames, PDWORD readerNamesLength) {
 	LONG result;
 	DWORD readersSize;
-	OPSP_STRING readers;
+	OPSP_STRING readers = NULL;
+	LOG_START(_T("list_readers"));
 	result = SCardListReaders( cardContext, NULL, NULL, &readersSize );
 	if ( SCARD_S_SUCCESS != result ) {
-		return result;
+		goto end;
 	}
 	if (readerNames == NULL) {
 		*readerNamesLength = readersSize;
-		return OPSP_ERROR_SUCCESS;
+		result = OPSP_ERROR_SUCCESS;
+		goto end;
 	}
 	readers = (OPSP_STRING)malloc(sizeof(TCHAR)*readersSize);
 	result = SCardListReaders( cardContext, NULL, readers, &readersSize);
 	if ( SCARD_S_SUCCESS != result ) {
-		free(readers);
-		return result;
+		goto end;
 	}
 	if (*readerNamesLength < readersSize) {
 		_tcsncpy(readerNames, readers, (*readerNamesLength)-2);
@@ -247,8 +268,12 @@ LONG list_readers(OPSP_CARDCONTEXT cardContext, OPSP_STRING readerNames, PDWORD 
 		memcpy(readerNames, readers, sizeof(TCHAR)*readersSize);
 		*readerNamesLength = readersSize;
 	}
-	free(readers);
-	return OPSP_ERROR_SUCCESS;
+	result = OPSP_ERROR_SUCCESS;
+end:
+	if (readers)
+		free(readers);
+	LOG_END(_T("list_readers"), result);
+	return result;
 }
 
 /**
@@ -262,6 +287,7 @@ LONG list_readers(OPSP_CARDCONTEXT cardContext, OPSP_STRING readerNames, PDWORD 
 LONG card_connect(OPSP_CARDCONTEXT cardContext, OPSP_CSTRING readerName, OPSP_CARDHANDLE *cardHandle, DWORD protocol) {
 	LONG result;
 	DWORD activeProtocol;
+	LOG_START(_T("card_connect"));
 	result = SCardConnect( cardContext,
 							readerName,
 							SCARD_SHARE_EXCLUSIVE,
@@ -269,9 +295,12 @@ LONG card_connect(OPSP_CARDCONTEXT cardContext, OPSP_CSTRING readerName, OPSP_CA
 							cardHandle,
 							&activeProtocol );
 	if ( SCARD_S_SUCCESS != result ) {
-		return result;
+		goto end;
 	}
-	return OPSP_ERROR_SUCCESS;
+	result = OPSP_ERROR_SUCCESS;
+end:
+	LOG_END(_T("card_connect"), result);
+	return result;
 }
 
 /**
@@ -280,11 +309,15 @@ LONG card_connect(OPSP_CARDCONTEXT cardContext, OPSP_CSTRING readerName, OPSP_CA
  */
 LONG card_disconnect(OPSP_CARDHANDLE cardHandle) {
 	LONG result;
+	LOG_START(_T("card_disconnect"));
 	result = SCardDisconnect(cardHandle, SCARD_RESET_CARD);
 	if ( SCARD_S_SUCCESS != result ) {
-		return result;
+		goto end;
 	}
-	return OPSP_ERROR_SUCCESS;
+	result = OPSP_ERROR_SUCCESS;
+end:
+	LOG_END(_T("card_disconnect"), result);
+	return result;
 }
 
 
@@ -293,7 +326,7 @@ LONG card_disconnect(OPSP_CARDHANDLE cardHandle) {
  * \param b IN The Le BYTE.
  * \return Value of b.
  */
-static inline DWORD convertByte(BYTE b) {
+static DWORD convertByte(BYTE b) {
 	return (b == 0) ? 256 : b;
 }
 
@@ -318,21 +351,21 @@ static LONG wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrapp
 	unsigned char encryption[240];
 	int encryptionLength = 240;
 	DWORD caseAPDU;
-
+	LOG_START(_T("wrap_command"));
 	if (*wrappedApduCommandLength < apduCommandLength)
-			return OPSP_ERROR_INSUFFICIENT_BUFFER;
+			{ result = OPSP_ERROR_INSUFFICIENT_BUFFER; goto end; }
 	memcpy(wrappedApduCommand, apduCommand, apduCommandLength);
 
 	// no security level defined, just return
 	if (secInfo == NULL) {
 		*wrappedApduCommandLength = apduCommandLength;
-		return OPSP_ERROR_SUCCESS;
+		{ result = OPSP_ERROR_SUCCESS; goto end; }
 	}
 
 	// trivial case, just return
 	if (secInfo->security_level == OPSP_SECURITY_LEVEL_PLAIN) {
 		*wrappedApduCommandLength = apduCommandLength;
-		return OPSP_ERROR_SUCCESS;
+		{ result = OPSP_ERROR_SUCCESS; goto end; }
 	}
 
 	// Determine which type of Exchange between the reader
@@ -359,7 +392,7 @@ static LONG wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrapp
 		le = apduCommand[apduCommandLength - 1];
 		apduCommandLength--;
 		} else {
-			return OPSP_ERROR_UNRECOGNIZED_APDU_COMMAND;
+			{ result = OPSP_ERROR_UNRECOGNIZED_APDU_COMMAND; goto end; }
 		}
 	} // if (Determine which type of Exchange)
 
@@ -367,20 +400,20 @@ static LONG wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrapp
 		if (secInfo->security_level == OPSP_SECURITY_LEVEL_ENC_MAC) {
 			switch (caseAPDU) {
 				case 3:
-					if (apduCommandLength > 239 + 8 + 5) return OPSP_ERROR_COMMAND_SECURE_MESSAGING_TOO_LARGE; // max apdu data size = 239 + 1 byte Lc
+					if (apduCommandLength > 239 + 8 + 5) { result = OPSP_ERROR_COMMAND_SECURE_MESSAGING_TOO_LARGE; goto end; } // max apdu data size = 239 + 1 byte Lc
 					break;
 				case 4:
-					if (apduCommandLength > 239 + 8 + 5 + 1) return OPSP_ERROR_COMMAND_SECURE_MESSAGING_TOO_LARGE;
+					if (apduCommandLength > 239 + 8 + 5 + 1) { result = OPSP_ERROR_COMMAND_SECURE_MESSAGING_TOO_LARGE; goto end; }
 					break;
 			}
 		}
 		if (secInfo->security_level == OPSP_SECURITY_LEVEL_MAC) {
 			switch (caseAPDU) {
 				case 3:
-					if (apduCommandLength > 247 + 8 + 5) return OPSP_ERROR_COMMAND_SECURE_MESSAGING_TOO_LARGE;
+					if (apduCommandLength > 247 + 8 + 5) { result = OPSP_ERROR_COMMAND_SECURE_MESSAGING_TOO_LARGE; goto end; }
 					break;
 				case 4:
-					if (apduCommandLength > 247 + 8 + 5 + 1) return OPSP_ERROR_COMMAND_SECURE_MESSAGING_TOO_LARGE;
+					if (apduCommandLength > 247 + 8 + 5 + 1) { result = OPSP_ERROR_COMMAND_SECURE_MESSAGING_TOO_LARGE; goto end; }
 					break;
 			}
 		}
@@ -388,7 +421,7 @@ static LONG wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrapp
 			case 1:
 			case 2: {
 				if (*wrappedApduCommandLength < apduCommandLength + 8 + 1)
-					return OPSP_ERROR_INSUFFICIENT_BUFFER;
+					{ result = OPSP_ERROR_INSUFFICIENT_BUFFER; goto end; }
 				wrappedLength = 4 + 8 + 1;
 				wrappedApduCommand[4] = 0x08;
 				break;
@@ -396,7 +429,7 @@ static LONG wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrapp
 			case 3:
 			case 4: {
 				if (*wrappedApduCommandLength < apduCommandLength + 8) {
-					return OPSP_ERROR_INSUFFICIENT_BUFFER;
+					{ result = OPSP_ERROR_INSUFFICIENT_BUFFER; goto end; }
 				}
 				wrappedLength =  4 + 1 + convertByte(lc) + 8;
 				wrappedApduCommand[4]+=8;
@@ -406,7 +439,7 @@ static LONG wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrapp
 		wrappedApduCommand[0] = apduCommand[0] | 0x04;
 		result = calculate_MAC(secInfo->session_mac_key, wrappedApduCommand, wrappedLength-8, secInfo->last_mac, mac);
 		if (result != OPSP_ERROR_SUCCESS) {
-			return result;
+			goto end;
 		}
 		memcpy(secInfo->last_mac, mac, 8);
 		memcpy(wrappedApduCommand+wrappedLength-8, mac, 8);
@@ -422,33 +455,36 @@ static LONG wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrapp
 				case 3:
 					result = calculate_enc_cbc(secInfo->session_enc_key, wrappedApduCommand+4, wrappedLength-4-8, encryption, &encryptionLength);
 					if (result != OPSP_ERROR_SUCCESS) {
-						return result;
+						goto end;
 					}
 					break;
 				case 2:
 				case 4:
 					result = calculate_enc_cbc(secInfo->session_enc_key, wrappedApduCommand+4, wrappedLength-4-8-1, encryption, &encryptionLength);
 					if (result != OPSP_ERROR_SUCCESS) {
-						return result;
+						goto end;
 					}
 					break;
 			}
 			wrappedLength = encryptionLength + 4 + 1 + 8;
 			if (*wrappedApduCommandLength < wrappedLength)
-				return OPSP_ERROR_INSUFFICIENT_BUFFER;
+				{ result = OPSP_ERROR_INSUFFICIENT_BUFFER; goto end; }
 			memcpy(wrappedApduCommand+5, encryption, encryptionLength);
 			wrappedApduCommand[4] = encryptionLength + 8;
 			memcpy(&wrappedApduCommand[encryptionLength + 5], mac, 8);
 			if ((caseAPDU == 2) || (caseAPDU ==4)) {
 				if (*wrappedApduCommandLength < wrappedLength+1)
-					return OPSP_ERROR_INSUFFICIENT_BUFFER;
+					{ result = OPSP_ERROR_INSUFFICIENT_BUFFER; goto end; }
 				wrappedApduCommand[wrappedLength] = le;
 				wrappedLength++;
 			}
 		} // if (secInfo.security_level == OPSP_SECURITY_LEVEL_ENC_MAC)
 		*wrappedApduCommandLength = wrappedLength;
 	} // if (secInfo.security_level == OPSP_SECURITY_LEVEL_PLAIN) ... else
-	return OPSP_ERROR_SUCCESS;
+	result = OPSP_ERROR_SUCCESS;
+end:
+	LOG_END(_T("wrap_command"), result);
+	return result;
 }
 
 /**
@@ -476,9 +512,10 @@ LONG send_APDU(OPSP_CARDHANDLE cardHandle, PBYTE capdu, DWORD capduLength, PBYTE
 
 	DWORD offset = 0;
 
-	PBYTE responseData;
+	PBYTE responseData = NULL;
 	DWORD responseDataLength = *rapduLength;
 
+	LOG_START(_T("send_APDU"));
 	responseData = (PBYTE)malloc(sizeof(BYTE)*responseDataLength);
 
 	// main transmition block
@@ -486,8 +523,7 @@ LONG send_APDU(OPSP_CARDHANDLE cardHandle, PBYTE capdu, DWORD capduLength, PBYTE
 	// wrap command
 	result = wrap_command(capdu, capduLength, apduCommand, &apduCommandLength, secInfo);
 	if ( OPSP_ERROR_SUCCESS != result) {
-		free(responseData);
-		return result;
+		goto end;
 	}
 	// if T=1 or else T=0
 
@@ -504,8 +540,7 @@ LONG send_APDU(OPSP_CARDHANDLE cardHandle, PBYTE capdu, DWORD capduLength, PBYTE
 				&responseDataLength
 				);
 		if ( SCARD_S_SUCCESS != result) {
-			free(responseData);
-			return result;
+			goto end;
 		} // if ( SCARD_S_SUCCESS != result)
 	} else {
 		// Determine which type of Exchange between the reader
@@ -532,22 +567,13 @@ LONG send_APDU(OPSP_CARDHANDLE cardHandle, PBYTE capdu, DWORD capduLength, PBYTE
 			le = apduCommand[apduCommandLength - 1];
 			apduCommandLength--;
 			} else {
-			free(responseData);
-			return OPSP_ERROR_UNRECOGNIZED_APDU_COMMAND;
+			{ result = OPSP_ERROR_UNRECOGNIZED_APDU_COMMAND; goto end; }
 			}
 		} // if (Determine which type of Exchange)
 
 		// T=0 transmition (first command)
 
 		responseDataLength = *rapduLength;
-		//{
-		//	int i;
-		//	printf("Data to send: \n");
-		//	for (i=0; i<apduCommandLength; i++) {
-		//		printf(" 0x%02x", apduCommand[i]);
-		//	}
-		//	printf("\n");
-		//}
 		result = SCardTransmit( cardHandle,
 				SCARD_PCI_T0,
 				apduCommand,
@@ -557,8 +583,7 @@ LONG send_APDU(OPSP_CARDHANDLE cardHandle, PBYTE capdu, DWORD capduLength, PBYTE
 				&responseDataLength
 				);
 		if ( SCARD_S_SUCCESS != result) {
-			free(responseData);
-			return result;
+			goto end;
 		} // if ( SCARD_S_SUCCESS != result)
 		offset += responseDataLength - 2;
 		// main switch block for cases 2 and 4
@@ -591,8 +616,7 @@ LONG send_APDU(OPSP_CARDHANDLE cardHandle, PBYTE capdu, DWORD capduLength, PBYTE
 								&responseDataLength
 								);
 						if ( SCARD_S_SUCCESS != result) {
-							free(responseData);
-							return result;
+							goto end;
 						}
 
 						// If La is greater that Le, then the response TPDU is mapped
@@ -658,8 +682,7 @@ LONG send_APDU(OPSP_CARDHANDLE cardHandle, PBYTE capdu, DWORD capduLength, PBYTE
 								&responseDataLength
 								);
 						if ( SCARD_S_SUCCESS != result) {
-							free(responseData);
-							return result;
+							goto end;
 						} // if ( SCARD_S_SUCCESS != result)
 						offset += responseDataLength - 2;
 						continue;
@@ -719,8 +742,7 @@ LONG send_APDU(OPSP_CARDHANDLE cardHandle, PBYTE capdu, DWORD capduLength, PBYTE
 							&responseDataLength
 							);
 					if ( SCARD_S_SUCCESS != result) {
-						free(responseData);
-						return result;
+						goto end;
 					} // if ( SCARD_S_SUCCESS != result)
 					offset += responseDataLength - 2;
 
@@ -749,8 +771,7 @@ LONG send_APDU(OPSP_CARDHANDLE cardHandle, PBYTE capdu, DWORD capduLength, PBYTE
 								&responseDataLength
 								);
 						if ( SCARD_S_SUCCESS != result) {
-							free(responseData);
-							return result;
+							goto end;
 						}
 
 						// If La is greater that Le, then the response TPDU is mapped
@@ -814,8 +835,7 @@ LONG send_APDU(OPSP_CARDHANDLE cardHandle, PBYTE capdu, DWORD capduLength, PBYTE
 								&responseDataLength
 								);
 						if ( SCARD_S_SUCCESS != result) {
-							free(responseData);
-							return result;
+							goto end;
 						}
 						offset += responseDataLength - 2;
 						continue;
@@ -856,20 +876,23 @@ LONG send_APDU(OPSP_CARDHANDLE cardHandle, PBYTE capdu, DWORD capduLength, PBYTE
 				&responseDataLength
 				);
 		if ( SCARD_S_SUCCESS != result) {
-			free(responseData);
-			return result;
+			goto end;
 		} // if ( SCARD_S_SUCCESS != result)
 		offset += responseDataLength - 2;
 	} // if (61)
 
 	memcpy(rapdu, responseData, offset + 2);
 	*rapduLength = offset + 2;
-	free(responseData);
 
 	if (rapdu[*rapduLength-2] != 0x90 || rapdu[*rapduLength-1] != 0x00) {
-		return (OPSP_ISO7816_ERROR_PREFIX | (rapdu[*rapduLength-2] << 8)) | rapdu[*rapduLength-1];
+		result = (OPSP_ISO7816_ERROR_PREFIX | (rapdu[*rapduLength-2] << 8)) | rapdu[*rapduLength-1];
 	}
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	if (responseData)
+		free(responseData);
+	LOG_END(_T("send_APDU"), result);
+	return result;
 }
 
 /**
@@ -886,6 +909,7 @@ LONG select_application(OPSP_CARDHANDLE cardHandle, OPSP_CARD_INFO cardInfo, PBY
 	PBYTE sendBuffer;
 	DWORD sendBufferLength;
 	DWORD i=0;
+	LOG_START(_T("select_application"));
 	sendBufferLength = 5 + AIDLength;
 	sendBuffer = (PBYTE)malloc(sizeof(BYTE)*sendBufferLength);
 	sendBuffer[i++] = 0x00;
@@ -896,195 +920,40 @@ LONG select_application(OPSP_CARDHANDLE cardHandle, OPSP_CARD_INFO cardInfo, PBY
 	memcpy(sendBuffer+i, AID, AIDLength);
 	i+=AIDLength;
 #ifdef DEBUG
-	_tprintf(_T("select_application: Data to send: \n"));
+	log_Log(_T("select_application: Data to send: "));
 	for (i=0; i<sendBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), sendBuffer[i]);
+		log_Log(_T(" 0x%02x"), sendBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 	result = send_APDU(cardHandle, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength, cardInfo, NULL);
 	if ( OPSP_ERROR_SUCCESS != result) {
-		free(sendBuffer);
 		switch (result) {
 			case OPSP_ISO7816_ERROR_CONDITIONS_NOT_SATISFIED:
-				return OPSP_ISO7816_ERROR_NOT_MULTI_SELECTABLE;
+				{ result = OPSP_ISO7816_ERROR_NOT_MULTI_SELECTABLE; goto end; }
 			case OPSP_ISO7816_ERROR_6999:
-				return OPSP_ISO7816_ERROR_SELECTION_REJECTED;
+				{ result = OPSP_ISO7816_ERROR_SELECTION_REJECTED; goto end; }
 			case OPSP_ISO7816_ERROR_FUNC_NOT_SUPPORTED:
-				return OPSP_ISO7816_ERROR_APPLET_NOT_SELECTABLE;
+				{ result = OPSP_ISO7816_ERROR_APPLET_NOT_SELECTABLE; goto end; }
 			case OPSP_ISO7816_ERROR_FILE_NOT_FOUND:
-				return OPSP_ISO7816_ERROR_APPLET_NOT_FOUND;
+				{ result = OPSP_ISO7816_ERROR_APPLET_NOT_FOUND; goto end; }
 			case OPSP_ISO7816_ERROR_FILE_INVALIDATED:
-				return OPSP_ISO7816_WARNING_CM_LOCKED;
+				{ result = OPSP_ISO7816_WARNING_CM_LOCKED; goto end; }
 			default:
-				return result;
+				goto end;
 		}
 	}
-	free(sendBuffer);
 #ifdef DEBUG
-	_tprintf(_T("select_application: Data: \n"));
+	log_Log(_T("select_application: Data: "));
 	for (i=0; i<recvBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), recvBuffer[i]);
+		log_Log(_T(" 0x%02x"), recvBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
-	return OPSP_ERROR_SUCCESS;
-}
-
-/**
- * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
- * \param attributeId IN The identifier for the requested attribute.
- <table>
- <tr>
-	<td>Value</td> <td>Meaning</td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_ATR_OPSP_STRING</td> <td>Answer to reset (ATR) string.</td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_CHANNEL_ID</td> <td>DWORD encoded as 0xDDDDCCCC, where DDDD = data channel type and CCCC = channel number:
-	The following encodings are defined for DDDD:
-	<ul>
-		<li>0x01 serial I/O; CCCC is a port number. </li>
-		<li>0x02 parallel I/O; CCCC is a port number. </li>
-		<li>0x04 PS/2 keyboard port; CCCC is zero. </li>
-		<li>0x08 SCSI; CCCC is SCSI ID number. </li>
-		<li>0x10 IDE; CCCC is device number. </li>
-		<li>0x20 USB; CCCC is device number. </li>
-		<li>0xFy vendor-defined interface with y in the range 0 through 15; CCCC is vendor defined. </li>
-	</ul>
-	</td>
-  </tr>
- <tr>
-	<td>SCARD_ATTR_CHARACTERISTICS</td> <td>DWORD indicating which mechanical characteristics are supported. If zero, no special characteristics are supported. Note that multiple bits can be set:
-	<ul>
-		<li>0x00000001 Card swallowing mechanism </li>
-		<li>0x00000002 Card ejection mechanism </li>
-		<li>0x00000004 Card capture mechanism </li>
-	</ul>
-	All other values are reserved for future use (RFU).
-	</td>
-  </tr>
- <tr>
-	<td>SCARD_ATTR_CURRENT_BWT</td> <td>Current block waiting time. </td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_CURRENT_CLK</td> <td>Current clock rate, in kHz. </td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_CURRENT_CWT</td> <td>Current character waiting time. </td>
- <tr>
-	<td>SCARD_ATTR_CURRENT_D Bit</td> <td>rate conversion factor. </td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_CURRENT_EBC_ENCODING Current error block control encoding. </td>
-	<ul>
-		<li>0 = longitudinal redundancy check (LRC)</li>
-		<li>1 = cyclical redundancy check (CRC)</li>
-	</ul>
-	</td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_CURRENT_F</td> <td>Clock conversion factor. </td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_CURRENT_IFSC</td> <td>Current byte size for information field size card. </td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_CURRENT_IFSD</td> <td>Current byte size for information field size device. </td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_CURRENT_N</td> <td>Current guard time. </td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_CURRENT_PROTOCOL_TYPE</td> <td>DWORD encoded as 0x0rrrpppp where rrr is RFU and should be 0x000. pppp encodes the current protocol type. Whichever bit has been set indicates which ISO protocol is currently in use. (For example, if bit 0 is set, T=0 protocol is in effect.) </td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_CURRENT_W</td> <td>Current work waiting time. </td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_DEFAULT_CLK</td> <td>Default clock rate, in kHz. </td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_DEFAULT_DATA_RATE</td> <td>Default data rate, in bps. </td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_DEVICE_FRIENDLY_NAME</td> <td>Reader's friendly name. </td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_DEVICE_IN_USE</td> <td>Reserved for future use. </td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_DEVICE_SYSTEM_NAME</td> <td>Reader's system name. </td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_DEVICE_UNIT</td> <td>Instance of this vendor's reader attached to the computer. The first instance will be device unit 0, the next will be unit 1 (if it is the same brand of reader) and so on. Two different brands of readers will both have 0 for this value. </td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_ICC_INTERFACE_STATUS</td> <td>Single byte. 0 if smart card electrical contact is not active; non-zero if contact is active. </td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_ICC_PRESENCE Single byte indicating smart card presence: </td>
-	<td>
-	<ul>
-		<li>0 = not present</li>
-		<li>1 = card present but not swallowed (applies only if reader supports smart card swallowing)</li>
-		<li>2 = card present (and swallowed if reader supports smart card swallowing)</li>
-		<li>4 = card confiscated.</li>
-	</ul>
-	</td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_ICC_TYPE_PER_ATR Single byte indicating smart card type: </td>
-	<td>
-	<ul>
-		<li>0 = unknown type</li>
-		<li>1 = 7816 Asynchronous</li>
-		<li>2 = 7816 Synchronous</li>
-	</ul>
-	Other values RFU.
-	</td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_MAX_CLK</td> <td>Maximum clock rate, in kHz. </td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_MAX_DATA_RATE</td> <td>Maximum data rate, in bps. </td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_MAX_IFSD</td> <td>Maximum bytes for information file size device. </td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_POWER_MGMT_SUPPORT</td> <td>0 if device does not support power down while smart card is inserted. Non-zero otherwise. </td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_PROTOCOL_TYPES</td> <td>DWORD encoded as 0x0rrrpppp where rrr is RFU and should be 0x000. pppp encodes the supported protocol types. A '1' in a given bit position indicates support for the associated ISO protocol, so if bits 0 and 1 are set, both T=0 and T=1 protocols are supported. </td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_VENDOR_IFD_SERIAL_NO</td> <td>Vendor-supplied interface device serial number. </td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_VENDOR_IFD_TYPE</td> <td>Vendor-supplied interface device type (model designation of reader). </td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_VENDOR_IFD_VERSION</td> <td>Vendor-supplied interface device version (DWORD in the form 0xMMmmbbbb where MM = major version, mm = minor version, and bbbb = build number). </td>
- </tr>
- <tr>
-	<td>SCARD_ATTR_VENDOR_NAME</td> <td>Vendor name. </td>
- </tr>
- </table>
-
- * \param attribute OUT The buffer for the requested attribute.
- * \param attributeLength INOUT The length of the attribute buffer.
- * \return OPSP_ERROR_SUCCESS if no error, error code else.
- */
-LONG get_reader_capabilities(OPSP_CARDHANDLE cardHandle, DWORD attributeId, PBYTE attribute, PDWORD attributeLength) {
-	LONG result;
-	result = SCardGetAttrib(cardHandle, attributeId, attribute, attributeLength);
-	if ( SCARD_S_SUCCESS != result) {
-		return result;
-	}
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("select_application"), result);
+	return result;
 }
 
 /**
@@ -1115,20 +984,21 @@ LONG put_rsa_key(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_C
 	FILE *PEMKeyFile;
 	BYTE rsa_modulus[128];
 	unsigned long rsa_exponent;
+	LOG_START(_T("put_rsa_key"));
 	if (passPhrase == NULL)
-		return OPSP_ERROR_INVALID_PASSWORD;
+		{ result = OPSP_ERROR_INVALID_PASSWORD; goto end; }
 
 	if ((PEMKeyFileName == NULL) || (_tcslen(PEMKeyFileName) == 0))
-		return OPSP_ERROR_INVALID_FILENAME;
+		{ result = OPSP_ERROR_INVALID_FILENAME; goto end; }
 	PEMKeyFile = _tfopen(PEMKeyFileName, _T("rb"));
 	if (PEMKeyFile == NULL) {
-		return OPSP_ERROR_FILE_NOT_FOUND;
+		{ result = OPSP_ERROR_FILE_NOT_FOUND; goto end; }
 	}
 	key = EVP_PKEY_new();
 	if (!PEM_read_PUBKEY(PEMKeyFile, &key, NULL, passPhrase)) {
 		fclose(PEMKeyFile);
 		EVP_PKEY_free(key);
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	};
 	fclose(PEMKeyFile);
 	rsa_exponent = key->pkey.rsa->e->d[0];
@@ -1136,11 +1006,11 @@ LONG put_rsa_key(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_C
 	EVP_PKEY_free(key);
 
 	if (keySetVersion > 0x7f)
-		return OPSP_ERROR_WRONG_KEY_VERSION;
+		{ result = OPSP_ERROR_WRONG_KEY_VERSION; goto end; }
 	if ((newKeySetVersion > 0x7f) || (newKeySetVersion < 0x01))
-		return OPSP_ERROR_WRONG_KEY_VERSION;
+		{ result = OPSP_ERROR_WRONG_KEY_VERSION; goto end; }
 	if (keyIndex > 0x7f)
-		return OPSP_ERROR_WRONG_KEY_INDEX;
+		{ result = OPSP_ERROR_WRONG_KEY_INDEX; goto end; }
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xD8;
 	sendBuffer[i++] = keySetVersion;
@@ -1162,30 +1032,33 @@ LONG put_rsa_key(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_C
 		sendBuffer[i++] = 0x01;
 	}
 	else {
-		return OPSP_ERROR_WRONG_EXPONENT;
+		{ result = OPSP_ERROR_WRONG_EXPONENT; goto end; }
 	}
 	sendBuffer[4] = (BYTE)i-5;
 	sendBuffer[i++] = 0x00; // Le
 	sendBufferLength = i;
 #ifdef DEBUG
-	_tprintf(_T("put_rsa_key: Data to send: \n"));
+	log_Log(_T("put_rsa_key: Data to send: "));
 	for (i=0; i<sendBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), sendBuffer[i]);
+		log_Log(_T(" 0x%02x"), sendBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 	result = send_APDU(cardHandle, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength, cardInfo, secInfo);
 	if ( OPSP_ERROR_SUCCESS != result) {
-		return result;
+		goto end;
 	}
 #ifdef DEBUG
-	_tprintf(_T("put_rsa_key: Data: \n"));
+	log_Log(_T("put_rsa_key: Data: "));
 	for (i=0; i<recvBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), recvBuffer[i]);
+		log_Log(_T(" 0x%02x"), recvBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("put_rsa_key"), result);
+	return result;
 }
 
 /**
@@ -1217,12 +1090,13 @@ LONG put_3des_key(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_
 	int keyCheckValueLength;
 	BYTE keyCheckTest[8] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
 	DWORD i=0;
+	LOG_START(_T("put_3des_key"));
 	if (keySetVersion > 0x7f)
-		return OPSP_ERROR_WRONG_KEY_VERSION;
+		{ result = OPSP_ERROR_WRONG_KEY_VERSION; goto end; }
 	if (newKeySetVersion > 0x7f)
-		return OPSP_ERROR_WRONG_KEY_VERSION;
+		{ result = OPSP_ERROR_WRONG_KEY_VERSION; goto end; }
 	if (keyIndex > 0x7f)
-		return OPSP_ERROR_WRONG_KEY_INDEX;
+		{ result = OPSP_ERROR_WRONG_KEY_INDEX; goto end; }
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xD8;
 	sendBuffer[i++] = keySetVersion;
@@ -1233,39 +1107,42 @@ LONG put_3des_key(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_
 	sendBuffer[i++] = 0x10; // length of 3DES key
 	result = calculate_enc_ecb(kek_key, _3des_key, 16, encrypted_3des_key, &encrypted_3des_key_length);
 	if ( OPSP_ERROR_SUCCESS != result) {
-		return result;
+		goto end;
 	}
 	memcpy(sendBuffer+i, encrypted_3des_key, 16); // key
 	i+=16;
 	sendBuffer[i++] = 0x03; // length of key check value
 	result = calculate_enc_ecb(_3des_key, keyCheckTest, 8, keyCheckValue, &keyCheckValueLength);
 	if ( OPSP_ERROR_SUCCESS != result) {
-		return result;
+		goto end;
 	}
 	memcpy(sendBuffer+i, keyCheckValue, 3);
 	i+=3;
 	sendBuffer[i] = 0x00; // Le
 #ifdef DEBUG
-	_tprintf(_T("put_3des_key: Data to send: \n"));
+	log_Log(_T("put_3des_key: Data to send: "));
 	for (i=0; i<sendBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), sendBuffer[i]);
+		log_Log(_T(" 0x%02x"), sendBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 	result = send_APDU(cardHandle, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength, cardInfo, secInfo);
 	if ( OPSP_ERROR_SUCCESS != result) {
-		return result;
+		goto end;
 	}
 #ifdef DEBUG
-	_tprintf(_T("put_3des_key: Data: \n"));
+	log_Log(_T("put_3des_key: Data: "));
 	for (i=0; i<recvBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), recvBuffer[i]);
+		log_Log(_T(" 0x%02x"), recvBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 	if (memcmp(keyCheckValue, recvBuffer+1, 3) != 0)
-		return OPSP_ERROR_KEY_CHECK_VALUE;
-	return OPSP_ERROR_SUCCESS;
+		{ result = OPSP_ERROR_KEY_CHECK_VALUE; goto end; }
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("put_3des_key"), result);
+	return result;
 }
 
 /**
@@ -1298,10 +1175,11 @@ LONG put_secure_channel_keys(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *sec
 	int keyCheckValueLength;
 	BYTE keyCheckTest[8] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
 	DWORD i=0;
+	LOG_START(_T("put_secure_channel_keys"));
 	if (keySetVersion > 0x7f)
-		return OPSP_ERROR_WRONG_KEY_VERSION;
+		{ result = OPSP_ERROR_WRONG_KEY_VERSION; goto end; }
 	if (newKeySetVersion > 0x7f)
-		return OPSP_ERROR_WRONG_KEY_VERSION;
+		{ result = OPSP_ERROR_WRONG_KEY_VERSION; goto end; }
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xD8;
 	sendBuffer[i++] = keySetVersion;
@@ -1315,14 +1193,14 @@ LONG put_secure_channel_keys(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *sec
 	sendBuffer[i++] = 0x10; // length of 3DES key
 	result = calculate_enc_ecb(kek_key, new_enc_key, 16, encrypted_key, &encrypted_key_length);
 	if ( OPSP_ERROR_SUCCESS != result) {
-		return result;
+		goto end;
 	}
 	memcpy(sendBuffer+i, encrypted_key, 16); // key
 	i+=16;
 	sendBuffer[i++] = 0x03; // length of key check value
 	result = calculate_enc_ecb(new_enc_key, keyCheckTest, 8, keyCheckValue1, &keyCheckValueLength);
 	if ( OPSP_ERROR_SUCCESS != result) {
-		return result;
+		goto end;
 	}
 	memcpy(sendBuffer+i, keyCheckValue1, 3);
 	i+=3;
@@ -1332,14 +1210,14 @@ LONG put_secure_channel_keys(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *sec
 	sendBuffer[i++] = 0x10; // length of 3DES key
 	result = calculate_enc_ecb(kek_key, new_mac_key, 16, encrypted_key, &encrypted_key_length);
 	if ( OPSP_ERROR_SUCCESS != result) {
-		return result;
+		goto end;
 	}
 	memcpy(sendBuffer+i, encrypted_key, 16); // key
 	i+=16;
 	sendBuffer[i++] = 0x03; // length of key check value
 	result = calculate_enc_ecb(new_mac_key, keyCheckTest, 8, keyCheckValue2, &keyCheckValueLength);
 	if ( OPSP_ERROR_SUCCESS != result) {
-		return result;
+		goto end;
 	}
 	memcpy(sendBuffer+i, keyCheckValue2, 3);
 	i+=3;
@@ -1349,14 +1227,14 @@ LONG put_secure_channel_keys(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *sec
 	sendBuffer[i++] = 0x10; // length of 3DES key
 	result = calculate_enc_ecb(kek_key, new_kek_key, 16, encrypted_key, &encrypted_key_length);
 	if ( OPSP_ERROR_SUCCESS != result) {
-		return result;
+		goto end;
 	}
 	memcpy(sendBuffer+i, encrypted_key, 16); // key
 	i+=16;
 	sendBuffer[i++] = 0x03; // length of key check value
 	result = calculate_enc_ecb(new_kek_key, keyCheckTest, 8, keyCheckValue3, &keyCheckValueLength);
 	if ( OPSP_ERROR_SUCCESS != result) {
-		return result;
+		goto end;
 	}
 	memcpy(sendBuffer+i, keyCheckValue3, 3);
 	i+=3;
@@ -1366,30 +1244,33 @@ LONG put_secure_channel_keys(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *sec
 	sendBufferLength = i;
 
 #ifdef DEBUG
-	_tprintf(_T("put_secure_channel_keys: Data to send: \n"));
+	log_Log(_T("put_secure_channel_keys: Data to send: "));
 	for (i=0; i<sendBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), sendBuffer[i]);
+		log_Log(_T(" 0x%02x"), sendBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 	result = send_APDU(cardHandle, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength, cardInfo, secInfo);
 	if ( OPSP_ERROR_SUCCESS != result) {
-		return result;
+		goto end;
 	}
 #ifdef DEBUG
-	_tprintf(_T("put_secure_channel_keys: Data: \n"));
+	log_Log(_T("put_secure_channel_keys: Data: "));
 	for (i=0; i<recvBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), recvBuffer[i]);
+		log_Log(_T(" 0x%02x"), recvBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 	if (memcmp(keyCheckValue1, recvBuffer+1, 3) != 0)
-		return OPSP_ERROR_KEY_CHECK_VALUE;
+		{ result = OPSP_ERROR_KEY_CHECK_VALUE; goto end; }
 	if (memcmp(keyCheckValue2, recvBuffer+1+3, 3) != 0)
-		return OPSP_ERROR_KEY_CHECK_VALUE;
+		{ result = OPSP_ERROR_KEY_CHECK_VALUE; goto end; }
 	if (memcmp(keyCheckValue3, recvBuffer+1+6, 3) != 0)
-		return OPSP_ERROR_KEY_CHECK_VALUE;
-	return OPSP_ERROR_SUCCESS;
+		{ result = OPSP_ERROR_KEY_CHECK_VALUE; goto end; }
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("put_secure_channel_keys"), result);
+	return result;
 }
 
 /**
@@ -1427,20 +1308,21 @@ LONG put_delegated_management_keys(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INF
 	FILE *PEMKeyFile;
 	BYTE token_verification_rsa_modulus[128];
 	unsigned long token_verification_rsa_exponent;
+	LOG_START(_T("put_delegated_management_keys"));
 	if (passPhrase == NULL)
-		return OPSP_ERROR_INVALID_PASSWORD;
+		{ result = OPSP_ERROR_INVALID_PASSWORD; goto end; }
 	if ((PEMKeyFileName == NULL) || (_tcslen(PEMKeyFileName) == 0))
-		return OPSP_ERROR_INVALID_FILENAME;
+		{ result = OPSP_ERROR_INVALID_FILENAME; goto end; }
 	PEMKeyFile = _tfopen(PEMKeyFileName, _T("rb"));
 	if (PEMKeyFile == NULL) {
-		return OPSP_ERROR_FILE_NOT_FOUND;
+		{ result = OPSP_ERROR_FILE_NOT_FOUND; goto end; }
 	}
 	key = EVP_PKEY_new();
 	if (!PEM_read_PUBKEY(PEMKeyFile, &key, NULL, passPhrase)) {
 	fclose(PEMKeyFile);
 
 		EVP_PKEY_free(key);
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	};
 	fclose(PEMKeyFile);
 	// only 3 and 65337 are supported
@@ -1449,9 +1331,9 @@ LONG put_delegated_management_keys(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INF
 	EVP_PKEY_free(key);
 
 	if (keySetVersion > 0x7f)
-		return OPSP_ERROR_WRONG_KEY_VERSION;
+		{ result = OPSP_ERROR_WRONG_KEY_VERSION; goto end; }
 	if (newKeySetVersion > 0x7f)
-		return OPSP_ERROR_WRONG_KEY_VERSION;
+		{ result = OPSP_ERROR_WRONG_KEY_VERSION; goto end; }
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xD8;
 	sendBuffer[i++] = keySetVersion;
@@ -1476,7 +1358,7 @@ LONG put_delegated_management_keys(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INF
 		sendBuffer[i++] = 0x01;
 	}
 	else {
-		return OPSP_ERROR_WRONG_EXPONENT;
+		{ result = OPSP_ERROR_WRONG_EXPONENT; goto end; }
 	}
 
 	// Receipt Generation Key
@@ -1485,14 +1367,14 @@ LONG put_delegated_management_keys(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INF
 	sendBuffer[i++] = 0x10; // length of 3DES key
 	result = calculate_enc_ecb(kek_key, receipt_generation_key, 16, encrypted_key, &encrypted_key_length);
 	if ( OPSP_ERROR_SUCCESS != result) {
-		return result;
+		goto end;
 	}
 	memcpy(sendBuffer+i, encrypted_key, 16); // key
 	i+=16;
 	sendBuffer[i++] = 0x03; // length of key check value
 	result = calculate_enc_ecb(receipt_generation_key, keyCheckTest, 8, keyCheckValue, &keyCheckValueLength);
 	if ( OPSP_ERROR_SUCCESS != result) {
-		return result;
+		goto end;
 	}
 	memcpy(sendBuffer+i, keyCheckValue, 3);
 	i+=3;
@@ -1504,27 +1386,30 @@ LONG put_delegated_management_keys(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INF
 	sendBufferLength = i;
 
 #ifdef DEBUG
-	_tprintf(_T("put_delegated_management_keys: Data to send: \n"));
+	log_Log(_T("put_delegated_management_keys: Data to send: "));
 	for (i=0; i<sendBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), sendBuffer[i]);
+		log_Log(_T(" 0x%02x"), sendBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 
 	result = send_APDU(cardHandle, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength, cardInfo, secInfo);
 	if ( OPSP_ERROR_SUCCESS != result) {
-		return result;
+		goto end;
 	}
 #ifdef DEBUG
-	_tprintf(_T("put_delegated_management_keys: Data: \n"));
+	log_Log(_T("put_delegated_management_keys: Data: "));
 	for (i=0; i<recvBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), recvBuffer[i]);
+		log_Log(_T(" 0x%02x"), recvBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 	if (memcmp(keyCheckValue, recvBuffer+1, 3) != 0)
-		return OPSP_ERROR_KEY_CHECK_VALUE;
-	return OPSP_ERROR_SUCCESS;
+		{ result = OPSP_ERROR_KEY_CHECK_VALUE; goto end; }
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("put_delegated_management_keys"), result);
+	return result;
 }
 
 /**
@@ -1544,12 +1429,13 @@ LONG delete_key(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_CA
 	DWORD recvBufferLength=3;
 	BYTE recvBuffer[3];
 	DWORD i=0;
+	LOG_START(_T("delete_key"));
 	if ((keySetVersion == 0x00) && (keyIndex == 0x00))
-		return OPSP_ERROR_INVALID_COMBINATION_KEY_SET_VERSION_KEY_INDEX;
+		{ result = OPSP_ERROR_INVALID_COMBINATION_KEY_SET_VERSION_KEY_INDEX; goto end; }
 	if (keySetVersion > 0x7f)
-		return OPSP_ERROR_WRONG_KEY_VERSION;
+		{ result = OPSP_ERROR_WRONG_KEY_VERSION; goto end; }
 	if (keyIndex > 0x7f)
-		return OPSP_ERROR_WRONG_KEY_INDEX;
+		{ result = OPSP_ERROR_WRONG_KEY_INDEX; goto end; }
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xE4;
 	sendBuffer[i++] = 0x00;
@@ -1578,24 +1464,27 @@ LONG delete_key(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_CA
 	sendBuffer[i++] = 0x01;
 	sendBufferLength = i;
 #ifdef DEBUG
-	_tprintf(_T("delete_key: Data to send: \n"));
+	log_Log(_T("delete_key: Data to send: "));
 	for (i=0; i<sendBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), sendBuffer[i]);
+		log_Log(_T(" 0x%02x"), sendBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 	result = send_APDU(cardHandle, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength, cardInfo, secInfo);
 	if ( OPSP_ERROR_SUCCESS != result) {
-		return result;
+		goto end;
 	}
 #ifdef DEBUG
-	_tprintf(_T("delete_key: Data: \n"));
+	log_Log(_T("delete_key: Data: "));
 	for (i=0; i<recvBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), recvBuffer[i]);
+		log_Log(_T(" 0x%02x"), recvBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("delete_key"), result);
+	return result;
 }
 
 /**
@@ -1620,6 +1509,7 @@ LONG delete_applet(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP
 	DWORD recvBufferLength=255;
 	BYTE recvBuffer[255];
 	DWORD j,i=0;
+	LOG_START(_T("delete_applet"));
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xE4;
 	sendBuffer[i++] = 0x00;
@@ -1628,7 +1518,7 @@ LONG delete_applet(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP
 	for (j=0; j< AIDsLength; j++) {
 		if (i + AIDs[j].AIDLength+2 > 260) {
 			*receiptDataLength = 0;
-			return OPSP_ERROR_COMMAND_TOO_LARGE;
+			{ result = OPSP_ERROR_COMMAND_TOO_LARGE; goto end; }
 		}
 		sendBuffer[4] += AIDs[j].AIDLength+2;
 		sendBuffer[i++] = 0x4F;
@@ -1639,16 +1529,16 @@ LONG delete_applet(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP
 	sendBuffer[i++] = 0x00;
 	sendBufferLength = i;
 #ifdef DEBUG
-	_tprintf(_T("delete_application: Data to send: \n"));
+	log_Log(_T("delete_application: Data to send: "));
 	for (i=0; i<sendBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), sendBuffer[i]);
+		log_Log(_T(" 0x%02x"), sendBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 	result = send_APDU(cardHandle, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength, cardInfo, secInfo);
 	if ( OPSP_ERROR_SUCCESS != result) {
 		*receiptDataLength = 0;
-		return result;
+		goto end;
 	}
 	if (recvBufferLength-count > sizeof(OPSP_RECEIPT_DATA)) { // assumption that a OPSP_RECEIPT_DATA structure is returned in a delegated management deletion
 		*receiptDataLength=0;
@@ -1660,13 +1550,16 @@ LONG delete_applet(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP
 		*receiptDataLength = 0;
 	}
 #ifdef DEBUG
-	_tprintf(_T("delete_application: Data: \n"));
+	log_Log(_T("delete_application: Data: "));
 	for (i=0; i<recvBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), recvBuffer[i]);
+		log_Log(_T(" 0x%02x"), recvBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("delete_applet"), result);
+	return result;
 }
 
 /**
@@ -1689,6 +1582,7 @@ LONG put_data(OPSP_CARDHANDLE cardHandle, BYTE identifier[2], PBYTE dataObject, 
 	DWORD recvBufferLength=2;
 	BYTE recvBuffer[2];
 	DWORD i=0;
+	LOG_START(_T("put_data"));
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xDA;
 	sendBuffer[i++] = identifier[0];
@@ -1698,24 +1592,26 @@ LONG put_data(OPSP_CARDHANDLE cardHandle, BYTE identifier[2], PBYTE dataObject, 
 	i+=dataObjectLength;
 	sendBufferLength = i;
 #ifdef DEBUG
-	_tprintf(_T("put_data: Data to send: \n"));
+	log_Log(_T("put_data: Data to send: "));
 	for (i=0; i<sendBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), sendBuffer[i]);
+		log_Log(_T(" 0x%02x"), sendBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 	result = send_APDU(cardHandle, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength, cardInfo, secInfo);
 	if ( OPSP_ERROR_SUCCESS != result) {
-		return result;
+		goto end;
 	}
 #ifdef DEBUG
-	_tprintf(_T("put_data: Data: \n"));
+	log_Log(_T("put_data: Data: "));
 	for (i=0; i<recvBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), recvBuffer[i]);
-	}
-	_tprintf(_T("\n"));
+		log_Log(_T(" 0x%02x"), recvBuffer[i]);
+	}	
 #endif
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("put_data"), result);
+	return result;
 }
 
 /**
@@ -1741,36 +1637,40 @@ LONG get_data(OPSP_CARDHANDLE cardHandle, BYTE identifier[2], PBYTE recvBuffer, 
 	BYTE cardData[256];
 	DWORD cardDataLength = 256;
 	DWORD i=0;
+	LOG_START(_T("get_data"));
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xCA;
 	sendBuffer[i++] = identifier[0];
 	sendBuffer[i++] = identifier[1];
 	sendBuffer[i] = 0x00;
 #ifdef DEBUG
-	_tprintf(_T("get_data: Data to send: \n"));
+	log_Log(_T("get_data: Data to send: "));
 	for (i=0; i<sendBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), sendBuffer[i]);
+		log_Log(_T(" 0x%02x"), sendBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 	result = send_APDU(cardHandle, sendBuffer, sendBufferLength, cardData, &cardDataLength, cardInfo, secInfo);
 	if ( OPSP_ERROR_SUCCESS != result) {
 		*recvBufferLength = 0;
-		return result;
+		goto end;
 	}
 #ifdef DEBUG
-	_tprintf(_T("get_data: Data: \n"));
+	log_Log(_T("get_data: Data: "));
 	for (i=0; i<*recvBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), recvBuffer[i]);
+		log_Log(_T(" 0x%02x"), recvBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 	if (cardDataLength-2 > *recvBufferLength) {
-		return OPSP_ERROR_INSUFFICIENT_BUFFER;
+		{ result = OPSP_ERROR_INSUFFICIENT_BUFFER; goto end; }
 	}
 	memcpy(recvBuffer, cardData, cardDataLength-2);
 	*recvBufferLength = cardDataLength-2;
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("get_data"), result);
+	return result;
 }
 
 /**
@@ -1792,33 +1692,34 @@ LONG get_key_information_templates(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INF
 	BYTE cardData[256];
 	DWORD cardDataLength = 256;
 	DWORD j,i=0;
+	LOG_START(_T("get_key_information_templates"));
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xCA;
 	sendBuffer[i++] = keyInformationTemplate;
 	sendBuffer[i++] = 0xE0;
 	sendBuffer[i] = 0x00;
 #ifdef DEBUG
-	_tprintf(_T("get_key_information_templates: Data to send: \n"));
+	log_Log(_T("get_key_information_templates: Data to send: "));
 	for (i=0; i<sendBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), sendBuffer[i]);
+		log_Log(_T(" 0x%02x"), sendBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 	result = send_APDU(cardHandle, sendBuffer, sendBufferLength, cardData, &cardDataLength, cardInfo, secInfo);
 	if ( OPSP_ERROR_SUCCESS != result) {
-		return result;
+		goto end;
 	}
 #ifdef DEBUG
-	_tprintf(_T("get_key_information_templates: Data: \n"));
+	log_Log(_T("get_key_information_templates: Data: "));
 	for (i=0; i<cardDataLength; i++) {
-		_tprintf(_T(" 0x%02x"), cardData[i]);
+		log_Log(_T(" 0x%02x"), cardData[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 	i=0;
 	for (j=4; j<cardDataLength-2; j+=2) {
 		if (*keyInformationLength <= i ) {
-			return OPSP_ERROR_MORE_KEY_INFORMATION_TEMPLATES;;
+			{ result = OPSP_ERROR_MORE_KEY_INFORMATION_TEMPLATES; goto end; };
 		}
 		keyInformation[i].keyIndex = cardData[j++];
 		keyInformation[i].keySetVersion = cardData[j++];
@@ -1828,14 +1729,19 @@ LONG get_key_information_templates(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INF
 	}
 
 	*keyInformationLength = i;
+#ifdef DEBUG
 	for (i=0; i<*keyInformationLength; i++) {
-		printf("Key index: 0x%02x\n", keyInformation[i].keyIndex);
-		printf("Key set version: 0x%02x\n", keyInformation[i].keySetVersion);
-		printf("Key type: 0x%02x\n", keyInformation[i].keyType);
-		printf("Key length: 0x%02x\n", keyInformation[i].keyLength);
+		log_Log(_T("Key index: 0x%02x\n"), keyInformation[i].keyIndex);
+		log_Log(_T("Key set version: 0x%02x\n"), keyInformation[i].keySetVersion);
+		log_Log(_T("Key type: 0x%02x\n"), keyInformation[i].keyType);
+		log_Log(_T("Key length: 0x%02x\n"), keyInformation[i].keyLength);
 	}
+#endif
 
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("get_key_information_templates"), result);
+	return result;
 }
 
 /**
@@ -1856,6 +1762,7 @@ LONG set_status(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_CA
 	BYTE recvBuffer[2];
 	BYTE sendBuffer[5+16];
 	DWORD i=0;
+	LOG_START(_T("set_status"));
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xF0;
 	sendBuffer[i++] = cardElement;
@@ -1864,24 +1771,27 @@ LONG set_status(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_CA
 	memcpy(sendBuffer+i, AID, AIDLength);
 	i+=AIDLength;
 #ifdef DEBUG
-	_tprintf(_T("set_status: Data to send: \n"));
+	log_Log(_T("set_status: Data to send: "));
 	for (i=0; i<sendBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), sendBuffer[i]);
+		log_Log(_T(" 0x%02x"), sendBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 	result = send_APDU(cardHandle,sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength, cardInfo, secInfo);
 	if (OPSP_ERROR_SUCCESS != result) {
-		return result;
+		goto end;
 	}
 #ifdef DEBUG
-	_tprintf(_T("set_status: Data: \n"));
+	log_Log(_T("set_status: Data: "));
 	for (i=0; i<recvBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), recvBuffer[i]);
+		log_Log(_T(" 0x%02x"), recvBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("set_status"), result);
+	return result;
 }
 
 /**
@@ -1900,6 +1810,7 @@ LONG get_status(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_CA
 	BYTE recvBuffer[256];
 	BYTE sendBuffer[8];
 	DWORD j,i=0;
+	LOG_START(_T("get_status"));
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xF2;
 	sendBuffer[i++] = cardElement;
@@ -1912,26 +1823,26 @@ LONG get_status(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_CA
 	do {
 		recvBufferLength=256;
 #ifdef DEBUG
-	_tprintf(_T("get_status: Data to send: \n"));
+	log_Log(_T("get_status: Data to send: "));
 	for (j=0; j<sendBufferLength; j++) {
-		_tprintf(_T(" 0x%02x"), sendBuffer[j]);
+		log_Log(_T(" 0x%02x"), sendBuffer[j]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 		result = send_APDU(cardHandle,sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength, cardInfo, secInfo);
 		if ( (OPSP_ERROR_SUCCESS != result) && !(result == OPSP_ISO7816_ERROR_MORE_DATA_AVAILABLE)) {
-			return result;
+			goto end;
 		}
 #ifdef DEBUG
-	_tprintf(_T("get_status: Data: \n"));
+	log_Log(_T("get_status: Data: "));
 	for (j=0; j<recvBufferLength; j++) {
-		_tprintf(_T(" 0x%02x"), recvBuffer[j]);
+		log_Log(_T(" 0x%02x"), recvBuffer[j]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 		for (j=0; j<recvBufferLength-2; ) {
 			if (*applDataLength <= i ) {
-				return OPSP_ERROR_MORE_APPLICATION_DATA;
+				{ result = OPSP_ERROR_MORE_APPLICATION_DATA; goto end; }
 			}
 			applData[i].AIDLength = recvBuffer[j++];
 			memcpy(applData[i].AID, recvBuffer+j, applData[i].AIDLength);
@@ -1944,7 +1855,10 @@ LONG get_status(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_CA
 	} while (result == OPSP_ISO7816_ERROR_MORE_DATA_AVAILABLE);
 
 	*applDataLength = i;
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("get_status"), result);
+	return result;
 }
 
 /**
@@ -1971,19 +1885,20 @@ LONG load_applet(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_C
 	DWORD recvBufferLength=256;
 	BYTE recvBuffer[256];
 	BYTE sendBuffer[261];
-	PBYTE dapBuf;
+	PBYTE dapBuf = NULL;
 	DWORD maxDAPBufSize=0;
 	long fileSize;
 	DWORD total=0;
 	DWORD fileSizeSize;
 	DWORD j,k,i=0;
-	FILE *CAPFile;
+	FILE *CAPFile = NULL;
 	BYTE sequenceNumber=0x00;
+	LOG_START(_T("load_applet"));
 	*receiptDataAvailable = 0;
 	sendBuffer[0] = 0x80;
 	sendBuffer[1] = 0xE8;
 	if ((CAPFileName == NULL) || (_tcslen(CAPFileName) == 0))
-		return OPSP_ERROR_INVALID_FILENAME;
+		{ result = OPSP_ERROR_INVALID_FILENAME; goto end; }
 
 	for (i=0; i<dapBlockLength; i++) {
 		maxDAPBufSize = max(maxDAPBufSize, (DWORD)dapBlock[i].DAPBlockLength + 1);
@@ -1996,8 +1911,7 @@ LONG load_applet(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_C
 		k = maxDAPBufSize;
 		result = readDAPBlock(dapBuf, &k, dapBlock[i]);
 		if (result != OPSP_ERROR_SUCCESS) {
-			free(dapBuf);
-			return result;
+			goto end;
 		}
 		if (j+k <= MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING) {
 			memcpy(sendBuffer+5+j, dapBuf, k);
@@ -2011,48 +1925,43 @@ LONG load_applet(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_C
 			//sendBufferLength++;
 			//sendBuffer[sendBufferLength-1] = 0x00;
 #ifdef DEBUG
-	_tprintf(_T("load_applet: Data to send: \n"));
+	log_Log(_T("load_applet: Data to send: "));
 	for (i=0; i<sendBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), sendBuffer[i]);
+		log_Log(_T(" 0x%02x"), sendBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 			result = send_APDU(cardHandle, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength, cardInfo, secInfo);
 			if (OPSP_ERROR_SUCCESS != result) {
-				return result;
+				goto end;
 			}
 #ifdef DEBUG
-	_tprintf(_T("load_applet: Data: \n"));
+	log_Log(_T("load_applet: Data: "));
 	for (i=0; i<recvBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), recvBuffer[i]);
+		log_Log(_T(" 0x%02x"), recvBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 			j=k;
 		}
-	}
-	if (dapBlockLength > 0) {
-		free(dapBuf);
 	}
 	// send load file data block
 
 	CAPFile = _tfopen(CAPFileName, _T("rb"));
 	if (CAPFile == NULL) {
-		return OPSP_ERROR_FILE_NOT_FOUND;
+		{ result = OPSP_ERROR_FILE_NOT_FOUND; goto end; }
 	}
 #ifdef WIN32
 	fileSize = _filelength(CAPFile->_file);
 #else
 	fileSize = fseek(CAPFile, 0, SEEK_END);
-	if (fileSize == -1) {
-		fclose(CAPFile);
-		return OPSP_ERROR_BAD_FILE_DESCRIPTOR;
+	if (fileSize == -1) {		
+		{ result = OPSP_ERROR_BAD_FILE_DESCRIPTOR; goto end; }
 	}
 	fileSize = ftell(CAPFile);
 #endif
 	if (fileSize == -1L) {
-		fclose(CAPFile);
-		return OPSP_ERROR_BAD_FILE_DESCRIPTOR;
+		{ result = OPSP_ERROR_BAD_FILE_DESCRIPTOR; goto end; }
 	}
 	if (fileSize < 128L) {
 		fileSizeSize=1;
@@ -2064,8 +1973,7 @@ LONG load_applet(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_C
 		fileSizeSize=3;
 	}
 	else {
-		fclose(CAPFile);
-		return OPSP_ERROR_APPLICATION_TOO_BIG;
+		{ result = OPSP_ERROR_APPLICATION_TOO_BIG; goto end; }
 	}
 	// Enough space left to start load file data block
 
@@ -2088,8 +1996,7 @@ LONG load_applet(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_C
 		total+=(DWORD)fread(sendBuffer+5+j, sizeof(unsigned char), MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING-j, CAPFile);
 		j+=total;
 		if(ferror(CAPFile)) {
-			fclose(CAPFile);
-			return OPSP_ERROR_READ;
+			{ result = OPSP_ERROR_READ; goto end; }
 		}
 		sendBufferLength=5+j;
 		sendBuffer[2] = 0x00;
@@ -2108,24 +2015,23 @@ LONG load_applet(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_C
 		recvBufferLength=256;
 
 #ifdef DEBUG
-	_tprintf(_T("load_applet: Data to send: \n"));
+	log_Log(_T("load_applet: Data to send: "));
 	for (i=0; i<sendBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), sendBuffer[i]);
+		log_Log(_T(" 0x%02x"), sendBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 
 		result = send_APDU(cardHandle, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength, cardInfo, secInfo);
 		if (OPSP_ERROR_SUCCESS != result) {
-			fclose(CAPFile);
-			return result;
+			goto end;
 		}
 #ifdef DEBUG
-	_tprintf(_T("load_applet: Data: \n"));
+	log_Log(_T("load_applet: Data: "));
 	for (i=0; i<recvBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), recvBuffer[i]);
+		log_Log(_T(" 0x%02x"), recvBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 	}
 	// Not enough space to start load file data block. First send data then start load file data block.
@@ -2139,23 +2045,22 @@ LONG load_applet(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_C
 //		sendBufferLength++;
 //		sendBuffer[sendBufferLength-1] = 0x00;
 #ifdef DEBUG
-	_tprintf(_T("load_applet: Data to send: \n"));
+	log_Log(_T("load_applet: Data to send: "));
 	for (i=0; i<sendBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), sendBuffer[i]);
+		log_Log(_T(" 0x%02x"), sendBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 		result = send_APDU(cardHandle, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength, cardInfo, secInfo);
 		if (OPSP_ERROR_SUCCESS != result) {
-			fclose(CAPFile);
-			return result;
+			goto end;
 		}
 #ifdef DEBUG
-	_tprintf(_T("load_applet: Data: \n"));
+	log_Log(_T("load_applet: Data: "));
 	for (i=0; i<recvBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), recvBuffer[i]);
+		log_Log(_T(" 0x%02x"), recvBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 		j=0;
 		sendBuffer[5+j++] = 0xC4;
@@ -2176,8 +2081,7 @@ LONG load_applet(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_C
 		total+=(DWORD)fread(sendBuffer+5+j, sizeof(unsigned char), MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING-1-fileSizeSize, CAPFile);
 		j+=total;
 		if(ferror(CAPFile)) {
-			fclose(CAPFile);
-			return OPSP_ERROR_READ;
+			{ result = OPSP_ERROR_READ; goto end; }
 		}
 		sendBufferLength=5+j;
 		sendBuffer[2] = 0x00;
@@ -2195,23 +2099,22 @@ LONG load_applet(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_C
 
 		recvBufferLength=256;
 #ifdef DEBUG
-	_tprintf(_T("load_applet: Data to send: \n"));
+	log_Log(_T("load_applet: Data to send: "));
 	for (i=0; i<sendBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), sendBuffer[i]);
+		log_Log(_T(" 0x%02x"), sendBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 		result = send_APDU(cardHandle, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength, cardInfo, secInfo);
 		if (OPSP_ERROR_SUCCESS != result) {
-			fclose(CAPFile);
-			return result;
+			goto end;
 		}
 #ifdef DEBUG
-	_tprintf(_T("load_applet: Data: \n"));
+	log_Log(_T("load_applet: Data: "));
 	for (i=0; i<recvBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), recvBuffer[i]);
+		log_Log(_T(" 0x%02x"), recvBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 	}
 	// The rest of the load file data block
@@ -2219,7 +2122,7 @@ LONG load_applet(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_C
 	while((feof(CAPFile) == 0) && !(total == (DWORD)fileSize)) {
 		total += j = (DWORD)fread(sendBuffer+5, sizeof(unsigned char), MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING, CAPFile);
 		if(ferror(CAPFile)) {
-			return OPSP_ERROR_READ;
+			{ result = OPSP_ERROR_READ; goto end; }
 		}
 		sendBufferLength=5+j;
 		sendBuffer[3] = sequenceNumber++;
@@ -2234,49 +2137,57 @@ LONG load_applet(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_C
 		else
 			sendBuffer[2]=0x00;
 #ifdef DEBUG
-		_tprintf(_T("load_applet: Data to send: \n"));
+		log_Log(_T("load_applet: Data to send: "));
 		for (i=0; i<sendBufferLength; i++) {
-			_tprintf(_T(" 0x%02x"), sendBuffer[i]);
+			log_Log(_T(" 0x%02x"), sendBuffer[i]);
 		}
-		_tprintf(_T("\n"));
+		
 #endif
 		recvBufferLength=256;
 		result = send_APDU(cardHandle, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength, cardInfo, secInfo);
 		if (OPSP_ERROR_SUCCESS != result) {
-			fclose(CAPFile);
-			return result;
+			goto end;
 		}
 #ifdef DEBUG
 		if (!(feof(CAPFile)) && !(total == (DWORD)fileSize)) {
-			_tprintf(_T("load_applet: Data: \n"));
+			log_Log(_T("load_applet: Data: "));
 			for (i=0; i<recvBufferLength; i++) {
-				_tprintf(_T(" 0x%02x"), recvBuffer[i]);
+				log_Log(_T(" 0x%02x"), recvBuffer[i]);
 			}
-			_tprintf(_T("\n"));
+			
 		}
 #endif
 	}
-	fclose(CAPFile);
 	if (recvBufferLength > sizeof(OPSP_RECEIPT_DATA)) { // assumption that a OPSP_RECEIPT_DATA structure is returned in a delegated management deletion
 		fillReceipt(recvBuffer, receiptData);
 		*receiptDataAvailable = 1;
 	}
-	_tprintf(_T("load_applet: Data: \n"));
+#ifdef DEBUG
+	log_Log(_T("load_applet: Data: "));
 	for (i=0; i<recvBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), recvBuffer[i]);
+		log_Log(_T(" 0x%02x"), recvBuffer[i]);
 	}
-	_tprintf(_T("\n"));
-	return OPSP_ERROR_SUCCESS;
+#endif
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	if (dapBuf)
+		free(dapBuf);
+	if (CAPFile)
+		fclose(CAPFile);
+	LOG_END(_T("load_applet"), result);
+	return result;
 }
 
 /**
  * The function assumes that the Card Manager or Security Domain
  * uses an optional load file DAP using the SHA-1 message digest algorithm.
- * The loadFileDAP can be calculated using calculate_load_file_DAP().
+ * The loadFileDAP can be calculated using calculate_load_file_DAP() or must be NULL, if the card does not 
+ * need or support a Load File DAP in this situation, e.g. if you want to load a package to the Card 
+ * Manager Security Domain.
  * In the case of delegated management a Load Token authorizing the INSTALL [for load] must be included.
  * Otherwise loadToken must be NULL. See calculate_load_token().
  * The term package is equivalent to the Open Platform term Load File Data Block.
- * volatileDataSpaceLimit and nonVolatileDataSpaceLimit can be NULL, if the card does not need or support this tags.
+ * volatileDataSpaceLimit and nonVolatileDataSpaceLimit can be 0, if the card does not need or support this tags.
  * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
  * \param *secInfo INOUT The pointer to the OPSP_SECURITY_INFO structure returned by mutual_authentication().
  * \param cardInfo IN The OPSP_CARD_INFO structure returned by get_card_status().
@@ -2298,20 +2209,21 @@ LONG install_for_load(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, O
 					  DWORD nonVolatileDataSpaceLimit)
 {
 	LONG result;
-	DWORD sendBufferLength;
+	DWORD sendBufferLength = 0;
 	DWORD recvBufferLength=256;
 	BYTE recvBuffer[256];
 	BYTE sendBuffer[261];
 	DWORD i=0;
 	BYTE buf[256];
-	DWORD bufLength;
+	DWORD bufLength = sizeof(buf);
+	LOG_START(_T("install_for_load"));
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xE6;
 	result = get_load_token_signature_data(packageAID, packageAIDLength, securityDomainAID,
 		securityDomainAIDLength, loadFileDAP, nonVolatileCodeSpaceLimit, volatileDataSpaceLimit,
 		nonVolatileDataSpaceLimit, buf, &bufLength);
 	if (OPSP_ERROR_SUCCESS != result) {
-		return result;
+		goto end;
 	}
 	memcpy(sendBuffer+2, buf, bufLength);
 	i+=bufLength;
@@ -2327,35 +2239,38 @@ LONG install_for_load(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, O
 	sendBuffer[i++] = 0x00; // Le
 	sendBufferLength = i;
 #ifdef DEBUG
-	_tprintf(_T("install_for_load: Data to send: \n"));
+	log_Log(_T("install_for_load: Data to send: "));
 	for (i=0; i<sendBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), sendBuffer[i]);
+		log_Log(_T(" 0x%02x"), sendBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 	result = send_APDU(cardHandle,sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength, cardInfo, secInfo);
 	if (OPSP_ERROR_SUCCESS != result) {
-		return result;
+		goto end;
 	}
 #ifdef DEBUG
-	_tprintf(_T("install_for_load: Data: \n"));
+	log_Log(_T("install_for_load: Data: "));
 	for (i=0; i<recvBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), recvBuffer[i]);
+		log_Log(_T(" 0x%02x"), recvBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("install_for_load"), result);
+	return result;
 }
 
 
 /**
  * In the case of delegated management an Install Token authorizing the INSTALL [for install] must be included.
  * Otherwise installToken must be NULL. See calculate_install_token().
- * volatileDataSpaceLimit and nonVolatileDataSpaceLimit can be NULL, if the card does not need or support this tag.
+ * volatileDataSpaceLimit and nonVolatileDataSpaceLimit can be 0, if the card does not need or support this tag.
  * For Security domains look in your manual what parameters are necessary.
  * If the tag for applet install parameters is mandatory for your card, but you have no install parameters
  * for the install() method of the applet anyway you have to use at least a dummy parameter.
- * If appletClassAID is NULL and appletClassAIDLength is NULL appletInstanceAID is assumed for appletClassAID.
+ * If appletClassAID is NULL and appletClassAIDLength is 0 appletInstanceAID is assumed for appletClassAID.
  * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
  * \param *secInfo INOUT The pointer to the OPSP_SECURITY_INFO structure returned by mutual_authentication().
  * \param cardInfo IN The OPSP_CARD_INFO structure returned by get_card_status().
@@ -2384,13 +2299,14 @@ LONG install_for_install(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo
 						 PBYTE appletInstallParameters, DWORD appletInstallParametersLength,
 						 BYTE installToken[128], OPSP_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable) {
 	LONG result;
-	DWORD sendBufferLength;
+	DWORD sendBufferLength = 0;
 	DWORD recvBufferLength=256;
 	BYTE recvBuffer[256];
 	BYTE sendBuffer[261];
 	DWORD i=0;
 	BYTE buf[256];
-	DWORD bufLength;
+	DWORD bufLength = sizeof(buf);
+	LOG_START(_T("install_for_install"));
 	*receiptDataAvailable = 0;
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xE6;
@@ -2399,7 +2315,7 @@ LONG install_for_install(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo
 		volatileDataSpaceLimit,	nonVolatileDataSpaceLimit, appletInstallParameters,
 		appletInstallParametersLength, buf, &bufLength);
 	if (OPSP_ERROR_SUCCESS != result) {
-		return result;
+		goto end;
 	}
 	memcpy(sendBuffer+2, buf, bufLength);
 	i+=bufLength;
@@ -2416,38 +2332,41 @@ LONG install_for_install(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo
 	sendBuffer[i++] = 0x00; // Le
 	sendBufferLength = i;
 #ifdef DEBUG
-	_tprintf(_T("install_for_install: Data to send: \n"));
+	log_Log(_T("install_for_install: Data to send: "));
 	for (i=0; i<sendBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), sendBuffer[i]);
+		log_Log(_T(" 0x%02x"), sendBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 	result = send_APDU(cardHandle,sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength, cardInfo, secInfo);
 	if (OPSP_ERROR_SUCCESS != result) {
-		return result;
+		goto end;
 	}
 	if (recvBufferLength > sizeof(OPSP_RECEIPT_DATA)) { // assumption that a OPSP_RECEIPT_DATA structure is returned in a delegated management deletion
 		fillReceipt(recvBuffer, receiptData);
 		*receiptDataAvailable = 1;
 	}
 #ifdef DEBUG
-	_tprintf(_T("install_for_install: Data: \n"));
+	log_Log(_T("install_for_install: Data: "));
 	for (i=0; i<recvBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), recvBuffer[i]);
+		log_Log(_T(" 0x%02x"), recvBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("install_for_install"), result);
+	return result;
 }
 
 /**
  * In the case of delegated management an Install Token authorizing the INSTALL [for install and make selectable] must be included.
  * Otherwise installToken must be NULL. See calculate_install_token().
- * volatileDataSpaceLimit and nonVolatileDataSpaceLimit can be NULL, if the card does not need or support this tag.
+ * volatileDataSpaceLimit and nonVolatileDataSpaceLimit can be 0, if the card does not need or support this tag.
  * For Security domains look in your manual what parameters are necessary.
  * If the tag for applet install parameters is mandatory for your card, but you have no install parameters
  * for the install() method of the applet anyway you have to use at least a dummy parameter.
- * If appletClassAID is NULL and appletClassAIDLength is NULL appletInstanceAID is assumed for appletClassAID.
+ * If appletClassAID is NULL and appletClassAIDLength is 0 appletInstanceAID is assumed for appletClassAID.
  * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
  * \param *secInfo INOUT The pointer to the OPSP_SECURITY_INFO structure returned by mutual_authentication().
  * \param cardInfo IN The OPSP_CARD_INFO structure returned by get_card_status().
@@ -2476,13 +2395,14 @@ LONG install_for_install_and_make_selectable(OPSP_CARDHANDLE cardHandle, OPSP_SE
 						 PBYTE appletInstallParameters, DWORD appletInstallParametersLength,
 						 BYTE installToken[128], OPSP_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable) {
 	LONG result;
-	DWORD sendBufferLength;
+	DWORD sendBufferLength=0;
 	DWORD recvBufferLength=256;
 	BYTE recvBuffer[256];
 	BYTE sendBuffer[261];
 	DWORD i=0;
 	BYTE buf[256];
-	DWORD bufLength;
+	DWORD bufLength = sizeof(buf);
+	LOG_START(_T("install_for_install_and_make_selectable"));
 	*receiptDataAvailable = 0;
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xE6;
@@ -2491,7 +2411,7 @@ LONG install_for_install_and_make_selectable(OPSP_CARDHANDLE cardHandle, OPSP_SE
 		volatileDataSpaceLimit,	nonVolatileDataSpaceLimit, appletInstallParameters,
 		appletInstallParametersLength, buf, &bufLength);
 	if (OPSP_ERROR_SUCCESS != result) {
-		return result;
+		goto end;
 	}
 	memcpy(sendBuffer+2, buf, bufLength);
 	i+=bufLength;
@@ -2508,28 +2428,31 @@ LONG install_for_install_and_make_selectable(OPSP_CARDHANDLE cardHandle, OPSP_SE
 	sendBuffer[i++] = 0x00; // Le
 	sendBufferLength = i;
 #ifdef DEBUG
-	_tprintf(_T("install_for_install_and_make_selectable: Data to send: \n"));
+	log_Log(_T("install_for_install_and_make_selectable: Data to send: "));
 	for (i=0; i<sendBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), sendBuffer[i]);
+		log_Log(_T(" 0x%02x"), sendBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 	result = send_APDU(cardHandle,sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength, cardInfo, secInfo);
 	if (OPSP_ERROR_SUCCESS != result) {
-		return result;
+		goto end;
 	}
 	if (recvBufferLength > sizeof(OPSP_RECEIPT_DATA)) { // assumption that a OPSP_RECEIPT_DATA structure is returned in a delegated management deletion
 		fillReceipt(recvBuffer, receiptData);
 		*receiptDataAvailable = 1;
 	}
 #ifdef DEBUG
-	_tprintf(_T("install_for_install_and_make_selectable: Data: \n"));
+	log_Log(_T("install_for_install_and_make_selectable: Data: "));
 	for (i=0; i<recvBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), recvBuffer[i]);
+		log_Log(_T(" 0x%02x"), recvBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("install_for_install_and_make_selectable"), result);
+	return result;
 }
 
 /**
@@ -2554,11 +2477,12 @@ LONG install_for_make_selectable(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO 
 								 BYTE installToken[128], OPSP_RECEIPT_DATA *receiptData,
 								 PDWORD receiptDataAvailable) {
 	LONG result;
-	DWORD sendBufferLength;
+	DWORD sendBufferLength=0;
 	DWORD recvBufferLength=256;
 	BYTE recvBuffer[256];
 	BYTE sendBuffer[261];
 	DWORD i=0;
+	LOG_START(_T("install_for_make_selectable"));
 	*receiptDataAvailable = 0;
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xE6;
@@ -2590,28 +2514,31 @@ LONG install_for_make_selectable(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO 
 	sendBuffer[i++] = 0x00; // Le
 	sendBufferLength = i;
 #ifdef DEBUG
-	_tprintf(_T("install_for_make_selectable: Data to send: \n"));
+	log_Log(_T("install_for_make_selectable: Data to send: "));
 	for (i=0; i<sendBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), sendBuffer[i]);
+		log_Log(_T(" 0x%02x"), sendBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 	result = send_APDU(cardHandle,sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength, cardInfo, secInfo);
 	if (OPSP_ERROR_SUCCESS != result) {
-		return result;
+		goto end;
 	}
 	if (recvBufferLength > sizeof(OPSP_RECEIPT_DATA)) { // assumption that a OPSP_RECEIPT_DATA structure is returned in a delegated management deletion
 		fillReceipt(recvBuffer, receiptData);
 		*receiptDataAvailable = 1;
 	}
 #ifdef DEBUG
-	_tprintf(_T("install_for_make_selectable: Data: \n"));
+	log_Log(_T("install_for_make_selectable: Data: "));
 	for (i=0; i<recvBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), recvBuffer[i]);
+		log_Log(_T(" 0x%02x"), recvBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("install_for_make_selectable"), result);
+	return result;
 }
 
 /**
@@ -2649,7 +2576,9 @@ LONG get_install_token_signature_data(BYTE P1, PBYTE packageAID, DWORD packageAI
 	unsigned char buf[258];
 	DWORD i=0;
 	DWORD hiByte, loByte;
+	LONG result;
 
+	LOG_START(_T("get_install_token_signature_data"));
 	buf[i++] = P1;
 	buf[i++] = 0x00;
 	buf[i++] = 0x00; // Lc dummy
@@ -2714,10 +2643,13 @@ LONG get_install_token_signature_data(BYTE P1, PBYTE packageAID, DWORD packageAI
 
 	buf[2] = (BYTE)i-3+128; // Lc (including 128 byte RSA signature length)
 	if (i > *installTokenSignatureDataLength)
-		return OPSP_ERROR_INSUFFICIENT_BUFFER;
+		{ result = OPSP_ERROR_INSUFFICIENT_BUFFER; goto end; }
 	memcpy(installTokenSignatureData, buf, i);
 	*installTokenSignatureDataLength = i;
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("get_install_token_signature_data"), result);
+	return result;
 }
 
 /**
@@ -2752,20 +2684,24 @@ LONG calculate_install_token(BYTE P1, PBYTE packageAID, DWORD packageAIDLength, 
 	LONG result;
 	BYTE installTokenSignatureData[256];
 	DWORD installTokenSignatureDataLength = 256;
+	LOG_START(_T("calculate_install_token"));
 	result = get_install_token_signature_data(P1, packageAID, packageAIDLength,
 		appletClassAID, appletClassAIDLength, appletInstanceAID,
 		appletInstanceAIDLength, appletPrivileges, volatileDataSpaceLimit,
 		nonVolatileDataSpaceLimit, appletInstallParameters,
 		appletInstallParametersLength, installTokenSignatureData, &installTokenSignatureDataLength);
 	if (result != OPSP_ERROR_SUCCESS) {
-		return result;
+		goto end;
 	}
 	result = calculate_rsa_signature(installTokenSignatureData, installTokenSignatureDataLength, PEMKeyFileName,
 									passPhrase, installToken);
 	if (result != OPSP_ERROR_SUCCESS) {
-		return result;
+		goto end;
 	}
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("calculate_install_token"), result);
+	return result;
 }
 
 
@@ -2780,62 +2716,51 @@ LONG calculate_install_token(BYTE P1, PBYTE packageAID, DWORD packageAIDLength, 
 static LONG calculate_rsa_signature(PBYTE message, DWORD messageLength, OPSP_STRING PEMKeyFileName,
 									char *passPhrase, BYTE signature[128]) {
 	LONG result;
-	EVP_PKEY *key;
-	FILE *PEMKeyFile;
+	EVP_PKEY *key = NULL;
+	FILE *PEMKeyFile = NULL;
 	EVP_MD_CTX mdctx;
 	unsigned int signatureLength=0;
+	LOG_START(_T("calculate_rsa_signature"));
+	EVP_MD_CTX_init(&mdctx);
 	if (passPhrase == NULL)
-		return OPSP_ERROR_INVALID_PASSWORD;
+		{ result = OPSP_ERROR_INVALID_PASSWORD; goto end; }
 	if ((PEMKeyFileName == NULL) || (_tcslen(PEMKeyFileName) == 0))
-		return OPSP_ERROR_INVALID_FILENAME;
+		{ result = OPSP_ERROR_INVALID_FILENAME; goto end; }
 	PEMKeyFile = _tfopen(PEMKeyFileName, _T("rb"));
 	if (PEMKeyFile == NULL) {
-		return OPSP_ERROR_FILE_NOT_FOUND;
+		{ result = OPSP_ERROR_FILE_NOT_FOUND; goto end; }
 	}
-	EVP_MD_CTX_init(&mdctx);
 	key = EVP_PKEY_new();
 	if (!PEM_read_PrivateKey(PEMKeyFile, &key, NULL, passPhrase)) {
-		fclose(PEMKeyFile);
-		EVP_MD_CTX_cleanup(&mdctx);
-		EVP_PKEY_free(key);
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	};
 	result = EVP_SignInit_ex(&mdctx, EVP_sha1(), NULL);
 	if (result != 1) {
-		fclose(PEMKeyFile);
-		EVP_PKEY_free(key);
-		EVP_MD_CTX_cleanup(&mdctx);
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	result = EVP_SignUpdate(&mdctx, message, messageLength);
 	if (result != 1) {
-		fclose(PEMKeyFile);
-		EVP_PKEY_free(key);
-		EVP_MD_CTX_cleanup(&mdctx);
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	if (EVP_PKEY_size(key) > 128) {
-		fclose(PEMKeyFile);
-		EVP_PKEY_free(key);
-		EVP_MD_CTX_cleanup(&mdctx);
-		return OPSP_ERROR_INSUFFICIENT_BUFFER;
+		{ result = OPSP_ERROR_INSUFFICIENT_BUFFER; goto end; }
 	}
 	result = EVP_SignFinal(&mdctx, signature, &signatureLength, key);
 	if (result != 1) {
-		fclose(PEMKeyFile);
-		EVP_PKEY_free(key);
-		EVP_MD_CTX_cleanup(&mdctx);
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
 	result = EVP_MD_CTX_cleanup(&mdctx);
 	if (result != 1) {
-		fclose(PEMKeyFile);
-		EVP_PKEY_free(key);
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; }
 	}
-	fclose(PEMKeyFile);
-	EVP_PKEY_free(key);
-	return OPSP_ERROR_SUCCESS;
+	if (PEMKeyFile)
+		fclose(PEMKeyFile);
+	if (key)
+		EVP_PKEY_free(key);
+	LOG_END(_T("calculate_rsa_signature"), result);
+	return result;
 }
 
 /**
@@ -2864,7 +2789,8 @@ LONG get_load_token_signature_data(PBYTE packageAID, DWORD packageAIDLength, PBY
 	DWORD i=0;
 	DWORD hiByte, loByte;
 	DWORD staticSize;
-
+	LONG result;
+	LOG_START(_T("get_load_token_signature_data"));
 	buf[i++] = 0x02;
 	buf[i++] = 0x00;
 	buf[i++] = 0x00; // Lc dummy
@@ -2928,10 +2854,13 @@ LONG get_load_token_signature_data(PBYTE packageAID, DWORD packageAIDLength, PBY
 
 	buf[2] = (BYTE)i-3+128; // Lc (including 128 byte RSA signature length)
 	if (i > *loadTokenSignatureDataLength)
-		return OPSP_ERROR_INSUFFICIENT_BUFFER;
+		{ result = OPSP_ERROR_INSUFFICIENT_BUFFER; goto end; }
 	memcpy(loadTokenSignatureData, buf, i);
 	*loadTokenSignatureDataLength = i;
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("get_load_token_signature_data"), result);
+	return result;
 }
 
 /**
@@ -2957,17 +2886,21 @@ LONG calculate_load_token(PBYTE packageAID, DWORD packageAIDLength, PBYTE securi
 	LONG result;
 	BYTE loadTokenSignatureData[256];
 	DWORD loadTokenSignatureDataLength = 256;
+	LOG_START(_T("calculate_load_token"));
 	result = get_load_token_signature_data(packageAID, packageAIDLength, securityDomainAID, securityDomainAIDLength,
 		loadFileDAP, nonVolatileCodeSpaceLimit, volatileDataSpaceLimit, nonVolatileDataSpaceLimit, loadTokenSignatureData, &loadTokenSignatureDataLength);
 	if (result != OPSP_ERROR_SUCCESS) {
-		return result;
+		goto end;
 	}
 	result = calculate_rsa_signature(loadTokenSignatureData, loadTokenSignatureDataLength, PEMKeyFileName,
 									passPhrase, loadToken);
 	if (result != OPSP_ERROR_SUCCESS) {
-		return result;
+		goto end;
 	}
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("calculate_load_token"), result);
+	return result;
 }
 
 /**
@@ -2992,17 +2925,17 @@ LONG calculate_load_file_DAP(OPSP_DAP_BLOCK *dapBlock, DWORD dapBlockLength, OPS
 	int count;
 	DWORD k,j,i;
 	unsigned char buf[1024];
-	PBYTE dapBuf;
+	PBYTE dapBuf = NULL;
 	DWORD dapBufSize=0;
-	FILE *CAPFile;
+	FILE *CAPFile = NULL;
 	EVP_MD_CTX mdctx;
-	if ((CAPFileName == NULL) || (_tcslen(CAPFileName) == 0))
-		return OPSP_ERROR_INVALID_FILENAME;
+	LOG_START(_T("calculate_load_file_DAP"));
 	EVP_MD_CTX_init(&mdctx);
+	if ((CAPFileName == NULL) || (_tcslen(CAPFileName) == 0))
+		{ result = OPSP_ERROR_INVALID_FILENAME; goto end; }
 	result = EVP_DigestInit_ex(&mdctx, EVP_sha1(), NULL);
 	if (result != 1) {
-		EVP_MD_CTX_cleanup(&mdctx);
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	for (i=0; i<dapBlockLength; i++) {
 		dapBufSize += dapBlock[i].DAPBlockLength + 1;
@@ -3015,50 +2948,43 @@ LONG calculate_load_file_DAP(OPSP_DAP_BLOCK *dapBlock, DWORD dapBlockLength, OPS
 		k = dapBufSize;
 		result = readDAPBlock(dapBuf, &k, dapBlock[i]);
 		if (OPSP_ERROR_SUCCESS != result) {
-			EVP_MD_CTX_cleanup(&mdctx);
-			free(dapBuf);
-			return result;
+			goto end;
 		}
 		result = EVP_DigestUpdate(&mdctx, dapBuf, k);
 		if (result != 1) {
-			EVP_MD_CTX_cleanup(&mdctx);
-			free(dapBuf);
-			return OPSP_OPENSSL_ERROR;
+			{ result = OPSP_OPENSSL_ERROR; goto end; }
 		}
-	}
-	if (dapBlockLength > 0) {
-		free(dapBuf);
 	}
 	CAPFile = _tfopen(CAPFileName, _T("rb"));
 	if (CAPFile == NULL) {
-		EVP_MD_CTX_cleanup(&mdctx);
-		return OPSP_ERROR_FILE_NOT_FOUND;
+		{ result = OPSP_ERROR_FILE_NOT_FOUND; goto end; }
 	}
 	while(feof(CAPFile) == 0) {
 		count = (int)fread(buf, sizeof(unsigned char), sizeof(buf), CAPFile);
 		if(ferror(CAPFile)) {
-			fclose(CAPFile);
-			EVP_MD_CTX_cleanup(&mdctx);
-			return OPSP_ERROR_READ;
+			{ result = OPSP_ERROR_READ; goto end; }
 		}
 		result = EVP_DigestUpdate(&mdctx, buf, count);
 		if (result != 1) {
-			fclose(CAPFile);
-			EVP_MD_CTX_cleanup(&mdctx);
-			return OPSP_OPENSSL_ERROR;
+			{ result = OPSP_OPENSSL_ERROR; goto end; }
 		}
 	}
-	fclose(CAPFile);
 	result = EVP_DigestFinal_ex(&mdctx, hash, NULL);
 	if (result != 1) {
-		EVP_MD_CTX_cleanup(&mdctx);
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
 	result = EVP_MD_CTX_cleanup(&mdctx);
 	if (result != 1) {
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; }
 	}
-	return OPSP_ERROR_SUCCESS;
+	if (CAPFile)
+		fclose(CAPFile);
+	if (dapBuf)
+		free(dapBuf);
+	LOG_END(_T("calculate_load_file_DAP"), result);
+	return result;
 }
 
 /**
@@ -3078,99 +3004,96 @@ LONG calculate_3des_DAP(PBYTE securityDomainAID, DWORD securityDomainAIDLength, 
 	long fileSize;
 	unsigned char buf[1024];
 	unsigned char des_key[8];
-	FILE *CAPFile;
+	FILE *CAPFile = NULL;
 	EVP_CIPHER_CTX ctx;
-	if ((CAPFileName == NULL) || (_tcslen(CAPFileName) == 0))
-		return OPSP_ERROR_INVALID_FILENAME;
+	LOG_START(_T("calculate_3des_DAP"));
 	EVP_CIPHER_CTX_init(&ctx);
+	if ((CAPFileName == NULL) || (_tcslen(CAPFileName) == 0))
+		{ result = OPSP_ERROR_INVALID_FILENAME; goto end; }
 // DES CBC mode
 	memcpy(des_key, DAP_verification_key+8, 8);
 	result = EVP_EncryptInit_ex(&ctx, EVP_des_cbc(), NULL, des_key, icv);
 	if (result != 1) {
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	EVP_CIPHER_CTX_set_padding(&ctx, 0);
 	CAPFile = _tfopen(CAPFileName, _T("rb"));
 	if (CAPFile == NULL) {
-		return OPSP_ERROR_FILE_NOT_FOUND;
+		{ result = OPSP_ERROR_FILE_NOT_FOUND; goto end; }
 	}
 #ifdef WIN32
 	fileSize = _filelength(CAPFile->_file);
 	if (fileSize == -1L) {
-		fclose(CAPFile);
-		return OPSP_ERROR_BAD_FILE_DESCRIPTOR;
+		{ result = OPSP_ERROR_BAD_FILE_DESCRIPTOR; goto end; }
 	}
 #else
 	fileSize = fseek(CAPFile, 0, SEEK_END);
 	if (fileSize == -1) {
-		fclose(CAPFile);
-		return OPSP_ERROR_BAD_FILE_DESCRIPTOR;
+		{ result = OPSP_ERROR_BAD_FILE_DESCRIPTOR; goto end; }
 	}
 	fileSize = ftell(CAPFile);
 #endif
 	while(feof(CAPFile) == 0) {
 		count = (int)fread(buf, sizeof(unsigned char), sizeof(buf), CAPFile);
 		if(ferror(CAPFile)) {
-			fclose(CAPFile);
-			EVP_CIPHER_CTX_cleanup(&ctx);
-			return OPSP_ERROR_READ;
+			{ result = OPSP_ERROR_READ; goto end; }
 		}
 		for (i=0; i<count/8; i++) {
 			result = EVP_EncryptUpdate(&ctx, dapBlock->signature,
 				&outl, buf+i*8, 8);
 			if (result != 1) {
-				fclose(CAPFile);
-				EVP_CIPHER_CTX_cleanup(&ctx);
-				return OPSP_OPENSSL_ERROR;
+				{ result = OPSP_OPENSSL_ERROR; goto end; }
 			}
 		}
 	}
-	fclose(CAPFile);
 	result = EVP_EncryptFinal_ex(&ctx, dapBlock->signature, &outl);
 	if (result != 1) {
-		EVP_CIPHER_CTX_cleanup(&ctx);
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
+
 	result = EVP_CIPHER_CTX_cleanup(&ctx);
 	if (result != 1) {
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
+	EVP_CIPHER_CTX_init(&ctx);
 // 3DES CBC mode
 	result = EVP_EncryptInit_ex(&ctx, EVP_des_ede_cbc(), NULL, DAP_verification_key, icv);
 	if (result != 1) {
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	EVP_CIPHER_CTX_set_padding(&ctx, 0);
 	if (count%8 != 0) {
 		result = EVP_EncryptUpdate(&ctx, dapBlock->signature,
 			&outl, buf+i*8, count%8);
 		if (result != 1) {
-			fclose(CAPFile);
-			EVP_CIPHER_CTX_cleanup(&ctx);
-			return OPSP_OPENSSL_ERROR;
+			{ result = OPSP_OPENSSL_ERROR; goto end; }
 		}
 	}
 	result = EVP_EncryptUpdate(&ctx, dapBlock->signature,
 		&outl, padding, 8 - (fileSize%8));
 	if (result != 1) {
-		EVP_CIPHER_CTX_cleanup(&ctx);
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	result = EVP_EncryptFinal_ex(&ctx, dapBlock->signature,
 		&outl);
 	if (result != 1) {
-		EVP_CIPHER_CTX_cleanup(&ctx);
-		return OPSP_OPENSSL_ERROR;
-	}
-	result = EVP_CIPHER_CTX_cleanup(&ctx);
-	if (result != 1) {
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	dapBlock->signatureLength = 8;
 	memcpy(dapBlock->securityDomainAID, securityDomainAID, securityDomainAIDLength);
 	dapBlock->securityDomainAIDLength = (BYTE)securityDomainAIDLength;
 	dapBlock->DAPBlockLength = (BYTE)securityDomainAIDLength+8+4;
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	result = EVP_CIPHER_CTX_cleanup(&ctx);
+	if (result != 1) {
+		{ result = OPSP_OPENSSL_ERROR; }
+	}
+	if (CAPFile)
+		fclose(CAPFile);
+	LOG_END(_T("calculate_3des_DAP"), result);
+	return result;
+
 }
 
 /**
@@ -3190,89 +3113,76 @@ LONG calculate_rsa_DAP(PBYTE securityDomainAID, DWORD securityDomainAIDLength, O
 	int count;
 	unsigned char buf[1024];
 	unsigned int signatureLength=0;
-	FILE *CAPFile;
-	EVP_PKEY *key;
+	FILE *CAPFile = NULL;
+	EVP_PKEY *key = NULL;
 	EVP_MD_CTX mdctx;
-	FILE *PEMKeyFile;
+	FILE *PEMKeyFile = NULL;
+	LOG_START(_T("calculate_rsa_DAP"));
+	EVP_MD_CTX_init(&mdctx);
 	if (passPhrase == NULL)
-		return OPSP_ERROR_INVALID_PASSWORD;
+		{ result = OPSP_ERROR_INVALID_PASSWORD; goto end; }
 	if ((CAPFileName == NULL) || (_tcslen(CAPFileName) == 0))
-		return OPSP_ERROR_INVALID_FILENAME;
+		{ result = OPSP_ERROR_INVALID_FILENAME; goto end; }
 	if ((PEMKeyFileName == NULL) || (_tcslen(PEMKeyFileName) == 0))
-		return OPSP_ERROR_INVALID_FILENAME;
+		{ result = OPSP_ERROR_INVALID_FILENAME; goto end; }
 	PEMKeyFile = _tfopen(PEMKeyFileName, _T("rb"));
 	if (PEMKeyFile == NULL) {
-		return OPSP_ERROR_FILE_NOT_FOUND;
+		{ result = OPSP_ERROR_FILE_NOT_FOUND; goto end; }
 	}
-	EVP_MD_CTX_init(&mdctx);
+	
 	key = EVP_PKEY_new();
 	if (!PEM_read_PrivateKey(PEMKeyFile, &key, NULL, passPhrase)) {
-		fclose(PEMKeyFile);
-		EVP_MD_CTX_cleanup(&mdctx);
-		EVP_PKEY_free(key);
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	result = EVP_SignInit_ex(&mdctx, EVP_sha1(), NULL);
 	if (result != 1) {
-		fclose(PEMKeyFile);
-		EVP_PKEY_free(key);
-		EVP_MD_CTX_cleanup(&mdctx);
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	CAPFile = _tfopen(CAPFileName, _T("rb"));
 	if (CAPFile == NULL) {
-		fclose(PEMKeyFile);
-		EVP_PKEY_free(key);
-		EVP_MD_CTX_cleanup(&mdctx);
-		return OPSP_ERROR_FILE_NOT_FOUND;
+		{ result = OPSP_ERROR_FILE_NOT_FOUND; goto end; }
 	}
 	while(feof(CAPFile) == 0) {
 		count = (int)fread(buf, sizeof(unsigned char), sizeof(buf), CAPFile);
 		if(ferror(CAPFile)) {
-			fclose(CAPFile);
-			fclose(PEMKeyFile);
-			EVP_PKEY_free(key);
-			EVP_MD_CTX_cleanup(&mdctx);
-			return OPSP_ERROR_READ;
+			{ result = OPSP_ERROR_READ; goto end; }
 		}
 		result = EVP_SignUpdate(&mdctx, buf, count);
 		if (result != 1) {
-			fclose(CAPFile);
-			fclose(PEMKeyFile);
-			EVP_PKEY_free(key);
-			EVP_MD_CTX_cleanup(&mdctx);
-			return OPSP_OPENSSL_ERROR;
+			{ result = OPSP_OPENSSL_ERROR; goto end; }
 		}
 	}
-	fclose(CAPFile);
 
 	if (EVP_PKEY_size(key) > 128) {
-		fclose(PEMKeyFile);
-		EVP_PKEY_free(key);
-		EVP_MD_CTX_cleanup(&mdctx);
-		return OPSP_ERROR_INSUFFICIENT_BUFFER;
+		{ result = OPSP_ERROR_INSUFFICIENT_BUFFER; goto end; }
 	}
 	result = EVP_SignFinal(&mdctx, dapBlock->signature, &signatureLength, key);
 	if (result != 1) {
-		fclose(PEMKeyFile);
-		EVP_PKEY_free(key);
-		EVP_MD_CTX_cleanup(&mdctx);
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	result = EVP_MD_CTX_cleanup(&mdctx);
 	if (result != 1) {
-		fclose(PEMKeyFile);
-		EVP_PKEY_free(key);
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
-	fclose(PEMKeyFile);
-	EVP_PKEY_free(key);
 
 	dapBlock->signatureLength = 128;
 	memcpy(dapBlock->securityDomainAID, securityDomainAID, securityDomainAIDLength);
 	dapBlock->securityDomainAIDLength = (BYTE)securityDomainAIDLength;
 	dapBlock->DAPBlockLength = (BYTE)securityDomainAIDLength+128+4;
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	result = EVP_MD_CTX_cleanup(&mdctx);
+	if (result != 1) {
+		{ result = OPSP_OPENSSL_ERROR; }
+	}
+	if (PEMKeyFile)
+		fclose(PEMKeyFile);
+	if (CAPFile)
+		fclose(CAPFile);
+	if (key)
+		EVP_PKEY_free(key);
+	LOG_END(_T("calculate_rsa_DAP"), result);
+	return result;
 }
 
 
@@ -3296,8 +3206,9 @@ LONG validate_load_receipt(DWORD confirmationCounter, BYTE cardUniqueData[10],
 						   PBYTE securityDomainAID, DWORD securityDomainAIDLength)
 {
 	LONG result;
-	PBYTE validationData;
+	PBYTE validationData = NULL;
 	DWORD validationDataLength;
+	LOG_START(_T("validate_load_receipt"));
 	validationDataLength = 1 + 2 + 1 + 10 + 1 + packageAIDLength + 1 + securityDomainAIDLength;
 	validationData = (PBYTE)malloc(validationDataLength);
 	validationData[0] = 2;
@@ -3310,11 +3221,15 @@ LONG validate_load_receipt(DWORD confirmationCounter, BYTE cardUniqueData[10],
 	validationData[13+1+packageAIDLength] = (BYTE)securityDomainAIDLength;
 	memcpy(validationData, securityDomainAID, securityDomainAIDLength);
 	result = validate_receipt(validationData, validationDataLength, receiptData.receipt, receipt_generation_key);
-	free(validationData);
 	if (result != OPSP_ERROR_SUCCESS) {
-		return result;
+		goto end;
 	}
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	if (validationData)
+		free(validationData);
+	LOG_END(_T("validate_load_receipt"), result);
+	return result;
 }
 
 /**
@@ -3339,6 +3254,7 @@ LONG validate_install_receipt(DWORD confirmationCounter, BYTE cardUniqueData[10]
 	LONG result;
 	PBYTE validationData;
 	DWORD validationDataLength;
+	LOG_START(_T("validate_install_receipt"));
 	validationDataLength = 1 + 2 + 1 + 10 + 1 + packageAIDLength + 1 + appletInstanceAIDLength;
 	validationData = (PBYTE)malloc(validationDataLength);
 	validationData[0] = 2;
@@ -3353,9 +3269,12 @@ LONG validate_install_receipt(DWORD confirmationCounter, BYTE cardUniqueData[10]
 	result = validate_receipt(validationData, validationDataLength, receiptData.receipt, receipt_generation_key);
 	free(validationData);
 	if (result != OPSP_ERROR_SUCCESS) {
-		return result;
+		goto end;
 	}
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("validate_install_receipt"), result);
+	return result;
 }
 
 /**
@@ -3375,8 +3294,9 @@ LONG validate_delete_receipt(DWORD confirmationCounter, BYTE cardUniqueData[10],
 						   PBYTE AID, DWORD AIDLength)
 {
 	LONG result;
-	PBYTE validationData;
+	PBYTE validationData = NULL;
 	DWORD validationDataLength;
+	LOG_START(_T("validate_delete_receipt"));
 	validationDataLength = 1 + 2 + 1 + 10 + 1 + AIDLength;
 	validationData = (PBYTE)malloc(validationDataLength);
 	validationData[0] = 2;
@@ -3387,11 +3307,15 @@ LONG validate_delete_receipt(DWORD confirmationCounter, BYTE cardUniqueData[10],
 	validationData[13] = (BYTE)AIDLength;
 	memcpy(validationData, AID, AIDLength);
 	result = validate_receipt(validationData, validationDataLength, receiptData.receipt, receipt_generation_key);
-	free(validationData);
 	if (result != OPSP_ERROR_SUCCESS) {
-		return result;
+		goto end;
 	}
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	if (validationData)
+		free(validationData);
+	LOG_END(_T("validate_delete_receipt"), result);
+	return result;
 }
 
 /**
@@ -3408,14 +3332,18 @@ static LONG validate_receipt(PBYTE validationData, DWORD validationDataLength,
 {
 	LONG result;
 	BYTE mac[8];
+	LOG_START(_T("validate_receipt"));
 	result = calculate_MAC_des_3des(receipt_generation_key, validationData, validationDataLength, icv, mac);
 	if (result != OPSP_ERROR_SUCCESS) {
-		return result;
+		goto end;
 	}
 	if (memcmp(mac, receipt, 8) != 0) {
-		return OPSP_ERROR_VALIDATION_FAILED;
+		{ result = OPSP_ERROR_VALIDATION_FAILED; goto end; }
 	}
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("validate_receipt"), result);
+	return result;
 }
 
 /**
@@ -3433,14 +3361,15 @@ static LONG calculate_MAC_des_3des(unsigned char _3des_key[16], unsigned char *m
 	LONG result;
 	int i,outl;
 	EVP_CIPHER_CTX ctx;
-	EVP_CIPHER_CTX_init(&ctx);
 	unsigned char des_key[8];
+	LOG_START(_T("calculate_MAC_des_3des"));
+	EVP_CIPHER_CTX_init(&ctx);
 // DES CBC mode
 	memcpy(des_key, _3des_key+8, 8);
 	result = EVP_EncryptInit_ex(&ctx, EVP_des_cbc(), NULL, des_key, icv);
 	if (result != 1) {
 		EVP_CIPHER_CTX_cleanup(&ctx);
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	EVP_CIPHER_CTX_set_padding(&ctx, 0);
 	for (i=0; i<messageLength/8; i++) {
@@ -3448,24 +3377,24 @@ static LONG calculate_MAC_des_3des(unsigned char _3des_key[16], unsigned char *m
 			&outl, message+i*8, 8);
 		if (result != 1) {
 			EVP_CIPHER_CTX_cleanup(&ctx);
-			return OPSP_OPENSSL_ERROR;
+			{ result = OPSP_OPENSSL_ERROR; goto end; }
 		}
 	}
 	result = EVP_EncryptFinal_ex(&ctx, mac,
 		&outl);
 	if (result != 1) {
 		EVP_CIPHER_CTX_cleanup(&ctx);
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	result = EVP_CIPHER_CTX_cleanup(&ctx);
 	if (result != 1) {
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 // 3DES CBC mode
 	result = EVP_EncryptInit_ex(&ctx, EVP_des_ede_cbc(), NULL, _3des_key, icv);
 	if (result != 1) {
 		EVP_CIPHER_CTX_cleanup(&ctx);
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	EVP_CIPHER_CTX_set_padding(&ctx, 0);
 	if (messageLength%8 != 0) {
@@ -3473,26 +3402,29 @@ static LONG calculate_MAC_des_3des(unsigned char _3des_key[16], unsigned char *m
 			&outl, message+i*8, messageLength%8);
 		if (result != 1) {
 			EVP_CIPHER_CTX_cleanup(&ctx);
-			return OPSP_OPENSSL_ERROR;
+			{ result = OPSP_OPENSSL_ERROR; goto end; }
 		}
 	}
 	result = EVP_EncryptUpdate(&ctx, mac,
 		&outl, padding, 8 - (messageLength%8));
 	if (result != 1) {
 		EVP_CIPHER_CTX_cleanup(&ctx);
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	result = EVP_EncryptFinal_ex(&ctx, mac,
 		&outl);
 	if (result != 1) {
 		EVP_CIPHER_CTX_cleanup(&ctx);
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	result = EVP_CIPHER_CTX_cleanup(&ctx);
 	if (result != 1) {
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("calculate_MAC_des_3des"), result);
+	return result;
 }
 
 /**
@@ -3509,6 +3441,7 @@ static LONG create_session_key(unsigned char key[16], unsigned char card_challen
 	unsigned char derivation_data[16];
 	int outl;
 
+	LOG_START(_T("create_session_key"));
 	memcpy(derivation_data, card_challenge+4, 4);
 	memcpy(derivation_data+4, host_challenge, 4);
 	memcpy(derivation_data+8, card_challenge, 4);
@@ -3516,9 +3449,12 @@ static LONG create_session_key(unsigned char key[16], unsigned char card_challen
 
 	result = calculate_enc_ecb(key, derivation_data, 16, session_key, &outl);
 	if (result != OPSP_ERROR_SUCCESS) {
-		return result;
+		goto end;
 	}
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("create_session_key"), result);
+	return result;
 }
 
 /**
@@ -3535,18 +3471,20 @@ static LONG calculate_enc_ecb(unsigned char key[16], unsigned char *message, int
 	LONG result;
 	int i,outl;
 	EVP_CIPHER_CTX ctx;
+	LOG_START(_T("calculate_enc_ecb"));
 	EVP_CIPHER_CTX_init(&ctx);
 	*encryptionLength = 0;
+
 	result = EVP_EncryptInit_ex(&ctx, EVP_des_ede(), NULL, key, icv);
 	if (result != 1) {
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	EVP_CIPHER_CTX_set_padding(&ctx, 0);
 	for (i=0; i<messageLength/8; i++) {
 		result = EVP_EncryptUpdate(&ctx, encryption+*encryptionLength,
 			&outl, message+i*8, 8);
 		if (result != 1) {
-			return OPSP_OPENSSL_ERROR;
+			{ result = OPSP_OPENSSL_ERROR; goto end; }
 		}
 		*encryptionLength+=outl;
 	}
@@ -3554,28 +3492,31 @@ static LONG calculate_enc_ecb(unsigned char key[16], unsigned char *message, int
 		result = EVP_EncryptUpdate(&ctx, encryption+*encryptionLength,
 			&outl, message+i*8, messageLength%8);
 		if (result != 1) {
-			return OPSP_OPENSSL_ERROR;
+			{ result = OPSP_OPENSSL_ERROR; goto end; }
 		}
 		*encryptionLength+=outl;
 
 		result = EVP_EncryptUpdate(&ctx, encryption+*encryptionLength,
 			&outl, padding, 8 - (messageLength%8));
 		if (result != 1) {
-			return OPSP_OPENSSL_ERROR;
+			{ result = OPSP_OPENSSL_ERROR; goto end; }
 		}
 		*encryptionLength+=outl;
 	}
 	result = EVP_EncryptFinal_ex(&ctx, encryption+*encryptionLength,
 		&outl);
 	if (result != 1) {
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	*encryptionLength+=outl;
 	result = EVP_CIPHER_CTX_cleanup(&ctx);
 	if (result != 1) {
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("calculate_enc_ecb"), result);
+	return result;
 }
 
 /**
@@ -3592,12 +3533,13 @@ static LONG calculate_MAC(unsigned char session_key[16], unsigned char *message,
 	LONG result;
 	int i,outl;
 	EVP_CIPHER_CTX ctx;
+	LOG_START(_T("calculate_MAC"));
 	EVP_CIPHER_CTX_init(&ctx);
 
 	result = EVP_EncryptInit_ex(&ctx, EVP_des_ede_cbc(), NULL, session_key, icv);
 	if (result != 1) {
 		EVP_CIPHER_CTX_cleanup(&ctx);
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	EVP_CIPHER_CTX_set_padding(&ctx, 0);
 	for (i=0; i<messageLength/8; i++) {
@@ -3605,7 +3547,7 @@ static LONG calculate_MAC(unsigned char session_key[16], unsigned char *message,
 			&outl, message+i*8, 8);
 		if (result != 1) {
 			EVP_CIPHER_CTX_cleanup(&ctx);
-			return OPSP_OPENSSL_ERROR;
+			{ result = OPSP_OPENSSL_ERROR; goto end; }
 		}
 	}
 	if (messageLength%8 != 0) {
@@ -3613,26 +3555,29 @@ static LONG calculate_MAC(unsigned char session_key[16], unsigned char *message,
 			&outl, message+i*8, messageLength%8);
 		if (result != 1) {
 			EVP_CIPHER_CTX_cleanup(&ctx);
-			return OPSP_OPENSSL_ERROR;
+			{ result = OPSP_OPENSSL_ERROR; goto end; }
 		}
 	}
 	result = EVP_EncryptUpdate(&ctx, mac,
 		&outl, padding, 8 - (messageLength%8));
 	if (result != 1) {
 		EVP_CIPHER_CTX_cleanup(&ctx);
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	result = EVP_EncryptFinal_ex(&ctx, mac,
 		&outl);
 	if (result != 1) {
 		EVP_CIPHER_CTX_cleanup(&ctx);
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	result = EVP_CIPHER_CTX_cleanup(&ctx);
 	if (result != 1) {
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("calculate_MAC"), result);
+	return result;
 }
 
 /**
@@ -3649,13 +3594,14 @@ static LONG calculate_enc_cbc(unsigned char session_key[16], unsigned char *mess
 	LONG result;
 	int i,outl;
 	EVP_CIPHER_CTX ctx;
+	LOG_START(_T("calculate_enc_cbc"));
 	EVP_CIPHER_CTX_init(&ctx);
 	*encryptionLength = 0;
 
 	result = EVP_EncryptInit_ex(&ctx, EVP_des_ede_cbc(), NULL, session_key, icv);
 	if (result != 1) {
 		EVP_CIPHER_CTX_cleanup(&ctx);
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	EVP_CIPHER_CTX_set_padding(&ctx, 0);
 	for (i=0; i<messageLength/8; i++) {
@@ -3663,7 +3609,7 @@ static LONG calculate_enc_cbc(unsigned char session_key[16], unsigned char *mess
 			&outl, message+i*8, 8);
 		if (result != 1) {
 			EVP_CIPHER_CTX_cleanup(&ctx);
-			return OPSP_OPENSSL_ERROR;
+			{ result = OPSP_OPENSSL_ERROR; goto end; }
 		}
 		*encryptionLength+=outl;
 	}
@@ -3672,7 +3618,7 @@ static LONG calculate_enc_cbc(unsigned char session_key[16], unsigned char *mess
 			&outl, message+i*8, messageLength%8);
 		if (result != 1) {
 			EVP_CIPHER_CTX_cleanup(&ctx);
-			return OPSP_OPENSSL_ERROR;
+			{ result = OPSP_OPENSSL_ERROR; goto end; }
 		}
 		*encryptionLength+=outl;
 
@@ -3680,7 +3626,7 @@ static LONG calculate_enc_cbc(unsigned char session_key[16], unsigned char *mess
 			&outl, padding, 8 - (messageLength%8));
 		if (result != 1) {
 			EVP_CIPHER_CTX_cleanup(&ctx);
-			return OPSP_OPENSSL_ERROR;
+			{ result = OPSP_OPENSSL_ERROR; goto end; }
 		}
 		*encryptionLength+=outl;
 	}
@@ -3688,14 +3634,17 @@ static LONG calculate_enc_cbc(unsigned char session_key[16], unsigned char *mess
 		&outl);
 	if (result != 1) {
 		EVP_CIPHER_CTX_cleanup(&ctx);
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	*encryptionLength+=outl;
 	result = EVP_CIPHER_CTX_cleanup(&ctx);
 	if (result != 1) {
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("calculate_enc_cbc"), result);
+	return result;
 }
 
 /**
@@ -3710,13 +3659,17 @@ static LONG calculate_card_cryptogram(unsigned char session_enc_key[16], unsigne
 									  unsigned char host_challenge[8], unsigned char card_cryptogram[8]) {
 	LONG result;
 	unsigned char message[16];
+	LOG_START(_T("calculate_card_cryptogram"));
 	memcpy(message, host_challenge, 8);
 	memcpy(message+8, card_challenge, 8);
 	result = calculate_MAC(session_enc_key, message, 16, icv, card_cryptogram);
 	if (result != OPSP_ERROR_SUCCESS) {
-		return result;
+		goto end;
 	}
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("calculate_card_cryptogram"), result);
+	return result;
 }
 
 /**
@@ -3731,13 +3684,17 @@ static LONG calculate_host_cryptogram(unsigned char session_enc_key[16], unsigne
 									  unsigned char host_challenge[8], unsigned char host_cryptogram[8]) {
 	LONG result;
 	unsigned char message[16];
+	LOG_START(_T("calculate_host_cryptogram"));
 	memcpy(message, card_challenge, 8);
 	memcpy(message+8, host_challenge, 8);
 	result = calculate_MAC(session_enc_key, message, 16, icv, host_cryptogram);
 	if (result != OPSP_ERROR_SUCCESS) {
-		return result;
+		goto end;
 	}
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("calculate_host_cryptogram"), result);
+	return result;
 }
 
 /**
@@ -3771,12 +3728,13 @@ LONG mutual_authentication(OPSP_CARDHANDLE cardHandle, BYTE enc_key[16], BYTE ma
 	DWORD sendBufferLength;
 	DWORD recvBufferLength=256;
 	BYTE recvBuffer[256];
-	PBYTE sendBuffer;
+	PBYTE sendBuffer = NULL;
 	// random for host challenge
 
+	LOG_START(_T("mutual_authentication"));
 	result = RAND_bytes(host_challenge, 8);
 	if (result != 1) {
-		return OPSP_OPENSSL_ERROR;
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 
 	// INITIALIZE UPDATE
@@ -3791,23 +3749,22 @@ LONG mutual_authentication(OPSP_CARDHANDLE cardHandle, BYTE enc_key[16], BYTE ma
 	i+=8;
 	sendBuffer[i] = 0x00;
 #ifdef DEBUG
-	_tprintf(_T("mutual_authentication: INITIALIZE UPDATE Data to send: \n"));
+	log_Log(_T("mutual_authentication: INITIALIZE UPDATE Data to send: "));
 	for (i=0; i<sendBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), sendBuffer[i]);
+		log_Log(_T(" 0x%02x"), sendBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 	result = send_APDU(cardHandle,sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength, cardInfo, NULL);
-	free(sendBuffer);
 	if ( OPSP_ERROR_SUCCESS != result) {
-		return result;
+		goto end;
 	}
 #ifdef DEBUG
-	_tprintf(_T("mutual_authentication: INITIALIZE UPDATE Data: \n"));
+	log_Log(_T("mutual_authentication: INITIALIZE UPDATE Data: "));
 	for (i=0; i<recvBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), recvBuffer[i]);
+		log_Log(_T(" 0x%02x"), recvBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 	// response of INITIALIZE UPDATE
 	memcpy(key_diversification_data, recvBuffer, 10);
@@ -3816,60 +3773,60 @@ LONG mutual_authentication(OPSP_CARDHANDLE cardHandle, BYTE enc_key[16], BYTE ma
 	memcpy(card_cryptogram, recvBuffer+20, 8);
 
 #ifdef DEBUG
-	_tprintf(_T("mutual_authentication: card_challenge: \n"));
+	log_Log(_T("mutual_authentication: card_challenge: "));
 	for (i=0; i<8; i++) {
-		_tprintf(_T("0x%02x "), card_challenge[i]);
+		log_Log(_T("0x%02x "), card_challenge[i]);
 	}
-	_tprintf(_T("\n"));
+	
 
-	_tprintf(_T("mutual_authentication: host_challenge: \n"));
+	log_Log(_T("mutual_authentication: host_challenge: "));
 	for (i=0; i<8; i++) {
-		_tprintf(_T("0x%02x "), host_challenge[i]);
+		log_Log(_T("0x%02x "), host_challenge[i]);
 	}
-	_tprintf(_T("\n"));
+	
 
-	_tprintf(_T("mutual_authentication: card_cryptogram: \n"));
+	log_Log(_T("mutual_authentication: card_cryptogram: "));
 	for (i=0; i<8; i++) {
-		_tprintf(_T("0x%02x "), card_cryptogram[i]);
+		log_Log(_T("0x%02x "), card_cryptogram[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 
 	// calculation of ENC session key
 	result = create_session_key(enc_key, card_challenge, host_challenge, secInfo->session_enc_key);
 	if (result != OPSP_ERROR_SUCCESS) {
-		return result;
+		goto end;
 	}
 
 #ifdef DEBUG
-	_tprintf(_T("mutual_authentication: session_enc_key: \n"));
+	log_Log(_T("mutual_authentication: session_enc_key: "));
 	for (i=0; i<16; i++) {
-		_tprintf(_T("0x%02x "), secInfo->session_enc_key[i]);
+		log_Log(_T("0x%02x "), secInfo->session_enc_key[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 
 	// calculation of MAC session key
 	result = create_session_key(mac_key, card_challenge, host_challenge, secInfo->session_mac_key);
 	if (result != OPSP_ERROR_SUCCESS) {
-		return result;
+		goto end;
 	}
 	// calculation of card cryptogram
 	result = calculate_card_cryptogram(secInfo->session_enc_key, card_challenge, host_challenge, card_cryptogram_ver);
 	if (result != OPSP_ERROR_SUCCESS) {
-		return result;
+		goto end;
 	}
 
 #ifdef DEBUG
-	_tprintf(_T("card_cryptogram_ver: \n"));
+	log_Log(_T("card_cryptogram_ver: "));
 	for (i=0; i<8; i++) {
-		_tprintf(_T("0x%02x "), card_cryptogram_ver[i]);
+		log_Log(_T("0x%02x "), card_cryptogram_ver[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 
 	if (memcmp(card_cryptogram, card_cryptogram_ver, 8) != 0) {
-		return OPSP_ERROR_CARD_CRYPTOGRAM_VERIFICATION;
+		{ result = OPSP_ERROR_CARD_CRYPTOGRAM_VERIFICATION; goto end; }
 	}
 
 	// EXTERNAL AUTHENTICATE
@@ -3890,30 +3847,34 @@ LONG mutual_authentication(OPSP_CARDHANDLE cardHandle, BYTE enc_key[16], BYTE ma
 	memcpy(sendBuffer+i, mac, 8);
 	i+=8;
 #ifdef DEBUG
-	_tprintf(_T("mutual_authentication: EXTERNAL AUTHENTICATE Data to send: \n"));
+	log_Log(_T("mutual_authentication: EXTERNAL AUTHENTICATE Data to send: "));
 	for (i=0; i<sendBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), sendBuffer[i]);
+		log_Log(_T(" 0x%02x"), sendBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 	result = send_APDU(cardHandle,sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength, cardInfo, NULL);
-	free(sendBuffer);
 	if ( OPSP_ERROR_SUCCESS != result) {
 		switch (result) {
 			case OPSP_ISO7816_ERROR_6300:
-				return OPSP_ISO7816_ERROR_HOST_CRYPTOGRAM_VERIFICATION;
+				{ result = OPSP_ISO7816_ERROR_HOST_CRYPTOGRAM_VERIFICATION; goto end; }
 			default:
-				return result;
+				goto end;
 		}
 	}
 #ifdef DEBUG
-	_tprintf(_T("mutual_authentication: EXTERNAL AUTHENTICATE Data: \n"));
+	log_Log(_T("mutual_authentication: EXTERNAL AUTHENTICATE Data: "));
 	for (i=0; i<recvBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), recvBuffer[i]);
+		log_Log(_T(" 0x%02x"), recvBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	if (sendBuffer)
+		free(sendBuffer);
+	LOG_END(_T("mutual_authentication"), result);
+	return result;
 }
 
 
@@ -3957,11 +3918,12 @@ LONG pin_change(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_CA
 	BYTE encryption[8];
 	int encryptionLength;
 	DWORD j,i=0;
+	LOG_START(_T("pin_change"));
 	if ((tryLimit != 0) && !((tryLimit > 0x03) && (tryLimit <= 0x0a))) {
-		return OPSP_ERROR_WRONG_TRY_LIMIT;
+		{ result = OPSP_ERROR_WRONG_TRY_LIMIT; goto end; }
 	}
 	if ((newPINLength < 6) || (newPINLength > 12)) {
-		return OPSP_ERROR_WRONG_PIN_LENGTH;
+		{ result = OPSP_ERROR_WRONG_PIN_LENGTH; goto end; }
 	}
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0x24;
@@ -3984,28 +3946,31 @@ LONG pin_change(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_CA
 	}
 	sendBufferLength = i;
 #ifdef DEBUG
-	_tprintf(_T("pin_change: Data to send: \n"));
+	log_Log(_T("pin_change: Data to send: "));
 	for (i=0; i<sendBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), sendBuffer[i]);
+		log_Log(_T(" 0x%02x"), sendBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
 	result = send_APDU(cardHandle,sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength, cardInfo, secInfo);
 	if (OPSP_ERROR_SUCCESS != result) {
 		if (result == OPSP_ISO7816_ERROR_WRONG_DATA)
-			return OPSP_ISO7816_ERROR_WRONG_GLOBAL_PIN_FORMAT;
+			{ result = OPSP_ISO7816_ERROR_WRONG_GLOBAL_PIN_FORMAT; goto end; }
 		if (result == OPSP_ISO7816_ERROR_INCORRECT_P1P2)
-			return OPSP_ISO7816_ERROR_WRONG_PIN_TRY_LIMIT;
-		return result;
+			{ result = OPSP_ISO7816_ERROR_WRONG_PIN_TRY_LIMIT; goto end; }
+		goto end;
 	}
 #ifdef DEBUG
-	_tprintf(_T("pin_change: Data: \n"));
+	log_Log(_T("pin_change: Data: "));
 	for (i=0; i<recvBufferLength; i++) {
-		_tprintf(_T(" 0x%02x"), recvBuffer[i]);
+		log_Log(_T(" 0x%02x"), recvBuffer[i]);
 	}
-	_tprintf(_T("\n"));
+	
 #endif
-	return OPSP_ERROR_SUCCESS;
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("pin_change"), result);
+	return result;
 }
 
 /**
