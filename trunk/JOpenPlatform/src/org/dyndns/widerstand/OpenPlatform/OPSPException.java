@@ -490,7 +490,7 @@ public class OPSPException extends java.lang.Exception {
      * The OpenSSL error codes are terrible to obtain. There is no comprehensive list.
      * The codes are auto generated and may change (?). So I can not provide a mapping.
      * The last OpenSSL error code can be obtained with a call to {@link OPSPWrapper#getLastOpenSSLErrorCode() OPSPWrapper.getLastOpenSSLErrorCode},
-     * a string representation of the last OpenSSL error as usual by a call to {@link OPSPWrapper#stringifyError(long) OPSPWrapper.stringifyError}.
+     * a string representation of the last OpenSSL error as usual by a call to {@link OPSPWrapper#stringifyError(int) OPSPWrapper.stringifyError}.
      */
     public final static int OPSP_OPENSSL_ERROR = 0x80400000;
     

@@ -24,11 +24,12 @@
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;_UNICODE"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				UsePrecompiledHeader="3"
+				RuntimeLibrary="2"
+				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="4"/>
+				DebugInformationFormat="4"
+				CompileAs="1"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
@@ -36,7 +37,7 @@
 				AdditionalDependencies="OpenPlatform.lib"
 				OutputFile="$(OutDir)/JOpenPlatformWrapper.dll"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;C:\Dokumente und Einstellungen\Widerstand\Eigene Dateien\Visual Studio Projects\OpenPlatform&quot;"
+				AdditionalLibraryDirectories="&quot;C:\Dokumente und Einstellungen\Widerstand\Eigene Dateien\Visual Studio Projects\OpenPlatform\Debug&quot;"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/JOpenPlatformWrapper.pdb"
 				SubSystem="2"
@@ -74,11 +75,12 @@
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="&quot;C:\Dokumente und Einstellungen\Widerstand\Eigene Dateien\Visual Studio Projects\OpenPlatform&quot;;E:\Programme\jdk1.5.0_01\include\win32;E:\Programme\jdk1.5.0_01\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;_UNICODE"
-				RuntimeLibrary="0"
+				RuntimeLibrary="2"
 				UsePrecompiledHeader="3"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="3"/>
+				DebugInformationFormat="3"
+				CompileAs="1"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
@@ -86,7 +88,7 @@
 				AdditionalDependencies="OpenPlatform.lib"
 				OutputFile="$(OutDir)/JOpenPlatformWrapper.dll"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;C:\Dokumente und Einstellungen\Widerstand\Eigene Dateien\Visual Studio Projects\OpenPlatform&quot;"
+				AdditionalLibraryDirectories="&quot;C:\Dokumente und Einstellungen\Widerstand\Eigene Dateien\Visual Studio Projects\OpenPlatform\Release&quot;"
 				GenerateDebugInformation="TRUE"
 				SubSystem="2"
 				OptimizeReferences="2"
