@@ -1,0 +1,80 @@
+Global Platform Shell (gpshell)
+snitmo@gmail.com
+
+Version 1.0.0	8/2/2005
+
+*** Summary
+
+GPShell is a script interpreter which talks to a smart card.  It uses smart card communication protocols ISO-7816-4 and Open Platform (which later became Global Platform) 2.0.1.  It can establish a secure channel with a smart card, load, instantiate, delete, list applets on a smart card.  
+
+
+*** Usage
+
+UNIX:
+gpshell scriptfile, or
+gpshell < scriptfile
+
+Win32:
+GPShell.exe scriptfile, or
+GPShell.exe < scriptfile
+
+gpshell can take a script file from standard input, as well as from a file.  This way, an application can can feed commands to gpshell without creating a script file.  
+
+
+*** Scriptfile Commands
+
+establish_context // Establish context
+card_connect [Reader Name] // Connect to card in the reader
+open_sc // Open secure channel
+select -f AID // select applet instance
+getdata
+install_for_load -AID xxx -nvCodeLimit yyy // Install for Load 
+load -file appletfile // Load applet
+install_for_install appletfile AID // Instantiate applet
+card_disconnect // Disconnect card
+get_status -element e0 // list applets
+release_context // Release context
+
+Options:
+-keyind 	Key index
+-keyver		Key set version  
+-key		Key value in hex
+-mac_key	MAC key value in hex
+-enc_key	ENC key value in hex
+-kek_key	KEK key value in hex
+-security	0: clear, 1: MAC, 3: MAC+ENC
+-appfile	Applet file name
+-reader		Smart card reader name
+-protocol	Protocol, 0:T=0, 1:T=1
+-AID		Applet ID
+-sdAID		Security Domain AID
+-pkgAID		Package AID
+-instAID	Instance AID
+-nvCodeLimit	Non-volatile code size limit
+-nvDataLimit	Non-volatile data size limit
+-vDataLimit	Volatile data size limit
+-file		File name
+-instParam	Installation parameter
+-element	Element type to be listed in hex (e0 for all)
+
+
+*** Sample / Testing
+
+We have tested this with OpenPlatform.dll version 1.0.0, Oberthur CosmopoliC 32K, and HelloWorld.bin (sample applet from JavaCard development kit 2.1.2).  See helloInstall.txt, helloDelete.txt, and list.txt for samples.
+
+	GPShell.exe helloInstall.txt	// install HelloWorld.bin
+	GPShell.exe helloDelete.txt	// delete HelloWorld.bin
+	GPShell.exe list.txt		// list applets on a smart card
+
+Make sure GPShell.exe and OpenPlatform.dll are in your path.
+Make sure the script file (helloInstall.txt, etc.) and applet binary file HelloWorld.bin are in your current directory.
+
+It should work with other smart cards that support JavaCard 2.1.2 and OpenPlatform 2.0.1.  You need to tweak options in the script files.  Please let us know how it works with the smart cards you have. 
+
+
+*** Known limitations / TODO
+
+- Sometimes errors are not reported.  Use list command to see what applets are on the card.  
+- Add APDU pass through command
+- Add putkey command
+
