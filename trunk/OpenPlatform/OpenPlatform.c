@@ -32,6 +32,8 @@
  *
  * This library offers functions to manage a Open Platform 2.0.1' conforming card.
  *
+ * <h2>Terminology</h2>
+ * <p>
  * The following terms are used different from the Open Platform 2.0.1' specification:
  * <ul>
  * <li>
@@ -46,19 +48,26 @@
  * They can be also be given separately to the according functions.
  * </li>
  * <li>
- * The term applet class has the meaning of the Open Platform term AID within Load File.
+ * The term "applet class" has the meaning of the Open Platform term "AID within Load File".
  * </li>
  * <li>
- * The term applet instance is equal to the the Open Platform application instance.
+ * The term "applet instance" is equal to the Open Platform "application instance".
  * </li>
  * <li>
- * The term applet is also Java Card specific and is the same as a Open Platform application.
+ * The term "applet" is also Java Card specific and is the same as a Open Platform "application".
  * </li>
+ * </ul>
+ * </p>
+ * <h2>Note</h2>
  * <p>
  * Before you call a card related command make sure that the Card Manager or Security Domain you 
  * want to use for the command is selected by select_application().
  * </p>
- * </ul>
+ * <h2>Unicode support</h2>
+ * <p>
+ * Obey that this library supports Unicode in Windows. If you develop an application you must use Unicode
+ * strings. Use the <code>LPTSTR</code>, <code>TCHAR</code> and the <code>_T()</code> macro.
+ * </p>
  *
  */
 #ifdef WIN32
@@ -886,6 +895,7 @@ LONG send_APDU(OPSP_CARDHANDLE cardHandle, PBYTE capdu, DWORD capduLength, PBYTE
 
 	if (rapdu[*rapduLength-2] != 0x90 || rapdu[*rapduLength-1] != 0x00) {
 		result = (OPSP_ISO7816_ERROR_PREFIX | (rapdu[*rapduLength-2] << 8)) | rapdu[*rapduLength-1];
+		goto end;
 	}
 	{ result = OPSP_ERROR_SUCCESS; goto end; }
 end:
@@ -1548,6 +1558,7 @@ LONG delete_applet(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP
 	}
 	else {
 		*receiptDataLength = 0;
+		goto end;
 	}
 #ifdef DEBUG
 	log_Log(_T("delete_application: Data: "));
