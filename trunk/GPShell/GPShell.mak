@@ -4,17 +4,17 @@ CFG=GPShell - Win32 Debug
 !MESSAGE No configuration specified. Defaulting to GPShell - Win32 Debug.
 !ENDIF 
 
-!IF "$(CFG)" != "GPShell - Win32 Release" && "$(CFG)" != "GPShell - Win32 Debug"
+!IF "$(CFG)" != "Release" && "$(CFG)" != "Debug"
 !MESSAGE Invalid configuration "$(CFG)" specified.
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "GPShell.mak" CFG="GPShell - Win32 Debug"
+!MESSAGE NMAKE /f "GPShell.mak" CFG="Debug"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
-!MESSAGE "GPShell - Win32 Release" (based on "Win32 (x86) Console Application")
-!MESSAGE "GPShell - Win32 Debug" (based on "Win32 (x86) Console Application")
+!MESSAGE "Release" (based on "Win32 (x86) Console Application")
+!MESSAGE "Debug" (based on "Win32 (x86) Console Application")
 !MESSAGE 
 !ERROR An invalid configuration is specified.
 !ENDIF 
@@ -37,12 +37,12 @@ NULL=nul
 CPP=cl.exe
 RSC=rc.exe
 
-!IF  "$(CFG)" == "GPShell - Win32 Release"
+!IF  "$(CFG)" == "Release"
 
-OUTDIR=.\GPShell___Win32_Release
-INTDIR=.\GPShell___Win32_Release
+OUTDIR=.\Release
+INTDIR=.\Release
 # Begin Custom Macros
-OutDir=.\GPShell___Win32_Release
+OutDir=.\Release
 # End Custom Macros
 
 ALL : "$(OUTDIR)\GPShell.exe"
@@ -72,7 +72,7 @@ LINK32_OBJS= \
   $(LINK32_FLAGS) $(LINK32_OBJS)
 <<
 
-!ELSEIF  "$(CFG)" == "GPShell - Win32 Debug"
+!ELSEIF  "$(CFG)" == "Debug"
 
 OUTDIR=.\Debug
 INTDIR=.\Debug
@@ -153,7 +153,7 @@ LINK32_OBJS= \
 !ENDIF 
 
 
-!IF "$(CFG)" == "GPShell - Win32 Release" || "$(CFG)" == "GPShell - Win32 Debug"
+!IF "$(CFG)" == "Release" || "$(CFG)" == "Debug"
 SOURCE=.\GPShell.c
 
 "$(INTDIR)\GPShell.obj" : $(SOURCE) "$(INTDIR)"
