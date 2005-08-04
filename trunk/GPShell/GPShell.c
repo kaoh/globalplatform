@@ -7,7 +7,7 @@
 #include <sys/stat.h>
 #include <io.h>
 
-#include "../OpenPlatform/OpenPlatform.h"
+#include "OpenPlatform.h"
 
 /* Constants */
 #define BUFLEN 256
@@ -557,9 +557,9 @@ int handleCommands(FILE *fd)
 					 NULL, // No install token
 					 &receipt,
 					 &receiptLen);
-				      
+
 		if (rv != 0) {
-		    _tprintf (_T("install_for_load() returns %d (%s)\n"),
+		    _tprintf (_T("install_for_install_and_make_selectable() returns %d (%s)\n"),
 			      rv, stringify_error(rv));
 		    exit (1);
 		}
