@@ -1,7 +1,7 @@
 # Microsoft Developer Studio Generated NMAKE File, Based on GPShell.dsp
 !IF "$(CFG)" == ""
-CFG=GPShell - Win32 Debug
-!MESSAGE No configuration specified. Defaulting to GPShell - Win32 Debug.
+CFG=Debug
+!MESSAGE No configuration specified. Defaulting to Debug.
 !ENDIF 
 
 !IF "$(CFG)" != "Release" && "$(CFG)" != "Debug"
