@@ -52,19 +52,7 @@ extern "C"
 #endif
 
 #include <winscard.h>
-
-#ifndef WIN32
-#define _tmain main
-#define _TCHAR char
-#define TCHAR char
-#define _T(arg) arg
-#define _tcsncpy strncpy
-#define _tcscpy strcpy
-#define _tcslen strlen
-#define _tprintf printf
-#define _tfopen fopen
-#define _stprintf sprintf
-#endif
+#include "unicode.h"
 
 typedef SCARDCONTEXT OPSP_CARDCONTEXT; //!< Reference to the reader ressource manager.
 typedef SCARDHANDLE OPSP_CARDHANDLE; //!< Reference to a card.

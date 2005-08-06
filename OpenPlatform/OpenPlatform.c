@@ -75,7 +75,7 @@
 #endif
 #include <stdio.h>
 #include <stdlib.h>
-#include "OpenPlatform.h"
+#include "OpenPlatform/OpenPlatform.h"
 #include <openssl/rand.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
