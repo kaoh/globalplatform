@@ -30,17 +30,13 @@
 #include "stdafx.h"
 #endif
 
+#include "OpenPlatform/unicode.h"
+
 #ifdef WIN32
 #define LOG_FILENAME _T("C:\\TEMP\\OpenPlatform.log")
 #else
 #define LOG_FILENAME _T("/tmp/OpenPlatform.log")
-#define LPTSTR *char
 #define LONG long
-#define _tgetenv getenv
-#define _ftprintf fprintf
-#define _sntprintf snprintf
-#define _fputts fputs
-#define _vftprintf vfprintf
 #endif
 
 #ifdef DEBUG
@@ -51,11 +47,11 @@
 #define LOG_END(x,rv)
 #endif
 
-//! \brief Logs something to a file or the syslog. */
+//! \brief Logs something to a file or the syslog.
 void log_Log(LPTSTR msg, ...);
 
-//! \brief Logs the end of a function and its return code. */
+//! \brief Logs the end of a function and its return code.
 void log_End(LPTSTR func, LPTSTR file, int line, LONG rv);
 
-//! \brief Logs the start of a function */
+//! \brief Logs the start of a function
 void log_Start(LPTSTR func, LPTSTR file, int line);

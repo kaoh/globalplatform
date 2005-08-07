@@ -1,7 +1,7 @@
 # Require autoconf 2.53
 AC_PREREQ(2.53)
 
-AC_INIT(Open Platform, 1.0.0, karsten.ohme@inf.tu-dresden.de)
+AC_INIT(Open Platform, 1.0.0, k_o_@users.sourceforge.net)
 AM_INIT_AUTOMAKE
 
 # check programs

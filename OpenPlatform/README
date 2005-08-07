@@ -50,3 +50,7 @@ the debugging will be syslogged. If you explicitly set a log file with
 the environment variable OPENPLATFORM_LOGFILE, this log file will be used.
 If no vsyslog is available the default log file is /tmp/OpenPlatform.log.
 
+For more information visit:
+
+http://sourceforge.net/projects/globalplatform/
+

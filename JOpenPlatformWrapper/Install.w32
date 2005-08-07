@@ -64,3 +64,8 @@ library, then you also have to build a release version.
 
 5.	(optional)
 	Run nmake -f Makefile.mak clean to delete the Debug and Release directories.
+
+For question visit:
+
+http://sourceforge.net/projects/globalplatform/
+
