@@ -31,7 +31,7 @@
 #include "stdafx.h"
 #endif
 #include <malloc.h>
-#include <OpenPlatform.h>
+#include <OpenPlatform/OpenPlatform.h>
 
 static void parsejcardInfo(JNIEnv *, jobject, OPSP_CARD_INFO *);
 static void parsejsecInfo(JNIEnv *, jobject, OPSP_SECURITY_INFO *);

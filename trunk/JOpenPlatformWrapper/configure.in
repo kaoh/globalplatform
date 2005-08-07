@@ -1,7 +1,7 @@
 # Require autoconf 2.53
 AC_PREREQ(2.53)
 
-AC_INIT(JOpenPlatform Wrapper, 1.0.0, karsten.ohme@inf.tu-dresden.de)
+AC_INIT(JOpenPlatform Wrapper, 1.0.0, k_o_@users.sourceforge.net)
 AM_INIT_AUTOMAKE
 
 # check programs
@@ -33,7 +33,7 @@ CFLAGS="$CFLAGS $PCSCLITE_CFLAGS"
 AC_CHECK_HEADER(winscard.h, [],
         [AC_MSG_ERROR([winscard.h not found or usable, install pcsc-lite 1.2.9-beta7 or 
 later, or use
-CFLAGS=... ./configure])])
+CFLAGS=-I<include directory> ./configure])])
 CFLAGS="$OLD_CFLAGS"
 
 
@@ -53,8 +53,7 @@ fi
 
 OLD_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS $PCSCLITE_CFLAGS"
-AC_CHECK_HEADER(OpenPlatform.h, [], [AC_MSG_ERROR([OpenPlatform.h not found or usable, 
-install OpenPlatform])])
+AC_CHECK_HEADER(OpenPlatform/OpenPlatform.h, [], [AC_MSG_ERROR([OpenPlatform/OpenPlatform.h not found or usable, install OpenPlatform, or use CFLAGS=-I<include directory> ./configure])], )
 CFLAGS="$OLD_CFLAGS"
 
 AC_CHECK_LIB(OpenPlatform, load_applet, [],

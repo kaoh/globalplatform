@@ -41,5 +41,8 @@ PKG_CONFIG_PATH. E.g. the Debian path for pkgconfig is /usr/lib/pkgconfig.
     start with /usr instead of the default /usr/local
 ./configure --help gives you a help of possible options.
 
+For question visit:
+
+http://sourceforge.net/projects/globalplatform/
 
 

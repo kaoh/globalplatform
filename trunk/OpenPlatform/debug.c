@@ -88,16 +88,17 @@ void log_Log(LPTSTR msg, ...)
 	goto filelog;
     }
     else {
-	va_start(args, msg);
-	vsyslog(LOG_USER | LOG_DEBUG, msg, args);
-	va_end(args);
+		va_start(args, msg);
+		vsyslog(LOG_USER | LOG_DEBUG, msg, args);
+		va_end(args);
+		return;
     }
 filelog:
     #endif // HAVE_VSYSLOG
     if (_tgetenv(_T("OPENPLATFORM_LOGFILE")))
-        fp = _tfopen(_tgetenv(_T("OPENPLATFORM_LOGFILE")), _T("ab"));
+        fp = _tfopen(_tgetenv(_T("OPENPLATFORM_LOGFILE")), _T("a"));
     else
-        fp = _tfopen(LOG_FILENAME, _T("ab"));
+        fp = _tfopen(LOG_FILENAME, _T("a"));
 
     if (!fp)
     {
