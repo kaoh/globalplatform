@@ -5,10 +5,12 @@ Version 1.0.0	8/3/2005
 
 *** Summary
 
-GPShell is a script interpreter which talks to a smart card.  It uses smart card communication protocols ISO-7816-4 and Open Platform (which later became Global Platform) 2.0.1.  It can establish a secure channel with a smart card, load, instantiate, delete, list applets on a smart card.  
+GPShell is a script interpreter which talks to a smart card.  It is written on top of the OpenPlatform library, which was developed by Karsten Ohme.  It uses smart card communication protocols ISO-7816-4 and Open Platform (which later became Global Platform) 2.0.1.  It can establish a secure channel with a smart card, load, instantiate, delete, list applets on a smart card.  
 
 
 *** Usage
+
+Make sure both GPShell.exe (or gpshell on UNIX) and OpenPlatform.dll (or .so) are in your PATH.  
 
 UNIX:
 gpshell scriptfile, or
@@ -33,6 +35,7 @@ install_for_install appletfile AID // Instantiate applet
 card_disconnect // Disconnect card
 get_status -element e0 // list applets
 release_context // Release context
+put_sc_key -keyver 0 -keyind 0 -mac_key $new_MAC_key -enc_key $new_ENC_key -kek_key $new_KEK_key -cur_kek $current_KEK_key // put secure channel key
 
 Options:
 -keyind 	Key index
@@ -65,7 +68,6 @@ We have tested this with OpenPlatform.dll version 1.0.0, Oberthur CosmopoliC 32K
 	GPShell.exe helloDelete.txt	// delete HelloWorld.bin
 	GPShell.exe list.txt		// list applets on a smart card
 
-Make sure GPShell.exe and OpenPlatform.dll are in your path.
 Make sure the script file (helloInstall.txt, etc.) and applet binary file HelloWorld.bin are in your current directory.
 
 It should work with other smart cards that support JavaCard 2.1.2 and OpenPlatform 2.0.1.  You need to tweak options in the script files.  Please let us know how it works with the smart cards you have. 
