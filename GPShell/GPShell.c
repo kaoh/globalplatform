@@ -1,13 +1,15 @@
 /* GPShell.c */
 
+#ifdef WIN32
 #include "stdafx.h"
+#endif
 #include <stdio.h>
+#include <string.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <io.h>
 
-#include "OpenPlatform.h"
+#include "OpenPlatform/OpenPlatform.h"
 
 /* Constants */
 #define BUFLEN 256
@@ -50,24 +52,24 @@ OPSP_CARD_INFO cardInfo;
 OPSP_SECURITY_INFO securityInfo;
 
 /* Functions */
-void ConvertTToC(CHAR* pszDest, const TCHAR* pszSrc)
+void ConvertTToC(char* pszDest, const TCHAR* pszSrc)
 {
     int i;
     
     for(i = 0; i < _tcslen(pszSrc); i++)
-	pszDest[i] = (CHAR) pszSrc[i];
+	pszDest[i] = (char) pszSrc[i];
 
-    pszDest[_tcslen(pszSrc)] = NULL;
+    pszDest[_tcslen(pszSrc)] = '\0';
 }
 
-void ConvertCToT(TCHAR* pszDest, const CHAR* pszSrc)
+void ConvertCToT(TCHAR* pszDest, const char* pszSrc)
 {
     int i;
     
     for(i = 0; i < strlen(pszSrc); i++)
 	pszDest[i] = (TCHAR) pszSrc[i];
 
-    pszDest[strlen(pszSrc)] = NULL;
+    pszDest[strlen(pszSrc)] = _T('\0');
 }
 char *strtokCheckComment(char *buf)
 {
@@ -163,7 +165,7 @@ int handleOptions(OptionStr *pOptionStr)
 		}
 		ConvertCToT (pOptionStr->reader, token);
 #ifdef DEBUG
-		_tprintf ( _T("reader name %s\n", pOptionStr->reader));
+		_tprintf ( _T("reader name %s\n"), pOptionStr->reader);
 #endif
 	    } 
 	} else if (strcmp(token, "-file") == 0) {
@@ -409,7 +411,7 @@ int handleCommands(FILE *fd)
 		break;
 	    } else if (strcmp(token, "card_connect") == 0) {
 		TCHAR buf[BUFLEN + 1];
-		int readerStrLen = BUFLEN;
+		DWORD readerStrLen = BUFLEN;
 		// open reader
 		handleOptions(&optionStr);
 #ifdef DEBUG
@@ -480,7 +482,7 @@ int handleCommands(FILE *fd)
 		break;
 	    } else if (strcmp(token, "load") == 0) {
 		// Load Applet
-		int receiptDataLen = 0;
+		DWORD receiptDataLen = 0;
 		handleOptions(&optionStr);
 
 		rv = load_applet(cardHandle, &securityInfo, cardInfo,
@@ -497,7 +499,7 @@ int handleCommands(FILE *fd)
 		// Delete Applet
 		OPSP_AID AIDs[1];
 		OPSP_RECEIPT_DATA receipt[10];
-		int receiptLen = 10;
+		DWORD receiptLen = 10;
 		    
 		handleOptions(&optionStr);
 		memcpy (AIDs[0].AID, optionStr.AID, optionStr.AIDLen);
@@ -506,7 +508,7 @@ int handleCommands(FILE *fd)
 		rv = delete_applet(cardHandle, &securityInfo,
 				   cardInfo,
 				   AIDs, 1,
-				   &receipt, &receiptLen);
+                                   (OPSP_RECEIPT_DATA **)&receipt, &receiptLen);
 
 		if (rv != 0) {
 		    _tprintf (_T("delete_applet() returns %d (%s)\n"),
@@ -535,8 +537,8 @@ int handleCommands(FILE *fd)
 		}
 		break;
 	    } else if (strcmp(token, "install_for_install") == 0) {
-		OPSP_RECEIPT_DATA receipt[10];
-		int receiptLen = 10;
+		OPSP_RECEIPT_DATA receipt;
+		DWORD receiptDataAvailable = 0;
 		char installParam[1];
 		installParam[0] = 0;
 
@@ -556,7 +558,7 @@ int handleCommands(FILE *fd)
 					 optionStr.instParamLen, 
 					 NULL, // No install token
 					 &receipt,
-					 &receiptLen);
+					 &receiptDataAvailable);
 
 		if (rv != 0) {
 		    _tprintf (_T("install_for_install_and_make_selectable() returns %d (%s)\n"),
@@ -576,7 +578,7 @@ int handleCommands(FILE *fd)
 	    } else if (strcmp(token, "get_status") == 0) {
 #define NUM_APPLICATIONS 64
 		OPSP_APPLICATION_DATA data[NUM_APPLICATIONS];
-		int numData = NUM_APPLICATIONS;
+		DWORD numData = NUM_APPLICATIONS;
 
 		handleOptions(&optionStr);
 		
@@ -629,12 +631,17 @@ int main(int argc, char* argv[])
     } else if (argc == 2) {
 	// read input from script file
 	fd = fopen (argv[1], "r");
+        // error
+        if (fd == NULL) {
+          fprintf(stderr, "Could not open scriptfile !\n");
+          return 1;
+        }
     } else {
 	// error
 	fprintf (stderr, "Usage: GPShell [scriptfile]\n");
 	return 1;
     }
-
+      
     // launch the command interpreter
     rv = handleCommands(fd);
 
