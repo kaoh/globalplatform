@@ -1,10 +1,10 @@
 ******************************************************
 Title    : Open Platform Manager
-Authors  : Karsten Ohme <karsten.ohme@inf.tu-dresden.de>
+Authors  : Karsten Ohme <k_o_@users.sourceforge.net>
 License  : See file COPYING
-Requires : OPSP Library
-           JOPSP
-           JOPSP Wrapper
+Requires : OpenPlatform Library
+           JOpenPlatform
+           JOpenPlatformWrapper
 ******************************************************
 
 Directories:

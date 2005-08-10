@@ -1014,13 +1014,14 @@ LONG put_rsa_key(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_C
 	rsa_exponent = key->pkey.rsa->e->d[0];
 	memcpy(rsa_modulus, key->pkey.rsa->n->d, sizeof(unsigned long)*key->pkey.rsa->n->top);
 	EVP_PKEY_free(key);
-
+        /*
 	if (keySetVersion > 0x7f)
 		{ result = OPSP_ERROR_WRONG_KEY_VERSION; goto end; }
 	if ((newKeySetVersion > 0x7f) || (newKeySetVersion < 0x01))
 		{ result = OPSP_ERROR_WRONG_KEY_VERSION; goto end; }
 	if (keyIndex > 0x7f)
 		{ result = OPSP_ERROR_WRONG_KEY_INDEX; goto end; }
+        */
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xD8;
 	sendBuffer[i++] = keySetVersion;
@@ -1101,12 +1102,14 @@ LONG put_3des_key(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_
 	BYTE keyCheckTest[8] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
 	DWORD i=0;
 	LOG_START(_T("put_3des_key"));
+        /*
 	if (keySetVersion > 0x7f)
 		{ result = OPSP_ERROR_WRONG_KEY_VERSION; goto end; }
 	if (newKeySetVersion > 0x7f)
 		{ result = OPSP_ERROR_WRONG_KEY_VERSION; goto end; }
 	if (keyIndex > 0x7f)
 		{ result = OPSP_ERROR_WRONG_KEY_INDEX; goto end; }
+        */
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xD8;
 	sendBuffer[i++] = keySetVersion;
@@ -1186,10 +1189,12 @@ LONG put_secure_channel_keys(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *sec
 	BYTE keyCheckTest[8] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
 	DWORD i=0;
 	LOG_START(_T("put_secure_channel_keys"));
+        /*
 	if (keySetVersion > 0x7f)
 		{ result = OPSP_ERROR_WRONG_KEY_VERSION; goto end; }
 	if (newKeySetVersion > 0x7f)
 		{ result = OPSP_ERROR_WRONG_KEY_VERSION; goto end; }
+        */
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xD8;
 	sendBuffer[i++] = keySetVersion;
