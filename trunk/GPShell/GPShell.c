@@ -20,10 +20,12 @@
 typedef struct _OptionStr {
     int keyIndex;
     int keySetVersion;
+    int newKeySetVersion;
     unsigned char key[DDES_KEY_LEN];
     unsigned char mac_key[DDES_KEY_LEN];
     unsigned char enc_key[DDES_KEY_LEN];
     unsigned char kek_key[DDES_KEY_LEN];
+    unsigned char current_kek[DDES_KEY_LEN];
     int securityLevel;
     char *appletFile;
     char *AID;
@@ -93,6 +95,7 @@ int handleOptions(OptionStr *pOptionStr)
 
     pOptionStr->keyIndex = 0;
     pOptionStr->keySetVersion = 0;
+    pOptionStr->newKeySetVersion = 0;
     pOptionStr->securityLevel = 0;
     pOptionStr->appletFile = NULL;
     pOptionStr->AID = NULL;
@@ -130,6 +133,14 @@ int handleOptions(OptionStr *pOptionStr)
 		exit (1);
 	    } else {
 		pOptionStr->keySetVersion = atoi(token);
+	    }
+	} else if (strcmp(token, "-newkeyver") == 0) {
+	    token = strtokCheckComment(NULL);
+	    if (token == NULL) {
+		printf ("Error: option -newkeyver not followed by data\n");
+		exit (1);
+	    } else {
+		pOptionStr->newKeySetVersion = atoi(token);
 	    }
 	} else if (strcmp(token, "-security") == 0) {
 	    token = strtokCheckComment(NULL);
@@ -234,6 +245,19 @@ int handleOptions(OptionStr *pOptionStr)
 		
 		for (i=0; i<DDES_KEY_LEN; i++) {
 		    sscanf (token, "%02x", &(pOptionStr->kek_key[i]));
+		    token += 2;
+		}
+	    } 
+	} else if (strcmp(token, "-current_kek") == 0) {
+	    token = strtokCheckComment(NULL);
+	    if (token == NULL) {
+		printf ("Error: option -current_kek not followed by data\n");
+		exit (1);
+	    } else {
+		int i;
+		
+		for (i=0; i<DDES_KEY_LEN; i++) {
+		    sscanf (token, "%02x", &(pOptionStr->current_kek[i]));
 		    token += 2;
 		}
 	    } 
@@ -571,9 +595,23 @@ int handleCommands(FILE *fd)
 		card_disconnect(cardHandle);
 
 		break;
-	    } else if (strcmp(token, "putkey") == 0) {
-		// TODO: put key
-		printf ("TODO: put key\n");
+	    } else if (strcmp(token, "put_sc_key") == 0) {
+		handleOptions(&optionStr);
+
+		rv = put_secure_channel_keys(cardHandle, &securityInfo,
+					     cardInfo,
+					     optionStr.keySetVersion,
+					     optionStr.newKeySetVersion,
+					     optionStr.enc_key,
+					     optionStr.mac_key,
+					     optionStr.kek_key,
+					     optionStr.current_kek);
+		
+		if (rv != 0) {
+		    _tprintf (_T("put_secure_channel_keys() returns %d (%s)\n"),
+			      rv, stringify_error(rv));
+		    exit (1);
+		}
 		break;
 	    } else if (strcmp(token, "get_status") == 0) {
 #define NUM_APPLICATIONS 64

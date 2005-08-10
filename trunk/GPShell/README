@@ -35,11 +35,13 @@ install_for_install appletfile AID // Instantiate applet
 card_disconnect // Disconnect card
 get_status -element e0 // list applets
 release_context // Release context
-put_sc_key -keyver 0 -keyind 0 -mac_key $new_MAC_key -enc_key $new_ENC_key -kek_key $new_KEK_key -cur_kek $current_KEK_key // put secure channel key
+put_sc_key -keyver 0 -newkeyver 0 -mac_key $new_MAC_key -enc_key $new_ENC_key -kek_key $new_KEK_key -cur_kek $current_KEK_key // add new key set version 2
+put_sc_key -keyver 1 -newkeyver 0 -mac_key $new_MAC_key -enc_key $new_ENC_key -kek_key $new_KEK_key -cur_kek $current_KEK_key // replace key set version 1
 
 Options:
 -keyind 	Key index
--keyver		Key set version  
+-keyver		Key set version
+-newkeyver	New key set version
 -key		Key value in hex
 -mac_key	MAC key value in hex
 -enc_key	ENC key value in hex
@@ -72,4 +74,15 @@ Make sure the script file (helloInstall.txt, etc.) and applet binary file HelloW
 
 It should work with other smart cards that support JavaCard 2.1.2 and OpenPlatform 2.0.1.  You need to tweak options in the script files.  Please let us know how it works with the smart cards you have. 
 
+* About put_sc_key
+
+We have tested put_sc_key with Oberthur CosmopoliC 64K card and Cyberflex Access e-gate 32K.  
+
+For Cyberflex example, please see:
+	replacekey-cflex.txt	// Replace the default key set (key set version 1, value 404142...4f) with a new key (505152...5f)
+	putdefault-cflex.txt	// Replace the new key (505152...5f) with the default key (404142...4f)
+
+For CosmopoliC 64K, you need to add a key set first.  See putkey-cosmo.txt.  I have not tested this particular sample file because I do not want to burn my cards.  Please use it as a sample.
+
+This would add a key set 1, and at the same time delete the initialization key set.  After the initialization key set is used, you can replace and add key sets as in Cyberflex.
 
