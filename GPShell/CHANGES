@@ -1,2 +1,5 @@
 8/4/2005	1.0.0	Initial Release
 			CVS Tag "Release-1-0-0"
+
+8/9/2005	1.0.1	Added put_sc_key (put secure channel key)
+			CVS Tag "Release-1-0-1"
