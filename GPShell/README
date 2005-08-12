@@ -37,6 +37,7 @@ get_status -element e0 // list applets
 release_context // Release context
 put_sc_key -keyver 0 -newkeyver 0 -mac_key $new_MAC_key -enc_key $new_ENC_key -kek_key $new_KEK_key -cur_kek $current_KEK_key // add new key set version 2
 put_sc_key -keyver 1 -newkeyver 0 -mac_key $new_MAC_key -enc_key $new_ENC_key -kek_key $new_KEK_key -cur_kek $current_KEK_key // replace key set version 1
+send_apdu -sc 0 -APDU xxx // Send APDU xxx without secure channel
 
 Options:
 -keyind 	Key index
@@ -60,7 +61,8 @@ Options:
 -file		File name
 -instParam	Installation parameter
 -element	Element type to be listed in hex (e0 for all)
-
+-sc		Secure Channel mode (0 off, 1 on)
+-APDU		APDU to be sent
 
 *** Sample / Testing
 

@@ -36,6 +36,9 @@ typedef struct _OptionStr {
     int pkgAIDLen;
     char *instAID;
     int instAIDLen;
+    unsigned char *APDU;
+    int APDULen;
+    int secureChannel;
     TCHAR *reader;
     int protocol;
     int nvCodeLimit;
@@ -106,6 +109,9 @@ int handleOptions(OptionStr *pOptionStr)
     pOptionStr->pkgAIDLen = 0;
     pOptionStr->instAID = NULL;
     pOptionStr->instAIDLen = 0;
+    pOptionStr->APDU = NULL;
+    pOptionStr->APDULen = 0;
+    pOptionStr->secureChannel = 0;
     pOptionStr->reader = NULL;
     pOptionStr->protocol = OPSP_CARD_PROTOCOL_T0;
     pOptionStr->nvCodeLimit = 0;
@@ -141,6 +147,21 @@ int handleOptions(OptionStr *pOptionStr)
 		exit (1);
 	    } else {
 		pOptionStr->newKeySetVersion = atoi(token);
+	    }
+	} else if (strcmp(token, "-sc") == 0) {
+	    token = strtokCheckComment(NULL);
+	    if (token == NULL) {
+		printf ("Error: option -sc not followed by data\n");
+		exit (1);
+	    } else {
+		if (atoi(token) == 0)
+		    pOptionStr->secureChannel = 0;
+		else if (atoi(token) == 1)
+		    pOptionStr->secureChannel = 1;
+		else {
+		    printf ("Error: option -sc not followed 0 (secure channel off) or 1 (secure channel on)\n");
+		    exit (1);
+		}		    
 	    }
 	} else if (strcmp(token, "-security") == 0) {
 	    token = strtokCheckComment(NULL);
@@ -324,6 +345,22 @@ int handleOptions(OptionStr *pOptionStr)
 		}
 		pOptionStr->instAIDLen = i;
 		pOptionStr->instAID = (char *)realloc (pOptionStr->instAID, i);
+	    } 
+	} else if (strcmp(token, "-APDU") == 0) {
+	    token = strtokCheckComment(NULL);
+	    if (token == NULL) {
+		printf ("Error: option -APDU not followed by data\n");
+		exit (1);
+	    } else {
+		int i = 0;
+
+		pOptionStr->APDU = (char *)malloc(sizeof(char) * (strlen (token) + 1));
+		while (sscanf (token, "%02x", &(pOptionStr->APDU[i])) > 0) {
+		    i++;
+		    token += 2;
+		}
+		pOptionStr->APDULen = i;
+		pOptionStr->APDU = (char *)realloc (pOptionStr->APDU, i);
 	    } 
 	} else if (strcmp(token, "-protocol") == 0) {
 	    token = strtokCheckComment(NULL);
@@ -643,6 +680,34 @@ int handleCommands(FILE *fd)
 		    printf ("\t%x", data[i].lifeCycleState);
 		    printf ("\t%x\n", data[i].privileges);
 		}
+		
+		break;
+	    } else if (strcmp(token, "send_apdu") == 0) {
+		unsigned char recvAPDU[257];
+		int recvAPDULen = 257, i;
+		// Install for Load
+		handleOptions(&optionStr);
+
+		printf ("Send APDU: ");
+		for (i=0; i<optionStr.APDULen; i++)
+		    printf ("%02x ", optionStr.APDU[i]);
+		printf ("\n");
+		
+		rv = send_APDU(cardHandle, 
+			       optionStr.APDU, optionStr.APDULen, 
+			       recvAPDU, &recvAPDULen,
+			       cardInfo,
+			       (optionStr.secureChannel == 0 ? NULL : &securityInfo));
+		if (rv != 0) {
+		    _tprintf (_T("send_APDU() returns %d (%s)\n"),
+			      rv, stringify_error(rv));
+		    exit (1);
+		}
+
+		printf ("Recv APDU: ");
+		for (i=0; i<recvAPDULen; i++)
+		    printf ("%02x ", recvAPDU[i]);
+		printf ("\n");
 		
 		break;
 	    } else {
