@@ -1,8 +1,7 @@
 VERSION=1.0.2
 DIR=GPShell-$(VERSION)
 
-all:
-	make bin_package
+all:	bin_package
 
 bin_package:
 	rm -rf $(DIR)
