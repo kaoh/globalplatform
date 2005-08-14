@@ -49,8 +49,8 @@ public class MainJFrame extends javax.swing.JFrame {
 
         jPanel1.setLayout(new java.awt.BorderLayout());
 
-        jPanel1.setMinimumSize(new java.awt.Dimension(1024, 768));
-        jPanel1.setPreferredSize(new java.awt.Dimension(1024, 768));
+        jPanel1.setMinimumSize(new java.awt.Dimension(1024, 800));
+        jPanel1.setPreferredSize(new java.awt.Dimension(1024, 800));
         jPanel1.setRequestFocusEnabled(false);
         jTabbedPane1.addTab("Manage Connection", jPanelConnectionManagement);
 
@@ -124,6 +124,7 @@ public class MainJFrame extends javax.swing.JFrame {
     public void refreshStatus() {
         ((ManageApplicationsJPanel)jPanelManageApplications).refresh();
         ((DAPManagementJPanel)jPanelDAPManagement).refresh();
+        ((KeyManagementJPanel)jPanelKeyManagement).refresh();
     }
     
     /**

@@ -72,6 +72,8 @@ public class InstallJPanel extends javax.swing.JPanel {
         jTextFieldvolatileDataSpaceLimitForInstall = new javax.swing.JTextField();
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
+        jLabelsecurityDomainAIDAlternative = new javax.swing.JLabel();
+        jTextFieldsecurityDomainAID = new javax.swing.JTextField();
         jPanel4 = new javax.swing.JPanel();
         jButtonAddDAP = new javax.swing.JButton();
         jComboBoxDAP = new javax.swing.JComboBox();
@@ -116,7 +118,7 @@ public class InstallJPanel extends javax.swing.JPanel {
         jLabelappletInstallParameters.setText("Applet Install Parameters");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 6;
+        gridBagConstraints.gridy = 7;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanel3.add(jLabelappletInstallParameters, gridBagConstraints);
@@ -124,7 +126,7 @@ public class InstallJPanel extends javax.swing.JPanel {
         jTextFieldappletClassAID.setColumns(20);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 3;
+        gridBagConstraints.gridy = 4;
         gridBagConstraints.gridwidth = 2;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
@@ -145,7 +147,7 @@ public class InstallJPanel extends javax.swing.JPanel {
         jLabelappletClassAID.setText("Applet Class AID");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 3;
+        gridBagConstraints.gridy = 4;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanel3.add(jLabelappletClassAID, gridBagConstraints);
@@ -236,7 +238,7 @@ public class InstallJPanel extends javax.swing.JPanel {
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 7;
+        gridBagConstraints.gridy = 8;
         gridBagConstraints.gridwidth = 3;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
@@ -255,7 +257,7 @@ public class InstallJPanel extends javax.swing.JPanel {
         jLabelappletInstanceAID.setText("Applet Instance AID");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 4;
+        gridBagConstraints.gridy = 5;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanel3.add(jLabelappletInstanceAID, gridBagConstraints);
@@ -263,7 +265,7 @@ public class InstallJPanel extends javax.swing.JPanel {
         jTextFieldappletInstallParameters.setColumns(20);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 6;
+        gridBagConstraints.gridy = 7;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
@@ -272,7 +274,7 @@ public class InstallJPanel extends javax.swing.JPanel {
         jTextFieldappletInstanceAID.setColumns(20);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 4;
+        gridBagConstraints.gridy = 5;
         gridBagConstraints.gridwidth = 2;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
@@ -395,11 +397,29 @@ public class InstallJPanel extends javax.swing.JPanel {
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 5;
+        gridBagConstraints.gridy = 6;
         gridBagConstraints.gridwidth = 3;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanel3.add(jPanel6, gridBagConstraints);
+
+        jLabelsecurityDomainAIDAlternative.setText("Security Domain AID");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel3.add(jLabelsecurityDomainAIDAlternative, gridBagConstraints);
+
+        jTextFieldsecurityDomainAID.setColumns(20);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel3.add(jTextFieldsecurityDomainAID, gridBagConstraints);
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -1126,7 +1146,18 @@ public class InstallJPanel extends javax.swing.JPanel {
                     "Colored text field cannot be understood as AID", "Wrong Number Format");
             throw e;
         }
-        byte[] securityDomainAID = OPSPUtil.bytesFromHexString((String)jComboBoxsecurityDomainAID.getSelectedItem());
+        byte[] securityDomainAID;
+        if (jTextFieldsecurityDomainAID.getText().length() > 0) {
+            try {
+                securityDomainAID = OPSPUtil.bytesFromHexString(jTextFieldsecurityDomainAID.getText());
+            } catch (NumberFormatException e) {
+                swingUtil.errorInJComponent(this, jTextFieldsecurityDomainAID,
+                        "Colored text field cannot be understood as AID", "Wrong Number Format");
+                return;
+            }
+        } else {
+            securityDomainAID = OPSPUtil.bytesFromHexString((String)jComboBoxsecurityDomainAID.getSelectedItem());
+        }
         byte[] loadFileDAP = null;
         if (jCheckBoxloadFileDAP.isSelected()) {
             OPSPDAPBlock dapBlocks[] = new OPSPDAPBlock[jComboBoxDAP.getItemCount()];
@@ -1263,6 +1294,7 @@ public class InstallJPanel extends javax.swing.JPanel {
     private javax.swing.JLabel jLabelnonVolatileDataSpaceLimit;
     private javax.swing.JLabel jLabelpackageAID;
     private javax.swing.JLabel jLabelsecurityDomainAID;
+    private javax.swing.JLabel jLabelsecurityDomainAIDAlternative;
     private javax.swing.JLabel jLabelvolatileDataSpaceLimit;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
@@ -1282,6 +1314,7 @@ public class InstallJPanel extends javax.swing.JPanel {
     private javax.swing.JTextField jTextFieldnonVolatileDataSpaceLimitForInstall;
     private javax.swing.JTextField jTextFieldnonVolatileDataSpaceLimitForLoad;
     private javax.swing.JTextField jTextFieldpackageAID;
+    private javax.swing.JTextField jTextFieldsecurityDomainAID;
     private javax.swing.JTextField jTextFieldvolatileDataSpaceLimitForInstall;
     private javax.swing.JTextField jTextFieldvolatileDataSpaceLimitForLoad;
     // End of variables declaration//GEN-END:variables

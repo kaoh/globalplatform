@@ -55,6 +55,8 @@ public class ValidateDAPJPanel extends javax.swing.JPanel {
         jTextFieldsecurityDomainAID = new javax.swing.JTextField();
         jTextFieldpackageAIDLoad = new javax.swing.JTextField();
         jButtonvalidateLoad = new javax.swing.JButton();
+        jLabelsecurityDomainAID1 = new javax.swing.JLabel();
+        jComboBoxsecurityDomainAID = new javax.swing.JComboBox();
         jPanel5 = new javax.swing.JPanel();
         jButtonvalidateInstall = new javax.swing.JButton();
         jTextFieldpackageAIDInstall = new javax.swing.JTextField();
@@ -206,7 +208,7 @@ public class ValidateDAPJPanel extends javax.swing.JPanel {
         jLabelsecurityDomainAID.setText("Security Domain AID");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridy = 2;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanel4.add(jLabelsecurityDomainAID, gridBagConstraints);
@@ -214,7 +216,7 @@ public class ValidateDAPJPanel extends javax.swing.JPanel {
         jTextFieldsecurityDomainAID.setColumns(20);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridy = 2;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
@@ -238,10 +240,26 @@ public class ValidateDAPJPanel extends javax.swing.JPanel {
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridy = 3;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanel4.add(jButtonvalidateLoad, gridBagConstraints);
+
+        jLabelsecurityDomainAID1.setText("Security Domain AID");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel4.add(jLabelsecurityDomainAID1, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel4.add(jComboBoxsecurityDomainAID, gridBagConstraints);
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -413,6 +431,16 @@ public class ValidateDAPJPanel extends javax.swing.JPanel {
         }
     }//GEN-LAST:event_jButtonvalidateDeleteActionPerformed
     
+    public void refresh() {
+        jComboBoxsecurityDomainAID.removeAllItems();
+        for (OPSPApplicationData appData : parent.session.cardManager) {
+            jComboBoxsecurityDomainAID.addItem(OPSPUtil.toHexString(appData.getAID()));
+        }
+        for (OPSPApplicationData appData : parent.session.securityDomains) {
+            jComboBoxsecurityDomainAID.addItem(OPSPUtil.toHexString(appData.getAID()));
+        }
+    }
+    
     private void jButtonvalidateInstallActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonvalidateInstallActionPerformed
         swingUtil.resetJComponentColor();
         byte[] packageAID;
@@ -491,12 +519,16 @@ public class ValidateDAPJPanel extends javax.swing.JPanel {
             return;
         }
         byte[] securityDomainAID;
-        try {
-            securityDomainAID = OPSPUtil.bytesFromHexString(jTextFieldsecurityDomainAID.getText());
-        } catch (NumberFormatException e) {
-            swingUtil.errorInJComponent(this, jTextFieldsecurityDomainAID,
-                    "Colored text field cannot be understood as AID", "Wrong Number Format");
-            return;
+        if (jTextFieldsecurityDomainAID.getText().length() > 0) {
+            try {
+                securityDomainAID = OPSPUtil.bytesFromHexString(jTextFieldsecurityDomainAID.getText());
+            } catch (NumberFormatException e) {
+                swingUtil.errorInJComponent(this, jTextFieldsecurityDomainAID,
+                        "Colored text field cannot be understood as AID", "Wrong Number Format");
+                return;
+            }
+        } else {
+            securityDomainAID = OPSPUtil.bytesFromHexString((String)jComboBoxsecurityDomainAID.getSelectedItem());
         }
         long confirmationCounter;
         try {
@@ -586,6 +618,7 @@ public class ValidateDAPJPanel extends javax.swing.JPanel {
     private javax.swing.JButton jButtonvalidateInstall;
     private javax.swing.JButton jButtonvalidateLoad;
     private javax.swing.JCheckBox jCheckBoxreceiptGenerationKey;
+    private javax.swing.JComboBox jComboBoxsecurityDomainAID;
     private javax.swing.JLabel jLabelReceiptData;
     private javax.swing.JLabel jLabelappletInstanceAID;
     private javax.swing.JLabel jLabelcardUniqueData;
@@ -595,6 +628,7 @@ public class ValidateDAPJPanel extends javax.swing.JPanel {
     private javax.swing.JLabel jLabelpackageAIDLoad;
     private javax.swing.JLabel jLabelreceiptGenerationKey;
     private javax.swing.JLabel jLabelsecurityDomainAID;
+    private javax.swing.JLabel jLabelsecurityDomainAID1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;

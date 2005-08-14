@@ -13,6 +13,7 @@ package org.dyndns.widerstand.OpenPlatform;
 public class OPSPException extends java.lang.Exception {
     
     private int exceptionCode;
+    private String method;
     
     /**
      * The exponent must be 3 or 65537.
@@ -33,6 +34,11 @@ public class OPSPException extends java.lang.Exception {
      * A validation has failed.
      */
     public final static int OPSP_ERROR_VALIDATION_FAILED = 0x8030F000;
+    
+    /**
+     * A necessary object is <code>NULL</code>.
+     */
+    public final static int OPSP_ERROR_OBJECT_NULL = 0x8030F004;    
     
     /**
      * A APDU command can't be recognized as a valid T=0 protocol Case 1-4 ISO7816-4 APDU.
@@ -499,8 +505,24 @@ public class OPSPException extends java.lang.Exception {
      */
     public OPSPException(String method, int exceptionCode) {
         super(method+": "+OPSPWrapper.stringifyError(exceptionCode));
+        this.method = method;
         this.exceptionCode = exceptionCode;
     }
+    
+//    public String toString() {
+//        if (exceptionCode == OPSPException.OPSP_ERROR_CARDINFO_NULL) {
+//            return method+": "+"OPSPCardInfo object is null.";
+//        }
+//        else if (exceptionCode == OPSPException.OPSP_ERROR_CARDINFO_NULL) {
+//            return method+": "+"OPSPSecurityInfo object is null.";
+//        } else {
+//            return method+": "+OPSPWrapper.stringifyError(exceptionCode);
+//        }
+//    };
+//    
+//    public String getMessage() {
+//        return toString();
+//    }
     
     /**
      * Getter for property exceptionCode.

@@ -430,7 +430,7 @@ public class PutKeySetJPanel extends javax.swing.JPanel {
         }
         byte newKeySetVersion;
         try {
-            dummy = Short.decode(jTextFieldKeySetVersion.getText());
+            dummy = Short.decode(jTextFieldNewKeySetVersion.getText());
             if (dummy > 255 || dummy < 0) 
                 throw new NumberFormatException();
             newKeySetVersion = dummy.byteValue();

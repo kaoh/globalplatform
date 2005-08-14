@@ -33,6 +33,8 @@
 #include <malloc.h>
 #include <OpenPlatform/OpenPlatform.h>
 
+#define OPSP_ERROR_OBJECT_NULL 0x8030F004 //!< A necessary object is <code>NULL</code>.
+
 static void parsejcardInfo(JNIEnv *, jobject, OPSP_CARD_INFO *);
 static void parsejsecInfo(JNIEnv *, jobject, OPSP_SECURITY_INFO *);
 static void setjsecInfo(JNIEnv *, jobject, OPSP_SECURITY_INFO);
@@ -156,22 +158,26 @@ JNIEXPORT jlong JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_card
 (JNIEnv *env, jclass cls, jlong cardContext, jstring readerJavaName, jlong protocol) {
 	LONG result;
 	OPSP_CARDHANDLE cardHandle;
-	OPSP_CSTRING readerName;
+	OPSP_STRING readerName = NULL;
+	if (readerJavaName != NULL) {
 #ifdef _UNICODE
-	readerName = (OPSP_STRING)(*env)->GetStringChars(env, readerJavaName, 0);
+		readerName = (OPSP_STRING)(*env)->GetStringChars(env, readerJavaName, 0);
 #else
-	readerName = (*env)->GetStringUTFChars(env, readerJavaName, 0);
+		readerName = (OPSP_STRING)(*env)->GetStringUTFChars(env, readerJavaName, 0);
 #endif
-	if ((*env)->ExceptionOccurred(env) != NULL) {
-		throwException(env, _T("cardConnect"));
-		return -1;
+		if ((*env)->ExceptionOccurred(env) != NULL) {
+			throwException(env, _T("cardConnect"));
+			return -1;
+		}
 	}
-	result = card_connect((OPSP_CARDCONTEXT)cardContext, readerName, &cardHandle, (DWORD)protocol);
+	result = card_connect((OPSP_CARDCONTEXT)cardContext, (OPSP_CSTRING)readerName, &cardHandle, (DWORD)protocol);
+	if (readerJavaName != NULL) {
 #ifdef _UNICODE
-	(*env)->ReleaseStringChars(env, readerJavaName, readerName);
+		(*env)->ReleaseStringChars(env, readerJavaName, readerName);
 #else
-	(*env)->ReleaseStringUTFChars(env, readerJavaName, readerName);
+		(*env)->ReleaseStringUTFChars(env, readerJavaName, readerName);
 #endif
+	}
 	if ( OPSP_ERROR_SUCCESS != result ) {
 		throwOPSPException(env, _T("cardConnect"), result);
 		return -1;
@@ -202,33 +208,30 @@ JNIEXPORT void JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_selec
 (JNIEnv *env, jclass cls, jlong cardHandle, jobject jcardInfo, jbyteArray jAID) {
 	LONG result;
 	OPSP_CARD_INFO cardInfo;
-	PBYTE AID;
-	DWORD AIDLength;
-	AIDLength = (*env)->GetArrayLength(env, jAID);
+	BYTE AID[16];
+	DWORD AIDLength = 16;
+	if (jcardInfo == NULL) {
+		throwOPSPException(env, _T("selectApplication"), OPSP_ERROR_OBJECT_NULL);
+		goto end;
+	}
+	parsejbyteArray(env, jAID, AID, &AIDLength);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("selectApplication"));
-		return;
+		goto end;
 	}
-	AID = (PBYTE)malloc(sizeof(BYTE)*AIDLength);
-	(*env)->GetByteArrayRegion(env, jAID, 0, (*env)->GetArrayLength(env, jAID), (jbyte *)AID);
-	if ((*env)->ExceptionOccurred(env) != NULL) {
-		free(AID);
-		throwException(env, _T("selectApplication"));
-		return;
-	}
+
 	parsejcardInfo(env, jcardInfo, &cardInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
-		free(AID);
 		throwException(env, _T("selectApplication"));
-		return;
+		goto end;
 	}
 	result = select_application((OPSP_CARDHANDLE)cardHandle, cardInfo, AID, AIDLength);
 	if (result != OPSP_ERROR_SUCCESS) {
-		free(AID);
 		throwOPSPException(env, _T("selectApplication"), result);
-		return;
+		goto end;
 	}
-	free(AID);
+end:
+	return;
 }
 
 /*
@@ -485,53 +488,57 @@ JNIEXPORT jobjectArray JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapp
 	jbyteArray jAID;
 	OPSP_SECURITY_INFO secInfo;
 	OPSP_CARD_INFO cardInfo;
+	if (jcardInfo == NULL || jsecInfo == NULL) {
+		throwOPSPException(env, _T("getStatus"), OPSP_ERROR_OBJECT_NULL);
+		goto end;
+	}
 	parsejcardInfo(env, jcardInfo, &cardInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("getStatus"));
-		return NULL;
+		goto end;
 	}
 	parsejsecInfo(env, jsecInfo, &secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("getStatus"));
-		return NULL;
+		goto end;
 	}
 	result = get_status((OPSP_CARDHANDLE)cardHandle, &secInfo, cardInfo, cardElement,
 		applData, &applDataLength);
 	setjsecInfo(env, jsecInfo, secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("getStatus"));
-		return NULL;
+		goto end;
 	}
 	if (result != OPSP_ERROR_SUCCESS) {
 		throwOPSPException(env, _T("getStatus"), result);
-		return NULL;
+		goto end;
 	}
 
 	OPSPApplicationDataClass = (*env)->FindClass(env, "org/dyndns/widerstand/OpenPlatform/OPSPApplicationData");
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("getStatus"));
-		return NULL;
+		goto end;
 	}
 	jappDataArray = (*env)->NewObjectArray(env, applDataLength, OPSPApplicationDataClass, NULL);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("getStatus"));
-		return NULL;
+		goto end;
 	}
 	for (i=0; i<applDataLength; i++) {
 		methodID = (*env)->GetMethodID(env, OPSPApplicationDataClass, "<init>", "([BBB)V");
 		if ((*env)->ExceptionOccurred(env) != NULL) {
 			throwException(env, _T("getStatus"));
-			return NULL;
+			goto end;
 		}
 		jAID = (*env)->NewByteArray(env, (jsize)applData[i].AIDLength);
 		if ((*env)->ExceptionOccurred(env) != NULL) {
 			throwException(env, _T("getStatus"));
-			return NULL;
+			goto end;
 		}
 		(*env)->SetByteArrayRegion(env, jAID, 0, (jsize)applData[i].AIDLength, (jbyte *)applData[i].AID);
 		if ((*env)->ExceptionOccurred(env) != NULL) {
 			throwException(env, _T("getStatus"));
-			return NULL;
+			goto end;
 		}
 		jappData = (*env)->NewObject(env, OPSPApplicationDataClass, methodID,
 			jAID,
@@ -539,14 +546,15 @@ JNIEXPORT jobjectArray JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapp
 			applData[i].privileges);
 		if ((*env)->ExceptionOccurred(env) != NULL) {
 			throwException(env, _T("getStatus"));
-			return NULL;
+			goto end;
 		}
 		(*env)->SetObjectArrayElement(env, jappDataArray, i, jappData);
 		if ((*env)->ExceptionOccurred(env) != NULL) {
 			throwException(env, _T("getStatus"));
-			return NULL;
+			goto end;
 		}
 	}
+end:
 	return jappDataArray;
 }
 
@@ -560,31 +568,31 @@ JNIEXPORT void JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_setSt
  jbyteArray jAID, jbyte lifeCycleState)
 {
 	LONG result;
-	PBYTE AID;
-	DWORD AIDLength;
+	PBYTE AID = NULL;
+	DWORD AIDLength = 0;
 	OPSP_CARD_INFO cardInfo;
 	OPSP_SECURITY_INFO secInfo;
+	if (jcardInfo == NULL || jsecInfo == NULL) {
+		throwOPSPException(env, _T("setStatus"), OPSP_ERROR_OBJECT_NULL);
+		goto end;
+	}
 	parsejcardInfo(env, jcardInfo, &cardInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("setStatus"));
-		return;
+		goto end;
 	}
 	parsejsecInfo(env, jsecInfo, &secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("setStatus"));
-		return;
+		goto end;
 	}
-	AIDLength = (DWORD)(*env)->GetArrayLength(env, jAID);
-	AID = (PBYTE)malloc(sizeof(BYTE)*AIDLength);
-	if (jAID == NULL) {
-		AID = NULL;
-		AIDLength = 0;
-	}
-	else {
+	if (jAID != NULL) {
+		AIDLength = (DWORD)(*env)->GetArrayLength(env, jAID);
+		AID = (PBYTE)malloc(sizeof(BYTE)*AIDLength);
 		parsejbyteArray(env, jAID, AID, &AIDLength);
 		if ((*env)->ExceptionOccurred(env) != NULL) {
 			throwException(env, _T("setStatus"));
-			return;
+			goto end;
 		}
 	}
 	result = set_status((OPSP_CARDHANDLE)cardHandle, &secInfo, cardInfo, (BYTE)cardElement,
@@ -592,14 +600,17 @@ JNIEXPORT void JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_setSt
 	setjsecInfo(env, jsecInfo, secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("setStatus"));
-		return;
+		goto end;
 	}
 	if (result != OPSP_ERROR_SUCCESS) {
-		free(AID);
 		throwOPSPException(env, _T("setStatus"), result);
-		return;
+		goto end;
 	}
-	free(AID);
+
+end:
+	if (AID)
+		free(AID);
+	return;
 }
 
 /*
@@ -610,7 +621,12 @@ JNIEXPORT void JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_setSt
 JNIEXPORT jstring JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_stringifyError
 (JNIEnv *env, jclass cls, jint errorCode) {
 	OPSP_STRING errorMsg;
-	errorMsg = stringify_error((DWORD)errorCode);
+	if (errorCode == OPSP_ERROR_OBJECT_NULL) {
+		errorMsg = _T("A necessary object is null.");
+	}
+	else {
+		errorMsg = stringify_error((DWORD)errorCode);
+	}
 #ifdef _UNICODE
 	return (*env)->NewString(env, errorMsg, (jsize)_tcslen(errorMsg));
 #else
@@ -713,21 +729,25 @@ JNIEXPORT jobject JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_mu
 	jclass OPSPSecurityInfoClass = NULL;
 	jmethodID constructorID;
 	jbyteArray lastMac, sessionMacKey, sessionEncKey;
+	if (jcardInfo == NULL || jmacKey == NULL || jencKey == NULL) {
+		throwOPSPException(env, _T("mutualAuthentication"), OPSP_ERROR_OBJECT_NULL);
+		goto end;
+	}
 	parsejcardInfo(env, jcardInfo, &cardInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("mutualAuthentication"));
-		return NULL;
+		goto end;
 	}
 	parsejbyteArray(env, jencKey, enc_key, &dummy);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("mutualAuthentication"));
-		return NULL;
+		goto end;
 	}
 	dummy = 16;
 	parsejbyteArray(env, jmacKey, mac_key, &dummy);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("mutualAuthentication"));
-		return NULL;
+		goto end;
 	}
 	result = mutual_authentication((OPSP_CARDHANDLE)cardHandle, enc_key, mac_key,
 		(BYTE)keySetVersion, (BYTE)keyIndex, cardInfo, (BYTE)securityLevel, &secInfo);
@@ -737,56 +757,57 @@ JNIEXPORT jobject JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_mu
 	OPSPSecurityInfoClass = (*env)->FindClass(env, "org/dyndns/widerstand/OpenPlatform/OPSPSecurityInfo");
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("mutualAuthentication"));
-		return NULL;
+		goto end;
 	}
 	constructorID = (*env)->GetMethodID(env, OPSPSecurityInfoClass, "<init>", "([B[B[BB)V");
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("mutualAuthentication"));
-		return NULL;
+		goto end;
 	}
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("mutualAuthentication"));
-		return NULL;
+		goto end;
 	}
 // last MAC
 	lastMac = (*env)->NewByteArray(env, 8);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("mutualAuthentication"));
-		return NULL;
+		goto end;
 	}
 	(*env)->SetByteArrayRegion(env, lastMac, 0, 8, (jbyte *)secInfo.last_mac);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("mutualAuthentication"));
-		return NULL;
+		goto end;
 	}
 // session MAC key
 	sessionMacKey = (*env)->NewByteArray(env, 16);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("mutualAuthentication"));
-		return NULL;
+		goto end;
 	}
 	(*env)->SetByteArrayRegion(env, sessionMacKey, 0, 16, (jbyte *)secInfo.session_mac_key);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("mutualAuthentication"));
-		return NULL;
+		goto end;
 	}
 // session ENC key
 	sessionEncKey = (*env)->NewByteArray(env, 16);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("mutualAuthentication"));
-		return NULL;
+		goto end;
 	}
 	(*env)->SetByteArrayRegion(env, sessionEncKey, 0, 16, (jbyte *)secInfo.session_enc_key);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("mutualAuthentication"));
-		return NULL;
+		goto end;
 	}
 	jsecInfo = (*env)->NewObject(env, OPSPSecurityInfoClass, constructorID, sessionMacKey, sessionEncKey,
 		lastMac, securityLevel);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("mutualAuthentication"));
-		return NULL;
+		goto end;
 	}
+end:
 	return jsecInfo;
  }
 
@@ -833,38 +854,43 @@ JNIEXPORT jbyteArray JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper
 	OPSP_SECURITY_INFO secInfo;
 	OPSP_CARD_INFO cardInfo;
 	jbyteArray cardData = NULL;
-		parsejbyteArray(env, jidentifier, identifier, &identifierLength);
-		if ((*env)->ExceptionOccurred(env) != NULL) {
-			throwException(env, _T("getData"));
-			return NULL;
-		}
+	if (jcardInfo == NULL || jsecInfo == NULL || jidentifier == NULL) {
+		throwOPSPException(env, _T("getData"), OPSP_ERROR_OBJECT_NULL);
+		goto end;
+	}
+	parsejbyteArray(env, jidentifier, identifier, &identifierLength);
+	if ((*env)->ExceptionOccurred(env) != NULL) {
+		throwException(env, _T("getData"));
+		goto end;
+	}
 
 	parsejcardInfo(env, jcardInfo, &cardInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("getData"));
-		return NULL;
+		goto end;
 	}
 	parsejsecInfo(env, jsecInfo, &secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("getData"));
-		return NULL;
+		goto end;
 	}
 	result = get_data((OPSP_CARDHANDLE)cardHandle, identifier,
 		recvBuffer, &recvBufferLength, cardInfo, &secInfo);
 	setjsecInfo(env, jsecInfo, secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("getData"));
-		return NULL;
+		goto end;
 	}
 	if (result != OPSP_ERROR_SUCCESS) {
 		throwOPSPException(env, _T("getData"), result);
-		return NULL;
+		goto end;
 	}
 	cardData = getjbyteArray(env, recvBuffer, recvBufferLength);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("getData"));
-		return NULL;
+		goto end;
 	}
+end:
 	return cardData;
 }
 
@@ -884,38 +910,45 @@ JNIEXPORT void JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_putDa
 	DWORD cardObjectLength=255;
 	OPSP_SECURITY_INFO secInfo;
 	OPSP_CARD_INFO cardInfo;
-		parsejbyteArray(env, jcardObject, cardObject, &cardObjectLength);
-		if ((*env)->ExceptionOccurred(env) != NULL) {
-			throwException(env, _T("putData"));
-			return;
-		}
+	if (jcardInfo == NULL || jsecInfo == NULL || jidentifier == NULL) {
+		throwOPSPException(env, _T("putData"), OPSP_ERROR_OBJECT_NULL);
+		goto end;
+	}
 
-		parsejbyteArray(env, jidentifier, identifier, &identifierLength);
-		if ((*env)->ExceptionOccurred(env) != NULL) {
-			throwException(env, _T("putData"));
-			return;
-		}
+	parsejbyteArray(env, jcardObject, cardObject, &cardObjectLength);
+	if ((*env)->ExceptionOccurred(env) != NULL) {
+		throwException(env, _T("putData"));
+		goto end;
+	}
+
+	parsejbyteArray(env, jidentifier, identifier, &identifierLength);
+	if ((*env)->ExceptionOccurred(env) != NULL) {
+		throwException(env, _T("putData"));
+		goto end;
+	}
 
 	parsejcardInfo(env, jcardInfo, &cardInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("putData"));
-		return;
+		goto end;
 	}
 	parsejsecInfo(env, jsecInfo, &secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("putData"));
-		return;
+		goto end;
 	}
 	result = put_data((OPSP_CARDHANDLE)cardHandle, identifier, cardObject, cardObjectLength, cardInfo, &secInfo);
 	setjsecInfo(env, jsecInfo, secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("getData"));
-		return;
+		goto end;
 	}
 	if (result != OPSP_ERROR_SUCCESS) {
 		throwOPSPException(env, _T("putData"), result);
-		return;
+		goto end;
 	}
+end:
+	return;
 }
 
 /*
@@ -933,39 +966,46 @@ JNIEXPORT void JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_pinCh
 	DWORD kek_key_length = 16;
 	OPSP_SECURITY_INFO secInfo;
 	OPSP_CARD_INFO cardInfo;
+	if (jcardInfo == NULL || jsecInfo == NULL || jnewPIN == NULL || jkekKey == NULL) {
+		throwOPSPException(env, _T("pinChange"), OPSP_ERROR_OBJECT_NULL);
+		goto end;
+	}
+
 	parsejcardInfo(env, jcardInfo, &cardInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("pinChange"));
-		return;
+		goto end;
 	}
 	parsejsecInfo(env, jsecInfo, &secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("pinChange"));
-		return;
+		goto end;
 	}
-		parsejbyteArray(env, jkekKey, kek_key, &kek_key_length);
-		if ((*env)->ExceptionOccurred(env) != NULL) {
-			throwException(env, _T("pinChange"));
-			return;
-		}
+	parsejbyteArray(env, jkekKey, kek_key, &kek_key_length);
+	if ((*env)->ExceptionOccurred(env) != NULL) {
+		throwException(env, _T("pinChange"));
+		goto end;
+	}
 
-		parsejbyteArray(env, jnewPIN, newPIN, &newPINLength);
-		if ((*env)->ExceptionOccurred(env) != NULL) {
-			throwException(env, _T("pinChange"));
-			return;
-		}
+	parsejbyteArray(env, jnewPIN, newPIN, &newPINLength);
+	if ((*env)->ExceptionOccurred(env) != NULL) {
+		throwException(env, _T("pinChange"));
+		goto end;
+	}
 
 	result = pin_change((OPSP_CARDHANDLE)cardHandle, &secInfo, cardInfo, (BYTE)tryLimit,
 		newPIN, newPINLength, kek_key);
 	setjsecInfo(env, jsecInfo, secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("pinChange"));
-		return;
+		goto end;
 	}
 	if (result != OPSP_ERROR_SUCCESS) {
 		throwOPSPException(env, _T("pinChange"), result);
-		return;
+		goto end;
 	}
+end:
+	return;
 }
 
 /*
@@ -984,37 +1024,44 @@ JNIEXPORT void JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_put3d
 	DWORD kek_key_length = 16;
 	OPSP_SECURITY_INFO secInfo;
 	OPSP_CARD_INFO cardInfo;
+	if (jcardInfo == NULL || jsecInfo == NULL || j3desKey == NULL || jkekKey == NULL) {
+		throwOPSPException(env, _T("put3desKey"), OPSP_ERROR_OBJECT_NULL);
+		goto end;
+	}
+
 	parsejcardInfo(env, jcardInfo, &cardInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("put3desKey"));
-		return;
+		goto end;
 	}
 	parsejsecInfo(env, jsecInfo, &secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("put3desKey"));
-		return;
+		goto end;
 	}
 	parsejbyteArray(env, jkekKey, kek_key, &kek_key_length);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("put3desKey"));
-		return;
+		goto end;
 	}
 	parsejbyteArray(env, j3desKey, _3des_key, &_3des_key_length);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("put3desKey"));
-		return;
+		goto end;
 	}
 	result = put_3des_key((OPSP_CARDHANDLE)cardHandle, &secInfo, cardInfo, (BYTE)keySetVersion,
 		(BYTE)keyIndex, (BYTE)newKeySetVersion, _3des_key, kek_key);
 	setjsecInfo(env, jsecInfo, secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("put3desKey"));
-		return;
+		goto end;
 	}
 	if (result != OPSP_ERROR_SUCCESS) {
 		throwOPSPException(env, _T("put3desKey"), result);
-		return;
+		goto end;
 	}
+end:
+	return;
 }
 
 /*
@@ -1031,15 +1078,20 @@ JNIEXPORT void JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_putRs
 	OPSP_CARD_INFO cardInfo;
 	const char *passPhrase;
 	OPSP_CSTRING PEMKeyFileName;
+	if (jcardInfo == NULL || jsecInfo == NULL) {
+		throwOPSPException(env, _T("putRsaKey"), OPSP_ERROR_OBJECT_NULL);
+		goto end;
+	}
+
 	parsejcardInfo(env, jcardInfo, &cardInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("putRsaKey"));
-		return;
+		goto end;
 	}
 	parsejsecInfo(env, jsecInfo, &secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("putRsaKey"));
-		return;
+		goto end;
 	}
 	if (jpassPhrase == NULL) {
 		passPhrase = NULL;
@@ -1048,7 +1100,7 @@ JNIEXPORT void JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_putRs
 		passPhrase = (*env)->GetStringUTFChars(env, jpassPhrase, 0);
 		if ((*env)->ExceptionOccurred(env) != NULL) {
 			throwException(env, _T("putRsaKey"));
-			return;
+			goto end;
 		}
 	}
 	if (jPEMKeyFileName == NULL) {
@@ -1062,7 +1114,7 @@ JNIEXPORT void JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_putRs
 #endif
 		if ((*env)->ExceptionOccurred(env) != NULL) {
 			throwException(env, _T("putRsaKey"));
-			return;
+			goto end;
 		}
 	}
 
@@ -1071,7 +1123,7 @@ JNIEXPORT void JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_putRs
 	setjsecInfo(env, jsecInfo, secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("putRsaKey"));
-		return;
+		goto end;
 	}
 	if (PEMKeyFileName != NULL) {
 #ifdef _UNICODE
@@ -1086,8 +1138,10 @@ JNIEXPORT void JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_putRs
 
 	if (result != OPSP_ERROR_SUCCESS) {
 		throwOPSPException(env, _T("putRsaKey"), result);
-		return;
+		goto end;
 	}
+end:
+	return;
 }
 
 /*
@@ -1106,50 +1160,57 @@ JNIEXPORT void JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_putSe
 	DWORD dummy=16;
 	OPSP_SECURITY_INFO secInfo;
 	OPSP_CARD_INFO cardInfo;
+	if (jcardInfo == NULL || jsecInfo == NULL || jnewEncKey == NULL || jnewKekKey == NULL || jnewMacKey == NULL || jkekKey == NULL) {
+		throwOPSPException(env, _T("putSecureChannelKeys"), OPSP_ERROR_OBJECT_NULL);
+		goto end;
+	}
+
 	parsejcardInfo(env, jcardInfo, &cardInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("putSecureChannelKeys"));
-		return;
+		goto end;
 	}
 	parsejsecInfo(env, jsecInfo, &secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("putSecureChannelKeys"));
-		return;
+		goto end;
 	}
 	parsejbyteArray(env, jnewEncKey, new_enc_key, &dummy);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("putSecureChannelKeys"));
-		return;
+		goto end;
 	}
 	dummy = 16;
 	parsejbyteArray(env, jnewMacKey, new_mac_key, &dummy);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("putSecureChannelKeys"));
-		return;
+		goto end;
 	}
 	dummy = 16;
 	parsejbyteArray(env, jnewKekKey, new_kek_key, &dummy);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("putSecureChannelKeys"));
-		return;
+		goto end;
 	}
 	dummy = 16;
 	parsejbyteArray(env, jkekKey, kek_key, &dummy);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("putSecureChannelKeys"));
-		return;
+		goto end;
 	}
 	result = put_secure_channel_keys((OPSP_CARDHANDLE)cardHandle, &secInfo, cardInfo, (BYTE)keySetVersion,
 		(BYTE)newKeySetVersion, new_enc_key, new_mac_key, new_kek_key, kek_key);
 	setjsecInfo(env, jsecInfo, secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("putSecureChannelKeys"));
-		return;
+		goto end;
 	}
 	if (result != OPSP_ERROR_SUCCESS) {
 		throwOPSPException(env, _T("putSecureChannelKeys"), result);
-		return;
+		goto end;
 	}
+end:
+	return;
 }
 
 /*
@@ -1164,26 +1225,33 @@ JNIEXPORT void JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_delet
 	LONG result;
 	OPSP_SECURITY_INFO secInfo;
 	OPSP_CARD_INFO cardInfo;
+	if (jcardInfo == NULL || jsecInfo == NULL ) {
+		throwOPSPException(env, _T("deleteKey"), OPSP_ERROR_OBJECT_NULL);
+		goto end;
+	}
+
 	parsejcardInfo(env, jcardInfo, &cardInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("deleteKey"));
-		return;
+		goto end;
 	}
 	parsejsecInfo(env, jsecInfo, &secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("deleteKey"));
-		return;
+		goto end;
 	}
 	result = delete_key((OPSP_CARDHANDLE)cardHandle, &secInfo, cardInfo, (BYTE)keySetVersion, (BYTE)keyIndex);
 	setjsecInfo(env, jsecInfo, secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("deleteKey"));
-		return;
+		goto end;
 	}
 	if (result != OPSP_ERROR_SUCCESS) {
 		throwOPSPException(env, _T("deleteKey"), result);
-		return;
+		goto end;
 	}
+end:
+	return;
 }
 
 /*
@@ -1202,41 +1270,46 @@ JNIEXPORT jobjectArray JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapp
 	OPSP_KEY_INFORMATION keyInformation[50];
 	DWORD i,keyInformationLength=50;
 	jobjectArray jkeyInformationArray = NULL;
+	if (jcardInfo == NULL || jsecInfo == NULL ) {
+		throwOPSPException(env, _T("getKeyInformationTemplates"), OPSP_ERROR_OBJECT_NULL);
+		goto end;
+	}
+
 	parsejcardInfo(env, jcardInfo, &cardInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("getKeyInformationTemplates"));
-		return NULL;
+		goto end;
 	}
 	parsejsecInfo(env, jsecInfo, &secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("getKeyInformationTemplates"));
-		return NULL;
+		goto end;
 	}
 	result = get_key_information_templates((OPSP_CARDHANDLE)cardHandle, &secInfo, cardInfo,
 		(BYTE)keyInformationTemplate, keyInformation, &keyInformationLength);
 	setjsecInfo(env, jsecInfo, secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("getKeyInformationTemplates"));
-		return NULL;
+		goto end;
 	}
 	if ((result != OPSP_ERROR_SUCCESS) &&  (result != OPSP_ERROR_MORE_KEY_INFORMATION_TEMPLATES)) {
 		throwOPSPException(env, _T("getKeyInformationTemplates"), result);
-		return NULL;
+		goto end;
 	}
 	OPSPKeyInformationClass = (*env)->FindClass(env, "org/dyndns/widerstand/OpenPlatform/OPSPKeyInformation");
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("getKeyInformationTemplates"));
-		return NULL;
+		goto end;
 	}
 	jkeyInformationArray = (*env)->NewObjectArray(env, (jsize)keyInformationLength, OPSPKeyInformationClass, NULL);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("getKeyInformationTemplates"));
-		return NULL;
+		goto end;
 	}
 	constructorID = (*env)->GetMethodID(env, OPSPKeyInformationClass, "<init>", "(BBBB)V");
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("getKeyInformationTemplates"));
-		return NULL;
+		goto end;
 	}
 	for (i=0; i<keyInformationLength; i++) {
 		OPSPKeyInformationInstance = (*env)->NewObject(env, OPSPKeyInformationClass, constructorID,
@@ -1244,18 +1317,19 @@ JNIEXPORT jobjectArray JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapp
 			keyInformation[i].keyType, keyInformation[i].keyLength);
 		if ((*env)->ExceptionOccurred(env) != NULL) {
 			throwException(env, _T("getKeyInformationTemplates"));
-			return NULL;
+			goto end;
 		}
 		(*env)->SetObjectArrayElement(env, jkeyInformationArray, (jsize)i, OPSPKeyInformationInstance);
 		if ((*env)->ExceptionOccurred(env) != NULL) {
 			throwException(env, _T("getKeyInformationTemplates"));
-			return NULL;
+			goto end;
 		}
 	}
 	if (result == OPSP_ERROR_MORE_KEY_INFORMATION_TEMPLATES) {
 		throwOPSPException(env, _T("getKeyInformationTemplates"), result);
-		return jkeyInformationArray;
+		goto end;
 	}
+end:
 	return jkeyInformationArray;
 }
 
@@ -1271,13 +1345,17 @@ JNIEXPORT jobjectArray JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapp
 	jobject OPSPReceiptDataInstance;
 	OPSP_SECURITY_INFO secInfo;
 	OPSP_CARD_INFO cardInfo;
-	OPSP_AID *AIDs;
+	OPSP_AID *AIDs = NULL;
 	DWORD AIDsLength;
-	OPSP_RECEIPT_DATA **receiptData;
+	OPSP_RECEIPT_DATA **receiptData = NULL;
 	DWORD receiptDataLength;
 	DWORD i;
 	jbyteArray jAID;
 	jobjectArray jreceiptDataArray = NULL;
+	if (jcardInfo == NULL || jsecInfo == NULL || jAIDs == NULL) {
+		throwOPSPException(env, _T("deleteApplet"), OPSP_ERROR_OBJECT_NULL);
+		goto end;
+	}
 
 // parse AIDs
 	AIDsLength = (*env)->GetArrayLength(env, jAIDs);
@@ -1286,15 +1364,13 @@ JNIEXPORT jobjectArray JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapp
 		jAID = (jbyteArray)(*env)->GetObjectArrayElement(env, jAIDs, i);
 		if ((*env)->ExceptionOccurred(env) != NULL) {
 			throwException(env, _T("deleteApplet"));
-			free(AIDs);
-			return NULL;
+			goto end;
 		}
 		AIDs[i].AIDLength = 16;
 		parsejbyteArray(env, jAID, AIDs[i].AID, (PDWORD)&(AIDs[i].AIDLength));
 		if ((*env)->ExceptionOccurred(env) != NULL) {
 			throwException(env, _T("deleteApplet"));
-			free(AIDs);
-			return NULL;
+			goto end;
 		}
 	}
 
@@ -1305,67 +1381,54 @@ JNIEXPORT jobjectArray JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapp
 	parsejcardInfo(env, jcardInfo, &cardInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("deleteApplet"));
-		free(AIDs);
-		free(*receiptData);
-		free(receiptData);
-		return NULL;
+		goto end;
 	}
 	parsejsecInfo(env, jsecInfo, &secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("deleteApplet"));
-		free(AIDs);
-		free(*receiptData);
-		free(receiptData);
-		return NULL;
+		goto end;
 	}
 	result = delete_applet((OPSP_CARDHANDLE)cardHandle, &secInfo, cardInfo,
 				   AIDs, AIDsLength, receiptData, &receiptDataLength);
-	free(AIDs);
+
 	setjsecInfo(env, jsecInfo, secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
-		free(*receiptData);
-		free(receiptData);
 		throwException(env, _T("deleteApplet"));
-		return NULL;
+		goto end;
 	}
 	if (result != OPSP_ERROR_SUCCESS) {
-		free(*receiptData);
-		free(receiptData);
 		throwOPSPException(env, _T("deleteApplet"), result);
-		return NULL;
+		goto end;
 	}
 	OPSPReceiptDataClass = (*env)->FindClass(env, "org/dyndns/widerstand/OpenPlatform/OPSPReceiptData");
 	if ((*env)->ExceptionOccurred(env) != NULL) {
-		free(*receiptData);
-		free(receiptData);
 		throwException(env, _T("deleteApplet"));
-		return NULL;
+		goto end;
 	}
 	jreceiptDataArray = (*env)->NewObjectArray(env, (jsize)receiptDataLength, OPSPReceiptDataClass, NULL);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
-		free(*receiptData);
-		free(receiptData);
 		throwException(env, _T("deleteApplet"));
-		return NULL;
+		goto end;
 	}
 	for (i=0; i<receiptDataLength; i++) {
 		OPSPReceiptDataInstance = getOPSPReceiptData(env, (*receiptData)[i]);
 		if ((*env)->ExceptionOccurred(env) != NULL) {
-			free(*receiptData);
-			free(receiptData);
 			throwException(env, _T("deleteApplet"));
-			return NULL;
+			goto end;
 		}
 		(*env)->SetObjectArrayElement(env, jreceiptDataArray, i, OPSPReceiptDataInstance);
 		if ((*env)->ExceptionOccurred(env) != NULL) {
-			free(*receiptData);
-			free(receiptData);
 			throwException(env, _T("deleteApplet"));
-			return NULL;
+			goto end;
 		}
 	}
-	free(*receiptData);
-	free(receiptData);
+end:
+	if (AIDs)
+		free(AIDs);
+	if (*receiptData)
+		free(*receiptData);
+	if (receiptData)
+		free(receiptData);
 	return jreceiptDataArray;
 }
 
@@ -1431,38 +1494,43 @@ JNIEXPORT void JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_insta
 	DWORD loadTokenLength=128;
 	OPSP_SECURITY_INFO secInfo;
 	OPSP_CARD_INFO cardInfo;
+	if (jcardInfo == NULL || jsecInfo == NULL ) {
+		throwOPSPException(env, _T("installForLoad"), OPSP_ERROR_OBJECT_NULL);
+		goto end;
+	}
+
 	parsejcardInfo(env, jcardInfo, &cardInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForLoad"));
-		return;
+		goto end;
 	}
 	parsejsecInfo(env, jsecInfo, &secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForLoad"));
-		return;
+		goto end;
 	}
 	parsejbyteArray(env, jpackageAID, packageAID, &packageAIDLength);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForLoad"));
-		return;
+		goto end;
 	}
 
 	parsejbyteArray(env, jsecurityDomainAID, securityDomainAID, &securityDomainAIDLength);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForLoad"));
-		return;
+		goto end;
 	}
 
 	parsejbyteArray(env, jloadToken, loadToken, &loadTokenLength);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForLoad"));
-		return;
+		goto end;
 	}
 
 	parsejbyteArray(env, jloadFileDAP, loadFileDAP, &loadFileDAPLength);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForLoad"));
-		return;
+		goto end;
 	}
 
 	result = install_for_load((OPSP_CARDHANDLE)cardHandle, &secInfo, cardInfo,
@@ -1474,12 +1542,14 @@ JNIEXPORT void JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_insta
 	setjsecInfo(env, jsecInfo, secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForLoad"));
-		return;
+		goto end;
 	}
 	if (result != OPSP_ERROR_SUCCESS) {
 		throwOPSPException(env, _T("installForLoad"), result);
-		return;
+		goto end;
 	}
+end:
+	return;
 }
 
 /*
@@ -1501,6 +1571,7 @@ JNIEXPORT jbyteArray JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper
 	BYTE loadTokenSignatureData[256];
 	DWORD loadTokenSignatureDataLength=256;
 	jbyteArray jloadTokenSignatureData = NULL;
+
 	parsejbyteArray(env, jpackageAID, packageAID, &packageAIDLength);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("getLoadTokenSignatureData"));
@@ -1784,51 +1855,60 @@ JNIEXPORT jbyteArray JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper
   (JNIEnv *env, jclass cls, jobjectArray jdapBlock, jstring jCAPFileName)
 {
 	LONG result;
-	OPSP_DAP_BLOCK *dapBlock;
+	OPSP_DAP_BLOCK *dapBlock = NULL;
 	DWORD dapBlockLength;
-	OPSP_CSTRING CAPFileName;
+	OPSP_STRING CAPFileName = NULL;
 	BYTE hash[20];
 	jbyteArray jhash = NULL;
 	DWORD i;
 	jobject jdapBlockInstance;
+	if (jdapBlock == NULL) {
+		throwOPSPException(env, _T("calculateLoadFileDAP"), OPSP_ERROR_OBJECT_NULL);
+		goto end;
+	}
+
 	dapBlockLength = (DWORD)(*env)->GetArrayLength(env, jdapBlock);
 	dapBlock = (OPSP_DAP_BLOCK *)malloc(sizeof(OPSP_DAP_BLOCK)*dapBlockLength);
 	for (i=0; i<dapBlockLength; i++) {
 		jdapBlockInstance = (*env)->GetObjectArrayElement(env, jdapBlock, i);
 		if ((*env)->ExceptionOccurred(env) != NULL) {
-			free(dapBlock);
 			throwException(env, _T("calculateLoadFileDAP"));
-			return NULL;
+			goto end;
 		}
 		parsejOPSPDAPBlock(env, jdapBlockInstance, &(dapBlock[i]));
 		if ((*env)->ExceptionOccurred(env) != NULL) {
-			free(dapBlock);
 			throwException(env, _T("calculateLoadFileDAP"));
-			return NULL;
+			goto end;
 		}
 	}
+	if (jCAPFileName != NULL) {
 #ifdef _UNICODE
-	CAPFileName = (*env)->GetStringChars(env, jCAPFileName, 0);
+		CAPFileName = (OPSP_STRING)(*env)->GetStringChars(env, jCAPFileName, 0);
 #else
-	CAPFileName = (*env)->GetStringUTFChars(env, jCAPFileName, 0);
+		CAPFileName = (OPSP_STRING)(*env)->GetStringUTFChars(env, jCAPFileName, 0);
 #endif
-	if ((*env)->ExceptionOccurred(env) != NULL) {
-		throwException(env, _T("calculateLoadFileDAP"));
-		return NULL;
+		if ((*env)->ExceptionOccurred(env) != NULL) {
+			throwException(env, _T("calculateLoadFileDAP"));
+			goto end;
+		}
 	}
 	result = calculate_load_file_DAP(dapBlock, dapBlockLength,
 							 (OPSP_STRING)CAPFileName, hash);
-	free(dapBlock);
+	if (jCAPFileName != NULL) {
 #ifdef _UNICODE
-	(*env)->ReleaseStringChars(env, jCAPFileName, CAPFileName);
+		(*env)->ReleaseStringChars(env, jCAPFileName, CAPFileName);
 #else
-	(*env)->ReleaseStringUTFChars(env, jCAPFileName, CAPFileName);
+		(*env)->ReleaseStringUTFChars(env, jCAPFileName, CAPFileName);
 #endif
-	if (result != OPSP_ERROR_SUCCESS) {
-		throwOPSPException(env, _T("calculateInstallToken"), result);
-		return NULL;
+		if (result != OPSP_ERROR_SUCCESS) {
+			throwOPSPException(env, _T("calculateInstallToken"), result);
+			return NULL;
+		}
 	}
 	jhash = getjbyteArray(env, hash, 20);
+end:
+	if (dapBlock)
+		free(dapBlock);
 	return jhash;
 }
 
@@ -1900,7 +1980,7 @@ JNIEXPORT jobject JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_lo
 	LONG result;
 	OPSP_DAP_BLOCK *dapBlock;
 	DWORD dapBlockLength;
-	OPSP_CSTRING CAPFileName;
+	OPSP_STRING CAPFileName = NULL;
 	DWORD i;
 	jobject jdapBlockInstance;
 	OPSP_RECEIPT_DATA receiptData;
@@ -1908,15 +1988,20 @@ JNIEXPORT jobject JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_lo
 	OPSP_CARD_INFO cardInfo;
 	jobject jreceiptData = NULL;
 	DWORD receiptDataAvailable;
+	if (jsecInfo == NULL || jcardInfo == NULL) {
+		throwOPSPException(env, _T("loadApplet"), OPSP_ERROR_OBJECT_NULL);
+		goto end;
+	}
+
 	parsejcardInfo(env, jcardInfo, &cardInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("loadApplet"));
-		return NULL;
+		goto end;
 	}
 	parsejsecInfo(env, jsecInfo, &secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("loadApplet"));
-		return NULL;
+		goto end;
 	}
 	if (jdapBlock != NULL) {
 		dapBlockLength = (DWORD)(*env)->GetArrayLength(env, jdapBlock);
@@ -1931,51 +2016,54 @@ JNIEXPORT jobject JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_lo
 		if ((*env)->ExceptionOccurred(env) != NULL) {
 			free(dapBlock);
 			throwException(env, _T("loadApplet"));
-			return NULL;
+			goto end;
 		}
 		parsejOPSPDAPBlock(env, jdapBlockInstance, &(dapBlock[i]));
 		if ((*env)->ExceptionOccurred(env) != NULL) {
-			free(dapBlock);
 			throwException(env, _T("loadApplet"));
-			return NULL;
+			goto end;
 		}
 	}
+	if (jCAPFileName != NULL) {
 #ifdef _UNICODE
-	CAPFileName = (*env)->GetStringChars(env, jCAPFileName, 0);
+		CAPFileName = (OPSP_STRING)(*env)->GetStringChars(env, jCAPFileName, 0);
 #else
-	CAPFileName = (*env)->GetStringUTFChars(env, jCAPFileName, 0);
+		CAPFileName = (OPSP_STRING)(*env)->GetStringUTFChars(env, jCAPFileName, 0);
 #endif
-	if ((*env)->ExceptionOccurred(env) != NULL) {
-		throwException(env, _T("loadApplet"));
-		return NULL;
+		if ((*env)->ExceptionOccurred(env) != NULL) {
+			throwException(env, _T("loadApplet"));
+			goto end;
+		}
 	}
 	result = load_applet((OPSP_CARDHANDLE)cardHandle, &secInfo, cardInfo,
 		dapBlock, (DWORD)dapBlockLength, (OPSP_STRING)CAPFileName, &receiptData,
 		&receiptDataAvailable);
-	if (jdapBlock != NULL) {
-		free(dapBlock);
-	}
+	if (jCAPFileName != NULL) {
 #ifdef _UNICODE
-	(*env)->ReleaseStringChars(env, jCAPFileName, CAPFileName);
+		(*env)->ReleaseStringChars(env, jCAPFileName, CAPFileName);
 #else
-	(*env)->ReleaseStringUTFChars(env, jCAPFileName, CAPFileName);
+		(*env)->ReleaseStringUTFChars(env, jCAPFileName, CAPFileName);
 #endif
+	}
 	setjsecInfo(env, jsecInfo, secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("loadApplet"));
-		return NULL;
+		goto end;
 	}
 	if (result != OPSP_ERROR_SUCCESS) {
 		throwOPSPException(env, _T("loadApplet"), result);
-		return NULL;
+		goto end;
 	}
 	if (receiptDataAvailable) {
 		jreceiptData = getOPSPReceiptData(env, receiptData);
 		if ((*env)->ExceptionOccurred(env) != NULL) {
 			throwException(env, _T("loadApplet"));
-			return NULL;
+			goto end;
 		}
 	}
+end:
+	if (dapBlock)
+		free(dapBlock);
 	return jreceiptData;
 }
 
@@ -2006,44 +2094,49 @@ JNIEXPORT jobject JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_in
 	BYTE appletInstallParameters[32];
 	DWORD appletInstallParametersLength=32;
 	DWORD receiptDataAvailable;
+	if (jsecInfo == NULL || jcardInfo == NULL) {
+		throwOPSPException(env, _T("installForInstall"), OPSP_ERROR_OBJECT_NULL);
+		goto end;
+	}
+
 	parsejbyteArray(env, jpackageAID, packageAID, &packageAIDLength);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForInstall"));
-		return NULL;
+		goto end;
 	}
 
 	parsejbyteArray(env, jappletClassAID, appletClassAID, &appletClassAIDLength);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForInstall"));
-		return NULL;
+		goto end;
 	}
 
 	parsejbyteArray(env, jappletInstanceAID, appletInstanceAID, &appletInstanceAIDLength);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForInstall"));
-		return NULL;
+		goto end;
 	}
 
 	parsejbyteArray(env, jappletInstallParameters, appletInstallParameters, &appletInstallParametersLength);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForInstall"));
-		return NULL;
+		goto end;
 	}
 	parsejbyteArray(env, jinstallToken, installToken, &installTokenLength);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForInstall"));
-		return NULL;
+		goto end;
 	}
 
 	parsejcardInfo(env, jcardInfo, &cardInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForInstall"));
-		return NULL;
+		goto end;
 	}
 	parsejsecInfo(env, jsecInfo, &secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForInstall"));
-		return NULL;
+		goto end;
 	}
 	result = install_for_install((OPSP_CARDHANDLE)cardHandle, &secInfo, cardInfo,
 		packageAID, packageAIDLength, appletClassAID, appletClassAIDLength,
@@ -2054,19 +2147,20 @@ JNIEXPORT jobject JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_in
 	setjsecInfo(env, jsecInfo, secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForInstall"));
-		return NULL;
+		goto end;
 	}
 	if (result != OPSP_ERROR_SUCCESS) {
 		throwOPSPException(env, _T("installForInstall"), result);
-		return NULL;
+		goto end;
 	}
 	if (receiptDataAvailable) {
 		jreceiptData = getOPSPReceiptData(env, receiptData);
 		if ((*env)->ExceptionOccurred(env) != NULL) {
 			throwException(env, _T("installForInstall"));
-			return NULL;
+			goto end;
 		}
 	}
+end:
 	return jreceiptData;
 }
 
@@ -2097,44 +2191,49 @@ JNIEXPORT jobject JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_in
 	BYTE appletInstallParameters[32];
 	DWORD appletInstallParametersLength=32;
 	DWORD receiptDataAvailable;
+	if (jsecInfo == NULL || jcardInfo == NULL) {
+		throwOPSPException(env, _T("installForInstallAndMakeSelectable"), OPSP_ERROR_OBJECT_NULL);
+		goto end;
+	}
+
 	parsejbyteArray(env, jpackageAID, packageAID, &packageAIDLength);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForInstallAndMakeSelectable"));
-		return NULL;
+		goto end;
 	}
 
 	parsejbyteArray(env, jappletClassAID, appletClassAID, &appletClassAIDLength);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForInstallAndMakeSelectable"));
-		return NULL;
+		goto end;
 	}
 
 	parsejbyteArray(env, jappletInstanceAID, appletInstanceAID, &appletInstanceAIDLength);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForInstallAndMakeSelectable"));
-		return NULL;
+		goto end;
 	}
 
 	parsejbyteArray(env, jappletInstallParameters, appletInstallParameters, &appletInstallParametersLength);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForInstallAndMakeSelectable"));
-		return NULL;
+		goto end;
 	}
 	parsejbyteArray(env, jinstallToken, installToken, &installTokenLength);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForInstallAndMakeSelectable"));
-		return NULL;
+		goto end;
 	}
 
 	parsejcardInfo(env, jcardInfo, &cardInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForInstallAndMakeSelectable"));
-		return NULL;
+		goto end;
 	}
 	parsejsecInfo(env, jsecInfo, &secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForInstallAndMakeSelectable"));
-		return NULL;
+		goto end;
 	}
 	result = install_for_install_and_make_selectable((OPSP_CARDHANDLE)cardHandle, &secInfo, cardInfo,
 		packageAID, packageAIDLength, appletClassAID, appletClassAIDLength,
@@ -2145,19 +2244,20 @@ JNIEXPORT jobject JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_in
 	setjsecInfo(env, jsecInfo, secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForInstallAndMakeSelectable"));
-		return NULL;
+		goto end;
 	}
 	if (result != OPSP_ERROR_SUCCESS) {
 		throwOPSPException(env, _T("installForInstallAndMakeSelectable"), result);
-		return NULL;
+		goto end;
 	}
 	if (receiptDataAvailable) {
 		jreceiptData = getOPSPReceiptData(env, receiptData);
 		if ((*env)->ExceptionOccurred(env) != NULL) {
 			throwException(env, _T("installForInstallAndMakeSelectable"));
-			return NULL;
+			goto end;
 		}
 	}
+end:
 	return jreceiptData;
 }
 
@@ -2181,26 +2281,31 @@ JNIEXPORT jobject JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_in
 	BYTE appletInstanceAID[16];
 	DWORD appletInstanceAIDLength=16;
 	DWORD receiptDataAvailable;
+	if (jsecInfo == NULL || jcardInfo == NULL) {
+		throwOPSPException(env, _T("installForMakeSelectable"), OPSP_ERROR_OBJECT_NULL);
+		goto end;
+	}
+
 	parsejbyteArray(env, jappletInstanceAID, appletInstanceAID, &appletInstanceAIDLength);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForMakeSelectable"));
-		return NULL;
+		goto end;
 	}
 	parsejbyteArray(env, jinstallToken, installToken, &installTokenLength);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForMakeSelectable"));
-		return NULL;
+		goto end;
 	}
 
 	parsejcardInfo(env, jcardInfo, &cardInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForMakeSelectable"));
-		return NULL;
+		goto end;
 	}
 	parsejsecInfo(env, jsecInfo, &secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForMakeSelectable"));
-		return NULL;
+		goto end;
 	}
 	result = install_for_make_selectable((OPSP_CARDHANDLE)cardHandle, &secInfo,
 		cardInfo, appletInstanceAID,
@@ -2210,19 +2315,20 @@ JNIEXPORT jobject JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_in
 	setjsecInfo(env, jsecInfo, secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("installForMakeSelectable"));
-		return NULL;
+		goto end;
 	}
 	if (result != OPSP_ERROR_SUCCESS) {
 		throwOPSPException(env, _T("installForMakeSelectable"), result);
-		return NULL;
+		goto end;
 	}
 	if (receiptDataAvailable) {
 		jreceiptData = getOPSPReceiptData(env, receiptData);
 		if ((*env)->ExceptionOccurred(env) != NULL) {
 			throwException(env, _T("installForMakeSelectable"));
-			return NULL;
+			goto end;
 		}
 	}
+end:
 	return jreceiptData;
 }
 
@@ -2244,8 +2350,8 @@ JNIEXPORT void JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_putDe
 	DWORD dummy=16;
 	OPSP_SECURITY_INFO secInfo;
 	OPSP_CARD_INFO cardInfo;
-	OPSP_CSTRING PEMKeyFileName;
-	const char *passPhrase;
+	OPSP_CSTRING PEMKeyFileName = NULL;
+	char *passPhrase;
 	parsejcardInfo(env, jcardInfo, &cardInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("putDelegatedManagementKeys"));
@@ -2256,30 +2362,24 @@ JNIEXPORT void JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_putDe
 		throwException(env, _T("putDelegatedManagementKeys"));
 		return;
 	}
-	if (jPEMKeyFileName == NULL) {
-		PEMKeyFileName = NULL;
-	}
-	else {
+	if (jPEMKeyFileName != NULL) {
 #ifdef _UNICODE
 	PEMKeyFileName = (OPSP_STRING)(*env)->GetStringChars(env, jPEMKeyFileName, 0);
 #else
-	PEMKeyFileName = (*env)->GetStringUTFChars(env, jPEMKeyFileName, 0);
+	PEMKeyFileName = (OPSP_STRING)(*env)->GetStringUTFChars(env, jPEMKeyFileName, 0);
 #endif
 		if ((*env)->ExceptionOccurred(env) != NULL) {
 			throwException(env, _T("putDelegatedManagementKeys"));
 			return;
 		}
 	}
-	if (jpassPhrase == NULL) {
-		passPhrase = NULL;
-	}
-	else {
-		passPhrase = (*env)->GetStringUTFChars(env, jpassPhrase, 0);
+	if (jpassPhrase != NULL) {
+		passPhrase = (char *)(*env)->GetStringUTFChars(env, jpassPhrase, 0);
 		if ((*env)->ExceptionOccurred(env) != NULL) {
 			throwException(env, _T("putDelegatedManagementKeys"));
 			return;
 		}
-}
+	}
 
 	parsejbyteArray(env, jreceiptGenerationKey, receipt_generation_key, &dummy);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
@@ -2334,23 +2434,28 @@ JNIEXPORT jbyteArray JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper
 	OPSP_SECURITY_INFO secInfo;
 	OPSP_CARD_INFO cardInfo;
 	jbyteArray jrapdu = NULL;
+	if (jsecInfo == NULL || jcardInfo == NULL) {
+		throwOPSPException(env, _T("sendAPDU"), OPSP_ERROR_OBJECT_NULL);
+		goto end;
+	}
+
 	parsejcardInfo(env, jcardInfo, &cardInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("sendAPDU"));
-		return NULL;
+		goto end;
 	}
 	if (jsecInfo != NULL) {
 		parsejsecInfo(env, jsecInfo, &secInfo);
 		if ((*env)->ExceptionOccurred(env) != NULL) {
 			throwException(env, _T("sendAPDU"));
-			return NULL;
+			goto end;
 		}
 	}
-		parsejbyteArray(env, jcapdu, capdu, &capduLength);
-		if ((*env)->ExceptionOccurred(env) != NULL) {
-			throwException(env, _T("sendAPDU"));
-			return NULL;
-		}
+	parsejbyteArray(env, jcapdu, capdu, &capduLength);
+	if ((*env)->ExceptionOccurred(env) != NULL) {
+		throwException(env, _T("sendAPDU"));
+		goto end;
+	}
 
 	if (jsecInfo == NULL) {
 		result = send_APDU((OPSP_CARDHANDLE)cardHandle, capdu, capduLength, rapdu, &rapduLength,
@@ -2363,17 +2468,18 @@ JNIEXPORT jbyteArray JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper
 	setjsecInfo(env, jsecInfo, secInfo);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("sendAPDU"));
-		return NULL;
+		goto end;
 	}
 	if (result != OPSP_ERROR_SUCCESS) {
 		throwOPSPException(env, _T("sendAPDU"), result);
-		return NULL;
+		goto end;
 	}
 	jrapdu = getjbyteArray(env, rapdu, rapduLength);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("sendAPDU"));
-		return NULL;
+		goto end;
 	}
+end:
 	return jrapdu;
 }
 
@@ -2388,43 +2494,47 @@ JNIEXPORT jobject JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_ca
 	LONG result;
 	BYTE securityDomainAID[16];
 	DWORD securityDomainAIDLength = 16;
-	OPSP_CSTRING CAPFileName;
+	OPSP_STRING CAPFileName = NULL;
 	OPSP_DAP_BLOCK dapBlock;
 	BYTE DAP_verification_key[16];
 	DWORD DAP_verification_key_length = 16;
 	jobject OPSPDAPBlockInstance = NULL;
-		parsejbyteArray(env, jsecurityDomainAID, securityDomainAID,
-			&securityDomainAIDLength);
-		if ((*env)->ExceptionOccurred(env) != NULL) {
-			throwException(env, _T("calculate3desDAP"));
-			return NULL;
-		}
-		parsejbyteArray(env, jDAPVerificationKey, DAP_verification_key,
-			&DAP_verification_key_length);
-		if ((*env)->ExceptionOccurred(env) != NULL) {
-			throwException(env, _T("calculate3desDAP"));
-			return NULL;
-		}
-
-#ifdef _UNICODE
-	CAPFileName = (OPSP_STRING)(*env)->GetStringChars(env, jCAPFileName, 0);
-#else
-	CAPFileName = (*env)->GetStringUTFChars(env, jCAPFileName, 0);
-#endif
+	parsejbyteArray(env, jsecurityDomainAID, securityDomainAID,
+		&securityDomainAIDLength);
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, _T("calculate3desDAP"));
 		return NULL;
 	}
+	parsejbyteArray(env, jDAPVerificationKey, DAP_verification_key,
+		&DAP_verification_key_length);
+	if ((*env)->ExceptionOccurred(env) != NULL) {
+		throwException(env, _T("calculate3desDAP"));
+		return NULL;
+	}
+
+	if (jCAPFileName != NULL) {
+#ifdef _UNICODE
+		CAPFileName = (OPSP_STRING)(*env)->GetStringChars(env, jCAPFileName, 0);
+#else
+		CAPFileName = (OPSP_STRING)(*env)->GetStringUTFChars(env, jCAPFileName, 0);
+#endif
+		if ((*env)->ExceptionOccurred(env) != NULL) {
+			throwException(env, _T("calculate3desDAP"));
+			return NULL;
+		}
+	}
 	result = calculate_3des_DAP(securityDomainAID, securityDomainAIDLength, (OPSP_STRING)CAPFileName,
 		DAP_verification_key, &dapBlock);
+	if (jCAPFileName != NULL) {
 #ifdef _UNICODE
-	(*env)->ReleaseStringChars(env, jCAPFileName, 0);
+		(*env)->ReleaseStringChars(env, jCAPFileName, 0);
 #else
-	(*env)->ReleaseStringUTFChars(env, jCAPFileName, 0);
+		(*env)->ReleaseStringUTFChars(env, jCAPFileName, 0);
 #endif
-	if (result != OPSP_ERROR_SUCCESS) {
-		throwOPSPException(env, _T("calculate3desDAP"), result);
-		return NULL;
+		if (result != OPSP_ERROR_SUCCESS) {
+			throwOPSPException(env, _T("calculate3desDAP"), result);
+			return NULL;
+		}
 	}
 	OPSPDAPBlockInstance = getOPSPDAPBlock(env, dapBlock);
 	if ((*env)->ExceptionOccurred(env) != NULL) {

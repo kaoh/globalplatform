@@ -47,6 +47,7 @@ public class DAPManagementJPanel extends javax.swing.JPanel {
     public void refresh() {
        ((DAPJPanel)jPanelDAP).refresh();
        ((TokenJPanel)jPanelToken).refresh();
+       ((ValidateDAPJPanel)jPanelValidateReceiptDAP).refresh();
     }
 
     

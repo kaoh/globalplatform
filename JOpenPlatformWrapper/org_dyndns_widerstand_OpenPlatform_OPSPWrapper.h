@@ -89,14 +89,6 @@ JNIEXPORT jstring JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_st
 
 /*
  * Class:     org_dyndns_widerstand_OpenPlatform_OPSPWrapper
- * Method:    getReaderCapabilities
- * Signature: (JJ)[B
- */
-JNIEXPORT jbyteArray JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_getReaderCapabilities
-  (JNIEnv *, jclass, jlong, jlong);
-
-/*
- * Class:     org_dyndns_widerstand_OpenPlatform_OPSPWrapper
  * Method:    getCardStatus
  * Signature: (J)Lorg/dyndns/widerstand/OpenPlatform/OPSPCardConnectionInfo;
  */
