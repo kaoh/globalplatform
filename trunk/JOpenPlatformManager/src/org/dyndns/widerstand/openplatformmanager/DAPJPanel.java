@@ -54,6 +54,8 @@ public class DAPJPanel extends javax.swing.JPanel {
         jLabelCAPFile = new javax.swing.JLabel();
         jButtonCAPFile = new javax.swing.JButton();
         jTextFieldCAPFile = new javax.swing.JTextField();
+        jLabelsecurityDomainAIDAlternative = new javax.swing.JLabel();
+        jTextFieldsecurityDomainAID = new javax.swing.JTextField();
 
         setLayout(new java.awt.BorderLayout());
 
@@ -179,7 +181,7 @@ public class DAPJPanel extends javax.swing.JPanel {
         jPanel3.setBorder(new javax.swing.border.CompoundBorder(new javax.swing.border.TitledBorder("Load File Data Block DAP Parameters"), new javax.swing.border.EmptyBorder(new java.awt.Insets(5, 5, 5, 5))));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridy = 1;
         gridBagConstraints.gridwidth = 2;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
@@ -189,7 +191,7 @@ public class DAPJPanel extends javax.swing.JPanel {
         jLabelsecurityDomainAID.setText("Security Domain AID");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridy = 1;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanel3.add(jLabelsecurityDomainAID, gridBagConstraints);
@@ -225,6 +227,24 @@ public class DAPJPanel extends javax.swing.JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanel3.add(jTextFieldCAPFile, gridBagConstraints);
 
+        jLabelsecurityDomainAIDAlternative.setText("Security Domain AID");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel3.add(jLabelsecurityDomainAIDAlternative, gridBagConstraints);
+
+        jTextFieldsecurityDomainAID.setColumns(20);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel3.add(jTextFieldsecurityDomainAID, gridBagConstraints);
+
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
@@ -240,7 +260,18 @@ public class DAPJPanel extends javax.swing.JPanel {
     
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
         swingUtil.resetJComponentColor();
-        byte[] securityDomainAID = OPSPUtil.bytesFromHexString((String)jComboBoxsecurityDomainAID.getSelectedItem());
+        byte[] securityDomainAID;
+        if (jTextFieldsecurityDomainAID.getText().length() > 0) {
+            try {
+                securityDomainAID = OPSPUtil.bytesFromHexString(jTextFieldsecurityDomainAID.getText());
+            } catch (NumberFormatException e) {
+                swingUtil.errorInJComponent(this, jTextFieldsecurityDomainAID,
+                        "Colored text field cannot be understood as AID", "Wrong Number Format");
+                return;
+            }
+        } else {
+            securityDomainAID = OPSPUtil.bytesFromHexString((String)jComboBoxsecurityDomainAID.getSelectedItem());
+        }
         String CAPFileName = jTextFieldCAPFile.getText();
         String PEMKeyFileName = jTextFieldRSAKey.getText();
         OPSPDAPBlock dapBlock;
@@ -281,7 +312,18 @@ public class DAPJPanel extends javax.swing.JPanel {
     
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         swingUtil.resetJComponentColor();
-        byte[] securityDomainAID = OPSPUtil.bytesFromHexString((String)jComboBoxsecurityDomainAID.getSelectedItem());
+        byte[] securityDomainAID;
+        if (jTextFieldsecurityDomainAID.getText().length() > 0) {
+            try {
+                securityDomainAID = OPSPUtil.bytesFromHexString(jTextFieldsecurityDomainAID.getText());
+            } catch (NumberFormatException e) {
+                swingUtil.errorInJComponent(this, jTextFieldsecurityDomainAID,
+                        "Colored text field cannot be understood as AID", "Wrong Number Format");
+                return;
+            }
+        } else {
+            securityDomainAID = OPSPUtil.bytesFromHexString((String)jComboBoxsecurityDomainAID.getSelectedItem());
+        }
         String CAPFileName = jTextFieldCAPFile.getText();
         byte DAPVerificationKey[] = null;
         try {
@@ -362,6 +404,7 @@ public class DAPJPanel extends javax.swing.JPanel {
     private javax.swing.JLabel jLabelDAPVerificationKey;
     private javax.swing.JLabel jLabelRSAKey;
     private javax.swing.JLabel jLabelsecurityDomainAID;
+    private javax.swing.JLabel jLabelsecurityDomainAIDAlternative;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
@@ -370,6 +413,7 @@ public class DAPJPanel extends javax.swing.JPanel {
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTextField jTextFieldCAPFile;
     private javax.swing.JTextField jTextFieldRSAKey;
+    private javax.swing.JTextField jTextFieldsecurityDomainAID;
     // End of variables declaration//GEN-END:variables
     
 }

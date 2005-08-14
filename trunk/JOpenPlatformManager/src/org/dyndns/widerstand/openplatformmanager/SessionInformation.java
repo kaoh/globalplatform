@@ -25,6 +25,7 @@ public class SessionInformation {
     public ArrayList<OPSPApplicationData> securityDomains = new ArrayList<OPSPApplicationData>(3);
     public ArrayList<OPSPApplicationData> applications = new ArrayList<OPSPApplicationData>(5);
     public byte[] kekKey;
+    public byte[] selectedApplication;
     
     /** Creates a new instance of SessionInformation */
     public SessionInformation() {

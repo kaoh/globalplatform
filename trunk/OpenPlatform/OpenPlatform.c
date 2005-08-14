@@ -2767,8 +2767,7 @@ static LONG calculate_rsa_signature(PBYTE message, DWORD messageLength, OPSP_STR
 	}
 	{ result = OPSP_ERROR_SUCCESS; goto end; }
 end:
-	result = EVP_MD_CTX_cleanup(&mdctx);
-	if (result != 1) {
+	if (EVP_MD_CTX_cleanup(&mdctx) != 1) {
 		{ result = OPSP_OPENSSL_ERROR; }
 	}
 	if (PEMKeyFile)
@@ -2991,8 +2990,7 @@ LONG calculate_load_file_DAP(OPSP_DAP_BLOCK *dapBlock, DWORD dapBlockLength, OPS
 	}
 	{ result = OPSP_ERROR_SUCCESS; goto end; }
 end:
-	result = EVP_MD_CTX_cleanup(&mdctx);
-	if (result != 1) {
+	if (EVP_MD_CTX_cleanup(&mdctx) != 1) {
 		{ result = OPSP_OPENSSL_ERROR; }
 	}
 	if (CAPFile)
@@ -3101,8 +3099,7 @@ LONG calculate_3des_DAP(PBYTE securityDomainAID, DWORD securityDomainAIDLength, 
 	dapBlock->DAPBlockLength = (BYTE)securityDomainAIDLength+8+4;
 	{ result = OPSP_ERROR_SUCCESS; goto end; }
 end:
-	result = EVP_CIPHER_CTX_cleanup(&ctx);
-	if (result != 1) {
+	if (EVP_CIPHER_CTX_cleanup(&ctx) != 1) {
 		{ result = OPSP_OPENSSL_ERROR; }
 	}
 	if (CAPFile)
@@ -3176,10 +3173,6 @@ LONG calculate_rsa_DAP(PBYTE securityDomainAID, DWORD securityDomainAIDLength, O
 	if (result != 1) {
 		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
-	result = EVP_MD_CTX_cleanup(&mdctx);
-	if (result != 1) {
-		{ result = OPSP_OPENSSL_ERROR; goto end; }
-	}
 
 	dapBlock->signatureLength = 128;
 	memcpy(dapBlock->securityDomainAID, securityDomainAID, securityDomainAIDLength);
@@ -3187,8 +3180,7 @@ LONG calculate_rsa_DAP(PBYTE securityDomainAID, DWORD securityDomainAIDLength, O
 	dapBlock->DAPBlockLength = (BYTE)securityDomainAIDLength+128+4;
 	{ result = OPSP_ERROR_SUCCESS; goto end; }
 end:
-	result = EVP_MD_CTX_cleanup(&mdctx);
-	if (result != 1) {
+	if (EVP_MD_CTX_cleanup(&mdctx) != 1) {
 		{ result = OPSP_OPENSSL_ERROR; }
 	}
 	if (PEMKeyFile)
@@ -3283,12 +3275,13 @@ LONG validate_install_receipt(DWORD confirmationCounter, BYTE cardUniqueData[10]
 	validationData[13+1+packageAIDLength] = (BYTE)appletInstanceAIDLength;
 	memcpy(validationData, appletInstanceAID, appletInstanceAIDLength);
 	result = validate_receipt(validationData, validationDataLength, receiptData.receipt, receipt_generation_key);
-	free(validationData);
 	if (result != OPSP_ERROR_SUCCESS) {
 		goto end;
 	}
 	{ result = OPSP_ERROR_SUCCESS; goto end; }
 end:
+	if (validationData)
+		free(validationData);
 	LOG_END(_T("validate_install_receipt"), result);
 	return result;
 }
@@ -3384,7 +3377,6 @@ static LONG calculate_MAC_des_3des(unsigned char _3des_key[16], unsigned char *m
 	memcpy(des_key, _3des_key+8, 8);
 	result = EVP_EncryptInit_ex(&ctx, EVP_des_cbc(), NULL, des_key, icv);
 	if (result != 1) {
-		EVP_CIPHER_CTX_cleanup(&ctx);
 		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	EVP_CIPHER_CTX_set_padding(&ctx, 0);
@@ -3392,14 +3384,12 @@ static LONG calculate_MAC_des_3des(unsigned char _3des_key[16], unsigned char *m
 		result = EVP_EncryptUpdate(&ctx, mac,
 			&outl, message+i*8, 8);
 		if (result != 1) {
-			EVP_CIPHER_CTX_cleanup(&ctx);
 			{ result = OPSP_OPENSSL_ERROR; goto end; }
 		}
 	}
 	result = EVP_EncryptFinal_ex(&ctx, mac,
 		&outl);
 	if (result != 1) {
-		EVP_CIPHER_CTX_cleanup(&ctx);
 		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	result = EVP_CIPHER_CTX_cleanup(&ctx);
@@ -3409,7 +3399,6 @@ static LONG calculate_MAC_des_3des(unsigned char _3des_key[16], unsigned char *m
 // 3DES CBC mode
 	result = EVP_EncryptInit_ex(&ctx, EVP_des_ede_cbc(), NULL, _3des_key, icv);
 	if (result != 1) {
-		EVP_CIPHER_CTX_cleanup(&ctx);
 		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	EVP_CIPHER_CTX_set_padding(&ctx, 0);
@@ -3417,28 +3406,24 @@ static LONG calculate_MAC_des_3des(unsigned char _3des_key[16], unsigned char *m
 		result = EVP_EncryptUpdate(&ctx, mac,
 			&outl, message+i*8, messageLength%8);
 		if (result != 1) {
-			EVP_CIPHER_CTX_cleanup(&ctx);
 			{ result = OPSP_OPENSSL_ERROR; goto end; }
 		}
 	}
 	result = EVP_EncryptUpdate(&ctx, mac,
 		&outl, padding, 8 - (messageLength%8));
 	if (result != 1) {
-		EVP_CIPHER_CTX_cleanup(&ctx);
 		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	result = EVP_EncryptFinal_ex(&ctx, mac,
 		&outl);
 	if (result != 1) {
-		EVP_CIPHER_CTX_cleanup(&ctx);
-		{ result = OPSP_OPENSSL_ERROR; goto end; }
-	}
-	result = EVP_CIPHER_CTX_cleanup(&ctx);
-	if (result != 1) {
 		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	{ result = OPSP_ERROR_SUCCESS; goto end; }
 end:
+	if (EVP_CIPHER_CTX_cleanup(&ctx) != 1) {
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
+	}
 	LOG_END(_T("calculate_MAC_des_3des"), result);
 	return result;
 }
@@ -3525,12 +3510,11 @@ static LONG calculate_enc_ecb(unsigned char key[16], unsigned char *message, int
 		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	*encryptionLength+=outl;
-	result = EVP_CIPHER_CTX_cleanup(&ctx);
-	if (result != 1) {
-		{ result = OPSP_OPENSSL_ERROR; goto end; }
-	}
 	{ result = OPSP_ERROR_SUCCESS; goto end; }
 end:
+	if (EVP_CIPHER_CTX_cleanup(&ctx) != 1) {
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
+	}
 	LOG_END(_T("calculate_enc_ecb"), result);
 	return result;
 }
@@ -3554,7 +3538,6 @@ static LONG calculate_MAC(unsigned char session_key[16], unsigned char *message,
 
 	result = EVP_EncryptInit_ex(&ctx, EVP_des_ede_cbc(), NULL, session_key, icv);
 	if (result != 1) {
-		EVP_CIPHER_CTX_cleanup(&ctx);
 		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	EVP_CIPHER_CTX_set_padding(&ctx, 0);
@@ -3562,7 +3545,6 @@ static LONG calculate_MAC(unsigned char session_key[16], unsigned char *message,
 		result = EVP_EncryptUpdate(&ctx, mac,
 			&outl, message+i*8, 8);
 		if (result != 1) {
-			EVP_CIPHER_CTX_cleanup(&ctx);
 			{ result = OPSP_OPENSSL_ERROR; goto end; }
 		}
 	}
@@ -3570,28 +3552,24 @@ static LONG calculate_MAC(unsigned char session_key[16], unsigned char *message,
 		result = EVP_EncryptUpdate(&ctx, mac,
 			&outl, message+i*8, messageLength%8);
 		if (result != 1) {
-			EVP_CIPHER_CTX_cleanup(&ctx);
 			{ result = OPSP_OPENSSL_ERROR; goto end; }
 		}
 	}
 	result = EVP_EncryptUpdate(&ctx, mac,
 		&outl, padding, 8 - (messageLength%8));
 	if (result != 1) {
-		EVP_CIPHER_CTX_cleanup(&ctx);
 		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	result = EVP_EncryptFinal_ex(&ctx, mac,
 		&outl);
 	if (result != 1) {
-		EVP_CIPHER_CTX_cleanup(&ctx);
-		{ result = OPSP_OPENSSL_ERROR; goto end; }
-	}
-	result = EVP_CIPHER_CTX_cleanup(&ctx);
-	if (result != 1) {
 		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	{ result = OPSP_ERROR_SUCCESS; goto end; }
 end:
+	if (EVP_CIPHER_CTX_cleanup(&ctx) != 1) {
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
+	}
 	LOG_END(_T("calculate_MAC"), result);
 	return result;
 }
@@ -3616,7 +3594,6 @@ static LONG calculate_enc_cbc(unsigned char session_key[16], unsigned char *mess
 
 	result = EVP_EncryptInit_ex(&ctx, EVP_des_ede_cbc(), NULL, session_key, icv);
 	if (result != 1) {
-		EVP_CIPHER_CTX_cleanup(&ctx);
 		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	EVP_CIPHER_CTX_set_padding(&ctx, 0);
@@ -3624,7 +3601,6 @@ static LONG calculate_enc_cbc(unsigned char session_key[16], unsigned char *mess
 		result = EVP_EncryptUpdate(&ctx, encryption+*encryptionLength,
 			&outl, message+i*8, 8);
 		if (result != 1) {
-			EVP_CIPHER_CTX_cleanup(&ctx);
 			{ result = OPSP_OPENSSL_ERROR; goto end; }
 		}
 		*encryptionLength+=outl;
@@ -3633,7 +3609,6 @@ static LONG calculate_enc_cbc(unsigned char session_key[16], unsigned char *mess
 		result = EVP_EncryptUpdate(&ctx, encryption+*encryptionLength,
 			&outl, message+i*8, messageLength%8);
 		if (result != 1) {
-			EVP_CIPHER_CTX_cleanup(&ctx);
 			{ result = OPSP_OPENSSL_ERROR; goto end; }
 		}
 		*encryptionLength+=outl;
@@ -3641,7 +3616,6 @@ static LONG calculate_enc_cbc(unsigned char session_key[16], unsigned char *mess
 		result = EVP_EncryptUpdate(&ctx, encryption+*encryptionLength,
 			&outl, padding, 8 - (messageLength%8));
 		if (result != 1) {
-			EVP_CIPHER_CTX_cleanup(&ctx);
 			{ result = OPSP_OPENSSL_ERROR; goto end; }
 		}
 		*encryptionLength+=outl;
@@ -3649,16 +3623,14 @@ static LONG calculate_enc_cbc(unsigned char session_key[16], unsigned char *mess
 	result = EVP_EncryptFinal_ex(&ctx, encryption+*encryptionLength,
 		&outl);
 	if (result != 1) {
-		EVP_CIPHER_CTX_cleanup(&ctx);
 		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	*encryptionLength+=outl;
-	result = EVP_CIPHER_CTX_cleanup(&ctx);
-	if (result != 1) {
-		{ result = OPSP_OPENSSL_ERROR; goto end; }
-	}
 	{ result = OPSP_ERROR_SUCCESS; goto end; }
 end:
+	if (EVP_CIPHER_CTX_cleanup(&ctx) != 1) {
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
+	}
 	LOG_END(_T("calculate_enc_cbc"), result);
 	return result;
 }
@@ -3900,13 +3872,6 @@ end:
 unsigned long get_last_OpenSSL_error_code(void) {
 	return ERR_get_error();
 }
-
-///**
-// * \return The last NSS error code.
-// */
-//unsigned long get_last_NSS_error_code(void) {
-//	return PR_GetError();
-//}
 
 
 /**

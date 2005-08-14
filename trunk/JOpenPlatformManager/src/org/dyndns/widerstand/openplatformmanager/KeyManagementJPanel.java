@@ -6,6 +6,9 @@
 
 package org.dyndns.widerstand.openplatformmanager;
 
+import java.util.Arrays;
+import org.dyndns.widerstand.OpenPlatform.OPSPApplet;
+
 /**
  *
  * @author  Widerstand
@@ -13,13 +16,24 @@ package org.dyndns.widerstand.openplatformmanager;
 public class KeyManagementJPanel extends javax.swing.JPanel {
     
     private MainJFrame parent;
+    private javax.swing.JPanel jPanel4;
     
     /** Creates new form KeyManagementJPanel */
     public KeyManagementJPanel(MainJFrame parent) {
         this.parent = parent;
         initComponents();
     }
-    
+
+    private void initConditionalComponents() {
+        jTabbedPane1.remove(jPanel4);
+        jPanel4 = new PINJPanel(parent);
+        jTabbedPane1.addTab("PIN", jPanel4);
+    }
+
+    private void removeConditionalComponents() {
+        jTabbedPane1.remove(jPanel4);
+    }
+
     /** This method is called from within the constructor to
      * initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is
@@ -30,7 +44,6 @@ public class KeyManagementJPanel extends javax.swing.JPanel {
         jPanel1 = new PutKeySetJPanel(parent);
         jPanel2 = new PutKeyJPanel(parent);
         jPanel3 = new DeleteKeyJPanel(parent);
-        jPanel4 = new PINJPanel(parent);
 
         setLayout(new java.awt.BorderLayout());
 
@@ -41,18 +54,24 @@ public class KeyManagementJPanel extends javax.swing.JPanel {
 
         jTabbedPane1.addTab("Delete Key", jPanel3);
 
-        jTabbedPane1.addTab("PIN", jPanel4);
-
         add(jTabbedPane1, java.awt.BorderLayout.CENTER);
 
     }//GEN-END:initComponents
     
-    
+    public void refresh() {
+        if (Arrays.equals(parent.session.selectedApplication, OPSPApplet.OPSP_CARD_MANAGER_AID)) {
+            initConditionalComponents();
+        }
+        else {
+            removeConditionalComponents();
+        }
+        ((DeleteKeyJPanel)jPanel3).refresh();
+    }
+   
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
-    private javax.swing.JPanel jPanel4;
     private javax.swing.JTabbedPane jTabbedPane1;
     // End of variables declaration//GEN-END:variables
     

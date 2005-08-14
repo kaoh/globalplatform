@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.10"
-	Name="Open Platform 2.0.1 Host Service with OpenSSL"
+	Name="OpenPlatform"
 	ProjectGUID="{1ECD7D44-4233-42CD-A4BB-EE2EB0BD12C7}"
 	Keyword="Win32Proj">
 	<Platforms>
@@ -143,10 +143,13 @@
 				RelativePath=".\debug.h">
 			</File>
 			<File
-				RelativePath=".\OpenPlatform.h">
+				RelativePath=".\OpenPlatform\OpenPlatform.h">
 			</File>
 			<File
 				RelativePath=".\stdafx.h">
+			</File>
+			<File
+				RelativePath=".\OpenPlatform\unicode.h">
 			</File>
 		</Filter>
 		<Filter

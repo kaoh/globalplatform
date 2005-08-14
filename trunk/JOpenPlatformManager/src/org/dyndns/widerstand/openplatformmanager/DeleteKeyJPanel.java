@@ -6,9 +6,10 @@
 
 package org.dyndns.widerstand.openplatformmanager;
 
+import java.awt.Dimension;
 import org.dyndns.widerstand.OpenPlatform.*;
-import java.util.*;
 import java.awt.GridBagConstraints;
+import java.util.Arrays;
 import javax.swing.*;
 
 /**
@@ -19,12 +20,62 @@ public class DeleteKeyJPanel extends javax.swing.JPanel {
     
     private MainJFrame parent;
     private SwingUtil swingUtil;
+    private JButton jButtonGetKeyInformationTemplates;
+    private JPanel jPanelAvailableKeys;
+    private JPanel jPanelKeyInformationTemplates;
     
     /** Creates new form DeleteKeyJPanel */
     public DeleteKeyJPanel(MainJFrame parent) {
         this.parent = parent;
         swingUtil = new SwingUtil();
         initComponents();
+    }
+    
+    private void initConditionalComponents() {
+        if (jPanelKeyInformationTemplates != null)
+            jPanel1.remove(jPanelKeyInformationTemplates);
+        java.awt.GridBagConstraints gridBagConstraints;
+        jButtonGetKeyInformationTemplates = new javax.swing.JButton();
+        jPanelKeyInformationTemplates = new javax.swing.JPanel();
+        jPanelAvailableKeys = new javax.swing.JPanel();
+
+        jButtonGetKeyInformationTemplates.setText("Get Key Information");
+        jButtonGetKeyInformationTemplates.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonGetKeyInformationTemplatesActionPerformed(evt);
+            }
+        });
+        
+        jPanelKeyInformationTemplates.setLayout(new java.awt.GridBagLayout());
+        
+        jPanelAvailableKeys.setLayout(new java.awt.GridLayout(0, 4));
+        jPanelAvailableKeys.setBorder(new javax.swing.border.CompoundBorder(new javax.swing.border.TitledBorder("Available Keys"), new javax.swing.border.EmptyBorder(new java.awt.Insets(5, 5, 5, 5))));
+        jPanelAvailableKeys.setMinimumSize(new java.awt.Dimension(600, 36));
+        jPanelAvailableKeys.setPreferredSize(new java.awt.Dimension(600, 36));
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelKeyInformationTemplates.add(jPanelAvailableKeys, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelKeyInformationTemplates.add(jButtonGetKeyInformationTemplates, gridBagConstraints);
+                
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanel1.add(jPanelKeyInformationTemplates, gridBagConstraints);
+    }
+    
+    private void removeConditionalComponents() {
+        jPanel1.remove(jPanelKeyInformationTemplates);
     }
     
     /** This method is called from within the constructor to
@@ -43,8 +94,6 @@ public class DeleteKeyJPanel extends javax.swing.JPanel {
         jLabelKeyIndex = new javax.swing.JLabel();
         jTextFieldKeyIndex = new javax.swing.JTextField();
         jButton1 = new javax.swing.JButton();
-        jButton2 = new javax.swing.JButton();
-        jPanel2 = new javax.swing.JPanel();
 
         setLayout(new java.awt.BorderLayout());
 
@@ -68,7 +117,7 @@ public class DeleteKeyJPanel extends javax.swing.JPanel {
         jLabelKeyIndex.setText("Key Index");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridy = 1;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanel7.add(jLabelKeyIndex, gridBagConstraints);
@@ -76,7 +125,7 @@ public class DeleteKeyJPanel extends javax.swing.JPanel {
         jTextFieldKeyIndex.setColumns(4);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridy = 1;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanel7.add(jTextFieldKeyIndex, gridBagConstraints);
 
@@ -100,153 +149,145 @@ public class DeleteKeyJPanel extends javax.swing.JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanel1.add(jButton1, gridBagConstraints);
 
-        jButton2.setText("Get Key Information");
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton2ActionPerformed(evt);
-            }
-        });
-
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 1;
-        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
-        jPanel1.add(jButton2, gridBagConstraints);
-
-        jPanel2.setLayout(new java.awt.GridLayout(0, 5));
-
-        jPanel2.setBorder(new javax.swing.border.CompoundBorder(new javax.swing.border.TitledBorder("Available Keys"), new javax.swing.border.EmptyBorder(new java.awt.Insets(5, 5, 5, 5))));
-        jPanel2.setMinimumSize(new java.awt.Dimension(600, 36));
-        jPanel2.setPreferredSize(new java.awt.Dimension(600, 36));
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
-        jPanel1.add(jPanel2, gridBagConstraints);
-
         jScrollPane1.setViewportView(jPanel1);
 
         add(jScrollPane1, java.awt.BorderLayout.CENTER);
 
     }//GEN-END:initComponents
     
-    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+    private void jButtonGetKeyInformationTemplatesActionPerformed(java.awt.event.ActionEvent evt) {
         refresh();
-    }//GEN-LAST:event_jButton2ActionPerformed
+    }
     
     public void refresh() {
-        byte keyInformationTemplate = 0;
-        OPSPKeyInformation keyInfos[] = null;
-        try {
-            Class parameterTypes[] = new Class[] {Long.TYPE, OPSPSecurityInfo.class,
-                    OPSPCardConnectionInfo.class, Byte.TYPE};
-                    Object parameters[] = new Object[] {parent.session.cardHandle,
-                            parent.session.secInfo, parent.session.cardInfo, keyInformationTemplate};
-                            
-                            keyInfos = (OPSPKeyInformation [])WaitForMethodJDialog.showDialog(parent,
-                                    "org.dyndns.widerstand.OpenPlatform.OPSPWrapper",
-                                    "getKeyInformationTemplates", null, parameterTypes, parameters);
-                            
-        } catch (OPSPException e) {
-            javax.swing.JOptionPane.showMessageDialog(this, e.getMessage(),
-                    "Open Platform Error", javax.swing.JOptionPane.ERROR_MESSAGE);
-            return;
-        } catch (Exception e) {
-            javax.swing.JOptionPane.showMessageDialog(this, e.getMessage(), "Generel Error", javax.swing.JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        jPanel2.removeAll();
-        GridBagConstraints gridBagConstraints;
-        JLabel jLabel1;
-        JPanel jPanel1;
-        JTextField jTextField1;
-        if (keyInfos != null) {
-            for (int h=0; h < keyInfos.length; h++) {
-                OPSPKeyInformation keyInfo = keyInfos[h];
-                jPanel1 = new JPanel();
-                jPanel1.setBorder(new javax.swing.border.CompoundBorder(new javax.swing.border.TitledBorder("Key"),
-                        new javax.swing.border.EmptyBorder(new java.awt.Insets(5, 5, 5, 5))));
-                jPanel1.setLayout(new java.awt.GridBagLayout());
-                jLabel1 = new JLabel("Key Set Version");
-                gridBagConstraints = new java.awt.GridBagConstraints();
-                gridBagConstraints.gridx = 0;
-                gridBagConstraints.gridy = 0;
-                gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-                gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
-                jPanel1.add(jLabel1, gridBagConstraints);
-                
-                jLabel1 = new JLabel("Key Index");
-                gridBagConstraints = new java.awt.GridBagConstraints();
-                gridBagConstraints.gridx = 0;
-                gridBagConstraints.gridy = 1;
-                gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-                gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
-                jPanel1.add(jLabel1, gridBagConstraints);
-                
-                jLabel1 = new JLabel("Key Type");
-                gridBagConstraints = new java.awt.GridBagConstraints();
-                gridBagConstraints.gridx = 0;
-                gridBagConstraints.gridy = 2;
-                gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-                gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
-                jPanel1.add(jLabel1, gridBagConstraints);
-                
-                jLabel1 = new JLabel("Key Length");
-                gridBagConstraints = new java.awt.GridBagConstraints();
-                gridBagConstraints.gridx = 0;
-                gridBagConstraints.gridy = 3;
-                gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-                gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
-                jPanel1.add(jLabel1, gridBagConstraints);
-                
-                jTextField1 = new JTextField(Byte.toString(keyInfo.keySetVersion));
-                jTextField1.setColumns(4);
-                jTextField1.setEnabled(false);
-                gridBagConstraints = new java.awt.GridBagConstraints();
-                gridBagConstraints.gridx = 1;
-                gridBagConstraints.gridy = 0;
-                gridBagConstraints.anchor = java.awt.GridBagConstraints.CENTER;
-                gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
-                jPanel1.add(jTextField1, gridBagConstraints);
-                
-                jTextField1 = new JTextField(Byte.toString(keyInfo.keyIndex));
-                jTextField1.setColumns(4);
-                jTextField1.setEnabled(false);
-                gridBagConstraints = new java.awt.GridBagConstraints();
-                gridBagConstraints.gridx = 1;
-                gridBagConstraints.gridy = 1;
-                gridBagConstraints.anchor = java.awt.GridBagConstraints.CENTER;
-                gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
-                jPanel1.add(jTextField1, gridBagConstraints);
-                
-                if (keyInfo.keyType == OPSPKeyInformation.OPSP_KEY_TYPE_3DES) {
-                    jTextField1 = new JTextField("3DES");
-                } else if (keyInfo.keyType == OPSPKeyInformation.OPSP_KEY_TYPE_RSA) {
-                    jTextField1 = new JTextField("RSA");
-                } else {
-                    jTextField1 = new JTextField(
-                            Integer.toString(((int)keyInfo.keyType) & 0x000000ff, 16).toUpperCase());
-                }
-                jTextField1.setEnabled(false);
-                gridBagConstraints = new java.awt.GridBagConstraints();
-                gridBagConstraints.gridx = 1;
-                gridBagConstraints.gridy = 2;
-                gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-                gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
-                jPanel1.add(jTextField1, gridBagConstraints);
-                
-                jTextField1 = new JTextField(Byte.toString(keyInfo.keyLength));
-                jTextField1.setColumns(4);
-                jTextField1.setEnabled(false);
-                gridBagConstraints = new java.awt.GridBagConstraints();
-                gridBagConstraints.gridx = 1;
-                gridBagConstraints.gridy = 3;
-                gridBagConstraints.anchor = java.awt.GridBagConstraints.CENTER;
-                gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
-                jPanel1.add(jTextField1, gridBagConstraints);
-                
-                jPanel2.add(jPanel1);
+        if (Arrays.equals(parent.session.selectedApplication, OPSPApplet.OPSP_CARD_MANAGER_AID)) {
+            initConditionalComponents();
+            byte keyInformationTemplate = 0;
+            OPSPKeyInformation keyInfos[] = null;
+            try {
+                Class parameterTypes[] = new Class[] {Long.TYPE, OPSPSecurityInfo.class,
+                        OPSPCardConnectionInfo.class, Byte.TYPE};
+                        Object parameters[] = new Object[] {parent.session.cardHandle,
+                                parent.session.secInfo, parent.session.cardInfo, keyInformationTemplate};
+                                
+                                keyInfos = (OPSPKeyInformation [])WaitForMethodJDialog.showDialog(parent,
+                                        "org.dyndns.widerstand.OpenPlatform.OPSPWrapper",
+                                        "getKeyInformationTemplates", null, parameterTypes, parameters);
+                                
+            } catch (OPSPException e) {
+                javax.swing.JOptionPane.showMessageDialog(this, e.getMessage(),
+                        "Open Platform Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+                return;
+            } catch (Exception e) {
+                javax.swing.JOptionPane.showMessageDialog(this, e.getMessage(), "Generel Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+                return;
             }
-            jPanel2.revalidate();
+            jPanelAvailableKeys.removeAll();
+            if (keyInfos.length > 0) {
+                jPanelAvailableKeys.setPreferredSize(null);
+                jPanelAvailableKeys.setMinimumSize(null);
+            } else {
+                Dimension dim = new Dimension(600, 36);
+                jPanelAvailableKeys.setPreferredSize(dim);
+                jPanelAvailableKeys.setMinimumSize(dim);
+            }
+            GridBagConstraints gridBagConstraints;
+            JLabel jLabel1;
+            JPanel jPanel1;
+            JTextField jTextField1;
+            if (keyInfos != null) {
+                for (int h=0; h < keyInfos.length; h++) {
+                    OPSPKeyInformation keyInfo = keyInfos[h];
+                    jPanel1 = new JPanel();
+                    jPanel1.setBorder(new javax.swing.border.CompoundBorder(new javax.swing.border.TitledBorder("Key"),
+                            new javax.swing.border.EmptyBorder(new java.awt.Insets(5, 5, 5, 5))));
+                    jPanel1.setLayout(new java.awt.GridBagLayout());
+                    jLabel1 = new JLabel("Key Set Version");
+                    gridBagConstraints = new java.awt.GridBagConstraints();
+                    gridBagConstraints.gridx = 0;
+                    gridBagConstraints.gridy = 0;
+                    gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+                    gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+                    jPanel1.add(jLabel1, gridBagConstraints);
+                    
+                    jLabel1 = new JLabel("Key Index");
+                    gridBagConstraints = new java.awt.GridBagConstraints();
+                    gridBagConstraints.gridx = 0;
+                    gridBagConstraints.gridy = 1;
+                    gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+                    gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+                    jPanel1.add(jLabel1, gridBagConstraints);
+                    
+                    jLabel1 = new JLabel("Key Type");
+                    gridBagConstraints = new java.awt.GridBagConstraints();
+                    gridBagConstraints.gridx = 0;
+                    gridBagConstraints.gridy = 2;
+                    gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+                    gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+                    jPanel1.add(jLabel1, gridBagConstraints);
+                    
+                    jLabel1 = new JLabel("Key Length");
+                    gridBagConstraints = new java.awt.GridBagConstraints();
+                    gridBagConstraints.gridx = 0;
+                    gridBagConstraints.gridy = 3;
+                    gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+                    gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+                    jPanel1.add(jLabel1, gridBagConstraints);
+                    
+                    jTextField1 = new JTextField(Byte.toString(keyInfo.keySetVersion));
+                    jTextField1.setColumns(4);
+                    jTextField1.setEnabled(false);
+                    gridBagConstraints = new java.awt.GridBagConstraints();
+                    gridBagConstraints.gridx = 1;
+                    gridBagConstraints.gridy = 0;
+                    gridBagConstraints.anchor = java.awt.GridBagConstraints.CENTER;
+                    gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+                    jPanel1.add(jTextField1, gridBagConstraints);
+                    
+                    jTextField1 = new JTextField(Byte.toString(keyInfo.keyIndex));
+                    jTextField1.setColumns(4);
+                    jTextField1.setEnabled(false);
+                    gridBagConstraints = new java.awt.GridBagConstraints();
+                    gridBagConstraints.gridx = 1;
+                    gridBagConstraints.gridy = 1;
+                    gridBagConstraints.anchor = java.awt.GridBagConstraints.CENTER;
+                    gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+                    jPanel1.add(jTextField1, gridBagConstraints);
+                    
+                    if (keyInfo.keyType == OPSPKeyInformation.OPSP_KEY_TYPE_3DES) {
+                        jTextField1 = new JTextField("3DES");
+                    } else if (keyInfo.keyType == OPSPKeyInformation.OPSP_KEY_TYPE_RSA) {
+                        jTextField1 = new JTextField("RSA");
+                    } else {
+                        jTextField1 = new JTextField(
+                                Integer.toString(((int)keyInfo.keyType) & 0x000000ff, 16).toUpperCase());
+                    }
+                    jTextField1.setEnabled(false);
+                    gridBagConstraints = new java.awt.GridBagConstraints();
+                    gridBagConstraints.gridx = 1;
+                    gridBagConstraints.gridy = 2;
+                    gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+                    gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+                    jPanel1.add(jTextField1, gridBagConstraints);
+                    
+                    jTextField1 = new JTextField(Byte.toString(keyInfo.keyLength));
+                    jTextField1.setColumns(4);
+                    jTextField1.setEnabled(false);
+                    gridBagConstraints = new java.awt.GridBagConstraints();
+                    gridBagConstraints.gridx = 1;
+                    gridBagConstraints.gridy = 3;
+                    gridBagConstraints.anchor = java.awt.GridBagConstraints.CENTER;
+                    gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+                    jPanel1.add(jTextField1, gridBagConstraints);
+                    Dimension d1 = jTextField1.getSize();
+                    Dimension d2 = jLabel1.getSize();
+                    jPanelAvailableKeys.add(jPanel1);
+                }
+                jPanelAvailableKeys.revalidate();
+            }
+        }
+        else {
+            removeConditionalComponents();
         }
     }
     
@@ -256,7 +297,7 @@ public class DeleteKeyJPanel extends javax.swing.JPanel {
         byte keySetVersion;
         try {
             dummy = Short.decode(jTextFieldKeySetVersion.getText());
-            if (dummy > 255 || dummy < 0) 
+            if (dummy > 255 || dummy < 0)
                 throw new NumberFormatException();
             keySetVersion = dummy.byteValue();
         } catch (NumberFormatException e) {
@@ -267,7 +308,7 @@ public class DeleteKeyJPanel extends javax.swing.JPanel {
         byte keyIndex;
         try {
             dummy = Short.decode(jTextFieldKeyIndex.getText());
-            if (dummy > 255 || dummy < 0) 
+            if (dummy > 255 || dummy < 0)
                 throw new NumberFormatException();
             keyIndex = dummy.byteValue();
         } catch (NumberFormatException e) {
@@ -303,11 +344,9 @@ public class DeleteKeyJPanel extends javax.swing.JPanel {
     
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
     private javax.swing.JLabel jLabelKeyIndex;
     private javax.swing.JLabel jLabelKeySetVersion;
     private javax.swing.JPanel jPanel1;
-    private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel7;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTextField jTextFieldKeyIndex;

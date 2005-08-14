@@ -49,7 +49,7 @@ public class ConnectJPanel extends javax.swing.JPanel {
         jPanel3 = new javax.swing.JPanel();
         jPanel8 = new javax.swing.JPanel();
         jLabelsecurityDomainAID = new javax.swing.JLabel();
-        jCheckBoxDefaultSelected = new javax.swing.JCheckBox();
+        jCheckBoxCardManagerSelected = new javax.swing.JCheckBox();
         jTextFieldsecurityDomainAID = new javax.swing.JTextField();
         jButtonENCKey = new javax.swing.JButton();
         jLabelENCKey = new javax.swing.JLabel();
@@ -145,11 +145,11 @@ public class ConnectJPanel extends javax.swing.JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanel8.add(jLabelsecurityDomainAID, gridBagConstraints);
 
-        jCheckBoxDefaultSelected.setSelected(true);
-        jCheckBoxDefaultSelected.setText("Authenticate to Default Selected");
-        jCheckBoxDefaultSelected.addActionListener(new java.awt.event.ActionListener() {
+        jCheckBoxCardManagerSelected.setSelected(true);
+        jCheckBoxCardManagerSelected.setText("Authenticate to Card Manager");
+        jCheckBoxCardManagerSelected.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jCheckBoxDefaultSelectedActionPerformed(evt);
+                jCheckBoxCardManagerSelectedActionPerformed(evt);
             }
         });
 
@@ -158,7 +158,7 @@ public class ConnectJPanel extends javax.swing.JPanel {
         gridBagConstraints.gridy = 1;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
-        jPanel8.add(jCheckBoxDefaultSelected, gridBagConstraints);
+        jPanel8.add(jCheckBoxCardManagerSelected, gridBagConstraints);
 
         jTextFieldsecurityDomainAID.setColumns(20);
         jTextFieldsecurityDomainAID.setEnabled(false);
@@ -434,13 +434,13 @@ public class ConnectJPanel extends javax.swing.JPanel {
 
     }//GEN-END:initComponents
     
-    private void jCheckBoxDefaultSelectedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxDefaultSelectedActionPerformed
-        if (jCheckBoxDefaultSelected.isSelected()) {
+    private void jCheckBoxCardManagerSelectedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxCardManagerSelectedActionPerformed
+        if (jCheckBoxCardManagerSelected.isSelected()) {
             jTextFieldsecurityDomainAID.setEnabled(false);
         } else {
             jTextFieldsecurityDomainAID.setEnabled(true);
         }
-    }//GEN-LAST:event_jCheckBoxDefaultSelectedActionPerformed
+    }//GEN-LAST:event_jCheckBoxCardManagerSelectedActionPerformed
     
     private void jButtonDisconnectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonDisconnectActionPerformed
         try {
@@ -560,7 +560,7 @@ public class ConnectJPanel extends javax.swing.JPanel {
         Short dummy;
         try {
             dummy = Short.decode(jTextFieldKeyIndex.getText());
-            if (dummy > 255 || dummy < 0) 
+            if (dummy > 255 || dummy < 0)
                 throw new NumberFormatException();
             keyIndex = dummy.byteValue();
         } catch (NumberFormatException e) {
@@ -571,7 +571,7 @@ public class ConnectJPanel extends javax.swing.JPanel {
         byte keySetVersion;
         try {
             dummy = Short.decode(jTextFieldKeySetVersion.getText());
-            if (dummy > 255 || dummy < 0) 
+            if (dummy > 255 || dummy < 0)
                 throw new NumberFormatException();
             keySetVersion = dummy.byteValue();
         } catch (NumberFormatException e) {
@@ -580,7 +580,7 @@ public class ConnectJPanel extends javax.swing.JPanel {
             return;
         }
         byte securityDomainAID[] = null;
-        if (!jCheckBoxDefaultSelected.isSelected()) {
+        if (!jCheckBoxCardManagerSelected.isSelected()) {
             try {
                 securityDomainAID = OPSPUtil.bytesFromHexString(jTextFieldsecurityDomainAID.getText());
             } catch (NumberFormatException e) {
@@ -596,10 +596,12 @@ public class ConnectJPanel extends javax.swing.JPanel {
             } finally {
                 parent.session.cardHandle = OPSPWrapper.cardConnect(parent.session.cardContext, reader, protocol);
                 parent.session.cardInfo = OPSPWrapper.getCardStatus(parent.session.cardHandle);
-                if (!jCheckBoxDefaultSelected.isSelected()) {
-                    OPSPWrapper.selectApplication(parent.session.cardHandle, parent.session.cardInfo, 
-                            securityDomainAID);
+                if (jCheckBoxCardManagerSelected.isSelected()) {
+                    securityDomainAID = OPSPApplet.OPSP_CARD_MANAGER_AID;
                 }
+                OPSPWrapper.selectApplication(parent.session.cardHandle, parent.session.cardInfo,
+                        securityDomainAID);
+                parent.session.selectedApplication = securityDomainAID;
                 parent.session.secInfo = OPSPWrapper.mutualAuthentication(parent.session.cardHandle, encKey, macKey,
                         keySetVersion, keyIndex, parent.session.cardInfo, securityLevel);
             }
@@ -634,7 +636,7 @@ public class ConnectJPanel extends javax.swing.JPanel {
     private javax.swing.JButton jButtonENCKey;
     private javax.swing.JButton jButtonKEKKey;
     private javax.swing.JButton jButtonMACKey;
-    private javax.swing.JCheckBox jCheckBoxDefaultSelected;
+    private javax.swing.JCheckBox jCheckBoxCardManagerSelected;
     private javax.swing.JCheckBox jCheckBoxENCKey;
     private javax.swing.JCheckBox jCheckBoxKEKKey;
     private javax.swing.JCheckBox jCheckBoxMACKey;
