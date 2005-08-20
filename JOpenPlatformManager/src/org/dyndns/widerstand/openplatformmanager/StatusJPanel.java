@@ -490,8 +490,11 @@ public class StatusJPanel extends javax.swing.JPanel {
         }
         if (applications != null) {
             for (OPSPApplicationData application : applications) {
-                if ((application.privileges & OPSPApplet.OPSP_APPLICATION_PRIVILEGE_SECURITY_DOMAIN) != 0)
-                    parent.session.applications.add(application);
+                if ((application.privileges & OPSPApplet.OPSP_APPLICATION_PRIVILEGE_SECURITY_DOMAIN) != 0
+                        || (application.privileges & OPSPApplet.OPSP_APPLICATION_PRIVILEGE_DELEGATED_MANAGEMENT) != 0
+                        || (application.privileges & OPSPApplet.OPSP_APPLICATION_PRIVILEGE_DAP_VERIFICATION) != 0
+                        || (application.privileges & OPSPApplet.OPSP_APPLICATION_PRIVILEGE_MANDATED_DAP_VERIFICATION) != 0)
+                    parent.session.securityDomains.add(application);
                 else
                     parent.session.applications.add(application);
             }

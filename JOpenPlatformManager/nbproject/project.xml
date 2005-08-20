@@ -2,9 +2,9 @@
 <project xmlns="http://www.netbeans.org/ns/project/1">
     <type xmlns="http://www.netbeans.org/ns/project/1">org.netbeans.modules.java.j2seproject</type>
     <configuration xmlns="http://www.netbeans.org/ns/project/1">
-        <data xmlns="http://www.netbeans.org/ns/j2se-project/2">
-            <name xmlns="http://www.netbeans.org/ns/j2se-project/1">OpenPlatformManager</name>
-            <minimum-ant-version xmlns="http://www.netbeans.org/ns/j2se-project/1">1.6</minimum-ant-version>
+        <data xmlns="http://www.netbeans.org/ns/j2se-project/1">
+            <name>OpenPlatformManager</name>
+            <minimum-ant-version>1.6</minimum-ant-version>
             <source-roots>
                 <root id="src.dir"/>
             </source-roots>

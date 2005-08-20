@@ -122,6 +122,11 @@ static LONG validate_receipt(PBYTE validationData, DWORD validationDataLength,
 static LONG calculate_MAC_des_3des(unsigned char _3des_key[16], unsigned char *message, int messageLength,
 						  unsigned char icv[8], unsigned char mac[8]);
 
+static LONG get_load_data(PBYTE packageAID, DWORD packageAIDLength, PBYTE securityDomainAID,
+								   DWORD securityDomainAIDLength, BYTE loadFileDAP[20],
+								   DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
+								   DWORD nonVolatileDataSpaceLimit, PBYTE loadData,
+								   PDWORD loadDataLength);
 /**
  * Reads a valid buffer containing a (delete, load, install) receipt and parses it in a OPSP_RECEIPT_DATA.
  * \param buf IN The buffer to parse.
@@ -156,17 +161,32 @@ static DWORD fillReceipt(PBYTE buf, OPSP_RECEIPT_DATA *receiptData) {
 static LONG readDAPBlock(PBYTE buf, PDWORD bufLength, OPSP_DAP_BLOCK dapBlock) {
 	DWORD j=0;
 	LOG_START(_T("readDAPBlock"));
-	if ((DWORD)dapBlock.DAPBlockLength+1 > *bufLength) {
+	if ((DWORD)dapBlock.DAPBlockLength+3 > *bufLength) {
 		return OPSP_ERROR_INSUFFICIENT_BUFFER;
 	}
 	buf[j++] = 0xE2; // Tag indicating a DAP block.
+	/* Dealing with BER length encoding - if greater than 127 coded on two bytes. */
+	if (dapBlock.DAPBlockLength <= 127) {
+		buf[j++] = dapBlock.DAPBlockLength;
+	}
+	else if (dapBlock.DAPBlockLength > 127) {
+		buf[j++] = 0x81;
+		buf[j++] = dapBlock.DAPBlockLength;
+	}
 	buf[j++] = dapBlock.DAPBlockLength;
 	buf[j++] = 0x4F; // Tag indicating a Security Domain AID.
 	buf[j++] = dapBlock.securityDomainAIDLength;
 	memcpy(buf+j, dapBlock.securityDomainAID, dapBlock.securityDomainAIDLength);
 	j+=dapBlock.securityDomainAIDLength;
 	buf[j++] = 0xC3; // The Tag indicating a signature
-	buf[j++] = dapBlock.signatureLength;
+	/* Dealing with BER length encoding - if greater than 127 coded on two bytes. */
+	if (dapBlock.signatureLength <= 127) {
+		buf[j++] = dapBlock.signatureLength;
+	}
+	else if (dapBlock.signatureLength > 127) {
+		buf[j++] = 0x81;
+		buf[j++] = dapBlock.signatureLength;
+	}
 	memcpy(buf+j, dapBlock.signature, dapBlock.signatureLength);
 	j+=dapBlock.signatureLength;
 	LOG_END(_T("readDAPBlock"), OPSP_ERROR_SUCCESS);
@@ -1344,11 +1364,12 @@ LONG put_delegated_management_keys(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INF
 	token_verification_rsa_exponent = key->pkey.rsa->e->d[0];
 	memcpy(token_verification_rsa_modulus, key->pkey.rsa->n->d, sizeof(unsigned long)*key->pkey.rsa->n->top);
 	EVP_PKEY_free(key);
-
+	/*
 	if (keySetVersion > 0x7f)
 		{ result = OPSP_ERROR_WRONG_KEY_VERSION; goto end; }
 	if (newKeySetVersion > 0x7f)
 		{ result = OPSP_ERROR_WRONG_KEY_VERSION; goto end; }
+	*/
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xD8;
 	sendBuffer[i++] = keySetVersion;
@@ -1917,7 +1938,7 @@ LONG load_applet(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_C
 		{ result = OPSP_ERROR_INVALID_FILENAME; goto end; }
 
 	for (i=0; i<dapBlockLength; i++) {
-		maxDAPBufSize = max(maxDAPBufSize, (DWORD)dapBlock[i].DAPBlockLength + 1);
+		maxDAPBufSize = max(maxDAPBufSize, (DWORD)dapBlock[i].DAPBlockLength + 3);
 	}
 	if (dapBlockLength > 0) {
 		dapBuf = (PBYTE)malloc(sizeof(BYTE)*maxDAPBufSize);
@@ -1927,6 +1948,10 @@ LONG load_applet(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_C
 		k = maxDAPBufSize;
 		result = readDAPBlock(dapBuf, &k, dapBlock[i]);
 		if (result != OPSP_ERROR_SUCCESS) {
+			goto end;
+		}
+		if (k > MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING) {
+			result = OPSP_ERROR_COMMAND_SECURE_MESSAGING_TOO_LARGE;
 			goto end;
 		}
 		if (j+k <= MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING) {
@@ -1941,10 +1966,10 @@ LONG load_applet(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_C
 			//sendBufferLength++;
 			//sendBuffer[sendBufferLength-1] = 0x00;
 #ifdef DEBUG
-	log_Log(_T("load_applet: Data to send: "));
-	for (i=0; i<sendBufferLength; i++) {
-		log_Log(_T(" 0x%02x"), sendBuffer[i]);
-	}
+			log_Log(_T("load_applet: Data to send: "));
+			for (i=0; i<sendBufferLength; i++) {
+				log_Log(_T(" 0x%02x"), sendBuffer[i]);
+			}
 	
 #endif
 			result = send_APDU(cardHandle, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength, cardInfo, secInfo);
@@ -1952,12 +1977,13 @@ LONG load_applet(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_C
 				goto end;
 			}
 #ifdef DEBUG
-	log_Log(_T("load_applet: Data: "));
-	for (i=0; i<recvBufferLength; i++) {
-		log_Log(_T(" 0x%02x"), recvBuffer[i]);
-	}
+			log_Log(_T("load_applet: Data: "));
+			for (i=0; i<recvBufferLength; i++) {
+				log_Log(_T(" 0x%02x"), recvBuffer[i]);
+			}
 	
 #endif
+			/* Next data block has size k */
 			j=k;
 		}
 	}
@@ -2235,7 +2261,7 @@ LONG install_for_load(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, O
 	LOG_START(_T("install_for_load"));
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xE6;
-	result = get_load_token_signature_data(packageAID, packageAIDLength, securityDomainAID,
+	result = get_load_data(packageAID, packageAIDLength, securityDomainAID,
 		securityDomainAIDLength, loadFileDAP, nonVolatileCodeSpaceLimit, volatileDataSpaceLimit,
 		nonVolatileDataSpaceLimit, buf, &bufLength);
 	if (OPSP_ERROR_SUCCESS != result) {
@@ -2781,8 +2807,286 @@ end:
 /**
  * If you are not the Card Issuer and do not know the token verification private key send this data to the
  * Card Issuer and obtain the RSA signature of the data, i.e. the Load Token.
- * volatileDataSpaceLimit and nonVolatileDataSpaceLimit can be NULL, if the card does not need or support this tags.
- * The parameters must match the parameters of a later install_for_load() method.
+ * volatileDataSpaceLimit and nonVolatileDataSpaceLimit can be 0, if the card does not need or support this tags.
+ * The parameters must match the parameters of a later install_for_load() command.
+ * \param packageAID IN A buffer containing the package AID.
+ * \param packageAIDLength IN The length of the package AID.
+ * \param securityDomainAID IN A buffer containing the Security Domain AID.
+ * \param securityDomainAIDLength IN The length of the Security Domain AID.
+ * \param loadFileDAP IN The Load File DAP. The same calculated as in install_for_load().
+ * \param nonVolatileCodeSpaceLimit IN The minimum space required to store the applet code.
+ * \param volatileDataSpaceLimit IN The minimum amount of RAM space that must be available.
+ * \param nonVolatileDataSpaceLimit IN The minimum amount of space for objects of the applet, i.e. the data allocated in its lifetime.
+ * \param loadTokenSignatureData OUT The data to sign in a Load Token.
+ * \param loadTokenSignatureDataLength INOUT The length of the loadTokenSignatureData buffer.
+ * \return OPSP_ERROR_SUCCESS if no error, error code else.
+ */
+static LONG OPget_load_token_signature_data(PBYTE packageAID, DWORD packageAIDLength, PBYTE securityDomainAID,
+								   DWORD securityDomainAIDLength, BYTE loadFileDAP[20],
+								   DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
+								   DWORD nonVolatileDataSpaceLimit, PBYTE loadTokenSignatureData,
+								   PDWORD loadTokenSignatureDataLength) {
+	unsigned char buf[258];
+	DWORD i=0;
+#ifdef DEBUG
+	DWORD j=0;
+#endif
+	DWORD hiByte, loByte;
+	DWORD staticSize;
+	LONG result;
+	LOG_START(_T("get_load_token_signature_data"));
+	if (loadFileDAP == NULL) {
+		result = OPSP_ERROR_LOAD_FILE_DAP_NULL;
+		goto end;
+	}
+	buf[i++] = 0x02;
+	buf[i++] = 0x00;
+	buf[i++] = 0x00; // Lc dummy
+	buf[i++] = (BYTE)packageAIDLength; // package AID
+	memcpy(buf+i, packageAID, packageAIDLength);
+	i+=packageAIDLength;
+	buf[i++] = (BYTE)securityDomainAIDLength; // Security Domain AID
+	memcpy(buf+i, securityDomainAID, securityDomainAIDLength);
+	i+=securityDomainAIDLength;
+	if ((volatileDataSpaceLimit != 0) || (nonVolatileCodeSpaceLimit != 0) || 
+(nonVolatileDataSpaceLimit != 0)) {
+		buf[i++] = 0x02; // load parameter field
+		if (volatileDataSpaceLimit != 0)
+			buf[i-1] += 4;
+		if (nonVolatileDataSpaceLimit != 0)
+			buf[i-1] += 4;
+		if (nonVolatileCodeSpaceLimit != 0)
+			buf[i-1] += 4;
+		buf[i++] = 0xEF;
+		buf[i++] = 0x00;
+		if (volatileDataSpaceLimit != 0)
+			buf[i-1] += 4;
+		if (nonVolatileDataSpaceLimit != 0)
+			buf[i-1] += 4;
+		if (nonVolatileCodeSpaceLimit != 0)
+			buf[i-1] += 4;
+		if (nonVolatileCodeSpaceLimit != 0) {
+			buf[i++] = 0xC6; // non-volatile code space limit.
+			buf[i++] = 0x02; //
+			staticSize = 8 - (nonVolatileCodeSpaceLimit % 8) + 8;
+            nonVolatileCodeSpaceLimit += staticSize;
+			hiByte = nonVolatileCodeSpaceLimit >> 8;
+			loByte = nonVolatileCodeSpaceLimit - (hiByte << 8);
+			buf[i++] = (BYTE)hiByte; // minimum amount
+			buf[i++] = (BYTE)loByte; // of space needed
+		}
+		if (volatileDataSpaceLimit != 0) {
+			buf[i++] = 0xC7;
+			buf[i++] = 0x02;
+			hiByte = volatileDataSpaceLimit >> 8;
+			loByte = volatileDataSpaceLimit - (hiByte << 8);
+			buf[i++] = (BYTE)hiByte;
+			buf[i++] = (BYTE)loByte;
+		}
+		if (nonVolatileDataSpaceLimit != 0) {
+			buf[i++] = 0xC8;
+			buf[i++] = 0x02;
+			hiByte = nonVolatileDataSpaceLimit >> 8;
+			loByte = nonVolatileDataSpaceLimit - (hiByte << 8);
+			buf[i++] = (BYTE)hiByte;
+			buf[i++] = (BYTE)loByte;
+		}
+	}
+	else buf[i++] = 0x00;
+
+	/* SHA-1 hash */
+	memcpy(buf+i, loadFileDAP, 20);
+	i+=20;
+
+	/* Lc - including 128 byte RSA signature length, one more byte for signature length field, 
+	   one more byte hash length field minus 3 for P1, P2 and Lc itself 
+	*/
+	buf[2] = (BYTE)i-3+128+1+1;
+	if (i > *loadTokenSignatureDataLength)
+		{ result = OPSP_ERROR_INSUFFICIENT_BUFFER; goto end; }
+	memcpy(loadTokenSignatureData, buf, i);
+	*loadTokenSignatureDataLength = i;
+#ifdef DEBUG
+	log_Log(_T("get_load_token_signature_data: Gathered data : "));
+	log_Log(_T("P1: 0x%02x"), loadTokenSignatureData[j++]);
+	log_Log(_T("P2: 0x%02x"), loadTokenSignatureData[j++]);
+	log_Log(_T("Lc: 0x%02x"), loadTokenSignatureData[j++]);
+	log_Log(_T("Load file AID length indicator: 0x%02x"), loadTokenSignatureData[j++]);
+	log_Log(_T("Load file AID:"));
+	for (i=0; i<loadTokenSignatureData[j-1]; i++) {
+		log_Log(_T(" 0x%02x"), loadTokenSignatureData[j+i]);
+	}
+	j+=loadTokenSignatureData[j-1];
+	log_Log(_T("Security Domain AID length indicator: 0x%02x"), loadTokenSignatureData[j++]);
+	log_Log(_T("Security Domain AID:"));
+	for (i=0; i<loadTokenSignatureData[j-1]; i++) {
+		log_Log(_T(" 0x%02x"), loadTokenSignatureData[j+i]);
+	}
+	j+=loadTokenSignatureData[j-1];
+	log_Log(_T("Load parameters length indicator: 0x%02x"), loadTokenSignatureData[j++]);
+	log_Log(_T("Load parameters:"));
+	for (i=0; i<loadTokenSignatureData[j-1]; i++) {
+		log_Log(_T(" 0x%02x"), loadTokenSignatureData[j+i]);
+	}
+	j+=loadTokenSignatureData[j-1];
+	log_Log(_T("Hash of Load File:"));
+	for (i=0; i<20; i++) {
+		log_Log(_T(" 0x%02x"), loadTokenSignatureData[j+i]);
+	}
+	j+=loadTokenSignatureData[j-1];
+#endif
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("get_load_token_signature_data"), result);
+	return result;
+}
+
+
+/**
+ * If you are not the Card Issuer and do not know the token verification private key send this data to the
+ * Card Issuer and obtain the RSA signature of the data, i.e. the Load Token.
+ * volatileDataSpaceLimit and nonVolatileDataSpaceLimit can be 0, if the card does not need or support this tags.
+ * The parameters must match the parameters of a later install_for_load() command.
+ * \param packageAID IN A buffer containing the package AID.
+ * \param packageAIDLength IN The length of the package AID.
+ * \param securityDomainAID IN A buffer containing the Security Domain AID.
+ * \param securityDomainAIDLength IN The length of the Security Domain AID.
+ * \param loadFileDataBlockHash IN The Load File Data Block Hash. The same calculated as in install_for_load().
+ * \param nonVolatileCodeSpaceLimit IN The minimum space required to store the applet code.
+ * \param volatileDataSpaceLimit IN The minimum amount of RAM space that must be available.
+ * \param nonVolatileDataSpaceLimit IN The minimum amount of space for objects of the applet, i.e. the data allocated in its lifetime.
+ * \param loadTokenSignatureData OUT The data to sign in a Load Token.
+ * \param loadTokenSignatureDataLength INOUT The length of the loadTokenSignatureData buffer.
+ * \return OPSP_ERROR_SUCCESS if no error, error code else.
+ */
+static LONG GPget_load_token_signature_data(PBYTE packageAID, DWORD packageAIDLength, PBYTE securityDomainAID,
+								   DWORD securityDomainAIDLength, BYTE loadFileDataBlockHash[20],
+								   DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
+								   DWORD nonVolatileDataSpaceLimit, PBYTE loadTokenSignatureData,
+								   PDWORD loadTokenSignatureDataLength) {
+	unsigned char buf[258];
+	DWORD i=0;
+#ifdef DEBUG
+	DWORD j=0;
+#endif
+	DWORD hiByte, loByte;
+	DWORD staticSize;
+	LONG result;
+	LOG_START(_T("GPget_load_token_signature_data"));
+	if (loadFileDataBlockHash == NULL) {
+		result = OPSP_ERROR_LOAD_FILE_DAP_NULL;
+		goto end;
+	}
+	buf[i++] = 0x02;
+	buf[i++] = 0x00;
+	buf[i++] = 0x00; // Lc dummy
+	buf[i++] = (BYTE)packageAIDLength; // package AID
+	memcpy(buf+i, packageAID, packageAIDLength);
+	i+=packageAIDLength;
+	buf[i++] = (BYTE)securityDomainAIDLength; // Security Domain AID
+	memcpy(buf+i, securityDomainAID, securityDomainAIDLength);
+	i+=securityDomainAIDLength;
+
+	/* SHA-1 hash */
+	buf[i++] = 0x14;
+	memcpy(buf+i, loadFileDataBlockHash, 20);
+	i+=20;
+
+	if ((volatileDataSpaceLimit != 0) || (nonVolatileCodeSpaceLimit != 0) || 
+(nonVolatileDataSpaceLimit != 0)) {
+		buf[i++] = 0x02; // load parameter field
+		if (volatileDataSpaceLimit != 0)
+			buf[i-1] += 4;
+		if (nonVolatileDataSpaceLimit != 0)
+			buf[i-1] += 4;
+		if (nonVolatileCodeSpaceLimit != 0)
+			buf[i-1] += 4;
+		buf[i++] = 0xEF;
+		buf[i++] = 0x00;
+		if (volatileDataSpaceLimit != 0)
+			buf[i-1] += 4;
+		if (nonVolatileDataSpaceLimit != 0)
+			buf[i-1] += 4;
+		if (nonVolatileCodeSpaceLimit != 0)
+			buf[i-1] += 4;
+		if (nonVolatileCodeSpaceLimit != 0) {
+			buf[i++] = 0xC6; // non-volatile code space limit.
+			buf[i++] = 0x02; //
+			staticSize = 8 - (nonVolatileCodeSpaceLimit % 8) + 8;
+            nonVolatileCodeSpaceLimit += staticSize;
+			hiByte = nonVolatileCodeSpaceLimit >> 8;
+			loByte = nonVolatileCodeSpaceLimit - (hiByte << 8);
+			buf[i++] = (BYTE)hiByte; // minimum amount
+			buf[i++] = (BYTE)loByte; // of space needed
+		}
+		if (volatileDataSpaceLimit != 0) {
+			buf[i++] = 0xC7;
+			buf[i++] = 0x02;
+			hiByte = volatileDataSpaceLimit >> 8;
+			loByte = volatileDataSpaceLimit - (hiByte << 8);
+			buf[i++] = (BYTE)hiByte;
+			buf[i++] = (BYTE)loByte;
+		}
+		if (nonVolatileDataSpaceLimit != 0) {
+			buf[i++] = 0xC8;
+			buf[i++] = 0x02;
+			hiByte = nonVolatileDataSpaceLimit >> 8;
+			loByte = nonVolatileDataSpaceLimit - (hiByte << 8);
+			buf[i++] = (BYTE)hiByte;
+			buf[i++] = (BYTE)loByte;
+		}
+	}
+	else buf[i++] = 0x00;
+
+	/* Length of all following fields - minus 3 for P1, P2 and length field itself */
+	buf[2] = (BYTE)i-3;
+	if (i > *loadTokenSignatureDataLength)
+		{ result = OPSP_ERROR_INSUFFICIENT_BUFFER; goto end; }
+	memcpy(loadTokenSignatureData, buf, i);
+	*loadTokenSignatureDataLength = i;
+#ifdef DEBUG
+	log_Log(_T("GPget_load_token_signature_data: Gathered data : "));
+	log_Log(_T("Reference control parameter P1: 0x%02x"), loadTokenSignatureData[j++]);
+	log_Log(_T("Reference control parameter P2: 0x%02x"), loadTokenSignatureData[j++]);
+	log_Log(_T("Length of the following fields: 0x%02x"), loadTokenSignatureData[j++]);
+	log_Log(_T("Load file AID length: 0x%02x"), loadTokenSignatureData[j++]);
+	log_Log(_T("Load file AID:"));
+	for (i=0; i<loadTokenSignatureData[j-1]; i++) {
+		log_Log(_T(" 0x%02x"), loadTokenSignatureData[j+i]);
+	}
+	j+=loadTokenSignatureData[j-1];
+	log_Log(_T("Security Domain AID length: 0x%02x"), loadTokenSignatureData[j++]);
+	log_Log(_T("Security Domain AID:"));
+	for (i=0; i<loadTokenSignatureData[j-1]; i++) {
+		log_Log(_T(" 0x%02x"), loadTokenSignatureData[j+i]);
+	}
+	j+=loadTokenSignatureData[j-1];
+	log_Log(_T("Length of the Load File Data Block Hash: 0x%02x"), loadTokenSignatureData[j++]);
+	log_Log(_T("Load File Data Block Hash:"));
+	for (i=0; i<loadTokenSignatureData[j-1]; i++) {
+		log_Log(_T(" 0x%02x"), loadTokenSignatureData[j+i]);
+	}
+	j+=loadTokenSignatureData[j-1];
+
+	log_Log(_T("Load parameters field length: 0x%02x"), loadTokenSignatureData[j++]);
+	log_Log(_T("Load parameters field:"));
+	for (i=0; i<loadTokenSignatureData[j-1]; i++) {
+		log_Log(_T(" 0x%02x"), loadTokenSignatureData[j+i]);
+	}
+	j+=loadTokenSignatureData[j-1];
+
+#endif
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("GPget_load_token_signature_data"), result);
+	return result;
+}
+
+/**
+ * If you are not the Card Issuer and do not know the token verification private key send this data to the
+ * Card Issuer and obtain the RSA signature of the data, i.e. the Load Token.
+ * volatileDataSpaceLimit and nonVolatileDataSpaceLimit can be 0, if the card does not need or support this tags.
+ * The parameters must match the parameters of a later install_for_load() command.
  * \param packageAID IN A buffer containing the package AID.
  * \param packageAIDLength IN The length of the package AID.
  * \param securityDomainAID IN A buffer containing the Security Domain AID.
@@ -2800,12 +3104,39 @@ LONG get_load_token_signature_data(PBYTE packageAID, DWORD packageAIDLength, PBY
 								   DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
 								   DWORD nonVolatileDataSpaceLimit, PBYTE loadTokenSignatureData,
 								   PDWORD loadTokenSignatureDataLength) {
+return OPget_load_token_signature_data(packageAID, packageAIDLength, securityDomainAID,
+								   securityDomainAIDLength, loadFileDAP,
+								   nonVolatileCodeSpaceLimit, volatileDataSpaceLimit,
+								   nonVolatileDataSpaceLimit, loadTokenSignatureData,
+								   loadTokenSignatureDataLength);
+}
+
+/**
+ * Gets the data for a install_for_load() command.
+ * volatileDataSpaceLimit and nonVolatileDataSpaceLimit can be 0, if the card does not need or support this tags.
+ * \param packageAID IN A buffer containing the package AID.
+ * \param packageAIDLength IN The length of the package AID.
+ * \param securityDomainAID IN A buffer containing the Security Domain AID.
+ * \param securityDomainAIDLength IN The length of the Security Domain AID.
+ * \param loadFileDAP IN The Load File DAP.
+ * \param nonVolatileCodeSpaceLimit IN The minimum space required to store the applet code.
+ * \param volatileDataSpaceLimit IN The minimum amount of RAM space that must be available.
+ * \param nonVolatileDataSpaceLimit IN The minimum amount of space for objects of the applet, i.e. the data allocated in its lifetime.
+ * \param loadData OUT The data to sign in a load data.
+ * \param loadDataLength INOUT The length of the loadData buffer.
+ * \return OPSP_ERROR_SUCCESS if no error, error code else.
+ */
+static LONG get_load_data(PBYTE packageAID, DWORD packageAIDLength, PBYTE securityDomainAID,
+								   DWORD securityDomainAIDLength, BYTE loadFileDAP[20],
+								   DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
+								   DWORD nonVolatileDataSpaceLimit, PBYTE loadData,
+								   PDWORD loadDataLength) {
 	unsigned char buf[258];
 	DWORD i=0;
 	DWORD hiByte, loByte;
 	DWORD staticSize;
 	LONG result;
-	LOG_START(_T("get_load_token_signature_data"));
+	LOG_START(_T("get_load_data"));
 	buf[i++] = 0x02;
 	buf[i++] = 0x00;
 	buf[i++] = 0x00; // Lc dummy
@@ -2868,13 +3199,19 @@ LONG get_load_token_signature_data(PBYTE packageAID, DWORD packageAIDLength, PBY
 	else buf[i++] = 0x00;
 
 	buf[2] = (BYTE)i-3+128; // Lc (including 128 byte RSA signature length)
-	if (i > *loadTokenSignatureDataLength)
+	if (i > *loadDataLength)
 		{ result = OPSP_ERROR_INSUFFICIENT_BUFFER; goto end; }
-	memcpy(loadTokenSignatureData, buf, i);
-	*loadTokenSignatureDataLength = i;
+	memcpy(loadData, buf, i);
+	*loadDataLength = i;
+#ifdef DEBUG
+	log_Log(_T("get_load_data: Gathered data : "));
+	for (i=0; i<*loadDataLength; i++) {
+		log_Log(_T(" 0x%02x"), loadData[i]);
+	}
+#endif
 	{ result = OPSP_ERROR_SUCCESS; goto end; }
 end:
-	LOG_END(_T("get_load_token_signature_data"), result);
+	LOG_END(_T("get_load_data"), result);
 	return result;
 }
 
@@ -2919,9 +3256,63 @@ end:
 }
 
 /**
- * This is a hash of the load file with SHA-1.
- * A load file consists of 0 to n Load File Data Block DAP blocks and a mandatory
- * load file data block, e.g. a CAP file.
+ * This is a hash of the Load File Data Block with SHA-1.
+ * \param CAPFileName IN The name of the CAP file to hash.
+ * \param hash OUT The hash value.
+ * \return OPSP_ERROR_SUCCESS if no error, error code else.
+ */
+static LONG GPcalculate_load_file_data_block_hash(OPSP_STRING CAPFileName,
+							 unsigned char hash[20]) {
+	LONG result;
+	int count;
+	unsigned char buf[1024];
+	PBYTE dapBuf = NULL;
+	DWORD dapBufSize=0;
+	FILE *CAPFile = NULL;
+	long fileSize = 0;
+	EVP_MD_CTX mdctx;
+	LOG_START(_T("GPcalculate_load_file_data_block_hash"));
+	EVP_MD_CTX_init(&mdctx);
+	if ((CAPFileName == NULL) || (_tcslen(CAPFileName) == 0))
+		{ result = OPSP_ERROR_INVALID_FILENAME; goto end; }
+	result = EVP_DigestInit_ex(&mdctx, EVP_sha1(), NULL);
+	if (result != 1) {
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
+	}
+	CAPFile = _tfopen(CAPFileName, _T("rb"));
+	if (CAPFile == NULL) {
+		{ result = OPSP_ERROR_FILE_NOT_FOUND; goto end; }
+	}
+
+	while(feof(CAPFile) == 0) {
+		count = (int)fread(buf, sizeof(unsigned char), sizeof(buf), CAPFile);
+		if(ferror(CAPFile)) {
+			{ result = OPSP_ERROR_READ; goto end; }
+		}
+		result = EVP_DigestUpdate(&mdctx, buf, count);
+		if (result != 1) {
+			{ result = OPSP_OPENSSL_ERROR; goto end; }
+		}
+	}
+	result = EVP_DigestFinal_ex(&mdctx, hash, NULL);
+	if (result != 1) {
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
+	}
+	{ result = OPSP_ERROR_SUCCESS; goto end; }
+end:
+	if (EVP_MD_CTX_cleanup(&mdctx) != 1) {
+		{ result = OPSP_OPENSSL_ERROR; }
+	}
+	if (CAPFile)
+		fclose(CAPFile);
+	LOG_END(_T("GPcalculate_load_file_data_block_hash"), result);
+	return result;
+}
+
+/**
+ * This is a hash of the Load File with SHA-1.
+ * A Load File consists of 0 to n Load File Data Block DAP blocks and a mandatory
+ * Load File Data Block, e.g. a CAP file.
  * If no Load File Data Block DAP blocks are necessary the dapBlock must be NULL and the dapBlockLength 0.
  * The dapBlock(s) can be calculated using calculate_3des_dap() or calculate_rsa_dap().
  * If the Load File Data Block DAP block(s) are already calculated they must be parsed into a OPSP_DAP_BLOCK structure.
@@ -2933,7 +3324,7 @@ end:
  * \param hash OUT The hash value.
  * \return OPSP_ERROR_SUCCESS if no error, error code else.
  */
-LONG calculate_load_file_DAP(OPSP_DAP_BLOCK *dapBlock, DWORD dapBlockLength, OPSP_STRING CAPFileName,
+static LONG OPcalculate_load_file_DAP(OPSP_DAP_BLOCK *dapBlock, DWORD dapBlockLength, OPSP_STRING CAPFileName,
 							 unsigned char hash[20])
 {
 	LONG result;
@@ -2943,6 +3334,7 @@ LONG calculate_load_file_DAP(OPSP_DAP_BLOCK *dapBlock, DWORD dapBlockLength, OPS
 	PBYTE dapBuf = NULL;
 	DWORD dapBufSize=0;
 	FILE *CAPFile = NULL;
+	long fileSize = 0;
 	EVP_MD_CTX mdctx;
 	LOG_START(_T("calculate_load_file_DAP"));
 	EVP_MD_CTX_init(&mdctx);
@@ -2953,12 +3345,24 @@ LONG calculate_load_file_DAP(OPSP_DAP_BLOCK *dapBlock, DWORD dapBlockLength, OPS
 		{ result = OPSP_OPENSSL_ERROR; goto end; }
 	}
 	for (i=0; i<dapBlockLength; i++) {
-		dapBufSize += dapBlock[i].DAPBlockLength + 1;
+		/* Because BER length encoding tag E2 and length field can consume at 
+		   most 3 bytes for RSA DAP blocks 
+		   - OPSPDapBlock is not a a good encapsulating structure ...
+		*/
+		dapBufSize += dapBlock[i].DAPBlockLength + 3;
 	}
 	if (dapBlockLength > 0) {
 		dapBuf = (PBYTE)malloc(sizeof(BYTE)*dapBufSize);
 	}
+#ifdef DEBUG
+	else {
+		log_Log(_T("No DAP blocks to hash."));
+	}
+#endif
 	for (i=0; i<dapBlockLength; i++) {
+#ifdef DEBUG
+		log_Log(_T("Hashing DAP block %lu."), i);
+#endif
 		j=0;
 		k = dapBufSize;
 		result = readDAPBlock(dapBuf, &k, dapBlock[i]);
@@ -2974,6 +3378,45 @@ LONG calculate_load_file_DAP(OPSP_DAP_BLOCK *dapBlock, DWORD dapBlockLength, OPS
 	if (CAPFile == NULL) {
 		{ result = OPSP_ERROR_FILE_NOT_FOUND; goto end; }
 	}
+#ifdef WIN32
+	fileSize = _filelength(CAPFile->_file);
+#else
+	fileSize = fseek(CAPFile, 0, SEEK_END);
+	if (fileSize == -1) {		
+		{ result = OPSP_ERROR_BAD_FILE_DESCRIPTOR; goto end; }
+	}
+	fileSize = ftell(CAPFile);
+#endif
+	if (fileSize == -1L) {
+		{ result = OPSP_ERROR_BAD_FILE_DESCRIPTOR; goto end; }
+	}
+	if (fileSize < 128L) {
+		buf[0] = 0xC4;
+		buf[1] = (BYTE)fileSize;
+		count=2;
+	}
+	else if (fileSize < 256L) {
+		buf[0] = 0xC4;
+		buf[1] = 0x81;
+		buf[2] = (BYTE)fileSize;
+		count=3;
+	}
+	else if (fileSize < 32536L) {
+		buf[0] = 0xC4;
+		buf[1] = 0x82;
+		buf[2] = (BYTE)(fileSize >> 8);
+		buf[3] = (BYTE)(fileSize - (buf[2] << 8));
+		count=4;
+	}
+	else {
+		{ result = OPSP_ERROR_APPLICATION_TOO_BIG; goto end; }
+	}
+	/* Hash tag and value field of Load File Data Block */
+	result = EVP_DigestUpdate(&mdctx, buf, count);
+	if (result != 1) {
+		{ result = OPSP_OPENSSL_ERROR; goto end; }
+	}
+
 	while(feof(CAPFile) == 0) {
 		count = (int)fread(buf, sizeof(unsigned char), sizeof(buf), CAPFile);
 		if(ferror(CAPFile)) {
@@ -2999,6 +3442,28 @@ end:
 		free(dapBuf);
 	LOG_END(_T("calculate_load_file_DAP"), result);
 	return result;
+}
+
+/**
+ * This is a hash of the Load File with SHA-1.
+ * A Load File consists of 0 to n Load File Data Block DAP blocks and a mandatory
+ * Load File Data Block, e.g. a CAP file.
+ * If no Load File Data Block DAP blocks are necessary the dapBlock must be NULL and the dapBlockLength 0.
+ * The dapBlock(s) can be calculated using calculate_3des_dap() or calculate_rsa_dap().
+ * If the Load File Data Block DAP block(s) are already calculated they must be parsed into a OPSP_DAP_BLOCK structure.
+ * If the Load File Data Block DAP block(s) are already prefixing the CAPFile following the Open Platform Specification 2.0.1',
+ * the whole CAPFile including the Load File Data Block DAP block(s) is sufficient, the dapBlock must be NULL and the dapBlockLength 0.
+ * \param *dapBlock IN A pointer to OPSP_DAP_BLOCK structure(s).
+ * \param dapBlockLength IN The number of OPSP_DAP_BLOCK structure(s).
+ * \param CAPFileName IN The name of the CAP file to hash.
+ * \param hash OUT The hash value.
+ * \return OPSP_ERROR_SUCCESS if no error, error code else.
+ */
+LONG calculate_load_file_DAP(OPSP_DAP_BLOCK *dapBlock, DWORD dapBlockLength, OPSP_STRING CAPFileName,
+							 unsigned char hash[20])
+{
+	return OPcalculate_load_file_DAP(dapBlock, dapBlockLength, CAPFileName, hash);
+	//GPcalculate_load_file_data_block_hash(CAPFileName, hash);
 }
 
 /**
@@ -3177,7 +3642,10 @@ LONG calculate_rsa_DAP(PBYTE securityDomainAID, DWORD securityDomainAIDLength, O
 	dapBlock->signatureLength = 128;
 	memcpy(dapBlock->securityDomainAID, securityDomainAID, securityDomainAIDLength);
 	dapBlock->securityDomainAIDLength = (BYTE)securityDomainAIDLength;
-	dapBlock->DAPBlockLength = (BYTE)securityDomainAIDLength+128+4;
+	/* Correct length for BER length coding for TLV objects 
+	   length for signature > 127 -> length coded on two bytes
+	*/
+	dapBlock->DAPBlockLength = (BYTE)securityDomainAIDLength+128+4 + 1;
 	{ result = OPSP_ERROR_SUCCESS; goto end; }
 end:
 	if (EVP_MD_CTX_cleanup(&mdctx) != 1) {

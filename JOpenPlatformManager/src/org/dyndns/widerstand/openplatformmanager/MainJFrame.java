@@ -39,6 +39,7 @@ public class MainJFrame extends javax.swing.JFrame {
         jPanelManageApplications = new ManageApplicationsJPanel(this);
         jPanelKeyManagement = new KeyManagementJPanel(this);
         jPanelDAPManagement = new DAPManagementJPanel(this);
+        jPanelDataManagement = new DataManagementJPanel(this);
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         addWindowListener(new java.awt.event.WindowAdapter() {
@@ -59,6 +60,8 @@ public class MainJFrame extends javax.swing.JFrame {
         jTabbedPane1.addTab("Manage Keys", jPanelKeyManagement);
 
         jTabbedPane1.addTab("Manage DAPs", jPanelDAPManagement);
+
+        jTabbedPane1.addTab("Manage Card Data", jPanelDataManagement);
 
         jPanel1.add(jTabbedPane1, java.awt.BorderLayout.CENTER);
 
@@ -96,10 +99,7 @@ public class MainJFrame extends javax.swing.JFrame {
         jTabbedPane1.setEnabledAt(getComponentIndex("Manage Applications"), true);
         jTabbedPane1.setEnabledAt(getComponentIndex("Manage Keys"), true);
         jTabbedPane1.setEnabledAt(getComponentIndex("Manage DAPs"), true);
-        //        jMenuItem1.setEnabled(false);
-        //        jMenuItem2.setEnabled(true);
-        //        int k = getComponentIndex("Manage Applications");
-        //        jTabbedPane1.setSelectedIndex(k);
+        jTabbedPane1.setEnabledAt(getComponentIndex("Manage Card Data"), true);
         refreshStatus();
     }
     
@@ -108,8 +108,7 @@ public class MainJFrame extends javax.swing.JFrame {
         jTabbedPane1.setEnabledAt(getComponentIndex("Manage Applications"), false);
         jTabbedPane1.setEnabledAt(getComponentIndex("Manage Keys"), false);
         jTabbedPane1.setEnabledAt(getComponentIndex("Manage DAPs"), false);
-        //        jMenuItem2.setEnabled(false);
-        //        jMenuItem1.setEnabled(true);
+        jTabbedPane1.setEnabledAt(getComponentIndex("Manage Card Data"), false);
     }
     
     public void enableAfterEstablishContext() {
@@ -143,6 +142,7 @@ public class MainJFrame extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanelConnectionManagement;
     private javax.swing.JPanel jPanelDAPManagement;
+    private javax.swing.JPanel jPanelDataManagement;
     private javax.swing.JPanel jPanelKeyManagement;
     private javax.swing.JPanel jPanelManageApplications;
     private javax.swing.JTabbedPane jTabbedPane1;

@@ -33,7 +33,7 @@ public class DeleteKeyJPanel extends javax.swing.JPanel {
     
     private void initConditionalComponents() {
         if (jPanelKeyInformationTemplates != null)
-            jPanel1.remove(jPanelKeyInformationTemplates);
+            jPanel8.remove(jPanelKeyInformationTemplates);
         java.awt.GridBagConstraints gridBagConstraints;
         jButtonGetKeyInformationTemplates = new javax.swing.JButton();
         jPanelKeyInformationTemplates = new javax.swing.JPanel();
@@ -71,11 +71,12 @@ public class DeleteKeyJPanel extends javax.swing.JPanel {
         gridBagConstraints.gridy = 1;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
-        jPanel1.add(jPanelKeyInformationTemplates, gridBagConstraints);
+        jPanel8.add(jPanelKeyInformationTemplates, gridBagConstraints);
     }
     
     private void removeConditionalComponents() {
-        jPanel1.remove(jPanelKeyInformationTemplates);
+        if (jPanelKeyInformationTemplates != null)
+            jPanel8.remove(jPanelKeyInformationTemplates);
     }
     
     /** This method is called from within the constructor to
@@ -87,7 +88,7 @@ public class DeleteKeyJPanel extends javax.swing.JPanel {
         java.awt.GridBagConstraints gridBagConstraints;
 
         jScrollPane1 = new javax.swing.JScrollPane();
-        jPanel1 = new javax.swing.JPanel();
+        jPanel8 = new javax.swing.JPanel();
         jPanel7 = new javax.swing.JPanel();
         jLabelKeySetVersion = new javax.swing.JLabel();
         jTextFieldKeySetVersion = new javax.swing.JTextField();
@@ -98,7 +99,7 @@ public class DeleteKeyJPanel extends javax.swing.JPanel {
         setLayout(new java.awt.BorderLayout());
 
         setBorder(new javax.swing.border.CompoundBorder(new javax.swing.border.TitledBorder("Delete Key"), new javax.swing.border.EmptyBorder(new java.awt.Insets(5, 5, 5, 5))));
-        jPanel1.setLayout(new java.awt.GridBagLayout());
+        jPanel8.setLayout(new java.awt.GridBagLayout());
 
         jPanel7.setLayout(new java.awt.GridBagLayout());
 
@@ -134,7 +135,7 @@ public class DeleteKeyJPanel extends javax.swing.JPanel {
         gridBagConstraints.gridy = 2;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
-        jPanel1.add(jPanel7, gridBagConstraints);
+        jPanel8.add(jPanel7, gridBagConstraints);
 
         jButton1.setText("Delete Key");
         jButton1.addActionListener(new java.awt.event.ActionListener() {
@@ -147,9 +148,9 @@ public class DeleteKeyJPanel extends javax.swing.JPanel {
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 3;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
-        jPanel1.add(jButton1, gridBagConstraints);
+        jPanel8.add(jButton1, gridBagConstraints);
 
-        jScrollPane1.setViewportView(jPanel1);
+        jScrollPane1.setViewportView(jPanel8);
 
         add(jScrollPane1, java.awt.BorderLayout.CENTER);
 
@@ -283,7 +284,7 @@ public class DeleteKeyJPanel extends javax.swing.JPanel {
                     Dimension d2 = jLabel1.getSize();
                     jPanelAvailableKeys.add(jPanel1);
                 }
-                jPanelAvailableKeys.revalidate();
+                jPanel8.revalidate();
             }
         }
         else {
@@ -346,8 +347,8 @@ public class DeleteKeyJPanel extends javax.swing.JPanel {
     private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabelKeyIndex;
     private javax.swing.JLabel jLabelKeySetVersion;
-    private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel7;
+    private javax.swing.JPanel jPanel8;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTextField jTextFieldKeyIndex;
     private javax.swing.JTextField jTextFieldKeySetVersion;

@@ -246,7 +246,7 @@ static void parsejcardInfo(JNIEnv *env, jobject jcardInfo, OPSP_CARD_INFO *cardI
 	jfieldID fieldID;
 	jmethodID methodID;
 	jbyteArray ATR;
-	OPSP_CSTRING empty = _T("");
+	OPSP_CSTRING empty = _T("parsejcardInfo");
 	cardConnectionInfoClass = (*env)->FindClass(env, "org/dyndns/widerstand/OpenPlatform/OPSPCardConnectionInfo");
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, empty);
@@ -301,7 +301,7 @@ static void parsejsecInfo(JNIEnv *env, jobject jsecInfo, OPSP_SECURITY_INFO *sec
 	jmethodID methodID;
 	jfieldID fieldID;
 	jbyteArray lastMac, sessionMacKey, sessionEncKey;
-	OPSP_CSTRING empty = _T("");
+	OPSP_CSTRING empty = _T("parsejsecInfo");
 	securityInfoClass = (*env)->FindClass(env, "org/dyndns/widerstand/OpenPlatform/OPSPSecurityInfo");
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, empty);
@@ -384,7 +384,7 @@ static void setjsecInfo(JNIEnv *env, jobject jsecInfo, OPSP_SECURITY_INFO secInf
 	jmethodID methodID;
 	jfieldID fieldID;
 	jbyteArray lastMac, sessionMacKey, sessionEncKey;
-	OPSP_CSTRING empty = _T("");
+	OPSP_CSTRING empty = _T("setjsecInfo");
 	OPSPsecurityInfoClass = (*env)->FindClass(env, "org/dyndns/widerstand/OpenPlatform/OPSPSecurityInfo");
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, empty);
@@ -647,7 +647,7 @@ JNIEXPORT jstring JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_st
  */
 static jbyteArray getjbyteArray(JNIEnv *env, PBYTE array, DWORD arrayLength) {
 	jbyteArray jarray;
-	OPSP_CSTRING empty = _T("");
+	OPSP_CSTRING empty = _T("getjbyteArray");
 	if (arrayLength == 0) {
 		return NULL;
 	}
@@ -819,7 +819,7 @@ end:
  * \param arrayLength The length of the native buffer.
  */
  static void parsejbyteArray(JNIEnv *env, jbyteArray jarray, PBYTE array, PDWORD arrayLength) {
-	OPSP_CSTRING empty = _T("");
+	OPSP_CSTRING empty = _T("parsejbyteArray");
 	DWORD jarrayLength;
 	if (jarray == NULL) {
 		*arrayLength = 0;
@@ -1436,7 +1436,7 @@ static jobject getOPSPReceiptData(JNIEnv *env, OPSP_RECEIPT_DATA receiptData) {
 	jclass OPSPReceiptDataClass;
 	jobject OPSPReceiptDataInstance;
 	jmethodID constructorID;
-	OPSP_STRING empty = _T("");
+	OPSP_STRING empty = _T("getOPSPReceiptData");
 	jbyteArray jreceipt, jcardUniqueData, jconfirmationCounter;
 	OPSPReceiptDataClass = (*env)->FindClass(env, "org/dyndns/widerstand/OpenPlatform/OPSPReceiptData");
 	if ((*env)->ExceptionOccurred(env) != NULL) {
@@ -1924,7 +1924,7 @@ static void parsejOPSPDAPBlock(JNIEnv *env, jobject jdapBlockInstance,
 	jmethodID methodID1, methodID2;
 	jclass dapBlockClass;
 	jbyteArray jsignature, jsecurityDomainAID;
-	OPSP_STRING empty = _T("");
+	OPSP_STRING empty = _T("parsejOPSPDAPBlock");
 	dapBlockClass = (*env)->FindClass(env, "org/dyndns/widerstand/OpenPlatform/OPSPDAPBlock");
 	if ((*env)->ExceptionOccurred(env) != NULL) {
 		throwException(env, empty);
@@ -2552,7 +2552,7 @@ JNIEXPORT jobject JNICALL Java_org_dyndns_widerstand_OpenPlatform_OPSPWrapper_ca
  * \return an jobject of class OPSPDAPBlock
  */
 static jobject getOPSPDAPBlock(JNIEnv *env, OPSP_DAP_BLOCK dapBlock) {
-	OPSP_STRING empty = _T("");
+	OPSP_STRING empty = _T("getOPSPDAPBlock");
 	jclass OPSPDAPBlockClass;
 	jobject OPSPDAPBlockInstance = NULL;
 	jmethodID constructorID;
@@ -2734,7 +2734,7 @@ static void parsejOPSPReceiptData(JNIEnv *env, jobject jreceiptData, OPSP_RECEIP
 {
 	jclass OPSPReceiptDataClass;
 	jmethodID methodID1, methodID2, methodID3;
-	OPSP_STRING empty = _T("");
+	OPSP_STRING empty = _T("parsejOPSPReceiptData");
 	DWORD dummy;
 	jbyteArray jcardUniqueData, jconfirmationCounter, jreceipt;
 	OPSPReceiptDataClass = (*env)->FindClass(env, "org/dyndns/widerstand/OpenPlatform/OPSPReceiptData");

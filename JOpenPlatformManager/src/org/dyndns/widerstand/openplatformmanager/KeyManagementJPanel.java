@@ -66,6 +66,7 @@ public class KeyManagementJPanel extends javax.swing.JPanel {
             removeConditionalComponents();
         }
         ((DeleteKeyJPanel)jPanel3).refresh();
+        ((PutKeySetJPanel)jPanel1).refresh();
     }
    
     // Variables declaration - do not modify//GEN-BEGIN:variables

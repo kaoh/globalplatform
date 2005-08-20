@@ -1153,7 +1153,7 @@ public class InstallJPanel extends javax.swing.JPanel {
             } catch (NumberFormatException e) {
                 swingUtil.errorInJComponent(this, jTextFieldsecurityDomainAID,
                         "Colored text field cannot be understood as AID", "Wrong Number Format");
-                return;
+                throw e;
             }
         } else {
             securityDomainAID = OPSPUtil.bytesFromHexString((String)jComboBoxsecurityDomainAID.getSelectedItem());
