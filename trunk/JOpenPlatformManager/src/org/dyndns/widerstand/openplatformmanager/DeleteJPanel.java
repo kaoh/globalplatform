@@ -83,7 +83,8 @@ public class DeleteJPanel extends javax.swing.JPanel {
     }
 
     private void removeConditionalComponents() {
-        jPanel8.remove(jPanelInstalledContent);
+        if (jPanelInstalledContent != null)
+            jPanel8.remove(jPanelInstalledContent);
     }
 
     /** This method is called from within the constructor to
@@ -265,6 +266,12 @@ public class DeleteJPanel extends javax.swing.JPanel {
             initConditionalComponents();
             JCheckBox checkBox;
             jPanelCardManager.removeAll();
+            jPanelExecutableLoadFile.removeAll();
+            jPanelSecurityDomains.removeAll();
+            jPanelApplications.removeAll();
+            jPanelAllApplications.removeAll();
+            jPanelInstalledContent.removeAll();
+            checkBoxList.clear();
             if (!parent.session.cardManager.isEmpty()) {
                 jPanelCardManager.setPreferredSize(null);
                 jPanelCardManager.setMinimumSize(null);
@@ -273,10 +280,6 @@ public class DeleteJPanel extends javax.swing.JPanel {
                 jPanelCardManager.setPreferredSize(dim);
                 jPanelCardManager.setMinimumSize(dim);
             }
-            jPanelExecutableLoadFile.removeAll();
-            jPanelSecurityDomains.removeAll();
-            jPanelApplications.removeAll();
-            checkBoxList.clear();
             for (OPSPApplicationData appData : parent.session.cardManager) {
                 checkBox = new JCheckBox(OPSPUtil.toHexString(appData.getAID()));
                 jPanelCardManager.add(checkBox);

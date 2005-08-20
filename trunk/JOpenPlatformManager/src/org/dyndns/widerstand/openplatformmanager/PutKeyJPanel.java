@@ -289,6 +289,7 @@ public class PutKeyJPanel extends javax.swing.JPanel {
             return;
         }
         javax.swing.JOptionPane.showMessageDialog(this, "Put 3DES Key.", "Open Platform Success", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+        parent.refreshStatus();
     }//GEN-LAST:event_jButton3ActionPerformed
     
     private void jButtonLoadRSAKeyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonLoadRSAKeyActionPerformed
@@ -339,6 +340,7 @@ public class PutKeyJPanel extends javax.swing.JPanel {
             return;
         }
         javax.swing.JOptionPane.showMessageDialog(this, "Put RSA Key.", "Open Platform Success", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+        parent.refreshStatus();
     }//GEN-LAST:event_jButton4ActionPerformed
     
     private void jCheckBox3DESKeyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBox3DESKeyActionPerformed
