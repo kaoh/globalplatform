@@ -314,6 +314,7 @@ typedef struct {
 #define OPSP_ERROR_INVALID_FILENAME ((DWORD)0x8030F001L) //!< A file name is invalid.
 #define OPSP_ERROR_INVALID_PASSWORD ((DWORD)0x8030F002L) //!< A password is invalid.
 #define OPSP_ERROR_WRONG_EXPONENT ((DWORD)0x8030F003L) //!< The exponent must be 3 or 65537.
+#define OPSP_ERROR_LOAD_FILE_DAP_NULL ((DWORD)0x8030F004L) //!< The Load File DAP is <code>NULL</code>.
 
 // Mapping of relevant WinSCard API errors to error codes.
 #define OPSP_CARD_E_CANCELLED SCARD_E_CANCELLED //!< The action was canceled by an SCardCancel request.
