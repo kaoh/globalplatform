@@ -1,6 +1,13 @@
 History
 =======
 
+1.1.0 - Thu Aug 25 2005, Karsten Ohme
+	- T=1 protocol bug fixed
+	- bug in calculation of Load File Data Block DAP fixed
+	- bug in string representation of error message fixed
+	- header files separated in OpenPlatform directory
+	- unicode.h file for unicode relevant mappings
+
 1.0.0 - Wed May 25 2005, Karsten Ohme
 	- first revision
 
