@@ -82,6 +82,7 @@
 #include <openssl/pem.h>
 #ifndef WIN32
 #include <sys/stat.h>
+#include <string.h>
 #endif
 #include "debug.h"
 
@@ -270,13 +271,16 @@ end:
  */
 LONG list_readers(OPSP_CARDCONTEXT cardContext, OPSP_STRING readerNames, PDWORD readerNamesLength) {
 	LONG result;
-	DWORD readersSize;
+	DWORD readersSize = 0;
 	OPSP_STRING readers = NULL;
 	LOG_START(_T("list_readers"));
 	result = SCardListReaders( cardContext, NULL, NULL, &readersSize );
 	if ( SCARD_S_SUCCESS != result ) {
 		goto end;
 	}
+#ifdef DEBUG
+	log_Log(_T("readerSize: %d"), readersSize);
+#endif
 	if (readerNames == NULL) {
 		*readerNamesLength = readersSize;
 		result = OPSP_ERROR_SUCCESS;
@@ -517,6 +521,7 @@ end:
 }
 
 /**
+ * The secInfo pointer can also be null and so this function can be used for arbitrary cards.
  * \param cardHandle IN The reference OPSP_CARDHANDLE obtained by card_connect().
  * \param capdu IN The command APDU.
  * \param capduLength IN The length of the command APDU.
@@ -538,6 +543,9 @@ LONG send_APDU(OPSP_CARDHANDLE cardHandle, PBYTE capdu, DWORD capduLength, PBYTE
 	BYTE lc;
 	BYTE le;
 	BYTE la;
+#ifdef DEBUG
+	DWORD i;
+#endif
 
 	DWORD offset = 0;
 
@@ -558,6 +566,13 @@ LONG send_APDU(OPSP_CARDHANDLE cardHandle, PBYTE capdu, DWORD capduLength, PBYTE
 
 	if (cardInfo.protocol == OPSP_CARD_PROTOCOL_T1) {
 
+#ifdef DEBUG
+	log_Log(_T("send_APDU: Data to send: "));
+	for (i=0; i<apduCommandLength; i++) {
+		log_Log(_T(" 0x%02x"), apduCommand[i]);
+	}
+	
+#endif
 		// T=1 transmition
 
 		result = SCardTransmit( cardHandle,
@@ -571,6 +586,7 @@ LONG send_APDU(OPSP_CARDHANDLE cardHandle, PBYTE capdu, DWORD capduLength, PBYTE
 		if ( SCARD_S_SUCCESS != result) {
 			goto end;
 		} // if ( SCARD_S_SUCCESS != result)
+                offset += responseDataLength - 2;
 	} else {
 		// Determine which type of Exchange between the reader
 		if (apduCommandLength == 4) {
@@ -759,7 +775,7 @@ LONG send_APDU(OPSP_CARDHANDLE cardHandle, PBYTE capdu, DWORD capduLength, PBYTE
 						}
 					}
 
-					// T=0 transmition (command w/ Le or La)
+					// T=0 transmission (command w/ Le or La)
 
 					responseDataLength = *rapduLength - offset;
 					result = SCardTransmit( cardHandle,
@@ -940,7 +956,7 @@ LONG select_application(OPSP_CARDHANDLE cardHandle, OPSP_CARD_INFO cardInfo, PBY
 	DWORD sendBufferLength;
 	DWORD i=0;
 	LOG_START(_T("select_application"));
-	sendBufferLength = 5 + AIDLength;
+	sendBufferLength = 5 + AIDLength + 1;
 	sendBuffer = (PBYTE)malloc(sizeof(BYTE)*sendBufferLength);
 	sendBuffer[i++] = 0x00;
 	sendBuffer[i++] = 0xA4;
@@ -949,6 +965,8 @@ LONG select_application(OPSP_CARDHANDLE cardHandle, OPSP_CARD_INFO cardInfo, PBY
 	sendBuffer[i++] = (BYTE)AIDLength;
 	memcpy(sendBuffer+i, AID, AIDLength);
 	i+=AIDLength;
+	/* Le */
+	sendBuffer[i++] = 0x00;
 #ifdef DEBUG
 	log_Log(_T("select_application: Data to send: "));
 	for (i=0; i<sendBufferLength; i++) {
@@ -4618,7 +4636,8 @@ OPSP_STRING stringify_error(DWORD errorCode) {
 // 0x94
 
 			default:
-				code = (OPSP_STRING)malloc(sizeof(TCHAR)*9);
+                          _sntprintf(strError, strErrorSize, _T("Unknown ISO7816 error: 0x%04lX"), errorCode&0x0000ffff);
+/*				code = (OPSP_STRING)malloc(sizeof(TCHAR)*9);
 				#ifdef WIN32
 				_ultot(errorCode, code, 16);
 				#else
@@ -4635,7 +4654,7 @@ OPSP_STRING stringify_error(DWORD errorCode) {
 					_tcscpy(&strError[_tcslen(prefix)], code+4);
 				}
 				free(code);
-				free(prefix);
+                          free(prefix);*/
 				return strError;
 		} // switch(errorCode)
 	} // if ((errorCode & ((DWORD)0xFFF00000L)) == ((DWORD)0x80200000L))
