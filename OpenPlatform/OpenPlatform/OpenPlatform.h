@@ -185,7 +185,7 @@ typedef struct {
  * The outer tag 0xE2 contains the two inner tags.
  */
 typedef struct {
-	BYTE DAPBlockLength; //!< The length of the DAP block. The length of all following fields.
+	BYTE DAPBlockLength; //!< DEPRECATED. Ignore this. The length of the DAP block. The length of all following fields.
 	BYTE securityDomainAIDLength; //!< The length of the Security Domain.
 	BYTE securityDomainAID[16]; //!< The AID of the Security Domain.
 	BYTE signatureLength; //!< The length of the signature. Can be 8 for a 3DES signature or 128 for a RSA signature.

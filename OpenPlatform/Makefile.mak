@@ -79,7 +79,7 @@ $(OUTDIR)/$(LIB_NAME).dll: $(OBJS) version.res
 $(OBJS): $(@B).c
 	$(CPP) $(CPPFLAGS) /c /Fd$(OUTDIR)/%|pfF %|pfF.c
 
-version.res : version.rc version.h
+version.res : version.rc
 !IFDEF DEBUG
 	rc /dDEBUG version.rc
 !ELSE
