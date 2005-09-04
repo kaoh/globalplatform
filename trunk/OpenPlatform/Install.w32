@@ -33,9 +33,14 @@ This will be a lot of work ...
 
 Installation:
 
+Important for Windows is that applications linked against Open Platform must use the UNICODE and _UNICODE switch.
+Otherwise the application will crash, because the Open Platform Library is compiled with Unicode support.
 Keep in mind, that all applications should be compiled and linked with the same debugging properties
-and against the same libraries. That means if you have downloaded a pre-built version of the pthread
-library, then you also have to build a release version.
+and against the same libraries.
+
+You can also use the .sln file for VS 2003 or the .dsw file for VS 6.0. Then you have to adjust the
+C/C++->General->Additional Include Directories, Linker->General->Additional Library Directories and
+Linker->Input->Additional Depencies fields according to the following.
 
 1.	Set the environment (This are include files and libraries and programms of the building environment)
 	for compilation and open a command prompt. If you have Microsoft Visual Studio 6.0
@@ -76,7 +81,7 @@ library, then you also have to build a release version.
 
 6.	(optional)
 	Run nmake -f Makefile.mak clean to delete the Debug and Release directories.
-	
+
 If you need to get debugging output you must have built a debug version
 and enable the debugging by setting the environment variable
 OPENPLATFORM_DEBUG=1. If you explicitly set a log file with

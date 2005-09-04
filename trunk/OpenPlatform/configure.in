@@ -1,7 +1,7 @@
 # Require autoconf 2.53
 AC_PREREQ(2.53)
 
-AC_INIT(Open Platform, 1.0.0, k_o_@users.sourceforge.net)
+AC_INIT(Open Platform, 1.2.0, k_o_@users.sourceforge.net)
 AM_INIT_AUTOMAKE
 
 # check programs
@@ -63,7 +63,7 @@ AC_CHECK_LIB(ssl, PEM_read_bio_PrivateKey, [],
         [AC_MSG_ERROR([PEM_read_PrivateKey() not
 found, install OpenSSL 0.9.7e or later])])
 
-AC_MSG_RESULT([enable OpenPlatform debug     : $debug]) 
+AC_MSG_RESULT([enable OpenPlatform debug     : $debug])
 
 AC_OUTPUT([
 Makefile

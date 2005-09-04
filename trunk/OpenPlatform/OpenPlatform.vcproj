@@ -39,13 +39,14 @@
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;E:\quarantine\openssl-0.9.7e\out32dll&quot;"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(OutDir)/Open Platform 2.0.1 Host Service with OpenSSL.pdb"
+				ProgramDatabaseFile="$(OutDir)/OpenPlatform.pdb"
 				SubSystem="1"
 				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCPostBuildEventTool"
+				CommandLine="copy &quot;$(OutDir)\OpenPlatform.dll&quot;  &quot;$(windir)\system32\&quot;"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool
@@ -96,7 +97,7 @@
 				Name="VCMIDLTool"/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy .\Release\OPSP.dll C:\Windows\System32\"/>
+				CommandLine="copy &quot;$(OutDir)\OpenPlatform.dll&quot;  &quot;$(windir)\system32\&quot;"/>
 			<Tool
 				Name="VCPreBuildEventTool"/>
 			<Tool
@@ -146,6 +147,12 @@
 				RelativePath=".\OpenPlatform\OpenPlatform.h">
 			</File>
 			<File
+				RelativePath=".\resource.h">
+			</File>
+			<File
+				RelativePath=".\resource1.h">
+			</File>
+			<File
 				RelativePath=".\stdafx.h">
 			</File>
 			<File
@@ -156,6 +163,21 @@
 			Name="Resource Files"
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}">
+			<File
+				RelativePath=".\version.rc">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCResourceCompilerTool"
+						PreprocessorDefinitions="_UNICODE;UNICODE;DEBUG"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCResourceCompilerTool"
+						PreprocessorDefinitions="_UNICODE;UNICODE"/>
+				</FileConfiguration>
+			</File>
 		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt">

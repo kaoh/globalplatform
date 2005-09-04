@@ -1,6 +1,10 @@
 History
 =======
 
+1.2.0 
+	- OPSP_DAP_BLOCK structure member DAPBlockLength deprecated, 
+	is ignored, all function calculate the length on its own.
+
 1.1.0 - Thu Aug 25 2005, Karsten Ohme
 	- T=1 protocol bug fixed
 	- bug in calculation of Load File Data Block DAP fixed

@@ -25,11 +25,11 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
- 
-/*
- * Contains mapping for Unicode functions.
+
+/*! @file
+ * Contains mappings for Unicode functions.
  */
- 
+
 #ifndef WIN32
 #define _tmain main
 #define _TCHAR char
