@@ -650,13 +650,13 @@ static LONG wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrapp
 		} // if (secInfo->securityLevel == GP_SCP01_SECURITY_LEVEL_C_DEC_C_MAC || secInfo->securityLevel == GP_SCP02_SECURITY_LEVEL_C_DEC_C_MAC)
 		*wrappedApduCommandLength = wrappedLength;
 	} // if (secInfo->securityLevel != GP_SCP02_SECURITY_LEVEL_NO_SECURE_MESSAGING && secInfo->securityLevel != GP_SCP01_SECURITY_LEVEL_NO_SECURE_MESSAGING)
-#ifdef DEBUG
-	log_Log(_T("wrap_command: Data to send: "));
-	for (i=0; i<wrappedLength; i++) {
-		log_Log(_T(" 0x%02x"), wrappedApduCommand[i]);
-	}
-
-#endif
+//#ifdef DEBUG
+//	log_Log(_T("wrap_command: Data to send: "));
+//	for (i=0; i<wrappedLength; i++) {
+//		log_Log(_T(" 0x%02x"), wrappedApduCommand[i]);
+//	}
+//
+//#endif
 
 	result = GP_ERROR_SUCCESS;
 end:
@@ -2421,15 +2421,16 @@ LONG load(GP_CARD_INFO cardInfo, GP_SECURITY_INFO *secInfo,
 		sendBuffer[2] = 0x00;
 		sendBuffer[3] = (BYTE)sequenceNumber++;
 		sendBuffer[4]=(BYTE)j;
-		//sendBufferLength++;
-		//sendBuffer[sendBufferLength-1] = 0x00;
 		if ((feof(CAPFile)) || (total == (DWORD)fileSize)) {
 			sendBuffer[2]=0x80;
 			sendBufferLength++;
 			sendBuffer[sendBufferLength-1] = 0x00;
 		}
-		else
+		else {
 			sendBuffer[2]=0x00;
+			sendBufferLength++;
+			sendBuffer[sendBufferLength-1] = 0x00;
+		}
 
 		recvBufferLength=256;
 
@@ -2461,8 +2462,6 @@ LONG load(GP_CARD_INFO cardInfo, GP_SECURITY_INFO *secInfo,
 		sendBuffer[3] = sequenceNumber++;
 		sendBuffer[4]=(BYTE)j;
 		recvBufferLength=256;
-//		sendBufferLength++;
-//		sendBuffer[sendBufferLength-1] = 0x00;
 #ifdef DEBUG
 	log_Log(_T("load_applet: Data to send: "));
 	for (i=0; i<sendBufferLength; i++) {
@@ -2506,15 +2505,16 @@ LONG load(GP_CARD_INFO cardInfo, GP_SECURITY_INFO *secInfo,
 		sendBuffer[2] = 0x00;
 		sendBuffer[3] = sequenceNumber++;
 		sendBuffer[4]=(BYTE)j;
-//		sendBufferLength++;
-//		sendBuffer[sendBufferLength-1] = 0x00;
 		if ((feof(CAPFile)) || (total == (DWORD)fileSize) ) {
 			sendBuffer[2]=0x80;
 			sendBufferLength++;
 			sendBuffer[sendBufferLength-1] = 0x00;
 		}
-		else
+		else {
 			sendBuffer[2]=0x00;
+			sendBufferLength++;
+			sendBuffer[sendBufferLength-1] = 0x00;
+		}
 
 		recvBufferLength=256;
 #ifdef DEBUG
@@ -2546,15 +2546,16 @@ LONG load(GP_CARD_INFO cardInfo, GP_SECURITY_INFO *secInfo,
 		sendBufferLength=5+j;
 		sendBuffer[3] = sequenceNumber++;
 		sendBuffer[4] = (BYTE)j;
-		//sendBufferLength++;
-		//sendBuffer[sendBufferLength-1] = 0x00;
 		if ((feof(CAPFile)) || (total == (DWORD)fileSize)) {
 			sendBuffer[2]=0x80;
 			sendBufferLength++;
 			sendBuffer[sendBufferLength-1] = 0x00;
 		}
-		else
+		else {
 			sendBuffer[2]=0x00;
+			sendBufferLength++;
+			sendBuffer[sendBufferLength-1] = 0x00;
+		}
 #ifdef DEBUG
 		log_Log(_T("load_applet: Data to send: "));
 		for (i=0; i<sendBufferLength; i++) {
