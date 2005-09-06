@@ -126,7 +126,7 @@ static const BYTE GP_SCP02_SECURITY_LEVEL_C_MAC = 0x01; //!< Secure Channel Prot
 static const BYTE GP_SCP02_SECURITY_LEVEL_NO_SECURE_MESSAGING = 0x00; //!< Secure Channel Protocol '02': No secure messaging expected.
 
 
-static const BYTE GP_CARD_MANAGER_AID[] = {0xA0, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00}; //!< The AID of the Card Manager defined by GlobalPlatform specification.
+static const BYTE GP_CARD_MANAGER_AID[] = {0xA0, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00}; //!< The AID of the Card Manager defined by GlobalPlatform specification.
 
 static const BYTE GP_KEY_TYPE_RSA = 0xA1; //!< RSA key
 static const BYTE GP_KEY_TYPE_3DES = 0x81; //!< 3DES key.
