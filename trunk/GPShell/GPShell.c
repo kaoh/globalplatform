@@ -48,6 +48,7 @@ typedef struct _OptionStr {
     char *instParam;
     int instParamLen;
     int element;
+    int privilege;
 } OptionStr;
 
 /* Global Variables */
@@ -120,6 +121,7 @@ int handleOptions(OptionStr *pOptionStr)
     pOptionStr->instParam = NULL;
     pOptionStr->instParamLen = 0;
     pOptionStr->element = 0;
+    pOptionStr->privilege = 0;
 	
     token = strtokCheckComment(NULL);
 
@@ -171,7 +173,7 @@ int handleOptions(OptionStr *pOptionStr)
 	    } else {
 		pOptionStr->securityLevel = atoi(token);
 	    }
-	}  else if (strcmp(token, "-appletfile") == 0) {
+	} else if (strcmp(token, "-appletfile") == 0) {
 	    token = strtokCheckComment(NULL);
 	    if (token == NULL) {
 		printf ("Error: option -appletfile not followed by data\n");
@@ -430,6 +432,14 @@ int handleOptions(OptionStr *pOptionStr)
 			token);
 		exit (1);
 	    }	    
+	} else if (strcmp(token, "-priv") == 0) {
+	    token = strtokCheckComment(NULL);
+	    if (token == NULL) {
+		printf ("Error: option -priv not followed by data\n");
+		exit (1);
+	    } else {
+		pOptionStr->privilege = atoi(token);
+	    }
 	} else {
 	    // unknown option
 	    printf ("Error: unknown option %s\n", token);
@@ -605,14 +615,14 @@ int handleCommands(FILE *fd)
 
 		// Install for Install
 		handleOptions(&optionStr);
-		
+
 		rv = install_for_install_and_make_selectable(
 					 cardHandle, &securityInfo,
 					 cardInfo,
 					 optionStr.pkgAID, optionStr.pkgAIDLen,
 					 optionStr.AID, optionStr.AIDLen,
 					 optionStr.instAID, optionStr.instAIDLen,
-					 OPSP_APPLICATION_PRIVILEGE_PIN_CHANGE_PRIVILEGE, // 
+					 optionStr.privilege, 
 					 optionStr.vDataLimit,
 					 optionStr.nvDataLimit,
 					 optionStr.instParam,
@@ -626,6 +636,21 @@ int handleCommands(FILE *fd)
 			      rv, stringify_error(rv));
 		    exit (1);
 		}
+		
+		/*rv = install_for_make_selectable(cardHandle, &securityInfo,
+						 cardInfo,
+						 optionStr.instAID,
+						 optionStr.instAIDLen,
+						 optionStr.privilege, 
+						 NULL, // No install token
+						 &receipt, 
+						 &receiptDataAvailable);
+		if (rv != 0) {
+		    _tprintf (_T("install_for_make_selectable() returns %d (%s)\n"),
+			      rv, stringify_error(rv));
+		    exit (1);
+		    }*/
+		
 		break;
 	    } else if (strcmp(token, "card_disconnect") == 0) {
 		// disconnect card
