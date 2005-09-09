@@ -49,7 +49,7 @@ BEGIN
             VALUE "FileVersion", "1, 2, 0, 0"
             VALUE "InternalName", "OpenPlatform.dll"
             VALUE "LegalCopyright", "Copyright (C) Karsten Ohme 2005"
-            VALUE "LegalTrademarks", "BSD License"
+            VALUE "License", "BSD"
             VALUE "OriginalFilename", "OpenPlatform.dll"
             VALUE "ProductName", " OpenPlatform Library"
             VALUE "ProductVersion", "1, 2, 0, 0"
