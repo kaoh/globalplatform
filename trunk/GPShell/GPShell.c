@@ -215,9 +215,9 @@ int handleOptions(OptionStr *pOptionStr)
 		}
 		
 		ConvertCToT (pOptionStr->file, token);
-#ifdef DEBUG
+		/*#ifdef DEBUG
 		_tprintf ( _T("file name %s\n"), pOptionStr->file);
-#endif
+		#endif*/
 	    } 
 	} else if (strcmp(token, "-key") == 0) {
 	    token = strtokCheckComment(NULL);
@@ -453,16 +453,24 @@ int handleOptions(OptionStr *pOptionStr)
 
 int handleCommands(FILE *fd)
 {
-    BYTE buf[BUFLEN + 1];
+    BYTE buf[BUFLEN + 1], commandLine[BUFLEN + 1];
     int rv = 0, i;
     char *token;
     OptionStr optionStr;
 
-    while (fgets (buf, BUFLEN, fd) != NULL) {	
+    while (fgets (buf, BUFLEN, fd) != NULL) {
+
+	// copy command line for printing it out later
+	strncpy (commandLine, buf, BUFLEN);
+
 	token = strtokCheckComment(buf);
 	while (token != NULL) {
 	    if (token[0] == '#' || strncmp (token, "//", 2) == 0)
 		break;
+
+	    // print command line
+	    printf ("%s", commandLine);
+	    
 	    if (strcmp(token, "establish_context") == 0) {
 		// Establish context
 		rv = establish_context(&cardContext);
@@ -485,16 +493,16 @@ int handleCommands(FILE *fd)
 		DWORD readerStrLen = BUFLEN;
 		// open reader
 		handleOptions(&optionStr);
-#ifdef DEBUG
+		/*#ifdef DEBUG
 		printf ("optionStr.reader %d\n", optionStr.reader);
-#endif
+		#endif*/
 		if (optionStr.reader == NULL) {	
 		    // get the first reader
 		    rv = list_readers (cardContext, buf, &readerStrLen);
 
 		    optionStr.reader = buf;
 #ifdef DEBUG
-		    _tprintf ( _T("reader name %s\n"), optionStr.reader);
+		    _tprintf ( _T("* reader name %s\n"), optionStr.reader);
 #endif
 		}
 		
