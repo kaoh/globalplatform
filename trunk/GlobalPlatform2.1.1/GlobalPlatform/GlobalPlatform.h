@@ -517,16 +517,16 @@ typedef struct {
 // Mapping of system errors to error codes.
 #ifdef _WIN32
 #define OPGP_ERROR_SUCCESS ERROR_SUCCESS //!< No error occured.
-#define OPGP_ERROR_READ ERROR_READ_FAULT //!< Read error.
-#define OPGP_ERROR_BAD_FILE_DESCRIPTOR ERROR_INVALID_HANDLE //!< Bad file descriptor.
-#define OPGP_ERROR_FILE_NOT_FOUND ERROR_FILE_NOT_FOUND //!< File not found.
-#define OPGP_ERROR_NOMEM ERROR_NOT_ENOUGH_MEMORY //!< No memory.
+//#define errno ERROR_READ_FAULT //!< Read error.
+//#define OPGP_ERROR_BAD_FILE_DESCRIPTOR ERROR_INVALID_HANDLE //!< Bad file descriptor.
+//#define errno ERROR_FILE_NOT_FOUND //!< File not found.
+//#define OPGP_ERROR_NOMEM ERROR_NOT_ENOUGH_MEMORY //!< No memory.
 #else
 #define OPGP_ERROR_SUCCESS 0 //!< No error occured.
-#define OPGP_ERROR_READ EIO //!< Read error.
-#define OPGP_ERROR_BAD_FILE_DESCRIPTOR EBADF //!< Bad file descriptor.
-#define OPGP_ERROR_FILE_NOT_FOUND ENOENT //!< File not found.
-#define OPGP_ERROR_NOMEM ENOMEM //!< No memory.
+//#define errno EIO //!< Read error.
+//#define OPGP_ERROR_BAD_FILE_DESCRIPTOR EBADF //!< Bad file descriptor.
+//#define errno ENOENT //!< File not found.
+//#define OPGP_ERROR_NOMEM ENOMEM //!< No memory.
 #endif
 
 
@@ -729,7 +729,7 @@ LONG GP211_set_status(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYT
 
 //! \brief Formats an error code to a human readable string.
 OPGP_API
-OPGP_STRING GP211_stringify_error(DWORD errorCode);
+OPGP_STRING stringify_error(DWORD errorCode);
 
 //! \brief GlobalPlatform2.1.1: Mutual authentication.
 OPGP_API
