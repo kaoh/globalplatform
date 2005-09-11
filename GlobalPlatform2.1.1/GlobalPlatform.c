@@ -251,6 +251,8 @@ static LONG get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD executa
 
 static void mapOP201ToGP211SecurityInfo(OP201_SECURITY_INFO op201secInfo, 
 										GP211_SECURITY_INFO *gp211secInfo) {
+	if (gp211secInfo == NULL)
+		return;
 	memcpy(gp211secInfo->C_MACSessionKey, op201secInfo.sessionMacKey, 16);
 	memcpy(gp211secInfo->lastC_MAC, op201secInfo.lastMac, 8);
 	memcpy(gp211secInfo->encryptionSessionKey, op201secInfo.sessionEncKey, 16);
@@ -271,6 +273,8 @@ static void mapOP201ToGP211SecurityInfo(OP201_SECURITY_INFO op201secInfo,
 
 static void mapGP211ToOP201SecurityInfo(GP211_SECURITY_INFO gp211secInfo,
 										OP201_SECURITY_INFO *op201secInfo) {
+	if (op201secInfo == NULL)
+		return;
 	memcpy(op201secInfo->sessionMacKey, gp211secInfo.C_MACSessionKey, 16);
 	memcpy(op201secInfo->lastMac, gp211secInfo.lastC_MAC, 8);
 	memcpy(op201secInfo->sessionEncKey, gp211secInfo.encryptionSessionKey, 16);
@@ -289,6 +293,8 @@ static void mapGP211ToOP201SecurityInfo(GP211_SECURITY_INFO gp211secInfo,
 
 static void mapOP201ToGP211DAPBlock(OP201_DAP_BLOCK op201dapBlock, 
 										GP211_DAP_BLOCK *gp211dapBlock) {
+	if (gp211dapBlock == NULL)
+		return;
 	gp211dapBlock->securityDomainAIDLength = op201dapBlock.securityDomainAIDLength;
 	memcpy(gp211dapBlock->securityDomainAID, op201dapBlock.securityDomainAID, op201dapBlock.securityDomainAIDLength);
 	gp211dapBlock->signatureLength = op201dapBlock.signatureLength;
@@ -297,6 +303,8 @@ static void mapOP201ToGP211DAPBlock(OP201_DAP_BLOCK op201dapBlock,
 
 static void mapGP211ToOP201DAPBlock(GP211_DAP_BLOCK gp211dapBlock,
 										OP201_DAP_BLOCK *op201dapBlock) {
+	if (op201dapBlock == NULL)
+		return;
 	op201dapBlock->securityDomainAIDLength = gp211dapBlock.securityDomainAIDLength;
 	memcpy(op201dapBlock->securityDomainAID, gp211dapBlock.securityDomainAID, gp211dapBlock.securityDomainAIDLength);
 	op201dapBlock->signatureLength = gp211dapBlock.signatureLength;
@@ -305,6 +313,8 @@ static void mapGP211ToOP201DAPBlock(GP211_DAP_BLOCK gp211dapBlock,
 
 static void mapOP201ToGP211ReceiptData(OP201_RECEIPT_DATA op201receiptData,
 									   GP211_RECEIPT_DATA *gp211receiptData) {
+	if (gp211receiptData == NULL)
+		return;
 	gp211receiptData->cardUniqueDataLength = op201receiptData.cardUniqueDataLength;
 	memcpy(gp211receiptData->cardUniqueData, op201receiptData.cardUniqueData, op201receiptData.cardUniqueDataLength);
 	gp211receiptData->confirmationCounterLength = op201receiptData.confirmationCounterLength;
@@ -315,6 +325,8 @@ static void mapOP201ToGP211ReceiptData(OP201_RECEIPT_DATA op201receiptData,
 
 static void mapGP211ToOP201ReceiptData(GP211_RECEIPT_DATA gp211receiptData,
 										OP201_RECEIPT_DATA *op201receiptData) {
+	if (op201receiptData == NULL)
+		return;
 	op201receiptData->cardUniqueDataLength = gp211receiptData.cardUniqueDataLength;
 	memcpy(op201receiptData->cardUniqueData, gp211receiptData.cardUniqueData, gp211receiptData.cardUniqueDataLength);
 	op201receiptData->confirmationCounterLength = gp211receiptData.confirmationCounterLength;
@@ -325,6 +337,8 @@ static void mapGP211ToOP201ReceiptData(GP211_RECEIPT_DATA gp211receiptData,
 
 static void mapOP201ToGP211KeyInformation(OP201_KEY_INFORMATION op201keyInformation,
 										  GP211_KEY_INFORMATION *gp211keyInformation) {
+	if (gp211keyInformation == NULL)
+		return;
 	gp211keyInformation->keyIndex = op201keyInformation.keyIndex;
 	gp211keyInformation->keyLength = op201keyInformation.keyLength;
 	gp211keyInformation->keySetVersion = op201keyInformation.keySetVersion;
@@ -333,6 +347,8 @@ static void mapOP201ToGP211KeyInformation(OP201_KEY_INFORMATION op201keyInformat
 
 static void mapGP211ToOP201KeyInformation(GP211_KEY_INFORMATION gp211keyInformation,
 										  OP201_KEY_INFORMATION *op201keyInformation) {
+	if (op201keyInformation == NULL)
+		return;
 	op201keyInformation->keyIndex = gp211keyInformation.keyIndex;
 	op201keyInformation->keyLength = gp211keyInformation.keyLength;
 	op201keyInformation->keySetVersion = gp211keyInformation.keySetVersion;
@@ -341,6 +357,8 @@ static void mapGP211ToOP201KeyInformation(GP211_KEY_INFORMATION gp211keyInformat
 
 static void mapOP201ToGP211ApplicationData(OP201_APPLICATION_DATA op201applData,
 										  GP211_APPLICATION_DATA *gp211applData) {
+	if (gp211applData == NULL)
+		return;
 	gp211applData->AIDLength = op201applData.AIDLength;
 	memcpy(gp211applData->AID, op201applData.AID, op201applData.AIDLength);
 	gp211applData->lifeCycleState = op201applData.lifeCycleState;
@@ -349,6 +367,8 @@ static void mapOP201ToGP211ApplicationData(OP201_APPLICATION_DATA op201applData,
 
 static void mapGP211ToOP201ApplicationData(GP211_APPLICATION_DATA gp211applData,
 										   OP201_APPLICATION_DATA *op201applData) {
+	if (op201applData == NULL)
+		return;
 	op201applData->AIDLength = gp211applData.AIDLength;
 	memcpy(op201applData->AID, gp211applData.AID, gp211applData.AIDLength);
 	op201applData->lifeCycleState = gp211applData.lifeCycleState;
@@ -1404,7 +1424,7 @@ static LONG put_rsa_key(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 		{ result = OPGP_ERROR_INVALID_FILENAME; goto end; }
 	PEMKeyFile = _tfopen(PEMKeyFileName, _T("rb"));
 	if (PEMKeyFile == NULL) {
-		{ result = OPGP_ERROR_FILE_NOT_FOUND; goto end; }
+		{ result = errno; goto end; }
 	}
 	key = EVP_PKEY_new();
 	if (!PEM_read_PUBKEY(PEMKeyFile, &key, NULL, passPhrase)) {
@@ -1787,7 +1807,7 @@ static LONG put_delegated_management_keys(OPGP_CARD_INFO cardInfo, GP211_SECURIT
 		{ result = OPGP_ERROR_INVALID_FILENAME; goto end; }
 	PEMKeyFile = _tfopen(PEMKeyFileName, _T("rb"));
 	if (PEMKeyFile == NULL) {
-		{ result = OPGP_ERROR_FILE_NOT_FOUND; goto end; }
+		{ result = errno; goto end; }
 	}
 	key = EVP_PKEY_new();
 	if (!PEM_read_PUBKEY(PEMKeyFile, &key, NULL, passPhrase)) {
@@ -2693,19 +2713,19 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 
 	CAPFile = _tfopen(executableLoadFileName, _T("rb"));
 	if (CAPFile == NULL) {
-		{ result = OPGP_ERROR_FILE_NOT_FOUND; goto end; }
+		{ result = errno; goto end; }
 	}
 #ifdef WIN32
 	fileSize = _filelength(CAPFile->_file);
 #else
 	fileSize = fseek(CAPFile, 0, SEEK_END);
 	if (fileSize == -1) {
-		{ result = OPGP_ERROR_BAD_FILE_DESCRIPTOR; goto end; }
+		{ result = errno; goto end; }
 	}
 	fileSize = ftell(CAPFile);
 #endif
 	if (fileSize == -1L) {
-		{ result = OPGP_ERROR_BAD_FILE_DESCRIPTOR; goto end; }
+		{ result = errno; goto end; }
 	}
 	if (fileSize < 128L) {
 		fileSizeSize=1;
@@ -2740,7 +2760,7 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 		total+=(DWORD)fread(sendBuffer+5+j, sizeof(unsigned char), MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING-j, CAPFile);
 		j+=total;
 		if(ferror(CAPFile)) {
-			{ result = OPGP_ERROR_READ; goto end; }
+			{ result = errno; goto end; }
 		}
 		sendBufferLength=5+j;
 		sendBuffer[2] = 0x00;
@@ -2753,8 +2773,9 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 		}
 		else {
 			sendBuffer[2]=0x00;
-			sendBufferLength++;
-			sendBuffer[sendBufferLength-1] = 0x00;
+			/* CyberFlex e-gate 32k cards do not behave standard conform and accept the Le field (?) */
+			//sendBufferLength++;
+			//sendBuffer[sendBufferLength-1] = 0x00;
 		}
 
 		recvBufferLength=256;
@@ -2824,7 +2845,7 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 		total+=(DWORD)fread(sendBuffer+5+j, sizeof(unsigned char), MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING-1-fileSizeSize, CAPFile);
 		j+=total;
 		if(ferror(CAPFile)) {
-			{ result = OPGP_ERROR_READ; goto end; }
+			{ result = errno; goto end; }
 		}
 		sendBufferLength=5+j;
 		sendBuffer[2] = 0x00;
@@ -2837,8 +2858,9 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 		}
 		else {
 			sendBuffer[2]=0x00;
-			sendBufferLength++;
-			sendBuffer[sendBufferLength-1] = 0x00;
+			/* CyberFlex e-gate 32k cards do not behave standard conform and accept the Le field (?) */
+			//sendBufferLength++;
+			//sendBuffer[sendBufferLength-1] = 0x00;
 		}
 
 		recvBufferLength=256;
@@ -2866,7 +2888,7 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 	while((feof(CAPFile) == 0) && !(total == (DWORD)fileSize)) {
 		total += j = (DWORD)fread(sendBuffer+5, sizeof(unsigned char), MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING, CAPFile);
 		if(ferror(CAPFile)) {
-			{ result = OPGP_ERROR_READ; goto end; }
+			{ result = errno; goto end; }
 		}
 		sendBufferLength=5+j;
 		sendBuffer[3] = sequenceNumber++;
@@ -2878,8 +2900,9 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 		}
 		else {
 			sendBuffer[2]=0x00;
-			sendBufferLength++;
-			sendBuffer[sendBufferLength-1] = 0x00;
+			/* CyberFlex e-gate 32k cards do not behave standard conform and accept the Le field (?) */
+			//sendBufferLength++;
+			//sendBuffer[sendBufferLength-1] = 0x00;
 		}
 #ifdef DEBUG
 		log_Log(_T("load: Data to send: "));
@@ -3755,7 +3778,7 @@ static LONG calculate_rsa_signature(PBYTE message, DWORD messageLength, OPGP_STR
 		{ result = OPGP_ERROR_INVALID_FILENAME; goto end; }
 	PEMKeyFile = _tfopen(PEMKeyFileName, _T("rb"));
 	if (PEMKeyFile == NULL) {
-		{ result = OPGP_ERROR_FILE_NOT_FOUND; goto end; }
+		{ result = errno; goto end; }
 	}
 	key = EVP_PKEY_new();
 	if (!PEM_read_PrivateKey(PEMKeyFile, &key, NULL, passPhrase)) {
@@ -4101,13 +4124,13 @@ LONG GP211_calculate_load_file_data_block_hash(OPGP_STRING executableLoadFileNam
 	}
 	CAPFile = _tfopen(executableLoadFileName, _T("rb"));
 	if (CAPFile == NULL) {
-		{ result = OPGP_ERROR_FILE_NOT_FOUND; goto end; }
+		{ result = errno; goto end; }
 	}
 
 	while(feof(CAPFile) == 0) {
 		count = (int)fread(buf, sizeof(unsigned char), sizeof(buf), CAPFile);
 		if(ferror(CAPFile)) {
-			{ result = OPGP_ERROR_READ; goto end; }
+			{ result = errno; goto end; }
 		}
 		result = EVP_DigestUpdate(&mdctx, buf, count);
 		if (result != 1) {
@@ -5873,16 +5896,10 @@ OPGP_STRING stringify_error(DWORD errorCode) {
 		return _T("The application to load must be less than 32535 bytes.");
 	if (errorCode == OPGP_ERROR_VALIDATION_FAILED)
 		return _T("A validation has failed.");
-	if (errorCode == OPGP_ERROR_INVALID_FILENAME)
-		return _T("A file name is invalid.");
 	if (errorCode == OPGP_ERROR_INVALID_PASSWORD)
 		return _T("A password is invalid.");
-	if (errorCode == OPGP_ERROR_FILE_NOT_FOUND)
-		return _T("A file is not found.");
 	if (errorCode == OPGP_ERROR_WRONG_EXPONENT)
 		return _T("The exponent must be 3 or 65537.");
-	if (errorCode == OPGP_ERROR_BAD_FILE_DESCRIPTOR)
-		return _T("Problems reading the file.");
 	if ((errorCode & ((DWORD)0xFFFFFF00L)) == OPGP_ISO7816_ERROR_CORRECT_LENGTH) {
         _sntprintf(strError, strErrorSize, _T("Wrong length Le: Exact length: 0x%02lX"), 
 					errorCode&0x000000ff);
@@ -6229,7 +6246,7 @@ LONG OP201_put_data(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
  * \param *secInfo INOUT The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
-					LONG OP201_get_data(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength) {
+LONG OP201_get_data(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength) {
 	LONG result;
 	GP211_SECURITY_INFO gp211secInfo;
 	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
@@ -6370,13 +6387,13 @@ end:
  * \param receiptDataAvailable OUT 0 if no receiptData is availabe.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
-LONG OP201_load_application(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, 
+LONG OP201_load(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, 
 				 OP201_DAP_BLOCK *dapBlock, DWORD dapBlockLength, OPGP_STRING executableLoadFileName,
 				 OP201_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable) {
 	LONG result;
 	GP211_SECURITY_INFO gp211secInfo;
 	GP211_RECEIPT_DATA gp211receiptData;
-	GP211_DAP_BLOCK *gp211dapBlock;
+	GP211_DAP_BLOCK *gp211dapBlock = NULL;
 	DWORD i;
 	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
 	gp211dapBlock = (GP211_DAP_BLOCK *)malloc(sizeof(GP211_DAP_BLOCK)*dapBlockLength);
@@ -6385,8 +6402,11 @@ LONG OP201_load_application(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInf
 	}
 	result = load(cardInfo, &gp211secInfo, gp211dapBlock, dapBlockLength, 
 		executableLoadFileName, &gp211receiptData, receiptDataAvailable);
-	mapGP211ToOP201ReceiptData(gp211receiptData, receiptData);
+	if (*receiptDataAvailable)
+		mapGP211ToOP201ReceiptData(gp211receiptData, receiptData);
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
+	if (gp211dapBlock)
+		free(gp211dapBlock);
 	return result;
 }
 
@@ -6473,7 +6493,8 @@ LONG OP201_install_for_install(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *sec
 		applicationPrivileges, volatileDataSpaceLimit, nonVolatileDataSpaceLimit,
 		applicationInstallParameters, applicationInstallParametersLength, installToken,
 		&gp211receiptData, receiptDataAvailable);
-	mapGP211ToOP201ReceiptData(gp211receiptData, receiptData);
+	if (*receiptDataAvailable)
+		mapGP211ToOP201ReceiptData(gp211receiptData, receiptData);
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 	return result;
 }
@@ -6522,7 +6543,8 @@ LONG OP201_install_for_install_and_make_selectable(OPGP_CARD_INFO cardInfo, OP20
 		applicationPrivileges, volatileDataSpaceLimit, nonVolatileDataSpaceLimit,
 		applicationInstallParameters, applicationInstallParametersLength, installToken,
 		&gp211receiptData, receiptDataAvailable);
-	mapGP211ToOP201ReceiptData(gp211receiptData, receiptData);
+	if (*receiptDataAvailable)
+		mapGP211ToOP201ReceiptData(gp211receiptData, receiptData);
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 	return result;
 }
@@ -6553,7 +6575,8 @@ LONG OP201_install_for_make_selectable(OPGP_CARD_INFO cardInfo, OP201_SECURITY_I
 	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
 	result = install_for_make_selectable(cardInfo, &gp211secInfo, applicationInstanceAID, applicationInstanceAIDLength, applicationPrivileges, installToken,
 		&gp211receiptData, receiptDataAvailable);
-	mapGP211ToOP201ReceiptData(gp211receiptData, receiptData);
+	if (*receiptDataAvailable)
+		mapGP211ToOP201ReceiptData(gp211receiptData, receiptData);
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 	return result;
 }
@@ -6871,19 +6894,19 @@ LONG OP201_calculate_load_file_DAP(OP201_DAP_BLOCK *dapBlock, DWORD dapBlockLeng
 	}
 	CAPFile = _tfopen(executableLoadFileName, _T("rb"));
 	if (CAPFile == NULL) {
-		{ result = OPGP_ERROR_FILE_NOT_FOUND; goto end; }
+		{ result = errno; goto end; }
 	}
 #ifdef WIN32
 	fileSize = _filelength(CAPFile->_file);
 #else
 	fileSize = fseek(CAPFile, 0, SEEK_END);
 	if (fileSize == -1) {
-		{ result = OPGP_ERROR_BAD_FILE_DESCRIPTOR; goto end; }
+		{ result = errno; goto end; }
 	}
 	fileSize = ftell(CAPFile);
 #endif
 	if (fileSize == -1L) {
-		{ result = OPGP_ERROR_BAD_FILE_DESCRIPTOR; goto end; }
+		{ result = errno; goto end; }
 	}
 	if (fileSize < 128L) {
 		buf[0] = 0xC4;
@@ -6915,11 +6938,11 @@ LONG OP201_calculate_load_file_DAP(OP201_DAP_BLOCK *dapBlock, DWORD dapBlockLeng
 	while(feof(CAPFile) == 0) {
 		count = (int)fread(buf, sizeof(unsigned char), sizeof(buf), CAPFile);
 		if(ferror(CAPFile)) {
-			{ result = OPGP_ERROR_READ; goto end; }
+			{ result = errno; goto end; }
 		}
 		result = EVP_DigestUpdate(&mdctx, buf, count);
 		if (result != 1) {
-			{ result = OPGP_OPENSSL_ERROR; goto end; }
+			{ result = errno; goto end; }
 		}
 	}
 	result = EVP_DigestFinal_ex(&mdctx, hash, NULL);
@@ -6969,12 +6992,12 @@ LONG OP201_calculate_3des_DAP(PBYTE securityDomainAID, DWORD securityDomainAIDLe
 	EVP_CIPHER_CTX_set_padding(&ctx, 0);
 	CAPFile = _tfopen(executableLoadFileName, _T("rb"));
 	if (CAPFile == NULL) {
-		{ result = OPGP_ERROR_FILE_NOT_FOUND; goto end; }
+		{ result = errno; goto end; }
 	}
 #ifdef WIN32
 	fileSize = _filelength(CAPFile->_file);
 	if (fileSize == -1L) {
-		{ result = OPGP_ERROR_BAD_FILE_DESCRIPTOR; goto end; }
+		{ result = errno; goto end; }
 	}
 #else
 	fileSize = fseek(CAPFile, 0, SEEK_END);
@@ -6986,7 +7009,7 @@ LONG OP201_calculate_3des_DAP(PBYTE securityDomainAID, DWORD securityDomainAIDLe
 	while(feof(CAPFile) == 0) {
 		count = (int)fread(buf, sizeof(unsigned char), sizeof(buf), CAPFile);
 		if(ferror(CAPFile)) {
-			{ result = OPGP_ERROR_READ; goto end; }
+			{ result = errno; goto end; }
 		}
 		for (i=0; i<count/8; i++) {
 			result = EVP_EncryptUpdate(&ctx, dapBlock->signature,
@@ -7075,7 +7098,7 @@ LONG OP201_calculate_rsa_DAP(PBYTE securityDomainAID, DWORD securityDomainAIDLen
 		{ result = OPGP_ERROR_INVALID_FILENAME; goto end; }
 	PEMKeyFile = _tfopen(PEMKeyFileName, _T("rb"));
 	if (PEMKeyFile == NULL) {
-		{ result = OPGP_ERROR_FILE_NOT_FOUND; goto end; }
+		{ result = errno; goto end; }
 	}
 
 	key = EVP_PKEY_new();
@@ -7088,12 +7111,12 @@ LONG OP201_calculate_rsa_DAP(PBYTE securityDomainAID, DWORD securityDomainAIDLen
 	}
 	CAPFile = _tfopen(executableLoadFileName, _T("rb"));
 	if (CAPFile == NULL) {
-		{ result = OPGP_ERROR_FILE_NOT_FOUND; goto end; }
+		{ result = errno; goto end; }
 	}
 	while(feof(CAPFile) == 0) {
 		count = (int)fread(buf, sizeof(unsigned char), sizeof(buf), CAPFile);
 		if(ferror(CAPFile)) {
-			{ result = OPGP_ERROR_READ; goto end; }
+			{ result = errno; goto end; }
 		}
 		result = EVP_SignUpdate(&mdctx, buf, count);
 		if (result != 1) {
@@ -7241,5 +7264,27 @@ static LONG readDAPBlock(PBYTE buf, PDWORD bufLength, OP201_DAP_BLOCK dapBlock) 
 	GP211_DAP_BLOCK gp211dapBlock;
 	mapOP201ToGP211DAPBlock(dapBlock, &gp211dapBlock);
 	result = readLoadFileDataBlockSignature(buf, bufLength, gp211dapBlock);
+	return result;
+}
+
+/**
+ * A keySetVersion and keyIndex of 0x00 selects the first available key set version and key index.
+ * \param encKey IN The static encryption key.
+ * \param macKey IN The static MAC key.
+ * \param keySetVersion IN The key set version on the card to use for mutual authentication.
+ * \param keyIndex IN The key index of the encryption key in the key set version on the card to use for mutual authentication.
+ * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by card_connect().
+ * \param securityLevel IN The requested security level.
+ * \param *secInfo OUT The returned OP201_SECURITY_INFO structure.
+ * \return OPGP_ERROR_SUCCESS if no error, error code else.
+ */
+LONG OP201_mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE encKey[16], BYTE macKey[16], 
+								 BYTE keySetVersion,
+								 BYTE keyIndex, BYTE securityLevel, OP201_SECURITY_INFO *secInfo) {
+	LONG result;
+	GP211_SECURITY_INFO gp211secInfo;
+	result = mutual_authentication(cardInfo, NULL, encKey, macKey, macKey, keySetVersion, 
+		keyIndex, GP211_SCP01, GP211_SCP01_IMPL_i05, securityLevel, &gp211secInfo);
+	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 	return result;
 }
