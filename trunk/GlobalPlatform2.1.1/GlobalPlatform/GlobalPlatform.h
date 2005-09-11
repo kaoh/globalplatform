@@ -64,6 +64,9 @@ typedef LPDWORD PDWORD; //!< A Microsoft LPDWORD/Muscle PC/SC, a pointer to a do
 #endif
 
 
+#define OPGP_TRACE_MODE_ENABLE 1 //!< Switch trace mode on
+#define OPGP_TRACE_MODE_DISABLE 0 //!< Switch trace mode off
+
 /* Some card states. */
 
 #define OPGP_CARD_ABSENT SCARD_ABSENT //!< There is no card in the reader.
@@ -517,16 +520,8 @@ typedef struct {
 // Mapping of system errors to error codes.
 #ifdef _WIN32
 #define OPGP_ERROR_SUCCESS ERROR_SUCCESS //!< No error occured.
-//#define errno ERROR_READ_FAULT //!< Read error.
-//#define OPGP_ERROR_BAD_FILE_DESCRIPTOR ERROR_INVALID_HANDLE //!< Bad file descriptor.
-//#define errno ERROR_FILE_NOT_FOUND //!< File not found.
-//#define OPGP_ERROR_NOMEM ERROR_NOT_ENOUGH_MEMORY //!< No memory.
 #else
 #define OPGP_ERROR_SUCCESS 0 //!< No error occured.
-//#define errno EIO //!< Read error.
-//#define OPGP_ERROR_BAD_FILE_DESCRIPTOR EBADF //!< Bad file descriptor.
-//#define errno ENOENT //!< File not found.
-//#define OPGP_ERROR_NOMEM ENOMEM //!< No memory.
 #endif
 
 
@@ -1178,6 +1173,11 @@ LONG OP201_validate_load_receipt(DWORD confirmationCounter, BYTE cardUniqueData[
 						   BYTE receiptGenerationKey[16], OP201_RECEIPT_DATA receiptData,
 						   PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 						   PBYTE securityDomainAID, DWORD securityDomainAIDLength);
+
+
+//! \brief Enables the trace mode.
+OPGP_API
+void enableTraceMode(DWORD enable, FILE *out);
 
 #ifdef __cplusplus
 }

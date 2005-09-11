@@ -249,6 +249,10 @@ static LONG get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD executa
 									  PBYTE installData, PDWORD installDataLength);
 
 
+
+static DWORD traceEnable; //!< Enable trace mode.
+static FILE *traceFile; //!< The trace file for trace mode.
+
 static void mapOP201ToGP211SecurityInfo(OP201_SECURITY_INFO op201secInfo, 
 										GP211_SECURITY_INFO *gp211secInfo) {
 	if (gp211secInfo == NULL)
@@ -932,6 +936,8 @@ static LONG send_APDU(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBY
 	BYTE le;
 	BYTE la;
 
+	DWORD i;
+
 	DWORD offset = 0;
 
 	PBYTE responseData = NULL;
@@ -940,7 +946,15 @@ static LONG send_APDU(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBY
 	LOG_START(_T("send_APDU"));
 	responseData = (PBYTE)malloc(sizeof(BYTE)*responseDataLength);
 
-	// main transmition block
+	if (traceEnable) {
+		_ftprintf(traceFile, _T("--> "));
+		for (i=0; i<capduLength; i++) {
+			_ftprintf(traceFile, _T("%02X"), capdu[i]);
+		}
+		_ftprintf(traceFile, _T("\n"));
+	}
+
+	// main transmission block
 
 	// wrap command
 	result = wrap_command(capdu, capduLength, apduCommand, &apduCommandLength, secInfo);
@@ -1308,6 +1322,14 @@ static LONG send_APDU(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBY
 
 	memcpy(rapdu, responseData, offset + 2);
 	*rapduLength = offset + 2;
+
+	if (traceEnable) {
+		_ftprintf(traceFile, _T("<-- "));
+		for (i=0; i<*rapduLength; i++) {
+			_ftprintf(traceFile, _T("%02X"), rapdu[i]);
+		}
+		_ftprintf(traceFile, _T("\n"));
+	}
 
 	if (rapdu[*rapduLength-2] != 0x90 || rapdu[*rapduLength-1] != 0x00) {
 		result = (OPGP_ISO7816_ERROR_PREFIX | (rapdu[*rapduLength-2] << 8)) | rapdu[*rapduLength-1];
@@ -7287,4 +7309,17 @@ LONG OP201_mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE encKey[16], BYTE 
 		keyIndex, GP211_SCP01, GP211_SCP01_IMPL_i05, securityLevel, &gp211secInfo);
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 	return result;
+}
+
+/**
+ * \param enable Enables or disables the trace mode.
+ * <ul>
+ * <li>#OPGP_TRACE_MODE_ENABLE
+ * <li>#OPGP_TRACE_MODE_DISABLE
+ * </ul>
+ * \param *out The pointer to to FILE to print result.
+ */
+void enableTraceMode(DWORD enable, FILE *out) {
+	traceFile = out;
+	traceEnable = enable;
 }
