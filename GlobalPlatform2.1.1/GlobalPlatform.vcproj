@@ -20,7 +20,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;E:\quarantine\openssl-0.9.7e\include&quot;"
-				PreprocessorDefinitions="WIN32;DEBUG;_DEBUG;_CONSOLE;GP_EXPORTS;_UNICODE;UNICODE"
+				PreprocessorDefinitions="WIN32;DEBUG;_DEBUG;_CONSOLE;OPGP_EXPORTS;_UNICODE;UNICODE"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="2"
@@ -73,7 +73,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="&quot;E:\quarantine\openssl-0.9.7e\include&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;GP_EXPORTS;_UNICODE;UNICODE"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;OPGP_EXPORTS;_UNICODE;UNICODE"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="3"
 				WarningLevel="3"
@@ -147,6 +147,9 @@
 				RelativePath=".\GlobalPlatform\GlobalPlatform.h">
 			</File>
 			<File
+				RelativePath=".\resource.h">
+			</File>
+			<File
 				RelativePath=".\stdafx.h">
 			</File>
 			<File
@@ -157,6 +160,9 @@
 			Name="Resource Files"
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}">
+			<File
+				RelativePath=".\version.rc">
+			</File>
 		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt">
