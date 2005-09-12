@@ -22,11 +22,14 @@ CFG=Debug
 # replace with your path to the OpenPlatform header files
 # or specify on command line
 OPENPLATFORM_INC=..\OpenPlatform
+#GLOBALPLATFORM_INC=..\GlobalPlatform2.1.1
 
 # replace with your path to the OpenPlatform library files
 # or specify on command line
 OPENPLATFORM_LIB_DEBUG=..\OpenPlatform\Debug
 OPENPLATFORM_LIB_RELEASE=..\OpenPlatform\Release
+#GLOBALPLATFORM_LIB_DEBUG=..\GlobalPlatform2.1.1\Debug
+#GLOBALPLATFORM_LIB_RELEASE=..\GlobalPlatform2.1.1\Release
 
 !IF "$(OS)" == "Windows_NT"
 NULL=

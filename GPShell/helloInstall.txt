@@ -6,7 +6,7 @@ delete -AID a00000006203010c01
 delete -AID a00000006203010c0101
 install_for_load -AID a00000006203010c01 -nvCodeLimit 1000
 load -file HelloWorld.bin
-install_for_install -pkgAID a00000006203010c01 -AID a00000006203010c0101 -instAID a00000006203010c0101 -nvDataLimit 2000 -instParam 00
+install_for_install -pkgAID a00000006203010c01 -AID a00000006203010c0101 -instAID a00000006203010c0101 -nvDataLimit 2000 -instParam 00 -priv 2
 # getdata
 # close_sc // Close secure channel
 # putkey // Put key
