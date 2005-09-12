@@ -31,7 +31,7 @@ open_sc // Open secure channel
 select -f AID // select applet instance
 install_for_load -AID xxx -nvCodeLimit yyy // Install for Load 
 load -file appletfile // Load applet
-install_for_install appletfile AID // Instantiate applet
+install_for_install -priv privilege -AID AID_in_pkg -pkgAID package_AID -instAID instanceAID -priv 2 // Instantiate applet
 card_disconnect // Disconnect card
 get_status -element e0 // list applets
 release_context // Release context
@@ -63,6 +63,7 @@ Options:
 -element	Element type to be listed in hex (e0 for all)
 -sc		Secure Channel mode (0 off, 1 on)
 -APDU		APDU to be sent
+-priv		(DWORD) Privilege.  // e.g. 0x04 Default Selected
 
 *** Sample / Testing
 
