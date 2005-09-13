@@ -6068,10 +6068,16 @@ OPGP_STRING stringify_error(DWORD errorCode) {
 LONG OP201_send_APDU(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 					 PBYTE capdu, DWORD capduLength, PBYTE rapdu, PDWORD rapduLength) {
 	LONG result;
-	GP211_SECURITY_INFO gp211secInfo;
-	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
-	result = send_APDU(cardInfo, &gp211secInfo, capdu, capduLength, rapdu, rapduLength);
-	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
+	
+	if (secInfo == NULL) {
+	    result = send_APDU(cardInfo, NULL, capdu, capduLength, rapdu, rapduLength);
+	} else {
+	    GP211_SECURITY_INFO gp211secInfo;
+	    mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
+	    result = send_APDU(cardInfo, &gp211secInfo, capdu, capduLength, rapdu, rapduLength);
+	    mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
+	}
+
 	return result;
 }
 
@@ -7320,6 +7326,9 @@ LONG OP201_mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE encKey[16], BYTE 
  * \param *out The pointer to to FILE to print result.
  */
 void enableTraceMode(DWORD enable, FILE *out) {
-	traceFile = out;
-	traceEnable = enable;
+    if (out == NULL)
+ 		traceFile = stdout;
+    else 
+ 		traceFile = out;
+    traceEnable = enable;
 }
