@@ -1562,7 +1562,13 @@ static LONG put_3des_key(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 	sendBuffer[i++] = keyIndex;
 	sendBuffer[i++] = 0x17;
 	sendBuffer[i++] = newKeySetVersion;
-	sendBuffer[i++] = 0x81; // alghoritm 3DES
+	if (secInfo->secureChannelProtocol == GP211_SCP01) {
+		sendBuffer[i++] = 0x81; // alghoritm 3DES
+	}
+	else {
+		sendBuffer[i++] = 0x80; // alghoritm 3DES
+	}
+
 	sendBuffer[i++] = 0x10; // length of 3DES key
 	if (secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i0B
 		|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i1B) {
@@ -1707,8 +1713,12 @@ static LONG put_secure_channel_keys(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO
 	}
 	else {
 		// S-ENC key
-
-		sendBuffer[i++] = 0x81; // alghoritm 3DES
+		if (secInfo->secureChannelProtocol == GP211_SCP01) {
+			sendBuffer[i++] = 0x81; // alghoritm 3DES
+		}
+		else {
+			sendBuffer[i++] = 0x80; // alghoritm 3DES
+		}
 		sendBuffer[i++] = 0x10; // length of 3DES key
 		if (secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i0B
 			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i1B) {
@@ -1732,7 +1742,13 @@ static LONG put_secure_channel_keys(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO
 		i+=3;
 		// S-MAC key
 
-		sendBuffer[i++] = 0x81; // alghoritm 3DES
+		if (secInfo->secureChannelProtocol == GP211_SCP01) {
+			sendBuffer[i++] = 0x81; // alghoritm 3DES
+		}
+		else {
+			sendBuffer[i++] = 0x80; // alghoritm 3DES
+		}
+
 		sendBuffer[i++] = 0x10; // length of 3DES key
 		if (secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i0B
 			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i1B) {
@@ -1755,7 +1771,13 @@ static LONG put_secure_channel_keys(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO
 		i+=3;
 		// DEK
 
-		sendBuffer[i++] = 0x81; // alghoritm 3DES
+		if (secInfo->secureChannelProtocol == GP211_SCP01) {
+			sendBuffer[i++] = 0x81; // alghoritm 3DES
+		}
+		else {
+			sendBuffer[i++] = 0x80; // alghoritm 3DES
+		}
+
 		sendBuffer[i++] = 0x10; // length of 3DES key
 		if (secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i0B
 			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i1B) {
@@ -1912,7 +1934,13 @@ static LONG put_delegated_management_keys(OPGP_CARD_INFO cardInfo, GP211_SECURIT
 
 	// Receipt Generation Key
 
-	sendBuffer[i++] = 0x81; // alghoritm 3DES
+	if (secInfo->secureChannelProtocol == GP211_SCP01) {
+		sendBuffer[i++] = 0x81; // alghoritm 3DES
+	}
+	else {
+		sendBuffer[i++] = 0x80; // alghoritm 3DES
+	}
+
 	sendBuffer[i++] = 0x10; // length of 3DES key
 	if (secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i0B
 		|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i1B) {
