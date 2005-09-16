@@ -19,17 +19,14 @@ CFG=Debug
 !ERROR An invalid configuration is specified.
 !ENDIF 
 
-# replace with your path to the OpenPlatform header files
+# replace with your path to the GlobalPlatform header files
 # or specify on command line
-OPENPLATFORM_INC=..\OpenPlatform
-#GLOBALPLATFORM_INC=..\GlobalPlatform2.1.1
+GLOBALPLATFORM_INC=..\GlobalPlatform2.1.1
 
-# replace with your path to the OpenPlatform library files
+# replace with your path to the GlobalPlatform library files
 # or specify on command line
-OPENPLATFORM_LIB_DEBUG=..\OpenPlatform\Debug
-OPENPLATFORM_LIB_RELEASE=..\OpenPlatform\Release
-#GLOBALPLATFORM_LIB_DEBUG=..\GlobalPlatform2.1.1\Debug
-#GLOBALPLATFORM_LIB_RELEASE=..\GlobalPlatform2.1.1\Release
+GLOBALPLATFORM_LIB_DEBUG=..\GlobalPlatform2.1.1\Debug
+GLOBALPLATFORM_LIB_RELEASE=..\GlobalPlatform2.1.1\Release
 
 !IF "$(OS)" == "Windows_NT"
 NULL=
@@ -59,14 +56,14 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-CPP_PROJ=/I $(OPENPLATFORM_INC) /nologo /ML /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D "UNICODE" /D "_UNICODE" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_PROJ=/I $(GLOBALPLATFORM_INC) /nologo /ML /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D "UNICODE" /D "_UNICODE" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
 
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\GPShell.bsc" 
 BSC32_SBRS= \
 	
 LINK32=link.exe
-LINK32_FLAGS=/LIBPATH:$(OPENPLATFORM_LIB_RELEASE) kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib OpenPlatform.lib /nologo /subsystem:console /incremental:no /pdb:"$(OUTDIR)\GPShell.pdb" /machine:I386 /out:"$(OUTDIR)\GPShell.exe" 
+LINK32_FLAGS=/LIBPATH:$(GLOBALPLATFORM_LIB_RELEASE) kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib GlobalPlatform.lib /nologo /subsystem:console /incremental:no /pdb:"$(OUTDIR)\GPShell.pdb" /machine:I386 /out:"$(OUTDIR)\GPShell.exe" 
 LINK32_OBJS= \
 	"$(INTDIR)\GPShell.obj"
 
@@ -97,13 +94,13 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-CPP_PROJ=/I $(OPENPLATFORM_INC) /nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "DEBUG" /D "_CONSOLE" /D "_MBCS" /D "UNICODE" /D "_UNICODE" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+CPP_PROJ=/I $(GLOBALPLATFORM_INC) /nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "DEBUG" /D "_CONSOLE" /D "_MBCS" /D "UNICODE" /D "_UNICODE" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
 BSC32=bscmake.exe
 BSC32_FLAGS=/nologo /o"$(OUTDIR)\GPShell.bsc" 
 BSC32_SBRS= \
 	
 LINK32=link.exe
-LINK32_FLAGS=/LIBPATH:$(OPENPLATFORM_LIB_DEBUG) kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib OpenPlatform.lib /nologo /subsystem:console /incremental:yes /pdb:"$(OUTDIR)\GPShell.pdb" /debug /machine:I386 /out:"$(OUTDIR)\GPShell.exe" /pdbtype:sept 
+LINK32_FLAGS=/LIBPATH:$(GLOBALPLATFORM_LIB_DEBUG) kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib GlobalPlatform.lib /nologo /subsystem:console /incremental:yes /pdb:"$(OUTDIR)\GPShell.pdb" /debug /machine:I386 /out:"$(OUTDIR)\GPShell.exe" /pdbtype:sept 
 LINK32_OBJS= \
 	"$(INTDIR)\GPShell.obj"
 

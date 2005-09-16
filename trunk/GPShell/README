@@ -5,12 +5,12 @@ Version 1.0.0	8/3/2005
 
 *** Summary
 
-GPShell is a script interpreter which talks to a smart card.  It is written on top of the OpenPlatform library, which was developed by Karsten Ohme.  It uses smart card communication protocols ISO-7816-4 and Open Platform (which later became Global Platform) 2.0.1.  It can establish a secure channel with a smart card, load, instantiate, delete, list applets on a smart card.  
+GPShell is a script interpreter which talks to a smart card.  It is written on top of the GlobalPlatform library, which was developed by Karsten Ohme.  It uses smart card communication protocols ISO-7816-4 and OpenPlatform 2.0.1 and GlobalPlatform 2.1.1.  It can establish a secure channel with a smart card, load, instantiate, delete, list applets on a smart card.  
 
 
 *** Usage
 
-Make sure both GPShell.exe (or gpshell on UNIX) and OpenPlatform.dll (or .so) are in your PATH.  
+Make sure both GPShell.exe (or gpshell on UNIX) and GlobalPlatform.dll (or .so) are in your PATH.  
 
 UNIX:
 gpshell scriptfile, or
@@ -25,6 +25,9 @@ gpshell can take a script file from standard input, as well as from a file.  Thi
 
 *** Scriptfile Commands
 
+mode_201 // Set protocol mode to OpenPlatform 2.0.1
+mode_211 // Set protocol mode to GlobalPlatform 2.1.1
+enable_trace // Enable APDU trace
 establish_context // Establish context
 card_connect [Reader Name] // Connect to card in the reader
 open_sc // Open secure channel
@@ -64,10 +67,12 @@ Options:
 -sc		Secure Channel mode (0 off, 1 on)
 -APDU		APDU to be sent
 -priv		(DWORD) Privilege.  // e.g. 0x04 Default Selected
+-scp 		Secure Channel Protocol (1 SCP01, 2 SCP02, default 1)
+-scpimpl	Secure Channel Implementation (default 5)
 
 *** Sample / Testing
 
-We have tested this with OpenPlatform.dll version 1.0.0, Oberthur CosmopoliC 32K, and HelloWorld.bin (sample applet from JavaCard development kit 2.1.2).  See helloInstall.txt, helloDelete.txt, and list.txt for samples.
+We have tested this with GlobalPlatform.dll, Oberthur CosmopoliC 32K (OP201), CosmopoliC 64K V5.2 (GP211, SCP01, Impl05) and HelloWorld.bin (sample applet from JavaCard development kit 2.1.2).  See helloInstall.txt, helloDelete.txt, and list.txt for samples.
 
 	GPShell.exe helloInstall.txt	// install HelloWorld.bin
 	GPShell.exe helloDelete.txt	// delete HelloWorld.bin
@@ -88,4 +93,10 @@ For Cyberflex example, please see:
 For CosmopoliC 64K, you need to add a key set first.  See putkey-cosmo.txt.  I have not tested this particular sample file because I do not want to burn my cards.  Please use it as a sample.
 
 This would add a key set 1, and at the same time delete the initialization key set.  After the initialization key set is used, you can replace and add key sets as in Cyberflex.
+
+* About install_for_load
+
+For CosmopoliC 64K (tested on V5.2), you need to specify Security Domain AID, in addition to AID.  For example, 
+
+  install_for_load -AID A000000081 -sdAID A000000003000000 -nvCodeLimit 4000
 
