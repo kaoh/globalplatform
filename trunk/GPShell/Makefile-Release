@@ -1,4 +1,4 @@
-VERSION=1.0.2
+VERSION=1.1.0
 DIR=GPShell-$(VERSION)
 
 all:	bin_package
@@ -6,7 +6,7 @@ all:	bin_package
 bin_package:
 	rm -rf $(DIR)
 	mkdir $(DIR)
-	cp Release/GPShell.exe README CHANGES COPYING helloInstall.txt helloDelete.txt list.txt HelloWorld.bin $(DIR)
+	cp Release/GPShell.exe GlobalPlatform.dll README CHANGES COPYING helloInstall.txt helloDelete.txt helloInstallGP211.txt helloDeleteGP211.txt list.txt listgp211.txt HelloWorld.bin $(DIR)
 	zip GPShell-$(VERSION).zip $(DIR)/*
 
 clean:
