@@ -46,10 +46,10 @@ LIB_NAME=GlobalPlatform # the name of the library
 CPP=cl
 
 !IFDEF DEBUG
-CPPFLAGS=/Od /I $(OPENSSL_INC) /D "WIN32" /D "_DEBUG" /D "DEBUG" /D "_CONSOLE" /D "GP_EXPORTS" /D "_UNICODE" \
+CPPFLAGS=/Od /I $(OPENSSL_INC) /D "WIN32" /D "_DEBUG" /D "DEBUG" /D "_CONSOLE" /D "OPGP_EXPORTS" /D "_UNICODE" \
 /D "_WINDLL" /D "UNICODE" /GZ /MD /Fo$(OUTDIR)/ /W3 /nologo /ZI /TC
 !ELSE
-CPPFLAGS=/O2 /I "$(OPENSSL_INC)" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "GP_EXPORTS" /D "_UNICODE" \
+CPPFLAGS=/O2 /I "$(OPENSSL_INC)" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "OPGP_EXPORTS" /D "_UNICODE" \
 /D "_WINDLL" /D "UNICODE" /FD /MD /Fo$(OUTDIR)/ /W3 /nologo /Zi /TC
 !ENDIF
 
@@ -79,7 +79,7 @@ $(OUTDIR)/$(LIB_NAME).dll: $(OBJS) version.res
 $(OBJS): $(@B).c
 	$(CPP) $(CPPFLAGS) /c /Fd$(OUTDIR)/%|pfF %|pfF.c
 
-version.res : version.rc version.h
+version.res : version.rc
 !IFDEF DEBUG
 	rc /dDEBUG version.rc
 !ELSE
