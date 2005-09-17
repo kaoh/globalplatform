@@ -985,12 +985,10 @@ LONG select_application(OPSP_CARDHANDLE cardHandle, OPSP_CARD_INFO cardInfo, PBY
 	LONG result;
 	DWORD recvBufferLength=256;
 	BYTE recvBuffer[256];
-	PBYTE sendBuffer;
-	DWORD sendBufferLength;
+	BYTE sendBuffer[256];
+	DWORD sendBufferLength=256;
 	DWORD i=0;
 	LOG_START(_T("select_application"));
-	sendBufferLength = 5 + AIDLength + 1;
-	sendBuffer = (PBYTE)malloc(sizeof(BYTE)*sendBufferLength);
 	sendBuffer[i++] = 0x00;
 	sendBuffer[i++] = 0xA4;
 	sendBuffer[i++] = 0x04;
@@ -1000,6 +998,7 @@ LONG select_application(OPSP_CARDHANDLE cardHandle, OPSP_CARD_INFO cardInfo, PBY
 	i+=AIDLength;
 	/* Le */
 	sendBuffer[i++] = 0x00;
+	sendBufferLength = i;
 #ifdef DEBUG
 	log_Log(_T("select_application: Data to send: "));
 	for (i=0; i<sendBufferLength; i++) {

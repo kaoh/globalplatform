@@ -658,7 +658,7 @@ static LONG wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrapp
 	int encryptionLength = 240;
 	DWORD caseAPDU;
 	BYTE C_MAC_ICV[8];
-	DWORD C_MAC_ICVLength = 8;
+	int C_MAC_ICVLength = 8;
 //#ifdef DEBUG
 //	DWORD i;
 //#endif
@@ -7113,7 +7113,7 @@ LONG OP201_calculate_3des_DAP(PBYTE securityDomainAID, DWORD securityDomainAIDLe
 #else
 	fileSize = fseek(CAPFile, 0, SEEK_END);
 	if (fileSize == -1) {
-		{ result = OPGP_ERROR_BAD_FILE_DESCRIPTOR; goto end; }
+		{ result = errno; goto end; }
 	}
 	fileSize = ftell(CAPFile);
 #endif
