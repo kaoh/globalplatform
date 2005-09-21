@@ -1,7 +1,7 @@
 # Require autoconf 2.52
 AC_PREREQ(2.52)
 
-AC_INIT(GPShell, 1.0.0, snitmo@gmail.com)
+AC_INIT(GPShell, 1.1.0, snitmo@gmail.com)
 AC_CONFIG_AUX_DIR(aux)
 AC_COPYRIGHT(COPYING)
 AM_INIT_AUTOMAKE([no-define])
@@ -60,12 +60,14 @@ fi
 
 OLD_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS $PCSCLITE_CFLAGS"
-AC_CHECK_HEADER(OpenPlatform/OpenPlatform.h, [], 
-[AC_MSG_ERROR([OpenPlatform/OpenPlatform.h not found or usable, install OpenPlatform, or use CFLAGS=-I<include directory> ./configure])], )
+AC_CHECK_HEADER(GlobalPlatform/GlobalPlatform.h, [], 
+[AC_MSG_ERROR([GlobalPlatform/GlobalPlatform.h not found or usable, install GlobalPlatform, 
+or 
+use CFLAGS=-I<include directory> ./configure])], )
 CFLAGS="$OLD_CFLAGS"
 
-AC_CHECK_LIB(OpenPlatform, load_applet, [],
-        [AC_MSG_ERROR([load_applet() not found, install OpenPlatform])])
+AC_CHECK_LIB(GlobalPlatform, GP211_load, [],
+        [AC_MSG_ERROR([GP211_load() not found, install GlobalPlatform])])
 
 
 AC_MSG_RESULT([Debug output enabled                  : $debug]) 

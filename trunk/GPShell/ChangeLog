@@ -1,7 +1,24 @@
 History
 =======
 
-1.0.0 - Sun Aug 07 2005, Snit Mo
-	- first revision
+8/4/2005        1.0.0   Initial Release
+                        CVS Tag "Release-1-0-0"
+
+8/9/2005        1.0.1   Added put_sc_key (put secure channel key)
+                        CVS Tag "Release-1-0-1"
+
+8/12/2005       1.0.2   Added send_apdu (APDU pass through)
+                        CVS Tag "Release-1-0-2"
+
+9/12/2005               Last version to support OpenPlatform Library
+                        Next versions will support the combined OP/GP library
+                        CVS Tag "last_openplatform"
+
+9/15/2005       1.1.0   Now linked against GlobalPlatform.dll,
+                        instead of OpenPlatform.dll.
+                        Supports GlobalPlatform 2.1.1 secure channel protocols
+                        in addition to OpenPlatform 2.0.1.
+                        Supports setting privilege when installing an applet.
+                        CVS Tag "Release-1-1-0"
 
 
