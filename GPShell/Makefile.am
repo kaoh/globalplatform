@@ -4,11 +4,12 @@ bin_PROGRAMS = gpshell
 
 gpshell_SOURCES = GPShell.c
 gpshell_CPPFLAGS = $(AM_CPPFLAGS) $(PCSCLITE_CFLAGS)
-gpshell_LDADD = $(AM_CPPFLAGS) -lOpenPlatform
+gpshell_LDADD = $(AM_CPPFLAGS) -lGlobalPlatform
 
 EXTRA_DIST = GPShell.dep GPShell.dsp GPShell.dsw GPShell.mak stdafx.c \
 stdafx.h reconf list.txt helloDelete.txt helloInstall.txt HelloWorld.bin \
-HelloWorld.cap
+HelloWorld.cap putdefault-cflex.txt replacekey-cflex.txt send_apdu.txt \
+listgp211.txt Makefile-Release CHANGES
 
 MAINTAINERCLEANFILES = \
 	Makefile.in \
