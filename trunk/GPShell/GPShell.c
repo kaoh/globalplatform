@@ -121,7 +121,7 @@ int handleOptions(OptionStr *pOptionStr)
     pOptionStr->APDULen = 0;
     pOptionStr->secureChannel = 0;
     pOptionStr->reader = NULL;
-    pOptionStr->protocol = OPGP_CARD_PROTOCOL_T0;
+    pOptionStr->protocol = OPGP_CARD_PROTOCOL_T0 | OPGP_CARD_PROTOCOL_T1;
     pOptionStr->nvCodeLimit = 0;
     pOptionStr->nvDataLimit = 0;
     pOptionStr->vDataLimit = 0;
@@ -458,12 +458,13 @@ int handleOptions(OptionStr *pOptionStr)
 		pOptionStr->scp = atoi(token);
 	    }
 	} else if (strcmp(token, "-scpimpl") == 0) {
+          char **dummy;
 	    token = strtokCheckComment(NULL);
 	    if (token == NULL) {
 		printf ("Error: option -scpimpl not followed by data\n");
 		exit (EXIT_FAILURE);
 	    } else {
-		pOptionStr->scpImpl = atoi(token);
+              pOptionStr->scpImpl = (int)strtol(token, dummy, 0);
 	    }
 	} else {
 	    // unknown option
