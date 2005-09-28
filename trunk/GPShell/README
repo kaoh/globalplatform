@@ -1,16 +1,16 @@
 Global Platform Shell (gpshell)
 snitmo@gmail.com
 
-Version 1.0.0	8/3/2005
+Version 1.1.1	9/24/2005
 
 *** Summary
 
-GPShell is a script interpreter which talks to a smart card.  It is written on top of the GlobalPlatform library, which was developed by Karsten Ohme.  It uses smart card communication protocols ISO-7816-4 and OpenPlatform 2.0.1 and GlobalPlatform 2.1.1.  It can establish a secure channel with a smart card, load, instantiate, delete, list applets on a smart card.  
+GPShell is a script interpreter which talks to a smart card.  It is written on top of the GlobalPlatform library, which was developed by Karsten Ohme.  It uses smart card communication protocols ISO-7816-4 and OpenPlatform 2.0.1 and GlobalPlatform 2.1.1.  It can establish a secure channel with a smart card, load, instantiate, delete, list applets on a smart card.
 
 
 *** Usage
 
-Make sure both GPShell.exe (or gpshell on UNIX) and GlobalPlatform.dll (or .so) are in your PATH.  
+Make sure both GPShell.exe (or gpshell on UNIX) and GlobalPlatform.dll (or .so) are in your PATH.
 
 UNIX:
 gpshell scriptfile, or
@@ -20,7 +20,7 @@ Win32:
 GPShell.exe scriptfile, or
 GPShell.exe < scriptfile
 
-gpshell can take a script file from standard input, as well as from a file.  This way, an application can feed commands to gpshell without creating a script file.  
+gpshell can take a script file from standard input, as well as from a file.  This way, an application can feed commands to gpshell without creating a script file.
 
 
 *** Scriptfile Commands
@@ -29,10 +29,10 @@ mode_201 // Set protocol mode to OpenPlatform 2.0.1
 mode_211 // Set protocol mode to GlobalPlatform 2.1.1
 enable_trace // Enable APDU trace
 establish_context // Establish context
-card_connect [Reader Name] // Connect to card in the reader
+card_connect -reader [Reader Name] // Connect to card in the reader
 open_sc // Open secure channel
 select -f AID // select applet instance
-install_for_load -AID xxx -nvCodeLimit yyy // Install for Load 
+install_for_load -AID xxx -nvCodeLimit yyy // Install for Load
 load -file appletfile // Load applet
 install_for_install -priv privilege -AID AID_in_pkg -pkgAID package_AID -instAID instanceAID -priv 2 // Instantiate applet
 card_disconnect // Disconnect card
@@ -51,8 +51,9 @@ Options:
 -enc_key	ENC key value in hex
 -kek_key	KEK key value in hex
 -security	0: clear, 1: MAC, 3: MAC+ENC
--appfile	Applet file name
 -reader		Smart card reader name
+-readerNumber Number of the reader in the system to connect to. 
+			If -reader is given this is ignored.
 -protocol	Protocol, 0:T=0, 1:T=1
 -AID		Applet ID
 -sdAID		Security Domain AID
@@ -64,11 +65,15 @@ Options:
 -file		File name
 -instParam	Installation parameter
 -element	Element type to be listed in hex (e0 for all)
--sc		Secure Channel mode (0 off, 1 on)
+-sc			Secure Channel mode (0 off, 1 on)
 -APDU		APDU to be sent
 -priv		(DWORD) Privilege.  // e.g. 0x04 Default Selected
--scp 		Secure Channel Protocol (1 SCP01, 2 SCP02, default 1)
--scpimpl	Secure Channel Implementation (default 5)
+-scp 		Secure Channel Protocol (1 SCP01, 2 SCP02, default no set). 
+			Should not be necessary to be stated explicitly.
+-scpimpl	Secure Channel Implementation (default not set)
+			Should not be necessary to be stated explicitly.
+
+Parameters containing spaces, e.g. file names or reader names must be quoted in "".
 
 *** Sample / Testing
 
@@ -80,11 +85,11 @@ We have tested this with GlobalPlatform.dll, Oberthur CosmopoliC 32K (OP201), Co
 
 Make sure the script file (helloInstall.txt, etc.) and applet binary file HelloWorld.bin are in your current directory.
 
-It should work with other smart cards that support JavaCard 2.1.2 and OpenPlatform 2.0.1.  You need to tweak options in the script files.  Please let us know how it works with the smart cards you have. 
+It should work with other smart cards that support JavaCard 2.1.2 and OpenPlatform 2.0.1.  You need to tweak options in the script files.  Please let us know how it works with the smart cards you have.
 
 * About put_sc_key
 
-We have tested put_sc_key with Oberthur CosmopoliC 64K card and Cyberflex Access e-gate 32K.  
+We have tested put_sc_key with Oberthur CosmopoliC 64K card and Cyberflex Access e-gate 32K.
 
 For Cyberflex example, please see:
 	replacekey-cflex.txt	// Replace the default key set (key set version 1, value 404142...4f) with a new key (505152...5f)
@@ -96,7 +101,7 @@ This would add a key set 1, and at the same time delete the initialization key s
 
 * About install_for_load
 
-For CosmopoliC 64K (tested on V5.2), you need to specify Security Domain AID, in addition to AID.  For example, 
+For CosmopoliC 64K (tested on V5.2), you need to specify Security Domain AID, in addition to AID.  For example,
 
   install_for_load -AID A000000081 -sdAID A000000003000000 -nvCodeLimit 4000
 

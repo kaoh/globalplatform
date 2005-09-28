@@ -1,7 +1,7 @@
 # Require autoconf 2.52
 AC_PREREQ(2.52)
 
-AC_INIT(GPShell, 1.1.0, snitmo@gmail.com)
+AC_INIT(GPShell, 1.1.1, snitmo@gmail.com)
 AC_CONFIG_AUX_DIR(aux)
 AC_COPYRIGHT(COPYING)
 AM_INIT_AUTOMAKE([no-define])

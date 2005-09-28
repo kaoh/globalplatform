@@ -18,3 +18,10 @@
 			Supports setting privilege when installing an applet.
 			CVS Tag "Release-1-1-0"
 
+9/28/2005	1.1.1	Automatic recognition of Secure Channel Protocol and 
+			implemenentation for GP 2.1.1 cards.
+			Quotation with "" for parameters with white space supported
+			Smart card communication protocol defaults to T=1 | T=0
+			Use of EXIT_SUCCESS and EXIT_FAILURE
+			Fixes
+			
