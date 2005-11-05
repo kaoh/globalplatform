@@ -1,9 +1,10 @@
 History
 =======
 
-1.2.0 
-	- OPSP_DAP_BLOCK structure member DAPBlockLength deprecated, 
+1.2.0 - Sat Nov 05 2005, Karsten Ohme
+	- OPSP_DAP_BLOCK structure member DAPBlockLength deprecated,
 	is ignored, all function calculate the length on its own.
+	- Bug in determining filesize with fseek() for Unix fixed 
 
 1.1.0 - Thu Aug 25 2005, Karsten Ohme
 	- T=1 protocol bug fixed
