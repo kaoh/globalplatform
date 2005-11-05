@@ -1,6 +1,9 @@
 History
 =======
 
+1.1.0 - Sat Nov 05 2005, Karsten Ohme
+	Bug in determining filesize with fseek() for Unix fixed
+
 1.0.0 - Fri Aug 26 2005, Karsten Ohme
 	- first revision
 

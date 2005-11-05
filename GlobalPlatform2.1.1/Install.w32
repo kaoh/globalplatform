@@ -20,10 +20,10 @@ This will be a lot of work ...
 	to get the libraries for linking and include files for compiling and nmake for the makefile.
 
 	NET Framework SDK Version 1.1
-	http://www.microsoft.com/downloads/details.aspx?familyid=EBA0128F-A770-45F1-86F3-7AB010B398A3&displaylang=en
+	http://www.microsoft.com/downloads/details.aspx?FamilyID=9b3a2ca6-3647-4070-9f41-a333c6b9181d&displaylang=en
 
 	to get the file msvcrt.lib. This is a necessary runtime library, but it is not included in the two above.
-	Copy this file to the lib directory of Windows® Server 2003 SP1 Platform SDK.
+	Copy this file (usually from Vc7\lib directory ) to the lib directory of the Microsoft Visual C++ Toolkit 2003.
 
 2.	You need OpenSSL. Download it from http://www.openssl.org/ and
 	build the library.

@@ -34,15 +34,15 @@
  *
  * <h2>Note</h2>
  * <p>
- * Before you call a card related command make sure that the Issuer Security Domain 
+ * Before you call a card related command make sure that the Issuer Security Domain
  * (CardManager for Open Platform 2.0.1') or Security Domain you
  * want to use for the command is selected by select_application().
  * </p>
  * <h2>Unicode support</h2>
  * <p>
  * Obey that this library supports Unicode in Windows. If you develop an application you must use Unicode
- * strings in Windows. Use the <code>LPTSTR</code>, <code>TCHAR</code> and the <code>_T()</code> macro, 
- * use Unicode functions and compile your application with the switches UNICODE and _UNICODE. Under Unixes 
+ * strings in Windows. Use the <code>LPTSTR</code>, <code>TCHAR</code> and the <code>_T()</code> macro,
+ * use Unicode functions and compile your application with the switches UNICODE and _UNICODE. Under Unixes
  * only ASCII is supported but to be portable use the mappings in GlobalPlatform/unicode.h
  * </p>
  *
@@ -85,26 +85,26 @@ static LONG calculate_rsa_signature(PBYTE message, DWORD messageLength, OPGP_STR
 static LONG calculate_MAC(unsigned char sessionKey[16], unsigned char *message, int messageLength,
 						  unsigned char icv[8], unsigned char mac[8]);
 
-static LONG calculate_card_cryptogram_SCP01(unsigned char S_ENCSessionKey[16], 
+static LONG calculate_card_cryptogram_SCP01(unsigned char S_ENCSessionKey[16],
 											unsigned char cardChallenge[8],
-											unsigned char hostChallenge[8], 
+											unsigned char hostChallenge[8],
 											unsigned char cardCryptogram[8]);
 
-static LONG calculate_card_cryptogram_SCP02(unsigned char S_ENCSessionKey[16], 
+static LONG calculate_card_cryptogram_SCP02(unsigned char S_ENCSessionKey[16],
 											unsigned char sequenceCounter[2],
 											unsigned char cardChallenge[6],
-											unsigned char hostChallenge[8], 
+											unsigned char hostChallenge[8],
 											unsigned char cardCryptogram[8]);
 
-static LONG calculate_host_cryptogram_SCP01(unsigned char S_ENCSessionKey[16], 
+static LONG calculate_host_cryptogram_SCP01(unsigned char S_ENCSessionKey[16],
 											unsigned char cardChallenge[8],
-											unsigned char hostChallenge[8], 
+											unsigned char hostChallenge[8],
 											unsigned char hostCryptogram[8]);
 
-static LONG calculate_host_cryptogram_SCP02(unsigned char S_ENCSessionKey[16], 
+static LONG calculate_host_cryptogram_SCP02(unsigned char S_ENCSessionKey[16],
 											unsigned char sequenceCounter[2],
 											unsigned char cardChallenge[6],
-											unsigned char hostChallenge[8], 
+											unsigned char hostChallenge[8],
 											unsigned char hostCryptogram[8]);
 
 static LONG wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrappedApduCommand,
@@ -116,8 +116,8 @@ static LONG calculate_enc_cbc_SCP02(unsigned char key[16], unsigned char *messag
 static LONG calculate_enc_cbc(unsigned char key[16], unsigned char *message, int messageLength,
 							  unsigned char *encryption, int *encryptionLength);
 
-static LONG calculate_enc_ecb_two_key_triple_des(unsigned char key[16], unsigned char *message, 
-												 int messageLength, unsigned char *encryption, 
+static LONG calculate_enc_ecb_two_key_triple_des(unsigned char key[16], unsigned char *message,
+												 int messageLength, unsigned char *encryption,
 												 int *encryptionLength);
 
 static LONG calculate_enc_ecb_single_des(unsigned char key[8], unsigned char *message, int messageLength,
@@ -144,11 +144,11 @@ static LONG put_rsa_key(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 static LONG put_3des_key(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 				  BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion, BYTE _3DESKey[16]);
 
-static LONG put_secure_channel_keys(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, 
-							 BYTE keySetVersion, 
-							 BYTE newKeySetVersion, 
+static LONG put_secure_channel_keys(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+							 BYTE keySetVersion,
+							 BYTE newKeySetVersion,
 							 BYTE newBaseKey[16],
-							 BYTE newS_ENC[16], 
+							 BYTE newS_ENC[16],
 							 BYTE newS_MAC[16], BYTE newDEK[16]);
 
 static LONG put_delegated_management_keys(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -161,7 +161,7 @@ static LONG delete_key(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BY
 static LONG delete_application(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 				   OPGP_AID *AIDs, DWORD AIDsLength, GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataLength);
 
-static LONG get_data(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, 
+static LONG get_data(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 			  const BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength);
 
 static LONG put_data(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE identifier[2], PBYTE dataObject, DWORD dataObjectLength);
@@ -173,7 +173,7 @@ static LONG get_key_information_templates(OPGP_CARD_INFO cardInfo, GP211_SECURIT
 static LONG set_status(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE cardElement, PBYTE AID, DWORD AIDLength, BYTE lifeCycleState);
 
 static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-				 GP211_DAP_BLOCK *loadFileDataBlockSignature, DWORD loadFileDataBlockSignatureLength, 
+				 GP211_DAP_BLOCK *loadFileDataBlockSignature, DWORD loadFileDataBlockSignatureLength,
 				 OPGP_STRING executableLoadFileName,
 				 GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
 
@@ -183,7 +183,7 @@ static LONG install_for_install_and_make_selectable(OPGP_CARD_INFO cardInfo, GP2
 						 DWORD applicationAIDLength, BYTE applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE installParameters, DWORD installParametersLength,
-						 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData, 
+						 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData,
 						 PDWORD receiptDataAvailable);
 
 static LONG install_for_load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -193,7 +193,7 @@ static LONG install_for_load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secIn
 					  DWORD nonVolatileDataSpaceLimit);
 
 static LONG install_for_install(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-						 PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, 
+						 PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 						 PBYTE executableModuleAID,
 						 DWORD executableModuleAIDLength, PBYTE applicationAID,
 						 DWORD applicationAIDLength, BYTE applicationPrivileges,
@@ -207,7 +207,7 @@ static LONG install_for_make_selectable(OPGP_CARD_INFO cardInfo, GP211_SECURITY_
 								 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData,
 								 PDWORD receiptDataAvailable);
 
-static LONG calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, 
+static LONG calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 							 PBYTE executableModuleAID,
 							 DWORD executableModuleAIDLength, PBYTE applicationAID, DWORD applicationAIDLength,
 							 BYTE applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
@@ -223,11 +223,11 @@ static LONG validate_load_receipt(DWORD confirmationCounter, PBYTE cardUniqueDat
 static LONG pin_change(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE tryLimit,
 				PBYTE newPIN, DWORD newPINLength);
 
-static LONG mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE baseKey[16], 
-						   BYTE S_ENC[16], BYTE S_MAC[16], 
+static LONG mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE baseKey[16],
+						   BYTE S_ENC[16], BYTE S_MAC[16],
 						   BYTE DEK[16], BYTE keySetVersion,
-						   BYTE keyIndex, BYTE secureChannelProtocol, 
-						   BYTE secureChannelProtocolImpl, BYTE securityLevel,  
+						   BYTE keyIndex, BYTE secureChannelProtocol,
+						   BYTE secureChannelProtocolImpl, BYTE securityLevel,
 						   GP211_SECURITY_INFO *secInfo);
 
 static LONG validate_install_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
@@ -253,7 +253,7 @@ static LONG get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD executa
 static DWORD traceEnable; //!< Enable trace mode.
 static FILE *traceFile; //!< The trace file for trace mode.
 
-static void mapOP201ToGP211SecurityInfo(OP201_SECURITY_INFO op201secInfo, 
+static void mapOP201ToGP211SecurityInfo(OP201_SECURITY_INFO op201secInfo,
 										GP211_SECURITY_INFO *gp211secInfo) {
 	if (gp211secInfo == NULL)
 		return;
@@ -295,7 +295,7 @@ static void mapGP211ToOP201SecurityInfo(GP211_SECURITY_INFO gp211secInfo,
 	}
 }
 
-static void mapOP201ToGP211DAPBlock(OP201_DAP_BLOCK op201dapBlock, 
+static void mapOP201ToGP211DAPBlock(OP201_DAP_BLOCK op201dapBlock,
 										GP211_DAP_BLOCK *gp211dapBlock) {
 	if (gp211dapBlock == NULL)
 		return;
@@ -449,7 +449,7 @@ static LONG readLoadFileDataBlockSignature(PBYTE buf, PDWORD bufLength, GP211_DA
 	}
 
 	buf[j++] = 0xE2; // Tag indicating a DAP block.
-	
+
 	if (length <= 127) {
 		buf[j++] = (BYTE)length;
 	}
@@ -571,7 +571,7 @@ end:
  * \param protocol IN The transmit protocol type to use. Can be OPGP_CARD_PROTOCOL_T0 or OPGP_CARD_PROTOCOL_T1 or both ORed.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
-LONG card_connect(OPGP_CARDCONTEXT cardContext, OPGP_CSTRING readerName, OPGP_CARD_INFO *cardInfo, 
+LONG card_connect(OPGP_CARDCONTEXT cardContext, OPGP_CSTRING readerName, OPGP_CARD_INFO *cardInfo,
 				  DWORD protocol) {
 	LONG result;
 	DWORD activeProtocol;
@@ -666,7 +666,7 @@ static LONG wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrapp
 	if (*wrappedApduCommandLength < apduCommandLength)
 			{ result = OPGP_ERROR_INSUFFICIENT_BUFFER; goto end; }
 	memcpy(wrappedApduCommand, apduCommand, apduCommandLength);
-	
+
 	// no security level defined, just return
 	if (secInfo == NULL) {
 		*wrappedApduCommandLength = apduCommandLength;
@@ -708,7 +708,7 @@ static LONG wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrapp
 	} // if (Determine which type of Exchange)
 
 	if  (secInfo->securityLevel != GP211_SCP02_SECURITY_LEVEL_NO_SECURE_MESSAGING && secInfo->securityLevel != GP211_SCP01_SECURITY_LEVEL_NO_SECURE_MESSAGING) {
-		if (secInfo->securityLevel == GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC 
+		if (secInfo->securityLevel == GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC
 			|| secInfo->securityLevel == GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC
 			|| secInfo->securityLevel == GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC) {
 			switch (caseAPDU) {
@@ -720,7 +720,7 @@ static LONG wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrapp
 					break;
 			}
 		}
-		if (secInfo->securityLevel == GP211_SCP01_SECURITY_LEVEL_C_MAC 
+		if (secInfo->securityLevel == GP211_SCP01_SECURITY_LEVEL_C_MAC
 			|| secInfo->securityLevel == GP211_SCP02_SECURITY_LEVEL_C_MAC
 			|| secInfo->securityLevel == GP211_SCP02_SECURITY_LEVEL_C_MAC_R_MAC) {
 			switch (caseAPDU) {
@@ -766,7 +766,7 @@ static LONG wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrapp
 				 || secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i15
 				 || secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i1A
 				 || secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i1B) {
-					 result = calculate_enc_ecb_single_des(secInfo->C_MACSessionKey, 
+					 result = calculate_enc_ecb_single_des(secInfo->C_MACSessionKey,
 						 secInfo->lastC_MAC, 8,
 						 C_MAC_ICV, &C_MAC_ICVLength);
 					if (result != OPGP_ERROR_SUCCESS) {
@@ -778,7 +778,7 @@ static LONG wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrapp
 			}
 		} else {
 			if (secInfo->secureChannelProtocolImpl == GP211_SCP01_IMPL_i15) {
-				result = calculate_enc_ecb_two_key_triple_des(secInfo->C_MACSessionKey, 
+				result = calculate_enc_ecb_two_key_triple_des(secInfo->C_MACSessionKey,
 					secInfo->lastC_MAC, 8,
 						 C_MAC_ICV, &C_MAC_ICVLength);
 				if (result != OPGP_ERROR_SUCCESS) {
@@ -790,14 +790,14 @@ static LONG wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrapp
 			}
 		}
 		if (secInfo->secureChannelProtocol == GP211_SCP02) {
-			result = calculate_MAC_des_3des(secInfo->C_MACSessionKey, wrappedApduCommand, wrappedLength-8, 
+			result = calculate_MAC_des_3des(secInfo->C_MACSessionKey, wrappedApduCommand, wrappedLength-8,
 				C_MAC_ICV, mac);
 			if (result != OPGP_ERROR_SUCCESS) {
 				goto end;
 			}
 		}
 		else {
-			result = calculate_MAC(secInfo->C_MACSessionKey, wrappedApduCommand, wrappedLength-8, 
+			result = calculate_MAC(secInfo->C_MACSessionKey, wrappedApduCommand, wrappedLength-8,
 				C_MAC_ICV, mac);
 			if (result != OPGP_ERROR_SUCCESS) {
 				goto end;
@@ -840,7 +840,7 @@ static LONG wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrapp
 			wrappedLength++;
 		}
 
-		if (secInfo->securityLevel == GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC 
+		if (secInfo->securityLevel == GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC
 			|| secInfo->securityLevel == GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC
 			|| secInfo->securityLevel == GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC) {
 			wrappedApduCommand[4] -= 8;
@@ -848,14 +848,14 @@ static LONG wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrapp
 				case 1:
 				case 3:
 					if (secInfo->secureChannelProtocol == GP211_SCP02) {
-						result = calculate_enc_cbc_SCP02(secInfo->encryptionSessionKey, 
+						result = calculate_enc_cbc_SCP02(secInfo->encryptionSessionKey,
 							wrappedApduCommand+5, wrappedLength-5-8, encryption, &encryptionLength);
 						if (result != OPGP_ERROR_SUCCESS) {
 							goto end;
 						}
 					}
 					else {
-						result = calculate_enc_cbc(secInfo->encryptionSessionKey, 
+						result = calculate_enc_cbc(secInfo->encryptionSessionKey,
 							wrappedApduCommand+4, wrappedLength-4-8, encryption, &encryptionLength);
 						if (result != OPGP_ERROR_SUCCESS) {
 							goto end;
@@ -865,14 +865,14 @@ static LONG wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrapp
 				case 2:
 				case 4:
 					if (secInfo->secureChannelProtocol == GP211_SCP02) {
-						result = calculate_enc_cbc_SCP02(secInfo->encryptionSessionKey, 
+						result = calculate_enc_cbc_SCP02(secInfo->encryptionSessionKey,
 							wrappedApduCommand+5, wrappedLength-5-8-1, encryption, &encryptionLength);
 						if (result != OPGP_ERROR_SUCCESS) {
 							goto end;
 						}
 					}
 					else {
-						result = calculate_enc_cbc(secInfo->encryptionSessionKey, 
+						result = calculate_enc_cbc(secInfo->encryptionSessionKey,
 							wrappedApduCommand+4, wrappedLength-4-8-1, encryption, &encryptionLength);
 						if (result != OPGP_ERROR_SUCCESS) {
 							goto end;
@@ -911,8 +911,8 @@ end:
 
 /**
  * The secInfo pointer can also be null and so this function can be used for arbitrary cards.
+ * \param cardInfo IN The OPGP_CARD_INFO structure returned by card_connect().
  * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param *secInfo IN The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * \param capdu IN The command APDU.
  * \param capduLength IN The length of the command APDU.
  * \param rapdu OUT The response APDU.
@@ -961,7 +961,7 @@ static LONG send_APDU(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBY
 	if ( OPGP_ERROR_SUCCESS != result) {
 		goto end;
 	}
-	
+
 	apduCommand[0] |= cardInfo.logicalChannel;
 
 	// if T=1 or else T=0
@@ -1344,7 +1344,7 @@ end:
 }
 
 /**
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param cardInfo IN The OPGP_CARD_INFO structure returned by card_connect().
  * \param AID IN The AID.
  * \param AIDLength IN The length of the AID.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
@@ -1421,7 +1421,7 @@ end:
 LONG GP211_put_rsa_key(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 				 BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion,
 				 OPGP_STRING PEMKeyFileName, char *passPhrase) {
-	return put_rsa_key(cardInfo, secInfo, keySetVersion, keyIndex, 
+	return put_rsa_key(cardInfo, secInfo, keySetVersion, keyIndex,
 						 newKeySetVersion, PEMKeyFileName, passPhrase);
 }
 
@@ -1572,11 +1572,11 @@ static LONG put_3des_key(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 	sendBuffer[i++] = 0x10; // length of 3DES key
 	if (secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i0B
 		|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i1B) {
-			result = calculate_enc_cbc_SCP02(secInfo->dataEncryptionSessionKey, _3DESKey, 16, 
+			result = calculate_enc_cbc_SCP02(secInfo->dataEncryptionSessionKey, _3DESKey, 16,
 				encrypted_3des_key, &encrypted_3des_key_length);
 		}
 	else {
-		result = calculate_enc_ecb_two_key_triple_des(secInfo->dataEncryptionSessionKey, _3DESKey, 
+		result = calculate_enc_ecb_two_key_triple_des(secInfo->dataEncryptionSessionKey, _3DESKey,
 			16, encrypted_3des_key, &encrypted_3des_key_length);
 	}
 
@@ -1627,8 +1627,8 @@ end:
  * \param cardInfo IN The OPGP_CARD_INFO structure returned by card_connect().
  * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * It depends on the supported protocol implementation by the card what keys must be passed as parameters.
- * baseKey must be NULL if the protocol uses 3 Secure Channel Keys 
- * (Secure Channel Encryption Key, Secure Channel Message Authentication Code Key and 
+ * baseKey must be NULL if the protocol uses 3 Secure Channel Keys
+ * (Secure Channel Encryption Key, Secure Channel Message Authentication Code Key and
  * Data Encryption Key) and vice versa.
  * Details about the supported Secure Channel Protocol and its implementation can be
  * obtained by a call to the function get_secure_channel_protocol_details().
@@ -1640,21 +1640,21 @@ end:
  * \param newDEK IN The new DEK.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
-LONG GP211_put_secure_channel_keys(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, 
-							 BYTE keySetVersion, 
+LONG GP211_put_secure_channel_keys(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+							 BYTE keySetVersion,
 							 BYTE newKeySetVersion, BYTE newBaseKey[16],
-							 BYTE newS_ENC[16], 
+							 BYTE newS_ENC[16],
 							 BYTE newS_MAC[16], BYTE newDEK[16]) {
-	return put_secure_channel_keys(cardInfo, secInfo, 
-							 keySetVersion, 
-							 newKeySetVersion, newBaseKey, newS_ENC, 
+	return put_secure_channel_keys(cardInfo, secInfo,
+							 keySetVersion,
+							 newKeySetVersion, newBaseKey, newS_ENC,
 							 newS_MAC, newDEK);
 }
 
-static LONG put_secure_channel_keys(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, 
-							 BYTE keySetVersion, 
+static LONG put_secure_channel_keys(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+							 BYTE keySetVersion,
 							 BYTE newKeySetVersion, BYTE newBaseKey[16],
-							 BYTE newS_ENC[16], 
+							 BYTE newS_ENC[16],
 							 BYTE newS_MAC[16], BYTE newDEK[16]) {
 	LONG result;
 	BYTE sendBuffer[73];
@@ -1684,7 +1684,7 @@ static LONG put_secure_channel_keys(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO
 
 	sendBuffer[i++] = newKeySetVersion;
 	/* Secure Channel base key */
-	if (secInfo->secureChannelProtocol == GP211_SCP02 && 
+	if (secInfo->secureChannelProtocol == GP211_SCP02 &&
 		(secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i04
 			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i14
 			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i0A
@@ -1944,11 +1944,11 @@ static LONG put_delegated_management_keys(OPGP_CARD_INFO cardInfo, GP211_SECURIT
 	sendBuffer[i++] = 0x10; // length of 3DES key
 	if (secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i0B
 		|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i1B) {
-			result = calculate_enc_cbc_SCP02(secInfo->dataEncryptionSessionKey, 
+			result = calculate_enc_cbc_SCP02(secInfo->dataEncryptionSessionKey,
 		receiptKey, 16, encrypted_key, &encrypted_key_length);
 		}
 	else {
-		result = calculate_enc_ecb_two_key_triple_des(secInfo->dataEncryptionSessionKey, 
+		result = calculate_enc_ecb_two_key_triple_des(secInfo->dataEncryptionSessionKey,
 		receiptKey, 16, encrypted_key, &encrypted_key_length);
 	}
 
@@ -2221,20 +2221,19 @@ end:
  * of your card.
  * There is a convenience method get_key_information_templates() to get the key information template(s)
  * containing key set version, key index, key type and key length of the keys.
-
+ * \param cardInfo IN The OPGP_CARD_INFO structure returned by card_connect().
+ * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * \param identifier IN Two byte buffer with high and low order tag value for identifying card data object.
  * \param recvBuffer OUT The buffer for the card data object.
  * \param recvBufferLength INOUT The length of the received card data object.
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by card_connect().
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
-LONG GP211_get_data(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, 
+LONG GP211_get_data(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 			  const BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength) {
 				  return get_data(cardInfo, secInfo, identifier, recvBuffer, recvBufferLength);
 }
 
-static LONG get_data(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, 
+static LONG get_data(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 			  const BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength) {
 	LONG result;
 	BYTE sendBuffer[5];
@@ -2279,20 +2278,19 @@ end:
 }
 
 /**
- * This command is useful to return the Card Data with identifier 0x0066 containing the 
- * Card Recognition Data with tag 0x73 containing among others 
+ * This command is useful to return the Card Data with identifier 0x0066 containing the
+ * Card Recognition Data with tag 0x73 containing among others
  * the Secure Channel Protocol and the eventual implementations.
- * For getting the Secure Channel Protocol and Secure Channel Protocol implementation there is the 
+ * For getting the Secure Channel Protocol and Secure Channel Protocol implementation there is the
  * convenience function get_secure_channel_protocol_details().
  * See also data objects identified in ISO 7816-6.
-
+ * \param cardInfo IN The OPGP_CARD_INFO structure returned by card_connect().
  * \param identifier IN Two byte buffer with high and low order tag value for identifying card data.
  * \param recvBuffer OUT The buffer for the card data.
  * \param recvBufferLength INOUT The length of the received card data.
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
-LONG GP211_get_data_iso7816_4(OPGP_CARD_INFO cardInfo, const BYTE identifier[2], PBYTE recvBuffer, 
+LONG GP211_get_data_iso7816_4(OPGP_CARD_INFO cardInfo, const BYTE identifier[2], PBYTE recvBuffer,
 						PDWORD recvBufferLength) {
 	LONG result;
 	BYTE sendBuffer[5];
@@ -2336,8 +2334,7 @@ end:
 }
 
 /**
-
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param cardInfo IN The OPGP_CARD_INFO structure returned by card_connect().
  * \param *secureChannelProtocol OUT A pointer to the Secure Channel Protocol to use.
  * \param *secureChannelProtocolImpl OUT A pointer to the implementation of the Secure Channel Protocol.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
@@ -2432,8 +2429,8 @@ LONG GP211_get_secure_channel_protocol_details(OPGP_CARD_INFO cardInfo,
 	/* 0x06 Universal tag for “Object Identifier” (OID) and Length */
 	offset++;
 	length = recvBuffer[offset++];
-	/* {globalPlatform 4 scp i} OID for Secure Channel Protocol of 
-	 * the Issuer Security Domain and its implementation options 
+	/* {globalPlatform 4 scp i} OID for Secure Channel Protocol of
+	 * the Issuer Security Domain and its implementation options
 	 */
 	memcpy(OIDSecureChannelProtocol, recvBuffer+offset, length);
 	OIDSecureChannelProtocolLength = length;
@@ -2453,7 +2450,7 @@ LONG GP211_get_secure_channel_protocol_details(OPGP_CARD_INFO cardInfo,
 		/* Application tag 5 and length */
 		offset++;
 		length = recvBuffer[offset++];
-		/* Card configuration details */ 
+		/* Card configuration details */
 		memcpy(CardConfigurationDetails, recvBuffer+offset, length);
 		CardConfigurationDetailsLength = length;
 	#ifdef DEBUG
@@ -2468,7 +2465,7 @@ LONG GP211_get_secure_channel_protocol_details(OPGP_CARD_INFO cardInfo,
 		/* Application tag 6 and length */
 		offset++;
 		length = recvBuffer[offset++];
-		/* Card / chip details */ 
+		/* Card / chip details */
 		memcpy(CardChipDetails, recvBuffer+offset, length);
 		CardChipDetailsLength = length;
 	#ifdef DEBUG
@@ -2618,9 +2615,9 @@ end:
 }
 
 /**
- * It depends on the card element to retrieve if an array of GP211_APPLICATION_DATA structures 
+ * It depends on the card element to retrieve if an array of GP211_APPLICATION_DATA structures
  * or an array of GP211_EXECUTABLE_MODULES_DATA structures must be passed to this function.
- * For the card element #GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES executableData must not 
+ * For the card element #GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES executableData must not
  * be NULL, else applData must not be NULL.
 
  * \param cardInfo IN The OPGP_CARD_INFO structure returned by card_connect().
@@ -2690,7 +2687,7 @@ LONG GP211_get_status(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYT
 					/* Length of Executable Module AID */
 					executableData[i].executableModules[k].AIDLength = recvBuffer[j++];
 					/* Executable Module AID */
-					memcpy(executableData[i].executableModules[k].AID, 
+					memcpy(executableData[i].executableModules[k].AID,
 						recvBuffer+j, executableData[i].executableModules[k].AIDLength);
 					j+=executableData[i].executableModules[k].AIDLength;
 				}
@@ -2737,17 +2734,17 @@ end:
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
 LONG GP211_load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-				 GP211_DAP_BLOCK *loadFileDataBlockSignature, DWORD loadFileDataBlockSignatureLength, 
+				 GP211_DAP_BLOCK *loadFileDataBlockSignature, DWORD loadFileDataBlockSignatureLength,
 				 OPGP_STRING executableLoadFileName,
 				 GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable) {
 	return load(cardInfo, secInfo,
-				 loadFileDataBlockSignature, loadFileDataBlockSignatureLength, 
+				 loadFileDataBlockSignature, loadFileDataBlockSignatureLength,
 				 executableLoadFileName,
 				 receiptData, receiptDataAvailable);
 }
 
 static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-				 GP211_DAP_BLOCK *loadFileDataBlockSignature, DWORD loadFileDataBlockSignatureLength, 
+				 GP211_DAP_BLOCK *loadFileDataBlockSignature, DWORD loadFileDataBlockSignatureLength,
 				 OPGP_STRING executableLoadFileName,
 				 GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable) {
 	LONG result = 0;
@@ -2828,6 +2825,7 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 		{ result = errno; goto end; }
 	}
 	fileSize = ftell(CAPFile);
+    fseek(CAPFile, 0, SEEK_SET);
 #endif
 	if (fileSize == -1L) {
 		{ result = errno; goto end; }
@@ -3174,7 +3172,7 @@ end:
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
 LONG GP211_install_for_install(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-						 PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, 
+						 PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 						 PBYTE executableModuleAID,
 						 DWORD executableModuleAIDLength, PBYTE applicationAID,
 						 DWORD applicationAIDLength, BYTE applicationPrivileges,
@@ -3182,7 +3180,7 @@ LONG GP211_install_for_install(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *sec
 						 PBYTE installParameters, DWORD installParametersLength,
 						 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable) {
 	return install_for_install(cardInfo, secInfo,
-						 executableLoadFileAID, executableLoadFileAIDLength, 
+						 executableLoadFileAID, executableLoadFileAIDLength,
 						 executableModuleAID,
 						 executableModuleAIDLength, applicationAID,
 						 applicationAIDLength, applicationPrivileges,
@@ -3192,7 +3190,7 @@ LONG GP211_install_for_install(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *sec
 }
 
 static LONG install_for_install(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-						 PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, 
+						 PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 						 PBYTE executableModuleAID,
 						 DWORD executableModuleAIDLength, PBYTE applicationAID,
 						 DWORD applicationAIDLength, BYTE applicationPrivileges,
@@ -3294,7 +3292,7 @@ LONG GP211_install_for_install_and_make_selectable(OPGP_CARD_INFO cardInfo, GP21
 						 DWORD applicationAIDLength, BYTE applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE installParameters, DWORD installParametersLength,
-						 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData, 
+						 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData,
 						 PDWORD receiptDataAvailable) {
 	return install_for_install_and_make_selectable(cardInfo, secInfo,
 						 executableLoadFileAID, executableLoadFileAIDLength, executableModuleAID,
@@ -3302,7 +3300,7 @@ LONG GP211_install_for_install_and_make_selectable(OPGP_CARD_INFO cardInfo, GP21
 						 applicationAIDLength, applicationPrivileges,
 						 volatileDataSpaceLimit, nonVolatileDataSpaceLimit,
 						 installParameters, installParametersLength,
-						 installToken, receiptData, 
+						 installToken, receiptData,
 						 receiptDataAvailable);
 }
 
@@ -3312,7 +3310,7 @@ static LONG install_for_install_and_make_selectable(OPGP_CARD_INFO cardInfo, GP2
 						 DWORD applicationAIDLength, BYTE applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE installParameters, DWORD installParametersLength,
-						 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData, 
+						 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData,
 						 PDWORD receiptDataAvailable) {
 	LONG result;
 	DWORD sendBufferLength=0;
@@ -3376,12 +3374,10 @@ end:
 }
 
 /**
- * In the case of delegated management an Extradition Token authorizing the 
+ * In the case of delegated management an Extradition Token authorizing the
  * INSTALL [for extradition] must be included.
  * Otherwise extraditionToken must be NULL. See calculate_install_token().
-
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by 
- mutual_authentication().
+ * \param cardInfo IN The OPGP_CARD_INFO structure returned by card_connect().
  * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * \param securityDomainAID IN A buffer containing the Security Domain AID.
  * \param securityDomainAIDLength IN The length of the Security Domain AID.
@@ -3394,11 +3390,11 @@ GP211_APPLICATION_PRIVILEGE_SECURITY_DOMAIN.
  * \param receiptDataAvailable OUT 0 if no receiptData is availabe.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
-LONG GP211_install_for_extradition(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, 
-							  PBYTE securityDomainAID, 
+LONG GP211_install_for_extradition(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+							  PBYTE securityDomainAID,
 						 DWORD securityDomainAIDLength, PBYTE applicationAID,
-						 DWORD applicationAIDLength, 
-						 BYTE extraditionToken[128], GP211_RECEIPT_DATA *receiptData, 
+						 DWORD applicationAIDLength,
+						 BYTE extraditionToken[128], GP211_RECEIPT_DATA *receiptData,
 						 PDWORD receiptDataAvailable) {
 	LONG result;
 	DWORD sendBufferLength=0;
@@ -3412,8 +3408,8 @@ LONG GP211_install_for_extradition(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO 
 	*receiptDataAvailable = 0;
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xE6;
-	result = GP211_get_extradition_token_signature_data(securityDomainAID, securityDomainAIDLength, 
-		applicationAID, applicationAIDLength, 
+	result = GP211_get_extradition_token_signature_data(securityDomainAID, securityDomainAIDLength,
+		applicationAID, applicationAIDLength,
 		buf, &bufLength);
 	if (OPGP_ERROR_SUCCESS != result) {
 		goto end;
@@ -3468,7 +3464,7 @@ end:
  * \param applicationAIDLength IN The length of the application instance AID.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
-LONG GP211_install_for_personalization( OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, 			
+LONG GP211_install_for_personalization( OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 						 PBYTE applicationAID,
 						 DWORD applicationAIDLength) {
 	LONG result;
@@ -3490,7 +3486,7 @@ LONG GP211_install_for_personalization( OPGP_CARD_INFO cardInfo, GP211_SECURITY_
 	sendBuffer[i++] = (BYTE)applicationAIDLength;
 	memcpy(sendBuffer+i, applicationAID, applicationAIDLength);
 	i+=applicationAIDLength;
-	
+
 	sendBuffer[i++] = 0x00;
 	sendBuffer[i++] = 0x00;
 	sendBuffer[i++] = 0x00;
@@ -3757,10 +3753,10 @@ end:
  * \param extraditionTokenSignatureDataLength INOUT The length of the installTokenSignatureData buffer.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
-LONG GP211_get_extradition_token_signature_data(PBYTE securityDomainAID, 
+LONG GP211_get_extradition_token_signature_data(PBYTE securityDomainAID,
 										  DWORD securityDomainAIDLength,
-										  PBYTE applicationAID, DWORD applicationAIDLength, 
-										  PBYTE extraditionTokenSignatureData, 
+										  PBYTE applicationAID, DWORD applicationAIDLength,
+										  PBYTE extraditionTokenSignatureData,
 										  PDWORD extraditionTokenSignatureDataLength) {
 	unsigned char buf[258];
 	DWORD i=0;
@@ -3817,20 +3813,20 @@ end:
  * \param *passPhrase IN The passphrase. Must be an ASCII string.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
-LONG GP211_calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, 
+LONG GP211_calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 							 PBYTE executableModuleAID,
 							 DWORD executableModuleAIDLength, PBYTE applicationAID, DWORD applicationAIDLength,
 							 BYTE applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 							 PBYTE installParameters, DWORD installParametersLength,
 							 BYTE installToken[128], OPGP_STRING PEMKeyFileName, char *passPhrase) {
-	return calculate_install_token(P1, executableLoadFileAID, executableLoadFileAIDLength, 
+	return calculate_install_token(P1, executableLoadFileAID, executableLoadFileAIDLength,
 							 executableModuleAID,
 							 executableModuleAIDLength, applicationAID, applicationAIDLength,
 							 applicationPrivileges, volatileDataSpaceLimit, nonVolatileDataSpaceLimit,
 							 installParameters, installParametersLength,
 							 installToken, PEMKeyFileName, passPhrase);
 }
-static LONG calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, 
+static LONG calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 							 PBYTE executableModuleAID,
 							 DWORD executableModuleAIDLength, PBYTE applicationAID, DWORD applicationAIDLength,
 							 BYTE applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
@@ -4072,7 +4068,7 @@ end:
  * \param loadDataLength INOUT The length of the loadData buffer.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
-static LONG get_load_data(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, 
+static LONG get_load_data(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 						  PBYTE securityDomainAID,
 								   DWORD securityDomainAIDLength, BYTE loadFileDataBlockHash[20],
 								   DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
@@ -4177,7 +4173,7 @@ end:
  * \param *passPhrase IN The passphrase. Must be an ASCII string.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
-LONG GP211_calculate_load_token(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, 
+LONG GP211_calculate_load_token(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 						  PBYTE securityDomainAID,
 						  DWORD securityDomainAIDLength, BYTE loadFileDataBlockHash[20],
 						  DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
@@ -4267,13 +4263,13 @@ end:
  * \param *loadFileDataBlockSignature OUT A pointer to the returned GP211_DAP_BLOCK structure.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
-LONG GP211_calculate_3des_DAP(BYTE loadFileDataBlockHash[20], PBYTE securityDomainAID, 
-						DWORD securityDomainAIDLength, 
+LONG GP211_calculate_3des_DAP(BYTE loadFileDataBlockHash[20], PBYTE securityDomainAID,
+						DWORD securityDomainAIDLength,
 						BYTE DAPCalculationKey[16], GP211_DAP_BLOCK *loadFileDataBlockSignature)
 {
 	LONG result;
 
-	calculate_MAC_des_3des(DAPCalculationKey, loadFileDataBlockHash, 20, icv, 
+	calculate_MAC_des_3des(DAPCalculationKey, loadFileDataBlockHash, 20, icv,
 		loadFileDataBlockSignature->signature);
 
 	loadFileDataBlockSignature->signatureLength = 8;
@@ -4298,15 +4294,15 @@ end:
  * \param *loadFileDataBlockSignature OUT A pointer to the returned GP211_DAP_BLOCK structure.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
-LONG GP211_calculate_rsa_DAP(BYTE loadFileDataBlockHash[20], PBYTE securityDomainAID, 
-					   DWORD securityDomainAIDLength, 
-					   OPGP_STRING PEMKeyFileName, char *passPhrase, 
+LONG GP211_calculate_rsa_DAP(BYTE loadFileDataBlockHash[20], PBYTE securityDomainAID,
+					   DWORD securityDomainAIDLength,
+					   OPGP_STRING PEMKeyFileName, char *passPhrase,
 					   GP211_DAP_BLOCK *loadFileDataBlockSignature)
 {
 	LONG result;
 	LOG_START(_T("calculate_rsa_DAP"));
 
-	calculate_rsa_signature(loadFileDataBlockHash, 20, PEMKeyFileName, passPhrase, 
+	calculate_rsa_signature(loadFileDataBlockHash, 20, PEMKeyFileName, passPhrase,
 		loadFileDataBlockSignature->signature);
 	loadFileDataBlockSignature->signatureLength = 128;
 	memcpy(loadFileDataBlockSignature->securityDomainAID, securityDomainAID, securityDomainAIDLength);
@@ -4525,7 +4521,7 @@ LONG GP211_validate_extradition_receipt(DWORD confirmationCounter, PBYTE cardUni
 						   BYTE receiptKey[16], GP211_RECEIPT_DATA receiptData,
 						   PBYTE oldSecurityDomainAID, DWORD oldSecurityDomainAIDLength,
 						   PBYTE newSecurityDomainAID, DWORD newSecurityDomainAIDLength,
-						   PBYTE applicationOrExecutableLoadFileAID, 
+						   PBYTE applicationOrExecutableLoadFileAID,
 						   DWORD applicationOrExecutableLoadFileAIDLength)
 {
 	LONG result;
@@ -4533,7 +4529,7 @@ LONG GP211_validate_extradition_receipt(DWORD confirmationCounter, PBYTE cardUni
 	PBYTE validationData;
 	DWORD validationDataLength;
 	LOG_START(_T("validate_install_receipt"));
-	validationDataLength = 1 + 2 + 1 + cardUniqueDataLength + 1 
+	validationDataLength = 1 + 2 + 1 + cardUniqueDataLength + 1
 		+ oldSecurityDomainAIDLength + 1 + applicationOrExecutableLoadFileAIDLength +
 		1 + newSecurityDomainAIDLength;
 	validationData = (PBYTE)malloc(validationDataLength);
@@ -5071,10 +5067,10 @@ end:
  * \param cardCryptogram[8] OUT The calculated card cryptogram.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
-static LONG calculate_card_cryptogram_SCP02(unsigned char S_ENCSessionKey[16], 
+static LONG calculate_card_cryptogram_SCP02(unsigned char S_ENCSessionKey[16],
 											unsigned char sequenceCounter[2],
 											unsigned char cardChallenge[6],
-											unsigned char hostChallenge[8], 
+											unsigned char hostChallenge[8],
 											unsigned char cardCryptogram[8]) {
 	LONG result;
 	unsigned char message[16];
@@ -5100,9 +5096,9 @@ end:
  * \param cardCryptogram[8] OUT The calculated host cryptogram.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
-static LONG calculate_host_cryptogram_SCP01(unsigned char S_ENCSessionKey[16], 
+static LONG calculate_host_cryptogram_SCP01(unsigned char S_ENCSessionKey[16],
 											unsigned char cardChallenge[8],
-											unsigned char hostChallenge[8], 
+											unsigned char hostChallenge[8],
 											unsigned char hostCryptogram[8]) {
 	LONG result;
 	unsigned char message[16];
@@ -5128,10 +5124,10 @@ end:
  * \param cardCryptogram[8] OUT The calculated host cryptogram.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
-static LONG calculate_host_cryptogram_SCP02(unsigned char S_ENCSessionKey[16], 
+static LONG calculate_host_cryptogram_SCP02(unsigned char S_ENCSessionKey[16],
 											unsigned char sequenceCounter[2],
 											unsigned char cardChallenge[6],
-											unsigned char hostChallenge[8], 
+											unsigned char hostChallenge[8],
 											unsigned char hostCryptogram[8]) {
 	LONG result;
 	unsigned char message[16];
@@ -5152,13 +5148,13 @@ end:
 /**
  * A keySetVersion and keyIndex of 0x00 selects the first available key set version and key index.
  * There a two Secure Channel Protocols defined be the GlobalPlatform specification. For SCP01 a secure channel
- * key set consist always of at least three keys, from which the Secure Channel Encryption Key and the Secure Channel 
- * Message Authentication Code Key is needed for mutual authentication and the generation of session keys. 
+ * key set consist always of at least three keys, from which the Secure Channel Encryption Key and the Secure Channel
+ * Message Authentication Code Key is needed for mutual authentication and the generation of session keys.
  * The Data Encryption Key is used when transmitting key sensitive data with a PUT KEY command.
- * For SCP02 a keyset can also have only one Secure Channel base key. 
+ * For SCP02 a keyset can also have only one Secure Channel base key.
  * It depends on the supported protocol implementation by the card what keys must be passed as parameters.
- * baseKey must be NULL if the protocol uses 3 Secure Channel Keys 
- * (Secure Channel Encryption Key, Secure Channel Message Authentication Code Key and 
+ * baseKey must be NULL if the protocol uses 3 Secure Channel Keys
+ * (Secure Channel Encryption Key, Secure Channel Message Authentication Code Key and
  * Data Encryption Key) and vice versa.
  * Details about the supported Secure Channel Protocol and its implementation can be
  * obtained by a call to the function get_secure_channel_protocol_details().
@@ -5169,7 +5165,7 @@ end:
  * \param S_MAC IN Secure Channel Message Authentication Code Key.
  * \param DEK IN Data Encryption Key.
  * \param keySetVersion IN The key set version on the card to use for mutual authentication.
- * \param keyIndex IN The key index of the encryption key in the key set version on the card to use for 
+ * \param keyIndex IN The key index of the encryption key in the key set version on the card to use for
  * mutual authentication.
  * \param secureChannelProtocol IN The Secure Channel Protocol.
  * \param secureChannelProtocolImpl IN The Secure Channel Protocol Implementation.
@@ -5178,25 +5174,25 @@ end:
  * \param *secInfo OUT The returned GP211_SECURITY_INFO structure.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
-LONG GP211_mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE baseKey[16], 
-						   BYTE S_ENC[16], BYTE S_MAC[16], 
+LONG GP211_mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE baseKey[16],
+						   BYTE S_ENC[16], BYTE S_MAC[16],
 						   BYTE DEK[16], BYTE keySetVersion,
-						   BYTE keyIndex, BYTE secureChannelProtocol, 
-						   BYTE secureChannelProtocolImpl, BYTE securityLevel,  
+						   BYTE keyIndex, BYTE secureChannelProtocol,
+						   BYTE secureChannelProtocolImpl, BYTE securityLevel,
 						   GP211_SECURITY_INFO *secInfo) {
-	return mutual_authentication(cardInfo, baseKey, 
-						   S_ENC, S_MAC, 
+	return mutual_authentication(cardInfo, baseKey,
+						   S_ENC, S_MAC,
 						   DEK, keySetVersion,
-						   keyIndex, secureChannelProtocol, 
-						   secureChannelProtocolImpl, securityLevel,  
+						   keyIndex, secureChannelProtocol,
+						   secureChannelProtocolImpl, securityLevel,
 						   secInfo);
 }
 
-static LONG mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE baseKey[16], 
-						   BYTE S_ENC[16], BYTE S_MAC[16], 
+static LONG mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE baseKey[16],
+						   BYTE S_ENC[16], BYTE S_MAC[16],
 						   BYTE DEK[16], BYTE keySetVersion,
-						   BYTE keyIndex, BYTE secureChannelProtocol, 
-						   BYTE secureChannelProtocolImpl, BYTE securityLevel,  
+						   BYTE keyIndex, BYTE secureChannelProtocol,
+						   BYTE secureChannelProtocolImpl, BYTE securityLevel,
 						   GP211_SECURITY_INFO *secInfo) {
 	LONG result;
 	DWORD i=0;
@@ -5451,14 +5447,14 @@ static LONG mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE baseKey[16],
 
 	// calculation of card cryptogram
 	if (secInfo->secureChannelProtocol == GP211_SCP02) {
-		result = calculate_card_cryptogram_SCP02(secInfo->encryptionSessionKey, 
+		result = calculate_card_cryptogram_SCP02(secInfo->encryptionSessionKey,
 			sequenceCounter, cardChallengeSCP02, hostChallenge, card_cryptogram_ver);
 		if (result != OPGP_ERROR_SUCCESS) {
 			goto end;
 		}
 	}
 	else {
-		result = calculate_card_cryptogram_SCP01(secInfo->encryptionSessionKey, 
+		result = calculate_card_cryptogram_SCP01(secInfo->encryptionSessionKey,
 			cardChallengeSCP01, hostChallenge, card_cryptogram_ver);
 		if (result != OPGP_ERROR_SUCCESS) {
 			goto end;
@@ -5480,11 +5476,11 @@ static LONG mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE baseKey[16],
 	// EXTERNAL AUTHENTICATE
 	secInfo->securityLevel = securityLevel;
 	if (secInfo->secureChannelProtocol == GP211_SCP02) {
-		calculate_host_cryptogram_SCP02(secInfo->encryptionSessionKey, sequenceCounter, 
+		calculate_host_cryptogram_SCP02(secInfo->encryptionSessionKey, sequenceCounter,
 			cardChallengeSCP02, hostChallenge, hostCryptogram);
 	}
 	else {
-		calculate_host_cryptogram_SCP01(secInfo->encryptionSessionKey, cardChallengeSCP01, hostChallenge, 
+		calculate_host_cryptogram_SCP01(secInfo->encryptionSessionKey, cardChallengeSCP01, hostChallenge,
 			hostCryptogram);
 	}
 
@@ -5539,8 +5535,8 @@ end:
 
 /**
  * It depends on the supported protocol implementation by the card what keys must be passed as parameters.
- * baseKey must be NULL if the protocol uses 3 Secure Channel Keys 
- * (Secure Channel Encryption Key, Secure Channel Message Authentication Code Key and 
+ * baseKey must be NULL if the protocol uses 3 Secure Channel Keys
+ * (Secure Channel Encryption Key, Secure Channel Message Authentication Code Key and
  * Data Encryption Key) and vice versa.
  * Details about the supported Secure Channel Protocol and its implementation can be
  * obtained by a call to the function GP211_get_secure_channel_protocol_details().
@@ -5558,9 +5554,9 @@ end:
  * \param *secInfo OUT The returned GP211_SECURITY_INFO structure.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
-LONG GP211_init_implicit_secure_channel(PBYTE AID, DWORD AIDLength, BYTE baseKey[16], 
+LONG GP211_init_implicit_secure_channel(PBYTE AID, DWORD AIDLength, BYTE baseKey[16],
 								  BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16],
-								  BYTE secureChannelProtocolImpl, BYTE sequenceCounter[2], 
+								  BYTE secureChannelProtocolImpl, BYTE sequenceCounter[2],
 								  GP211_SECURITY_INFO *secInfo) {
 	LONG result;
 
@@ -5640,19 +5636,18 @@ end:
 }
 
 /**
-
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param cardInfo IN The OPGP_CARD_INFO structure returned by card_connect().
  * \param sequenceCounter OUT The sequence counter.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
-LONG GP211_get_sequence_counter(OPGP_CARD_INFO cardInfo, 
+LONG GP211_get_sequence_counter(OPGP_CARD_INFO cardInfo,
 						  BYTE sequenceCounter[2]) {
 	LONG result;
 	BYTE recvBuffer[256];
 	DWORD recvBufferLength = sizeof(recvBuffer);
 
 	LOG_START(_T("get_sequence_counter"));
-	result = GP211_get_data_iso7816_4(cardInfo, GP211_GET_DATA_SEQUENCE_COUNTER_DEFAULT_KEY_VERSION, 
+	result = GP211_get_data_iso7816_4(cardInfo, GP211_GET_DATA_SEQUENCE_COUNTER_DEFAULT_KEY_VERSION,
 		recvBuffer, &recvBufferLength);
 	if ( OPGP_ERROR_SUCCESS != result) {
 		goto end;
@@ -5664,7 +5659,7 @@ end:
 	return result;
 }
 
-/** 
+/**
  * \param *secInfo OUT The returned GP211_SECURITY_INFO structure.
  */
 LONG close_implicit_secure_channel(GP211_SECURITY_INFO *secInfo) {
@@ -5811,7 +5806,7 @@ LONG GP211_store_data(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 			sendBuffer[4] = MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING;
 		}
 		sendBuffer[3] = blockNumber++;
-		
+
 #ifdef DEBUG
 		log_Log(_T("store_data: Data to send: "));
 		for (i=0; i<sendBufferLength; i++) {
@@ -5864,14 +5859,14 @@ end:
  * For an OPEN command, the channelNumberToClose is ignored.
  * For an CLOSE command, the channelNumberOpened is returned.
  * After closing a Logical Channel the Basic Logical Channel is assumed for the next transmissions.
-
+ * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * \param *cardInfo INOUT The OPGP_CARD_INFO structure returned by card_connect().
  * \param openClose IN Logical Channel should be opened or closed. See #BYTE GP211_MANAGE_CHANNEL_OPEN.
  * \param channelNumberToClose IN The Logical Channel number to close.
  * \param channelNumberOpened OUT The Logical Channel number opened.
  */
-LONG manage_channel(GP211_SECURITY_INFO *secInfo, 
-					OPGP_CARD_INFO *cardInfo, BYTE openClose, BYTE channelNumberToClose, 
+LONG manage_channel(GP211_SECURITY_INFO *secInfo,
+					OPGP_CARD_INFO *cardInfo, BYTE openClose, BYTE channelNumberToClose,
 					BYTE *channelNumberOpened) {
 
 	LONG result;
@@ -6006,13 +6001,13 @@ OPGP_STRING stringify_error(DWORD errorCode) {
 	if (errorCode == OPGP_ERROR_WRONG_EXPONENT)
 		return _T("The exponent must be 3 or 65537.");
 	if ((errorCode & ((DWORD)0xFFFFFF00L)) == OPGP_ISO7816_ERROR_CORRECT_LENGTH) {
-        _sntprintf(strError, strErrorSize, _T("Wrong length Le: Exact length: 0x%02lX"), 
+        _sntprintf(strError, strErrorSize, _T("Wrong length Le: Exact length: 0x%02lX"),
 					errorCode&0x000000ff);
 		strError[strErrorSize-1] = _T('\0');
 		return strError;
 	}
 	if ((errorCode & ((DWORD)0xFFFFFF00L)) == OPGP_ISO7816_ERROR_RESPONSE_LENGTH) {
-        _sntprintf(strError, strErrorSize, _T("Number of response bytes still available: 0x%02lX"), 
+        _sntprintf(strError, strErrorSize, _T("Number of response bytes still available: 0x%02lX"),
 					errorCode&0x000000ff);
 		strError[strErrorSize-1] = _T('\0');
 		return strError;
@@ -6099,7 +6094,7 @@ OPGP_STRING stringify_error(DWORD errorCode) {
 // 0x94
 
 			default:
-                _sntprintf(strError, strErrorSize, _T("Unknown ISO7816 error: 0x%04lX"), 
+                _sntprintf(strError, strErrorSize, _T("Unknown ISO7816 error: 0x%04lX"),
 					errorCode&0x0000ffff);
 				strError[strErrorSize-1] = _T('\0');
 				return strError;
@@ -6151,7 +6146,7 @@ OPGP_STRING stringify_error(DWORD errorCode) {
 LONG OP201_send_APDU(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 					 PBYTE capdu, DWORD capduLength, PBYTE rapdu, PDWORD rapduLength) {
 	LONG result;
-	
+
 	if (secInfo == NULL) {
 	    result = send_APDU(cardInfo, NULL, capdu, capduLength, rapdu, rapduLength);
 	} else {
@@ -6184,7 +6179,7 @@ LONG OP201_put_rsa_key(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 	LONG result;
 	GP211_SECURITY_INFO gp211secInfo;
 	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
-	result = put_rsa_key(cardInfo, &gp211secInfo, keySetVersion, keyIndex, newKeySetVersion, 
+	result = put_rsa_key(cardInfo, &gp211secInfo, keySetVersion, keyIndex, newKeySetVersion,
 		PEMKeyFileName, passPhrase);
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 	return result;
@@ -6235,7 +6230,7 @@ LONG OP201_put_3desKey(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 	GP211_SECURITY_INFO gp211secInfo;
 	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
 	memcpy(gp211secInfo.dataEncryptionSessionKey, KEK, 16);
-	result = put_secure_channel_keys(cardInfo, &gp211secInfo, keySetVersion, newKeySetVersion, 
+	result = put_secure_channel_keys(cardInfo, &gp211secInfo, keySetVersion, newKeySetVersion,
 		NULL, new_encKey, new_macKey, new_KEK);
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 	return result;
@@ -6264,7 +6259,7 @@ LONG OP201_put_delegated_management_keys(OPGP_CARD_INFO cardInfo, OP201_SECURITY
 	GP211_SECURITY_INFO gp211secInfo;
 	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
 	memcpy(gp211secInfo.dataEncryptionSessionKey, KEK, 16);
-	result = put_delegated_management_keys(cardInfo, &gp211secInfo, keySetVersion, newKeySetVersion, 
+	result = put_delegated_management_keys(cardInfo, &gp211secInfo, keySetVersion, newKeySetVersion,
 		PEMKeyFileName, passPhrase, receiptGenerationKey);
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 	return result;
@@ -6307,10 +6302,10 @@ LONG OP201_delete_application(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secI
 	GP211_SECURITY_INFO gp211secInfo;
 	GP211_RECEIPT_DATA *gp211receiptData;
 	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
-	gp211receiptData = 
+	gp211receiptData =
 		(GP211_RECEIPT_DATA *)malloc(sizeof(GP211_RECEIPT_DATA)* (*receiptDataLength));
 
-	result = delete_application(cardInfo, &gp211secInfo, AIDs, AIDsLength, 
+	result = delete_application(cardInfo, &gp211secInfo, AIDs, AIDsLength,
 		gp211receiptData, receiptDataLength);
 	for (i=0; i<*receiptDataLength; i++) {
 		mapGP211ToOP201ReceiptData(gp211receiptData[i], &(receiptData[i]));
@@ -6333,7 +6328,7 @@ LONG OP201_delete_application(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secI
  * \param *secInfo INOUT The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
-LONG OP201_put_data(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, 
+LONG OP201_put_data(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 					BYTE identifier[2], PBYTE dataObject, DWORD dataObjectLength) {
 	LONG result;
 	GP211_SECURITY_INFO gp211secInfo;
@@ -6383,10 +6378,10 @@ LONG OP201_get_key_information_templates(OPGP_CARD_INFO cardInfo, OP201_SECURITY
 	GP211_SECURITY_INFO gp211secInfo;
 	GP211_KEY_INFORMATION *gp211keyInformation;
 	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
-	gp211keyInformation = 
+	gp211keyInformation =
 		(GP211_KEY_INFORMATION *)malloc(sizeof(GP211_KEY_INFORMATION)* (*keyInformationLength));
 
-	result = get_key_information_templates(cardInfo, &gp211secInfo, keyInformationTemplate, 
+	result = get_key_information_templates(cardInfo, &gp211secInfo, keyInformationTemplate,
 		gp211keyInformation, keyInformationLength);
 	for (i=0; i<*keyInformationLength; i++) {
 		mapGP211ToOP201KeyInformation(gp211keyInformation[i], &(keyInformation[i]));
@@ -6498,7 +6493,7 @@ end:
  * \param receiptDataAvailable OUT 0 if no receiptData is availabe.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
-LONG OP201_load(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, 
+LONG OP201_load(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 				 OP201_DAP_BLOCK *dapBlock, DWORD dapBlockLength, OPGP_STRING executableLoadFileName,
 				 OP201_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable) {
 	LONG result;
@@ -6511,7 +6506,7 @@ LONG OP201_load(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 	for (i=0; i<dapBlockLength; i++) {
 		mapOP201ToGP211DAPBlock(dapBlock[i], &(gp211dapBlock[i]));
 	}
-	result = load(cardInfo, &gp211secInfo, gp211dapBlock, dapBlockLength, 
+	result = load(cardInfo, &gp211secInfo, gp211dapBlock, dapBlockLength,
 		executableLoadFileName, &gp211receiptData, receiptDataAvailable);
 	if (*receiptDataAvailable)
 		mapGP211ToOP201ReceiptData(gp211receiptData, receiptData);
@@ -6598,9 +6593,9 @@ LONG OP201_install_for_install(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *sec
 	GP211_SECURITY_INFO gp211secInfo;
 	GP211_RECEIPT_DATA gp211receiptData;
 	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
-	result = install_for_install(cardInfo, &gp211secInfo, executableLoadFileAID, 
+	result = install_for_install(cardInfo, &gp211secInfo, executableLoadFileAID,
 		executableLoadFileAIDLength, AIDWithinLoadFileAID, AIDWithinLoadFileAIDLength,
-		applicationInstanceAID, applicationInstanceAIDLength, 
+		applicationInstanceAID, applicationInstanceAIDLength,
 		applicationPrivileges, volatileDataSpaceLimit, nonVolatileDataSpaceLimit,
 		applicationInstallParameters, applicationInstallParametersLength, installToken,
 		&gp211receiptData, receiptDataAvailable);
@@ -6648,9 +6643,9 @@ LONG OP201_install_for_install_and_make_selectable(OPGP_CARD_INFO cardInfo, OP20
 	GP211_SECURITY_INFO gp211secInfo;
 	GP211_RECEIPT_DATA gp211receiptData;
 	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
-	result = install_for_install_and_make_selectable(cardInfo, &gp211secInfo, executableLoadFileAID, 
+	result = install_for_install_and_make_selectable(cardInfo, &gp211secInfo, executableLoadFileAID,
 		executableLoadFileAIDLength, AIDWithinLoadFileAID, AIDWithinLoadFileAIDLength,
-		applicationInstanceAID, applicationInstanceAIDLength, 
+		applicationInstanceAID, applicationInstanceAIDLength,
 		applicationPrivileges, volatileDataSpaceLimit, nonVolatileDataSpaceLimit,
 		applicationInstallParameters, applicationInstallParametersLength, installToken,
 		&gp211receiptData, receiptDataAvailable);
@@ -6763,7 +6758,7 @@ LONG OP201_calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, DWORD e
 							 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
 							 BYTE installToken[128], OPGP_STRING PEMKeyFileName, char *passPhrase) {
 	LONG result;
-	result = calculate_install_token(P1, executableLoadFileAID, executableLoadFileAIDLength, 
+	result = calculate_install_token(P1, executableLoadFileAID, executableLoadFileAIDLength,
 		AIDWithinLoadFileAID, AIDWithinLoadFileAIDLength, applicationInstanceAID, applicationInstanceAIDLength,
 		applicationPrivileges, volatileDataSpaceLimit, nonVolatileDataSpaceLimit,
 		applicationInstallParameters, applicationInstallParametersLength, installToken,
@@ -7015,6 +7010,7 @@ LONG OP201_calculate_load_file_DAP(OP201_DAP_BLOCK *dapBlock, DWORD dapBlockLeng
 		{ result = errno; goto end; }
 	}
 	fileSize = ftell(CAPFile);
+	fseek(CAPFile, 0, SEEK_SET);
 #endif
 	if (fileSize == -1L) {
 		{ result = errno; goto end; }
@@ -7116,6 +7112,7 @@ LONG OP201_calculate_3des_DAP(PBYTE securityDomainAID, DWORD securityDomainAIDLe
 		{ result = errno; goto end; }
 	}
 	fileSize = ftell(CAPFile);
+	fseek(CAPFile, 0, SEEK_SET);
 #endif
 	while(feof(CAPFile) == 0) {
 		count = (int)fread(buf, sizeof(unsigned char), sizeof(buf), CAPFile);
@@ -7389,12 +7386,12 @@ static LONG readDAPBlock(PBYTE buf, PDWORD bufLength, OP201_DAP_BLOCK dapBlock) 
  * \param *secInfo OUT The returned OP201_SECURITY_INFO structure.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
-LONG OP201_mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE encKey[16], BYTE macKey[16], 
+LONG OP201_mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE encKey[16], BYTE macKey[16],
 								 BYTE keySetVersion,
 								 BYTE keyIndex, BYTE securityLevel, OP201_SECURITY_INFO *secInfo) {
 	LONG result;
 	GP211_SECURITY_INFO gp211secInfo;
-	result = mutual_authentication(cardInfo, NULL, encKey, macKey, macKey, keySetVersion, 
+	result = mutual_authentication(cardInfo, NULL, encKey, macKey, macKey, keySetVersion,
 		keyIndex, GP211_SCP01, GP211_SCP01_IMPL_i05, securityLevel, &gp211secInfo);
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 	return result;
@@ -7411,7 +7408,7 @@ LONG OP201_mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE encKey[16], BYTE 
 void enableTraceMode(DWORD enable, FILE *out) {
     if (out == NULL)
  		traceFile = stdout;
-    else 
+    else
  		traceFile = out;
     traceEnable = enable;
 }
