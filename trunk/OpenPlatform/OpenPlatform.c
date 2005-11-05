@@ -197,7 +197,7 @@ static LONG readDAPBlock(PBYTE buf, PDWORD bufLength, OPSP_DAP_BLOCK dapBlock) {
 	}
 
 	buf[j++] = 0xE2; // Tag indicating a DAP block.
-	
+
 	if (length <= 127) {
 		buf[j++] = (BYTE)length;
 	}
@@ -2045,6 +2045,7 @@ LONG load_applet(OPSP_CARDHANDLE cardHandle, OPSP_SECURITY_INFO *secInfo, OPSP_C
 		{ result = OPSP_ERROR_BAD_FILE_DESCRIPTOR; goto end; }
 	}
 	fileSize = ftell(CAPFile);
+	fileSize = fseek(CAPFile, 0, SEEK_SET);
 #endif
 	if (fileSize == -1L) {
 		{ result = OPSP_ERROR_BAD_FILE_DESCRIPTOR; goto end; }
@@ -3205,6 +3206,7 @@ LONG calculate_load_file_DAP(OPSP_DAP_BLOCK *dapBlock, DWORD dapBlockLength, OPS
 		{ result = OPSP_ERROR_BAD_FILE_DESCRIPTOR; goto end; }
 	}
 	fileSize = ftell(CAPFile);
+	fileSize = fseek(CAPFile, 0, SEEK_SET);
 #endif
 	if (fileSize == -1L) {
 		{ result = OPSP_ERROR_BAD_FILE_DESCRIPTOR; goto end; }
@@ -3309,6 +3311,7 @@ LONG calculate_3des_DAP(PBYTE securityDomainAID, DWORD securityDomainAIDLength, 
 		{ result = OPSP_ERROR_BAD_FILE_DESCRIPTOR; goto end; }
 	}
 	fileSize = ftell(CAPFile);
+	fileSize = fseek(CAPFile, 0, SEEK_SET);
 #endif
 	while(feof(CAPFile) == 0) {
 		count = (int)fread(buf, sizeof(unsigned char), sizeof(buf), CAPFile);

@@ -27,8 +27,8 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,2,0,0
- PRODUCTVERSION 1,2,0,0
+ FILEVERSION 1,0,2,0
+ PRODUCTVERSION 1,0,2,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -46,13 +46,13 @@ BEGIN
             VALUE "Comments", "Library for accessing Open Platform 2.0.1' compliant smart cards with PC/SC"
             VALUE "CompanyName", "Karsten Ohme"
             VALUE "FileDescription", "Open Platform 2.0.1' for Windows32 Library"
-            VALUE "FileVersion", "1, 2, 0, 0"
+            VALUE "FileVersion", "1, 0, 2, 0"
             VALUE "InternalName", "OpenPlatform.dll"
             VALUE "LegalCopyright", "Copyright (C) Karsten Ohme 2005"
             VALUE "License", "BSD"
             VALUE "OriginalFilename", "OpenPlatform.dll"
             VALUE "ProductName", " OpenPlatform Library"
-            VALUE "ProductVersion", "1, 2, 0, 0"
+            VALUE "ProductVersion", "1, 0, 2, 0"
         END
     END
     BLOCK "VarFileInfo"
