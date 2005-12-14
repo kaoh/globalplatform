@@ -1,7 +1,7 @@
 # Require autoconf 2.53
 AC_PREREQ(2.53)
 
-AC_INIT(GlobalPlatform, 1.0.0, k_o_@users.sourceforge.net)
+AC_INIT(GlobalPlatform, 2.0.1, k_o_@users.sourceforge.net)
 AM_INIT_AUTOMAKE
 
 # check programs
