@@ -89,44 +89,44 @@ static const BYTE OPGP_VISA_DEFAULT_KEY[] = {0x40, 0x41, 0x42, 0x43, 0x44, 0x45,
 #define GP211_SCP01 0x01 //!< Secure Channel Protocol '01'
 #define GP211_SCP02 0x02 //!< Secure Channel Protocol '02'
 
-/** Secure Channel Protocol '01': "i" '05': Initiation mode explicit, C-MAC on modified APDU, 
+/** Secure Channel Protocol '01': "i" '05': Initiation mode explicit, C-MAC on modified APDU,
   * ICV set to zero, no ICV encryption, 3 Secure Channel Keys
   */
-#define GP211_SCP01_IMPL_i05 0x05 
-/** Secure Channel Protocol '01': "i" '15': Initiation mode explicit, C-MAC on modified APDU, 
+#define GP211_SCP01_IMPL_i05 0x05
+/** Secure Channel Protocol '01': "i" '15': Initiation mode explicit, C-MAC on modified APDU,
   * ICV set to zero, ICV encryption, 3 Secure Channel Keys
   */
 #define GP211_SCP01_IMPL_i15 0x15
 
-/** Secure Channel Protocol '02': "i" '04': Initiation mode explicit, C-MAC on modified APDU, 
-  * ICV set to zero, no ICV encryption, 1 Secure Channel base key 
+/** Secure Channel Protocol '02': "i" '04': Initiation mode explicit, C-MAC on modified APDU,
+  * ICV set to zero, no ICV encryption, 1 Secure Channel base key
   */
 #define GP211_SCP02_IMPL_i04 0x04
-/** Secure Channel Protocol '02': "i" '05': Initiation mode explicit, C-MAC on modified APDU, 
-  * ICV set to zero, no ICV encryption, 3 Secure Channel Keys 
+/** Secure Channel Protocol '02': "i" '05': Initiation mode explicit, C-MAC on modified APDU,
+  * ICV set to zero, no ICV encryption, 3 Secure Channel Keys
   */
 #define GP211_SCP02_IMPL_i05 0x05
-/** Secure Channel Protocol '02': "i" '0A': Initiation mode implicit, C-MAC on unmodified APDU, 
-  *ICV set to MAC over AID, no ICV encryption, 1 Secure Channel base key 
+/** Secure Channel Protocol '02': "i" '0A': Initiation mode implicit, C-MAC on unmodified APDU,
+  *ICV set to MAC over AID, no ICV encryption, 1 Secure Channel base key
   */
 #define GP211_SCP02_IMPL_i0A 0x0A
-/** Secure Channel Protocol '02': "i" '0B': Initiation mode implicit, C-MAC on unmodified APDU, 
-  * ICV set to MAC over AID, no ICV encryption, 3 Secure Channel Keys 
+/** Secure Channel Protocol '02': "i" '0B': Initiation mode implicit, C-MAC on unmodified APDU,
+  * ICV set to MAC over AID, no ICV encryption, 3 Secure Channel Keys
   */
 #define GP211_SCP02_IMPL_i0B 0x0B
-/** Secure Channel Protocol '02': "i" '14': Initiation mode explicit, C-MAC on modified APDU, 
+/** Secure Channel Protocol '02': "i" '14': Initiation mode explicit, C-MAC on modified APDU,
   * ICV set to zero, ICV encryption for CMAC session, 1 Secure Channel base key
   */
 #define GP211_SCP02_IMPL_i14 0x14
-/** Secure Channel Protocol '02': "i" '15': Initiation mode explicit, C-MAC on modified APDU, 
+/** Secure Channel Protocol '02': "i" '15': Initiation mode explicit, C-MAC on modified APDU,
   *ICV set to zero, ICV encryption for CMAC session, 3 Secure Channel Keys
   */
 #define GP211_SCP02_IMPL_i15 0x15
-/** Secure Channel Protocol '02': "i" '1A': Initiation mode implicit, C-MAC on unmodified APDU, 
+/** Secure Channel Protocol '02': "i" '1A': Initiation mode implicit, C-MAC on unmodified APDU,
   * ICV set to MAC over AID, ICV encryption for C-MAC session, 1 Secure Channel base key
   */
 #define GP211_SCP02_IMPL_i1A 0x1A
-/** Secure Channel Protocol '02': "i" '1B': Initiation mode implicit, C-MAC on unmodified APDU, 
+/** Secure Channel Protocol '02': "i" '1B': Initiation mode implicit, C-MAC on unmodified APDU,
   *ICV set to MAC over AID, ICV encryption for C-MAC session, 3 Secure Channel Keys
   */
 #define GP211_SCP02_IMPL_i1B 0x1B
@@ -412,7 +412,7 @@ typedef struct {
 
 
 /**
- * A structure describing a Load File Data Block Signature according to the GlobalPlatform 
+ * A structure describing a Load File Data Block Signature according to the GlobalPlatform
  * specification 2.1.1.
  */
 typedef struct {
@@ -461,9 +461,20 @@ typedef struct {
 } OPGP_AID;
 
 
+/**
+ * A structure describing an Executable Load File. 
+ * This structure is limited to 32 applets in the Load File.
+ */
+typedef struct {
+	DWORD loadFileSize; //!< The size of the Load File.
+	OPGP_AID loadFileAID; //!< The AID of the Load File.
+	BYTE numAppletAIDs; //!< The number of applets contained in the Load File.
+	OPGP_AID appletAIDs[32]; //!< The contained applets in the Load File.
+} OPGP_LOAD_FILE_PARAMETERS;
+
 
 /**
- * The structure containing Issuer Security Domain, Security Domains, Executable Load Files 
+ * The structure containing Issuer Security Domain, Security Domains, Executable Load Files
  * and Application life cycle states and privileges returned by get_status().
  */
 typedef struct {
@@ -544,6 +555,7 @@ typedef struct {
 #define OPGP_ERROR_INVALID_FILENAME ((DWORD)0x8030F001L) //!< A file name is invalid.
 #define OPGP_ERROR_INVALID_PASSWORD ((DWORD)0x8030F002L) //!< A password is invalid.
 #define OPGP_ERROR_WRONG_EXPONENT ((DWORD)0x8030F003L) //!< The exponent must be 3 or 65537.
+#define OPGP_ERROR_INVALID_LOAD_FILE ((DWORD)0x8030F008L) //!< The load file has an invalid structure.
 
 /* Open Platform 2.0.1' specific errors */
 
@@ -556,6 +568,7 @@ typedef struct {
 #define GP211_ERROR_LOAD_FILE_DATA_BLOCK_HASH_NULL ((DWORD)0x8030F004L) //!< The Load File Data Block Hash is <code>NULL</code>.
 #define GP211_ERROR_INVALID_SCP ((DWORD)0x8030F005L) //!< The Secure Channel Protocol is invalid.
 #define GP211_ERROR_INVALID_SCP_IMPL ((DWORD)0x8030F006L) //!< The Secure Channel Protocol Implementation is invalid.
+#define GP211_ERROR_VALIDATION_R_MAC ((DWORD)0x8030F007L) //!< The validation of the R-MAC has failed.
 
 /* Mapping of relevant PC/SC Lite / WinSCard API errors to error codes. */
 
@@ -709,13 +722,13 @@ LONG card_disconnect(OPGP_CARD_INFO cardInfo);
 OPGP_API
 LONG select_application(OPGP_CARD_INFO cardInfo, PBYTE AID, DWORD AIDLength);
 
-/** \brief GlobalPlatform2.1.1: Gets the life cycle status of Applications, the Issuer Security 
+/** \brief GlobalPlatform2.1.1: Gets the life cycle status of Applications, the Issuer Security
  * Domains, Security Domains and Executable Load Files and their privileges or information about
  * Executable Modules of the Executable Load Files.
  */
 OPGP_API
-LONG GP211_get_status(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, 
-				BYTE cardElement, GP211_APPLICATION_DATA *applData, 
+LONG GP211_get_status(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+				BYTE cardElement, GP211_APPLICATION_DATA *applData,
 				GP211_EXECUTABLE_MODULES_DATA *executableData, PDWORD dataLength);
 
 //! \brief GlobalPlatform2.1.1: Sets the life cycle status of Applications, Security Domains or the Card Manager.
@@ -728,23 +741,23 @@ OPGP_STRING stringify_error(DWORD errorCode);
 
 //! \brief GlobalPlatform2.1.1: Mutual authentication.
 OPGP_API
-LONG GP211_mutual_authentication(OPGP_CARD_INFO cardInfo, 
-						   BYTE baseKey[16], BYTE S_ENC[16], BYTE S_MAC[16], 
+LONG GP211_mutual_authentication(OPGP_CARD_INFO cardInfo,
+						   BYTE baseKey[16], BYTE S_ENC[16], BYTE S_MAC[16],
 						   BYTE DEK[16], BYTE keySetVersion,
-						   BYTE keyIndex, BYTE secureChannelProtocol, 
-						   BYTE secureChannelProtocolImpl, 
+						   BYTE keyIndex, BYTE secureChannelProtocol,
+						   BYTE secureChannelProtocolImpl,
 						   BYTE securityLevel, GP211_SECURITY_INFO *secInfo);
 
 //! \brief GlobalPlatform2.1.1: Inits a Secure Channel implicitly.
 OPGP_API
-LONG GP211_init_implicit_secure_channel(PBYTE AID, DWORD AIDLength, BYTE baseKey[16], 
+LONG GP211_init_implicit_secure_channel(PBYTE AID, DWORD AIDLength, BYTE baseKey[16],
 								  BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16],
-								  BYTE secureChannelProtocolImpl, BYTE sequenceCounter[2], 
+								  BYTE secureChannelProtocolImpl, BYTE sequenceCounter[2],
 								  GP211_SECURITY_INFO *secInfo);
 
 //! \brief GlobalPlatform2.1.1: Retrieve card data.
 OPGP_API
-LONG GP211_get_data(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, 
+LONG GP211_get_data(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 			  const BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength);
 
 //! \brief Retrieve card data according ISO/IEC 7816-4 command not within a secure channel.
@@ -763,7 +776,7 @@ LONG GP211_get_sequence_counter(OPGP_CARD_INFO cardInfo,
 
 //! \brief GlobalPlatform2.1.1: Put card data.
 OPGP_API
-LONG GP211_put_data(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, 
+LONG GP211_put_data(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 			  BYTE identifier[2], PBYTE dataObject, DWORD dataObjectLength);
 
 //! \brief GlobalPlatform2.1.1: Changes or unblocks the global PIN.
@@ -807,7 +820,7 @@ LONG GP211_delete_application(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secI
 //! \brief GlobalPlatform2.1.1: Prepares the card for loading an application.
 OPGP_API
 LONG GP211_install_for_load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-					  PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, 
+					  PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 					  PBYTE securityDomainAID,
 					  DWORD securityDomainAIDLength, BYTE loadFileDataBlockHash[20], BYTE loadToken[128],
 					  DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
@@ -815,15 +828,15 @@ LONG GP211_install_for_load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInf
 
 //! \brief GlobalPlatform2.1.1: Function to retrieve the data to sign by the Card Issuer in an Extradition Token.
 OPGP_API
-LONG GP211_get_extradition_token_signature_data(PBYTE securityDomainAID, 
+LONG GP211_get_extradition_token_signature_data(PBYTE securityDomainAID,
 										  DWORD securityDomainAIDLength,
-										  PBYTE applicationAID, DWORD applicationAIDLength, 
-										  PBYTE extraditionTokenSignatureData, 
+										  PBYTE applicationAID, DWORD applicationAIDLength,
+										  PBYTE extraditionTokenSignatureData,
 										  PDWORD extraditionTokenSignatureDataLength);
 
 //! \brief GlobalPlatform2.1.1: Function to retrieve the data to sign by the Card Issuer in a Load Token.
 OPGP_API
-LONG GP211_get_load_token_signature_data(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, 
+LONG GP211_get_load_token_signature_data(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 								   PBYTE securityDomainAID,
 								   DWORD securityDomainAIDLength, BYTE loadFileDataBlockHash[20],
 								   DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
@@ -832,7 +845,7 @@ LONG GP211_get_load_token_signature_data(PBYTE executableLoadFileAID, DWORD exec
 
 //! \brief GlobalPlatform2.1.1: Function to retrieve the data to sign by the Card Issuer in an Install Token.
 OPGP_API
-LONG GP211_get_install_token_signature_data(BYTE P1, PBYTE executableLoadFileAID, 
+LONG GP211_get_install_token_signature_data(BYTE P1, PBYTE executableLoadFileAID,
 									  DWORD executableLoadFileAIDLength,
 									  PBYTE executableModuleAID, DWORD executableModuleAIDLength,
 									  PBYTE applicationAID, DWORD applicationAIDLength,
@@ -843,7 +856,7 @@ LONG GP211_get_install_token_signature_data(BYTE P1, PBYTE executableLoadFileAID
 
 //! \brief GlobalPlatform2.1.1: Calculates a Load Token using PKCS#1.
 OPGP_API
-LONG GP211_calculate_load_token(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, 
+LONG GP211_calculate_load_token(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 						  PBYTE securityDomainAID,
 						  DWORD securityDomainAIDLength, BYTE loadFileDataBlockHash[20],
 						  DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
@@ -852,7 +865,7 @@ LONG GP211_calculate_load_token(PBYTE executableLoadFileAID, DWORD executableLoa
 
 //! \brief GlobalPlatform2.1.1: Calculates an Install Token using PKCS#1.
 OPGP_API
-LONG GP211_calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, 
+LONG GP211_calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 							 PBYTE executableModuleAID,
 							 DWORD executableModuleAIDLength, PBYTE applicationAID,
 							 DWORD applicationAIDLength, BYTE applicationPrivileges,
@@ -873,7 +886,7 @@ LONG GP211_load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 
 //! \brief GlobalPlatform2.1.1: Installs an application on the card.
 OPGP_API
-LONG GP211_install_for_install(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, 
+LONG GP211_install_for_install(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 						 PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE executableModuleAID,
 						 DWORD executableModuleAIDLength, PBYTE applicationAID, DWORD applicationAIDLength,
 						 BYTE applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
@@ -899,18 +912,18 @@ LONG GP211_install_for_install_and_make_selectable(OPGP_CARD_INFO cardInfo, GP21
 
 //! \brief GlobalPlatform2.1.1: Informs a Security Domain that a associated application will retrieve personalization data.
 OPGP_API
-LONG GP211_install_for_personalization(OPGP_CARD_INFO cardInfo, 
-											 GP211_SECURITY_INFO *secInfo, 
+LONG GP211_install_for_personalization(OPGP_CARD_INFO cardInfo,
+											 GP211_SECURITY_INFO *secInfo,
 						 PBYTE applicationAID,
 						 DWORD applicationAIDLength);
 
 //! \brief GlobalPlatform2.1.1: Associates an application with another Security Domain.
 OPGP_API
-LONG GP211_install_for_extradition(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, 
-							  PBYTE securityDomainAID, 
+LONG GP211_install_for_extradition(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+							  PBYTE securityDomainAID,
 						 DWORD securityDomainAIDLength, PBYTE applicationAID,
-						 DWORD applicationAIDLength, 
-						 BYTE extraditionToken[128], GP211_RECEIPT_DATA *receiptData, 
+						 DWORD applicationAIDLength,
+						 BYTE extraditionToken[128], GP211_RECEIPT_DATA *receiptData,
 						 PDWORD receiptDataAvailable);
 
 //! \brief GlobalPlatform2.1.1: Adds a key set for Delegated Management.
@@ -923,21 +936,21 @@ LONG GP211_put_delegated_management_keys(OPGP_CARD_INFO cardInfo, GP211_SECURITY
 
 //! \brief Sends an application protocol data unit.
 OPGP_API
-LONG GP211_send_APDU(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, 
+LONG GP211_send_APDU(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 			   PBYTE capdu, DWORD capduLength, PBYTE rapdu,
 			   PDWORD rapduLength);
 
 //! \brief GlobalPlatform2.1.1: Calculates a Load File Data Block Signature using 3DES.
 OPGP_API
-LONG GP211_calculate_3des_DAP(BYTE loadFileDataBlockHash[20], 
-						PBYTE securityDomainAID, 
-						DWORD securityDomainAIDLength, 
+LONG GP211_calculate_3des_DAP(BYTE loadFileDataBlockHash[20],
+						PBYTE securityDomainAID,
+						DWORD securityDomainAIDLength,
 						BYTE DAPVerificationKey[16], GP211_DAP_BLOCK *loadFileDataBlockSignature);
 
 //! \brief GlobalPlatform2.1.1: Calculates a Load File Data Block Signature using SHA-1 and PKCS#1 (RSA).
 OPGP_API
-LONG GP211_calculate_rsa_DAP(BYTE loadFileDataBlockHash[20], PBYTE securityDomainAID, 
-					   DWORD securityDomainAIDLength, OPGP_STRING PEMKeyFileName, 
+LONG GP211_calculate_rsa_DAP(BYTE loadFileDataBlockHash[20], PBYTE securityDomainAID,
+					   DWORD securityDomainAIDLength, OPGP_STRING PEMKeyFileName,
 					   char *passPhrase, GP211_DAP_BLOCK *loadFileDataBlockSignature);
 
 //! \brief GlobalPlatform2.1.1: Validates a Load Receipt.
@@ -969,13 +982,13 @@ LONG GP211_validate_extradition_receipt(DWORD confirmationCounter, PBYTE cardUni
 						   BYTE receiptKey[16], GP211_RECEIPT_DATA receiptData,
 						   PBYTE oldSecurityDomainAID, DWORD oldSecurityDomainAIDLength,
 						   PBYTE newSecurityDomainAID, DWORD newSecurityDomainAIDLength,
-						   PBYTE applicationOrExecutableLoadFileAID, 
+						   PBYTE applicationOrExecutableLoadFileAID,
 						   DWORD applicationOrExecutableLoadFileAIDLength);
 
 //! \brief ISO 7816-4 / GlobalPlatform2.1.1: Opens or closes a Logical Channel.
 OPGP_API
-LONG manage_channel(GP211_SECURITY_INFO *secInfo, 
-					OPGP_CARD_INFO *cardInfo, BYTE openClose, BYTE channelNumberToClose, 
+LONG manage_channel(GP211_SECURITY_INFO *secInfo,
+					OPGP_CARD_INFO *cardInfo, BYTE openClose, BYTE channelNumberToClose,
 					BYTE *channelNumberOpened);
 
 //! \brief ISO 7816-4 / GlobalPlatform2.1.1: If multiple Logical Channels are open or a new Logical Channel is opened with select_application(), selects the Logical Channel.
@@ -1004,12 +1017,12 @@ LONG OP201_mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE encKey[16], BYTE 
 
 //! \brief Open Platform: Retrieve card data.
 OPGP_API
-LONG OP201_get_data(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, 
+LONG OP201_get_data(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 					BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength);
 
 //! \brief Open Platform: Put card data.
 OPGP_API
-LONG OP201_put_data(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, 
+LONG OP201_put_data(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 					BYTE identifier[2], PBYTE dataObject, DWORD dataObjectLength);
 
 //! \brief Open Platform: Changes or unblocks the global PIN.
@@ -1047,13 +1060,13 @@ LONG OP201_get_key_information_templates(OPGP_CARD_INFO cardInfo, OP201_SECURITY
 
 //! \brief Open Platform: Deletes a Executable Load File or an application.
 OPGP_API
-LONG OP201_delete_application(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, 
+LONG OP201_delete_application(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 				   OPGP_AID *AIDs, DWORD AIDsLength,
 				   OP201_RECEIPT_DATA *receiptData, PDWORD receiptDataLength);
 
 //! \brief Open Platform: Prepares the card for loading an application.
 OPGP_API
-LONG OP201_install_for_load(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, 
+LONG OP201_install_for_load(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 					  PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE securityDomainAID,
 					  DWORD securityDomainAIDLength, BYTE loadFileDAP[20], BYTE loadToken[128],
 					  DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
@@ -1101,7 +1114,7 @@ LONG OP201_calculate_load_file_DAP(OP201_DAP_BLOCK *dapBlock, DWORD dapBlockLeng
 
 //! \brief Open Platform: Loads a Executable Load File (containing an application) to the card.
 OPGP_API
-LONG OP201_load(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, 
+LONG OP201_load(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 				 OP201_DAP_BLOCK *dapBlock, DWORD dapBlockLength, OPGP_STRING executableLoadFileName,
 				 OP201_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
 
@@ -1140,7 +1153,7 @@ LONG OP201_put_delegated_management_keys(OPGP_CARD_INFO cardInfo, OP201_SECURITY
 
 //! \brief Sends an application protocol data unit.
 OPGP_API
-LONG OP201_send_APDU(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, 
+LONG OP201_send_APDU(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 					 PBYTE capdu, DWORD capduLength, PBYTE rapdu,
 			   PDWORD rapduLength);
 
@@ -1178,6 +1191,18 @@ LONG OP201_validate_load_receipt(DWORD confirmationCounter, BYTE cardUniqueData[
 //! \brief Enables the trace mode.
 OPGP_API
 void enableTraceMode(DWORD enable, FILE *out);
+
+//! \brief Initiates a R-MAC session.
+OPGP_API
+LONG GP211_begin_R_MAC(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE securityLevel, PBYTE data, DWORD dataLength);
+
+//! \brief Terminates a R-MAC session.
+OPGP_API
+LONG GP211_end_R_MAC(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo);
+
+//! \brief Reads the parameters of an Executable Load File.
+OPGP_API
+LONG read_executable_load_file_parameters(OPGP_STRING loadFileName, OPGP_LOAD_FILE_PARAMETERS *loadFileParams);
 
 #ifdef __cplusplus
 }

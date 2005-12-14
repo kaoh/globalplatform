@@ -1,12 +1,13 @@
 // Microsoft Visual C++ generated resource script.
 //
-#include "resource.h"
+#include "resrc1.h"
 
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
 //
 // Generated from the TEXTINCLUDE 2 resource.
 //
+#include "resource.h"
 #include "afxres.h"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -27,19 +28,19 @@ LANGUAGE LANG_GERMAN, SUBLANG_GERMAN
 // TEXTINCLUDE
 //
 
-1 TEXTINCLUDE
+1 TEXTINCLUDE 
 BEGIN
     "resrc1.h\0"
 END
 
-2 TEXTINCLUDE
+2 TEXTINCLUDE 
 BEGIN
     "#include ""resource.h""\r\n"
     "#include ""afxres.h""\r\n"
     "\0"
 END
 
-3 TEXTINCLUDE
+3 TEXTINCLUDE 
 BEGIN
     "\r\n"
     "\0"
@@ -66,8 +67,8 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,1,0
- PRODUCTVERSION 1,0,1,0
+ FILEVERSION 2,0,1,0
+ PRODUCTVERSION 2,0,1,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -85,13 +86,13 @@ BEGIN
             VALUE "Comment", "Library for accessing OpenPlatform 2.0.1' and GlobalPlatform 2.1.1 compliant smart cards with PC/SC\n"
             VALUE "CompanyName", "Karsten Ohme"
             VALUE "Description", "GlobalPlatform for Windows32 Library"
-            VALUE "FileVersion", "1, 0, 1, 0"
+            VALUE "FileVersion", "2, 0, 1, 0"
             VALUE "Info", "k_o_@users.sourceforge.net"
             VALUE "InternalName", "GlobalPlatform"
             VALUE "LegalCopyright", "Copyright (C) Karsten Ohme 2005"
             VALUE "License", "BSD"
             VALUE "OriginalFilename", "GlobalPlatform"
-            VALUE "ProductVersion", "1, 0, 1, 0"
+            VALUE "ProductVersion", "2, 0, 1, 0"
         END
     END
     BLOCK "VarFileInfo"
@@ -114,3 +115,4 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
+

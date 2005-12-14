@@ -248,7 +248,17 @@ static LONG get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD executa
 									  PBYTE installParameters, DWORD installParametersLength,
 									  PBYTE installData, PDWORD installDataLength);
 
+static LONG GP211_check_R_MAC(PBYTE apduCommand, DWORD apduCommandLength, PBYTE responseData,
+				 DWORD responseDataLength, GP211_SECURITY_INFO *secInfo);
 
+static LONG GP211_calculate_R_MAC(BYTE commandHeader[4],
+						   PBYTE commandData, 
+						   DWORD commandDataLength,
+						   PBYTE responseData,
+						   DWORD responseDataLength,
+						   BYTE statusWord[2],
+						   GP211_SECURITY_INFO *secInfo,
+						   BYTE mac[8]);
 
 static DWORD traceEnable; //!< Enable trace mode.
 static FILE *traceFile; //!< The trace file for trace mode.
@@ -541,6 +551,11 @@ LONG list_readers(OPGP_CARDCONTEXT cardContext, OPGP_STRING readerNames, PDWORD 
 		goto end;
 	}
 	readers = (OPGP_STRING)malloc(sizeof(TCHAR)*readersSize);
+	if (readers == NULL) {
+		result = ENOMEM;
+		goto end;
+	}
+
 	result = SCardListReaders( cardContext, NULL, readers, &readersSize);
 	if ( SCARD_S_SUCCESS != result ) {
 		goto end;
@@ -910,6 +925,85 @@ end:
 }
 
 /**
+ * Checks the R-MAC of an APDU with the necessary security information according to secInfo.
+ * \param apduCommand IN The command APDU.
+ * \param apduCommandLength IN The length of the command APDU.
+ * \param responseData IN The response data.
+ * \param responseDataLength IN The length of the response data.
+ * \param *secInfo IN The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \return OPGP_ERROR_SUCCESS if no error, error code else.
+ */
+static LONG GP211_check_R_MAC(PBYTE apduCommand, DWORD apduCommandLength, PBYTE responseData,
+				 DWORD responseDataLength, GP211_SECURITY_INFO *secInfo) {
+	LONG result;
+	BYTE lc;
+	DWORD le;
+	BYTE mac[8];
+	DWORD caseAPDU;
+#ifdef DEBUG
+	DWORD i;
+#endif
+	LOG_START(_T("check_R_MAC"));
+
+	// no security level defined, just return
+	if (secInfo == NULL) {
+		{ result = OPGP_ERROR_SUCCESS; goto end; }
+	}
+
+	// trivial case, just return
+	if ((secInfo->securityLevel != GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC) && 
+		(secInfo->securityLevel != GP211_SCP02_SECURITY_LEVEL_R_MAC) &&
+		(secInfo->securityLevel != GP211_SCP02_SECURITY_LEVEL_C_MAC_R_MAC)) {
+		{ result = OPGP_ERROR_SUCCESS; goto end; }
+	}
+
+	// Determine which type of Exchange between the reader
+	if (apduCommandLength == 4) {
+	// Case 1 short
+		lc = 0;
+		caseAPDU = 1;
+	} else if (apduCommandLength == 5) {
+	// Case 2 short
+		lc = 0;
+		caseAPDU = 2;
+	} else {
+		lc = apduCommand[4];
+		if ((convertByte(lc) + 5) == apduCommandLength) {
+		// Case 3 short
+			caseAPDU = 3;
+		} else if ((convertByte(lc) + 5 + 1) == apduCommandLength) {
+		// Case 4 short
+			caseAPDU = 4;
+		} else {
+			{ result = OPGP_ERROR_UNRECOGNIZED_APDU_COMMAND; goto end; }
+		}
+	} // if (Determine which type of Exchange)
+	le = responseDataLength-2;
+	GP211_calculate_R_MAC(apduCommand, apduCommand, lc, responseData, le, 
+			responseData+responseDataLength-2, secInfo, mac);
+#ifdef DEBUG
+	log_Log(_T("check_R_MAC: received R-MAC: "));
+	for (i=0; i<8; i++) {
+		log_Log(_T(" 0x%02x"), responseData[responseDataLength-10+i]);
+	}
+	log_Log(_T("check_R_MAC: calculated R-MAC: "));
+	for (i=0; i<8; i++) {
+		log_Log(_T(" 0x%02x"), mac[i]);
+	}
+#endif
+	if (memcmp(mac, responseData+responseDataLength-10, 8)) {
+		result = GP211_ERROR_VALIDATION_R_MAC;
+		goto end;
+	}
+	memcpy(secInfo->lastR_MAC, mac, 8);
+
+	{ result = OPGP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("check_R_MAC"), result);
+	return result;
+}
+
+/**
  * The secInfo pointer can also be null and so this function can be used for arbitrary cards.
  * \param cardInfo IN The OPGP_CARD_INFO structure returned by card_connect().
  * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
@@ -945,6 +1039,11 @@ static LONG send_APDU(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBY
 
 	LOG_START(_T("send_APDU"));
 	responseData = (PBYTE)malloc(sizeof(BYTE)*responseDataLength);
+	if (responseData == NULL) {
+		result = ENOMEM;
+		goto end;
+	}
+
 
 	if (traceEnable) {
 		_ftprintf(traceFile, _T("--> "));
@@ -980,7 +1079,7 @@ static LONG send_APDU(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBY
 		if ( SCARD_S_SUCCESS != result) {
 			goto end;
 		} // if ( SCARD_S_SUCCESS != result)
-                offset += responseDataLength - 2;
+        offset += responseDataLength - 2;
 	} else {
 		// Determine which type of Exchange between the reader
 		if (apduCommandLength == 4) {
@@ -1322,6 +1421,11 @@ static LONG send_APDU(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBY
 
 	memcpy(rapdu, responseData, offset + 2);
 	*rapduLength = offset + 2;
+
+	result = GP211_check_R_MAC(capdu, capduLength, rapdu, *rapduLength, secInfo);
+	if ( OPGP_ERROR_SUCCESS != result) {
+		goto end;
+	}
 
 	if (traceEnable) {
 		_ftprintf(traceFile, _T("<-- "));
@@ -2233,6 +2337,95 @@ LONG GP211_get_data(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 				  return get_data(cardInfo, secInfo, identifier, recvBuffer, recvBufferLength);
 }
 
+/**
+ * 
+ * \param cardInfo IN The OPGP_CARD_INFO structure returned by card_connect().
+ * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param securityLevel Level of security for all subsequent commands
+ * <ul>
+ * <li>GP211_SCP02_SECURITY_LEVEL_R_MAC - Each APDU response contains a R-MAC during the session.</li>
+ * <li>GP211_SCP02_SECURITY_LEVEL_NO_SECURE_MESSAGING - Only the END R-MAC SESSION response message will contain a R-MAC.</li>
+ * </ul>
+ * \param data IN Data for the BEGIN R-MAC SESSION command, e.g. extra challenge.
+ * \param dataLength IN Length of data.
+ * \return OPGP_ERROR_SUCCESS if no error, error code else.
+ */
+LONG GP211_begin_R_MAC(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE securityLevel, PBYTE data, DWORD dataLength) 
+{
+	LONG result;
+	BYTE sendBuffer[30];
+	DWORD sendBufferLength = 30;
+	DWORD i=0;
+	DWORD recvBufferLength=2;
+	BYTE recvBuffer[2];
+	LOG_START(_T("GP211_begin_R_MAC"));
+	sendBuffer[i++] = 0x80;
+	sendBuffer[i++] = 0x7A;
+	sendBuffer[i++] = securityLevel;
+	sendBuffer[i++] = 1;
+	sendBuffer[i++] = (BYTE)(1+dataLength);
+	sendBuffer[i++] = (BYTE)dataLength;
+	if (dataLength > 24) {
+		result = OPGP_ERROR_COMMAND_TOO_LARGE;
+		goto end;
+	}
+	memcpy(sendBuffer+i, data, dataLength);
+	i+=dataLength;
+	sendBufferLength=i;
+#ifdef DEBUG
+	log_Log(_T("GP211_begin_R_MAC: Data to send: "));
+	for (i=0; i<sendBufferLength; i++) {
+		log_Log(_T(" 0x%02x"), sendBuffer[i]);
+	}
+#endif
+	result = send_APDU(cardInfo, secInfo, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
+	if ( OPGP_ERROR_SUCCESS != result) {
+		goto end;
+	}
+	secInfo->securityLevel |= securityLevel;
+	{ result = OPGP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("GP211_begin_R_MAC"), result);
+	return result;
+}
+
+/**
+ * 
+ * \param cardInfo IN The OPGP_CARD_INFO structure returned by card_connect().
+ * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \return OPGP_ERROR_SUCCESS if no error, error code else.
+ */
+LONG GP211_end_R_MAC(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo) 
+{
+	LONG result;
+	BYTE sendBuffer[6];
+	DWORD sendBufferLength = 6;
+	DWORD i=0;
+	DWORD recvBufferLength=2;
+	BYTE recvBuffer[2];
+	LOG_START(_T("GP211_end_R_MAC"));
+	sendBuffer[i++] = 0x80;
+	sendBuffer[i++] = 0x78;
+	sendBuffer[i++] = 0;
+	sendBuffer[i++] = 3;
+	sendBuffer[i++] = 0; // Le
+#ifdef DEBUG
+	log_Log(_T("GP211_end_R_MAC: Data to send: "));
+	for (i=0; i<sendBufferLength; i++) {
+		log_Log(_T(" 0x%02x"), sendBuffer[i]);
+	}
+#endif
+	result = send_APDU(cardInfo, secInfo, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
+	if ( OPGP_ERROR_SUCCESS != result) {
+		goto end;
+	}
+	secInfo->securityLevel &= ~GP211_SCP02_SECURITY_LEVEL_R_MAC;
+	{ result = OPGP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("GP211_end_R_MAC"), result);
+	return result;
+}
+
 static LONG get_data(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 			  const BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength) {
 	LONG result;
@@ -2817,17 +3010,16 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 	if (CAPFile == NULL) {
 		{ result = errno; goto end; }
 	}
-#ifdef WIN32
-	fileSize = _filelength(CAPFile->_file);
-#else
-	fileSize = fseek(CAPFile, 0, SEEK_END);
-	if (fileSize == -1) {
+	result = fseek(CAPFile, 0, SEEK_END);
+	if (result) {
 		{ result = errno; goto end; }
 	}
 	fileSize = ftell(CAPFile);
-    fseek(CAPFile, 0, SEEK_SET);
-#endif
 	if (fileSize == -1L) {
+		{ result = errno; goto end; }
+	}
+	result = fseek(CAPFile, 0, SEEK_SET);
+	if (result) {
 		{ result = errno; goto end; }
 	}
 	if (fileSize < 128L) {
@@ -4355,6 +4547,11 @@ static LONG validate_load_receipt(DWORD confirmationCounter, PBYTE cardUniqueDat
 	LOG_START(_T("validate_load_receipt"));
 	validationDataLength = 1 + 2 + 1 + cardUniqueDataLength + 1 + executableLoadFileAIDLength + 1 + securityDomainAIDLength;
 	validationData = (PBYTE)malloc(validationDataLength);
+	if (validationData == NULL) {
+		result = ENOMEM;
+		goto end;
+	}
+
 	validationData[i++] = 2;
 	validationData[i++] = (BYTE)((confirmationCounter & 0x0000FF00) >> 8);
 	validationData[i++] = (BYTE)(confirmationCounter & 0x000000FF);
@@ -4419,6 +4616,11 @@ static LONG validate_install_receipt(DWORD confirmationCounter, PBYTE cardUnique
 	LOG_START(_T("validate_install_receipt"));
 	validationDataLength = 1 + 2 + 1 + cardUniqueDataLength + 1 + executableLoadFileAIDLength + 1 + applicationAIDLength;
 	validationData = (PBYTE)malloc(validationDataLength);
+	if (validationData == NULL) {
+		result = ENOMEM;
+		goto end;
+	}
+
 	validationData[i++] = 2;
 	validationData[i++] = (BYTE)((confirmationCounter & 0x0000FF00) >> 8);
 	validationData[i++] = (BYTE)(confirmationCounter & 0x000000FF);
@@ -4478,6 +4680,11 @@ static LONG validate_delete_receipt(DWORD confirmationCounter, PBYTE cardUniqueD
 	LOG_START(_T("validate_delete_receipt"));
 	validationDataLength = 1 + 2 + 1 + cardUniqueDataLength + 1 + AIDLength;
 	validationData = (PBYTE)malloc(validationDataLength);
+	if (validationData == NULL) {
+		result = ENOMEM;
+		goto end;
+	}
+
 	validationData[i++] = 2;
 	validationData[i++] = (BYTE)((confirmationCounter & 0x0000FF00) >> 8);
 	validationData[i++] = (BYTE)(confirmationCounter & 0x000000FF);
@@ -4533,6 +4740,11 @@ LONG GP211_validate_extradition_receipt(DWORD confirmationCounter, PBYTE cardUni
 		+ oldSecurityDomainAIDLength + 1 + applicationOrExecutableLoadFileAIDLength +
 		1 + newSecurityDomainAIDLength;
 	validationData = (PBYTE)malloc(validationDataLength);
+	if (validationData == NULL) {
+		result = ENOMEM;
+		goto end;
+	}
+
 	validationData[i++] = 2;
 	validationData[i++] = (BYTE)((confirmationCounter & 0x0000FF00) >> 8);
 	validationData[i++] = (BYTE)(confirmationCounter & 0x000000FF);
@@ -5954,6 +6166,10 @@ OPGP_STRING stringify_error(DWORD errorCode) {
 		return strError;
 #endif
 	}
+	if (errorCode == OPGP_ERROR_INVALID_LOAD_FILE)
+		return _T("The load file has an invalid structure.");
+	if (errorCode == GP211_ERROR_VALIDATION_R_MAC)
+		return _T("The validation of the R-MAC has failed.");
 	if (errorCode == OP201_ERROR_MORE_APPLICATION_DATA)
 		return _T("More Card Manager, Executable Load File or application data is available.");
 	if (errorCode == OP201_ERROR_LOAD_FILE_DAP_NULL)
@@ -6304,6 +6520,11 @@ LONG OP201_delete_application(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secI
 	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
 	gp211receiptData =
 		(GP211_RECEIPT_DATA *)malloc(sizeof(GP211_RECEIPT_DATA)* (*receiptDataLength));
+	if (gp211receiptData == NULL) {
+		result = ENOMEM;
+		goto end;
+	}
+
 
 	result = delete_application(cardInfo, &gp211secInfo, AIDs, AIDsLength,
 		gp211receiptData, receiptDataLength);
@@ -6311,6 +6532,7 @@ LONG OP201_delete_application(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secI
 		mapGP211ToOP201ReceiptData(gp211receiptData[i], &(receiptData[i]));
 	}
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
+end:
 	if (gp211receiptData)
 		free(gp211receiptData);
 	return result;
@@ -6380,6 +6602,10 @@ LONG OP201_get_key_information_templates(OPGP_CARD_INFO cardInfo, OP201_SECURITY
 	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
 	gp211keyInformation =
 		(GP211_KEY_INFORMATION *)malloc(sizeof(GP211_KEY_INFORMATION)* (*keyInformationLength));
+	if (gp211keyInformation == NULL) {
+		result = ENOMEM;
+		goto end;
+	}
 
 	result = get_key_information_templates(cardInfo, &gp211secInfo, keyInformationTemplate,
 		gp211keyInformation, keyInformationLength);
@@ -6388,6 +6614,7 @@ LONG OP201_get_key_information_templates(OPGP_CARD_INFO cardInfo, OP201_SECURITY
 	}
 
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
+end:
 	if (keyInformation)
 		free(keyInformation);
 	return result;
@@ -6503,6 +6730,11 @@ LONG OP201_load(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 	DWORD i;
 	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
 	gp211dapBlock = (GP211_DAP_BLOCK *)malloc(sizeof(GP211_DAP_BLOCK)*dapBlockLength);
+	if (gp211dapBlock == NULL) {
+		result = ENOMEM;
+		goto end;
+	}
+
 	for (i=0; i<dapBlockLength; i++) {
 		mapOP201ToGP211DAPBlock(dapBlock[i], &(gp211dapBlock[i]));
 	}
@@ -6511,6 +6743,7 @@ LONG OP201_load(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 	if (*receiptDataAvailable)
 		mapGP211ToOP201ReceiptData(gp211receiptData, receiptData);
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
+end:
 	if (gp211dapBlock)
 		free(gp211dapBlock);
 	return result;
@@ -7002,16 +7235,15 @@ LONG OP201_calculate_load_file_DAP(OP201_DAP_BLOCK *dapBlock, DWORD dapBlockLeng
 	if (CAPFile == NULL) {
 		{ result = errno; goto end; }
 	}
-#ifdef WIN32
-	fileSize = _filelength(CAPFile->_file);
-#else
-	fileSize = fseek(CAPFile, 0, SEEK_END);
-	if (fileSize == -1) {
+	result = fseek(CAPFile, 0, SEEK_END);
+	if (result) {
 		{ result = errno; goto end; }
 	}
 	fileSize = ftell(CAPFile);
-	fseek(CAPFile, 0, SEEK_SET);
-#endif
+	result = fseek(CAPFile, 0, SEEK_SET);
+	if (result) {
+		{ result = errno; goto end; }
+	}
 	if (fileSize == -1L) {
 		{ result = errno; goto end; }
 	}
@@ -7068,6 +7300,60 @@ end:
 }
 
 /**
+ * Calculates a R-MAC.
+ * \param commandHeader IN The APDU command header.
+ * \param commandData IN The APDU command body.
+ * \param commandDataLength IN The APDU command body length.
+ * \param responseData IN The APDU response body.
+ * \param responseDataLength IN The APDU response body length.
+ * \param statusWord IN The status word of the response.
+ * \param *secInfo IN The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param mac OUT The R-MAC.
+ * \return OPGP_ERROR_SUCCESS if no error, error code else.
+ */
+static LONG GP211_calculate_R_MAC(BYTE commandHeader[4],
+						   PBYTE commandData, 
+						   DWORD commandDataLength,
+						   PBYTE responseData,
+						   DWORD responseDataLength,
+						   BYTE statusWord[2],
+						   GP211_SECURITY_INFO *secInfo,
+						   BYTE mac[8])
+{
+	LONG result;
+	PBYTE r_MacData;
+	DWORD offset=0;
+	DWORD r_MacDataLength;
+	LOG_START(_T("GP211_calculate_R_MAC"));
+	r_MacDataLength = 4 + 1 + commandDataLength + 1 + responseDataLength + 2;
+	r_MacData = (PBYTE)malloc(r_MacDataLength*sizeof(BYTE));
+	if (r_MacData == NULL) {
+		result = ENOMEM;
+		goto end;
+	}
+	memcpy(r_MacData, commandHeader, 4);
+	offset+=4;
+	memset(r_MacData+offset++, commandDataLength, sizeof(BYTE));
+	memcpy(r_MacData+offset, commandData, commandDataLength);
+	offset+=commandDataLength;
+	memset(r_MacData+offset++, responseDataLength%256, sizeof(BYTE));
+	memcpy(r_MacData+offset, responseData, responseDataLength);
+	offset+=responseDataLength;
+	memcpy(r_MacData+offset, statusWord, 2);
+	offset+=2;
+	result = calculate_MAC_des_3des(secInfo->R_MACSessionKey, r_MacData, r_MacDataLength, secInfo->lastR_MAC, 
+		mac);
+	if (result != OPGP_ERROR_SUCCESS)
+		goto end;
+	{ result = OPGP_ERROR_SUCCESS; goto end; }
+end:
+	if (r_MacData)
+		free(r_MacData);
+	LOG_END(_T("GP211_calculate_R_MAC"), result);
+	return result;
+}
+
+/**
  * If a security domain has DAP verification privilege the security domain validates this DAP.
  * \param securityDomainAID IN A buffer containing the Security Domain AID.
  * \param securityDomainAIDLength IN The length of the Security Domain AID.
@@ -7101,19 +7387,18 @@ LONG OP201_calculate_3des_DAP(PBYTE securityDomainAID, DWORD securityDomainAIDLe
 	if (CAPFile == NULL) {
 		{ result = errno; goto end; }
 	}
-#ifdef WIN32
-	fileSize = _filelength(CAPFile->_file);
-	if (fileSize == -1L) {
-		{ result = errno; goto end; }
-	}
-#else
-	fileSize = fseek(CAPFile, 0, SEEK_END);
-	if (fileSize == -1) {
+	result = fseek(CAPFile, 0, SEEK_END);
+	if (result) {
 		{ result = errno; goto end; }
 	}
 	fileSize = ftell(CAPFile);
-	fseek(CAPFile, 0, SEEK_SET);
-#endif
+	if (fileSize == -1L) {
+		{ result = errno; goto end; }
+	}
+	result = fseek(CAPFile, 0, SEEK_SET);
+	if (result) {
+		{ result = errno; goto end; }
+	}
 	while(feof(CAPFile) == 0) {
 		count = (int)fread(buf, sizeof(unsigned char), sizeof(buf), CAPFile);
 		if(ferror(CAPFile)) {
@@ -7411,4 +7696,266 @@ void enableTraceMode(DWORD enable, FILE *out) {
     else
  		traceFile = out;
     traceEnable = enable;
+}
+
+/**
+ * Can read only IJC files (concatenated extracted CAP files) at the moment.
+ * \param loadFileName The name of the Executable Load File.
+ * \param loadFileParams The parameters of the Executable Load File.
+ */
+LONG read_executable_load_file_parameters(OPGP_STRING loadFileName, OPGP_LOAD_FILE_PARAMETERS *loadFileParams) {
+	LONG result;
+	FILE *file;
+	DWORD fileSize;
+	BYTE packageAID[16];
+	BYTE packageAIDLength;
+	BYTE appletCount, customCount, packageCount;
+	BYTE dummy[16];
+	BYTE dummyLength;
+	DWORD i, offset=0;
+	OPGP_AID appletAIDs[32];
+	LOG_START(_T("read_executable_load_file_paramaters"));
+	file = _tfopen(loadFileName, _T("rb"));
+	if (file == NULL) {
+		{ result = errno; goto end; }
+	}
+	result = fseek(file, 0, SEEK_END);
+	if (result) {
+		{ result = errno; goto end; }
+	}
+	fileSize = ftell(file);
+	if (fileSize == -1L) {
+		{ result = errno; goto end; }
+	}
+	result = fseek(file, 0, SEEK_SET);
+	if (result) {
+		{ result = errno; goto end; }
+	}
+	/* header component */
+	/* tag COMPONENT_Header */
+	offset++;
+	/* size of header_component */
+	offset+=2;
+	/* magic DECAFFED */
+	offset+=4;
+	/* minor version */
+	offset++;
+	/* major version */
+	offset++;
+	/* flags */
+	offset++;
+	/* this_package package_info structure */
+	/* minor version */
+	offset++;
+	/* major version */
+	offset++;
+	/* AID_length */
+	result = fseek(file, offset, SEEK_SET);
+	if (result) {
+		{ result = errno; goto end; }
+	}
+	fread(&packageAIDLength, sizeof(BYTE), 1, file);
+	offset++;
+	if (feof(file)) {
+		result = OPGP_ERROR_INVALID_LOAD_FILE;
+		goto end;
+	}
+	if (ferror(file)) {
+		{ result = errno; goto end; }
+	}
+	if (packageAIDLength < 5 || packageAIDLength > 16) {
+		result = OPGP_ERROR_INVALID_LOAD_FILE;
+		goto end;
+	}
+	/* AID */
+	fread(packageAID, sizeof(BYTE), packageAIDLength, file);
+	offset+=packageAIDLength;
+	if (feof(file)) {
+		result = OPGP_ERROR_INVALID_LOAD_FILE;
+		goto end;
+	}
+	if (ferror(file)) {
+		{ result = errno; goto end; }
+	}
+	/* directory component */
+	/* tag COMPONENT_Directory */
+	offset++;
+	/* size */
+	offset+=2;
+	/* component_sizes */
+	offset+=11*2;
+	/* static_field_size static_field_size_info structure */
+	/* image_size */
+	offset+=2;
+	/* array_init_count */
+	offset+=2;
+	/* array_init_size */
+	offset+=2;
+	/* import_count */
+	offset++;
+	/* applet_count */
+	result = fseek(file, offset, SEEK_SET);
+	if (result) {
+		{ result = errno; goto end; }
+	}
+	fread(&appletCount, sizeof(BYTE), 1, file);
+	offset++;
+	if (feof(file)) {
+		result = OPGP_ERROR_INVALID_LOAD_FILE;
+		goto end;
+	}
+	if (ferror(file)) {
+		{ result = errno; goto end; }
+	}
+	/* custom_count */
+	fread(&customCount, sizeof(BYTE), 1, file);
+	offset++;
+	if (feof(file)) {
+		result = OPGP_ERROR_INVALID_LOAD_FILE;
+		goto end;
+	}
+	if (ferror(file)) {
+		{ result = errno; goto end; }
+	}
+	/* custom_components */
+	for (i=0; i<customCount; i++) {
+		/* component_tag */
+		offset++;
+		/* size */
+		offset+=2;
+		/* AID_length */
+		result = fseek(file, offset, SEEK_SET);
+		if (result) {
+			{ result = errno; goto end; }
+		}
+		fread(&dummyLength, sizeof(BYTE), 1, file);
+		offset++;
+		if (feof(file)) {
+			result = OPGP_ERROR_INVALID_LOAD_FILE;
+			goto end;
+		}
+		if (ferror(file)) {
+			{ result = errno; goto end; }
+		}
+		if (dummyLength < 5 || dummyLength > 16) {
+			result = OPGP_ERROR_INVALID_LOAD_FILE;
+			goto end;
+		}
+		/* AID */
+		fread(dummy, sizeof(BYTE), dummyLength, file);
+		offset+=dummyLength;
+		if (feof(file)) {
+			result = OPGP_ERROR_INVALID_LOAD_FILE;
+			goto end;
+		}
+		if (ferror(file)) {
+			{ result = errno; goto end; }
+		}
+	}
+	/* Import Component */
+	/* tag COMPONENT_Import */
+	offset++;
+	/* size */
+	offset+=2;
+	/* count */
+	result = fseek(file, offset, SEEK_SET);
+	if (result) {
+		{ result = errno; goto end; }
+	}
+	fread(&packageCount, sizeof(BYTE), 1, file);
+	offset++;
+	if (feof(file)) {
+		result = OPGP_ERROR_INVALID_LOAD_FILE;
+		goto end;
+	}
+	if (ferror(file)) {
+		{ result = errno; goto end; }
+	}
+	/* packages */
+	for (i=0; i<packageCount; i++) {
+		/* minor and major version */
+		offset+=2;
+		/* AID_length */
+		result = fseek(file, offset, SEEK_SET);
+		if (result) {
+			{ result = errno; goto end; }
+		}
+		fread(&dummyLength, sizeof(BYTE), 1, file);
+		offset++;
+		if (feof(file)) {
+			result = OPGP_ERROR_INVALID_LOAD_FILE;
+			goto end;
+		}
+		if (ferror(file)) {
+			{ result = errno; goto end; }
+		}
+		if (dummyLength < 5 || dummyLength > 16) {
+			result = OPGP_ERROR_INVALID_LOAD_FILE;
+			goto end;
+		}
+		/* AID */
+		fread(dummy, sizeof(BYTE), dummyLength, file);
+		offset+=dummyLength;
+		if (feof(file)) {
+			result = OPGP_ERROR_INVALID_LOAD_FILE;
+			goto end;
+		}
+		if (ferror(file)) {
+			{ result = errno; goto end; }
+		}
+	}
+	/* Applet Component */
+	/* tag COMPONENT_Applet */
+	offset++;
+	/* size */
+	offset+=2;
+	/* count */
+	offset++;
+	/* applets */
+	for (i=0; i<appletCount; i++) {
+		/* AID_length */
+		result = fseek(file, offset, SEEK_SET);
+		if (result) {
+			{ result = errno; goto end; }
+		}
+		fread(&(appletAIDs[i].AIDLength), sizeof(BYTE), 1, file);
+		offset++;
+		if (feof(file)) {
+			result = OPGP_ERROR_INVALID_LOAD_FILE;
+			goto end;
+		}
+		if (ferror(file)) {
+			{ result = errno; goto end; }
+		}
+		if (appletAIDs[i].AIDLength < 5 || appletAIDs[i].AIDLength > 16) {
+			result = OPGP_ERROR_INVALID_LOAD_FILE;
+			goto end;
+		}
+		/* AID */
+		fread(appletAIDs[i].AID, sizeof(BYTE), appletAIDs[i].AIDLength, file);
+		offset+=appletAIDs[i].AIDLength;
+		if (feof(file)) {
+			result = OPGP_ERROR_INVALID_LOAD_FILE;
+			goto end;
+		}
+		if (ferror(file)) {
+			{ result = errno; goto end; }
+		}
+		/* install_method_offset */
+		offset+=2;
+	}
+	loadFileParams->loadFileSize = fileSize;
+	loadFileParams->numAppletAIDs = appletCount;
+	memcpy(loadFileParams->loadFileAID.AID, packageAID, packageAIDLength);
+	loadFileParams->loadFileAID.AIDLength = packageAIDLength;
+	for (i=0; i<appletCount; i++) {
+		memcpy(loadFileParams->appletAIDs[i].AID, appletAIDs[i].AID, appletAIDs[i].AIDLength);
+		loadFileParams->appletAIDs[i].AIDLength = appletAIDs[i].AIDLength;
+	}
+	{ result = OPGP_ERROR_SUCCESS; goto end; }
+end:
+	if (file)
+		fclose(file);
+	LOG_END(_T("read_executable_load_file_paramaters"), result);
+	return result;
 }
