@@ -12,6 +12,6 @@ nobase_include_HEADERS = GlobalPlatform/GlobalPlatform.h GlobalPlatform/unicode.
 libGlobalPlatform_la_SOURCES = GlobalPlatform/GlobalPlatform.h GlobalPlatform.c debug.h debug.c GlobalPlatform/unicode.h
 libGlobalPlatform_la_LDFLAGS = -version-info 2:0:1
 
-doc : GlobalPlatform.c GlobalPlatform.h
+doc : GlobalPlatform.c GlobalPlatform/GlobalPlatform.h GlobalPlatform/unicode.h
 	doxygen Doxyfile.cfg
 
