@@ -2409,6 +2409,8 @@ LONG GP211_end_R_MAC(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo)
 	sendBuffer[i++] = 0;
 	sendBuffer[i++] = 3;
 	sendBuffer[i++] = 0; // Le
+	/* Switch on, if R-MAC is only applied to last command of session. */
+	secInfo->securityLevel |= GP211_SCP02_SECURITY_LEVEL_R_MAC;
 #ifdef DEBUG
 	log_Log(_T("GP211_end_R_MAC: Data to send: "));
 	for (i=0; i<sendBufferLength; i++) {
