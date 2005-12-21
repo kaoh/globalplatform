@@ -1,7 +1,7 @@
 # Require autoconf 2.52
 AC_PREREQ(2.52)
 
-AC_INIT(GPShell, 1.1.1, snitmo@gmail.com)
+AC_INIT(GPShell, 1.2.0, snitmo@gmail.com)
 AC_CONFIG_AUX_DIR(aux)
 AC_COPYRIGHT(COPYING)
 AM_INIT_AUTOMAKE([no-define])
@@ -29,7 +29,7 @@ AC_CHECK_FUNCS(atoi fgets, [],
 
 PKG_CHECK_MODULES(PCSCLITE, libpcsclite >= 1.2.9-beta7, [],
         [ if test -f /usr/local/lib/pkgconfig/libpcsclite.pc ; then
-                AC_MSG_ERROR([install pkg-config or set PKG_CONFIG_PATH to pkgconfig 
+                AC_MSG_ERROR([install pkg-config or set PKG_CONFIG_PATH to pkgconfig
 directory])
           else
                 AC_MSG_WARN([install pcsc-lite 1.2.9-beta7 or later])
@@ -39,7 +39,7 @@ directory])
 OLD_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS $PCSCLITE_CFLAGS"
 AC_CHECK_HEADER(winscard.h, [],
-        [AC_MSG_ERROR([winscard.h not found or usable, install pcsc-lite 1.2.9-beta7 or 
+        [AC_MSG_ERROR([winscard.h not found or usable, install pcsc-lite 1.2.9-beta7 or
 later, or use
 CFLAGS=-I<include directory> ./configure])])
 CFLAGS="$OLD_CFLAGS"
@@ -60,9 +60,9 @@ fi
 
 OLD_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS $PCSCLITE_CFLAGS"
-AC_CHECK_HEADER(GlobalPlatform/GlobalPlatform.h, [], 
-[AC_MSG_ERROR([GlobalPlatform/GlobalPlatform.h not found or usable, install GlobalPlatform, 
-or 
+AC_CHECK_HEADER(GlobalPlatform/GlobalPlatform.h, [],
+[AC_MSG_ERROR([GlobalPlatform/GlobalPlatform.h not found or usable, install GlobalPlatform,
+or
 use CFLAGS=-I<include directory> ./configure])], )
 CFLAGS="$OLD_CFLAGS"
 
@@ -70,7 +70,7 @@ AC_CHECK_LIB(GlobalPlatform, GP211_load, [],
         [AC_MSG_ERROR([GP211_load() not found, install GlobalPlatform])])
 
 
-AC_MSG_RESULT([Debug output enabled                  : $debug]) 
+AC_MSG_RESULT([Debug output enabled                  : $debug])
 
 AC_OUTPUT([
 Makefile

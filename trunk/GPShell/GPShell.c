@@ -14,6 +14,10 @@
 
 #include "GlobalPlatform/GlobalPlatform.h"
 
+#ifndef WIN32
+#define _snprintf snprintf
+#endif
+
 /* Constants */
 #define BUFLEN 1024
 #define FILENAMELEN 256
@@ -74,7 +78,7 @@ int platform_mode = PLATFORM_MODE_OP_201;;
 void ConvertTToC(char* pszDest, const TCHAR* pszSrc)
 {
     unsigned int i;
-    
+
     for(i = 0; i < _tcslen(pszSrc); i++)
 	pszDest[i] = (char) pszSrc[i];
 
@@ -84,7 +88,7 @@ void ConvertTToC(char* pszDest, const TCHAR* pszSrc)
 void ConvertCToT(TCHAR* pszDest, const char* pszSrc)
 {
     unsigned int i;
-    
+
 	for(i = 0; i < strlen(pszSrc); i++) {
 		pszDest[i] = (TCHAR) pszSrc[i];
 	}
@@ -102,7 +106,7 @@ char *strtokCheckComment(char *buf)
 
     if (token == NULL)
 	return NULL;
-    
+
 	/* Check for quoted string */
 	if (token[0] == '"') {
 		size = _snprintf(dummy, avail, "%s", token+1);
@@ -164,7 +168,7 @@ int handleOptions(OptionStr *pOptionStr)
     pOptionStr->privilege = 0;
     pOptionStr->scp = 0;
     pOptionStr->scpImpl = 0;
-  
+
     token = strtokCheckComment(NULL);
 
     while (token != NULL) {
@@ -210,7 +214,7 @@ int handleOptions(OptionStr *pOptionStr)
 		    printf ("Error: option -sc not followed 0 (secure channel off) or 1 (secure channel on)\n");
 			rv = EXIT_FAILURE;
 			goto end;
-		}		    
+		}
 	    }
 	} else if (strcmp(token, "-security") == 0) {
 	    token = strtokCheckComment(NULL);
@@ -243,7 +247,7 @@ int handleOptions(OptionStr *pOptionStr)
 #ifdef DEBUG
 		_tprintf ( _T("reader name %s\n"), pOptionStr->reader);
 #endif
-	    } 
+	    }
 	} else if (strcmp(token, "-file") == 0) {
 	    token = strtokCheckComment(NULL);
 	    if (token == NULL) {
@@ -252,12 +256,12 @@ int handleOptions(OptionStr *pOptionStr)
 			goto end;
 	    } else {
 			strncpy(dummy, token, FILENAMELEN+1);
-			dummy[FILENAMELEN] = '\0';		
+			dummy[FILENAMELEN] = '\0';
 			ConvertCToT (pOptionStr->file, dummy);
 #ifdef DEBUG
 		_tprintf ( _T("file name %s\n"), pOptionStr->file);
 #endif
-	    } 
+	    }
 	} else if (strcmp(token, "-key") == 0) {
 	    token = strtokCheckComment(NULL);
 	    if (token == NULL) {
@@ -266,12 +270,12 @@ int handleOptions(OptionStr *pOptionStr)
 			goto end;
 	    } else {
 		int i;
-		
+
 		for (i=0; i<DDES_KEY_LEN; i++) {
 		    sscanf (token, "%02x", &(pOptionStr->key[i]));
 		    token += 2;
 		}
-	    } 
+	    }
 	} else if (strcmp(token, "-mac_key") == 0) {
 	    token = strtokCheckComment(NULL);
 	    if (token == NULL) {
@@ -280,12 +284,12 @@ int handleOptions(OptionStr *pOptionStr)
 			goto end;
 	    } else {
 		int i;
-		
+
 		for (i=0; i<DDES_KEY_LEN; i++) {
 		    sscanf (token, "%02x", &(pOptionStr->mac_key[i]));
 		    token += 2;
 		}
-	    } 
+	    }
 	} else if (strcmp(token, "-enc_key") == 0) {
 	    token = strtokCheckComment(NULL);
 	    if (token == NULL) {
@@ -294,12 +298,12 @@ int handleOptions(OptionStr *pOptionStr)
 			goto end;
 	    } else {
 		int i;
-		
+
 		for (i=0; i<DDES_KEY_LEN; i++) {
 		    sscanf (token, "%02x", &(pOptionStr->enc_key[i]));
 		    token += 2;
 		}
-	    } 
+	    }
 	} else if (strcmp(token, "-kek_key") == 0) {
 	    token = strtokCheckComment(NULL);
 	    if (token == NULL) {
@@ -308,12 +312,12 @@ int handleOptions(OptionStr *pOptionStr)
 			goto end;
 	    } else {
 		int i;
-		
+
 		for (i=0; i<DDES_KEY_LEN; i++) {
 		    sscanf (token, "%02x", &(pOptionStr->kek_key[i]));
 		    token += 2;
 		}
-	    } 
+	    }
 	} else if (strcmp(token, "-current_kek") == 0) {
 	    token = strtokCheckComment(NULL);
 	    if (token == NULL) {
@@ -322,12 +326,12 @@ int handleOptions(OptionStr *pOptionStr)
 			goto end;
 	    } else {
 		int i;
-		
+
 		for (i=0; i<DDES_KEY_LEN; i++) {
 		    sscanf (token, "%02x", &(pOptionStr->current_kek[i]));
 		    token += 2;
 		}
-	    } 
+	    }
 	} else if (strcmp(token, "-AID") == 0) {
 	    token = strtokCheckComment(NULL);
 	    if (token == NULL) {
@@ -335,16 +339,17 @@ int handleOptions(OptionStr *pOptionStr)
 			rv = EXIT_FAILURE;
 			goto end;
 	    } else {
+
 			int i = 0;
 
 			strncpy(dummy, token, AIDLEN*2+1);
-			dummy[AIDLEN*2] = '\0';		
+			dummy[AIDLEN*2] = '\0';
 
 			while (sscanf (&(dummy[i*2]), "%02x", &(pOptionStr->AID[i])) > 0) {
 				i++;
 			}
 			pOptionStr->AIDLen = i;
-	    } 
+	    }
 	} else if (strcmp(token, "-sdAID") == 0) {
 	    token = strtokCheckComment(NULL);
 	    if (token == NULL) {
@@ -354,13 +359,13 @@ int handleOptions(OptionStr *pOptionStr)
 	    } else {
 			int i = 0;
 			strncpy(dummy, token, AIDLEN*2+1);
-			dummy[AIDLEN*2] = '\0';		
+			dummy[AIDLEN*2] = '\0';
 
 			while (sscanf (&(dummy[i*2]), "%02x", &(pOptionStr->sdAID[i])) > 0) {
 				i++;
 			}
 			pOptionStr->sdAIDLen = i;
-	    } 
+	    }
 	} else if (strcmp(token, "-pkgAID") == 0) {
 	    token = strtokCheckComment(NULL);
 	    if (token == NULL) {
@@ -370,12 +375,12 @@ int handleOptions(OptionStr *pOptionStr)
 	    } else {
 			int i = 0;
 			strncpy(dummy, token, AIDLEN*2+1);
-			dummy[AIDLEN*2] = '\0';		
+			dummy[AIDLEN*2] = '\0';
 			while (sscanf (&(dummy[i*2]), "%02x", &(pOptionStr->pkgAID[i])) > 0) {
 				i++;
 			}
 			pOptionStr->pkgAIDLen = i;
-	    } 
+	    }
 	} else if (strcmp(token, "-instAID") == 0) {
 	    token = strtokCheckComment(NULL);
 	    if (token == NULL) {
@@ -384,13 +389,13 @@ int handleOptions(OptionStr *pOptionStr)
 	    } else {
 			int i = 0;
 			strncpy(dummy, token, AIDLEN*2+1);
-			dummy[AIDLEN*2] = '\0';		
-		
+			dummy[AIDLEN*2] = '\0';
+
 			while (sscanf (&(dummy[i*2]), "%02x", &(pOptionStr->instAID[i])) > 0) {
 				i++;
 			}
 			pOptionStr->instAIDLen = i;
-	    } 
+	    }
 	} else if (strcmp(token, "-APDU") == 0) {
 	    token = strtokCheckComment(NULL);
 	    if (token == NULL) {
@@ -401,13 +406,13 @@ int handleOptions(OptionStr *pOptionStr)
 			int i = 0;
 
 			strncpy(dummy, token, APDULEN*2+1);
-			dummy[APDULEN*2] = '\0';		
+			dummy[APDULEN*2] = '\0';
 
 			while (sscanf (&(dummy[i*2]), "%02x", &(pOptionStr->APDU[i])) > 0) {
 				i++;
 			}
 			pOptionStr->APDULen = i;
-	    } 
+	    }
 	} else if (strcmp(token, "-protocol") == 0) {
 	    token = strtokCheckComment(NULL);
 	    if (token == NULL) {
@@ -461,7 +466,7 @@ int handleOptions(OptionStr *pOptionStr)
 	    } else {
 			unsigned int i = 0;
 			strncpy(dummy, token, INSTPARAMLEN*2+1);
-			dummy[INSTPARAMLEN*2] = '\0';		
+			dummy[INSTPARAMLEN*2] = '\0';
 			while (sscanf (&(dummy[i*2]), "%02x", &(pOptionStr->instParam[i])) > 0) {
 				i++;
 			}
@@ -474,13 +479,13 @@ int handleOptions(OptionStr *pOptionStr)
 			rv = EXIT_FAILURE;
 			goto end;
 	    }
-	    
+
 	    if (sscanf (token, "%02x", &(pOptionStr->element)) <= 0) {
 			printf ("Error: option -element followed by an illegal string %s\n",
 			token);
 			rv = EXIT_FAILURE;
 			goto end;
-	    }	    
+	    }
 	} else if (strcmp(token, "-priv") == 0) {
 	    token = strtokCheckComment(NULL);
 	    if (token == NULL) {
@@ -541,7 +546,7 @@ int handleCommands(FILE *fd)
 
 	    // print command line
 	    printf ("%s", commandLine);
-	    
+
 	    if (strcmp(token, "establish_context") == 0) {
 		// Establish context
 		rv = establish_context(&cardContext);
@@ -569,7 +574,7 @@ int handleCommands(FILE *fd)
 		if (rv != EXIT_SUCCESS) {
 			goto end;
 		}
-		if (_tcslen(optionStr.reader) == 0) {	
+		if (_tcslen(optionStr.reader) == 0) {
 			int j=0;
 			int k=0;
 
@@ -592,7 +597,7 @@ int handleCommands(FILE *fd)
 		    _tprintf ( _T("* reader name %s\n"), optionStr.reader);
 #endif
 		}
-		
+
 		rv = card_connect (cardContext, optionStr.reader,
 				   &cardInfo, optionStr.protocol);
 
@@ -623,7 +628,7 @@ int handleCommands(FILE *fd)
 					&optionStr.scpImpl);
 			}
 
-		    rv = GP211_mutual_authentication(cardInfo, 
+		    rv = GP211_mutual_authentication(cardInfo,
 						     optionStr.key,
 						     optionStr.enc_key,
 						     optionStr.mac_key,
@@ -636,7 +641,7 @@ int handleCommands(FILE *fd)
 						     &securityInfo211);
 
 		}
-		
+
 		if (rv != 0) {
 		    _tprintf (_T("mutual_authentication() returns 0x%08X (%s)\n"),
 			      rv, stringify_error(rv));
@@ -676,14 +681,14 @@ int handleCommands(FILE *fd)
 			goto end;
 		}
 		if (platform_mode == PLATFORM_MODE_OP_201) {
-		    rv = OP201_load(cardInfo, &securityInfo201, 
+		    rv = OP201_load(cardInfo, &securityInfo201,
 				    NULL, 0,
 				    optionStr.file,
 				    NULL, &receiptDataLen);
 		} else if (platform_mode == PLATFORM_MODE_GP_211) {
 		    rv = GP211_load(cardInfo, &securityInfo211,
 				    NULL, 0,
-				    optionStr.file, 
+				    optionStr.file,
 				    NULL, &receiptDataLen);
 		}
 
@@ -698,9 +703,9 @@ int handleCommands(FILE *fd)
 	    }  else if (strcmp(token, "delete") == 0) {
 		// Delete Applet
 		OPGP_AID AIDs[1];
-		
+
 		DWORD receiptLen = 10;
-		    
+
 		rv = handleOptions(&optionStr);
 		if (rv != EXIT_SUCCESS) {
 			goto end;
@@ -729,7 +734,133 @@ int handleCommands(FILE *fd)
 		}
 		break;
 	    }
-    
+
+	    else if (strcmp(token, "install") == 0) {
+			// One step install
+			OPGP_LOAD_FILE_PARAMETERS loadFileParams;
+			DWORD receiptDataAvailable = 0;
+			DWORD receiptDataLen = 0;
+			char installParam[1];
+			installParam[0] = 0;
+
+			rv = handleOptions(&optionStr);
+			if (rv != EXIT_SUCCESS) {
+				goto end;
+			}
+			rv = read_executable_load_file_parameters(optionStr.file, &loadFileParams);
+			if (rv != EXIT_SUCCESS) {
+				_tprintf (_T("read_executable_load_file_parameters() returns 0x%08X (%s)\n"),
+					rv, stringify_error(rv));
+				rv = EXIT_FAILURE;
+				goto end;
+			}
+			if (optionStr.pkgAIDLen == 0) {
+				optionStr.pkgAIDLen = loadFileParams.loadFileAID.AIDLength;
+				memcpy(optionStr.pkgAID, loadFileParams.loadFileAID.AID, optionStr.pkgAIDLen);
+			}
+			if (optionStr.AIDLen == 0) {
+				optionStr.AIDLen = loadFileParams.appletAIDs[0].AIDLength;
+				memcpy(optionStr.AID, loadFileParams.appletAIDs[0].AID, optionStr.AIDLen);
+			}
+			if (optionStr.instAIDLen == 0) {
+				optionStr.instAIDLen = loadFileParams.appletAIDs[0].AIDLength;
+				memcpy(optionStr.instAID, loadFileParams.appletAIDs[0].AID, optionStr.instAIDLen);
+			}
+			if (optionStr.nvCodeLimit == 0) {
+				optionStr.nvCodeLimit = loadFileParams.loadFileSize;
+			}
+			if (platform_mode == PLATFORM_MODE_OP_201) {
+				if (optionStr.sdAIDLen == 0) {
+					optionStr.sdAIDLen = sizeof(OP201_CARD_MANAGER_AID);
+					memcpy(optionStr.sdAID, OP201_CARD_MANAGER_AID, optionStr.sdAIDLen);
+				}
+				rv = OP201_install_for_load(cardInfo, &securityInfo201,
+							(PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
+							(PBYTE)optionStr.sdAID, optionStr.sdAIDLen,
+						NULL, NULL,
+						optionStr.nvCodeLimit,
+						optionStr.nvDataLimit,
+						optionStr.vDataLimit);
+			} else if (platform_mode == PLATFORM_MODE_GP_211) {
+				if (optionStr.sdAIDLen == 0) {
+					optionStr.sdAIDLen = sizeof(GP211_CARD_MANAGER_AID);
+					memcpy(optionStr.sdAID, GP211_CARD_MANAGER_AID, optionStr.sdAIDLen);
+				}
+				rv = GP211_install_for_load(cardInfo, &securityInfo211,
+							(PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
+							(PBYTE)optionStr.sdAID, optionStr.sdAIDLen,
+							NULL, NULL,
+							optionStr.nvCodeLimit,
+							optionStr.nvDataLimit,
+							optionStr.vDataLimit);
+			}
+
+			if (rv != 0) {
+				_tprintf (_T("install_for_load() returns 0x%08X (%s)\n"),
+					rv, stringify_error(rv));
+				rv = EXIT_FAILURE;
+				goto end;
+			}
+			if (platform_mode == PLATFORM_MODE_OP_201) {
+				rv = OP201_load(cardInfo, &securityInfo201,
+						NULL, 0,
+						optionStr.file,
+						NULL, &receiptDataLen);
+			} else if (platform_mode == PLATFORM_MODE_GP_211) {
+				rv = GP211_load(cardInfo, &securityInfo211,
+						NULL, 0,
+						optionStr.file,
+						NULL, &receiptDataLen);
+			}
+
+			if (rv != 0) {
+				_tprintf (_T("load_applet() returns 0x%08X (%s)\n"),
+					rv, stringify_error(rv));
+				rv = EXIT_FAILURE;
+				goto end;
+			}
+
+			if (platform_mode == PLATFORM_MODE_OP_201) {
+				OP201_RECEIPT_DATA receipt;
+				rv = OP201_install_for_install_and_make_selectable(
+							cardInfo, &securityInfo201,
+						(PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
+						(PBYTE)optionStr.AID, optionStr.AIDLen,
+						(PBYTE)optionStr.instAID, optionStr.instAIDLen,
+						optionStr.privilege,
+						optionStr.vDataLimit,
+						optionStr.nvDataLimit,
+											(PBYTE)optionStr.instParam,
+						optionStr.instParamLen,
+						NULL, // No install token
+						&receipt,
+						&receiptDataAvailable);
+			} else if (platform_mode == PLATFORM_MODE_GP_211) {
+				GP211_RECEIPT_DATA receipt;
+
+				rv = GP211_install_for_install_and_make_selectable(
+						cardInfo, &securityInfo211,
+						(PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
+						(PBYTE)optionStr.AID, optionStr.AIDLen,
+						(PBYTE)optionStr.instAID, optionStr.instAIDLen,
+						optionStr.privilege,
+						optionStr.vDataLimit,
+						optionStr.nvDataLimit,
+											(PBYTE)optionStr.instParam,
+						optionStr.instParamLen,
+						NULL, // No install token
+						&receipt,
+						&receiptDataAvailable);
+			}
+
+			if (rv != 0) {
+				_tprintf (_T("install_for_install_and_make_selectable() returns 0x%08X (%s)\n"),
+					rv, stringify_error(rv));
+				rv = EXIT_FAILURE;
+				goto end;
+			}
+			break;
+		}
 	    else if (strcmp(token, "install_for_load") == 0) {
 		// Install for Load
 		rv = handleOptions(&optionStr);
@@ -737,23 +868,31 @@ int handleCommands(FILE *fd)
 			goto end;
 		}
 		if (platform_mode == PLATFORM_MODE_OP_201) {
-		    rv = OP201_install_for_load(cardInfo, &securityInfo201,
-                        (PBYTE)optionStr.AID, optionStr.AIDLen,
+			if (optionStr.sdAIDLen == 0) {
+				optionStr.sdAIDLen = sizeof(OP201_CARD_MANAGER_AID);
+				memcpy(optionStr.sdAID, OP201_CARD_MANAGER_AID, optionStr.sdAIDLen);
+			}
+			rv = OP201_install_for_load(cardInfo, &securityInfo201,
+                        (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
                         (PBYTE)optionStr.sdAID, optionStr.sdAIDLen,
 				      NULL, NULL,
 				      optionStr.nvCodeLimit,
 				      optionStr.nvDataLimit,
 				      optionStr.vDataLimit);
 		} else if (platform_mode == PLATFORM_MODE_GP_211) {
-		    rv = GP211_install_for_load(cardInfo, &securityInfo211,
-                        (PBYTE)optionStr.AID, optionStr.AIDLen,
+			if (optionStr.sdAIDLen == 0) {
+				optionStr.sdAIDLen = sizeof(GP211_CARD_MANAGER_AID);
+				memcpy(optionStr.sdAID, GP211_CARD_MANAGER_AID, optionStr.sdAIDLen);
+			}
+			rv = GP211_install_for_load(cardInfo, &securityInfo211,
+                        (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
                         (PBYTE)optionStr.sdAID, optionStr.sdAIDLen,
 					    NULL, NULL,
 					    optionStr.nvCodeLimit,
 					    optionStr.nvDataLimit,
 					    optionStr.vDataLimit);
 		}
-		
+
 		if (rv != 0) {
 		    _tprintf (_T("install_for_load() returns 0x%08X (%s)\n"),
 			      rv, stringify_error(rv));
@@ -762,7 +901,7 @@ int handleCommands(FILE *fd)
 		}
 		break;
 	    } else if (strcmp(token, "install_for_install") == 0) {
-		
+
 
 		DWORD receiptDataAvailable = 0;
 		char installParam[1];
@@ -780,17 +919,17 @@ int handleCommands(FILE *fd)
                     (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
                     (PBYTE)optionStr.AID, optionStr.AIDLen,
                     (PBYTE)optionStr.instAID, optionStr.instAIDLen,
-					 optionStr.privilege, 
+					 optionStr.privilege,
 					 optionStr.vDataLimit,
 					 optionStr.nvDataLimit,
                                          (PBYTE)optionStr.instParam,
-					 optionStr.instParamLen, 
+					 optionStr.instParamLen,
 					 NULL, // No install token
 					 &receipt,
 					 &receiptDataAvailable);
 		} else if (platform_mode == PLATFORM_MODE_GP_211) {
 		    GP211_RECEIPT_DATA receipt;
-		    
+
 		    rv = GP211_install_for_install_and_make_selectable(
 					cardInfo, &securityInfo211,
                     (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
@@ -805,14 +944,14 @@ int handleCommands(FILE *fd)
 					&receipt,
 					&receiptDataAvailable);
 		}
-		
+
 		if (rv != 0) {
 		    _tprintf (_T("install_for_install_and_make_selectable() returns 0x%08X (%s)\n"),
 			      rv, stringify_error(rv));
 			rv = EXIT_FAILURE;
 			goto end;
 		}
-		
+
 		break;
 	    } else if (strcmp(token, "card_disconnect") == 0) {
 		// disconnect card
@@ -842,7 +981,7 @@ int handleCommands(FILE *fd)
 						       optionStr.mac_key,
 						       optionStr.kek_key);
 		}
-		
+
 		if (rv != 0) {
 		    _tprintf (_T("put_secure_channel_keys() returns 0x%08X (%s)\n"),
 			      rv, stringify_error(rv));
@@ -877,11 +1016,11 @@ int handleCommands(FILE *fd)
 		    printf ("\nList of applets (AID state privileges)\n");
 		    for (i=0; i<(int)numData; i++) {
 			int j;
-			
+
 			for (j=0; j<data[i].AIDLength; j++) {
 			    printf ("%02x", data[i].AID[j]);
 			}
-			
+
 			printf ("\t%x", data[i].lifeCycleState);
 			printf ("\t%x\n", data[i].privileges);
 		    }
@@ -906,11 +1045,11 @@ int handleCommands(FILE *fd)
 		    printf ("\nList of applets (AID state privileges)\n");
 		    for (i=0; i<(int)numData; i++) {
 			int j;
-			
+
 			for (j=0; j<appData[i].AIDLength; j++) {
 			    printf ("%02x", appData[i].AID[j]);
 			}
-			
+
 			printf ("\t%x", appData[i].lifeCycleState);
 			printf ("\t%x\n", appData[i].privileges);
 		    }
@@ -922,7 +1061,7 @@ int handleCommands(FILE *fd)
 			goto end;
 		}
 
-		
+
 		break;
 	    } else if (strcmp(token, "send_apdu") == 0) {
 		unsigned char recvAPDU[257];
@@ -941,12 +1080,12 @@ int handleCommands(FILE *fd)
 		if (platform_mode == PLATFORM_MODE_OP_201) {
 		    rv = OP201_send_APDU(cardInfo,
 				     (optionStr.secureChannel == 0 ? NULL : &securityInfo201),
-                                     (PBYTE)optionStr.APDU, optionStr.APDULen, 
+				     (PBYTE)(optionStr.APDU), optionStr.APDULen,
 				     recvAPDU, &recvAPDULen);
 		} else if (platform_mode == PLATFORM_MODE_GP_211) {
 		    rv = GP211_send_APDU(cardInfo,
 				     (optionStr.secureChannel == 0 ? NULL : &securityInfo211),
-                                     (PBYTE)optionStr.APDU, optionStr.APDULen, 
+					 (PBYTE)(optionStr.APDU), optionStr.APDULen,
 				     recvAPDU, &recvAPDULen);
 		}
 		if (rv != 0) {
@@ -960,7 +1099,7 @@ int handleCommands(FILE *fd)
 		for (i=0; i<(int)recvAPDULen; i++)
 		    printf ("%02x ", recvAPDU[i]);
 		printf ("\n");
-		
+
 		break;
 	    } else if (strcmp(token, "mode_201") == 0) {
 			platform_mode = PLATFORM_MODE_OP_201;
@@ -969,7 +1108,7 @@ int handleCommands(FILE *fd)
 	    } else if (strcmp(token, "enable_trace") == 0) {
 		enableTraceMode(OPGP_TRACE_MODE_ENABLE, NULL);
 	    }
-	    
+
 	    else {
 			printf ("Unknown command %s\n", token);
 			rv = EXIT_FAILURE;
@@ -1007,7 +1146,7 @@ int main(int argc, char* argv[])
 		rv = EXIT_FAILURE;
 		goto end;
     }
-      
+
     // launch the command interpreter
     rv = handleCommands(fd);
 end:
