@@ -18,10 +18,15 @@
 			Supports setting privilege when installing an applet.
 			CVS Tag "Release-1-1-0"
 
-9/28/2005	1.1.1	Automatic recognition of Secure Channel Protocol and 
+9/28/2005	1.1.1	Automatic recognition of Secure Channel Protocol and
 			implemenentation for GP 2.1.1 cards.
 			Quotation with "" for parameters with white space supported
 			Smart card communication protocol defaults to T=1 | T=0
 			Use of EXIT_SUCCESS and EXIT_FAILURE
 			Fixes
-			
+
+12/14/2005	1.2.0	Automatic detection of package AIDs, file size (-nvCodeLimit),
+            applet AID in new install command
+            Automatic selection of Security Domain AID
+			Linked against GlobalPlatform 2.0.1 library
+

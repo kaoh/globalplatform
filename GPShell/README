@@ -1,7 +1,7 @@
 Global Platform Shell (gpshell)
 snitmo@gmail.com
 
-Version 1.1.1	9/24/2005
+Version 1.2.0	12/14/2005
 
 *** Summary
 
@@ -32,9 +32,17 @@ establish_context // Establish context
 card_connect -reader [Reader Name] // Connect to card in the reader
 open_sc // Open secure channel
 select -f AID // select applet instance
-install_for_load -AID xxx -nvCodeLimit yyy // Install for Load
+
+The parameters -AID -instAID -pkgAID -nvCodeLimit can be detected automatically and the -AID and -instAID is set to the first applet in appletfile.
+If -sdAID is not specified the Card Issuer Security Domain is assumed.
+
+install -file appletfile -priv privilege -sdAID zzz -AID AID_in_pkg -pkgAID package_AID -instAID instanceAID -nvCodeLimit yyy -nvDataLimit xxx // Load and installs in one step
+
+If -sdAID is not specified the Card Issuer Security Domain is assumed.
+install_for_load -pkgAID xxx -sdAID zzz -nvCodeLimit yyy // Install for Load
+
 load -file appletfile // Load applet
-install_for_install -priv privilege -AID AID_in_pkg -pkgAID package_AID -instAID instanceAID -priv 2 // Instantiate applet
+install_for_install -priv privilege -AID AID_in_pkg -pkgAID package_AID -instAID instanceAID -nvDataLimit xxx // Instantiate applet
 card_disconnect // Disconnect card
 get_status -element e0 // list applets
 release_context // Release context
@@ -52,9 +60,10 @@ Options:
 -kek_key	KEK key value in hex
 -security	0: clear, 1: MAC, 3: MAC+ENC
 -reader		Smart card reader name
--readerNumber Number of the reader in the system to connect to. 
+-readerNumber Number of the reader in the system to connect to.
 			If -reader is given this is ignored.
 -protocol	Protocol, 0:T=0, 1:T=1
+			Should not be necessary to be stated explicitly.
 -AID		Applet ID
 -sdAID		Security Domain AID
 -pkgAID		Package AID
@@ -68,7 +77,7 @@ Options:
 -sc			Secure Channel mode (0 off, 1 on)
 -APDU		APDU to be sent
 -priv		(DWORD) Privilege.  // e.g. 0x04 Default Selected
--scp 		Secure Channel Protocol (1 SCP01, 2 SCP02, default no set). 
+-scp 		Secure Channel Protocol (1 SCP01, 2 SCP02, default no set).
 			Should not be necessary to be stated explicitly.
 -scpimpl	Secure Channel Implementation (default not set)
 			Should not be necessary to be stated explicitly.
