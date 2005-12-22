@@ -9,7 +9,7 @@ gpshell_LDADD = $(AM_CPPFLAGS) -lGlobalPlatform
 EXTRA_DIST = GPShell.dep GPShell.dsp GPShell.dsw GPShell.mak stdafx.c \
 stdafx.h reconf list.txt helloDelete.txt helloInstall.txt HelloWorld.bin \
 HelloWorld.cap putdefault-cflex.txt replacekey-cflex.txt send_apdu.txt \
-listgp211.txt Makefile-Release CHANGES
+listgp211.txt helloInstallGP211.txt helloDeleteGP211.txt Makefile-Release CHANGES
 
 MAINTAINERCLEANFILES = \
 	Makefile.in \
