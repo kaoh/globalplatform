@@ -72,7 +72,7 @@ OPGP_CARDCONTEXT cardContext;
 OPGP_CARD_INFO cardInfo;
 OP201_SECURITY_INFO securityInfo201;
 GP211_SECURITY_INFO securityInfo211;
-int platform_mode = PLATFORM_MODE_OP_201;;
+int platform_mode = PLATFORM_MODE_OP_201;
 
 /* Functions */
 void ConvertTToC(char* pszDest, const TCHAR* pszSrc)
@@ -779,8 +779,8 @@ int handleCommands(FILE *fd)
 							(PBYTE)optionStr.sdAID, optionStr.sdAIDLen,
 						NULL, NULL,
 						optionStr.nvCodeLimit,
-						optionStr.nvDataLimit,
-						optionStr.vDataLimit);
+						0,
+						0);
 			} else if (platform_mode == PLATFORM_MODE_GP_211) {
 				if (optionStr.sdAIDLen == 0) {
 					optionStr.sdAIDLen = sizeof(GP211_CARD_MANAGER_AID);
@@ -1074,7 +1074,7 @@ int handleCommands(FILE *fd)
 		}
 		printf ("Send APDU: ");
 		for (i=0; i<optionStr.APDULen; i++)
-		    printf ("%02x ", optionStr.APDU[i]);
+		    printf ("%02X ", optionStr.APDU[i] & 0xFF);
 		printf ("\n");
 
 		if (platform_mode == PLATFORM_MODE_OP_201) {
