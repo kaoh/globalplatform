@@ -64,10 +64,10 @@ void log_End(LPTSTR func, LPTSTR file, int line, LONG rv)
 
 /**
 * In Unix systems which have a syslog facility the msg is stored there.
-* The environment varibale <code>OPENPLATFORM_DEBUG</code> must be set to enable the logging.
-* With the environment varibale <code>OPENPLATFORM_LOGFILE</code> an explicit log file name can
-* be set. If a no log file name has been set impilictly <code>/tmp/OpenPlatform.log</code>
-* or <code>C:\TEMP\OpenPlatform.log</code> under Windows will be used. If a log file name
+* The environment varibale <code>GLOBALPLATFORM_DEBUG</code> must be set to enable the logging.
+* With the environment varibale <code>GLOBALPLATFORM_LOGFILE</code> an explicit log file name can
+* be set. If a no log file name has been set impilictly <code>/tmp/GlobalPlatform.log</code>
+* or <code>C:\TEMP\GlobalPlatform.log</code> under Windows will be used. If a log file name
 * is given the syslog if available will not be used.
 * \param msg The formatted message which will be stored.
 * \prama ... Variable argument list

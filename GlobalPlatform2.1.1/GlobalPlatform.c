@@ -252,7 +252,7 @@ static LONG GP211_check_R_MAC(PBYTE apduCommand, DWORD apduCommandLength, PBYTE 
 				 DWORD responseDataLength, GP211_SECURITY_INFO *secInfo);
 
 static LONG GP211_calculate_R_MAC(BYTE commandHeader[4],
-						   PBYTE commandData, 
+						   PBYTE commandData,
 						   DWORD commandDataLength,
 						   PBYTE responseData,
 						   DWORD responseDataLength,
@@ -951,7 +951,7 @@ static LONG GP211_check_R_MAC(PBYTE apduCommand, DWORD apduCommandLength, PBYTE 
 	}
 
 	// trivial case, just return
-	if ((secInfo->securityLevel != GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC) && 
+	if ((secInfo->securityLevel != GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC) &&
 		(secInfo->securityLevel != GP211_SCP02_SECURITY_LEVEL_R_MAC) &&
 		(secInfo->securityLevel != GP211_SCP02_SECURITY_LEVEL_C_MAC_R_MAC)) {
 		{ result = OPGP_ERROR_SUCCESS; goto end; }
@@ -979,7 +979,7 @@ static LONG GP211_check_R_MAC(PBYTE apduCommand, DWORD apduCommandLength, PBYTE 
 		}
 	} // if (Determine which type of Exchange)
 	le = responseDataLength-2;
-	GP211_calculate_R_MAC(apduCommand, apduCommand, lc, responseData, le, 
+	GP211_calculate_R_MAC(apduCommand, apduCommand, lc, responseData, le,
 			responseData+responseDataLength-2, secInfo, mac);
 #ifdef DEBUG
 	log_Log(_T("check_R_MAC: received R-MAC: "));
@@ -2338,7 +2338,7 @@ LONG GP211_get_data(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 }
 
 /**
- * 
+ *
  * \param cardInfo IN The OPGP_CARD_INFO structure returned by card_connect().
  * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * \param securityLevel Level of security for all subsequent commands
@@ -2350,7 +2350,7 @@ LONG GP211_get_data(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
  * \param dataLength IN Length of data.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
-LONG GP211_begin_R_MAC(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE securityLevel, PBYTE data, DWORD dataLength) 
+LONG GP211_begin_R_MAC(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE securityLevel, PBYTE data, DWORD dataLength)
 {
 	LONG result;
 	BYTE sendBuffer[30];
@@ -2390,12 +2390,12 @@ end:
 }
 
 /**
- * 
+ *
  * \param cardInfo IN The OPGP_CARD_INFO structure returned by card_connect().
  * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
-LONG GP211_end_R_MAC(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo) 
+LONG GP211_end_R_MAC(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo)
 {
 	LONG result;
 	BYTE sendBuffer[6];
@@ -4881,6 +4881,71 @@ end:
 }
 
 /**
+  * \param motherKey[16] IN The mother key.
+  * \param keyDiversificationData[10] The key diversification data.
+  * \param S_ENC[16] OUT The static Encryption key.
+  * \param S_MAC[16] OUT The static Message Authentication Code key.
+  * \param DEK[16] OUT The static Key Encryption Key.
+  * \return OPGP_ERROR_SUCCESS if no error, error code else.
+  */
+LONG GemXpressoPro_create_daughter_keys(BYTE motherKey[16], BYTE keyDiversificationData[10], 
+								 BYTE S_ENC[16], BYTE S_MAC[16], BYTE KEK[16]) {
+	LONG result;
+	int outl;
+	// this comes from card diversification
+ 	BYTE derivationData[16];
+
+	LOG_START(_T("GemXpressoPro_create_daughter_keys"));
+
+ 	// derivation left
+ 	memcpy(derivationData, keyDiversificationData, 2);
+ 	memcpy(derivationData+2, keyDiversificationData+4, 4);
+ 	derivationData[6] = 0xF0;
+ 	derivationData[7] = 0x01;
+ 	// derivation right
+ 	memcpy(derivationData+8, keyDiversificationData, 2);
+ 	memcpy(derivationData+10, keyDiversificationData, 4);
+ 	derivationData[14] = 0x0F;
+ 	derivationData[15] = 0x01;
+
+	result = calculate_enc_ecb_two_key_triple_des(motherKey, derivationData, 16, S_ENC, &outl);
+	if (result != OPGP_ERROR_SUCCESS) {
+		goto end;
+	}
+
+	// left derivation for MAC
+	derivationData[6] = 0xF0;
+	derivationData[7] = 0x02;
+	// right derivation for MAC
+	derivationData[14] = 0x0F;
+	derivationData[15] = 0x02;
+
+	result = calculate_enc_ecb_two_key_triple_des(motherKey, derivationData, 16, S_MAC, &outl);
+	if (result != OPGP_ERROR_SUCCESS) {
+		goto end;
+	}
+
+	// DEK
+
+	// left derivation for DEK
+	derivationData[6] = 0xF0;
+	derivationData[7] = 0x03;
+	// right derivation for DEK
+	derivationData[14] = 0x0F;
+	derivationData[15] = 0x03;
+
+	result = calculate_enc_ecb_two_key_triple_des(motherKey, derivationData, 16, KEK, &outl);
+	if (result != OPGP_ERROR_SUCCESS) {
+		goto end;
+	}
+
+	{ result = OPGP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("GemXpressoPro_create_daughter_keys"), result);
+	return result;
+}
+
+/**
  * Creates the session key for SCP01.
  * \param key[16] IN The Secure Channel Encryption Key or Secure Channel Message
  * Authentication Code Key for calculating the corresponding session key.
@@ -6055,9 +6120,10 @@ end:
 }
 
 /**
- * You must track on your won, what channels are open.
+ * You must track on your own, what channels are open.
  * \param *cardInfo INOUT The OPGP_CARD_INFO structure returned by card_connect().
  * \param channelNumber IN The Logical Channel number to select.
+ * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
 LONG select_channel(OPGP_CARD_INFO *cardInfo, BYTE channelNumber) {
 	LONG result;
@@ -6078,6 +6144,7 @@ end:
  * \param openClose IN Logical Channel should be opened or closed. See #BYTE GP211_MANAGE_CHANNEL_OPEN.
  * \param channelNumberToClose IN The Logical Channel number to close.
  * \param channelNumberOpened OUT The Logical Channel number opened.
+ * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
 LONG manage_channel(GP211_SECURITY_INFO *secInfo,
 					OPGP_CARD_INFO *cardInfo, BYTE openClose, BYTE channelNumberToClose,
@@ -7314,7 +7381,7 @@ end:
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
 static LONG GP211_calculate_R_MAC(BYTE commandHeader[4],
-						   PBYTE commandData, 
+						   PBYTE commandData,
 						   DWORD commandDataLength,
 						   PBYTE responseData,
 						   DWORD responseDataLength,
@@ -7343,7 +7410,7 @@ static LONG GP211_calculate_R_MAC(BYTE commandHeader[4],
 	offset+=responseDataLength;
 	memcpy(r_MacData+offset, statusWord, 2);
 	offset+=2;
-	result = calculate_MAC_des_3des(secInfo->R_MACSessionKey, r_MacData, r_MacDataLength, secInfo->lastR_MAC, 
+	result = calculate_MAC_des_3des(secInfo->R_MACSessionKey, r_MacData, r_MacDataLength, secInfo->lastR_MAC,
 		mac);
 	if (result != OPGP_ERROR_SUCCESS)
 		goto end;
@@ -7674,11 +7741,12 @@ static LONG readDAPBlock(PBYTE buf, PDWORD bufLength, OP201_DAP_BLOCK dapBlock) 
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
 LONG OP201_mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE encKey[16], BYTE macKey[16],
+								 BYTE kekKey[16],
 								 BYTE keySetVersion,
 								 BYTE keyIndex, BYTE securityLevel, OP201_SECURITY_INFO *secInfo) {
 	LONG result;
 	GP211_SECURITY_INFO gp211secInfo;
-	result = mutual_authentication(cardInfo, NULL, encKey, macKey, macKey, keySetVersion,
+	result = mutual_authentication(cardInfo, NULL, encKey, macKey, kekKey, keySetVersion,
 		keyIndex, GP211_SCP01, GP211_SCP01_IMPL_i05, securityLevel, &gp211secInfo);
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 	return result;
