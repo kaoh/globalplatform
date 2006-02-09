@@ -590,7 +590,7 @@ static int handleCommands(FILE *fd)
 				if (k == optionStr.readerNumber)
 					break;
 				k++;
-				j+=_tcslen(buf+j)+1;
+				j+=(int)_tcslen(buf+j)+1;
 			}
 			optionStr.reader[READERNAMELEN] = _T('\0');
 

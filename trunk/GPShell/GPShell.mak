@@ -2,22 +2,22 @@
 !IF "$(CFG)" == ""
 CFG=Debug
 !MESSAGE No configuration specified. Defaulting to Debug.
-!ENDIF 
+!ENDIF
 
 !IF "$(CFG)" != "Release" && "$(CFG)" != "Debug"
 !MESSAGE Invalid configuration "$(CFG)" specified.
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
-!MESSAGE 
+!MESSAGE
 !MESSAGE NMAKE /f "GPShell.mak" CFG="Debug"
-!MESSAGE 
+!MESSAGE
 !MESSAGE Possible choices for configuration are:
-!MESSAGE 
+!MESSAGE
 !MESSAGE "Release" (based on "Win32 (x86) Console Application")
 !MESSAGE "Debug" (based on "Win32 (x86) Console Application")
-!MESSAGE 
+!MESSAGE
 !ERROR An invalid configuration is specified.
-!ENDIF 
+!ENDIF
 
 # replace with your path to the GlobalPlatform header files
 # or specify on command line
@@ -30,9 +30,9 @@ GLOBALPLATFORM_LIB_RELEASE=..\GlobalPlatform2.1.1\Release
 
 !IF "$(OS)" == "Windows_NT"
 NULL=
-!ELSE 
+!ELSE
 NULL=nul
-!ENDIF 
+!ENDIF
 
 CPP=cl.exe
 RSC=rc.exe
@@ -56,14 +56,14 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-CPP_PROJ=/I $(GLOBALPLATFORM_INC) /nologo /ML /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D "UNICODE" /D "_UNICODE" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c 
+CPP_PROJ=/I $(GLOBALPLATFORM_INC) /nologo /ML /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "UNICODE" /D "_UNICODE" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /c
 
 BSC32=bscmake.exe
-BSC32_FLAGS=/nologo /o"$(OUTDIR)\GPShell.bsc" 
+BSC32_FLAGS=/nologo /o"$(OUTDIR)\GPShell.bsc"
 BSC32_SBRS= \
-	
+
 LINK32=link.exe
-LINK32_FLAGS=/LIBPATH:$(GLOBALPLATFORM_LIB_RELEASE) kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib GlobalPlatform.lib /nologo /subsystem:console /incremental:no /pdb:"$(OUTDIR)\GPShell.pdb" /machine:I386 /out:"$(OUTDIR)\GPShell.exe" 
+LINK32_FLAGS=/LIBPATH:$(GLOBALPLATFORM_LIB_RELEASE) kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib GlobalPlatform.lib /nologo /subsystem:console /incremental:no /pdb:"$(OUTDIR)\GPShell.pdb" /machine:I386 /out:"$(OUTDIR)\GPShell.exe"
 LINK32_OBJS= \
 	"$(INTDIR)\GPShell.obj"
 
@@ -94,13 +94,13 @@ CLEAN :
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
-CPP_PROJ=/I $(GLOBALPLATFORM_INC) /nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "DEBUG" /D "_CONSOLE" /D "_MBCS" /D "UNICODE" /D "_UNICODE" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c 
+CPP_PROJ=/I $(GLOBALPLATFORM_INC) /nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "DEBUG" /D "_CONSOLE" /D "UNICODE" /D "_UNICODE" /Fo"$(INTDIR)\\" /Fd"$(INTDIR)\\" /FD /GZ /c
 BSC32=bscmake.exe
-BSC32_FLAGS=/nologo /o"$(OUTDIR)\GPShell.bsc" 
+BSC32_FLAGS=/nologo /o"$(OUTDIR)\GPShell.bsc"
 BSC32_SBRS= \
-	
+
 LINK32=link.exe
-LINK32_FLAGS=/LIBPATH:$(GLOBALPLATFORM_LIB_DEBUG) kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib GlobalPlatform.lib /nologo /subsystem:console /incremental:yes /pdb:"$(OUTDIR)\GPShell.pdb" /debug /machine:I386 /out:"$(OUTDIR)\GPShell.exe" /pdbtype:sept 
+LINK32_FLAGS=/LIBPATH:$(GLOBALPLATFORM_LIB_DEBUG) kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib GlobalPlatform.lib /nologo /subsystem:console /incremental:yes /pdb:"$(OUTDIR)\GPShell.pdb" /debug /machine:I386 /out:"$(OUTDIR)\GPShell.exe" /pdbtype:sept
 LINK32_OBJS= \
 	"$(INTDIR)\GPShell.obj"
 
@@ -110,47 +110,47 @@ LINK32_OBJS= \
 #  $(LINK32_FLAGS) $(LINK32_OBJS)
 #<<
 
-!ENDIF 
+!ENDIF
 
 .c{$(INTDIR)}.obj::
    $(CPP) $(CPP_PROJ) $<
 #   $(CPP) @<<
-#   $(CPP_PROJ) $< 
+#   $(CPP_PROJ) $<
 #<<
 
 .cpp{$(INTDIR)}.obj::
    $(CPP) @<<
-   $(CPP_PROJ) $< 
+   $(CPP_PROJ) $<
 <<
 
 .cxx{$(INTDIR)}.obj::
    $(CPP) @<<
-   $(CPP_PROJ) $< 
+   $(CPP_PROJ) $<
 <<
 
 .c{$(INTDIR)}.sbr::
    $(CPP) @<<
-   $(CPP_PROJ) $< 
+   $(CPP_PROJ) $<
 <<
 
 .cpp{$(INTDIR)}.sbr::
    $(CPP) @<<
-   $(CPP_PROJ) $< 
+   $(CPP_PROJ) $<
 <<
 
 .cxx{$(INTDIR)}.sbr::
    $(CPP) @<<
-   $(CPP_PROJ) $< 
+   $(CPP_PROJ) $<
 <<
 
 
 !IF "$(NO_EXTERNAL_DEPS)" != "1"
 !IF EXISTS("GPShell.dep")
 !INCLUDE "GPShell.dep"
-!ELSE 
+!ELSE
 !MESSAGE Warning: cannot find "GPShell.dep"
-!ENDIF 
-!ENDIF 
+!ENDIF
+!ENDIF
 
 
 !IF "$(CFG)" == "Release" || "$(CFG)" == "Debug"
@@ -160,5 +160,4 @@ SOURCE=.\GPShell.c
 
 
 
-!ENDIF 
-
+!ENDIF
