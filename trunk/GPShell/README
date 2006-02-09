@@ -27,10 +27,16 @@ gpshell can take a script file from standard input, as well as from a file.  Thi
 
 mode_201 // Set protocol mode to OpenPlatform 2.0.1
 mode_211 // Set protocol mode to GlobalPlatform 2.1.1
+gemXpressoPro // If you have a GemXpresso Pro card you must set this.
 enable_trace // Enable APDU trace
 establish_context // Establish context
 card_connect -reader [Reader Name] // Connect to card in the reader
-open_sc // Open secure channel
+open_sc -keyind x -keyver x -key xyz -mac_key xyz -enc_key xyz -kek_key xyz -security x -scp x -scpimpl x // Open secure channel
+
+For OpenPlatform 2.0.1' card only -keyind -keyver -mac_key and enc_key are necessary.
+If you have an GemXpresso Pro card set gemXpressoPro and specify with -key the master (mother) key. -mac_key and -enc_key are not relevant.
+For GlobalPlatform 2.1.1 cards -scp and -scpimpl should be not necessary to supply. You must also specify -kek_key. If your card supports a Secure Channel Protocol Implementation with only one base key, specify this key with -key and omit the others.
+
 select -f AID // select applet instance
 
 The parameters -AID -instAID -pkgAID -nvCodeLimit can be detected automatically and the -AID and -instAID is set to the first applet in appletfile.

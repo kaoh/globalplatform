@@ -68,14 +68,15 @@ typedef struct _OptionStr {
 } OptionStr;
 
 /* Global Variables */
-OPGP_CARDCONTEXT cardContext;
-OPGP_CARD_INFO cardInfo;
-OP201_SECURITY_INFO securityInfo201;
-GP211_SECURITY_INFO securityInfo211;
-int platform_mode = PLATFORM_MODE_OP_201;
+static OPGP_CARDCONTEXT cardContext;
+static OPGP_CARD_INFO cardInfo;
+static OP201_SECURITY_INFO securityInfo201;
+static GP211_SECURITY_INFO securityInfo211;
+static int platform_mode = PLATFORM_MODE_OP_201;
+static int gemXpressoPro = 0;
 
 /* Functions */
-void ConvertTToC(char* pszDest, const TCHAR* pszSrc)
+static void ConvertTToC(char* pszDest, const TCHAR* pszSrc)
 {
     unsigned int i;
 
@@ -85,7 +86,7 @@ void ConvertTToC(char* pszDest, const TCHAR* pszSrc)
     pszDest[_tcslen(pszSrc)] = '\0';
 }
 
-void ConvertCToT(TCHAR* pszDest, const char* pszSrc)
+static void ConvertCToT(TCHAR* pszDest, const char* pszSrc)
 {
     unsigned int i;
 
@@ -95,7 +96,7 @@ void ConvertCToT(TCHAR* pszDest, const char* pszSrc)
 
     pszDest[strlen(pszSrc)] = _T('\0');
 }
-char *strtokCheckComment(char *buf)
+static char *strtokCheckComment(char *buf)
 {
     char *token;
 	char dummy[BUFLEN];
@@ -134,7 +135,7 @@ char *strtokCheckComment(char *buf)
     }
 }
 
-int handleOptions(OptionStr *pOptionStr)
+static int handleOptions(OptionStr *pOptionStr)
 {
 	int rv = EXIT_SUCCESS;
     char *token;
@@ -527,10 +528,10 @@ end:
     return rv;
 }
 
-int handleCommands(FILE *fd)
+static int handleCommands(FILE *fd)
 {
     char buf[BUFLEN + 1], commandLine[BUFLEN + 1];
-    int rv = -1, i;
+    int rv = EXIT_SUCCESS, i;
     char *token;
     OptionStr optionStr;
 
@@ -614,18 +615,45 @@ int handleCommands(FILE *fd)
 			goto end;
 		}
 		if (platform_mode == PLATFORM_MODE_OP_201) {
+			BYTE keyDiversificationData[10];
+			DWORD keyDiversificationDataLength = 10;
+			if (gemXpressoPro) {
+				rv = OP201_get_data(cardInfo, NULL, (PBYTE)OP201_DIVERSIFICATION_DATA,
+					keyDiversificationData, &keyDiversificationDataLength);
+				if (rv != 0) {
+					_tprintf (_T("OP201_get_data() returns 0x%08X (%s)\n"),
+						rv, stringify_error(rv));
+					rv = EXIT_FAILURE;
+					goto end;
+				}
+				rv = GemXpressoPro_create_daughter_keys(optionStr.key, keyDiversificationData, 
+								 optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
+				if (rv != 0) {
+					_tprintf (_T("GemXpressoPro_create_daughter_keys() returns 0x%08X (%s)\n"),
+						rv, stringify_error(rv));
+					rv = EXIT_FAILURE;
+					goto end;
+				}
+			}
 		    rv = OP201_mutual_authentication(cardInfo,
 						     optionStr.enc_key,
 						     optionStr.mac_key,
+							 optionStr.kek_key,
 						     optionStr.keySetVersion,
 						     optionStr.keyIndex,
 						     optionStr.securityLevel,
 						     &securityInfo201);
 		} else if (platform_mode == PLATFORM_MODE_GP_211) {
 			if (optionStr.scp == 0 || optionStr.scpImpl == 0) {
-				GP211_get_secure_channel_protocol_details(cardInfo,
+				rv = GP211_get_secure_channel_protocol_details(cardInfo,
 					&optionStr.scp,
 					&optionStr.scpImpl);
+				if (rv != 0) {
+					_tprintf (_T("GP211_get_secure_channel_protocol_details() returns 0x%08X (%s)\n"),
+						rv, stringify_error(rv));
+					rv = EXIT_FAILURE;
+					goto end;
+				}
 			}
 
 		    rv = GP211_mutual_authentication(cardInfo,
@@ -1106,7 +1134,9 @@ int handleCommands(FILE *fd)
 	    } else if (strcmp(token, "mode_211") == 0) {
 			platform_mode = PLATFORM_MODE_GP_211;
 	    } else if (strcmp(token, "enable_trace") == 0) {
-		enableTraceMode(OPGP_TRACE_MODE_ENABLE, NULL);
+			enableTraceMode(OPGP_TRACE_MODE_ENABLE, NULL);
+	    } else if (strcmp(token, "gemXpressoPro") == 0) {
+			gemXpressoPro = 1;
 	    }
 
 	    else {
@@ -1125,7 +1155,7 @@ end:
 int main(int argc, char* argv[])
 {
     FILE *fd = NULL;
-    int rv;
+    int rv = EXIT_SUCCESS;
 
     // take care of input argument
     if (argc == 1) {
