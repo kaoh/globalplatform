@@ -1,12 +1,17 @@
 Global Platform Shell (gpshell)
 snitmo@gmail.com
 
-Version 1.2.0	12/14/2005
+Version 1.3.0	02/09/2006
 
 *** Summary
 
 GPShell is a script interpreter which talks to a smart card.  It is written on top of the GlobalPlatform library, which was developed by Karsten Ohme.  It uses smart card communication protocols ISO-7816-4 and OpenPlatform 2.0.1 and GlobalPlatform 2.1.1.  It can establish a secure channel with a smart card, load, instantiate, delete, list applets on a smart card.
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+PLEASE OBEY THAT EVERY CARD GETS LOCKED AFTER A FEW (USUALLY 10) UNSUCCESSFUL MUTUAL AUTHENTICATIONS. THE CONTENTS OF A LOCKED CARD CANNOT BE MANAGED ANYMORE (DELETED, INSTALLED)!!! IF YOU EXPERIENCE SOME UNSUCCESSFUL MUTUAL AUTHENTICATION ATTEMPS FIRST EXECUTE A SUCCESSFUL MUTUAL AUTHENTICATION WITH A KNOWN WORKING PROGRAM TO RESET THE RETRY COUNTER BEFORE YOU PROCEED WITH GPSHELL. CHECK THE PARAMETERS FOR MUTUAL AUTHENTICATION (KEYS, SECURITY PROTOCOL) AND ASK IF ANYBODY KNOWS IF THE CARD IS SUPPORTED.
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 *** Usage
 
