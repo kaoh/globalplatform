@@ -27,19 +27,14 @@ LANGUAGE LANG_GERMAN, SUBLANG_GERMAN
 // TEXTINCLUDE
 //
 
-1 TEXTINCLUDE 
-BEGIN
-    "resrc1.h\0"
-END
-
-2 TEXTINCLUDE 
+1 TEXTINCLUDE
 BEGIN
     "#include ""resource.h""\r\n"
     "#include ""afxres.h""\r\n"
     "\0"
 END
 
-3 TEXTINCLUDE 
+2 TEXTINCLUDE
 BEGIN
     "\r\n"
     "\0"
@@ -66,8 +61,8 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 2,0,1,0
- PRODUCTVERSION 2,0,1,0
+ FILEVERSION 3,0,2,0
+ PRODUCTVERSION 3,0,2,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -85,13 +80,13 @@ BEGIN
             VALUE "Comment", "Library for accessing OpenPlatform 2.0.1' and GlobalPlatform 2.1.1 compliant smart cards with PC/SC\n"
             VALUE "CompanyName", "Karsten Ohme"
             VALUE "Description", "GlobalPlatform for Windows32 Library"
-            VALUE "FileVersion", "2, 0, 1, 0"
+            VALUE "FileVersion", "3, 0, 2, 0"
             VALUE "Info", "k_o_@users.sourceforge.net"
             VALUE "InternalName", "GlobalPlatform"
             VALUE "LegalCopyright", "Copyright (C) Karsten Ohme 2005"
             VALUE "License", "BSD"
-            VALUE "OriginalFilename", "GlobalPlatform"
-            VALUE "ProductVersion", "2, 0, 1, 0"
+            VALUE "OriginalFilename", "GlobalPlatform.dll"
+            VALUE "ProductVersion", "3, 0, 2, 0"
         END
     END
     BLOCK "VarFileInfo"
@@ -114,4 +109,3 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
-

@@ -54,7 +54,7 @@ extern "C"
 #include <winscard.h>
 #include "unicode.h"
 
-typedef SCARDCONTEXT OPGP_CARDCONTEXT; //!< Reference to the reader ressource manager.
+typedef SCARDCONTEXT OPGP_CARDCONTEXT; //!< Reference to the reader resource manager.
 typedef SCARDHANDLE OPGP_CARDHANDLE; //!< Reference to a card.
 typedef LPTSTR OPGP_STRING; //!< A Microsoft/Muscle PC/SC LPTSTR.
 typedef LPCTSTR OPGP_CSTRING; //!< A Microsoft/Muscle PC/SC LPCTSTR.
@@ -462,7 +462,7 @@ typedef struct {
 
 
 /**
- * A structure describing an Executable Load File. 
+ * A structure describing an Executable Load File.
  * This structure is limited to 32 applets in the Load File.
  */
 typedef struct {
@@ -569,49 +569,6 @@ typedef struct {
 #define GP211_ERROR_INVALID_SCP ((DWORD)0x8030F005L) //!< The Secure Channel Protocol is invalid.
 #define GP211_ERROR_INVALID_SCP_IMPL ((DWORD)0x8030F006L) //!< The Secure Channel Protocol Implementation is invalid.
 #define GP211_ERROR_VALIDATION_R_MAC ((DWORD)0x8030F007L) //!< The validation of the R-MAC has failed.
-
-/* Mapping of relevant PC/SC Lite / WinSCard API errors to error codes. */
-
-#define OPGP_CARD_E_CANCELLED SCARD_E_CANCELLED //!< The action was canceled by an SCardCancel request.
-#define OPGP_CARD_E_CANT_DISPOSE SCARD_E_CANT_DISPOSE //!< The system could not dispose of the media in the requested manner.
-#define OPGP_CARD_E_CARD_UNSUPPORTED SCARD_E_CARD_UNSUPPORTED //!< The smart card does not meet minimal requirements for support.
-#define OPGP_CARD_E_COMM_DATA_LOST SCARD_E_COMM_DATA_LOST //!< A communications error with the smart card has been detected.
-#define OPGP_CARD_E_DUPLICATE_READER SCARD_E_DUPLICATE_READER //!< The reader driver did not produce a unique reader name.
-#define OPGP_CARD_E_INSUFFICIENT_BUFFER SCARD_E_INSUFFICIENT_BUFFER //!< The data buffer for returned data is too small for the returned data.
-#define OPGP_CARD_E_INVALID_ATR SCARD_E_INVALID_ATR //!< An ATR string obtained from the registry is not a valid ATR string.
-#define OPGP_CARD_E_INVALID_HANDLE SCARD_E_INVALID_HANDLE //!< The supplied handle was invalid.
-#define OPGP_CARD_E_INVALID_PARAMETER SCARD_E_INVALID_PARAMETER //!< One or more of the supplied parameters could not be properly interpreted.
-#define OPGP_CARD_E_INVALID_TARGET SCARD_E_INVALID_TARGET //!< Registry startup information is missing or invalid.
-#define OPGP_CARD_E_INVALID_VALUE SCARD_E_INVALID_VALUE //!< One or more of the supplied parameter values could not be properly interpreted.
-#define OPGP_CARD_E_NO_MEMORY SCARD_E_NO_MEMORY //!< Not enough memory available to complete this command.
-#define OPGP_CARD_E_NO_READERS_AVAILABLE SCARD_E_NO_READERS_AVAILABLE //!< No smart card reader is available.
-#define OPGP_CARD_E_NO_SERVICE SCARD_E_NO_SERVICE //!< The smart card resource manager is not running.
-#define OPGP_CARD_E_NO_SMARTCARD SCARD_E_NO_SMARTCARD //!< The operation requires a smart card, but no smart card is currently in the device.
-#define OPGP_CARD_E_NOT_READY SCARD_E_NOT_READY //!< The reader or card is not ready to accept commands.
-#define OPGP_CARD_E_NOT_TRANSACTED SCARD_E_NOT_TRANSACTED //!< An attempt was made to end a non-existent transaction.
-#define OPGP_CARD_E_PCI_TOO_SMALL SCARD_E_PCI_TOO_SMALL //!< The PCI receive buffer was too small.
-#define OPGP_CARD_E_PROTO_MISMATCH SCARD_E_PROTO_MISMATCH //!< The requested protocols are incompatible with the protocol currently in use with the card.
-#define OPGP_CARD_E_READER_UNAVAILABLE SCARD_E_READER_UNAVAILABLE //!< The specified reader is not currently available for use.
-#define OPGP_CARD_E_READER_UNSUPPORTED SCARD_E_READER_UNSUPPORTED //!< The reader driver does not meet minimal requirements for support.
-#define OPGP_CARD_E_SERVICE_STOPPED SCARD_E_SERVICE_STOPPED //!< The smart card resource manager has shut down.
-#define OPGP_CARD_E_SHARING_VIOLATION SCARD_E_SHARING_VIOLATION //!< The smart card cannot be accessed because of other outstanding connections.
-#define OPGP_CARD_E_SYSTEM_CANCELLED SCARD_E_SYSTEM_CANCELLED //!< The action was canceled by the system, presumably to log off or shut down.
-#define OPGP_CARD_E_TIMEOUT SCARD_E_TIMEOUT //!< The user-specified timeout value has expired.
-#define OPGP_CARD_E_UNEXPECTED SCARD_E_UNEXPECTED //!< An unexpected card error has occurred.
-#define OPGP_CARD_E_UNKNOWN_CARD SCARD_E_UNKNOWN_CARD //!< The specified smart card name is not recognized.
-#define OPGP_CARD_E_UNKNOWN_READER SCARD_E_UNKNOWN_READER //!< The specified reader name is not recognized.
-#define OPGP_CARD_E_UNSUPPORTED_FEATURE SCARD_E_UNSUPPORTED_FEATURE //!< This smart card does not support the requested feature.
-#define OPGP_CARD_F_COMM_ERROR SCARD_F_COMM_ERROR //!< An internal communications error has been detected.
-#define OPGP_CARD_F_INTERNAL_ERROR SCARD_F_INTERNAL_ERROR //!< An internal consistency check failed.
-#define OPGP_CARD_F_UNKNOWN_ERROR SCARD_F_UNKNOWN_ERROR //!< An internal error has been detected, but the source is unknown.
-#define OPGP_CARD_F_WAITED_TOO_LONG SCARD_F_WAITED_TOO_LONG //!< An internal consistency timer has expired.
-#define OPGP_CARD_S_SUCCESS SCARD_S_SUCCESS //!< No error was encountered.
-#define OPGP_CARD_W_CANCELLED_BY_USER SCARD_W_CANCELLED_BY_USER //!< The action was canceled by the user.
-#define OPGP_CARD_W_REMOVED_CARD SCARD_W_REMOVED_CARD //!< The smart card has been removed, so that further communication is not possible.
-#define OPGP_CARD_W_RESET_CARD SCARD_W_RESET_CARD //!< The smart card has been reset, so any shared state information is invalid.
-#define OPGP_CARD_W_UNPOWERED_CARD SCARD_W_UNPOWERED_CARD //!< Power has been removed from the smart card, so that further communication is not possible.
-#define OPGP_CARD_W_UNRESPONSIVE_CARD SCARD_W_UNRESPONSIVE_CARD //!< The smart card is not responding to a reset.
-#define OPGP_CARD_W_UNSUPPORTED_CARD SCARD_W_UNSUPPORTED_CARD //!< The reader cannot communicate with the card, due to ATR string configuration conflicts.
 
 /* Mapping of ISO7816-4 errors to error codes.
  * 0x8020XXXX is the generell meaning error.
@@ -1011,7 +968,8 @@ LONG OP201_set_status(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, BYT
 
 //! \brief Open Platform: Mutual authentication.
 OPGP_API
-LONG OP201_mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE encKey[16], BYTE macKey[16], BYTE keySetVersion,
+LONG OP201_mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE encKey[16], BYTE macKey[16], 
+								 BYTE kekKey[16], BYTE keySetVersion,
 						   BYTE keyIndex, BYTE securityLevel,
 						   OP201_SECURITY_INFO *secInfo);
 
@@ -1203,6 +1161,11 @@ LONG GP211_end_R_MAC(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo);
 //! \brief Reads the parameters of an Executable Load File.
 OPGP_API
 LONG read_executable_load_file_parameters(OPGP_STRING loadFileName, OPGP_LOAD_FILE_PARAMETERS *loadFileParams);
+
+//! \brief Derives the static keys form a mother key for GemXpresso Pro cards.
+OPGP_API
+LONG GemXpressoPro_create_daughter_keys(BYTE motherKey[16], BYTE keyDiversificationData[16], 
+								 BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
 
 #ifdef __cplusplus
 }
