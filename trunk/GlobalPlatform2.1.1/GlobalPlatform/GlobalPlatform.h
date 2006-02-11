@@ -84,6 +84,8 @@ typedef LPDWORD PDWORD; //!< A Microsoft LPDWORD/Muscle PC/SC, a pointer to a do
 /* The default key value for new cards defined in a VISA specification. */
 static const BYTE OPGP_VISA_DEFAULT_KEY[] = {0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
 
+static const BYTE OPGP_GEMXPRESSO_DEFAULT_KEY[] = {0x47, 0x45, 0x4d, 0x58, 0x50, 0x52, 0x45, 0x53, 0x53, 0x4f, 0x53, 0x41, 0x4d, 0x50, 0x4c, 0x45};
+
 /* Secure Channel stuff */
 
 #define GP211_SCP01 0x01 //!< Secure Channel Protocol '01'
@@ -304,7 +306,7 @@ static const BYTE OP201_GET_DATA_CPLC_PERSONALIZATION_DATE[2] = {0x9F, 0x66}; //
 static const BYTE OP201_GET_DATA_CPLC_PRE_PERSONALIZATION_DATE[2] = {0x9F, 0x67}; //!< CPLC pre-personalization date.
 static const BYTE OP201_GET_DATA_CPLC_ICC_MANUFACTURER_EMBEDDING_DATE[2] = {0x9F, 0x68}; //!< CPLC ICC manufacturer, embedding date.
 static const BYTE OP201_GET_DATA_CPLC_MODULE_FABRICATOR_PACKAGING_DATE[2] = {0x9F, 0x69}; //!< CPLC module fabricator, module packaging date.
-static const BYTE OP201_GET_DATA_CPLC_FABRICATION_DATE_SERIAL_NUMBER_BATCH_IDENTIFIER[2] = {0x9F, 0x6A}; //!< CPLC fabrication date, serail number, batch identifier.
+static const BYTE OP201_GET_DATA_CPLC_FABRICATION_DATE_SERIAL_NUMBER_BATCH_IDENTIFIER[2] = {0x9F, 0x6A}; //!< CPLC fabrication date, serial number, batch identifier.
 static const BYTE OP201_GET_DATA_CPLC_WHOLE_CPLC[2] = {0x9F, 0x7F}; //!< Whole CPLC data from ROM and EEPROM.
 
 static const BYTE OP201_GET_DATA_FCI_DATA[2] = {0xBF, 0x0C}; //!< File Control Information (FCI) discretionary data.
@@ -1164,7 +1166,7 @@ LONG read_executable_load_file_parameters(OPGP_STRING loadFileName, OPGP_LOAD_FI
 
 //! \brief Derives the static keys form a mother key for GemXpresso Pro cards.
 OPGP_API
-LONG GemXpressoPro_create_daughter_keys(BYTE motherKey[16], BYTE keyDiversificationData[16], 
+LONG GemXpressoPro_create_daughter_keys(OPGP_CARD_INFO cardInfo, BYTE motherKey[16], 
 								 BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
 
 #ifdef __cplusplus
