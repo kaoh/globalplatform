@@ -2337,6 +2337,7 @@ LONG GP211_get_data(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 				  return get_data(cardInfo, secInfo, identifier, recvBuffer, recvBufferLength);
 }
 
+
 /**
  *
  * \param cardInfo IN The OPGP_CARD_INFO structure returned by card_connect().
@@ -4881,21 +4882,44 @@ end:
 }
 
 /**
+  * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by card_connect().
   * \param motherKey[16] IN The mother key.
-  * \param keyDiversificationData[10] The key diversification data.
   * \param S_ENC[16] OUT The static Encryption key.
   * \param S_MAC[16] OUT The static Message Authentication Code key.
   * \param DEK[16] OUT The static Key Encryption Key.
   * \return OPGP_ERROR_SUCCESS if no error, error code else.
   */
-LONG GemXpressoPro_create_daughter_keys(BYTE motherKey[16], BYTE keyDiversificationData[10], 
+LONG GemXpressoPro_create_daughter_keys(OPGP_CARD_INFO cardInfo, BYTE motherKey[16], 
 								 BYTE S_ENC[16], BYTE S_MAC[16], BYTE KEK[16]) {
 	LONG result;
 	int outl;
 	// this comes from card diversification
- 	BYTE derivationData[16];
+	BYTE derivationData[16];
+	BYTE cardCPLCData[50];
+	DWORD cplcDataLen = 50;
+	BYTE keyDiversificationData[10];
+	DWORD keyDiversificationDataLength = 10;
 
 	LOG_START(_T("GemXpressoPro_create_daughter_keys"));
+
+	result = OP201_get_data(cardInfo, NULL, (PBYTE)OP201_GET_DATA_CPLC_WHOLE_CPLC,
+		cardCPLCData, &cplcDataLen);
+	if (result != OPGP_ERROR_SUCCESS) {
+		goto end;
+	}
+	// parse card diversification
+
+	/* we need 2 first Card Manager AID bytes 
+	 * IC Fabrication Date 2
+	 * IC Serial Number 4
+	 * IC Batch Identifier 2
+	 */
+
+	// card manager first 2 AID bytes
+	keyDiversificationData[0] = OP201_CARD_MANAGER_AID[0];
+	keyDiversificationData[1] = OP201_CARD_MANAGER_AID[1];
+	// rest
+	memcpy(keyDiversificationData+2, cardCPLCData+13, 8);
 
  	// derivation left
  	memcpy(derivationData, keyDiversificationData, 2);
@@ -4904,7 +4928,7 @@ LONG GemXpressoPro_create_daughter_keys(BYTE motherKey[16], BYTE keyDiversificat
  	derivationData[7] = 0x01;
  	// derivation right
  	memcpy(derivationData+8, keyDiversificationData, 2);
- 	memcpy(derivationData+10, keyDiversificationData, 4);
+ 	memcpy(derivationData+10, keyDiversificationData+4, 4);
  	derivationData[14] = 0x0F;
  	derivationData[15] = 0x01;
 
@@ -6646,9 +6670,17 @@ LONG OP201_put_data(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 LONG OP201_get_data(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength) {
 	LONG result;
 	GP211_SECURITY_INFO gp211secInfo;
-	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
-	result = get_data(cardInfo, &gp211secInfo, identifier, recvBuffer, recvBufferLength);
-	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
+	/* can be executed outside of a secret channel */
+	if (secInfo != NULL) {
+		mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
+		result = get_data(cardInfo, &gp211secInfo, identifier, recvBuffer, recvBufferLength);
+	}
+	else {
+		result = get_data(cardInfo, NULL, identifier, recvBuffer, recvBufferLength);
+	}
+	if (secInfo != NULL) {
+		mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
+	}
 	return result;
 }
 
