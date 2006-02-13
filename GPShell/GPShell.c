@@ -615,18 +615,8 @@ static int handleCommands(FILE *fd)
 			goto end;
 		}
 		if (platform_mode == PLATFORM_MODE_OP_201) {
-			BYTE keyDiversificationData[10];
-			DWORD keyDiversificationDataLength = 10;
 			if (gemXpressoPro) {
-				rv = OP201_get_data(cardInfo, NULL, (PBYTE)OP201_DIVERSIFICATION_DATA,
-					keyDiversificationData, &keyDiversificationDataLength);
-				if (rv != 0) {
-					_tprintf (_T("OP201_get_data() returns 0x%08X (%s)\n"),
-						rv, stringify_error(rv));
-					rv = EXIT_FAILURE;
-					goto end;
-				}
-				rv = GemXpressoPro_create_daughter_keys(optionStr.key, keyDiversificationData, 
+				rv = GemXpressoPro_create_daughter_keys(cardInfo, optionStr.key,  
 								 optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
 				if (rv != 0) {
 					_tprintf (_T("GemXpressoPro_create_daughter_keys() returns 0x%08X (%s)\n"),
