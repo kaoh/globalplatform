@@ -243,6 +243,7 @@ static const BYTE GP211_GET_DATA_WHOLE_EF_PROD[2] = {0xDF, 0x7F}; //!< Whole EF<
 
 static const BYTE OP201_CARD_MANAGER_AID[] = {0xA0, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00}; //!< The AID of the Card Manager defined by Open Platform specification.
 
+static const BYTE GEMXPRRESSOPRO_CARD_MANAGER_AID[] = {0xa0, 0x00, 0x00, 0x00, 0x18, 0x43, 0x4d, 0x00}; //!< The AID of GemXPressoPro cards.
 
 #define OP201_SECURITY_LEVEL_ENC_MAC 0x03 //!< Command messages are signed and encrypted.
 #define OP201_SECURITY_LEVEL_MAC 0x01 //!< Command messages are signed.

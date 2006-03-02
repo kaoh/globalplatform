@@ -4916,8 +4916,8 @@ LONG GemXpressoPro_create_daughter_keys(OPGP_CARD_INFO cardInfo, BYTE motherKey[
 	 */
 
 	// card manager first 2 AID bytes
-	keyDiversificationData[0] = OP201_CARD_MANAGER_AID[0];
-	keyDiversificationData[1] = OP201_CARD_MANAGER_AID[1];
+	keyDiversificationData[0] = GEMXPRRESSOPRO_CARD_MANAGER_AID[sizeof(GEMXPRRESSOPRO_CARD_MANAGER_AID)-2];
+	keyDiversificationData[1] = GEMXPRRESSOPRO_CARD_MANAGER_AID[sizeof(GEMXPRRESSOPRO_CARD_MANAGER_AID)-1];
 	// rest
 	memcpy(keyDiversificationData+2, cardCPLCData+13, 8);
 
