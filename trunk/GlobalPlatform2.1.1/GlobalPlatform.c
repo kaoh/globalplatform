@@ -4889,7 +4889,7 @@ end:
   * \param DEK[16] OUT The static Key Encryption Key.
   * \return OPGP_ERROR_SUCCESS if no error, error code else.
   */
-LONG GemXpressoPro_create_daughter_keys(OPGP_CARD_INFO cardInfo, BYTE motherKey[16], 
+LONG GemXpressoPro_create_daughter_keys(OPGP_CARD_INFO cardInfo, BYTE motherKey[16],
 								 BYTE S_ENC[16], BYTE S_MAC[16], BYTE KEK[16]) {
 	LONG result;
 	int outl;
@@ -4909,7 +4909,7 @@ LONG GemXpressoPro_create_daughter_keys(OPGP_CARD_INFO cardInfo, BYTE motherKey[
 	}
 	// parse card diversification
 
-	/* we need 2 first Card Manager AID bytes 
+	/* we need 2 first Card Manager AID bytes
 	 * IC Fabrication Date 2
 	 * IC Serial Number 4
 	 * IC Batch Identifier 2
