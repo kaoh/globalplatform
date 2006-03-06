@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://www.netbeans.org/ns/project/1">
-    <type xmlns="http://www.netbeans.org/ns/project/1">org.netbeans.modules.java.j2seproject</type>
-    <configuration xmlns="http://www.netbeans.org/ns/project/1">
-        <data xmlns="http://www.netbeans.org/ns/j2se-project/1">
+    <type>org.netbeans.modules.java.j2seproject</type>
+    <configuration>
+        <data xmlns="http://www.netbeans.org/ns/j2se-project/2">
             <name>OpenPlatformManager</name>
             <minimum-ant-version>1.6</minimum-ant-version>
             <source-roots>
@@ -14,7 +14,7 @@
         </data>
         <references xmlns="http://www.netbeans.org/ns/ant-project-references/1">
             <reference>
-                <foreign-project>JOpenPlatform</foreign-project>
+                <foreign-project>___</foreign-project>
                 <artifact-type>jar</artifact-type>
                 <script>build.xml</script>
                 <target>jar</target>
