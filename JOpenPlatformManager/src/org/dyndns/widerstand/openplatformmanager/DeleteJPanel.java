@@ -265,12 +265,6 @@ public class DeleteJPanel extends javax.swing.JPanel {
         if (Arrays.equals(parent.session.selectedApplication, OPSPApplet.OPSP_CARD_MANAGER_AID)) {
             initConditionalComponents();
             JCheckBox checkBox;
-            jPanelCardManager.removeAll();
-            jPanelExecutableLoadFile.removeAll();
-            jPanelSecurityDomains.removeAll();
-            jPanelApplications.removeAll();
-            jPanelAllApplications.removeAll();
-            jPanelInstalledContent.removeAll();
             checkBoxList.clear();
             if (!parent.session.cardManager.isEmpty()) {
                 jPanelCardManager.setPreferredSize(null);

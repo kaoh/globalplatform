@@ -176,15 +176,15 @@ public class DeleteKeyJPanel extends javax.swing.JPanel {
                                         "getKeyInformationTemplates", null, parameterTypes, parameters);
                                 
             } catch (OPSPException e) {
-                javax.swing.JOptionPane.showMessageDialog(this, e.getMessage(),
-                        "Open Platform Error", javax.swing.JOptionPane.ERROR_MESSAGE);
-                return;
+//                javax.swing.JOptionPane.showMessageDialog(this, e.getMessage(),
+//                        "Open Platform Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+//                return;
             } catch (Exception e) {
                 javax.swing.JOptionPane.showMessageDialog(this, e.getMessage(), "Generel Error", javax.swing.JOptionPane.ERROR_MESSAGE);
                 return;
             }
             jPanelAvailableKeys.removeAll();
-            if (keyInfos.length > 0) {
+            if (keyInfos != null && keyInfos.length > 0) {
                 jPanelAvailableKeys.setPreferredSize(null);
                 jPanelAvailableKeys.setMinimumSize(null);
             } else {
@@ -284,8 +284,8 @@ public class DeleteKeyJPanel extends javax.swing.JPanel {
                     Dimension d2 = jLabel1.getSize();
                     jPanelAvailableKeys.add(jPanel1);
                 }
-                jPanel8.revalidate();
             }
+            jPanel8.revalidate();
         }
         else {
             removeConditionalComponents();
