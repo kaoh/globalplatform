@@ -20,7 +20,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;E:\quarantine\openssl-0.9.7e\include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;OPSP_EXPORTS;_UNICODE;UNICODE"
+				PreprocessorDefinitions="WIN32;_DEBUG;DEBUG;_CONSOLE;OPSP_EXPORTS;_UNICODE;UNICODE"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="2"
