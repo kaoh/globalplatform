@@ -1,6 +1,7 @@
 Global Platform Shell (gpshell)
 snitmo@gmail.com
 
+Version 1.1.1	9/24/2005
 Version 1.3.0	02/09/2006
 
 *** Summary
@@ -97,7 +98,7 @@ Parameters containing spaces, e.g. file names or reader names must be quoted in 
 
 *** Sample / Testing
 
-We have tested this with GlobalPlatform.dll, Oberthur CosmopoliC 32K (OP201), CosmopoliC 64K V5.2 (GP211, SCP01, Impl05) and HelloWorld.bin (sample applet from JavaCard development kit 2.1.2).  See helloInstall.txt, helloDelete.txt, and list.txt for samples.
+We have tested this with GlobalPlatform.dll, Oberthur CosmopoliC 32K (OP201), CosmopoliC 64K V5.2 (GP211, SCP01, Impl05) and HelloWorld.bin (sample applet from JavaCard development kit 2.1.2).  See helloInstall.txt, helloDelete.txt, and list.txt for samples.  About how to generate a .bin file, please see the later section (How to convert a .cap file into a .bin file). 
 
 	GPShell.exe helloInstall.txt	// install HelloWorld.bin
 	GPShell.exe helloDelete.txt	// delete HelloWorld.bin
@@ -124,4 +125,37 @@ This would add a key set 1, and at the same time delete the initialization key s
 For CosmopoliC 64K (tested on V5.2), you need to specify Security Domain AID, in addition to AID.  For example,
 
   install_for_load -AID A000000081 -sdAID A000000003000000 -nvCodeLimit 4000
+
+* How to convert a .cap file into a .bin file
+
+JavaCard applets can be in CAP files.  For example, JavaCard Toolkit generates one.  Unfortunately, this cannot be understood by GPShell.  You need to covert it to a .bin file.  Fortunately, the conversion is straightforward.
+
+Take the cap file, unjar it.  This results in many smaller cap files.  Concatenate all of them into one .bin file.  Here's an example.
+
+cp com/sun/javacard/samples/HelloWorld/javacard/HelloWorld.cap .
+jar xvf HelloWorld.cap
+extracted: com/sun/javacard/samples/HelloWorld/javacard/Header.cap
+extracted: com/sun/javacard/samples/HelloWorld/javacard/Directory.cap
+extracted: com/sun/javacard/samples/HelloWorld/javacard/Applet.cap
+extracted: com/sun/javacard/samples/HelloWorld/javacard/Import.cap
+extracted: com/sun/javacard/samples/HelloWorld/javacard/ConstantPool.cap
+extracted: com/sun/javacard/samples/HelloWorld/javacard/Class.cap
+extracted: com/sun/javacard/samples/HelloWorld/javacard/Method.cap
+extracted: com/sun/javacard/samples/HelloWorld/javacard/StaticField.cap
+extracted: com/sun/javacard/samples/HelloWorld/javacard/RefLocation.cap
+extracted: com/sun/javacard/samples/HelloWorld/javacard/Descriptor.cap
+
+cat com/sun/javacard/samples/HelloWorld/javacard/Header.cap
+com/sun/javacard/samples/HelloWorld/javacard/Directory.cap
+com/sun/javacard/samples/HelloWorld/javacard/Import.cap
+com/sun/javacard/samples/HelloWorld/javacard/Applet.cap
+com/sun/javacard/samples/HelloWorld/javacard/Class.cap
+com/sun/javacard/samples/HelloWorld/javacard/Method.cap
+com/sun/javacard/samples/HelloWorld/javacard/StaticField.cap
+com/sun/javacard/samples/HelloWorld/javacard/ConstantPool.cap
+com/sun/javacard/samples/HelloWorld/javacard/RefLocation.cap
+com/sun/javacard/samples/HelloWorld/javacard/Descriptor.cap >
+HelloWorld.bin
+
+I have run this in cygwin.  You can see I have opened up HelloWorld.cap and concatanated all the resulting .cap files into one file, HelloWorld.bin.  Try the same thing to your .cap file, and please let us know if it doesn't work.
 
