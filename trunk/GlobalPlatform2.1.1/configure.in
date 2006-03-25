@@ -1,7 +1,7 @@
 # Require autoconf 2.53
 AC_PREREQ(2.53)
 
-AC_INIT(GlobalPlatform, 2.0.1, k_o_@users.sourceforge.net)
+AC_INIT(GlobalPlatform, 3.0.2, k_o_@users.sourceforge.net)
 AM_INIT_AUTOMAKE
 
 # check programs
@@ -59,7 +59,7 @@ AC_CHECK_HEADERS(openssl/rand.h openssl/err.h openssl/evp.h openssl/pem.h, [],
         [AC_MSG_ERROR([OpenSSL headers not found, install OpenSSL
 0.9.7e or later, or use CFLAGS=... ./configure])])
 
-AC_CHECK_LIB(ssl, PEM_read_bio_PrivateKey, [],
+AC_CHECK_LIB(crypto, PEM_read_PrivateKey, [],
         [AC_MSG_ERROR([PEM_read_PrivateKey() not
 found, install OpenSSL 0.9.7e or later])])
 
