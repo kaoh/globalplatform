@@ -1,13 +1,23 @@
-VERSION=1.3.0
-DIR=GPShell-$(VERSION)
+# Usage: make -f Makefile-Release
+# (In Cygwin)
 
-all:	bin_package
+VERSION=1.3.1
+DIR=GPShell-$(VERSION)
+SRCDIR=GPShell-$(VERSION)-src
+
+all:	bin_package src_package
 
 bin_package:
 	rm -rf $(DIR)
 	mkdir $(DIR)
-	cp Debug/GPShell.exe GlobalPlatform.dll README CHANGES COPYING helloInstall.txt helloDelete.txt helloInstallGP211.txt helloDeleteGP211.txt list.txt listgp211.txt HelloWorld.bin $(DIR)
+	cp Release/GPShell.exe GlobalPlatform.dll README CHANGES COPYING AUTHORS helloInstall.txt helloDelete.txt helloInstallGP211.txt helloDeleteGP211.txt list.txt listgp211.txt HelloWorld.bin $(DIR)
 	zip GPShell-$(VERSION).zip $(DIR)/*
 
+src_package:
+	rm -rf $(SRCDIR)
+	mkdir $(SRCDIR)
+	cp GPShell.c stdafx.c stdafx.h README CHANGES COPYING AUTHORS helloInstall.txt helloDelete.txt helloInstallGP211.txt helloDeleteGP211.txt list.txt listgp211.txt HelloWorld.bin $(SRCDIR)
+	tar cvfz GPShell-$(VERSION)-src.tar.gz $(SRCDIR)
+
 clean:
-	rm -rf GPShell-$(VERSION).zip $(DIR)
+	rm -rf GPShell-$(VERSION).zip $(DIR) GPShell-$(VERSION)-src.tar.gz $(SRCDIR)
