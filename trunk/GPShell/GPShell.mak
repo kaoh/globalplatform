@@ -1,3 +1,5 @@
+# Usage: nmake -f GPShell.mak CFG=Release
+
 # Microsoft Developer Studio Generated NMAKE File, Based on GPShell.dsp
 !IF "$(CFG)" == ""
 CFG=Debug
