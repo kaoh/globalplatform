@@ -96,6 +96,19 @@ static void ConvertCToT(TCHAR* pszDest, const char* pszSrc)
 
     pszDest[strlen(pszSrc)] = _T('\0');
 }
+
+static int ConvertStringToByteArray(char *src, int maxLength, char *dest) {
+	char dummy[BUFLEN+1];
+	int temp, i = 0;
+	strncpy(dummy, src, maxLength*2+1);
+	dummy[maxLength*2] = '\0';
+	while (sscanf (&(dummy[i*2]), "%02x", &temp) > 0) {
+		dest[i] = temp;
+		i++;
+	}
+	return i;
+}
+
 static char *strtokCheckComment(char *buf)
 {
     char *token;
@@ -270,12 +283,8 @@ static int handleOptions(OptionStr *pOptionStr)
 			rv = EXIT_FAILURE;
 			goto end;
 	    } else {
-		int i;
 
-		for (i=0; i<DDES_KEY_LEN; i++) {
-		    sscanf (token, "%02x", &(pOptionStr->key[i]));
-		    token += 2;
-		}
+		ConvertStringToByteArray(token, DDES_KEY_LEN, pOptionStr->key);
 	    }
 	} else if (strcmp(token, "-mac_key") == 0) {
 	    token = strtokCheckComment(NULL);
@@ -284,12 +293,8 @@ static int handleOptions(OptionStr *pOptionStr)
 			rv = EXIT_FAILURE;
 			goto end;
 	    } else {
-		int i;
 
-		for (i=0; i<DDES_KEY_LEN; i++) {
-		    sscanf (token, "%02x", &(pOptionStr->mac_key[i]));
-		    token += 2;
-		}
+		ConvertStringToByteArray(token, DDES_KEY_LEN, pOptionStr->mac_key);
 	    }
 	} else if (strcmp(token, "-enc_key") == 0) {
 	    token = strtokCheckComment(NULL);
@@ -298,12 +303,8 @@ static int handleOptions(OptionStr *pOptionStr)
 			rv = EXIT_FAILURE;
 			goto end;
 	    } else {
-		int i;
 
-		for (i=0; i<DDES_KEY_LEN; i++) {
-		    sscanf (token, "%02x", &(pOptionStr->enc_key[i]));
-		    token += 2;
-		}
+		ConvertStringToByteArray(token, DDES_KEY_LEN, pOptionStr->enc_key);
 	    }
 	} else if (strcmp(token, "-kek_key") == 0) {
 	    token = strtokCheckComment(NULL);
@@ -312,12 +313,8 @@ static int handleOptions(OptionStr *pOptionStr)
 			rv = EXIT_FAILURE;
 			goto end;
 	    } else {
-		int i;
 
-		for (i=0; i<DDES_KEY_LEN; i++) {
-		    sscanf (token, "%02x", &(pOptionStr->kek_key[i]));
-		    token += 2;
-		}
+		ConvertStringToByteArray(token, DDES_KEY_LEN, pOptionStr->kek_key);
 	    }
 	} else if (strcmp(token, "-current_kek") == 0) {
 	    token = strtokCheckComment(NULL);
@@ -326,13 +323,9 @@ static int handleOptions(OptionStr *pOptionStr)
 			rv = EXIT_FAILURE;
 			goto end;
 	    } else {
-		int i;
 
-		for (i=0; i<DDES_KEY_LEN; i++) {
-		    sscanf (token, "%02x", &(pOptionStr->current_kek[i]));
-		    token += 2;
+		ConvertStringToByteArray(token, DDES_KEY_LEN, pOptionStr->current_kek);
 		}
-	    }
 	} else if (strcmp(token, "-AID") == 0) {
 	    token = strtokCheckComment(NULL);
 	    if (token == NULL) {
@@ -340,16 +333,7 @@ static int handleOptions(OptionStr *pOptionStr)
 			rv = EXIT_FAILURE;
 			goto end;
 	    } else {
-
-			int i = 0;
-
-			strncpy(dummy, token, AIDLEN*2+1);
-			dummy[AIDLEN*2] = '\0';
-
-			while (sscanf (&(dummy[i*2]), "%02x", &(pOptionStr->AID[i])) > 0) {
-				i++;
-			}
-			pOptionStr->AIDLen = i;
+			pOptionStr->AIDLen = ConvertStringToByteArray(token, AIDLEN, pOptionStr->AID);
 	    }
 	} else if (strcmp(token, "-sdAID") == 0) {
 	    token = strtokCheckComment(NULL);
@@ -358,14 +342,7 @@ static int handleOptions(OptionStr *pOptionStr)
 			rv = EXIT_FAILURE;
 			goto end;
 	    } else {
-			int i = 0;
-			strncpy(dummy, token, AIDLEN*2+1);
-			dummy[AIDLEN*2] = '\0';
-
-			while (sscanf (&(dummy[i*2]), "%02x", &(pOptionStr->sdAID[i])) > 0) {
-				i++;
-			}
-			pOptionStr->sdAIDLen = i;
+			pOptionStr->sdAIDLen = ConvertStringToByteArray(token, AIDLEN, pOptionStr->sdAID);
 	    }
 	} else if (strcmp(token, "-pkgAID") == 0) {
 	    token = strtokCheckComment(NULL);
@@ -374,13 +351,7 @@ static int handleOptions(OptionStr *pOptionStr)
 			rv = EXIT_FAILURE;
 			goto end;
 	    } else {
-			int i = 0;
-			strncpy(dummy, token, AIDLEN*2+1);
-			dummy[AIDLEN*2] = '\0';
-			while (sscanf (&(dummy[i*2]), "%02x", &(pOptionStr->pkgAID[i])) > 0) {
-				i++;
-			}
-			pOptionStr->pkgAIDLen = i;
+			pOptionStr->pkgAIDLen = ConvertStringToByteArray(token, AIDLEN, pOptionStr->pkgAID);
 	    }
 	} else if (strcmp(token, "-instAID") == 0) {
 	    token = strtokCheckComment(NULL);
@@ -388,14 +359,7 @@ static int handleOptions(OptionStr *pOptionStr)
 		printf ("Error: option -instAID not followed by data\n");
 		exit (EXIT_FAILURE);
 	    } else {
-			int i = 0;
-			strncpy(dummy, token, AIDLEN*2+1);
-			dummy[AIDLEN*2] = '\0';
-
-			while (sscanf (&(dummy[i*2]), "%02x", &(pOptionStr->instAID[i])) > 0) {
-				i++;
-			}
-			pOptionStr->instAIDLen = i;
+			pOptionStr->instAIDLen = ConvertStringToByteArray(token, AIDLEN, pOptionStr->instAID);
 	    }
 	} else if (strcmp(token, "-APDU") == 0) {
 	    token = strtokCheckComment(NULL);
@@ -404,15 +368,7 @@ static int handleOptions(OptionStr *pOptionStr)
 			rv = EXIT_FAILURE;
 			goto end;
 	    } else {
-			int i = 0;
-
-			strncpy(dummy, token, APDULEN*2+1);
-			dummy[APDULEN*2] = '\0';
-
-			while (sscanf (&(dummy[i*2]), "%02x", &(pOptionStr->APDU[i])) > 0) {
-				i++;
-			}
-			pOptionStr->APDULen = i;
+			pOptionStr->APDULen = ConvertStringToByteArray(token, APDULEN, pOptionStr->APDU);
 	    }
 	} else if (strcmp(token, "-protocol") == 0) {
 	    token = strtokCheckComment(NULL);
@@ -465,15 +421,10 @@ static int handleOptions(OptionStr *pOptionStr)
 			rv = EXIT_FAILURE;
 			goto end;
 	    } else {
-			unsigned int i = 0;
-			strncpy(dummy, token, INSTPARAMLEN*2+1);
-			dummy[INSTPARAMLEN*2] = '\0';
-			while (sscanf (&(dummy[i*2]), "%02x", &(pOptionStr->instParam[i])) > 0) {
-				i++;
-			}
-			pOptionStr->instParamLen = i;
+			pOptionStr->instParamLen = ConvertStringToByteArray(token, INSTPARAMLEN, pOptionStr->instParam);
 	    }
 	} else if (strcmp(token, "-element") == 0) {
+		int temp;
 	    token = strtokCheckComment(NULL);
 	    if (token == NULL) {
 			printf ("Error: option -element not followed by data\n");
@@ -481,12 +432,13 @@ static int handleOptions(OptionStr *pOptionStr)
 			goto end;
 	    }
 
-	    if (sscanf (token, "%02x", &(pOptionStr->element)) <= 0) {
+		if (sscanf (token, "%02x", &temp) <= 0) {
 			printf ("Error: option -element followed by an illegal string %s\n",
 			token);
 			rv = EXIT_FAILURE;
 			goto end;
 	    }
+		pOptionStr->element = temp;
 	} else if (strcmp(token, "-priv") == 0) {
 	    token = strtokCheckComment(NULL);
 	    if (token == NULL) {
