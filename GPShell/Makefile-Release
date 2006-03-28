@@ -10,13 +10,13 @@ all:	bin_package src_package
 bin_package:
 	rm -rf $(DIR)
 	mkdir $(DIR)
-	cp Release/GPShell.exe GlobalPlatform.dll README CHANGES COPYING AUTHORS helloInstall.txt helloDelete.txt helloInstallGP211.txt helloDeleteGP211.txt list.txt listgp211.txt HelloWorld.bin $(DIR)
+	cp Release/GPShell.exe GlobalPlatform.dll README CHANGES COPYING AUTHORS helloInstall.txt helloDelete.txt helloInstallGP211.txt helloDeleteGP211.txt list.txt listgp211.txt replacekey-cosmo-gp211.txt recyclekey-cosmo-gp211.txt HelloWorld.bin $(DIR)
 	zip GPShell-$(VERSION).zip $(DIR)/*
 
 src_package:
 	rm -rf $(SRCDIR)
 	mkdir $(SRCDIR)
-	cp GPShell.c stdafx.c stdafx.h README CHANGES COPYING AUTHORS helloInstall.txt helloDelete.txt helloInstallGP211.txt helloDeleteGP211.txt list.txt listgp211.txt HelloWorld.bin $(SRCDIR)
+	cp GPShell.c stdafx.c stdafx.h README CHANGES COPYING AUTHORS helloInstall.txt helloDelete.txt helloInstallGP211.txt helloDeleteGP211.txt list.txt listgp211.txt replacekey-cosmo-gp211.txt recyclekey-cosmo-gp211.txt HelloWorld.bin $(SRCDIR)
 	tar cvfz GPShell-$(VERSION)-src.tar.gz $(SRCDIR)
 
 clean:
