@@ -4883,10 +4883,10 @@ end:
 
 /**
   * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by card_connect().
-  * \param motherKey[16] IN The mother key.
-  * \param S_ENC[16] OUT The static Encryption key.
-  * \param S_MAC[16] OUT The static Message Authentication Code key.
-  * \param DEK[16] OUT The static Key Encryption Key.
+  * \param motherKey IN The mother key.
+  * \param S_ENC OUT The static Encryption key.
+  * \param S_MAC OUT The static Message Authentication Code key.
+  * \param KEK OUT The static Key Encryption Key.
   * \return OPGP_ERROR_SUCCESS if no error, error code else.
   */
 LONG GemXpressoPro_create_daughter_keys(OPGP_CARD_INFO cardInfo, BYTE motherKey[16], 
@@ -7766,6 +7766,7 @@ static LONG readDAPBlock(PBYTE buf, PDWORD bufLength, OP201_DAP_BLOCK dapBlock) 
  * A keySetVersion and keyIndex of 0x00 selects the first available key set version and key index.
  * \param encKey IN The static encryption key.
  * \param macKey IN The static MAC key.
+ * \param kekKey IN The static Key Encryption key.
  * \param keySetVersion IN The key set version on the card to use for mutual authentication.
  * \param keyIndex IN The key index of the encryption key in the key set version on the card to use for mutual authentication.
  * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by card_connect().

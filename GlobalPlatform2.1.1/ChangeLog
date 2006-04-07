@@ -1,12 +1,16 @@
 History
 =======
 
+3.0.2 - Sat Mar 25 2006, Karsten Ohme
+	GemXpresso support
+	bug fixes
+
 2.0.1 - Wed Dec 14 2005, Karsten Ohme
 	R-MAC support
 	BEGIN R-MAC
 	END R-MAC
 	automatic detection of load file parameters
-	
+
 
 1.1.0 - Sat Nov 05 2005, Karsten Ohme
 	Bug in determining filesize with fseek() for Unix fixed
