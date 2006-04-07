@@ -34,34 +34,34 @@ if test x${debug} = xtrue ; then
 fi
 
 dnl Check for pcsclite
-PKG_CHECK_MODULES(PCSCLITE, libpcsclite >= 1.2.9-beta7, [],
+PKG_CHECK_MODULES(PCSCLITE, libpcsclite >= 1.1.0, [],
         [ if test -f /usr/local/lib/pkgconfig/libpcsclite.pc ; then
                 AC_MSG_ERROR([install pkg-config or set PKG_CONFIG_PATH
 to pkgconfig directory])
           else
-                AC_MSG_WARN([install pcsc-lite 1.2.9-beta7 or later])
+                AC_MSG_WARN([install pcsc-lite 1.1.0 or later])
           fi
         ])
 
 AC_CHECK_LIB(pcsclite, SCardEstablishContext, [],
         [AC_MSG_ERROR([SCardEstablishContext() not found, install
-pcsc-lite 1.2.9-beta7 or later])])
+pcsc-lite 1.10 or later, or use ./configure ... LIBS=-L...])])
 
 CFLAGS="$CFLAGS $PCSCLITE_CFLAGS"
 
 AC_CHECK_HEADER(winscard.h, [],
         [AC_MSG_ERROR([winscard.h not found, install pcsc-lite
-1.2.9-beta7 or later, or use CFLAGS=... ./configure])])
+1.1.0 or later, or use ./configure ... CFLAGS=-I...])])
 
 
 dnl Check for OpenSSL headers
 AC_CHECK_HEADERS(openssl/rand.h openssl/err.h openssl/evp.h openssl/pem.h, [],
         [AC_MSG_ERROR([OpenSSL headers not found, install OpenSSL
-0.9.7e or later, or use CFLAGS=... ./configure])])
+0.9.7 or later, or use ./configure ... CFLAGS=-I...])])
 
 AC_CHECK_LIB(crypto, PEM_read_PrivateKey, [],
         [AC_MSG_ERROR([PEM_read_PrivateKey() not
-found, install OpenSSL 0.9.7e or later])])
+found, install OpenSSL 0.9.7 or later, or use ./configure ... LIBS=-L...])])
 
 AC_MSG_RESULT([enable GlobalPlatform debug     : $debug])
 
