@@ -159,7 +159,7 @@ static LONG put_delegated_management_keys(OPGP_CARD_INFO cardInfo, GP211_SECURIT
 static LONG delete_key(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE keySetVersion, BYTE keyIndex);
 
 static LONG delete_application(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-				   OPGP_AID *AIDs, DWORD AIDsLength, GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataLength);
+				   OPGP_AID *AIDs, DWORD AIDsLength, GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataLength, DWORD mode);
 
 static LONG get_data(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 			  const BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength);
@@ -262,6 +262,9 @@ static LONG GP211_calculate_R_MAC(BYTE commandHeader[4],
 
 static DWORD traceEnable; //!< Enable trace mode.
 static FILE *traceFile; //!< The trace file for trace mode.
+
+#define OP201 0x01 //!< Operation mode for OpenPlatform 2.0.1'
+#define GP211 0x02 //!< Operation mode for GlobalPlatform 2.1.1
 
 static void mapOP201ToGP211SecurityInfo(OP201_SECURITY_INFO op201secInfo,
 										GP211_SECURITY_INFO *gp211secInfo) {
@@ -2196,11 +2199,14 @@ end:
  */
 LONG GP211_delete_application(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 						OPGP_AID *AIDs, DWORD AIDsLength, GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataLength) {
-	return delete_application(cardInfo, secInfo, AIDs, AIDsLength, receiptData, receiptDataLength);
+							return delete_application(cardInfo, secInfo, AIDs, AIDsLength, receiptData, receiptDataLength, GP211);
 }
 
+/**
+* \param mode OpenPlatform 2.0.1' or GlobalPlatform 2.1.1 delete command.
+*/
 static LONG delete_application(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-				   OPGP_AID *AIDs, DWORD AIDsLength, GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataLength) {
+				   OPGP_AID *AIDs, DWORD AIDsLength, GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataLength, DWORD mode) {
 	LONG result;
 	DWORD count=0;
 	BYTE sendBuffer[261];
@@ -2212,7 +2218,10 @@ static LONG delete_application(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *sec
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xE4;
 	sendBuffer[i++] = 0x00;
-	sendBuffer[i++] = 0x00;
+	if (mode == OP201)
+		sendBuffer[i++] = 0x00;
+	else
+		sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0x00;
 	for (j=0; j< AIDsLength; j++) {
 		if (i + AIDs[j].AIDLength+2 > 260) {
@@ -3895,7 +3904,7 @@ static LONG get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD executa
 		buf[i-1] += 4;
 	}
 
-	if (installParametersLength > 0) {
+	if (installParametersLength >= 0) {
 		buf[i++] = 0xC9; // application install parameters
 		buf[i++] = (BYTE)installParametersLength;
 		memcpy(buf+i, installParameters, installParametersLength);
@@ -4899,6 +4908,8 @@ LONG GemXpressoPro_create_daughter_keys(OPGP_CARD_INFO cardInfo, BYTE motherKey[
 	DWORD cplcDataLen = 50;
 	BYTE keyDiversificationData[10];
 	DWORD keyDiversificationDataLength = 10;
+	BYTE cardmanagerAID[16];
+	DWORD cardmanagerAIDLength = 16;
 
 	LOG_START(_T("GemXpressoPro_create_daughter_keys"));
 
@@ -4909,15 +4920,22 @@ LONG GemXpressoPro_create_daughter_keys(OPGP_CARD_INFO cardInfo, BYTE motherKey[
 	}
 	// parse card diversification
 
-	/* we need 2 first Card Manager AID bytes 
+	/* we need
+	 * 2 least significant Card Manager AID bytes 
 	 * IC Fabrication Date 2
 	 * IC Serial Number 4
 	 * IC Batch Identifier 2
 	 */
 
 	// card manager first 2 AID bytes
-	keyDiversificationData[0] = GEMXPRRESSOPRO_CARD_MANAGER_AID[sizeof(GEMXPRRESSOPRO_CARD_MANAGER_AID)-2];
-	keyDiversificationData[1] = GEMXPRRESSOPRO_CARD_MANAGER_AID[sizeof(GEMXPRRESSOPRO_CARD_MANAGER_AID)-1];
+	result = OP201_get_data(cardInfo, NULL, (PBYTE)OP201_GET_DATA_CARD_MANAGER_AID,
+		cardmanagerAID, &cardmanagerAIDLength);
+	if (result != OPGP_ERROR_SUCCESS) {
+		goto end;
+	}
+	
+	keyDiversificationData[0] = cardmanagerAID[cardmanagerAIDLength-2];
+	keyDiversificationData[1] = cardmanagerAID[cardmanagerAIDLength-1];
 	// rest
 	memcpy(keyDiversificationData+2, cardCPLCData+13, 8);
 
@@ -6621,7 +6639,7 @@ LONG OP201_delete_application(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secI
     }
 
 	result = delete_application(cardInfo, &gp211secInfo, AIDs, AIDsLength,
-		gp211receiptData, receiptDataLength);
+		gp211receiptData, receiptDataLength, OP201);
 	for (i=0; i<*receiptDataLength; i++) {
 		mapGP211ToOP201ReceiptData(gp211receiptData[i], &(receiptData[i]));
 	}
