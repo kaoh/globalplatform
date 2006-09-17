@@ -568,7 +568,7 @@ static int handleCommands(FILE *fd)
 		}
 		if (platform_mode == PLATFORM_MODE_OP_201) {
 			if (gemXpressoPro) {
-				rv = GemXpressoPro_create_daughter_keys(cardInfo, optionStr.key,  
+				rv = GemXpressoPro_create_daughter_keys(cardInfo, optionStr.key,
 								 optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
 				if (rv != 0) {
 					_tprintf (_T("GemXpressoPro_create_daughter_keys() returns 0x%08X (%s)\n"),
