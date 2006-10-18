@@ -503,7 +503,7 @@ typedef struct {
 
 
 /**
- * The card information returned by a card_connect().
+ * The card information returned by a card_connect() and select_channel().
  */
 typedef struct {
 	/**
@@ -522,6 +522,7 @@ typedef struct {
 	DWORD ATRLength; //!< The length of the ATR buffer.
 	OPGP_CARDHANDLE cardHandle; //!< Internal used card handle
 	BYTE logicalChannel; //!< The current logical channel.
+
 } OPGP_CARD_INFO;
 
 
@@ -1166,7 +1167,7 @@ LONG read_executable_load_file_parameters(OPGP_STRING loadFileName, OPGP_LOAD_FI
 
 //! \brief Derives the static keys form a mother key for GemXpresso Pro cards.
 OPGP_API
-LONG GemXpressoPro_create_daughter_keys(OPGP_CARD_INFO cardInfo, BYTE motherKey[16], 
+LONG GemXpressoPro_create_daughter_keys(OPGP_CARD_INFO cardInfo, PBYTE AID, DWORD AIDLength, BYTE motherKey[16], 
 								 BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
 
 #ifdef __cplusplus
