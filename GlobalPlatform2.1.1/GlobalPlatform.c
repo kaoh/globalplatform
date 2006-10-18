@@ -2466,8 +2466,8 @@ static LONG get_data(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 	}
 #ifdef DEBUG
 	log_Log(_T("get_data: Data: "));
-	for (i=0; i<*recvBufferLength; i++) {
-		log_Log(_T(" 0x%02x"), recvBuffer[i]);
+	for (i=0; i<cardDataLength; i++) {
+		log_Log(_T(" 0x%02x"), cardData[i]);
 	}
 
 #endif
@@ -3888,9 +3888,8 @@ static LONG get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD executa
 	buf[i++] = 0x01;
 	buf[i++] = applicationPrivileges; // application privileges
 
-	buf[i++] = 0x00; // install parameter field length
+	buf[i++] = 0x02; // install parameter field length
 	if (installParametersLength > 0) {
-		buf[i-1] += 2;
 		buf[i-1] += (BYTE)installParametersLength;
 	}
 
@@ -3904,20 +3903,18 @@ static LONG get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD executa
 		buf[i-1] += 4;
 	}
 
+	buf[i++] = 0xC9; // application install parameters
+	buf[i++] = 0;
+
 	if (installParametersLength >= 0) {
-		buf[i++] = 0xC9; // application install parameters
-		buf[i++] = (BYTE)installParametersLength;
+		buf[i-1] = (BYTE)installParametersLength;
 		memcpy(buf+i, installParameters, installParametersLength);
 		i+=installParametersLength;
 	}
 
 	if (nonVolatileDataSpaceLimit > 0) {
-		if (volatileDataSpaceLimit != 0)
-			buf[i-1] += 4;
 		buf[i++] = 0xEF;
 		buf[i++] = 0x04;
-		if (volatileDataSpaceLimit != 0)
-			buf[i-1] += 4;
 		if (volatileDataSpaceLimit != 0) {
 			buf[i++] = 0xC7;
 			buf[i++] = 0x02;
@@ -4892,91 +4889,127 @@ end:
 
 /**
   * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by card_connect().
+  * \param AID IN The AID of the Card Manager.
+  * \param AIDLength IN The length of the Card Manager AID.
   * \param motherKey IN The mother key.
   * \param S_ENC OUT The static Encryption key.
   * \param S_MAC OUT The static Message Authentication Code key.
   * \param KEK OUT The static Key Encryption Key.
   * \return OPGP_ERROR_SUCCESS if no error, error code else.
   */
-LONG GemXpressoPro_create_daughter_keys(OPGP_CARD_INFO cardInfo, BYTE motherKey[16], 
+LONG GemXpressoPro_create_daughter_keys(OPGP_CARD_INFO cardInfo, PBYTE AID, DWORD AIDLength, BYTE motherKey[16], 
 								 BYTE S_ENC[16], BYTE S_MAC[16], BYTE KEK[16]) {
 	LONG result;
 	int outl;
-	// this comes from card diversification
-	BYTE derivationData[16];
+	DWORD i;
 	BYTE cardCPLCData[50];
 	DWORD cplcDataLen = 50;
-	BYTE keyDiversificationData[10];
-	DWORD keyDiversificationDataLength = 10;
+	BYTE keyDiversificationData[16];
 	BYTE cardmanagerAID[16];
 	DWORD cardmanagerAIDLength = 16;
 
 	LOG_START(_T("GemXpressoPro_create_daughter_keys"));
+
+#ifdef DEBUG
+	log_Log(_T("Card Manager AID: "));
+	for (i=0; i<AIDLength; i++) {
+		log_Log(_T("0x%02x "), AID[i]);
+	}
+#endif
 
 	result = OP201_get_data(cardInfo, NULL, (PBYTE)OP201_GET_DATA_CPLC_WHOLE_CPLC,
 		cardCPLCData, &cplcDataLen);
 	if (result != OPGP_ERROR_SUCCESS) {
 		goto end;
 	}
-	// parse card diversification
 
-	/* we need
-	 * 2 least significant Card Manager AID bytes 
-	 * IC Fabrication Date 2
-	 * IC Serial Number 4
-	 * IC Batch Identifier 2
-	 */
+	/* Only VISA2 Key Diversification Data is supported until now */
 
+	/* Key Diversification data
+	KDCAUTH/ENC xxh xxh || IC serial number || F0h 01h ||xxh xxh || IC serial number
+	||0Fh 01h
+	KDCMAC xxh xxh || IC serial number || F0h 02h ||xxh xxh || IC serial number
+	|| 0Fh 02h
+	KDCKEK xxh xxh || IC serial number || F0h 03h || xxh xxh || IC serial number
+	|| 0Fh 03h
+
+
+	xxh xxh is the last (rightmost) two bytes of the Card Manager AID.
+	IC Serial Number is taken from the CPLC data.
+	*/
+	
 	// card manager first 2 AID bytes
-	result = OP201_get_data(cardInfo, NULL, (PBYTE)OP201_GET_DATA_CARD_MANAGER_AID,
-		cardmanagerAID, &cardmanagerAIDLength);
-	if (result != OPGP_ERROR_SUCCESS) {
-		goto end;
-	}
+	// does not work on GemXpresso cards
+	//result = OP201_get_data(cardInfo, NULL, (PBYTE)OP201_GET_DATA_CARD_MANAGER_AID,
+	//	cardmanagerAID, &cardmanagerAIDLength);
+	//if (result != OPGP_ERROR_SUCCESS) {
+	//	goto end;
+	//}
+	memcpy(cardmanagerAID, AID, AIDLength);
+	cardmanagerAIDLength = AIDLength;
 	
 	keyDiversificationData[0] = cardmanagerAID[cardmanagerAIDLength-2];
 	keyDiversificationData[1] = cardmanagerAID[cardmanagerAIDLength-1];
-	// rest
-	memcpy(keyDiversificationData+2, cardCPLCData+13, 8);
+	keyDiversificationData[8] = cardmanagerAID[cardmanagerAIDLength-2];
+	keyDiversificationData[9] = cardmanagerAID[cardmanagerAIDLength-1];
 
- 	// derivation left
- 	memcpy(derivationData, keyDiversificationData, 2);
- 	memcpy(derivationData+2, keyDiversificationData+4, 4);
- 	derivationData[6] = 0xF0;
- 	derivationData[7] = 0x01;
- 	// derivation right
- 	memcpy(derivationData+8, keyDiversificationData, 2);
- 	memcpy(derivationData+10, keyDiversificationData+4, 4);
- 	derivationData[14] = 0x0F;
- 	derivationData[15] = 0x01;
+ 	// left
+ 	memcpy(keyDiversificationData+2, cardCPLCData+15, 4);
+ 	keyDiversificationData[6] = 0xF0;
+ 	keyDiversificationData[7] = 0x01;
+ 	// right
+ 	memcpy(keyDiversificationData+10, cardCPLCData+15, 4);
+ 	keyDiversificationData[14] = 0x0F;
+ 	keyDiversificationData[15] = 0x01;
 
-	result = calculate_enc_ecb_two_key_triple_des(motherKey, derivationData, 16, S_ENC, &outl);
+#ifdef DEBUG
+	log_Log(_T("Key Diversification Data: "));
+	for (i=0; i<16; i++) {
+		log_Log(_T("0x%02x "), keyDiversificationData[i]);
+	}
+#endif
+
+	result = calculate_enc_ecb_two_key_triple_des(motherKey, keyDiversificationData, 16, S_ENC, &outl);
 	if (result != OPGP_ERROR_SUCCESS) {
 		goto end;
 	}
 
-	// left derivation for MAC
-	derivationData[6] = 0xF0;
-	derivationData[7] = 0x02;
-	// right derivation for MAC
-	derivationData[14] = 0x0F;
-	derivationData[15] = 0x02;
+	// left for MAC
+	keyDiversificationData[6] = 0xF0;
+	keyDiversificationData[7] = 0x02;
+	// right for MAC
+	keyDiversificationData[14] = 0x0F;
+	keyDiversificationData[15] = 0x02;
 
-	result = calculate_enc_ecb_two_key_triple_des(motherKey, derivationData, 16, S_MAC, &outl);
+#ifdef DEBUG
+	log_Log(_T("Key Diversification Data: "));
+	for (i=0; i<16; i++) {
+		log_Log(_T("0x%02x "), keyDiversificationData[i]);
+	}
+#endif
+
+	result = calculate_enc_ecb_two_key_triple_des(motherKey, keyDiversificationData, 16, S_MAC, &outl);
 	if (result != OPGP_ERROR_SUCCESS) {
 		goto end;
 	}
 
 	// DEK
 
-	// left derivation for DEK
-	derivationData[6] = 0xF0;
-	derivationData[7] = 0x03;
-	// right derivation for DEK
-	derivationData[14] = 0x0F;
-	derivationData[15] = 0x03;
+	// left for DEK
+	keyDiversificationData[6] = 0xF0;
+	keyDiversificationData[7] = 0x03;
+	// right for DEK
+	keyDiversificationData[14] = 0x0F;
+	keyDiversificationData[15] = 0x03;
 
-	result = calculate_enc_ecb_two_key_triple_des(motherKey, derivationData, 16, KEK, &outl);
+#ifdef DEBUG
+	log_Log(_T("Key Diversification Data: "));
+	for (i=0; i<16; i++) {
+		log_Log(_T("0x%02x "), keyDiversificationData[i]);
+	}
+#endif
+
+	result = calculate_enc_ecb_two_key_triple_des(motherKey, keyDiversificationData, 16, KEK, &outl);
 	if (result != OPGP_ERROR_SUCCESS) {
 		goto end;
 	}
@@ -5741,7 +5774,7 @@ static LONG mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE baseKey[16],
 
 #ifdef DEBUG
 	if (secInfo->secureChannelProtocol == GP211_SCP01) {
-		log_Log(_T("Date Encryption Key: "));
+		log_Log(_T("Data Encryption Key: "));
 		for (i=0; i<16; i++) {
 			log_Log(_T("0x%02x "), secInfo->dataEncryptionSessionKey[i]);
 		}
