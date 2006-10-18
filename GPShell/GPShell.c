@@ -74,6 +74,8 @@ static OP201_SECURITY_INFO securityInfo201;
 static GP211_SECURITY_INFO securityInfo211;
 static int platform_mode = PLATFORM_MODE_OP_201;
 static int gemXpressoPro = 0;
+static char selectedAID[AIDLEN+1];
+static int selectedAIDLength;
 
 /* Functions */
 static void ConvertTToC(char* pszDest, const TCHAR* pszSrc)
@@ -568,7 +570,7 @@ static int handleCommands(FILE *fd)
 		}
 		if (platform_mode == PLATFORM_MODE_OP_201) {
 			if (gemXpressoPro) {
-				rv = GemXpressoPro_create_daughter_keys(cardInfo, optionStr.key,
+				rv = GemXpressoPro_create_daughter_keys(cardInfo, selectedAID, selectedAIDLength, optionStr.key,
 								 optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
 				if (rv != 0) {
 					_tprintf (_T("GemXpressoPro_create_daughter_keys() returns 0x%08X (%s)\n"),
@@ -634,6 +636,8 @@ static int handleCommands(FILE *fd)
 			rv = EXIT_FAILURE;
 			goto end;
 		}
+		memcpy(selectedAID, optionStr.AID, optionStr.AIDLen);
+		selectedAIDLength = optionStr.AIDLen;
 		break;
 	    } else if (strcmp(token, "getdata") == 0) {
 		// Get Data

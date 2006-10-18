@@ -41,7 +41,7 @@ card_connect -reader [Reader Name] // Connect to card in the reader
 open_sc -keyind x -keyver x -key xyz -mac_key xyz -enc_key xyz -kek_key xyz -security x -scp x -scpimpl x // Open secure channel
 
 For OpenPlatform 2.0.1' card only -keyind -keyver -mac_key and enc_key are necessary.
-If you have an GemXpresso Pro card set gemXpressoPro and specify with -key the master (mother) key. -mac_key and -enc_key are not relevant.
+If you have an GemXpresso Pro card set gemXpressoPro and you MUST specify with -key the master (mother) key. -mac_key and -enc_key are not relevant.
 For GlobalPlatform 2.1.1 cards -scp and -scpimpl should be not necessary to supply. You must also specify -kek_key. If your card supports a Secure Channel Protocol Implementation with only one base key, specify this key with -key and omit the others.
 
 select -f AID // select applet instance
@@ -99,7 +99,15 @@ Parameters containing spaces, e.g. file names or reader names must be quoted in 
 
 *** Sample / Testing
 
-We have tested this with GlobalPlatform.dll, Oberthur CosmopoliC 32K (OP201), CosmopoliC 64K V5.2 (GP211, SCP01, Impl05) and HelloWorld.bin (sample applet from JavaCard development kit 2.1.2).  See helloInstall.txt, helloDelete.txt, and list.txt for samples.  About how to generate a .bin file, please see the later section (How to convert a .cap file into a .bin file). 
+Tested cards:
+
+Oberthur CosmopoliC 32K (OP201)
+CosmopoliC 64K V5.2 (GP211, SCP01, Impl05)
+Axalto CyberFlex e-gate 32k
+GemXpresso R3.2 E64
+IBM JCOP v2.2 41
+
+We have tested this with GlobalPlatform.dll and HelloWorld.bin (sample applet from JavaCard development kit 2.1.2).  See helloInstall.txt, helloDelete.txt, and list.txt and teh other script files (.txt) for samples.  About how to generate a .bin file, please see the later section (How to convert a .cap file into a .bin file).
 
 	GPShell.exe helloInstall.txt	// install HelloWorld.bin
 	GPShell.exe helloDelete.txt	// delete HelloWorld.bin
@@ -121,11 +129,15 @@ For CosmopoliC 64K, you need to add a key set first.  See putkey-cosmo.txt.  I h
 
 This would add a key set 1, and at the same time delete the initialization key set.  After the initialization key set is used, you can replace and add key sets as in Cyberflex.
 
-* About install_for_load
+* About install_for_load and install
 
 For CosmopoliC 64K (tested on V5.2), you need to specify Security Domain AID, in addition to AID.  For example,
 
   install_for_load -AID A000000081 -sdAID A000000003000000 -nvCodeLimit 4000
+  
+For GemXpresso R3.2 E64, you need to specify the Security Domain AID (Card Manager AID), in addition to AID.  For example,
+
+  install -file HelloWorld.bin -sdAID A000000018434D00 -nvCodeLimit 4000
 
 * How to convert a .cap file into a .bin file
 
