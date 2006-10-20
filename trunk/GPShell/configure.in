@@ -103,7 +103,7 @@ case "$host" in
 	fi
   ;;
 *)
-  CFLAGS="$CFLAGS $GLOBALPLATFORM_H_PATH"
+  CFLAGS="$CFLAGS -I$GLOBALPLATFORM_H_PATH"
   AC_CHECK_HEADER(GlobalPlatform/GlobalPlatform.h, [],
   [AC_MSG_ERROR([GlobalPlatform/GlobalPlatform.h not found or usable, install GlobalPlatform 3.0.2
     or later, or use ./configure GLOBALPLATFORM_H_PATH=<include directory>])], )
