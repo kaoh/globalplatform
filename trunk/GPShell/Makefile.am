@@ -3,8 +3,8 @@
 bin_PROGRAMS = gpshell
 
 gpshell_SOURCES = GPShell.c
-gpshell_CPPFLAGS = $(AM_CPPFLAGS) "$(PCSCLITE_CFLAGS)" "$(GLOBALPLATFORM_CFLAGS)"
-gpshell_LDADD = $(AM_CPPFLAGS) -lGlobalPlatform -L"$(GLOBALPLATFORM_LIB_PATH)"
+gpshell_CPPFLAGS = $(AM_CPPFLAGS) $(PCSCLITE_CFLAGS) $(GLOBALPLATFORM_CFLAGS)
+gpshell_LDADD = $(AM_CPPFLAGS) -lGlobalPlatform $(GLOBALPLATFORM_LDFLAGS)
 
 EXTRA_DIST = GPShell.dep GPShell.dsp GPShell.dsw GPShell.mak stdafx.c \
 stdafx.h reconf list.txt helloDelete.txt helloInstall.txt HelloWorld.bin \
