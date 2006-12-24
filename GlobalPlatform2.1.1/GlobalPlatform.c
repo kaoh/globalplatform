@@ -62,6 +62,8 @@
 #include <string.h>
 #endif
 #include "debug.h"
+#include "unzip/unzip.h"
+#include "unzip/zip.h"
 
 #define MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING 239
 
@@ -4901,7 +4903,9 @@ LONG GemXpressoPro_create_daughter_keys(OPGP_CARD_INFO cardInfo, PBYTE AID, DWOR
 								 BYTE S_ENC[16], BYTE S_MAC[16], BYTE KEK[16]) {
 	LONG result;
 	int outl;
+#ifdef DEBUG
 	DWORD i;
+#endif
 	BYTE cardCPLCData[50];
 	DWORD cplcDataLen = 50;
 	BYTE keyDiversificationData[16];
@@ -6310,6 +6314,8 @@ OPGP_STRING stringify_error(DWORD errorCode) {
 		return strError;
 #endif
 	}
+	if (errorCode == OPGP_ERROR_CAP_UNZIP)
+		return _T("The CAP file cannot be unzipped.");
 	if (errorCode == OPGP_ERROR_INVALID_LOAD_FILE)
 		return _T("The load file has an invalid structure.");
 	if (errorCode == GP211_ERROR_VALIDATION_R_MAC)
@@ -7854,7 +7860,7 @@ void enableTraceMode(DWORD enable, FILE *out) {
 }
 
 /**
- * Can read only IJC files (concatenated extracted CAP files) at the moment.
+ * Can read only IJC files (concatenated extracted CAP files).
  * \param loadFileName The name of the Executable Load File.
  * \param loadFileParams The parameters of the Executable Load File.
  */
@@ -8114,3 +8120,254 @@ end:
 	LOG_END(_T("read_executable_load_file_paramaters"), result);
 	return result;
 }
+
+static void ConvertTToC(char* pszDest, const TCHAR* pszSrc)
+{
+    unsigned int i;
+
+    for(i = 0; i < _tcslen(pszSrc); i++)
+	pszDest[i] = (char) pszSrc[i];
+
+    pszDest[_tcslen(pszSrc)] = '\0';
+}
+
+/**
+ * \param capFileName The name of the CAP file.
+ * \param loadFile The destination Executable Load File.
+ */
+LONG cap_to_bin_file(LPCTSTR capFileName, FILE *loadFile)
+{
+	int rv;
+	zipFile szip;
+	char *tmp;
+	unsigned char *appletbuf = NULL;
+	unsigned char *classbuf = NULL;
+	unsigned char *constantpoolbuf = NULL;
+	unsigned char *descriptorbuf = NULL;
+	unsigned char *directorybuf = NULL;
+	unsigned char *headerbuf = NULL;
+	unsigned char *importbuf = NULL;
+	unsigned char *methodbuf = NULL;
+	unsigned char *reflocationbuf = NULL;
+	unsigned char *staticfieldbuf = NULL;
+
+	int appletbufsz = 0;
+	int classbufsz = 0;
+	int constantpoolbufsz = 0;
+	int descriptorbufsz = 0;
+	int directorybufsz = 0;
+	int headerbufsz = 0;
+	int importbufsz = 0;
+	int methodbufsz = 0;
+	int reflocationbufsz = 0;
+	int staticfieldbufsz = 0;
+
+	unsigned char *buf;
+
+	tmp = (char *)malloc(sizeof(char)*(_tcslen(capFileName)+1));
+	if (tmp == NULL) {
+		rv = ENOMEM;
+		goto end; 
+	}
+	ConvertTToC(tmp, capFileName);
+	szip = unzOpen(tmp);
+	if (szip==NULL) 
+	{ 
+		rv = OPGP_ERROR_CAP_UNZIP;
+		goto end;
+	}
+
+	rv = unzGoToFirstFile(szip);
+	while (rv == UNZ_OK)
+	{
+		// get zipped file info
+		unz_file_info unzfi;
+		char fn[MAX_PATH];
+		int sz;
+
+		if (unzGetCurrentFileInfo(szip, &unzfi, fn, MAX_PATH, NULL, 0, NULL, 0) != UNZ_OK)
+		{
+			rv = OPGP_ERROR_CAP_UNZIP;
+			goto end;
+		}
+
+		if (unzOpenCurrentFile(szip)!=UNZ_OK) 
+		{ 
+			rv = OPGP_ERROR_CAP_UNZIP;
+			goto end; 
+		}
+
+		// write file
+		if (strcmp(fn + strlen(fn)-10, "Header.cap") == 0) {
+			headerbufsz = unzfi.uncompressed_size;
+			buf = headerbuf = (unsigned char *)malloc(unzfi.uncompressed_size);
+		}
+		else if (strcmp(fn + strlen(fn)-10, "Applet.cap") == 0) {
+			appletbufsz = unzfi.uncompressed_size;
+			buf = appletbuf = (unsigned char *)malloc(unzfi.uncompressed_size);
+		}
+		else if (strcmp(fn + strlen(fn)-9, "Class.cap") == 0) {
+			classbufsz = unzfi.uncompressed_size;
+			buf = classbuf = (unsigned char *)malloc(unzfi.uncompressed_size);
+		}
+		else if (strcmp(fn + strlen(fn)-10, "Import.cap") == 0) {
+			importbufsz = unzfi.uncompressed_size;
+			buf = importbuf = (unsigned char *)malloc(unzfi.uncompressed_size);
+		}
+		else if (strcmp(fn + strlen(fn)-13, "Directory.cap") == 0) {
+			directorybufsz = unzfi.uncompressed_size;
+			buf = directorybuf = (unsigned char *)malloc(unzfi.uncompressed_size);
+		}
+		else if (strcmp(fn + strlen(fn)-10, "Method.cap") == 0) {
+			methodbufsz = unzfi.uncompressed_size;
+			buf = methodbuf = (unsigned char *)malloc(unzfi.uncompressed_size);
+		}
+		else if (strcmp(fn + strlen(fn)-16, "ConstantPool.cap") == 0) {
+			constantpoolbufsz = unzfi.uncompressed_size;
+			buf = constantpoolbuf = (unsigned char *)malloc(unzfi.uncompressed_size);
+		}
+		else if (strcmp(fn + strlen(fn)-14, "Descriptor.cap") == 0) {
+			descriptorbufsz = unzfi.uncompressed_size;
+			buf = descriptorbuf = (unsigned char *)malloc(unzfi.uncompressed_size);
+		}
+		else if (strcmp(fn + strlen(fn)-15, "RefLocation.cap") == 0) {
+			reflocationbufsz = unzfi.uncompressed_size;
+			buf = reflocationbuf = (unsigned char *)malloc(unzfi.uncompressed_size);
+		}
+		else if (strcmp(fn + strlen(fn)-15, "StaticField.cap") == 0) {
+			staticfieldbufsz = unzfi.uncompressed_size;
+			buf = staticfieldbuf = (unsigned char *)malloc(unzfi.uncompressed_size);
+		}
+		else {
+			goto next;
+		}
+
+		if ((buf==NULL)&&(unzfi.uncompressed_size!=0)) 
+		{ 
+			rv = ENOMEM;
+			goto end; 
+		}
+		// read file
+		sz = unzReadCurrentFile(szip, buf, unzfi.uncompressed_size);
+		if ((unsigned int)sz != unzfi.uncompressed_size) 
+		{ 
+			rv = OPGP_ERROR_CAP_UNZIP;
+			goto end;
+		}
+
+next:
+		if (unzCloseCurrentFile(szip)==UNZ_CRCERROR) 
+		{
+			rv = OPGP_ERROR_CAP_UNZIP;
+			goto end;
+		}
+
+		rv = unzGoToNextFile(szip);
+	}
+
+	unzClose(szip);
+
+	if ( rv!=UNZ_END_OF_LIST_OF_FILE )	{
+		rv = OPGP_ERROR_CAP_UNZIP;
+		goto end;		
+	}
+
+	if (headerbuf != NULL) {
+		if (fwrite(headerbuf, sizeof(unsigned char), headerbufsz, loadFile) != headerbufsz) {
+			rv = ferror(loadFile);
+			goto end;
+		}
+	}
+	if (directorybuf != NULL) {
+		if (fwrite(directorybuf, sizeof(unsigned char), directorybufsz, loadFile) != directorybufsz) {
+			rv = ferror(loadFile);
+			goto end;
+		}
+	}
+	if (importbuf != NULL) {
+		if (fwrite(importbuf, sizeof(unsigned char), importbufsz, loadFile) != importbufsz) {
+			rv = ferror(loadFile);
+			goto end;
+		}
+	}
+	if (appletbuf != NULL) {
+		if (fwrite(appletbuf, sizeof(unsigned char), appletbufsz, loadFile) != appletbufsz) {
+			rv = ferror(loadFile);
+			goto end;
+		}
+	}
+	if (classbuf != NULL) {
+		if (fwrite(classbuf, sizeof(unsigned char), classbufsz, loadFile) != classbufsz) {
+			rv = ferror(loadFile);
+			goto end;
+		}
+	}
+	if (methodbuf != NULL) {
+		if (fwrite(methodbuf, sizeof(unsigned char), methodbufsz, loadFile) != methodbufsz) {
+			rv = ferror(loadFile);
+			goto end;
+		}
+	}
+	if (staticfieldbuf != NULL) {
+		if (fwrite(staticfieldbuf, sizeof(unsigned char), staticfieldbufsz, loadFile) != staticfieldbufsz) {
+			rv = ferror(loadFile);
+			goto end;
+		}
+	}
+	if (constantpoolbuf != NULL) {
+		if (fwrite(constantpoolbuf, sizeof(unsigned char), constantpoolbufsz, loadFile) != constantpoolbufsz) {
+			rv = ferror(loadFile);
+			goto end;
+		}
+	}
+	if (reflocationbuf != NULL) {
+		if (fwrite(reflocationbuf, sizeof(unsigned char), reflocationbufsz, loadFile) != reflocationbufsz) {
+			rv = ferror(loadFile);
+			goto end;
+		}
+	}
+	if (descriptorbuf != NULL) {
+		if (fwrite(descriptorbuf, sizeof(unsigned char), descriptorbufsz, loadFile) != descriptorbufsz) {
+			rv = ferror(loadFile);
+			goto end;
+		}
+	}
+	rv = OPGP_ERROR_SUCCESS;
+end:
+	if (tmp != NULL) {
+		free(tmp);
+	}
+	if (appletbuf != NULL) {
+		free(appletbuf);
+	}
+	if (classbuf != NULL) {
+		free(classbuf);
+	}
+	if (constantpoolbuf != NULL) {
+		free(constantpoolbuf);
+	}
+	if (descriptorbuf != NULL) {
+		free(descriptorbuf);
+	}
+	if (directorybuf != NULL) {
+		free(directorybuf);
+	}
+	if (headerbuf != NULL) {
+		free(headerbuf);
+	}
+	if (importbuf != NULL) {
+		free(importbuf);
+	}
+	if (methodbuf != NULL) {
+		free(methodbuf);
+	}
+	if (reflocationbuf != NULL) {
+		free(reflocationbuf);
+	}
+	if (staticfieldbuf != NULL) {
+		free(staticfieldbuf);
+	}
+
+	return rv;
+}
+
