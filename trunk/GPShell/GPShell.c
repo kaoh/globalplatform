@@ -16,7 +16,13 @@
 
 #ifndef WIN32
 #define _snprintf snprintf
+#define _ttempnam tempnam
+#define _tfdopen fdopen
+#define _topen open
 #endif
+
+static FILE *create_temp_file(LPTSTR tmpFileName);
+static int handle_cap_file(LPTSTR fileName);
 
 /* Constants */
 #define BUFLEN 1024
@@ -654,6 +660,10 @@ static int handleCommands(FILE *fd)
 		if (rv != EXIT_SUCCESS) {
 			goto end;
 		}
+		rv = handle_cap_file(optionStr.file);
+		if (rv != EXIT_SUCCESS) {
+			goto end;
+		}
 		if (platform_mode == PLATFORM_MODE_OP_201) {
 		    rv = OP201_load(cardInfo, &securityInfo201,
 				    NULL, 0,
@@ -718,6 +728,10 @@ static int handleCommands(FILE *fd)
 			installParam[0] = 0;
 
 			rv = handleOptions(&optionStr);
+			if (rv != EXIT_SUCCESS) {
+				goto end;
+			}
+			rv = handle_cap_file(optionStr.file);
 			if (rv != EXIT_SUCCESS) {
 				goto end;
 			}
@@ -1129,3 +1143,71 @@ end:
     return rv;
 }
 
+static int handle_cap_file(LPTSTR fileName) {
+	int rv = 0;
+	FILE *loadFile = NULL;
+	unsigned char magic[2];
+	if (rv != EXIT_SUCCESS) {
+		goto end;
+	}
+	loadFile = _tfopen(fileName, _T("rb"));
+	if (loadFile == NULL) {
+		printf ("Error: applet could not be opened.\n");
+		rv = EXIT_FAILURE;
+		goto end;
+	}
+	if (fread(magic, sizeof(unsigned char), sizeof(magic), loadFile) != sizeof(magic)) {
+		printf ("Error: applet format could not be identified.\n");
+		rv = EXIT_FAILURE;
+		fclose(loadFile);
+		goto end;
+	}
+	fclose(loadFile);
+	// starts with PK -> is CAP file
+	if (magic[0] == 0x50 && magic[1] == 0x4B) {
+		TCHAR tmpName[257];
+		FILE *tmpFile;
+		// transform into Executable Load File
+		if ((tmpFile = create_temp_file(tmpName)) == NULL) {
+			printf ("Error: tmp file could not be created.\n");
+			rv = EXIT_FAILURE;
+			goto end;
+		}
+		if (cap_to_bin_file(fileName, tmpFile) != OPGP_ERROR_SUCCESS) {
+			_tprintf (_T("cap_to_bin_file() returns 0x%08X (%s)\n"),
+			    rv, stringify_error(rv));
+			rv = EXIT_FAILURE;
+			goto end;
+		}
+		fclose(tmpFile);
+		_tcscpy(fileName, tmpName);
+	}
+end:
+	return rv;
+}
+
+static FILE *create_temp_file(LPTSTR tmpFileName) {
+	int tmp_fd;
+	LPTSTR tmp_name;
+#ifdef WIN32
+	tmp_name = _ttempnam(_T("C:\\Temp"), _T("gpshell"));
+#else
+	tmp_name = _ttempnam("/tmp", "gpshell");
+#endif
+	if(tmp_name == NULL) {
+		return NULL;
+	}
+	if((tmp_fd = _topen(tmp_name, _O_BINARY|O_RDWR|O_CREAT|O_EXCL, 0600)) < 0)
+	{
+		return NULL;
+	}
+	if (tmpFileName == NULL) {
+		return NULL;
+	}
+	if (_tcslen(tmp_name) > _tcslen(tmpFileName)) {
+		return NULL;
+	}
+	_tcscpy(tmpFileName, tmp_name);
+	free(tmp_name);
+	return _tfdopen(tmp_fd, _T("w+b"));
+}
