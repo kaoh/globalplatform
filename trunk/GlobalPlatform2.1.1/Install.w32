@@ -9,13 +9,23 @@ This will be a lot of work ...
 
 	For a free way to build you need:
 
-	Microsoft Visual C++ Toolkit 2003
+	Microsoft Visual C++ Toolkit 2003 (no longer available)
 	http://msdn.microsoft.com/visualc/vctoolkit2003/
 
+	or the new version (not tested)
+	
+	Visual C++ 2005 Express Edition
+	http://msdn.microsoft.com/vstudio/express/visualc/default.aspx
+	
 	to get a compiler C/C++ compiler suite.
 
 	Windows® Server 2003 SP1 Platform SDK
 	http://www.microsoft.com/downloads/details.aspx?familyid=EBA0128F-A770-45F1-86F3-7AB010B398A3&displaylang=en
+
+	or the new version (not tested)	
+	
+	Windows® Server 2003 R2 Platform SDK 
+	http://www.microsoft.com/downloads/details.aspx?FamilyId=484269E2-3B89-47E3-8EB7-1F2BE6D7123A&displaylang=en1
 
 	to get the libraries for linking and include files for compiling and nmake for the makefile.
 
@@ -26,9 +36,15 @@ This will be a lot of work ...
 	Copy this file (usually from Vc7\lib directory ) to the lib directory of the Microsoft Visual C++ Toolkit 2003.
 
 2.	You need OpenSSL. Download it from http://www.openssl.org/ and
-	build the library.
+	build the library. A prebuild package is enough. The headers and the linker library zlib1.lib must 
+	be available. The zlib1.dll must be installed in a common library search path, e.g. Windows/System32.
+	
+3.	You need the zlib library. Download it from http://www.zlib.net/ and build the 
+	library. A prebuild package is enough. The headers and the linker libraries ssleay32.lib and 
+	libeay32.lib must be available. The libeay32.dll and ssleay32.dll must be installed in a 
+	common library search path, e.g. Windows/System32.
 
-3.	You need Doxygen for generating the documentation.
+4.	You need Doxygen for generating the documentation.
 	www.doxygen.org/
 
 Installation:
@@ -36,11 +52,11 @@ Installation:
 Important for Windows is that applications linked against GlobalPlatform must use the UNICODE and _UNICODE switch.
 Otherwise the application will crash, because the GlobalPlatform Library is compiled with Unicode support.
 Keep in mind, that all applications should be compiled and linked with the same debugging properties
-and against the same libraries. 
+and against the same libraries.
 
-You can also use the .sln file for VS 2003. Then you have to adjust the 
-C/C++->General->Additional Include Directories, Linker->General->Additional Library Directories and 
-Linker->Input->Additional Depencies fields according to the following.
+You can also use the .sln file for VS 2003. Then you have to adjust the
+C/C++->General->Additional Include Directories, Linker->General->Additional Library Directories and
+Linker->Input->Additional Dependencies fields according to the following.
 
 1.	Set the environment (This are include files and libraries and programms of the building environment)
 	for compilation and open a command prompt. If you have Microsoft Visual Studio 6.0
@@ -62,14 +78,17 @@ Linker->Input->Additional Depencies fields according to the following.
 
 	OPENSSL_INC   - The path to the headers of OpenSSL
 	OPENSSL_LIB   - The path to the link library (.lib) of OpenSSL
+	ZLIB_INC  	  - The path to the headers of zlib
+	ZLIB_LIB  	  - The path to the link library (.lib) of zlib
 
 	E.g. nmake -f Makefile.mak OPENSSL_INC=C:\openssl-0.9.7e\include
-	OPENSSL_LIB=C:\openssl-0.9.7e\out32dll
+	OPENSSL_LIB=C:\openssl-0.9.7e\out32dll ZLIB_INC=C:\zlib123
+	ZLIB_LIB=C:\zlib123\projects\visualc6\Win32_DLL_Release
 
-4.	Copy the OpenPlatform.dll library from the Release or Debug directory to a location,
+4.	Copy the GlobalPlatform.dll library from the Release or Debug directory to a location,
 	where the application(s) using it can find it. This is a directory included in the
 	%PATH% environment, usually at least e.g. Windows\System32
-	You may also need the OpenPlatform.lib from the appropriate directory
+	You may also need the GlobalPlatform.lib from the appropriate directory
 	if your are linking applications against the library.
 
 5.	Build the documentation with nmake -f Makefile.mak doc
@@ -91,4 +110,3 @@ The default log file is C:\Temp\GlobalPlatform.log.
 For more information visit:
 
 http://sourceforge.net/projects/globalplatform/
-

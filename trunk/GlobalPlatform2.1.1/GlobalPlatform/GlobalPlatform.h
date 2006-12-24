@@ -53,6 +53,7 @@ extern "C"
 
 #include <winscard.h>
 #include "unicode.h"
+#include <stdio.h>
 
 typedef SCARDCONTEXT OPGP_CARDCONTEXT; //!< Reference to the reader resource manager.
 typedef SCARDHANDLE OPGP_CARDHANDLE; //!< Reference to a card.
@@ -559,6 +560,7 @@ typedef struct {
 #define OPGP_ERROR_INVALID_PASSWORD ((DWORD)0x8030F002L) //!< A password is invalid.
 #define OPGP_ERROR_WRONG_EXPONENT ((DWORD)0x8030F003L) //!< The exponent must be 3 or 65537.
 #define OPGP_ERROR_INVALID_LOAD_FILE ((DWORD)0x8030F008L) //!< The load file has an invalid structure.
+#define OPGP_ERROR_CAP_UNZIP ((DWORD)0x8030F009L) //!< The CAP file cannot be unzipped.
 
 /* Open Platform 2.0.1' specific errors */
 
@@ -1165,10 +1167,14 @@ LONG GP211_end_R_MAC(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo);
 OPGP_API
 LONG read_executable_load_file_parameters(OPGP_STRING loadFileName, OPGP_LOAD_FILE_PARAMETERS *loadFileParams);
 
-//! \brief Derives the static keys form a mother key for GemXpresso Pro cards.
+//! \brief Derives the static keys from a mother key for GemXpresso Pro cards.
 OPGP_API
 LONG GemXpressoPro_create_daughter_keys(OPGP_CARD_INFO cardInfo, PBYTE AID, DWORD AIDLength, BYTE motherKey[16], 
 								 BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
+
+//! \brief Converts a CAP file to an Executable Load File.
+OPGP_API
+LONG cap_to_bin_file(LPCTSTR capFileName, FILE *loadFile);
 
 #ifdef __cplusplus
 }

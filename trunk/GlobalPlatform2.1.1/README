@@ -2,8 +2,9 @@
 Title    : GlobalPlatform
 Authors  : Karsten Ohme <k_o_@users.sourceforge.net>
 License  : See file COPYING
-Requires : PC/SC Lite
-           OpenSSL
+Requires : PC/SC Lite http://www.musclecard.com/
+           OpenSSL http://www.openssl.org/
+           zlib http://www.zlib.net/
 ******************************************************
 
 This is a library for providing access to GlobalPlatform
