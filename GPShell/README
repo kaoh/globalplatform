@@ -1,5 +1,6 @@
 Global Platform Shell (gpshell)
 snitmo@gmail.com
+Karsten Ohme <k_o_@users.sourceforge.net>
 
 Version 1.1.1	9/24/2005
 Version 1.3.0	02/09/2006
@@ -134,12 +135,14 @@ This would add a key set 1, and at the same time delete the initialization key s
 For CosmopoliC 64K (tested on V5.2), you need to specify Security Domain AID, in addition to AID.  For example,
 
   install_for_load -AID A000000081 -sdAID A000000003000000 -nvCodeLimit 4000
-  
+
 For GemXpresso R3.2 E64, you need to specify the Security Domain AID (Card Manager AID), in addition to AID.  For example,
 
   install -file HelloWorld.bin -sdAID A000000018434D00 -nvCodeLimit 4000
 
 * How to convert a .cap file into a .bin file
+
+Usually also CAP files can be installed. If this does not work here is an guide how to transform a CAP fiel into BIN file.
 
 JavaCard applets can be in CAP files.  For example, JavaCard Toolkit generates one.  Unfortunately, this cannot be understood by GPShell.  You need to covert it to a .bin file.  Fortunately, the conversion is straightforward.
 

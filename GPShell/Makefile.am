@@ -11,7 +11,8 @@ stdafx.h reconf list.txt helloDelete.txt helloInstall.txt HelloWorld.bin \
 HelloWorld.cap putdefault-cflex.txt replacekey-cflex.txt send_apdu.txt \
 listgp211.txt helloInstallGP211.txt helloDeleteGP211.txt Makefile-Release CHANGES \
 pcsclite-includes/README pcsclite-includes/pcsclite.h pcsclite-includes/winscard.h \
-pcsclite-includes/wintypes.h
+pcsclite-includes/wintypes.h helloDeletegemXpressoProR3_2E64.txt \
+helloInstallgemXpressoProR3_2E64.txt listgemXpressoProR3_2E64.txt
 
 MAINTAINERCLEANFILES = \
 	Makefile.in \

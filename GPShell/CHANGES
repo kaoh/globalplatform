@@ -30,3 +30,10 @@
             Automatic selection of Security Domain AID
 			Linked against GlobalPlatform 2.0.1 library
 
+3/24/2006	1.3.1  README change
+	        Synchronized to latest GlobalPlatform library
+	        Cleanup
+		    CVS Tag "Release-1-3-1"
+		       
+12/24/2006	1.4.0	GemXpresso support
+			CAP file support
