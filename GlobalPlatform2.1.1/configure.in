@@ -53,6 +53,15 @@ AC_CHECK_HEADER(winscard.h, [],
         [AC_MSG_ERROR([winscard.h not found, install pcsc-lite
 1.2.9-beta7 or later, or use CFLAGS=... ./configure])])
 
+dnl Check for zlib headers
+AC_CHECK_HEADERS(zconf.h zlib.h, [],
+        [AC_MSG_ERROR([zlib headers not found, install zlib
+1.2.3 or later, or use CFLAGS=... ./configure])])
+
+AC_CHECK_LIB(z, gzopen, [],
+        [AC_MSG_ERROR([gzopen() not
+found, install zlib 1.2.3 or later])])
+
 
 dnl Check for OpenSSL headers
 AC_CHECK_HEADERS(openssl/rand.h openssl/err.h openssl/evp.h openssl/pem.h, [],

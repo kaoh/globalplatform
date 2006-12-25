@@ -1,7 +1,9 @@
 ## Process this file with automake to create Makefile.in.
 
 EXTRA_DIST = GlobalPlatform.sln GlobalPlatform.vcproj \
-stdafx.c stdafx.h resource.h version.rc DLLMain.c Doxyfile.cfg Makefile.mak
+stdafx.c stdafx.h resource.h version.rc DLLMain.c Doxyfile.cfg Makefile.mak \
+unzip/crypt.h  unzip/ioapi.c unzip/ioapi.h unzip/iowin32.c \
+unzip/iowin32.h unzip/unzip.c unzip/unzip.h unzip/zip.c unzip/zip.h
 
 lib_LTLIBRARIES = libGlobalPlatform.la
 

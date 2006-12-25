@@ -12,7 +12,7 @@ conforming smart cards.
 
 Installation:
 
-Generel install instructions are in the file INSTALL.
+General install instructions are in the file INSTALL.
 Installation instruction for Windows are in the file Install.w32.
 
 ./configure

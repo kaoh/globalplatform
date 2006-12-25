@@ -67,6 +67,10 @@
 
 #define MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING 239
 
+#ifndef MAX_PATH
+#define MAX_PATH 257
+#endif
+
 static unsigned char padding[8] = {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; //!< Applied padding pattern.
 static unsigned char icv[8] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00}; //!< First initial chaining vector.
 
