@@ -62,7 +62,8 @@ am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)" \
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libGlobalPlatform_la_LIBADD =
-am_libGlobalPlatform_la_OBJECTS = GlobalPlatform.lo debug.lo
+am_libGlobalPlatform_la_OBJECTS = GlobalPlatform.lo debug.lo ioapi.lo \
+	unzip.lo zip.lo
 libGlobalPlatform_la_OBJECTS = $(am_libGlobalPlatform_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -199,14 +200,29 @@ sysconfdir = ${prefix}/etc
 target_alias = 
 EXTRA_DIST = GlobalPlatform.sln GlobalPlatform.vcproj \
 stdafx.c stdafx.h resource.h version.rc DLLMain.c Doxyfile.cfg Makefile.mak \
-unzip/crypt.h  unzip/ioapi.c unzip/ioapi.h unzip/iowin32.c \
-unzip/iowin32.h unzip/unzip.c unzip/unzip.h unzip/zip.c unzip/zip.h
+unzip/iowin32.c unzip/iowin32.h
 
 lib_LTLIBRARIES = libGlobalPlatform.la
 include_HEADERS = 
 nobase_include_HEADERS = GlobalPlatform/GlobalPlatform.h GlobalPlatform/unicode.h
-libGlobalPlatform_la_SOURCES = GlobalPlatform/GlobalPlatform.h GlobalPlatform.c debug.h debug.c GlobalPlatform/unicode.h
+libGlobalPlatform_la_SOURCES = GlobalPlatform/GlobalPlatform.h GlobalPlatform.c debug.h \
+debug.c GlobalPlatform/unicode.h unzip/crypt.h  unzip/ioapi.c unzip/ioapi.h \
+unzip/unzip.c unzip/unzip.h unzip/zip.c unzip/zip.h
+
 libGlobalPlatform_la_LDFLAGS = -version-info 4:0:3
+MAINTAINERCLEANFILES = \
+	Makefile.in \
+	configure \
+	config.guess \
+	config.sub \
+	aclocal.m4 \
+	install-sh \
+	missing \
+	config.guess \
+	config.sub \
+	compile \
+	depcomp
+
 all: all-am
 
 .SUFFIXES:
@@ -282,6 +298,9 @@ distclean-compile:
 
 include ./$(DEPDIR)/GlobalPlatform.Plo
 include ./$(DEPDIR)/debug.Plo
+include ./$(DEPDIR)/ioapi.Plo
+include ./$(DEPDIR)/unzip.Plo
+include ./$(DEPDIR)/zip.Plo
 
 .c.o:
 	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -303,6 +322,27 @@ include ./$(DEPDIR)/debug.Plo
 #	source='$<' object='$@' libtool=yes \
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
 #	$(LTCOMPILE) -c -o $@ $<
+
+ioapi.lo: unzip/ioapi.c
+	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ioapi.lo -MD -MP -MF "$(DEPDIR)/ioapi.Tpo" -c -o ioapi.lo `test -f 'unzip/ioapi.c' || echo '$(srcdir)/'`unzip/ioapi.c; \
+	then mv -f "$(DEPDIR)/ioapi.Tpo" "$(DEPDIR)/ioapi.Plo"; else rm -f "$(DEPDIR)/ioapi.Tpo"; exit 1; fi
+#	source='unzip/ioapi.c' object='ioapi.lo' libtool=yes \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ioapi.lo `test -f 'unzip/ioapi.c' || echo '$(srcdir)/'`unzip/ioapi.c
+
+unzip.lo: unzip/unzip.c
+	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unzip.lo -MD -MP -MF "$(DEPDIR)/unzip.Tpo" -c -o unzip.lo `test -f 'unzip/unzip.c' || echo '$(srcdir)/'`unzip/unzip.c; \
+	then mv -f "$(DEPDIR)/unzip.Tpo" "$(DEPDIR)/unzip.Plo"; else rm -f "$(DEPDIR)/unzip.Tpo"; exit 1; fi
+#	source='unzip/unzip.c' object='unzip.lo' libtool=yes \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unzip.lo `test -f 'unzip/unzip.c' || echo '$(srcdir)/'`unzip/unzip.c
+
+zip.lo: unzip/zip.c
+	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT zip.lo -MD -MP -MF "$(DEPDIR)/zip.Tpo" -c -o zip.lo `test -f 'unzip/zip.c' || echo '$(srcdir)/'`unzip/zip.c; \
+	then mv -f "$(DEPDIR)/zip.Tpo" "$(DEPDIR)/zip.Plo"; else rm -f "$(DEPDIR)/zip.Tpo"; exit 1; fi
+#	source='unzip/zip.c' object='zip.lo' libtool=yes \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o zip.lo `test -f 'unzip/zip.c' || echo '$(srcdir)/'`unzip/zip.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -556,6 +596,7 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+	-test -z "$(MAINTAINERCLEANFILES)" || rm -f $(MAINTAINERCLEANFILES)
 clean: clean-am
 
 clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
