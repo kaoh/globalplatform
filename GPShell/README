@@ -5,6 +5,7 @@ Karsten Ohme <k_o_@users.sourceforge.net>
 Version 1.1.1	9/24/2005
 Version 1.3.0	02/09/2006
 Version 1.3.1	3/24/2006
+Version 1.4.0	12/28/2006
 
 *** Summary
 
@@ -138,13 +139,13 @@ For CosmopoliC 64K (tested on V5.2), you need to specify Security Domain AID, in
 
 For GemXpresso R3.2 E64, you need to specify the Security Domain AID (Card Manager AID), in addition to AID.  For example,
 
-  install -file HelloWorld.bin -sdAID A000000018434D00 -nvCodeLimit 4000
+  install -file HelloWorld.cap -sdAID A000000018434D00 -nvCodeLimit 4000
 
-* How to convert a .cap file into a .bin file
+* How to convert a .cap file into a .ijc (.bin) file
 
-Usually also CAP files can be installed. If this does not work here is an guide how to transform a CAP fiel into BIN file.
+Usually CAP files can be used. This was tested successfully with all of the above cards. If this does not work here is an guide how to transform a CAP file into a IJC file. Sometimes for IJC files the extension .bin is used.
 
-JavaCard applets can be in CAP files.  For example, JavaCard Toolkit generates one.  Unfortunately, this cannot be understood by GPShell.  You need to covert it to a .bin file.  Fortunately, the conversion is straightforward.
+JavaCard applets can be in CAP files.  For example, JavaCard Toolkit generates one. Fortunately, the conversion is straightforward.
 
 Take the cap file, unjar it.  This results in many smaller cap files.  Concatenate all of them into one .bin file.  Here's an example.
 
