@@ -8,6 +8,7 @@
 !MESSAGE ALL [DEBUG=] - Build version.
 !MESSAGE CLEAN - Delete Debug and Release directories
 !MESSAGE DOC - Create documentation.
+!MESSAGE PREBUILD - Builds a prebuild zipped version. VERSION= must be set.
 !MESSAGE
 
 # replace with your path to the OpenSSL header files
@@ -95,10 +96,9 @@ create_dirs:
 $(OUTDIR)/$(LIB_NAME).dll: $(OBJS) $(MINIZIP) version.res
 	$(LINK) $(LFLAGS) $(OBJS) $(MINIZIP) version.res
 
-
 $(OBJS): $(@B).c
 	$(CPP) $(CPPFLAGS) /c /Fd$(OUTDIR)/%|pfF %|pfF.c
-	
+
 $(MINIZIP): unzip/$(@B).c
 	$(CPP) $(CPPFLAGS) /c /Fd$(OUTDIR)/$(@B) %|pfF.c
 
@@ -111,6 +111,16 @@ version.res : version.rc
 
 # run doxygen
 doc: do-doc
+
+PREBUILDDIR="GlobalPlatform-$(VERSION)"
+
+prebuild: all
+	-@del /S /F /Q $(PREBUILDDIR)
+	-@mkdir $(PREBUILDDIR)
+	-@mkdir $(PREBUILDDIR)/GlobalPlatform
+	cp Debug/GlobalPlatform.dll Debug/GlobalPlatform.lib ChangeLog COPYING AUTHORS  $(PREBUILDDIR)
+	cp GlobalPlatform/GlobalPlatform.h GlobalPlatform/unicode.h $(PREBUILDDIR)/GlobalPlatform
+	zip -r $(PREBUILDDIR).zip $(PREBUILDDIR)/* 
 
 clean:
 	-@rd /S /Q Debug
