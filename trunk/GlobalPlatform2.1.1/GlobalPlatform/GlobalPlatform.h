@@ -82,9 +82,10 @@ typedef LPDWORD PDWORD; //!< A Microsoft LPDWORD/Muscle PC/SC, a pointer to a do
 #define OPGP_CARD_PROTOCOL_T1 SCARD_PROTOCOL_T1 //!< The protocol T1.
 
 
-/* The default key value for new cards defined in a VISA specification. */
+/** The default key value for new cards defined in a VISA specification. */
 static const BYTE OPGP_VISA_DEFAULT_KEY[] = {0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
 
+/** The default mother key value for new GemXpresso cards. */
 static const BYTE OPGP_GEMXPRESSO_DEFAULT_KEY[] = {0x47, 0x45, 0x4d, 0x58, 0x50, 0x52, 0x45, 0x53, 0x53, 0x4f, 0x53, 0x41, 0x4d, 0x50, 0x4c, 0x45};
 
 /* Secure Channel stuff */
@@ -1172,9 +1173,9 @@ OPGP_API
 LONG GemXpressoPro_create_daughter_keys(OPGP_CARD_INFO cardInfo, PBYTE AID, DWORD AIDLength, BYTE motherKey[16], 
 								 BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
 
-//! \brief Converts a CAP file to an Executable Load File.
+//! \brief Converts a CAP file to an IJC file (Executable Load File).
 OPGP_API
-LONG cap_to_bin_file(LPCTSTR capFileName, FILE *loadFile);
+LONG cap_to_ijc(OPGP_CSTRING capFileName, OPGP_STRING ijcFileName);
 
 #ifdef __cplusplus
 }

@@ -2,8 +2,9 @@ History
 =======
 
 4.0.3 - Sun Dec 24 2006, Karsten Ohme
+	CAP file support
 	GemXpresso support fixed
-	function for CAP file conversion
+	CAP to IFC file conversion function
 	
 3.0.2 - Sat Mar 25 2006, Karsten Ohme
 	GemXpresso support

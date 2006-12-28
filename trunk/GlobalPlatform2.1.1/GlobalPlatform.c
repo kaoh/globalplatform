@@ -1,4 +1,4 @@
-/* Copyright (c) 2005, Karsten Ohme
+/* Copyright (c) 2006, Karsten Ohme
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -265,6 +265,12 @@ static LONG GP211_calculate_R_MAC(BYTE commandHeader[4],
 						   BYTE statusWord[2],
 						   GP211_SECURITY_INFO *secInfo,
 						   BYTE mac[8]);
+
+static int detect_cap_file(OPGP_CSTRING fileName);
+
+static LONG handle_load_file(OPGP_CSTRING fileName, PBYTE loadFileBuf, PDWORD loadFileBufSize);
+
+static LONG extract_cap_file(OPGP_CSTRING fileName, PBYTE loadFileBuf, PDWORD loadFileBufSize);
 
 static DWORD traceEnable; //!< Enable trace mode.
 static FILE *traceFile; //!< The trace file for trace mode.
@@ -2280,7 +2286,7 @@ end:
 /**
  * Puts a single card data object identified by identifier.
  * Some cards do not provide some data objects. Some possible identifiers are predefined.
- * See #GP211_GET_DATA_ISSUER_BIN. For details about the coding of the dataObject see the programmer's manual
+ * See #GP211_GET_DATA_CPLC_WHOLE_CPLC. For details about the coding of the dataObject see the programmer's manual
  * of your card.
 
  * \param identifier IN Two byte buffer with high and low order tag value for identifying card data object.
@@ -2336,7 +2342,7 @@ end:
 /**
  * Retrieves a single card data object from the card identified by identifier.
  * Some cards do not provide some data objects. Some possible identifiers are predefined.
- * See #GP211_GET_DATA_ISSUER_BIN and so on. For details about the coding of the response see the programmer's manual
+ * See #GP211_GET_DATA_CPLC_WHOLE_CPLC and so on. For details about the coding of the response see the programmer's manual
  * of your card.
  * There is a convenience method get_key_information_templates() to get the key information template(s)
  * containing key set version, key index, key type and key length of the keys.
@@ -2834,7 +2840,7 @@ end:
  * \param cardInfo IN The OPGP_CARD_INFO structure returned by card_connect().
  * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * \param cardElement IN Identifier to retrieve data for Load Files, Applications or the Card Manager.
- * See #GP_STATUS_APPLICATIONS and so on.
+ * See #GP211_STATUS_APPLICATIONS and related.
  * \param *applData OUT The GP211_APPLICATION_DATA structure.
  * \param *executableData OUT The GP211_APPLICATION_DATA structure.
  * \param dataLength INOUT The number of GP211_APPLICATION_DATA or GP211_EXECUTABLE_MODULES_DATA passed and returned.
@@ -2937,7 +2943,7 @@ end:
  * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * \param *loadFileDataBlockSignature IN A pointer to GP211_DAP_BLOCK structure(s).
  * \param loadFileDataBlockSignatureLength IN The number of GP211_DAP_BLOCK structure(s).
- * \param executableLoadFileName IN The name of the Executable Load File to hash.
+ * \param executableLoadFileName IN The name of the CAP or IJC file (Executable Load File) to load.
  * \param *receiptData OUT If the deletion is performed by a security domain with delegated management privilege
  * this structure contains the according data.
  * Can be validated with validate_load_receipt().
@@ -2965,11 +2971,12 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 	BYTE sendBuffer[261];
 	BYTE dapBuf[256];
 	DWORD dapBufSize=sizeof(dapBuf);
-	long fileSize;
+
 	DWORD total=0;
 	DWORD fileSizeSize;
-	DWORD j,k,i=0;
-	FILE *CAPFile = NULL;
+	DWORD j,k,i=0,count;
+	PBYTE loadFileBuf = NULL;
+	DWORD loadFileBufSize;
 	BYTE sequenceNumber=0x00;
 	LOG_START(_T("load"));
 	*receiptDataAvailable = 0;
@@ -3024,29 +3031,26 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 	}
 	// send load file data block
 
-	CAPFile = _tfopen(executableLoadFileName, _T("rb"));
-	if (CAPFile == NULL) {
-		{ result = errno; goto end; }
+	result = handle_load_file((OPGP_CSTRING)executableLoadFileName, loadFileBuf, &loadFileBufSize);
+	if (result != OPGP_ERROR_SUCCESS) {
+		goto end;
 	}
-	result = fseek(CAPFile, 0, SEEK_END);
+	loadFileBuf = (PBYTE)malloc(sizeof(BYTE) * loadFileBufSize);
+	result = handle_load_file((OPGP_CSTRING)executableLoadFileName, loadFileBuf, &loadFileBufSize);
+	if (result != OPGP_ERROR_SUCCESS) {
+		goto end;
+	}
+
 	if (result) {
 		{ result = errno; goto end; }
 	}
-	fileSize = ftell(CAPFile);
-	if (fileSize == -1L) {
-		{ result = errno; goto end; }
-	}
-	result = fseek(CAPFile, 0, SEEK_SET);
-	if (result) {
-		{ result = errno; goto end; }
-	}
-	if (fileSize < 128L) {
+	if (loadFileBufSize < 128L) {
 		fileSizeSize=1;
 	}
-	else if (fileSize < 256L) {
+	else if (loadFileBufSize < 256L) {
 		fileSizeSize=2;
 	}
-	else if (fileSize < 32536L) {
+	else if (loadFileBufSize < 32536L) {
 		fileSizeSize=3;
 	}
 	else {
@@ -3058,28 +3062,33 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 		sendBuffer[5+j++] = 0xC4;
 		switch(fileSizeSize) {
 			case 1: {
-				sendBuffer[5+j++] = (BYTE)fileSize;
+				sendBuffer[5+j++] = (BYTE)loadFileBufSize;
 					}
 			case 2: {
 				sendBuffer[5+j++] = 0x81;
-				sendBuffer[5+j++] = (BYTE)fileSize;
+				sendBuffer[5+j++] = (BYTE)loadFileBufSize;
 					}
 			case 3: {
 				sendBuffer[5+j++] = 0x82;
-				sendBuffer[5+j++] = (BYTE)(fileSize >> 8);
-				sendBuffer[5+j++] = (BYTE)(fileSize - (sendBuffer[5+j-1] << 8));
+				sendBuffer[5+j++] = (BYTE)(loadFileBufSize >> 8);
+				sendBuffer[5+j++] = (BYTE)(loadFileBufSize - (sendBuffer[5+j-1] << 8));
 					}
 		}
-		total+=(DWORD)fread(sendBuffer+5+j, sizeof(unsigned char), MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING-j, CAPFile);
-		j+=total;
-		if(ferror(CAPFile)) {
-			{ result = errno; goto end; }
+		if (loadFileBufSize > MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING-j) {
+			count=MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING-j;
 		}
+		else {
+			count=loadFileBufSize;
+		}
+		
+		memcpy(sendBuffer+5+j, loadFileBuf, count);
+		j+=count;
+		total+=count;
 		sendBufferLength=5+j;
 		sendBuffer[2] = 0x00;
 		sendBuffer[3] = (BYTE)sequenceNumber++;
 		sendBuffer[4]=(BYTE)j;
-		if ((feof(CAPFile)) || (total == (DWORD)fileSize)) {
+		if (count == loadFileBufSize) {
 			sendBuffer[2]=0x80;
 			sendBufferLength++;
 			sendBuffer[sendBufferLength-1] = 0x00;
@@ -3094,22 +3103,21 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 		recvBufferLength=256;
 
 #ifdef DEBUG
-	log_Log(_T("load: Data to send: "));
-	for (i=0; i<sendBufferLength; i++) {
-		log_Log(_T(" 0x%02x"), sendBuffer[i]);
-	}
+		log_Log(_T("load: Data to send: "));
+		for (i=0; i<sendBufferLength; i++) {
+			log_Log(_T(" 0x%02x"), sendBuffer[i]);
+		}
 
 #endif
-
 		result = send_APDU(cardInfo, secInfo, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
 		if (OPGP_ERROR_SUCCESS != result) {
 			goto end;
 		}
 #ifdef DEBUG
-	log_Log(_T("load: Data: "));
-	for (i=0; i<recvBufferLength; i++) {
-		log_Log(_T(" 0x%02x"), recvBuffer[i]);
-	}
+		log_Log(_T("load: Data: "));
+		for (i=0; i<recvBufferLength; i++) {
+			log_Log(_T(" 0x%02x"), recvBuffer[i]);
+		}
 
 #endif
 	}
@@ -3122,49 +3130,54 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 		sendBuffer[4]=(BYTE)j;
 		recvBufferLength=256;
 #ifdef DEBUG
-	log_Log(_T("load: Data to send: "));
-	for (i=0; i<sendBufferLength; i++) {
-		log_Log(_T(" 0x%02x"), sendBuffer[i]);
-	}
-
+		log_Log(_T("load: Data to send: "));
+		for (i=0; i<sendBufferLength; i++) {
+			log_Log(_T(" 0x%02x"), sendBuffer[i]);
+		}
 #endif
 		result = send_APDU(cardInfo, secInfo, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
 		if (OPGP_ERROR_SUCCESS != result) {
 			goto end;
 		}
 #ifdef DEBUG
-	log_Log(_T("load: Data: "));
-	for (i=0; i<recvBufferLength; i++) {
-		log_Log(_T(" 0x%02x"), recvBuffer[i]);
-	}
+		log_Log(_T("load: Data: "));
+		for (i=0; i<recvBufferLength; i++) {
+			log_Log(_T(" 0x%02x"), recvBuffer[i]);
+		}
 
 #endif
 		j=0;
 		sendBuffer[5+j++] = 0xC4;
 		switch(fileSizeSize) {
 			case 1: {
-				sendBuffer[5+j++] = (BYTE)fileSize;
-					}
+				sendBuffer[5+j++] = (BYTE)loadFileBufSize;
+				}
 			case 2: {
 				sendBuffer[5+j++] = 0x81;
-				sendBuffer[5+j++] = (BYTE)fileSize;
-					}
+				sendBuffer[5+j++] = (BYTE)loadFileBufSize;
+				}
 			case 3: {
 				sendBuffer[5+j++] = 0x82;
-				sendBuffer[5+j++] = (BYTE)(fileSize >> 8);
-				sendBuffer[5+j++] = (BYTE)(fileSize - (sendBuffer[5+j-1] << 8));
-					}
+				sendBuffer[5+j++] = (BYTE)(loadFileBufSize >> 8);
+				sendBuffer[5+j++] = (BYTE)(loadFileBufSize - (sendBuffer[5+j-1] << 8));
+				}
 		}
-		total+=(DWORD)fread(sendBuffer+5+j, sizeof(unsigned char), MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING-1-fileSizeSize, CAPFile);
-		j+=total;
-		if(ferror(CAPFile)) {
-			{ result = errno; goto end; }
+		if (loadFileBufSize > MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING-1-fileSizeSize) {
+			count=MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING-1-fileSizeSize;
 		}
+		else {
+			count=loadFileBufSize;
+		}
+		
+		memcpy(sendBuffer+5+j, loadFileBuf, count);
+		j+=count;
+		total+=count;
+
 		sendBufferLength=5+j;
 		sendBuffer[2] = 0x00;
 		sendBuffer[3] = sequenceNumber++;
 		sendBuffer[4]=(BYTE)j;
-		if ((feof(CAPFile)) || (total == (DWORD)fileSize) ) {
+		if (total == loadFileBufSize) {
 			sendBuffer[2]=0x80;
 			sendBufferLength++;
 			sendBuffer[sendBufferLength-1] = 0x00;
@@ -3178,10 +3191,10 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 
 		recvBufferLength=256;
 #ifdef DEBUG
-	log_Log(_T("load: Data to send: "));
-	for (i=0; i<sendBufferLength; i++) {
-		log_Log(_T(" 0x%02x"), sendBuffer[i]);
-	}
+		log_Log(_T("load: Data to send: "));
+		for (i=0; i<sendBufferLength; i++) {
+			log_Log(_T(" 0x%02x"), sendBuffer[i]);
+		}
 
 #endif
 		result = send_APDU(cardInfo, secInfo, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
@@ -3189,24 +3202,35 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 			goto end;
 		}
 #ifdef DEBUG
-	log_Log(_T("load: Data: "));
-	for (i=0; i<recvBufferLength; i++) {
-		log_Log(_T(" 0x%02x"), recvBuffer[i]);
-	}
+		log_Log(_T("load: Data: "));
+		for (i=0; i<recvBufferLength; i++) {
+			log_Log(_T(" 0x%02x"), recvBuffer[i]);
+		}
 
 #endif
 	}
 	// The rest of the load file data block
 
-	while((feof(CAPFile) == 0) && !(total == (DWORD)fileSize)) {
-		total += j = (DWORD)fread(sendBuffer+5, sizeof(unsigned char), MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING, CAPFile);
-		if(ferror(CAPFile)) {
-			{ result = errno; goto end; }
+	while(!(total == loadFileBufSize)) {
+		j = 0;
+#ifdef DEBUG
+		log_Log(_T("load: left: %d"), loadFileBufSize-total);
+#endif
+		if (loadFileBufSize-total > MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING) {
+			count=MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING;
 		}
+		else {
+			count=loadFileBufSize-total;
+		}
+		
+		memcpy(sendBuffer+5+j, loadFileBuf+total, count);
+		j+=count;
+		total+=count;
+
 		sendBufferLength=5+j;
 		sendBuffer[3] = sequenceNumber++;
 		sendBuffer[4] = (BYTE)j;
-		if ((feof(CAPFile)) || (total == (DWORD)fileSize)) {
+		if (loadFileBufSize == total) {
 			sendBuffer[2]=0x80;
 			sendBufferLength++;
 			sendBuffer[sendBufferLength-1] = 0x00;
@@ -3222,7 +3246,6 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 		for (i=0; i<sendBufferLength; i++) {
 			log_Log(_T(" 0x%02x"), sendBuffer[i]);
 		}
-
 #endif
 		recvBufferLength=256;
 		result = send_APDU(cardInfo, secInfo, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
@@ -3230,7 +3253,7 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 			goto end;
 		}
 #ifdef DEBUG
-		if (!(feof(CAPFile)) && !(total == (DWORD)fileSize)) {
+		if (!(total == loadFileBufSize)) {
 			log_Log(_T("load: Data: "));
 			for (i=0; i<recvBufferLength; i++) {
 				log_Log(_T(" 0x%02x"), recvBuffer[i]);
@@ -3251,8 +3274,9 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 #endif
 	{ result = OPGP_ERROR_SUCCESS; goto end; }
 end:
-	if (CAPFile)
-		fclose(CAPFile);
+	if (loadFileBuf) {
+		free(loadFileBuf);
+	}
 	LOG_END(_T("load"), result);
 	return result;
 }
@@ -4415,12 +4439,10 @@ end:
 LONG GP211_calculate_load_file_data_block_hash(OPGP_STRING executableLoadFileName,
 							 unsigned char hash[20]) {
 	LONG result;
-	int count;
-	unsigned char buf[1024];
 	PBYTE dapBuf = NULL;
 	DWORD dapBufSize=0;
-	FILE *CAPFile = NULL;
-	long fileSize = 0;
+	PBYTE loadFileBuf = NULL;
+	DWORD loadFileBufSize;
 	EVP_MD_CTX mdctx;
 	LOG_START(_T("GPcalculate_load_file_data_block_hash"));
 	EVP_MD_CTX_init(&mdctx);
@@ -4430,21 +4452,21 @@ LONG GP211_calculate_load_file_data_block_hash(OPGP_STRING executableLoadFileNam
 	if (result != 1) {
 		{ result = OPGP_OPENSSL_ERROR; goto end; }
 	}
-	CAPFile = _tfopen(executableLoadFileName, _T("rb"));
-	if (CAPFile == NULL) {
-		{ result = errno; goto end; }
+	result = handle_load_file((OPGP_CSTRING)executableLoadFileName, loadFileBuf, &loadFileBufSize);
+	if (result != OPGP_ERROR_SUCCESS) {
+		goto end;
+	}
+	loadFileBuf = (PBYTE)malloc(sizeof(BYTE) * loadFileBufSize);
+	result = handle_load_file((OPGP_CSTRING)executableLoadFileName, loadFileBuf, &loadFileBufSize);
+	if (result != OPGP_ERROR_SUCCESS) {
+		goto end;
 	}
 
-	while(feof(CAPFile) == 0) {
-		count = (int)fread(buf, sizeof(unsigned char), sizeof(buf), CAPFile);
-		if(ferror(CAPFile)) {
-			{ result = errno; goto end; }
-		}
-		result = EVP_DigestUpdate(&mdctx, buf, count);
-		if (result != 1) {
-			{ result = OPGP_OPENSSL_ERROR; goto end; }
-		}
+	result = EVP_DigestUpdate(&mdctx, loadFileBuf, loadFileBufSize);
+	if (result != 1) {
+		{ result = OPGP_OPENSSL_ERROR; goto end; }
 	}
+
 	result = EVP_DigestFinal_ex(&mdctx, hash, NULL);
 	if (result != 1) {
 		{ result = OPGP_OPENSSL_ERROR; goto end; }
@@ -4454,8 +4476,9 @@ end:
 	if (EVP_MD_CTX_cleanup(&mdctx) != 1) {
 		{ result = OPGP_OPENSSL_ERROR; }
 	}
-	if (CAPFile)
-		fclose(CAPFile);
+	if (loadFileBuf != NULL) {
+		free(loadFileBuf);
+	}
 	LOG_END(_T("GPcalculate_load_file_data_block_hash"), result);
 	return result;
 }
@@ -5520,7 +5543,7 @@ end:
  * Data Encryption Key) and vice versa.
  * Details about the supported Secure Channel Protocol and its implementation can be
  * obtained by a call to the function get_secure_channel_protocol_details().
- * New cards usually use the VISA default key for all DES keys. See #GP211_VISA_DEFAULT_KEY.
+ * New cards usually use the VISA default key for all DES keys. See #OPGP_VISA_DEFAULT_KEY.
  * \param cardInfo IN The OPGP_CARD_INFO structure returned by card_connect().
  * \param baseKey IN Secure Channel base key.
  * \param S_ENC IN Secure Channel Encryption Key.
@@ -5902,7 +5925,7 @@ end:
  * Data Encryption Key) and vice versa.
  * Details about the supported Secure Channel Protocol and its implementation can be
  * obtained by a call to the function GP211_get_secure_channel_protocol_details().
- * New cards usually use the VISA default key for all DES keys. See #GP211_VISA_DEFAULT_KEY.
+ * New cards usually use the VISA default key for all DES keys. See #OPGP_VISA_DEFAULT_KEY.
  * The current Sequence Counter can be obtained with a call to GP211_get_sequence_counter().
  * SCP02 is implicitly set and the security level is set to C-MAC only.
  * \param AID The AID needed for the calculation of the ICV.
@@ -6224,7 +6247,7 @@ end:
  * After closing a Logical Channel the Basic Logical Channel is assumed for the next transmissions.
  * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * \param *cardInfo INOUT The OPGP_CARD_INFO structure returned by card_connect().
- * \param openClose IN Logical Channel should be opened or closed. See #BYTE GP211_MANAGE_CHANNEL_OPEN.
+ * \param openClose IN Logical Channel should be opened or closed. See #GP211_MANAGE_CHANNEL_OPEN.
  * \param channelNumberToClose IN The Logical Channel number to close.
  * \param channelNumberOpened OUT The Logical Channel number opened.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
@@ -6479,7 +6502,7 @@ OPGP_STRING stringify_error(DWORD errorCode) {
 		switch (errorCode)
 		{
 			case OPGP_ERROR_SUCCESS:
-	#ifdef _WIN32
+	#ifdef WIN32
 			default:
 				FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 					NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (OPGP_STRING) &lpMsgBuf, 0, NULL);
@@ -6495,8 +6518,7 @@ OPGP_STRING stringify_error(DWORD errorCode) {
 	#else
 				return _T("No error.");
 			default:
-				strerror_r(errorCode, strError, strErrorSize);
-				return strError;
+				return (OPGP_STRING)strerror_r(errorCode, strError, strErrorSize);
 	#endif
 		}
 	}
@@ -6696,7 +6718,7 @@ end:
 /**
  * Puts a single card data object identified by identifier.
  * Some cards do not provide some data objects. Some possible identifiers are predefined.
- * See OP201_GET_DATA_ISSUER_BIN. For details about the coding of the dataObject see the programmer's manual
+ * See #OP201_GET_DATA_ISSUER_BIN. For details about the coding of the dataObject see the programmer's manual
  * of your card.
  * \param identifier IN Two byte buffer with high and low order tag value for identifying card data object.
  * \param dataObject IN The coded data object.
@@ -6718,7 +6740,7 @@ LONG OP201_put_data(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 /**
  * Retrieves a single card data object from the card identified by identifier.
  * Some cards do not provide some data objects. Some possible identifiers are predefined.
- * See OP201_GET_DATA_ISSUER_BIN and so on. For details about the coding of the response see the programmer's manual
+ * See #OP201_GET_DATA_ISSUER_BIN and so on. For details about the coding of the response see the programmer's manual
  * of your card.
  * There is a convenience method get_key_information_templates() to get the key information template(s)
  * containing key set version, key index, key type and key length of the keys.
@@ -6876,7 +6898,7 @@ end:
  * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by card_connect().
  * \param *dapBlock IN A pointer to OP201_DAP_BLOCK structure(s).
  * \param dapBlockLength IN The number of OP201_DAP_BLOCK structure(s).
- * \param executableLoadFileName IN The name of the CAP file to hash.
+ * \param executableLoadFileName IN The name of the CAP or IJC file to load.
  * \param *receiptData OUT If the deletion is performed by a security domain with delegated management privilege
  * this structure contains the according data.
  * Can be validated with validate_load_receipt().
@@ -7350,7 +7372,7 @@ end:
  * the whole CAPFile including the Load File Data Block DAP block(s) is sufficient, the dapBlock must be NULL and the dapBlockLength 0.
  * \param *dapBlock IN A pointer to OP201_DAP_BLOCK structure(s).
  * \param dapBlockLength IN The number of OP201_DAP_BLOCK structure(s).
- * \param executableLoadFileName IN The name of the CAP file to hash.
+ * \param executableLoadFileName IN The name of the CAP or IJC file to hash.
  * \param hash OUT The hash value.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
@@ -7360,11 +7382,14 @@ LONG OP201_calculate_load_file_DAP(OP201_DAP_BLOCK *dapBlock, DWORD dapBlockLeng
 	LONG result;
 	int count;
 	DWORD k,j,i;
-	unsigned char buf[1024];
+	BYTE buf[4];
+
 	BYTE dapBuf[256];
 	DWORD dapBufSize=sizeof(dapBuf);
-	FILE *CAPFile = NULL;
-	long fileSize = 0;
+
+	PBYTE loadFileBuf = NULL;
+	DWORD loadFileBufSize;
+
 	EVP_MD_CTX mdctx;
 	LOG_START(_T("calculate_load_file_DAP"));
 	EVP_MD_CTX_init(&mdctx);
@@ -7394,38 +7419,33 @@ LONG OP201_calculate_load_file_DAP(OP201_DAP_BLOCK *dapBlock, DWORD dapBlockLeng
 			{ result = OPGP_OPENSSL_ERROR; goto end; }
 		}
 	}
-	CAPFile = _tfopen(executableLoadFileName, _T("rb"));
-	if (CAPFile == NULL) {
-		{ result = errno; goto end; }
+
+	result = handle_load_file((OPGP_CSTRING)executableLoadFileName, loadFileBuf, &loadFileBufSize);
+	if (result != OPGP_ERROR_SUCCESS) {
+		goto end;
 	}
-	result = fseek(CAPFile, 0, SEEK_END);
-	if (result) {
-		{ result = errno; goto end; }
+	loadFileBuf = (PBYTE)malloc(sizeof(BYTE) * loadFileBufSize);
+	result = handle_load_file((OPGP_CSTRING)executableLoadFileName, loadFileBuf, &loadFileBufSize);
+	if (result != OPGP_ERROR_SUCCESS) {
+		goto end;
 	}
-	fileSize = ftell(CAPFile);
-	result = fseek(CAPFile, 0, SEEK_SET);
-	if (result) {
-		{ result = errno; goto end; }
-	}
-	if (fileSize == -1L) {
-		{ result = errno; goto end; }
-	}
-	if (fileSize < 128L) {
+
+	if (loadFileBufSize < 128L) {
 		buf[0] = 0xC4;
-		buf[1] = (BYTE)fileSize;
+		buf[1] = (BYTE)loadFileBufSize;
 		count=2;
 	}
-	else if (fileSize < 256L) {
+	else if (loadFileBufSize < 256L) {
 		buf[0] = 0xC4;
 		buf[1] = 0x81;
-		buf[2] = (BYTE)fileSize;
+		buf[2] = (BYTE)loadFileBufSize;
 		count=3;
 	}
-	else if (fileSize < 32536L) {
+	else if (loadFileBufSize < 32536L) {
 		buf[0] = 0xC4;
 		buf[1] = 0x82;
-		buf[2] = (BYTE)(fileSize >> 8);
-		buf[3] = (BYTE)(fileSize - (buf[2] << 8));
+		buf[2] = (BYTE)(loadFileBufSize >> 8);
+		buf[3] = (BYTE)(loadFileBufSize - (buf[2] << 8));
 		count=4;
 	}
 	else {
@@ -7437,16 +7457,11 @@ LONG OP201_calculate_load_file_DAP(OP201_DAP_BLOCK *dapBlock, DWORD dapBlockLeng
 		{ result = OPGP_OPENSSL_ERROR; goto end; }
 	}
 
-	while(feof(CAPFile) == 0) {
-		count = (int)fread(buf, sizeof(unsigned char), sizeof(buf), CAPFile);
-		if(ferror(CAPFile)) {
-			{ result = errno; goto end; }
-		}
-		result = EVP_DigestUpdate(&mdctx, buf, count);
-		if (result != 1) {
-			{ result = errno; goto end; }
-		}
+	result = EVP_DigestUpdate(&mdctx, loadFileBuf, loadFileBufSize);
+	if (result != 1) {
+		{ result = errno; goto end; }
 	}
+
 	result = EVP_DigestFinal_ex(&mdctx, hash, NULL);
 	if (result != 1) {
 		{ result = OPGP_OPENSSL_ERROR; goto end; }
@@ -7456,8 +7471,9 @@ end:
 	if (EVP_MD_CTX_cleanup(&mdctx) != 1) {
 		{ result = OPGP_OPENSSL_ERROR; }
 	}
-	if (CAPFile)
-		fclose(CAPFile);
+	if (loadFileBuf != NULL) {
+		free(loadFileBuf);
+	}
 	LOG_END(_T("calculate_load_file_DAP"), result);
 	return result;
 }
@@ -7520,7 +7536,7 @@ end:
  * If a security domain has DAP verification privilege the security domain validates this DAP.
  * \param securityDomainAID IN A buffer containing the Security Domain AID.
  * \param securityDomainAIDLength IN The length of the Security Domain AID.
- * \param executableLoadFileName IN The name of the CAP file to calculate the DAP for.
+ * \param executableLoadFileName IN The name of the CAP or IJC file to calculate the DAP for.
  * \param DAP_verification_key IN The key to calculate the DAP.
  * \param *dapBlock OUT A pointer to the returned OP201_DAP_BLOCK structure.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
@@ -7529,11 +7545,11 @@ LONG OP201_calculate_3des_DAP(PBYTE securityDomainAID, DWORD securityDomainAIDLe
 						BYTE DAP_verification_key[16], OP201_DAP_BLOCK *dapBlock)
 {
 	LONG result;
-	int i, count, outl;
-	long fileSize;
-	unsigned char buf[1024];
+	DWORD i;
+	int outl;
 	unsigned char des_key[8];
-	FILE *CAPFile = NULL;
+	PBYTE loadFileBuf = NULL;
+	DWORD loadFileBufSize;
 	EVP_CIPHER_CTX ctx;
 	LOG_START(_T("calculate_3des_DAP"));
 	EVP_CIPHER_CTX_init(&ctx);
@@ -7546,34 +7562,26 @@ LONG OP201_calculate_3des_DAP(PBYTE securityDomainAID, DWORD securityDomainAIDLe
 		{ result = OPGP_OPENSSL_ERROR; goto end; }
 	}
 	EVP_CIPHER_CTX_set_padding(&ctx, 0);
-	CAPFile = _tfopen(executableLoadFileName, _T("rb"));
-	if (CAPFile == NULL) {
-		{ result = errno; goto end; }
+
+	result = handle_load_file((OPGP_CSTRING)executableLoadFileName, loadFileBuf, &loadFileBufSize);
+	if (result != OPGP_ERROR_SUCCESS) {
+		goto end;
 	}
-	result = fseek(CAPFile, 0, SEEK_END);
-	if (result) {
-		{ result = errno; goto end; }
+	loadFileBuf = (PBYTE)malloc(sizeof(BYTE) * loadFileBufSize);
+	result = handle_load_file((OPGP_CSTRING)executableLoadFileName, loadFileBuf, &loadFileBufSize);
+	if (result != OPGP_ERROR_SUCCESS) {
+		goto end;
 	}
-	fileSize = ftell(CAPFile);
-	if (fileSize == -1L) {
-		{ result = errno; goto end; }
-	}
-	result = fseek(CAPFile, 0, SEEK_SET);
-	if (result) {
-		{ result = errno; goto end; }
-	}
-	while(feof(CAPFile) == 0) {
-		count = (int)fread(buf, sizeof(unsigned char), sizeof(buf), CAPFile);
-		if(ferror(CAPFile)) {
-			{ result = errno; goto end; }
+
+	for (i=0; i<loadFileBufSize/8; i++) {
+		result = EVP_EncryptUpdate(&ctx, dapBlock->signature,
+			&outl, loadFileBuf+i*8, 8);
+		if (result != 1) {
+			{ result = OPGP_OPENSSL_ERROR; goto end; }
 		}
-		for (i=0; i<count/8; i++) {
-			result = EVP_EncryptUpdate(&ctx, dapBlock->signature,
-				&outl, buf+i*8, 8);
-			if (result != 1) {
-				{ result = OPGP_OPENSSL_ERROR; goto end; }
-			}
-		}
+	}
+	if (result != 1) {
+		{ result = OPGP_OPENSSL_ERROR; goto end; }
 	}
 	result = EVP_EncryptFinal_ex(&ctx, dapBlock->signature, &outl);
 	if (result != 1) {
@@ -7591,15 +7599,15 @@ LONG OP201_calculate_3des_DAP(PBYTE securityDomainAID, DWORD securityDomainAIDLe
 		{ result = OPGP_OPENSSL_ERROR; goto end; }
 	}
 	EVP_CIPHER_CTX_set_padding(&ctx, 0);
-	if (count%8 != 0) {
+	if (loadFileBufSize%8 != 0) {
 		result = EVP_EncryptUpdate(&ctx, dapBlock->signature,
-			&outl, buf+i*8, count%8);
+			&outl, loadFileBuf+i*8, loadFileBufSize%8);
 		if (result != 1) {
 			{ result = OPGP_OPENSSL_ERROR; goto end; }
 		}
 	}
 	result = EVP_EncryptUpdate(&ctx, dapBlock->signature,
-		&outl, padding, 8 - (fileSize%8));
+		&outl, padding, 8 - (loadFileBufSize%8));
 	if (result != 1) {
 		{ result = OPGP_OPENSSL_ERROR; goto end; }
 	}
@@ -7617,8 +7625,9 @@ end:
 	if (EVP_CIPHER_CTX_cleanup(&ctx) != 1) {
 		{ result = OPGP_OPENSSL_ERROR; }
 	}
-	if (CAPFile)
-		fclose(CAPFile);
+	if (loadFileBuf != NULL) {
+		free(loadFileBuf);
+	}
 	LOG_END(_T("calculate_3des_DAP"), result);
 	return result;
 }
@@ -7627,7 +7636,7 @@ end:
  * If a security domain has DAP verification privilege the security domain validates this DAP.
  * \param securityDomainAID IN A buffer containing the Security Domain AID.
  * \param securityDomainAIDLength IN The length of the Security Domain AID.
- * \param executableLoadFileName IN The name of the CAP file to calculate the DAP for.
+ * \param executableLoadFileName IN The name of the CAP or IJC file to calculate the DAP for.
  * \param PEMKeyFileName IN A PEM file name with the private RSA key.
  * \param *passPhrase IN The passphrase. Must be an ASCII string.
  * \param *dapBlock OUT A pointer to the returned OP201_DAP_BLOCK structure.
@@ -7637,13 +7646,13 @@ LONG OP201_calculate_rsa_DAP(PBYTE securityDomainAID, DWORD securityDomainAIDLen
 					   OPGP_STRING PEMKeyFileName, char *passPhrase, OP201_DAP_BLOCK *dapBlock)
 {
 	LONG result;
-	int count;
-	unsigned char buf[1024];
 	unsigned int signatureLength=0;
-	FILE *CAPFile = NULL;
 	EVP_PKEY *key = NULL;
 	EVP_MD_CTX mdctx;
 	FILE *PEMKeyFile = NULL;
+	PBYTE loadFileBuf = NULL;
+	DWORD loadFileBufSize;
+
 	LOG_START(_T("calculate_rsa_DAP"));
 	EVP_MD_CTX_init(&mdctx);
 	if (passPhrase == NULL)
@@ -7665,19 +7674,20 @@ LONG OP201_calculate_rsa_DAP(PBYTE securityDomainAID, DWORD securityDomainAIDLen
 	if (result != 1) {
 		{ result = OPGP_OPENSSL_ERROR; goto end; }
 	}
-	CAPFile = _tfopen(executableLoadFileName, _T("rb"));
-	if (CAPFile == NULL) {
-		{ result = errno; goto end; }
+
+	result = handle_load_file((OPGP_CSTRING)executableLoadFileName, loadFileBuf, &loadFileBufSize);
+	if (result != OPGP_ERROR_SUCCESS) {
+		goto end;
 	}
-	while(feof(CAPFile) == 0) {
-		count = (int)fread(buf, sizeof(unsigned char), sizeof(buf), CAPFile);
-		if(ferror(CAPFile)) {
-			{ result = errno; goto end; }
-		}
-		result = EVP_SignUpdate(&mdctx, buf, count);
-		if (result != 1) {
-			{ result = OPGP_OPENSSL_ERROR; goto end; }
-		}
+	loadFileBuf = (PBYTE)malloc(sizeof(BYTE) * loadFileBufSize);
+	result = handle_load_file((OPGP_CSTRING)executableLoadFileName, loadFileBuf, &loadFileBufSize);
+	if (result != OPGP_ERROR_SUCCESS) {
+		goto end;
+	}
+
+	result = EVP_SignUpdate(&mdctx, loadFileBuf, loadFileBufSize);
+	if (result != 1) {
+		{ result = OPGP_OPENSSL_ERROR; goto end; }
 	}
 
 	if (EVP_PKEY_size(key) > 128) {
@@ -7699,10 +7709,11 @@ end:
 	}
 	if (PEMKeyFile)
 		fclose(PEMKeyFile);
-	if (CAPFile)
-		fclose(CAPFile);
 	if (key)
 		EVP_PKEY_free(key);
+	if (loadFileBuf != NULL) {
+		free(loadFileBuf);
+	}
 	LOG_END(_T("calculate_rsa_DAP"), result);
 	return result;
 }
@@ -7848,12 +7859,12 @@ LONG OP201_mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE encKey[16], BYTE 
 }
 
 /**
- * \param enable Enables or disables the trace mode.
+ * \param enable IN Enables or disables the trace mode.
  * <ul>
  * <li>#OPGP_TRACE_MODE_ENABLE
  * <li>#OPGP_TRACE_MODE_DISABLE
  * </ul>
- * \param *out The pointer to to FILE to print result.
+ * \param *out OUT The pointer to to FILE to print result.
  */
 void enableTraceMode(DWORD enable, FILE *out) {
     if (out == NULL)
@@ -7864,13 +7875,13 @@ void enableTraceMode(DWORD enable, FILE *out) {
 }
 
 /**
- * Can read only IJC files (concatenated extracted CAP files).
- * \param loadFileName The name of the Executable Load File.
- * \param loadFileParams The parameters of the Executable Load File.
+ * Can read CAP and IJC files (concatenated extracted CAP files).
+ * \param loadFileName IN The name of the Executable Load File.
+ * \param loadFileParams OUT The parameters of the Executable Load File.
+ * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
 LONG read_executable_load_file_parameters(OPGP_STRING loadFileName, OPGP_LOAD_FILE_PARAMETERS *loadFileParams) {
 	LONG result;
-	FILE *file;
 	DWORD fileSize;
 	BYTE packageAID[16];
 	BYTE packageAIDLength;
@@ -7879,23 +7890,24 @@ LONG read_executable_load_file_parameters(OPGP_STRING loadFileName, OPGP_LOAD_FI
 	BYTE dummyLength;
 	DWORD i, offset=0;
 	OPGP_AID appletAIDs[32];
+	PBYTE loadFileBuf = NULL;
+	DWORD loadFileBufSize;
 	LOG_START(_T("read_executable_load_file_paramaters"));
-	file = _tfopen(loadFileName, _T("rb"));
-	if (file == NULL) {
-		{ result = errno; goto end; }
+
+	if ((loadFileName == NULL) || (_tcslen(loadFileName) == 0))
+		{ result = OPGP_ERROR_INVALID_FILENAME; goto end; }
+
+	result = handle_load_file((OPGP_CSTRING)loadFileName, loadFileBuf, &loadFileBufSize);
+	if (result != OPGP_ERROR_SUCCESS) {
+		goto end;
 	}
-	result = fseek(file, 0, SEEK_END);
-	if (result) {
-		{ result = errno; goto end; }
+	loadFileBuf = (PBYTE)malloc(sizeof(BYTE) * loadFileBufSize);
+	result = handle_load_file((OPGP_CSTRING)loadFileName, loadFileBuf, &loadFileBufSize);
+	if (result != OPGP_ERROR_SUCCESS) {
+		goto end;
 	}
-	fileSize = ftell(file);
-	if (fileSize == -1L) {
-		{ result = errno; goto end; }
-	}
-	result = fseek(file, 0, SEEK_SET);
-	if (result) {
-		{ result = errno; goto end; }
-	}
+
+	fileSize = loadFileBufSize;
 	/* header component */
 	/* tag COMPONENT_Header */
 	offset++;
@@ -7915,33 +7927,33 @@ LONG read_executable_load_file_parameters(OPGP_STRING loadFileName, OPGP_LOAD_FI
 	/* major version */
 	offset++;
 	/* AID_length */
-	result = fseek(file, offset, SEEK_SET);
-	if (result) {
-		{ result = errno; goto end; }
-	}
-	fread(&packageAIDLength, sizeof(BYTE), 1, file);
-	offset++;
-	if (feof(file)) {
+
+	if (loadFileBufSize < offset+1) {
 		result = OPGP_ERROR_INVALID_LOAD_FILE;
 		goto end;
 	}
-	if (ferror(file)) {
-		{ result = errno; goto end; }
-	}
+	packageAIDLength = loadFileBuf[offset];
+	offset++;
+#ifdef DEBUG
+	log_Log(_T("Package AID Length: %d"), packageAIDLength);
+#endif
 	if (packageAIDLength < 5 || packageAIDLength > 16) {
 		result = OPGP_ERROR_INVALID_LOAD_FILE;
 		goto end;
 	}
 	/* AID */
-	fread(packageAID, sizeof(BYTE), packageAIDLength, file);
-	offset+=packageAIDLength;
-	if (feof(file)) {
+	if (loadFileBufSize < offset+packageAIDLength+1) {
 		result = OPGP_ERROR_INVALID_LOAD_FILE;
 		goto end;
 	}
-	if (ferror(file)) {
-		{ result = errno; goto end; }
+	memcpy(packageAID, loadFileBuf+offset, packageAIDLength);
+	offset+=packageAIDLength;
+#ifdef DEBUG
+	log_Log(_T("Package AID:"));
+	for (i=0; i<packageAIDLength; i++) {
+		log_Log(_T("0x%02x"), packageAID[i]);
 	}
+#endif
 	/* directory component */
 	/* tag COMPONENT_Directory */
 	offset++;
@@ -7959,63 +7971,54 @@ LONG read_executable_load_file_parameters(OPGP_STRING loadFileName, OPGP_LOAD_FI
 	/* import_count */
 	offset++;
 	/* applet_count */
-	result = fseek(file, offset, SEEK_SET);
-	if (result) {
-		{ result = errno; goto end; }
-	}
-	fread(&appletCount, sizeof(BYTE), 1, file);
-	offset++;
-	if (feof(file)) {
+	if (loadFileBufSize < offset+1) {
 		result = OPGP_ERROR_INVALID_LOAD_FILE;
 		goto end;
 	}
-	if (ferror(file)) {
-		{ result = errno; goto end; }
-	}
+	appletCount = loadFileBuf[offset];
+	offset++;
+#ifdef DEBUG
+	log_Log(_T("Applet count: %d"), appletCount);
+#endif
 	/* custom_count */
-	fread(&customCount, sizeof(BYTE), 1, file);
-	offset++;
-	if (feof(file)) {
+	if (loadFileBufSize < offset+1) {
 		result = OPGP_ERROR_INVALID_LOAD_FILE;
 		goto end;
 	}
-	if (ferror(file)) {
-		{ result = errno; goto end; }
-	}
+	customCount = loadFileBuf[offset];
+	offset++;
+#ifdef DEBUG
+	log_Log(_T("Custom count: %d"), appletCount);
+#endif
 	/* custom_components */
 	for (i=0; i<customCount; i++) {
 		/* component_tag */
 		offset++;
 		/* size */
 		offset+=2;
-		/* AID_length */
-		result = fseek(file, offset, SEEK_SET);
-		if (result) {
-			{ result = errno; goto end; }
-		}
-		fread(&dummyLength, sizeof(BYTE), 1, file);
-		offset++;
-		if (feof(file)) {
+		if (loadFileBufSize < offset+1) {
 			result = OPGP_ERROR_INVALID_LOAD_FILE;
 			goto end;
 		}
-		if (ferror(file)) {
-			{ result = errno; goto end; }
-		}
+		dummyLength = loadFileBuf[offset];
+		offset++;
 		if (dummyLength < 5 || dummyLength > 16) {
 			result = OPGP_ERROR_INVALID_LOAD_FILE;
 			goto end;
 		}
 		/* AID */
-		fread(dummy, sizeof(BYTE), dummyLength, file);
-		offset+=dummyLength;
-		if (feof(file)) {
+		if (loadFileBufSize < offset+dummyLength+1) {
 			result = OPGP_ERROR_INVALID_LOAD_FILE;
 			goto end;
 		}
-		if (ferror(file)) {
-			{ result = errno; goto end; }
+		memcpy(dummy, loadFileBuf+offset, dummyLength);
+		offset+=dummyLength;
+#ifdef DEBUG
+		log_Log(_T("Custom component AID:"));
+		for (i=0; i<dummyLength; i++) {
+			log_Log(_T("0x%02x"), dummy[i]);
 		}
+#endif
 	}
 	/* Import Component */
 	/* tag COMPONENT_Import */
@@ -8023,51 +8026,40 @@ LONG read_executable_load_file_parameters(OPGP_STRING loadFileName, OPGP_LOAD_FI
 	/* size */
 	offset+=2;
 	/* count */
-	result = fseek(file, offset, SEEK_SET);
-	if (result) {
-		{ result = errno; goto end; }
-	}
-	fread(&packageCount, sizeof(BYTE), 1, file);
-	offset++;
-	if (feof(file)) {
+	if (loadFileBufSize < offset+1) {
 		result = OPGP_ERROR_INVALID_LOAD_FILE;
 		goto end;
 	}
-	if (ferror(file)) {
-		{ result = errno; goto end; }
-	}
+	packageCount = loadFileBuf[offset];
+	offset++;
 	/* packages */
 	for (i=0; i<packageCount; i++) {
 		/* minor and major version */
 		offset+=2;
 		/* AID_length */
-		result = fseek(file, offset, SEEK_SET);
-		if (result) {
-			{ result = errno; goto end; }
-		}
-		fread(&dummyLength, sizeof(BYTE), 1, file);
-		offset++;
-		if (feof(file)) {
+		if (loadFileBufSize < offset+1) {
 			result = OPGP_ERROR_INVALID_LOAD_FILE;
 			goto end;
 		}
-		if (ferror(file)) {
-			{ result = errno; goto end; }
-		}
+		dummyLength = loadFileBuf[offset];
+		offset++;
 		if (dummyLength < 5 || dummyLength > 16) {
 			result = OPGP_ERROR_INVALID_LOAD_FILE;
 			goto end;
 		}
 		/* AID */
-		fread(dummy, sizeof(BYTE), dummyLength, file);
-		offset+=dummyLength;
-		if (feof(file)) {
+		if (loadFileBufSize < offset+dummyLength+1) {
 			result = OPGP_ERROR_INVALID_LOAD_FILE;
 			goto end;
 		}
-		if (ferror(file)) {
-			{ result = errno; goto end; }
+		memcpy(dummy, loadFileBuf+offset, dummyLength);
+		offset+=dummyLength;
+#ifdef DEBUG
+		log_Log(_T("Import package AID:"));
+		for (i=0; i<dummyLength; i++) {
+			log_Log(_T("0x%02x"), dummy[i]);
 		}
+#endif
 	}
 	/* Applet Component */
 	/* tag COMPONENT_Applet */
@@ -8079,33 +8071,29 @@ LONG read_executable_load_file_parameters(OPGP_STRING loadFileName, OPGP_LOAD_FI
 	/* applets */
 	for (i=0; i<appletCount; i++) {
 		/* AID_length */
-		result = fseek(file, offset, SEEK_SET);
-		if (result) {
-			{ result = errno; goto end; }
-		}
-		fread(&(appletAIDs[i].AIDLength), sizeof(BYTE), 1, file);
-		offset++;
-		if (feof(file)) {
+		if (loadFileBufSize < offset+1) {
 			result = OPGP_ERROR_INVALID_LOAD_FILE;
 			goto end;
 		}
-		if (ferror(file)) {
-			{ result = errno; goto end; }
-		}
+		appletAIDs[i].AIDLength = loadFileBuf[offset];
+		offset++;
 		if (appletAIDs[i].AIDLength < 5 || appletAIDs[i].AIDLength > 16) {
 			result = OPGP_ERROR_INVALID_LOAD_FILE;
 			goto end;
 		}
-		/* AID */
-		fread(appletAIDs[i].AID, sizeof(BYTE), appletAIDs[i].AIDLength, file);
-		offset+=appletAIDs[i].AIDLength;
-		if (feof(file)) {
+		if (loadFileBufSize < offset+appletAIDs[i].AIDLength+1) {
 			result = OPGP_ERROR_INVALID_LOAD_FILE;
 			goto end;
 		}
-		if (ferror(file)) {
-			{ result = errno; goto end; }
+		/* AID */
+		memcpy(appletAIDs[i].AID, loadFileBuf+offset, appletAIDs[i].AIDLength);
+		offset+=appletAIDs[i].AIDLength;
+#ifdef DEBUG
+		log_Log(_T("Applet AID:"));
+		for (i=0; i<appletAIDs[i].AIDLength; i++) {
+			log_Log(_T("0x%02x"), appletAIDs[i].AID[i]);
 		}
+#endif
 		/* install_method_offset */
 		offset+=2;
 	}
@@ -8119,31 +8107,147 @@ LONG read_executable_load_file_parameters(OPGP_STRING loadFileName, OPGP_LOAD_FI
 	}
 	{ result = OPGP_ERROR_SUCCESS; goto end; }
 end:
-	if (file)
-		fclose(file);
+	if (loadFileBuf != NULL) {
+		free(loadFileBuf);
+	}
 	LOG_END(_T("read_executable_load_file_paramaters"), result);
 	return result;
 }
 
+/**
+ * \param capFileName IN The name of the CAP file.
+ * \param ijcFileName IN The name of the destination IJC file.
+ * \return OPGP_ERROR_SUCCESS if no error, error code else.
+ */
+LONG cap_to_ijc(OPGP_CSTRING capFileName, OPGP_STRING ijcFileName) {
+	LONG rv;
+	PBYTE loadFileBuf = NULL;
+	DWORD loadFileBufSize;
+	FILE *ijcFile = NULL;
+	LOG_START(_T("cap_to_ijc"));
+	
+	if ((capFileName == NULL) || (_tcslen(capFileName) == 0))
+		{ rv = OPGP_ERROR_INVALID_FILENAME; goto end; }
+
+	rv = extract_cap_file(capFileName, loadFileBuf, &loadFileBufSize);
+	if (rv != OPGP_ERROR_SUCCESS) {
+		goto error;
+	}
+	loadFileBuf = (PBYTE)malloc(sizeof(BYTE) * loadFileBufSize);
+	rv = extract_cap_file(capFileName, loadFileBuf, &loadFileBufSize);
+	if (rv != OPGP_ERROR_SUCCESS) {
+		goto error;
+	}
+	ijcFile = _tfopen(ijcFileName, _T("wb"));
+	if (ijcFile == NULL) {
+		rv = errno;
+		goto error;
+	}
+	fwrite(loadFileBuf, sizeof(BYTE), loadFileBufSize, ijcFile);
+	if (ferror(ijcFile)) {
+		rv = errno;
+		goto error;
+	}
+	fclose(ijcFile);
+end:
+	rv = OPGP_ERROR_SUCCESS;
+error:
+	if (loadFileBuf != NULL) {
+		free(loadFileBuf);
+	}
+	if (ijcFile != NULL) {
+		fclose(ijcFile);
+	}
+	LOG_END(_T("cap_to_ijc"), rv);
+	return rv;
+}
+
+
+/**
+ * Handles a CAP or IJC file and copies the Executable Load File contents.
+ * If loadFileBuf is NULL the loadFileBufSize is ignored and the necessary buffer size
+ * is returned in loadFileBufSize and the functions returns.
+ * \param fileName IN The name of the CAP or IJC file.
+ * \param loadFileBuf OUT The destination buffer with the Executable Load File contents.
+ * \param loadFileBufSize INOUT The size of the loadFileBuf.
+ * \return OPGP_ERROR_SUCCESS if no error, error code else.
+ */
+static LONG handle_load_file(OPGP_CSTRING fileName, PBYTE loadFileBuf, PDWORD loadFileBufSize)
+{
+	int rv;
+	FILE *file = NULL;
+	LOG_START(_T("handle_load_file"));
+	if (detect_cap_file(fileName)) {
+		rv = extract_cap_file(fileName, loadFileBuf, loadFileBufSize);
+	}
+	else {
+		size_t fileSize;
+		file = _tfopen(fileName, _T("rb"));
+		if (file == NULL) {
+			rv = errno;
+			goto error;
+		}
+		rv = fseek(file, 0, SEEK_END);
+		if (rv) {
+			rv = errno; 
+			goto error;
+		}
+		fileSize = ftell(file);
+		if (fileSize == -1L) {
+			rv = errno;
+			goto error;
+		}
+		rv = fseek(file, 0, SEEK_SET);
+		if (rv) {
+			rv = errno; 
+			goto error;
+		}
+		if (loadFileBuf == NULL) {
+			*loadFileBufSize = (DWORD)fileSize;
+			goto end;
+		}
+		if (*loadFileBufSize < (DWORD)fileSize) {
+			rv = OPGP_ERROR_INSUFFICIENT_BUFFER;
+			goto error;
+		}
+		fileSize = fread(loadFileBuf, sizeof(BYTE), fileSize, file);
+		if(ferror(file)) {
+			{ rv = errno; goto error; }
+		}
+		*loadFileBufSize = (DWORD)fileSize;
+	}	
+end:
+	rv = OPGP_ERROR_SUCCESS;
+error:
+	if (file != NULL) {
+		fclose(file);
+	}
+	LOG_END(_T("handle_load_file"), rv);
+	return rv;
+}
+
 static void ConvertTToC(char* pszDest, const TCHAR* pszSrc)
 {
-    unsigned int i;
-
-    for(i = 0; i < _tcslen(pszSrc); i++)
-	pszDest[i] = (char) pszSrc[i];
-
-    pszDest[_tcslen(pszSrc)] = '\0';
+	unsigned int i;
+	for(i = 0; i < _tcslen(pszSrc); i++) {
+		pszDest[i] = (char) pszSrc[i];
+	}
+	pszDest[_tcslen(pszSrc)] = '\0';
 }
 
 /**
- * \param capFileName The name of the CAP file.
- * \param loadFile The destination Executable Load File.
+ * Extracts a CAP file.
+ * If loadFileBuf is NULL the loadFileBufSize is ignored and the necessary buffer size
+ * is returned in loadFileBufSize and the functions returns.
+ * \param fileName IN The name of the CAP file.
+ * \param loadFileBuf OUT The destination buffer with the Executable Load File contents.
+ * \param loadFileBufSize INOUT The size of the loadFileBuf.
+ * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
-LONG cap_to_bin_file(LPCTSTR capFileName, FILE *loadFile)
+static LONG extract_cap_file(OPGP_CSTRING fileName, PBYTE loadFileBuf, PDWORD loadFileBufSize)
 {
 	int rv;
 	zipFile szip;
-	char *tmp;
 	unsigned char *appletbuf = NULL;
 	unsigned char *classbuf = NULL;
 	unsigned char *constantpoolbuf = NULL;
@@ -8167,20 +8271,17 @@ LONG cap_to_bin_file(LPCTSTR capFileName, FILE *loadFile)
 	int staticfieldbufsz = 0;
 
 	unsigned char *buf;
-
-	tmp = (char *)malloc(sizeof(char)*(_tcslen(capFileName)+1));
-	if (tmp == NULL) {
-		rv = ENOMEM;
-		goto end; 
-	}
-	ConvertTToC(tmp, capFileName);
-	szip = unzOpen(tmp);
+	char capFileName[MAX_PATH];
+	DWORD totalSize = 0;
+	
+	LOG_START(_T("extract_cap_file"));
+	ConvertTToC(capFileName, fileName);
+	szip = unzOpen((const char *)capFileName);
 	if (szip==NULL) 
 	{ 
 		rv = OPGP_ERROR_CAP_UNZIP;
-		goto end;
+		goto error;
 	}
-
 	rv = unzGoToFirstFile(szip);
 	while (rv == UNZ_OK)
 	{
@@ -8192,53 +8293,63 @@ LONG cap_to_bin_file(LPCTSTR capFileName, FILE *loadFile)
 		if (unzGetCurrentFileInfo(szip, &unzfi, fn, MAX_PATH, NULL, 0, NULL, 0) != UNZ_OK)
 		{
 			rv = OPGP_ERROR_CAP_UNZIP;
-			goto end;
+			goto error;
 		}
 
 		if (unzOpenCurrentFile(szip)!=UNZ_OK) 
 		{ 
 			rv = OPGP_ERROR_CAP_UNZIP;
-			goto end; 
+			goto error; 
 		}
 
 		// write file
 		if (strcmp(fn + strlen(fn)-10, "Header.cap") == 0) {
+			totalSize+=unzfi.uncompressed_size;
 			headerbufsz = unzfi.uncompressed_size;
 			buf = headerbuf = (unsigned char *)malloc(unzfi.uncompressed_size);
 		}
 		else if (strcmp(fn + strlen(fn)-10, "Applet.cap") == 0) {
+			totalSize+=unzfi.uncompressed_size;
 			appletbufsz = unzfi.uncompressed_size;
 			buf = appletbuf = (unsigned char *)malloc(unzfi.uncompressed_size);
 		}
 		else if (strcmp(fn + strlen(fn)-9, "Class.cap") == 0) {
+			totalSize+=unzfi.uncompressed_size;
 			classbufsz = unzfi.uncompressed_size;
 			buf = classbuf = (unsigned char *)malloc(unzfi.uncompressed_size);
 		}
 		else if (strcmp(fn + strlen(fn)-10, "Import.cap") == 0) {
+			totalSize+=unzfi.uncompressed_size;
 			importbufsz = unzfi.uncompressed_size;
 			buf = importbuf = (unsigned char *)malloc(unzfi.uncompressed_size);
 		}
 		else if (strcmp(fn + strlen(fn)-13, "Directory.cap") == 0) {
+			totalSize+=unzfi.uncompressed_size;
 			directorybufsz = unzfi.uncompressed_size;
 			buf = directorybuf = (unsigned char *)malloc(unzfi.uncompressed_size);
 		}
 		else if (strcmp(fn + strlen(fn)-10, "Method.cap") == 0) {
+			totalSize+=unzfi.uncompressed_size;
 			methodbufsz = unzfi.uncompressed_size;
 			buf = methodbuf = (unsigned char *)malloc(unzfi.uncompressed_size);
 		}
 		else if (strcmp(fn + strlen(fn)-16, "ConstantPool.cap") == 0) {
+			totalSize+=unzfi.uncompressed_size;
 			constantpoolbufsz = unzfi.uncompressed_size;
 			buf = constantpoolbuf = (unsigned char *)malloc(unzfi.uncompressed_size);
 		}
 		else if (strcmp(fn + strlen(fn)-14, "Descriptor.cap") == 0) {
+			totalSize+=unzfi.uncompressed_size;
 			descriptorbufsz = unzfi.uncompressed_size;
 			buf = descriptorbuf = (unsigned char *)malloc(unzfi.uncompressed_size);
 		}
 		else if (strcmp(fn + strlen(fn)-15, "RefLocation.cap") == 0) {
+			totalSize+=unzfi.uncompressed_size;
 			reflocationbufsz = unzfi.uncompressed_size;
 			buf = reflocationbuf = (unsigned char *)malloc(unzfi.uncompressed_size);
 		}
 		else if (strcmp(fn + strlen(fn)-15, "StaticField.cap") == 0) {
+			totalSize+=unzfi.uncompressed_size;
 			staticfieldbufsz = unzfi.uncompressed_size;
 			buf = staticfieldbuf = (unsigned char *)malloc(unzfi.uncompressed_size);
 		}
@@ -8249,97 +8360,91 @@ LONG cap_to_bin_file(LPCTSTR capFileName, FILE *loadFile)
 		if ((buf==NULL)&&(unzfi.uncompressed_size!=0)) 
 		{ 
 			rv = ENOMEM;
-			goto end; 
+			goto error; 
 		}
 		// read file
 		sz = unzReadCurrentFile(szip, buf, unzfi.uncompressed_size);
 		if ((unsigned int)sz != unzfi.uncompressed_size) 
 		{ 
 			rv = OPGP_ERROR_CAP_UNZIP;
-			goto end;
+			goto error;
 		}
 
 next:
 		if (unzCloseCurrentFile(szip)==UNZ_CRCERROR) 
 		{
 			rv = OPGP_ERROR_CAP_UNZIP;
-			goto end;
+			goto error;
 		}
 
 		rv = unzGoToNextFile(szip);
 	}
 
-	unzClose(szip);
-
 	if ( rv!=UNZ_END_OF_LIST_OF_FILE )	{
 		rv = OPGP_ERROR_CAP_UNZIP;
-		goto end;		
+		goto error;		
+	}
+	
+	if (loadFileBuf == NULL) {
+		*loadFileBufSize = totalSize;
+		goto end;
+	}
+	
+	if (*loadFileBufSize < totalSize) {
+		rv = OPGP_ERROR_INSUFFICIENT_BUFFER;
+		goto error;
 	}
 
+	totalSize = 0;
 	if (headerbuf != NULL) {
-		if (fwrite(headerbuf, sizeof(unsigned char), headerbufsz, loadFile) != headerbufsz) {
-			rv = ferror(loadFile);
-			goto end;
-		}
+		memcpy(loadFileBuf+totalSize, headerbuf, headerbufsz);
+		totalSize+=headerbufsz;
 	}
 	if (directorybuf != NULL) {
-		if (fwrite(directorybuf, sizeof(unsigned char), directorybufsz, loadFile) != directorybufsz) {
-			rv = ferror(loadFile);
-			goto end;
-		}
+		memcpy(loadFileBuf+totalSize, directorybuf, directorybufsz);
+		totalSize+=directorybufsz;
 	}
 	if (importbuf != NULL) {
-		if (fwrite(importbuf, sizeof(unsigned char), importbufsz, loadFile) != importbufsz) {
-			rv = ferror(loadFile);
-			goto end;
-		}
+		memcpy(loadFileBuf+totalSize, importbuf, importbufsz);
+		totalSize+=importbufsz;
 	}
 	if (appletbuf != NULL) {
-		if (fwrite(appletbuf, sizeof(unsigned char), appletbufsz, loadFile) != appletbufsz) {
-			rv = ferror(loadFile);
-			goto end;
-		}
+		memcpy(loadFileBuf+totalSize, appletbuf, appletbufsz);
+		totalSize+=appletbufsz;
 	}
 	if (classbuf != NULL) {
-		if (fwrite(classbuf, sizeof(unsigned char), classbufsz, loadFile) != classbufsz) {
-			rv = ferror(loadFile);
-			goto end;
-		}
+		memcpy(loadFileBuf+totalSize, classbuf, classbufsz);
+		totalSize+=classbufsz;
 	}
 	if (methodbuf != NULL) {
-		if (fwrite(methodbuf, sizeof(unsigned char), methodbufsz, loadFile) != methodbufsz) {
-			rv = ferror(loadFile);
-			goto end;
-		}
+		memcpy(loadFileBuf+totalSize, methodbuf, methodbufsz);
+		totalSize+=methodbufsz;
 	}
 	if (staticfieldbuf != NULL) {
-		if (fwrite(staticfieldbuf, sizeof(unsigned char), staticfieldbufsz, loadFile) != staticfieldbufsz) {
-			rv = ferror(loadFile);
-			goto end;
-		}
+		memcpy(loadFileBuf+totalSize, staticfieldbuf, staticfieldbufsz);
+		totalSize+=staticfieldbufsz;
 	}
 	if (constantpoolbuf != NULL) {
-		if (fwrite(constantpoolbuf, sizeof(unsigned char), constantpoolbufsz, loadFile) != constantpoolbufsz) {
-			rv = ferror(loadFile);
-			goto end;
-		}
+		memcpy(loadFileBuf+totalSize, constantpoolbuf, constantpoolbufsz);
+		totalSize+=constantpoolbufsz;
 	}
 	if (reflocationbuf != NULL) {
-		if (fwrite(reflocationbuf, sizeof(unsigned char), reflocationbufsz, loadFile) != reflocationbufsz) {
-			rv = ferror(loadFile);
-			goto end;
-		}
+		memcpy(loadFileBuf+totalSize, reflocationbuf, reflocationbufsz);
+		totalSize+=reflocationbufsz;
 	}
 	if (descriptorbuf != NULL) {
-		if (fwrite(descriptorbuf, sizeof(unsigned char), descriptorbufsz, loadFile) != descriptorbufsz) {
-			rv = ferror(loadFile);
-			goto end;
-		}
+		memcpy(loadFileBuf+totalSize, descriptorbuf, descriptorbufsz);
+		totalSize+=descriptorbufsz;
 	}
-	rv = OPGP_ERROR_SUCCESS;
+#ifdef DEBUG
+	log_Log(_T("extract_cap_file: Buffer copied."));
+#endif
 end:
-	if (tmp != NULL) {
-		free(tmp);
+	rv = OPGP_ERROR_SUCCESS;
+error:
+
+	if (szip != NULL) {
+		unzClose(szip);
 	}
 	if (appletbuf != NULL) {
 		free(appletbuf);
@@ -8371,7 +8476,49 @@ end:
 	if (staticfieldbuf != NULL) {
 		free(staticfieldbuf);
 	}
+	LOG_END(_T("extract_cap_file"), rv);
+	return rv;
+}
 
+/**
+ * Detects if a file is a CAP file.
+ * Returns 1 if the file is a CAP file 0 otherwise.
+ * \param fileName IN The name of the file.
+ * \return OPGP_ERROR_SUCCESS if no error, error code else.
+ */
+static int detect_cap_file(OPGP_CSTRING fileName) {
+	int rv = 0;
+	FILE *loadFile = NULL;
+	BYTE magic[2];
+	LOG_START(_T("detect_cap_file"));
+	loadFile = _tfopen(fileName, _T("rb"));
+	if (loadFile == NULL) {
+		rv = 0;
+		goto end;
+	}
+	if (fread(magic, sizeof(BYTE), sizeof(magic), loadFile) != sizeof(magic)) {
+		rv = 0;
+		goto end;
+	}
+#ifdef DEBUG
+	log_Log(_T("Magic: 0x%02x 0x%02x"), magic[0], magic[1]);
+#endif
+	// starts with PK -> is CAP file
+	if (magic[0] == 0x50 && magic[1] == 0x4B) {
+#ifdef DEBUG
+	log_Log(_T("File is a CAP file."));
+#endif
+		rv = 1;
+		goto end;
+	}
+#ifdef DEBUG
+	log_Log(_T("File is not a CAP file."));
+#endif
+end:
+	if (loadFile != NULL) {
+		fclose(loadFile);
+	}
+	LOG_END(_T("detect_cap_file"), rv);
 	return rv;
 }
 
