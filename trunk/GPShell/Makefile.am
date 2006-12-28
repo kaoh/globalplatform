@@ -17,6 +17,8 @@ helloInstallgemXpressoProR3_2E64.txt listgemXpressoProR3_2E64.txt
 MAINTAINERCLEANFILES = \
 	Makefile.in \
 	configure \
+	myaux\config.guess \
+	myaux\config.sub \
 	aclocal.m4 \
 	myaux/install-sh \
 	myaux/missing \
