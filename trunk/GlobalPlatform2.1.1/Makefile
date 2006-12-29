@@ -113,7 +113,7 @@ CXXCPP = g++ -E
 CXXDEPMODE = depmode=gcc3
 CXXFLAGS = -g -O2
 CYGPATH_W = echo
-DEFS = -DPACKAGE_NAME=\"GlobalPlatform\" -DPACKAGE_TARNAME=\"globalplatform\" -DPACKAGE_VERSION=\"4.0.3\" -DPACKAGE_STRING=\"GlobalPlatform\ 4.0.3\" -DPACKAGE_BUGREPORT=\"k_o_@users.sourceforge.net\" -DPACKAGE=\"globalplatform\" -DVERSION=\"4.0.3\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_DLFCN_H=1 -DSTDC_HEADERS=1 -DHAVE_STDLIB_H=1 -DHAVE_MALLOC=1 -DHAVE_VPRINTF=1 -DHAVE_MEMCPY=1 -DHAVE_VSYSLOG=1 -DDEBUG=1 -DHAVE_LIBPCSCLITE=1 -DHAVE_ZCONF_H=1 -DHAVE_ZLIB_H=1 -DHAVE_LIBZ=1 -DHAVE_OPENSSL_RAND_H=1 -DHAVE_OPENSSL_ERR_H=1 -DHAVE_OPENSSL_EVP_H=1 -DHAVE_OPENSSL_PEM_H=1 -DHAVE_LIBCRYPTO=1
+DEFS = -DPACKAGE_NAME=\"GlobalPlatform\" -DPACKAGE_TARNAME=\"globalplatform\" -DPACKAGE_VERSION=\"4.1.3\" -DPACKAGE_STRING=\"GlobalPlatform\ 4.1.3\" -DPACKAGE_BUGREPORT=\"k_o_@users.sourceforge.net\" -DPACKAGE=\"globalplatform\" -DVERSION=\"4.1.3\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_DLFCN_H=1 -DSTDC_HEADERS=1 -DHAVE_STDLIB_H=1 -DHAVE_MALLOC=1 -DHAVE_VPRINTF=1 -DHAVE_MEMCPY=1 -DHAVE_VSYSLOG=1 -DDEBUG=1 -DHAVE_LIBPCSCLITE=1 -DHAVE_ZCONF_H=1 -DHAVE_ZLIB_H=1 -DHAVE_LIBZ=1 -DHAVE_OPENSSL_RAND_H=1 -DHAVE_OPENSSL_ERR_H=1 -DHAVE_OPENSSL_EVP_H=1 -DHAVE_OPENSSL_PEM_H=1 -DHAVE_LIBCRYPTO=1
 DEPDIR = .deps
 ECHO = echo
 ECHO_C = 
@@ -139,9 +139,9 @@ OBJEXT = o
 PACKAGE = globalplatform
 PACKAGE_BUGREPORT = k_o_@users.sourceforge.net
 PACKAGE_NAME = GlobalPlatform
-PACKAGE_STRING = GlobalPlatform 4.0.3
+PACKAGE_STRING = GlobalPlatform 4.1.3
 PACKAGE_TARNAME = globalplatform
-PACKAGE_VERSION = 4.0.3
+PACKAGE_VERSION = 4.1.3
 PATH_SEPARATOR = :
 PCSCLITE_CFLAGS = -I/usr/include/PCSC  
 PCSCLITE_LIBS = -lpcsclite  
@@ -150,7 +150,7 @@ RANLIB = ranlib
 SET_MAKE = 
 SHELL = /bin/sh
 STRIP = strip
-VERSION = 4.0.3
+VERSION = 4.1.3
 ac_ct_CC = gcc
 ac_ct_CXX = g++
 ac_ct_F77 = 
@@ -191,7 +191,7 @@ mandir = ${datarootdir}/man
 mkdir_p = mkdir -p --
 oldincludedir = /usr/include
 pdfdir = ${docdir}
-prefix = /usr/
+prefix = /usr
 program_transform_name = s,x,x,
 psdir = ${docdir}
 sbindir = ${exec_prefix}/sbin
@@ -209,7 +209,7 @@ libGlobalPlatform_la_SOURCES = GlobalPlatform/GlobalPlatform.h GlobalPlatform.c 
 debug.c GlobalPlatform/unicode.h unzip/crypt.h  unzip/ioapi.c unzip/ioapi.h \
 unzip/unzip.c unzip/unzip.h unzip/zip.c unzip/zip.h
 
-libGlobalPlatform_la_LDFLAGS = -version-info 4:0:3
+libGlobalPlatform_la_LDFLAGS = -version-info 4:1:3
 MAINTAINERCLEANFILES = \
 	Makefile.in \
 	configure \
