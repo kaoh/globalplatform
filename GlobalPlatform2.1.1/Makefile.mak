@@ -118,9 +118,9 @@ prebuild: all
 	-@del /S /F /Q $(PREBUILDDIR)
 	-@mkdir $(PREBUILDDIR)
 	-@mkdir $(PREBUILDDIR)/GlobalPlatform
-	cp Debug/GlobalPlatform.dll Debug/GlobalPlatform.lib ChangeLog COPYING AUTHORS  $(PREBUILDDIR)
+	cp Debug/GlobalPlatform.dll Debug/GlobalPlatform.lib ChangeLog README COPYING AUTHORS  $(PREBUILDDIR)
 	cp GlobalPlatform/GlobalPlatform.h GlobalPlatform/unicode.h $(PREBUILDDIR)/GlobalPlatform
-	zip -r $(PREBUILDDIR).zip $(PREBUILDDIR)/* 
+	zip -r $(PREBUILDDIR).zip $(PREBUILDDIR)/*
 
 clean:
 	-@rd /S /Q Debug
