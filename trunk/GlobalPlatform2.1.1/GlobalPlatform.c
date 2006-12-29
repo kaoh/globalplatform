@@ -7874,6 +7874,10 @@ void enableTraceMode(DWORD enable, FILE *out) {
     traceEnable = enable;
 }
 
+static DWORD get_short(PBYTE buf, DWORD offset) {
+	return ((buf[offset] & 0xFF) << 8) | (buf[offset+1] & 0xFF);
+}
+
 /**
  * Can read CAP and IJC files (concatenated extracted CAP files).
  * \param loadFileName IN The name of the Executable Load File.
@@ -7885,14 +7889,14 @@ LONG read_executable_load_file_parameters(OPGP_STRING loadFileName, OPGP_LOAD_FI
 	DWORD fileSize;
 	BYTE packageAID[16];
 	BYTE packageAIDLength;
-	BYTE appletCount, customCount, packageCount;
-	BYTE dummy[16];
-	BYTE dummyLength;
+	BYTE appletCount;
 	DWORD i, offset=0;
 	OPGP_AID appletAIDs[32];
 	PBYTE loadFileBuf = NULL;
 	DWORD loadFileBufSize;
-	LOG_START(_T("read_executable_load_file_paramaters"));
+	DWORD componentSize;
+	DWORD componentOffset=0;
+	LOG_START(_T("read_executable_load_file_parameters"));
 
 	if ((loadFileName == NULL) || (_tcslen(loadFileName) == 0))
 		{ result = OPGP_ERROR_INVALID_FILENAME; goto end; }
@@ -7909,9 +7913,15 @@ LONG read_executable_load_file_parameters(OPGP_STRING loadFileName, OPGP_LOAD_FI
 
 	fileSize = loadFileBufSize;
 	/* header component */
+	offset = componentOffset;
 	/* tag COMPONENT_Header */
 	offset++;
 	/* size of header_component */
+	if (loadFileBufSize < offset+2) {
+		result = OPGP_ERROR_INVALID_LOAD_FILE;
+		goto end;
+	}
+	componentSize = get_short(loadFileBuf, offset);
 	offset+=2;
 	/* magic DECAFFED */
 	offset+=4;
@@ -7955,21 +7965,44 @@ LONG read_executable_load_file_parameters(OPGP_STRING loadFileName, OPGP_LOAD_FI
 	}
 #endif
 	/* directory component */
+	componentOffset+=componentSize+3;
+	offset = componentOffset;
 	/* tag COMPONENT_Directory */
 	offset++;
 	/* size */
+	if (loadFileBufSize < offset+2) {
+		result = OPGP_ERROR_INVALID_LOAD_FILE;
+		goto end;
+	}
+	componentSize = get_short(loadFileBuf, offset);
 	offset+=2;
-	/* component_sizes */
-	offset+=11*2;
-	/* static_field_size static_field_size_info structure */
-	/* image_size */
-	offset+=2;
-	/* array_init_count */
-	offset+=2;
-	/* array_init_size */
-	offset+=2;
-	/* import_count */
+
+	/* Import Component */
+	componentOffset+=componentSize+3;
+	offset = componentOffset;
+	/* tag COMPONENT_Import */
 	offset++;
+	/* size */
+	if (loadFileBufSize < offset+2) {
+		result = OPGP_ERROR_INVALID_LOAD_FILE;
+		goto end;
+	}
+	componentSize = get_short(loadFileBuf, offset);
+	offset+=2;
+	
+	/* Applet Component */
+	componentOffset+=componentSize+3;
+	offset = componentOffset;
+	/* tag COMPONENT_Applet */
+	offset++;
+	/* size */
+	if (loadFileBufSize < offset+2) {
+		result = OPGP_ERROR_INVALID_LOAD_FILE;
+		goto end;
+	}
+	componentSize = get_short(loadFileBuf, offset);
+	offset+=2;
+	/* count */
 	/* applet_count */
 	if (loadFileBufSize < offset+1) {
 		result = OPGP_ERROR_INVALID_LOAD_FILE;
@@ -7980,94 +8013,6 @@ LONG read_executable_load_file_parameters(OPGP_STRING loadFileName, OPGP_LOAD_FI
 #ifdef DEBUG
 	log_Log(_T("Applet count: %d"), appletCount);
 #endif
-	/* custom_count */
-	if (loadFileBufSize < offset+1) {
-		result = OPGP_ERROR_INVALID_LOAD_FILE;
-		goto end;
-	}
-	customCount = loadFileBuf[offset];
-	offset++;
-#ifdef DEBUG
-	log_Log(_T("Custom count: %d"), appletCount);
-#endif
-	/* custom_components */
-	for (i=0; i<customCount; i++) {
-		/* component_tag */
-		offset++;
-		/* size */
-		offset+=2;
-		if (loadFileBufSize < offset+1) {
-			result = OPGP_ERROR_INVALID_LOAD_FILE;
-			goto end;
-		}
-		dummyLength = loadFileBuf[offset];
-		offset++;
-		if (dummyLength < 5 || dummyLength > 16) {
-			result = OPGP_ERROR_INVALID_LOAD_FILE;
-			goto end;
-		}
-		/* AID */
-		if (loadFileBufSize < offset+dummyLength+1) {
-			result = OPGP_ERROR_INVALID_LOAD_FILE;
-			goto end;
-		}
-		memcpy(dummy, loadFileBuf+offset, dummyLength);
-		offset+=dummyLength;
-#ifdef DEBUG
-		log_Log(_T("Custom component AID:"));
-		for (i=0; i<dummyLength; i++) {
-			log_Log(_T("0x%02x"), dummy[i]);
-		}
-#endif
-	}
-	/* Import Component */
-	/* tag COMPONENT_Import */
-	offset++;
-	/* size */
-	offset+=2;
-	/* count */
-	if (loadFileBufSize < offset+1) {
-		result = OPGP_ERROR_INVALID_LOAD_FILE;
-		goto end;
-	}
-	packageCount = loadFileBuf[offset];
-	offset++;
-	/* packages */
-	for (i=0; i<packageCount; i++) {
-		/* minor and major version */
-		offset+=2;
-		/* AID_length */
-		if (loadFileBufSize < offset+1) {
-			result = OPGP_ERROR_INVALID_LOAD_FILE;
-			goto end;
-		}
-		dummyLength = loadFileBuf[offset];
-		offset++;
-		if (dummyLength < 5 || dummyLength > 16) {
-			result = OPGP_ERROR_INVALID_LOAD_FILE;
-			goto end;
-		}
-		/* AID */
-		if (loadFileBufSize < offset+dummyLength+1) {
-			result = OPGP_ERROR_INVALID_LOAD_FILE;
-			goto end;
-		}
-		memcpy(dummy, loadFileBuf+offset, dummyLength);
-		offset+=dummyLength;
-#ifdef DEBUG
-		log_Log(_T("Import package AID:"));
-		for (i=0; i<dummyLength; i++) {
-			log_Log(_T("0x%02x"), dummy[i]);
-		}
-#endif
-	}
-	/* Applet Component */
-	/* tag COMPONENT_Applet */
-	offset++;
-	/* size */
-	offset+=2;
-	/* count */
-	offset++;
 	/* applets */
 	for (i=0; i<appletCount; i++) {
 		/* AID_length */
