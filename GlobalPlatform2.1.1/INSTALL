@@ -29,7 +29,7 @@ PKG_CONFIG_PATH. E.g. the Debian path for pkgconfig is /usr/lib/pkgconfig.
 ./configure --prefix=/usr Defines the installation target for everything to
     start with /usr instead of the default /usr/local
 ./configure --help gives you a help of possible options.
-./configure --enable-debug enables debugging output on stdout
+./configure --enable-debug enables debugging output
 
 If you need to get debugging output run configure with --enable-debug.
 You must enable the debugging by setting the environment variable
