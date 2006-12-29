@@ -14,7 +14,7 @@ libGlobalPlatform_la_SOURCES = GlobalPlatform/GlobalPlatform.h GlobalPlatform.c 
 debug.c GlobalPlatform/unicode.h unzip/crypt.h  unzip/ioapi.c unzip/ioapi.h \
 unzip/unzip.c unzip/unzip.h unzip/zip.c unzip/zip.h
 
-libGlobalPlatform_la_LDFLAGS = -version-info 4:0:3
+libGlobalPlatform_la_LDFLAGS = -version-info 4:1:3
 
 doc : GlobalPlatform.c GlobalPlatform/GlobalPlatform.h GlobalPlatform/unicode.h
 	doxygen Doxyfile.cfg
