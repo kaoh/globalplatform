@@ -10,7 +10,7 @@ all:	bin_package src_package
 bin_package:
 	rm -rf $(DIR)
 	mkdir $(DIR)
-	cp Release/GPShell.exe GlobalPlatform.dll README CHANGES COPYING AUTHORS helloInstall.txt helloDelete.txt helloInstallGP211.txt helloDeleteGP211.txt list.txt listgp211.txt replacekey-cosmo-gp211.txt recyclekey-cosmo-gp211.txt helloDeletegemXpressoProR3_2E64.txt  helloInstallgemXpressoProR3_2E64.txt listgemXpressoProR3_2E64.txt HelloWorld.bin HelloWorld.cap $(DIR)
+	cp Release/GPShell.exe GlobalPlatform.dll ssleay32.dll libeay32.dll LICENSE README CHANGES COPYING AUTHORS helloInstall.txt helloDelete.txt helloInstallGP211.txt helloDeleteGP211.txt list.txt listgp211.txt replacekey-cosmo-gp211.txt recyclekey-cosmo-gp211.txt helloDeletegemXpressoProR3_2E64.txt  helloInstallgemXpressoProR3_2E64.txt listgemXpressoProR3_2E64.txt HelloWorld.bin HelloWorld.cap $(DIR)
 	zip GPShell-$(VERSION).zip $(DIR)/*
 
 src_package:
