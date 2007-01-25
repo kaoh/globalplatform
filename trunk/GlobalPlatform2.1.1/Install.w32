@@ -13,18 +13,18 @@ This will be a lot of work ...
 	http://msdn.microsoft.com/visualc/vctoolkit2003/
 
 	or the new version (not tested)
-	
+
 	Visual C++ 2005 Express Edition
 	http://msdn.microsoft.com/vstudio/express/visualc/default.aspx
-	
+
 	to get a compiler C/C++ compiler suite.
 
 	Windows® Server 2003 SP1 Platform SDK
 	http://www.microsoft.com/downloads/details.aspx?familyid=EBA0128F-A770-45F1-86F3-7AB010B398A3&displaylang=en
 
-	or the new version (not tested)	
-	
-	Windows® Server 2003 R2 Platform SDK 
+	or the new version (not tested)
+
+	Windows® Server 2003 R2 Platform SDK
 	http://www.microsoft.com/downloads/details.aspx?FamilyId=484269E2-3B89-47E3-8EB7-1F2BE6D7123A&displaylang=en1
 
 	to get the libraries for linking and include files for compiling and nmake for the makefile.
@@ -36,13 +36,13 @@ This will be a lot of work ...
 	Copy this file (usually from Vc7\lib directory ) to the lib directory of the Microsoft Visual C++ Toolkit 2003.
 
 2.	You need OpenSSL. Download it from http://www.openssl.org/ and
-	build the library. A prebuild package is enough. The headers and the linker library zlib1.lib must 
-	be available. The zlib1.dll must be installed in a common library search path, e.g. Windows/System32.
-	
-3.	You need the zlib library. Download it from http://www.zlib.net/ and build the 
-	library. A prebuild package is enough. The headers and the linker libraries ssleay32.lib and 
-	libeay32.lib must be available. The libeay32.dll and ssleay32.dll must be installed in a 
+	build the library. A prebuild package is enough.  The headers and the linker libraries ssleay32.lib and
+	libeay32.lib must be available. The libeay32.dll and ssleay32.dll must be installed in a
 	common library search path, e.g. Windows/System32.
+
+3.	You need the zlib library. Download it from http://www.zlib.net/ and build the
+	library. A prebuild package is enough. 	The headers and the linker library zlib1.lib must
+	be available. The zlib1.dll must be installed in a common library search path, e.g. Windows/System32.
 
 4.	You need Doxygen for generating the documentation.
 	www.doxygen.org/
