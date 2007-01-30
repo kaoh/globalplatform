@@ -707,9 +707,39 @@ static int handleCommands(FILE *fd)
 			      rv, stringify_error(rv));
 		}
 		break;
-	    }
+		/* Augusto: added delete_key command support */
+	    } else if (strcmp(token, "delete_key") == 0) {
+			
+			rv = handleOptions(&optionStr);
+			if(rv != EXIT_SUCCESS) {
+				goto end;
+			}
 
-	    else if (strcmp(token, "install") == 0) {
+			if(platform_mode == PLATFORM_MODE_OP_201) {
+				rv = OP201_delete_key
+				(
+					cardInfo,
+					&securityInfo201,
+					optionStr.keySetVersion,
+					optionStr.keyIndex
+				);
+			} else if (platform_mode == PLATFORM_MODE_GP_211) {
+				rv = GP211_delete_key
+				(
+					cardInfo,
+					&securityInfo211,
+					optionStr.keySetVersion,
+					optionStr.keyIndex
+				);
+			}
+
+			if(rv != 0) {
+				_tprintf (_T("delete_key() return 0x%08x (%s)\n"),
+					rv, stringify_error(rv));
+			}
+			break;
+		/* end */
+		} else if (strcmp(token, "install") == 0) {
 			// One step install
 			OPGP_LOAD_FILE_PARAMETERS loadFileParams;
 			DWORD receiptDataAvailable = 0;
