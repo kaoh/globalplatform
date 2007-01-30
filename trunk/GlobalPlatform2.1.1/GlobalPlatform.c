@@ -298,6 +298,11 @@ static void mapOP201ToGP211SecurityInfo(OP201_SECURITY_INFO op201secInfo,
 	}
 	gp211secInfo->secureChannelProtocol = GP211_SCP01;
 	gp211secInfo->secureChannelProtocolImpl = GP211_SCP01_IMPL_i05;
+	/* Augusto: added two attributes for key information */
+	gp211secInfo->keySetVersion = op201secInfo.keySetVersion;
+	gp211secInfo->keyIndex = op201secInfo.keyIndex;
+	/* end */
+
 }
 
 static void mapGP211ToOP201SecurityInfo(GP211_SECURITY_INFO gp211secInfo,
@@ -318,6 +323,11 @@ static void mapGP211ToOP201SecurityInfo(GP211_SECURITY_INFO gp211secInfo,
 			op201secInfo->securityLevel = OP201_SECURITY_LEVEL_MAC;
 			break;
 	}
+
+	/* Augusto: added two attributes for key information */
+	op201secInfo->keySetVersion = gp211secInfo.keySetVersion;
+	op201secInfo->keyIndex = gp211secInfo.keyIndex;
+	/* end */
 }
 
 static void mapOP201ToGP211DAPBlock(OP201_DAP_BLOCK op201dapBlock,
@@ -5656,6 +5666,12 @@ static LONG mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE baseKey[16],
 	// response of INITIALIZE UPDATE
 	memcpy(key_diversification_data, recvBuffer, 10);
 	memcpy(key_information_data, recvBuffer+10,2);
+
+	/* Augusto: added key information data in secInfo */
+	secInfo->keySetVersion = key_information_data[0];
+	secInfo->keyIndex = key_information_data[1];
+	/* end */
+
 	if (secInfo->secureChannelProtocol == GP211_SCP02) {
 		memcpy(sequenceCounter, recvBuffer+12, 2);
 		memcpy(cardChallengeSCP02, recvBuffer+14, 6);

@@ -338,7 +338,11 @@ typedef struct {
 	BYTE securityLevel; //!< The security level.
 	BYTE sessionMacKey[16]; //!< The MAC session key.
 	BYTE sessionEncKey[16]; //!< The ENC session key.
-	BYTE lastMac[8]; //!< The last computed mac.
+	BYTE lastMac[8]; //!< The last computed mac
+	/* Augusto: added two more attributes for key information */
+	BYTE keySetVersion; //!< The keyset version used in the secure channel
+	BYTE keyIndex; //!< The key index used in the secure channel
+	/* end */
 } OP201_SECURITY_INFO;
 
 
@@ -412,6 +416,10 @@ typedef struct {
 	BYTE dataEncryptionSessionKey[16]; //!< Secure Channel data encryption key.
 	BYTE lastC_MAC[8]; //!< The last computed C-MAC.
 	BYTE lastR_MAC[8]; //!< The last computed R-MAC.
+	/* Augusto: added two more attributes for key information */
+	BYTE keySetVersion; //!< The keyset version used in secure channel
+	BYTE keyIndex; //! The key index used in secured channel
+	/* end */
 } GP211_SECURITY_INFO;
 
 
