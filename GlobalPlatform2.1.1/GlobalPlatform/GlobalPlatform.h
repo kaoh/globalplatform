@@ -83,10 +83,10 @@ typedef LPDWORD PDWORD; //!< A Microsoft LPDWORD/Muscle PC/SC, a pointer to a do
 
 
 /** The default key value for new cards defined in a VISA specification. */
-static const BYTE OPGP_VISA_DEFAULT_KEY[] = {0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
+static const BYTE OPGP_VISA_DEFAULT_KEY[16] = {0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
 
 /** The default mother key value for new GemXpresso cards. */
-static const BYTE OPGP_GEMXPRESSO_DEFAULT_KEY[] = {0x47, 0x45, 0x4d, 0x58, 0x50, 0x52, 0x45, 0x53, 0x53, 0x4f, 0x53, 0x41, 0x4d, 0x50, 0x4c, 0x45};
+static const BYTE OPGP_GEMXPRESSO_DEFAULT_KEY[16] = {0x47, 0x45, 0x4d, 0x58, 0x50, 0x52, 0x45, 0x53, 0x53, 0x4f, 0x53, 0x41, 0x4d, 0x50, 0x4c, 0x45};
 
 /* Secure Channel stuff */
 
@@ -148,7 +148,7 @@ static const BYTE OPGP_GEMXPRESSO_DEFAULT_KEY[] = {0x47, 0x45, 0x4d, 0x58, 0x50,
 #define GP211_SCP02_SECURITY_LEVEL_NO_SECURE_MESSAGING 0x00 //!< Secure Channel Protocol '02': No secure messaging expected.
 
 
-static const BYTE GP211_CARD_MANAGER_AID[] = {0xA0, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00}; //!< The AID of the Issuer Security Domain defined by GlobalPlatform 2.1.1 specification.
+static const BYTE GP211_CARD_MANAGER_AID[8] = {0xA0, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00}; //!< The AID of the Issuer Security Domain defined by GlobalPlatform 2.1.1 specification.
 
 #define GP211_KEY_TYPE_RSA 0xA1 //!< RSA key
 #define GP211_KEY_TYPE_3DES 0x81 //!< 3DES key.
@@ -182,10 +182,10 @@ static const BYTE GP211_CARD_MANAGER_AID[] = {0xA0, 0x00, 0x00, 0x00, 0x03, 0x00
 #define GP211_APPLICATION_PRIVILEGE_PIN_CHANGE_PRIVILEGE 0x02 //!< Application can change global PIN.
 #define GP211_APPLICATION_PRIVILEGE_MANDATED_DAP_VERIFICATION 0x01 //!< Security domain requires DAP verification for loading and installating applications.
 
-#define GP211_STATUS_APPLICATIONS 0x40 //!< Indicate Applications or Security Domains in GP211_get_status() or GP211_set_status().
-#define GP211_STATUS_ISSUER_SECURITY_DOMAIN 0x80 //!< Indicate Issuer Security Domain in GP211_get_status() or GP211_set_status().
+#define GP211_STATUS_APPLICATIONS 0x40 //!< Indicate Applications or Security Domains in GP211_get_status() (request GP211_APPLICATION_DATA) or GP211_set_status().
+#define GP211_STATUS_ISSUER_SECURITY_DOMAIN 0x80 //!< Indicate Issuer Security Domain in GP211_get_status() (request GP211_APPLICATION_DATA) or GP211_set_status().
 #define GP211_STATUS_LOAD_FILES 0x20 //!< Request GP211_APPLICATION_DATA for Executable Load Files in GP211_get_status().
-#define GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES 0x10 //!< Request GP211_APPLICATION_DATA for Executable Load Files and their Executable Modules in GP211_get_status().
+#define GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES 0x10 //!< Request GP211_EXECUTABLE_MODULES_DATA for Executable Load Files and their Executable Modules in GP211_get_status().
 
 
 
@@ -243,7 +243,7 @@ static const BYTE GP211_GET_DATA_WHOLE_EF_PROD[2] = {0xDF, 0x7F}; //!< Whole EF<
 
 
 
-static const BYTE OP201_CARD_MANAGER_AID[] = {0xA0, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00}; //!< The AID of the Card Manager defined by Open Platform specification.
+static const BYTE OP201_CARD_MANAGER_AID[7] = {0xA0, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00}; //!< The AID of the Card Manager defined by Open Platform specification.
 
 
 #define OP201_SECURITY_LEVEL_ENC_MAC 0x03 //!< Command messages are signed and encrypted.
@@ -809,9 +809,9 @@ LONG GP211_get_extradition_token_signature_data(PBYTE securityDomainAID,
 OPGP_API
 LONG GP211_get_load_token_signature_data(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 								   PBYTE securityDomainAID,
-								   DWORD securityDomainAIDLength, BYTE loadFileDataBlockHash[20],
-								   DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
-								   DWORD nonVolatileDataSpaceLimit, PBYTE loadTokenSignatureData,
+								   DWORD securityDomainAIDLength, BYTE loadFileDataBlockHash[20], 
+								   DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit, 
+								   DWORD nonVolatileDataSpaceLimit, PBYTE loadTokenSignatureData, 
 								   PDWORD loadTokenSignatureDataLength);
 
 //! \brief GlobalPlatform2.1.1: Function to retrieve the data to sign by the Card Issuer in an Install Token.

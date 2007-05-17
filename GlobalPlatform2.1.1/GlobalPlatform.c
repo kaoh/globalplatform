@@ -1843,7 +1843,7 @@ static LONG put_secure_channel_keys(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO
 	else {
 		// S-ENC key
 		if (secInfo->secureChannelProtocol == GP211_SCP01) {
-			sendBuffer[i++] = 0x81; // alghoritm 3DES
+			sendBuffer[i++] = 0x80; // alghoritm 3DES
 		}
 		else {
 			sendBuffer[i++] = 0x80; // alghoritm 3DES
@@ -1872,7 +1872,7 @@ static LONG put_secure_channel_keys(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO
 		// S-MAC key
 
 		if (secInfo->secureChannelProtocol == GP211_SCP01) {
-			sendBuffer[i++] = 0x81; // alghoritm 3DES
+			sendBuffer[i++] = 0x80; // alghoritm 3DES
 		}
 		else {
 			sendBuffer[i++] = 0x80; // alghoritm 3DES
@@ -1901,7 +1901,7 @@ static LONG put_secure_channel_keys(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO
 		// DEK
 
 		if (secInfo->secureChannelProtocol == GP211_SCP01) {
-			sendBuffer[i++] = 0x81; // alghoritm 3DES
+			sendBuffer[i++] = 0x80; // alghoritm 3DES
 		}
 		else {
 			sendBuffer[i++] = 0x80; // alghoritm 3DES
@@ -2844,7 +2844,7 @@ end:
 /**
  * It depends on the card element to retrieve if an array of GP211_APPLICATION_DATA structures
  * or an array of GP211_EXECUTABLE_MODULES_DATA structures must be passed to this function.
- * For the card element #GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES executableData must not
+ * For the card element #GP211_EXECUTABLE_MODULES_DATA executableData must not
  * be NULL, else applData must not be NULL.
 
  * \param cardInfo IN The OPGP_CARD_INFO structure returned by card_connect().
@@ -3294,11 +3294,11 @@ end:
 /**
  * The function assumes that the Issuer Security Domain or Security Domain
  * uses an optional Load File Data Block Hash using the SHA-1 message digest algorithm.
- * The loadFileDataBlockHash can be calculated using calculate_load_file_data_block_hash() or must be NULL, if the card does not
+ * The loadFileDataBlockHash can be calculated using GP211_calculate_load_file_data_block_hash() or must be NULL, if the card does not
  * need or support a Load File DAP in this situation, e.g. if you want to load a Executable Load File to the Card
  * Manager Security Domain.
  * In the case of delegated management a Load Token authorizing the INSTALL [for load] must be included.
- * Otherwise loadToken must be NULL. See calculate_load_token().
+ * Otherwise loadToken must be NULL. See GP211_calculate_load_token().
  * The term Executable Load File is equivalent to the GlobalPlatform term Load File Data Block.
  * volatileDataSpaceLimit and nonVolatileDataSpaceLimit can be 0, if the card does not need or support this tags.
 
@@ -6194,17 +6194,17 @@ LONG GP211_store_data(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 			sendBuffer[2] = 0x80;
 			memcpy(sendBuffer+5, data+read, left);
 			read+=left;
-			left-=left;
 			sendBufferLength=5+left;
 			sendBuffer[4] = (BYTE)left;
+			left-=left;
 		}
 		else {
 			sendBuffer[2] = 0x00;
 			memcpy(sendBuffer+5, data+read, MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING);
 			read+=MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING;
-			left-=MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING;
 			sendBufferLength=5+MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING;
 			sendBuffer[4] = MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING;
+			left-=MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING;
 		}
 		sendBuffer[3] = blockNumber++;
 
@@ -7389,7 +7389,7 @@ end:
  * \param *dapBlock IN A pointer to OP201_DAP_BLOCK structure(s).
  * \param dapBlockLength IN The number of OP201_DAP_BLOCK structure(s).
  * \param executableLoadFileName IN The name of the CAP or IJC file to hash.
- * \param hash OUT The hash value.
+ * \param hash OUT The hash value. This are 20 bytes.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
 LONG OP201_calculate_load_file_DAP(OP201_DAP_BLOCK *dapBlock, DWORD dapBlockLength, OPGP_STRING executableLoadFileName,

@@ -19,7 +19,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="E:\quarantine\zlib123\;&quot;E:\quarantine\openssl-0.9.7e\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(JAVA_INCLUDE)&quot;;&quot;$(JAVA_INCLUDE)\win32&quot;;E:\quarantine\zlib123\include;&quot;E:\quarantine\openssl-0.9.8d\include&quot;"
 				PreprocessorDefinitions="WIN32;DEBUG;_DEBUG;_CONSOLE;OPGP_EXPORTS;_UNICODE;UNICODE"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -34,10 +34,10 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ssleay32.lib libeay32.lib winscard.lib zlib1.lib"
+				AdditionalDependencies="ssleay32.lib libeay32.lib winscard.lib zdll.lib"
 				OutputFile="$(OutDir)/GlobalPlatform.dll"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="E:\quarantine\zlib123\projects\visualc6\Win32_DLL_Release;&quot;E:\quarantine\openssl-0.9.7e\out32dll&quot;"
+				AdditionalLibraryDirectories="E:\quarantine\zlib123\lib;&quot;E:\quarantine\openssl-0.9.8d\out32dll&quot;"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/GlobalPlatform.pdb"
 				SubSystem="1"
@@ -72,7 +72,7 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="E:\quarantine\zlib123\;&quot;E:\quarantine\openssl-0.9.7e\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(JAVA_INCLUDE)&quot;;&quot;$(JAVA_INCLUDE)\win32&quot;;E:\quarantine\zlib123\include;&quot;E:\quarantine\openssl-0.9.8d\include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;OPGP_EXPORTS;_UNICODE;UNICODE"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
@@ -84,10 +84,10 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ssleay32.lib libeay32.lib winscard.lib zlib1.lib"
+				AdditionalDependencies="ssleay32.lib libeay32.lib winscard.lib zdll.lib"
 				OutputFile="$(OutDir)/GlobalPlatform.dll"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="E:\quarantine\zlib123\projects\visualc6\Win32_DLL_Release;&quot;E:\quarantine\openssl-0.9.7e\out32dll&quot;"
+				AdditionalLibraryDirectories="E:\quarantine\zlib123\lib;&quot;E:\quarantine\openssl-0.9.8d\out32dll&quot;"
 				GenerateDebugInformation="FALSE"
 				SubSystem="1"
 				OptimizeReferences="2"
