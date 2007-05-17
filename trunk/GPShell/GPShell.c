@@ -506,7 +506,7 @@ static int handleCommands(FILE *fd)
 		// Establish context
 		rv = establish_context(&cardContext);
 		if (rv != OPGP_ERROR_SUCCESS) {
-		    printf ("establish_context failed with error 0x%08X\n", rv);
+		    printf ("establish_context failed with error 0x%08X (%s)\n", rv, stringify_error(rv));
 			rv = EXIT_FAILURE;
 			goto end;
 		}
@@ -515,7 +515,7 @@ static int handleCommands(FILE *fd)
 		// Release context
 		rv = release_context(cardContext);
 		if (rv != OPGP_ERROR_SUCCESS) {
-		    printf ("release_context failed with error 0x%08X\n", rv);
+		    printf ("release_context failed with error 0x%08X (%s)\n", rv, stringify_error(rv));
 			rv = EXIT_FAILURE;
 			goto end;
 		}
@@ -535,6 +535,11 @@ static int handleCommands(FILE *fd)
 
 			// get all readers
 		    rv = list_readers (cardContext, buf, &readerStrLen);
+			if (rv != OPGP_ERROR_SUCCESS) {
+				printf ("list_readers failed with error 0x%08X (%s)\n", rv, stringify_error(rv));
+				rv = EXIT_FAILURE;
+				goto end;
+			}
 
 			for (j=0; j<(int)readerStrLen;) {
 				/* Check for end of readers */
