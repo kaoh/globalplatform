@@ -788,8 +788,8 @@ static int handleCommands(FILE *fd)
 							(PBYTE)optionStr.sdAID, optionStr.sdAIDLen,
 						NULL, NULL,
 						optionStr.nvCodeLimit,
-						0,
-						0);
+						optionStr.vDataLimit,  // jvictor
+						optionStr.nvDataLimit); // jvictor
 			} else if (platform_mode == PLATFORM_MODE_GP_211) {
 				if (optionStr.sdAIDLen == 0) {
 					optionStr.sdAIDLen = sizeof(GP211_CARD_MANAGER_AID);
@@ -800,8 +800,8 @@ static int handleCommands(FILE *fd)
 							(PBYTE)optionStr.sdAID, optionStr.sdAIDLen,
 							NULL, NULL,
 							optionStr.nvCodeLimit,
-							optionStr.nvDataLimit,
-							optionStr.vDataLimit);
+							optionStr.vDataLimit,          // jvictor
+							optionStr.nvDataLimit);        // jvictor
 			}
 
 			if (rv != 0) {
@@ -886,8 +886,8 @@ static int handleCommands(FILE *fd)
                         (PBYTE)optionStr.sdAID, optionStr.sdAIDLen,
 				      NULL, NULL,
 				      optionStr.nvCodeLimit,
-				      optionStr.nvDataLimit,
-				      optionStr.vDataLimit);
+				      optionStr.vDataLimit,  // jvictor
+				      optionStr.nvDataLimit);// jvictor
 		} else if (platform_mode == PLATFORM_MODE_GP_211) {
 			if (optionStr.sdAIDLen == 0) {
 				optionStr.sdAIDLen = sizeof(GP211_CARD_MANAGER_AID);
@@ -898,8 +898,8 @@ static int handleCommands(FILE *fd)
                         (PBYTE)optionStr.sdAID, optionStr.sdAIDLen,
 					    NULL, NULL,
 					    optionStr.nvCodeLimit,
-					    optionStr.nvDataLimit,
-					    optionStr.vDataLimit);
+					    optionStr.vDataLimit,   // jvictor
+					    optionStr.nvDataLimit); // jvictor
 		}
 
 		if (rv != 0) {
