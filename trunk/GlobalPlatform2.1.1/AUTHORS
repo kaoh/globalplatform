@@ -1,3 +1,4 @@
 Karsten Ohme <k_o_@users.sourceforge.net>
 Matheus Ribeiro <mfribeiro@gmail.com> for GemXpresso Pro daughter key derivation
 Augusto Makiyama <augusto.cesar.makiyama@gmail.com> for adding the key set version and key set index to the SECURITY_INFO structure.
+Roger C. Pao <rpao@users.sourceforge.net> bug fixes for GP211_CARD_MANAGER_AID, GP211_store_data, put_sc_key
