@@ -1,4 +1,4 @@
-/* Copyright (c) 2006, Karsten Ohme
+/* Copyright (c) 2007, Karsten Ohme
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without

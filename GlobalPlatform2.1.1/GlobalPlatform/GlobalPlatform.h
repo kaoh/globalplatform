@@ -1,4 +1,4 @@
-/* Copyright (c) 2005, Karsten Ohme
+/* Copyright (c) 2007, Karsten Ohme
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -147,8 +147,7 @@ static const BYTE OPGP_GEMXPRESSO_DEFAULT_KEY[16] = {0x47, 0x45, 0x4d, 0x58, 0x5
 #define GP211_SCP02_SECURITY_LEVEL_C_MAC 0x01 //!< Secure Channel Protocol '02': C-MAC
 #define GP211_SCP02_SECURITY_LEVEL_NO_SECURE_MESSAGING 0x00 //!< Secure Channel Protocol '02': No secure messaging expected.
 
-
-static const BYTE GP211_CARD_MANAGER_AID[8] = {0xA0, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00}; //!< The AID of the Issuer Security Domain defined by GlobalPlatform 2.1.1 specification.
+static const BYTE GP211_CARD_MANAGER_AID[8] = {0xA0, 0x00, 0x00, 0x01, 0x51, 0x00, 0x00}; //!< The AID of the Issuer Security Domain defined by GlobalPlatform 2.1.1 specification.
 
 #define GP211_KEY_TYPE_RSA 0xA1 //!< RSA key
 #define GP211_KEY_TYPE_3DES 0x81 //!< 3DES key.
