@@ -4,7 +4,7 @@
  * Copyright (C) 1999
  *  David Corcoran <corcoran@linuxnet.com>
  *
- * $Id: wintypes.h,v 1.1 2006-09-17 12:44:23 k_o_ Exp $
+ * $Id: wintypes.h,v 1.2 2007-07-23 22:05:19 k_o_ Exp $
  */
 
 /**
