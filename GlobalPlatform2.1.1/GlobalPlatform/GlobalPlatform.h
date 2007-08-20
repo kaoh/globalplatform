@@ -1,4 +1,4 @@
-/* Copyright (c) 2007, Karsten Ohme
+/* Copyright (c) 2005, Karsten Ohme
  * All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
@@ -102,16 +102,36 @@ static const BYTE OPGP_GEMXPRESSO_DEFAULT_KEY[16] = {0x47, 0x45, 0x4d, 0x58, 0x5
   */
 #define GP211_SCP01_IMPL_i15 0x15
 
+/** Secure Channel Protocol '02': "i" = '44': Initiation mode explicit, C-MAC on modified APDU, 
+  * ICV set to zero, no ICV encryption, 1 Secure Channel base key, 
+  * well-known pseudo-random algorithm (card challenge),
+  */
+#define GP211_SCP02_IMPL_i44 0x44
+/** Secure Channel Protocol '02': "i" = '45': Initiation mode explicit, C-MAC on modified APDU, 
+  * ICV set to zero, no ICV encryption, 3 Secure Channel Keys, 
+  * well-known pseudo-random algorithm (card challenge),
+  */
+#define GP211_SCP02_IMPL_i45 0x45
+/** Secure Channel Protocol '02': "i" = '54': Initiation mode explicit, C-MAC on modified APDU, 
+  * ICV set to zero, ICV encryption for C-MAC session, 1 Secure Channel base key, 
+  * well-known pseudo-random algorithm (card challenge),
+  */
+#define GP211_SCP02_IMPL_i54 0x54
+/** Secure Channel Protocol '02': "i" = '55': Initiation mode explicit, C-MAC on modified APDU, 
+  * ICV set to zero, ICV encryption for C-MAC session, 3 Secure Channel Keys, 
+  * well-known pseudo-random algorithm (card challenge).”
+  */
+#define GP211_SCP02_IMPL_i55 0x55
 /** Secure Channel Protocol '02': "i" '04': Initiation mode explicit, C-MAC on modified APDU,
-  * ICV set to zero, no ICV encryption, 1 Secure Channel base key
+  * ICV set to zero, no ICV encryption, 1 Secure Channel base key, unspecified card challenge generation method
   */
 #define GP211_SCP02_IMPL_i04 0x04
 /** Secure Channel Protocol '02': "i" '05': Initiation mode explicit, C-MAC on modified APDU,
-  * ICV set to zero, no ICV encryption, 3 Secure Channel Keys
+  * ICV set to zero, no ICV encryption, 3 Secure Channel Keys, unspecified card challenge generation method
   */
 #define GP211_SCP02_IMPL_i05 0x05
 /** Secure Channel Protocol '02': "i" '0A': Initiation mode implicit, C-MAC on unmodified APDU,
-  *ICV set to MAC over AID, no ICV encryption, 1 Secure Channel base key
+  * ICV set to MAC over AID, no ICV encryption, 1 Secure Channel base key
   */
 #define GP211_SCP02_IMPL_i0A 0x0A
 /** Secure Channel Protocol '02': "i" '0B': Initiation mode implicit, C-MAC on unmodified APDU,
@@ -119,11 +139,13 @@ static const BYTE OPGP_GEMXPRESSO_DEFAULT_KEY[16] = {0x47, 0x45, 0x4d, 0x58, 0x5
   */
 #define GP211_SCP02_IMPL_i0B 0x0B
 /** Secure Channel Protocol '02': "i" '14': Initiation mode explicit, C-MAC on modified APDU,
-  * ICV set to zero, ICV encryption for CMAC session, 1 Secure Channel base key
+  * ICV set to zero, ICV encryption for CMAC session, 1 Secure Channel base key,
+  * unspecified card challenge generation method
   */
 #define GP211_SCP02_IMPL_i14 0x14
 /** Secure Channel Protocol '02': "i" '15': Initiation mode explicit, C-MAC on modified APDU,
-  *ICV set to zero, ICV encryption for CMAC session, 3 Secure Channel Keys
+  * ICV set to zero, ICV encryption for CMAC session, 3 Secure Channel Keys,
+  * unspecified card challenge generation method
   */
 #define GP211_SCP02_IMPL_i15 0x15
 /** Secure Channel Protocol '02': "i" '1A': Initiation mode implicit, C-MAC on unmodified APDU,
@@ -131,7 +153,7 @@ static const BYTE OPGP_GEMXPRESSO_DEFAULT_KEY[16] = {0x47, 0x45, 0x4d, 0x58, 0x5
   */
 #define GP211_SCP02_IMPL_i1A 0x1A
 /** Secure Channel Protocol '02': "i" '1B': Initiation mode implicit, C-MAC on unmodified APDU,
-  *ICV set to MAC over AID, ICV encryption for C-MAC session, 3 Secure Channel Keys
+  * ICV set to MAC over AID, ICV encryption for C-MAC session, 3 Secure Channel Keys
   */
 #define GP211_SCP02_IMPL_i1B 0x1B
 
@@ -147,10 +169,26 @@ static const BYTE OPGP_GEMXPRESSO_DEFAULT_KEY[16] = {0x47, 0x45, 0x4d, 0x58, 0x5
 #define GP211_SCP02_SECURITY_LEVEL_C_MAC 0x01 //!< Secure Channel Protocol '02': C-MAC
 #define GP211_SCP02_SECURITY_LEVEL_NO_SECURE_MESSAGING 0x00 //!< Secure Channel Protocol '02': No secure messaging expected.
 
-static const BYTE GP211_CARD_MANAGER_AID[8] = {0xA0, 0x00, 0x00, 0x01, 0x51, 0x00, 0x00}; //!< The AID of the Issuer Security Domain defined by GlobalPlatform 2.1.1 specification.
 
-#define GP211_KEY_TYPE_RSA 0xA1 //!< RSA key
-#define GP211_KEY_TYPE_3DES 0x81 //!< 3DES key.
+static const BYTE GP211_CARD_MANAGER_AID[8] = {0xA0, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00}; //!< The AID of the Issuer Security Domain defined by GlobalPlatform 2.1.1 specification.
+
+#define GP211_KEY_TYPE_RSA_PUB_N 0xA1 //!< 'A1' RSA Public Key - modulus N component (clear text).
+#define GP211_KEY_TYPE_RSA_PUB_E 0xA0 //!< 'A0' RSA Public Key - public exponent e component (clear text)
+#define GP211_KEY_TYPE_RSA_PRIV_N 0xA2 //!< ''A2' RSA Private Key - modulus N component
+#define GP211_KEY_TYPE_RSA_PRIV_D 0xA3 //!< ''A3' RSA Private Key - private exponent d component
+#define GP211_KEY_TYPE_RSA_PRIV_P 0xA4 //!< ''A4' RSA Private Key - Chinese Remainder P component
+#define GP211_KEY_TYPE_RSA_PRIV_Q 0xA5 //!< ''A5' RSA Private Key - Chinese Remainder Q component
+#define GP211_KEY_TYPE_RSA_PRIV_PQ 0xA6 //!< ''A6' RSA Private Key - Chinese Remainder PQ component
+#define GP211_KEY_TYPE_RSA_PRIV_DP1 0xA7 //!< ''A7' RSA Private Key - Chinese Remainder DP1 component
+#define GP211_KEY_TYPE_RSA_PRIV_DQ1 0xA8 //!< ''A8' RSA Private Key - Chinese Remainder DQ1 component
+
+
+#define GP211_KEY_TYPE_3DES 0x81 //!< Reserved (triple DES).
+#define GP211_KEY_TYPE_DES 0x80 //!< '80' DES – mode (EBC/CBC) implicitly known.
+#define GP211_KEY_TYPE_3DES_CBC 0x82 //!<'82' Triple DES in CBC mode.
+#define GP211_KEY_TYPE_DES_ECB 0x83 //!<'83' DES in ECB mode.
+#define GP211_KEY_TYPE_DES_CBC 0x84 //!<'84' DES in CBC mode.
+
 #define GP211_LIFE_CYCLE_LOAD_FILE_LOADED 0x01 //!< Executable Load File is loaded.
 #define GP211_LIFE_CYCLE_CARD_OP_READY 0x01 //!< Card is OP ready.
 #define GP211_LIFE_CYCLE_CARD_INITIALIZED 0x07 //!< Card is initialized.
@@ -249,8 +287,11 @@ static const BYTE OP201_CARD_MANAGER_AID[7] = {0xA0, 0x00, 0x00, 0x00, 0x03, 0x0
 #define OP201_SECURITY_LEVEL_MAC 0x01 //!< Command messages are signed.
 #define OP201_SECURITY_LEVEL_PLAIN 0x00 //!< Command messages are plaintext.
 
-#define OP201_KEY_TYPE_RSA 0xA1 //!< RSA key
-#define OP201_KEY_TYPE_3DES 0x81 //!< 3DES key.
+#define OP201_KEY_TYPE_RSA_PUP_N 0xA1 //!< 'A1' RSA Public Key - modulus N component (clear text).
+#define OP201_KEY_TYPE_RSA_PUP_E 0xA0 //!< 'A0' RSA Public Key - public exponent e component (clear text)
+#define OP201_KEY_TYPE_DES 0x80 //!< DES (ECB/CBC) key.
+#define OP201_KEY_TYPE_DES_ECB 0x81 //!< DES ECB.
+#define OP201_KEY_TYPE_DES_CBC 0x82 //!< DES CBC.
 #define OP201_LIFE_CYCLE_LOAD_FILE_LOGICALLY_DELETED 0x00 //!< Executable Load File is logically deleted.
 #define OP201_LIFE_CYCLE_LOAD_FILE_LOADED 0x01 //!< Executable Load File is loaded.
 #define OP201_LIFE_CYCLE_CARD_MANAGER_OP_READY 0x01 //!< Card is OP ready.

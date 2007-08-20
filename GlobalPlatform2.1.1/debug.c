@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, Karsten Ohme
+ * Copyright (c) 2007, Karsten Ohme
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -82,7 +82,6 @@ void log_Log(LPTSTR msg, ...)
 
     if (_tgetenv(_T("GLOBALPLATFORM_DEBUG")))
     {
-
     #ifdef HAVE_VSYSLOG
     if (getenv("GLOBALPLATFORM_LOGFILE")) {
 	goto filelog;
