@@ -41,3 +41,6 @@ History
 12/24/2006       1.4.0	GemXpresso support
                         CAP file support is now default in examples
                         Compiled against GlobalPlatform 4.0.3
+                        
+08/20/2007	     1.4.1	Parameters for install_for_load added and fixed
+                        ico file added
