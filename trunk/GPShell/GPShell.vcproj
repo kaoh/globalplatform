@@ -4,6 +4,7 @@
 	Version="8,00"
 	Name="GPShell"
 	ProjectGUID="{335EE32C-3F99-4EFF-81C1-BBE1658B704A}"
+	RootNamespace="GPShell"
 	Keyword="Win32Proj"
 	>
 	<Platforms>
@@ -56,6 +57,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
+				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Include\mfc&quot;;&quot;C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -66,6 +68,8 @@
 				OutputFile="$(OutDir)/GPShell.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;;..\GlobalPlatform\Debug"
+				EmbedManagedResourceFile=""
+				AssemblyLinkResource=""
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/GPShell.pdb"
 				SubSystem="1"
@@ -135,6 +139,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
+				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Include\mfc&quot;;&quot;C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -145,6 +150,7 @@
 				OutputFile="$(OutDir)/GPShell.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\GlobalPlatform\Release;&quot;C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;"
+				EmbedManagedResourceFile=""
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -209,6 +215,10 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
+			<File
+				RelativePath=".\version.rc"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>
