@@ -7,12 +7,13 @@ Requires : PC/SC Lite http://www.musclecard.com/ (for UNIXes)
            zlib http://www.zlib.net/
 ******************************************************
 
-This is a library for providing access to GlobalPlatform
-conforming smart cards.
+This is a library for providing access to OpenPlatform 2.0.1' and 
+GlobalPlatform 2.1.1 conforming smart cards.
 
-You need also the libraries zlib 1.2.3 (zlib1.dll) and OpenSSL 0.97e 
+You need also the libraries zlib 1.2.3 (zlib1.dll) and OpenSSL 0.9.7e 
 (libeay32.dll and ssleay32.dll) or compatible. Best is to place them 
-in the system directory (C:\Windows\System32 or /usr/(local/)lib usually).
+in the system directory (C:\Windows\System32 or /usr/(local/)lib 
+usually) or application directory.
 
 For more information contact the author through the mailinglist at:
 

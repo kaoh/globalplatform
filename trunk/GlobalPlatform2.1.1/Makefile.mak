@@ -13,19 +13,19 @@
 
 # replace with your path to the OpenSSL header files
 # or specify on command line
-OPENSSL_INC=E:\quarantine\openssl-0.9.7e\include
-
+OPENSSL_INC=C:\Users\widerstand_2\Libs\C\openssl-0.9.8e\include
+               
 # replace with your path to the OpenSSL library files
 # or specify on command line
-OPENSSL_LIB=E:\quarantine\openssl-0.9.7e\out32dll
+OPENSSL_LIB=C:\Users\widerstand_2\Libs\C\openssl-0.9.8e\out32dll
 
 # replace with your path to the zlib header files
 # or specify on command line
-ZLIB_INC=E:\quarantine\zlib123
+ZLIB_INC=C:\Users\widerstand_2\Libs\C\zlib123-dll\include
 
 # replace with your path to the zlib library files
 # or specify on command line
-ZLIB_LIB=E:\quarantine\zlib123\projects\visualc6\Win32_DLL_Release
+ZLIB_LIB=C:\Users\widerstand_2\Libs\C\zlib123-dll\lib
 
 !IF !EXIST($(OPENSSL_INC))
 !ERROR Your path to the header files for OpenSSL is wrong. \
@@ -78,12 +78,12 @@ LINK=link
 
 !IFDEF DEBUG
 LFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).dll /NOLOGO /LIBPATH:$(OPENSSL_LIB) /LIBPATH:$(ZLIB_LIB) /DLL /DEBUG /PDB:$(OUTDIR)/$(LIB_NAME).pdb \
-/SUBSYSTEM:CONSOLE /MACHINE:X86 zlib1.lib ssleay32.lib libeay32.lib winscard.lib kernel32.lib user32.lib gdi32.lib winspool.lib \
-comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib
+/SUBSYSTEM:CONSOLE /MACHINE:X86 zdll.lib ssleay32.lib libeay32.lib winscard.lib kernel32.lib user32.lib gdi32.lib winspool.lib \
+comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib
 !ELSE
 LFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).dll /INCREMENTAL:NO /NOLOGO /LIBPATH:$(OPENSSL_LIB) /LIBPATH:$(ZLIB_LIB) /DLL /SUBSYSTEM:CONSOLE \
-/OPT:REF /OPT:ICF /MACHINE:X86 zlib1.lib ssleay32.lib libeay32.lib winscard.lib kernel32.lib user32.lib gdi32.lib \
-winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib
+/OPT:REF /OPT:ICF /MACHINE:X86 zdll.lib ssleay32.lib libeay32.lib winscard.lib kernel32.lib user32.lib gdi32.lib \
+winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib
 !ENDIF
 
 all: create_dirs $(OUTDIR)/$(LIB_NAME).dll
@@ -104,21 +104,22 @@ $(MINIZIP): unzip/$(@B).c
 
 version.res : version.rc
 !IFDEF DEBUG
-	rc /dDEBUG version.rc
+	rc /dDEBUG /i "$(MSSDK)\Include\mfc" version.rc
 !ELSE
-	rc version.rc
+	rc /i "$(MSSDK)\Include\mfc" version.rc
 !ENDIF
 
 # run doxygen
 doc: do-doc
 
+VERSION=4.2.3
 PREBUILDDIR="GlobalPlatform-$(VERSION)"
 
 prebuild: all
 	-@del /S /F /Q $(PREBUILDDIR)
 	-@mkdir $(PREBUILDDIR)
 	-@mkdir $(PREBUILDDIR)/GlobalPlatform
-	cp Debug/GlobalPlatform.dll Debug/GlobalPlatform.lib ChangeLog README COPYING AUTHORS  $(PREBUILDDIR)
+	cp LICENSE zlib1.dll ssleay32.dll libeay32.dll Debug/GlobalPlatform.dll Debug/GlobalPlatform.lib ChangeLog README COPYING AUTHORS  $(PREBUILDDIR)
 	cp GlobalPlatform/GlobalPlatform.h GlobalPlatform/unicode.h $(PREBUILDDIR)/GlobalPlatform
 	zip -r $(PREBUILDDIR).zip $(PREBUILDDIR)/*
 

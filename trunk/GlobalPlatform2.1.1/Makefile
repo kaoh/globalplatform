@@ -35,12 +35,13 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-build_triplet = i686-pc-linux-gnu
-host_triplet = i686-pc-linux-gnu
+build_triplet = i686-pc-cygwin
+host_triplet = i686-pc-cygwin
+LIBOBJDIR =
 DIST_COMMON = README $(am__configure_deps) $(include_HEADERS) \
 	$(nobase_include_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(top_srcdir)/configure AUTHORS COPYING \
-	ChangeLog INSTALL NEWS config.guess config.sub depcomp \
+	ChangeLog INSTALL NEWS compile config.guess config.sub depcomp \
 	install-sh ltmain.sh missing
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -62,8 +63,10 @@ am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)" \
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libGlobalPlatform_la_LIBADD =
-am_libGlobalPlatform_la_OBJECTS = GlobalPlatform.lo debug.lo ioapi.lo \
-	unzip.lo zip.lo
+am_libGlobalPlatform_la_OBJECTS =  \
+	libGlobalPlatform_la-GlobalPlatform.lo \
+	libGlobalPlatform_la-debug.lo libGlobalPlatform_la-ioapi.lo \
+	libGlobalPlatform_la-unzip.lo libGlobalPlatform_la-zip.lo
 libGlobalPlatform_la_OBJECTS = $(am_libGlobalPlatform_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -94,66 +97,69 @@ DIST_ARCHIVES = $(distdir).tar.gz
 GZIP_ENV = --best
 distuninstallcheck_listfiles = find . -type f -print
 distcleancheck_listfiles = find . -type f -print
-ACLOCAL = ${SHELL} /home/widerstand/MuscleCard/GlobalPlatform/missing --run aclocal-1.9
+ACLOCAL = aclocal-1.9
 AMDEP_FALSE = #
 AMDEP_TRUE = 
-AMTAR = ${SHELL} /home/widerstand/MuscleCard/GlobalPlatform/missing --run tar
+AMTAR = tar
 AR = ar
-AUTOCONF = ${SHELL} /home/widerstand/MuscleCard/GlobalPlatform/missing --run autoconf
-AUTOHEADER = ${SHELL} /home/widerstand/MuscleCard/GlobalPlatform/missing --run autoheader
-AUTOMAKE = ${SHELL} /home/widerstand/MuscleCard/GlobalPlatform/missing --run automake-1.9
+AUTOCONF = autoconf
+AUTOHEADER = autoheader
+AUTOMAKE = automake-1.9
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -g -O2 -I/usr/include/PCSC  
+CFLAGS = -g -O2
 CPP = gcc -E
 CPPFLAGS = 
 CXX = g++
 CXXCPP = g++ -E
 CXXDEPMODE = depmode=gcc3
 CXXFLAGS = -g -O2
-CYGPATH_W = echo
-DEFS = -DPACKAGE_NAME=\"GlobalPlatform\" -DPACKAGE_TARNAME=\"globalplatform\" -DPACKAGE_VERSION=\"4.1.3\" -DPACKAGE_STRING=\"GlobalPlatform\ 4.1.3\" -DPACKAGE_BUGREPORT=\"k_o_@users.sourceforge.net\" -DPACKAGE=\"globalplatform\" -DVERSION=\"4.1.3\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_DLFCN_H=1 -DSTDC_HEADERS=1 -DHAVE_STDLIB_H=1 -DHAVE_MALLOC=1 -DHAVE_VPRINTF=1 -DHAVE_MEMCPY=1 -DHAVE_VSYSLOG=1 -DDEBUG=1 -DHAVE_LIBPCSCLITE=1 -DHAVE_ZCONF_H=1 -DHAVE_ZLIB_H=1 -DHAVE_LIBZ=1 -DHAVE_OPENSSL_RAND_H=1 -DHAVE_OPENSSL_ERR_H=1 -DHAVE_OPENSSL_EVP_H=1 -DHAVE_OPENSSL_PEM_H=1 -DHAVE_LIBCRYPTO=1
+CYGPATH_W = cygpath -w
+DEFS = -DPACKAGE_NAME=\"GlobalPlatform\" -DPACKAGE_TARNAME=\"globalplatform\" -DPACKAGE_VERSION=\"4.2.3\" -DPACKAGE_STRING=\"GlobalPlatform\ 4.2.3\" -DPACKAGE_BUGREPORT=\"k_o_@users.sourceforge.net\" -DPACKAGE=\"globalplatform\" -DVERSION=\"4.2.3\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_DLFCN_H=1 -DSTDC_HEADERS=1 -DHAVE_STDLIB_H=1 -DHAVE_MALLOC=1 -DHAVE_VPRINTF=1 -DHAVE_MEMCPY=1 -DHAVE_VSYSLOG=1 -DDEBUG=1 -DHAVE_ZCONF_H=1 -DHAVE_ZLIB_H=1 -DHAVE_LIBZ=1 -DHAVE_OPENSSL_RAND_H=1 -DHAVE_OPENSSL_ERR_H=1 -DHAVE_OPENSSL_EVP_H=1 -DHAVE_OPENSSL_PEM_H=1 -DHAVE_LIBCRYPTO=1
 DEPDIR = .deps
 ECHO = echo
 ECHO_C = 
 ECHO_N = -n
 ECHO_T = 
-EGREP = /bin/grep -E
-EXEEXT = 
-F77 = 
-FFLAGS = 
-GREP = /bin/grep
+EGREP = /usr/bin/grep -E
+EXEEXT = .exe
+F77 = g77
+FFLAGS = -g -O2
+GREP = /usr/bin/grep
 INSTALL_DATA = ${INSTALL} -m 644
 INSTALL_PROGRAM = ${INSTALL}
 INSTALL_SCRIPT = ${INSTALL}
 INSTALL_STRIP_PROGRAM = ${SHELL} $(install_sh) -c -s
 LDFLAGS = 
 LIBOBJS = 
-LIBS = -lcrypto -lz -lpcsclite 
+LIBS = -lcrypto -lz 
 LIBTOOL = $(SHELL) $(top_builddir)/libtool
 LN_S = ln -s
 LTLIBOBJS = 
-MAKEINFO = ${SHELL} /home/widerstand/MuscleCard/GlobalPlatform/missing --run makeinfo
+MAKEINFO = makeinfo
 OBJEXT = o
 PACKAGE = globalplatform
 PACKAGE_BUGREPORT = k_o_@users.sourceforge.net
 PACKAGE_NAME = GlobalPlatform
-PACKAGE_STRING = GlobalPlatform 4.1.3
+PACKAGE_STRING = GlobalPlatform 4.2.3
 PACKAGE_TARNAME = globalplatform
-PACKAGE_VERSION = 4.1.3
+PACKAGE_VERSION = 4.2.3
 PATH_SEPARATOR = :
-PCSCLITE_CFLAGS = -I/usr/include/PCSC  
-PCSCLITE_LIBS = -lpcsclite  
-PKG_CONFIG = /usr/bin/pkg-config
+PCSCLITE_CFLAGS = -I./pcsclite-includes/
+PCSCLITE_H_PATH = ./pcsclite-includes/
+PCSCLITE_LIBS = -L/cygdrive/c/Program Files/Microsoft Platform SDK for Windows Server 2003 R2/Lib/
+PKG_CONFIG = 
 RANLIB = ranlib
+SED = /usr/bin/sed
 SET_MAKE = 
 SHELL = /bin/sh
 STRIP = strip
-VERSION = 4.1.3
+VERSION = 4.2.3
+WINSCARD_LIB_PATH = /cygdrive/c/Program Files/Microsoft Platform SDK for Windows Server 2003 R2/Lib/
 ac_ct_CC = gcc
 ac_ct_CXX = g++
-ac_ct_F77 = 
+ac_ct_F77 = g77
 am__fastdepCC_FALSE = #
 am__fastdepCC_TRUE = 
 am__fastdepCXX_FALSE = #
@@ -164,25 +170,25 @@ am__quote =
 am__tar = ${AMTAR} chof - "$$tardir"
 am__untar = ${AMTAR} xf -
 bindir = ${exec_prefix}/bin
-build = i686-pc-linux-gnu
+build = i686-pc-cygwin
 build_alias = 
 build_cpu = i686
-build_os = linux-gnu
+build_os = cygwin
 build_vendor = pc
 datadir = ${datarootdir}
 datarootdir = ${prefix}/share
 docdir = ${datarootdir}/doc/${PACKAGE_TARNAME}
 dvidir = ${docdir}
 exec_prefix = ${prefix}
-host = i686-pc-linux-gnu
+host = i686-pc-cygwin
 host_alias = 
 host_cpu = i686
-host_os = linux-gnu
+host_os = cygwin
 host_vendor = pc
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = /home/widerstand/MuscleCard/GlobalPlatform/install-sh
+install_sh = /cygdrive/c/Users/widerstand_2/Documents/Visual Studio 2005/Projects/GlobalPlatform/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -200,16 +206,19 @@ sysconfdir = ${prefix}/etc
 target_alias = 
 EXTRA_DIST = GlobalPlatform.sln GlobalPlatform.vcproj \
 stdafx.c stdafx.h resource.h version.rc DLLMain.c Doxyfile.cfg Makefile.mak \
-unzip/iowin32.c unzip/iowin32.h
+unzip/iowin32.c unzip/iowin32.h reconf GlobalPlatform.sln.old \
+GlobalPlatform.vcproj.7.10.old pcsclite-includes/pcsclite.h \
+pcsclite-includes/README pcsclite-includes/wintypes.h pcsclite-includes/winscard.h
 
 lib_LTLIBRARIES = libGlobalPlatform.la
 include_HEADERS = 
 nobase_include_HEADERS = GlobalPlatform/GlobalPlatform.h GlobalPlatform/unicode.h
 libGlobalPlatform_la_SOURCES = GlobalPlatform/GlobalPlatform.h GlobalPlatform.c debug.h \
-debug.c GlobalPlatform/unicode.h unzip/crypt.h  unzip/ioapi.c unzip/ioapi.h \
+debug.c GlobalPlatform/unicode.h unzip/crypt.h unzip/ioapi.c unzip/ioapi.h \
 unzip/unzip.c unzip/unzip.h unzip/zip.c unzip/zip.h
 
-libGlobalPlatform_la_LDFLAGS = -version-info 4:1:3
+libGlobalPlatform_la_LDFLAGS = -version-info 4:2:3 $(PCSCLITE_LIBS)
+libGlobalPlatform_la_CPPFLAGS = $(AM_CPPFLAGS) $(PCSCLITE_CFLAGS)
 MAINTAINERCLEANFILES = \
 	Makefile.in \
 	configure \
@@ -296,11 +305,11 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-include ./$(DEPDIR)/GlobalPlatform.Plo
-include ./$(DEPDIR)/debug.Plo
-include ./$(DEPDIR)/ioapi.Plo
-include ./$(DEPDIR)/unzip.Plo
-include ./$(DEPDIR)/zip.Plo
+include ./$(DEPDIR)/libGlobalPlatform_la-GlobalPlatform.Plo
+include ./$(DEPDIR)/libGlobalPlatform_la-debug.Plo
+include ./$(DEPDIR)/libGlobalPlatform_la-ioapi.Plo
+include ./$(DEPDIR)/libGlobalPlatform_la-unzip.Plo
+include ./$(DEPDIR)/libGlobalPlatform_la-zip.Plo
 
 .c.o:
 	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -323,26 +332,40 @@ include ./$(DEPDIR)/zip.Plo
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
 #	$(LTCOMPILE) -c -o $@ $<
 
-ioapi.lo: unzip/ioapi.c
-	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ioapi.lo -MD -MP -MF "$(DEPDIR)/ioapi.Tpo" -c -o ioapi.lo `test -f 'unzip/ioapi.c' || echo '$(srcdir)/'`unzip/ioapi.c; \
-	then mv -f "$(DEPDIR)/ioapi.Tpo" "$(DEPDIR)/ioapi.Plo"; else rm -f "$(DEPDIR)/ioapi.Tpo"; exit 1; fi
-#	source='unzip/ioapi.c' object='ioapi.lo' libtool=yes \
+libGlobalPlatform_la-GlobalPlatform.lo: GlobalPlatform.c
+	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libGlobalPlatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libGlobalPlatform_la-GlobalPlatform.lo -MD -MP -MF "$(DEPDIR)/libGlobalPlatform_la-GlobalPlatform.Tpo" -c -o libGlobalPlatform_la-GlobalPlatform.lo `test -f 'GlobalPlatform.c' || echo '$(srcdir)/'`GlobalPlatform.c; \
+	then mv -f "$(DEPDIR)/libGlobalPlatform_la-GlobalPlatform.Tpo" "$(DEPDIR)/libGlobalPlatform_la-GlobalPlatform.Plo"; else rm -f "$(DEPDIR)/libGlobalPlatform_la-GlobalPlatform.Tpo"; exit 1; fi
+#	source='GlobalPlatform.c' object='libGlobalPlatform_la-GlobalPlatform.lo' libtool=yes \
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ioapi.lo `test -f 'unzip/ioapi.c' || echo '$(srcdir)/'`unzip/ioapi.c
+#	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libGlobalPlatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libGlobalPlatform_la-GlobalPlatform.lo `test -f 'GlobalPlatform.c' || echo '$(srcdir)/'`GlobalPlatform.c
 
-unzip.lo: unzip/unzip.c
-	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unzip.lo -MD -MP -MF "$(DEPDIR)/unzip.Tpo" -c -o unzip.lo `test -f 'unzip/unzip.c' || echo '$(srcdir)/'`unzip/unzip.c; \
-	then mv -f "$(DEPDIR)/unzip.Tpo" "$(DEPDIR)/unzip.Plo"; else rm -f "$(DEPDIR)/unzip.Tpo"; exit 1; fi
-#	source='unzip/unzip.c' object='unzip.lo' libtool=yes \
+libGlobalPlatform_la-debug.lo: debug.c
+	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libGlobalPlatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libGlobalPlatform_la-debug.lo -MD -MP -MF "$(DEPDIR)/libGlobalPlatform_la-debug.Tpo" -c -o libGlobalPlatform_la-debug.lo `test -f 'debug.c' || echo '$(srcdir)/'`debug.c; \
+	then mv -f "$(DEPDIR)/libGlobalPlatform_la-debug.Tpo" "$(DEPDIR)/libGlobalPlatform_la-debug.Plo"; else rm -f "$(DEPDIR)/libGlobalPlatform_la-debug.Tpo"; exit 1; fi
+#	source='debug.c' object='libGlobalPlatform_la-debug.lo' libtool=yes \
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unzip.lo `test -f 'unzip/unzip.c' || echo '$(srcdir)/'`unzip/unzip.c
+#	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libGlobalPlatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libGlobalPlatform_la-debug.lo `test -f 'debug.c' || echo '$(srcdir)/'`debug.c
 
-zip.lo: unzip/zip.c
-	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT zip.lo -MD -MP -MF "$(DEPDIR)/zip.Tpo" -c -o zip.lo `test -f 'unzip/zip.c' || echo '$(srcdir)/'`unzip/zip.c; \
-	then mv -f "$(DEPDIR)/zip.Tpo" "$(DEPDIR)/zip.Plo"; else rm -f "$(DEPDIR)/zip.Tpo"; exit 1; fi
-#	source='unzip/zip.c' object='zip.lo' libtool=yes \
+libGlobalPlatform_la-ioapi.lo: unzip/ioapi.c
+	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libGlobalPlatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libGlobalPlatform_la-ioapi.lo -MD -MP -MF "$(DEPDIR)/libGlobalPlatform_la-ioapi.Tpo" -c -o libGlobalPlatform_la-ioapi.lo `test -f 'unzip/ioapi.c' || echo '$(srcdir)/'`unzip/ioapi.c; \
+	then mv -f "$(DEPDIR)/libGlobalPlatform_la-ioapi.Tpo" "$(DEPDIR)/libGlobalPlatform_la-ioapi.Plo"; else rm -f "$(DEPDIR)/libGlobalPlatform_la-ioapi.Tpo"; exit 1; fi
+#	source='unzip/ioapi.c' object='libGlobalPlatform_la-ioapi.lo' libtool=yes \
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o zip.lo `test -f 'unzip/zip.c' || echo '$(srcdir)/'`unzip/zip.c
+#	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libGlobalPlatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libGlobalPlatform_la-ioapi.lo `test -f 'unzip/ioapi.c' || echo '$(srcdir)/'`unzip/ioapi.c
+
+libGlobalPlatform_la-unzip.lo: unzip/unzip.c
+	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libGlobalPlatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libGlobalPlatform_la-unzip.lo -MD -MP -MF "$(DEPDIR)/libGlobalPlatform_la-unzip.Tpo" -c -o libGlobalPlatform_la-unzip.lo `test -f 'unzip/unzip.c' || echo '$(srcdir)/'`unzip/unzip.c; \
+	then mv -f "$(DEPDIR)/libGlobalPlatform_la-unzip.Tpo" "$(DEPDIR)/libGlobalPlatform_la-unzip.Plo"; else rm -f "$(DEPDIR)/libGlobalPlatform_la-unzip.Tpo"; exit 1; fi
+#	source='unzip/unzip.c' object='libGlobalPlatform_la-unzip.lo' libtool=yes \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libGlobalPlatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libGlobalPlatform_la-unzip.lo `test -f 'unzip/unzip.c' || echo '$(srcdir)/'`unzip/unzip.c
+
+libGlobalPlatform_la-zip.lo: unzip/zip.c
+	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libGlobalPlatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libGlobalPlatform_la-zip.lo -MD -MP -MF "$(DEPDIR)/libGlobalPlatform_la-zip.Tpo" -c -o libGlobalPlatform_la-zip.lo `test -f 'unzip/zip.c' || echo '$(srcdir)/'`unzip/zip.c; \
+	then mv -f "$(DEPDIR)/libGlobalPlatform_la-zip.Tpo" "$(DEPDIR)/libGlobalPlatform_la-zip.Plo"; else rm -f "$(DEPDIR)/libGlobalPlatform_la-zip.Tpo"; exit 1; fi
+#	source='unzip/zip.c' object='libGlobalPlatform_la-zip.lo' libtool=yes \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libGlobalPlatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libGlobalPlatform_la-zip.lo `test -f 'unzip/zip.c' || echo '$(srcdir)/'`unzip/zip.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -441,7 +464,7 @@ distclean-tags:
 distdir: $(DISTFILES)
 	$(am__remove_distdir)
 	mkdir $(distdir)
-	$(mkdir_p) $(distdir)/GlobalPlatform $(distdir)/unzip
+	$(mkdir_p) $(distdir)/GlobalPlatform $(distdir)/pcsclite-includes $(distdir)/unzip
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's|.|.|g'`; \
 	list='$(DISTFILES)'; for file in $$list; do \
