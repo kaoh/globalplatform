@@ -37,7 +37,6 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-LIBOBJDIR =
 DIST_COMMON = README $(am__configure_deps) $(include_HEADERS) \
 	$(nobase_include_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(top_srcdir)/configure AUTHORS COPYING \
@@ -151,7 +150,6 @@ PCSCLITE_H_PATH = @PCSCLITE_H_PATH@
 PCSCLITE_LIBS = @PCSCLITE_LIBS@
 PKG_CONFIG = @PKG_CONFIG@
 RANLIB = @RANLIB@
-SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
