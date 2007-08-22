@@ -93,7 +93,7 @@ CFLAGS = -g -O2
 CPP = gcc -E
 CPPFLAGS = 
 CYGPATH_W = echo
-DEFS = -DPACKAGE_NAME=\"GPShell\" -DPACKAGE_TARNAME=\"gpshell\" -DPACKAGE_VERSION=\"1.4.1\" -DPACKAGE_STRING=\"GPShell\ 1.4.1\" -DPACKAGE_BUGREPORT=\"snitmo@gmail.com\" -DPACKAGE=\"gpshell\" -DVERSION=\"1.4.1\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DLSTAT_FOLLOWS_SLASHED_SYMLINK=1 -DHAVE_STDLIB_H=1 -DHAVE_MALLOC=1 -DHAVE_ATOI=1 -DHAVE_FGETS=1 -DHAVE_LIBGLOBALPLATFORM=1
+DEFS = -DPACKAGE_NAME=\"GPShell\" -DPACKAGE_TARNAME=\"gpshell\" -DPACKAGE_VERSION=\"1.4.1\" -DPACKAGE_STRING=\"GPShell\ 1.4.1\" -DPACKAGE_BUGREPORT=\"snitmo@gmail.com\" -DPACKAGE=\"gpshell\" -DVERSION=\"1.4.1\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DLSTAT_FOLLOWS_SLASHED_SYMLINK=1 -DHAVE_STDLIB_H=1 -DHAVE_MALLOC=1 -DHAVE_ATOI=1 -DHAVE_FGETS=1 -DDEBUG=1 -DHAVE_LIBGLOBALPLATFORM=1
 DEPDIR = .deps
 ECHO_C = 
 ECHO_N = -n
@@ -184,7 +184,10 @@ HelloWorld.cap putdefault-cflex.txt replacekey-cflex.txt send_apdu.txt \
 listgp211.txt helloInstallGP211.txt helloDeleteGP211.txt Makefile.mak CHANGES \
 pcsclite-includes/README pcsclite-includes/pcsclite.h pcsclite-includes/winscard.h \
 pcsclite-includes/wintypes.h helloDeletegemXpressoProR3_2E64.txt \
-helloInstallgemXpressoProR3_2E64.txt listgemXpressoProR3_2E64.txt
+helloInstallgemXpressoProR3_2E64.txt listgemXpressoProR3_2E64.txt \
+helloInstallCyberflexe-gate32k.txt helloInstallCyberflexAccess64k.txt \
+helloInstallNokia6131NFC.txt HelloWorld.cap.transf \
+GPShell.sln.old GPShell.vcproj.7.10.old
 
 MAINTAINERCLEANFILES = \
 	Makefile.in \
