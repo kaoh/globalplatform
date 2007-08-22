@@ -15,7 +15,8 @@ pcsclite-includes/README pcsclite-includes/pcsclite.h pcsclite-includes/winscard
 pcsclite-includes/wintypes.h helloDeletegemXpressoProR3_2E64.txt \
 helloInstallgemXpressoProR3_2E64.txt listgemXpressoProR3_2E64.txt \
 helloInstallCyberflexe-gate32k.txt helloInstallCyberflexAccess64k.txt \
-helloInstallNokia6131NFC.txt HelloWorld.cap.transf
+helloInstallNokia6131NFC.txt HelloWorld.cap.transf \
+GPShell.sln.old GPShell.vcproj.7.10.old
 
 MAINTAINERCLEANFILES = \
 	Makefile.in \
