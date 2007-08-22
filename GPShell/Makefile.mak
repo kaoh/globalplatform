@@ -85,21 +85,21 @@ version.res : version.rc
 
 VERSION=1.4.1
 DIR=GPShell-$(VERSION)
-SRCDIR=GPShell-$(VERSION)-src
 
-PREBUILD:	clean_package bin_package src_package
+PREBUILD:	clean_package bin_package
 
 bin_package:
 	rm -rf $(DIR)
 	mkdir $(DIR)
-	cp Release/GPShell.exe GlobalPlatform.dll ssleay32.dll libeay32.dll zlib1.dll LICENSE README CHANGES COPYING AUTHORS helloInstall.txt helloDelete.txt helloInstallGP211.txt helloDeleteGP211.txt list.txt listgp211.txt replacekey-cosmo-gp211.txt recyclekey-cosmo-gp211.txt helloDeletegemXpressoProR3_2E64.txt  helloInstallgemXpressoProR3_2E64.txt listgemXpressoProR3_2E64.txt HelloWorld.bin HelloWorld.cap $(DIR)
+	cp Release/GPShell.exe GlobalPlatform.dll ssleay32.dll \
+	libeay32.dll zlib1.dll LICENSE README CHANGES COPYING AUTHORS \
+	helloInstall.txt helloDelete.txt helloInstallGP211.txt helloDeleteGP211.txt \
+	list.txt listgp211.txt replacekey-cosmo-gp211.txt recyclekey-cosmo-gp211.txt \
+	helloDeletegemXpressoProR3_2E64.txt  helloInstallgemXpressoProR3_2E64.txt \
+	listgemXpressoProR3_2E64.txt HelloWorld.bin HelloWorld.cap \
+	helloInstallCyberflexe-gate32k.txt helloInstallCyberflexAccess64k.txt \
+	helloInstallNokia6131NFC.txt HelloWorld.cap.transf $(DIR)
 	zip GPShell-$(VERSION).zip $(DIR)/*
 
-src_package:
-	rm -rf $(SRCDIR)
-	mkdir $(SRCDIR)
-	cp GPShell.c stdafx.c stdafx.h README CHANGES COPYING AUTHORS helloInstall.txt helloDelete.txt helloInstallGP211.txt helloDeleteGP211.txt list.txt listgp211.txt replacekey-cosmo-gp211.txt recyclekey-cosmo-gp211.txt helloDeletegemXpressoProR3_2E64.txt  helloInstallgemXpressoProR3_2E64.txt listgemXpressoProR3_2E64.txt HelloWorld.bin HelloWorld.cap GPShell.mak GPShell.sln GPShell.dep GPShell.dsw GPShell.dsp GPShell.vcproj $(SRCDIR)
-	tar cvfz GPShell-$(VERSION)-src.tar.gz $(SRCDIR)
-
 clean_package:
-	rm -rf "GPShell-$(VERSION).zip" "$(DIR)" "GPShell-$(VERSION)-src.tar.gz" "$(SRCDIR)"
+	rm -rf "GPShell-$(VERSION).zip" "$(DIR)" "$(SRCDIR)"

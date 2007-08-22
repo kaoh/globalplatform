@@ -44,35 +44,89 @@ gpshell can take a script file from standard input, as well as from a file.  Thi
 *** Scriptfile Commands
 
 mode_201 // Set protocol mode to OpenPlatform 2.0.1
+
+---
+
 mode_211 // Set protocol mode to GlobalPlatform 2.1.1
+
+---
+
 gemXpressoPro // If you have a GemXpresso Pro card you must set this.
+
+---
+
 enable_trace // Enable APDU trace
+
+---
+
 establish_context // Establish context
+
+---
+
 card_connect -reader [Reader Name] // Connect to card in the reader
+
+---
+
 open_sc -keyind x -keyver x -key xyz -mac_key xyz -enc_key xyz -kek_key xyz -security x -scp x -scpimpl x // Open secure channel
 
 For OpenPlatform 2.0.1' card only -keyind -keyver -mac_key and enc_key are necessary.
 If you have an GemXpresso Pro card set gemXpressoPro and you MUST specify with -key the master (mother) key. -mac_key and -enc_key are not relevant.
 For GlobalPlatform 2.1.1 cards -scp and -scpimpl should be not necessary to supply. You must also specify -kek_key. If your card supports a Secure Channel Protocol Implementation with only one base key, specify this key with -key and omit the others.
 
+---
+
 select -f AID // select applet instance
 
-The parameters -AID -instAID -pkgAID -nvCodeLimit can be detected automatically and the -AID and -instAID is set to the first applet in appletfile.
-If -sdAID is not specified the Card Issuer Security Domain is assumed.
+---
 
 install -file appletfile -priv privilege -sdAID zzz -AID AID_in_pkg -pkgAID package_AID -instAID instanceAID -nvCodeLimit yyy -nvDataLimit xxx // Load and installs in one step
 
-If -sdAID is not specified the Card Issuer Security Domain is assumed.
+The parameters -AID -instAID -pkgAID -nvCodeLimit can be detected automatically and the -AID and -instAID is set to the first applet in appletfile.
+If -sdAID is not specified the Card Manager AID is assumed 
+on OpenPlatform 2.0.1' cards which defaults to a0000000030000. 
+Sometimes you muss use a000000003000000. For GlobalPlatform cards the Issuer 
+Security Domain AID must be specified, it is usually not the default.
+
+---
+
 install_for_load -pkgAID xxx -sdAID zzz -nvCodeLimit yyy // Install for Load
 
+If -sdAID is not specified the Card Manager AID is assumed 
+on OpenPlatform 2.0.1' cards which defaults to a0000000030000. 
+Sometimes you muss use a000000003000000. For GlobalPlatform cards the Issuer 
+Security Domain AID must be specified, it is usually not the default.
+
+---
+
 load -file appletfile // Load applet
+
+---
+
 install_for_install -priv privilege -AID AID_in_pkg -pkgAID package_AID -instAID instanceAID -nvDataLimit xxx // Instantiate applet
+
+---
+
 card_disconnect // Disconnect card
+
+---
+
 get_status -element e0 // list applets
+
+---
+
 release_context // Release context
+
+---
+
 put_sc_key -keyver 0 -newkeyver 0 -mac_key $new_MAC_key -enc_key $new_ENC_key -kek_key $new_KEK_key -cur_kek $current_KEK_key // add new key set version 2
+
 put_sc_key -keyver 1 -newkeyver 0 -mac_key $new_MAC_key -enc_key $new_ENC_key -kek_key $new_KEK_key -cur_kek $current_KEK_key // replace key set version 1
+
+---
+
 send_apdu -sc 0 -APDU xxx // Send APDU xxx without secure channel
+
+---
 
 Options:
 -keyind 	Key index
@@ -114,10 +168,12 @@ Tested cards:
 
 Oberthur CosmopoliC 32K (OP201)
 CosmopoliC 64K V5.2 (GP211, SCP01, Impl05)
-Axalto CyberFlex e-gate 32k
+Axalto Cyberflex e-gate 32k
 GemXpresso R3.2 E64
 IBM JCOP v2.2 41
 IBM JCOP 31 (36k)
+Nokia 6131 NFC Phone
+Axalto Cyberflex Access 64k
 
 We have tested this with GlobalPlatform.dll and HelloWorld.cap (sample applet from JavaCard development kit 2.1.2).  See helloInstall.txt, helloDelete.txt, and list.txt and the other script files (.txt) for samples. If a CAP file cannot be used, please see the later section (How to convert a .cap file into a .bin file).
 
@@ -154,7 +210,18 @@ For GemXpresso R3.2 E64, you need to specify the Security Domain AID (Card Manag
 
 * CyberFlex cards
 
-For the Cyberflex you also need the CAP transformer (I believe this is a kind of obfuscator) which you must apply to the CAP file. Download it from http://www.trusted-logic.fr/down.php and use it.
+For the Cyberflex you also need the CAP transformer (I believe this is 
+a kind of obfuscator) which you must apply to the CAP file. Download it 
+from http://www.trusted-logic.fr/down.php and use it. For Cyberflex 
+e-gate 32k the simple install command does not work. Unfortunately some 
+parameters are not accepted by the card. You must execute the single 
+steps:
+
+install_for_load
+load
+install_for_install
+
+See the sample file helloInstallCyberflexe-gate32k.txt.
 
 *** How to convert a .cap file into a .ijc (.bin) file
 

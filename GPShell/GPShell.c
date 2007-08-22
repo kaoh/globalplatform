@@ -791,10 +791,10 @@ static int handleCommands(FILE *fd)
 						optionStr.vDataLimit,  // jvictor
 						optionStr.nvDataLimit); // jvictor
 			} else if (platform_mode == PLATFORM_MODE_GP_211) {
-				if (optionStr.sdAIDLen == 0) {
-					optionStr.sdAIDLen = sizeof(GP211_CARD_MANAGER_AID);
-					memcpy(optionStr.sdAID, GP211_CARD_MANAGER_AID, optionStr.sdAIDLen);
-				}
+				//if (optionStr.sdAIDLen == 0) {
+				//	optionStr.sdAIDLen = sizeof(GP211_CARD_MANAGER_AID);
+				//	memcpy(optionStr.sdAID, GP211_CARD_MANAGER_AID, optionStr.sdAIDLen);
+				//}
 				rv = GP211_install_for_load(cardInfo, &securityInfo211,
 							(PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
 							(PBYTE)optionStr.sdAID, optionStr.sdAIDLen,
@@ -889,10 +889,10 @@ static int handleCommands(FILE *fd)
 				      optionStr.vDataLimit,  // jvictor
 				      optionStr.nvDataLimit);// jvictor
 		} else if (platform_mode == PLATFORM_MODE_GP_211) {
-			if (optionStr.sdAIDLen == 0) {
-				optionStr.sdAIDLen = sizeof(GP211_CARD_MANAGER_AID);
-				memcpy(optionStr.sdAID, GP211_CARD_MANAGER_AID, optionStr.sdAIDLen);
-			}
+			//if (optionStr.sdAIDLen == 0) {
+			//	optionStr.sdAIDLen = sizeof(GP211_CARD_MANAGER_AID);
+			//	memcpy(optionStr.sdAID, GP211_CARD_MANAGER_AID, optionStr.sdAIDLen);
+			//}
 			rv = GP211_install_for_load(cardInfo, &securityInfo211,
                         (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
                         (PBYTE)optionStr.sdAID, optionStr.sdAIDLen,
