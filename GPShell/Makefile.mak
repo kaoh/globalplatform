@@ -83,6 +83,11 @@ version.res : version.rc
 	rc /i "$(MSSDK)\Include\mfc" version.rc
 !ENDIF
 
+clean:
+	-@rd /S /Q Debug
+	-@rd /S /Q Release
+	-@del version.res
+	
 VERSION=1.4.1
 DIR=GPShell-$(VERSION)
 
@@ -91,7 +96,7 @@ PREBUILD:	clean_package bin_package
 bin_package:
 	rm -rf $(DIR)
 	mkdir $(DIR)
-	cp Release/GPShell.exe GlobalPlatform.dll ssleay32.dll \
+	cp Debug/GPShell.exe GlobalPlatform.dll ssleay32.dll \
 	libeay32.dll zlib1.dll LICENSE README CHANGES COPYING AUTHORS \
 	helloInstall.txt helloDelete.txt helloInstallGP211.txt helloDeleteGP211.txt \
 	list.txt listgp211.txt replacekey-cosmo-gp211.txt recyclekey-cosmo-gp211.txt \
