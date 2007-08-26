@@ -57,6 +57,11 @@ gemXpressoPro // If you have a GemXpresso Pro card you must set this.
 
 enable_trace // Enable APDU trace
 
+You will see the sent APDUs in clear text. The last two bytes of the 
+reponse are the response code. A reponse code of 9000 means success, 
+otherwise the response code indicates an error. This may be OK when 
+deleting a non existing applet or package.
+
 ---
 
 establish_context // Establish context
