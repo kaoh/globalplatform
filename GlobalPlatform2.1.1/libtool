@@ -4,7 +4,7 @@
 # Generated automatically by  (GNU globalplatform 4.2.3)
 # NOTE: Changes made to this file will be lost: look at ltmain.sh.
 #
-# Copyright (C) 1996, 1997, 1998, 1999, 2000, 2001
+# Copyright (C) 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006
 # Free Software Foundation, Inc.
 #
 # This file is part of GNU Libtool:
@@ -30,21 +30,21 @@
 # the same distribution terms that you use for the rest of that program.
 
 # A sed program that does not truncate output.
-SED="/bin/sed"
+SED="/usr/bin/sed"
 
 # Sed that helps us avoid accidentally triggering echo(1) options like -n.
-Xsed="/bin/sed -e 1s/^X//"
+Xsed="/usr/bin/sed -e 1s/^X//"
 
 # The HP-UX ksh and POSIX shell print the target directory to stdout
 # if CDPATH is set.
 (unset CDPATH) >/dev/null 2>&1 && unset CDPATH
 
 # The names of the tagged configurations supported by this script.
-available_tags=" CXX"
+available_tags=" CXX F77"
 
 # ### BEGIN LIBTOOL CONFIG
 
-# Libtool was configured on host enterprise.federation:
+# Libtool was configured on host Enterprise:
 
 # Shell to use when invoking shell scripts.
 SHELL="/bin/sh"
@@ -56,23 +56,23 @@ build_libtool_libs=yes
 build_old_libs=yes
 
 # Whether or not to add -lc for building shared libraries.
-build_libtool_need_lc=no
+build_libtool_need_lc=yes
 
 # Whether or not to disallow shared libs when runtime libs are static
-allow_libtool_libs_with_static_runtimes=no
+allow_libtool_libs_with_static_runtimes=yes
 
 # Whether or not to optimize for fast installation.
-fast_install=yes
+fast_install=needless
 
 # The host system.
 host_alias=
-host=i686-pc-linux-gnu
-host_os=linux-gnu
+host=i686-pc-cygwin
+host_os=cygwin
 
 # The build system.
 build_alias=
-build=i686-pc-linux-gnu
-build_os=linux-gnu
+build=i686-pc-cygwin
+build_os=cygwin
 
 # An echo program that does not interpret backslashes.
 echo="echo"
@@ -94,10 +94,10 @@ CC="gcc"
 with_gcc=yes
 
 # An ERE matcher.
-EGREP="/bin/grep -E"
+EGREP="/usr/bin/grep -E"
 
 # The linker used to build libraries.
-LD="/usr/bin/ld"
+LD="/usr/i686-pc-cygwin/bin/ld.exe"
 
 # Whether we need hard or soft links.
 LN_S="ln -s"
@@ -137,17 +137,17 @@ objext="o"
 libext="a"
 
 # Shared library suffix (normally ".so").
-shrext_cmds='.so'
+shrext_cmds='.dll'
 
 # Executable file suffix (normally "").
 exeext=""
 
 # Additional compiler flags for building library objects.
-pic_flag=" -fPIC -DPIC"
+pic_flag=" -DDLL_EXPORT -DPIC"
 pic_mode=default
 
 # What is the maximum length of a command?
-max_cmd_len=32768
+max_cmd_len=8192
 
 # Does compiler simultaneously support -c and -o options?
 compiler_c_o="yes"
@@ -186,17 +186,17 @@ whole_archive_flag_spec="\${wl}--whole-archive\$convenience \${wl}--no-whole-arc
 thread_safe_flag_spec=""
 
 # Library versioning type.
-version_type=linux
+version_type=windows
 
 # Format of library name prefix.
 libname_spec="lib\$name"
 
 # List of archive names.  First name is the real one, the rest are links.
 # The last name is the one that the linker finds with -lNAME.
-library_names_spec="\${libname}\${release}\${shared_ext}\$versuffix \${libname}\${release}\${shared_ext}\$major \$libname\${shared_ext}"
+library_names_spec="\$libname.dll.a"
 
 # The coded name of the library, if different from the real name.
-soname_spec="\${libname}\${release}\${shared_ext}\$major"
+soname_spec="\`echo \${libname} | sed -e s/^lib/cyg/\`\`echo \${release} | \$SED -e s/[.]/-/g\`\${versuffix}\${shared_ext}"
 
 # Commands used to build and install an old-style archive.
 RANLIB="ranlib"
@@ -211,13 +211,23 @@ old_archive_from_new_cmds=""
 old_archive_from_expsyms_cmds=""
 
 # Commands used to build and install a shared archive.
-archive_cmds="\$CC -shared \$libobjs \$deplibs \$compiler_flags \${wl}-soname \$wl\$soname -o \$lib"
-archive_expsym_cmds="\$echo \\\"{ global:\\\" > \$output_objdir/\$libname.ver~
-  cat \$export_symbols | sed -e \\\"s/\\\\(.*\\\\)/\\\\1;/\\\" >> \$output_objdir/\$libname.ver~
-  \$echo \\\"local: *; };\\\" >> \$output_objdir/\$libname.ver~
-	  \$CC -shared \$libobjs \$deplibs \$compiler_flags \${wl}-soname \$wl\$soname \${wl}-version-script \${wl}\$output_objdir/\$libname.ver -o \$lib"
-postinstall_cmds=""
-postuninstall_cmds=""
+archive_cmds="\$CC -shared \$libobjs \$deplibs \$compiler_flags -o \$output_objdir/\$soname \${wl}--enable-auto-image-base -Xlinker --out-implib -Xlinker \$lib"
+archive_expsym_cmds="if test \\\"x\\\`\$SED 1q \$export_symbols\\\`\\\" = xEXPORTS; then
+	  cp \$export_symbols \$output_objdir/\$soname.def;
+	else
+	  echo EXPORTS > \$output_objdir/\$soname.def;
+	  cat \$export_symbols >> \$output_objdir/\$soname.def;
+	fi~
+	\$CC -shared \$output_objdir/\$soname.def \$libobjs \$deplibs \$compiler_flags -o \$output_objdir/\$soname \${wl}--enable-auto-image-base -Xlinker --out-implib -Xlinker \$lib"
+postinstall_cmds="base_file=\\\`basename \\\${file}\\\`~
+      dlpath=\\\`\$SHELL 2>&1 -c '. \$dir/'\\\${base_file}'i;echo \\\$dlname'\\\`~
+      dldir=\$destdir/\\\`dirname \\\$dlpath\\\`~
+      test -d \\\$dldir || mkdir -p \\\$dldir~
+      \$install_prog \$dir/\$dlname \\\$dldir/\$dlname~
+      chmod a+x \\\$dldir/\$dlname"
+postuninstall_cmds="dldll=\\\`\$SHELL 2>&1 -c '. \$file; echo \\\$dlname'\\\`~
+      dlpath=\$dir/\\\$dldll~
+       \$rm \\\$dlpath"
 
 # Commands used to build a loadable module (assumed same as above if empty)
 module_cmds=""
@@ -248,28 +258,28 @@ postdeps=""
 compiler_lib_search_path=""
 
 # Method to check whether dependent libraries are shared objects.
-deplibs_check_method="pass_all"
+deplibs_check_method="file_magic ^x86 archive import|^x86 DLL"
 
 # Command to use when deplibs_check_method == file_magic.
-file_magic_cmd="\$MAGIC_CMD"
+file_magic_cmd="func_win32_libid"
 
 # Flag that allows shared libraries with undefined symbols to be built.
-allow_undefined_flag=""
+allow_undefined_flag="unsupported"
 
 # Flag that forces no undefined symbols.
 no_undefined_flag=""
 
 # Commands used to finish a libtool library installation in a directory.
-finish_cmds="PATH=\\\"\\\$PATH:/sbin\\\" ldconfig -n \$libdir"
+finish_cmds=""
 
 # Same as above, but a single script fragment to be evaled but not shown.
 finish_eval=""
 
 # Take the output of nm and produce a listing of raw symbols and C names.
-global_symbol_pipe="sed -n -e 's/^.*[ 	]\\([ABCDGIRSTW][ABCDGIRSTW]*\\)[ 	][ 	]*\\([_A-Za-z][_A-Za-z0-9]*\\)\$/\\1 \\2 \\2/p'"
+global_symbol_pipe=""
 
 # Transform the output of nm in a proper C declaration
-global_symbol_to_cdecl="sed -n -e 's/^. .* \\(.*\\)\$/extern int \\1;/p'"
+global_symbol_to_cdecl=""
 
 # Transform the output of nm in a C name address pair
 global_symbol_to_c_name_address="sed -n -e 's/^: \\([^ ]*\\) \$/  {\\\"\\1\\\", (lt_ptr) 0},/p' -e 's/^[BCDEGRST] \\([^ ]*\\) \\([^ ]*\\)\$/  {\"\\2\", (lt_ptr) \\&\\2},/p'"
@@ -278,20 +288,20 @@ global_symbol_to_c_name_address="sed -n -e 's/^: \\([^ ]*\\) \$/  {\\\"\\1\\\", 
 runpath_var=LD_RUN_PATH
 
 # This is the shared library path variable.
-shlibpath_var=LD_LIBRARY_PATH
+shlibpath_var=PATH
 
 # Is shlibpath searched before the hard-coded library search path?
-shlibpath_overrides_runpath=no
+shlibpath_overrides_runpath=yes
 
 # How to hardcode a shared library path into an executable.
 hardcode_action=immediate
 
 # Whether we should hardcode library paths into libraries.
-hardcode_into_libs=yes
+hardcode_into_libs=no
 
 # Flag to hardcode $libdir into a binary during linking.
 # This must work even if $libdir does not exist.
-hardcode_libdir_flag_spec="\${wl}--rpath \${wl}\$libdir"
+hardcode_libdir_flag_spec="-L\$libdir"
 
 # If ld is used when linking, flag to hardcode $libdir into
 # a binary during linking. This must work even if $libdir does
@@ -319,16 +329,16 @@ hardcode_automatic=no
 
 # Variables whose values should be saved in libtool wrapper scripts and
 # restored at relink time.
-variables_saved_for_relink="PATH LD_LIBRARY_PATH LD_RUN_PATH GCC_EXEC_PREFIX COMPILER_PATH LIBRARY_PATH"
+variables_saved_for_relink="PATH PATH LD_RUN_PATH GCC_EXEC_PREFIX COMPILER_PATH LIBRARY_PATH"
 
 # Whether libtool must link a program against all its dependency libraries.
-link_all_deplibs=no
+link_all_deplibs=unknown
 
 # Compile-time system search path for libraries
-sys_lib_search_path_spec=" /usr/lib/gcc/i486-linux-gnu/4.1.3/ /usr/lib/gcc/i486-linux-gnu/4.1.3/ /usr/lib/gcc/i486-linux-gnu/4.1.3/../../../../i486-linux-gnu/lib/i486-linux-gnu/4.1.3/ /usr/lib/gcc/i486-linux-gnu/4.1.3/../../../../i486-linux-gnu/lib/ /usr/lib/gcc/i486-linux-gnu/4.1.3/../../../i486-linux-gnu/4.1.3/ /usr/lib/gcc/i486-linux-gnu/4.1.3/../../../ /lib/i486-linux-gnu/4.1.3/ /lib/ /usr/lib/i486-linux-gnu/4.1.3/ /usr/lib/"
+sys_lib_search_path_spec="/usr/lib /lib/w32api /lib /usr/local/lib"
 
 # Run-time system search path for libraries
-sys_lib_dlsearch_path_spec="/lib /usr/lib /usr/X11R6/lib/Xaw3d /usr/X11R6/lib /usr/i486-linuxlibc1/lib /usr/local/lib /lib/i486-linux-gnu /usr/lib/i486-linux-gnu "
+sys_lib_dlsearch_path_spec="/lib /usr/lib"
 
 # Fix the shell variable $srcfile for the compiler.
 fix_srcfile_path=""
@@ -337,7 +347,7 @@ fix_srcfile_path=""
 always_export_symbols=no
 
 # The commands to list exported symbols.
-export_symbols_cmds="\$NM \$libobjs \$convenience | \$global_symbol_pipe | \$SED 's/.* //' | sort | uniq > \$export_symbols"
+export_symbols_cmds="\$NM \$libobjs \$convenience | \$global_symbol_pipe | \$SED -e '/^[BCDGRS][ ]/s/.*[ ]\\\\([^ ]*\\\\)/\\\\1 DATA/' -e '/^[AITW][ ]/s/.*[ ]//' | sort | uniq > \$export_symbols"
 
 # The commands to extract the exported symbol list from a shared archive.
 extract_expsyms_cmds=""
@@ -7279,7 +7289,7 @@ disable_libs=static
 # End:
 # ### BEGIN LIBTOOL TAG CONFIG: CXX
 
-# Libtool was configured on host enterprise.federation:
+# Libtool was configured on host Enterprise:
 
 # Shell to use when invoking shell scripts.
 SHELL="/bin/sh"
@@ -7294,20 +7304,20 @@ build_old_libs=yes
 build_libtool_need_lc=no
 
 # Whether or not to disallow shared libs when runtime libs are static
-allow_libtool_libs_with_static_runtimes=no
+allow_libtool_libs_with_static_runtimes=yes
 
 # Whether or not to optimize for fast installation.
-fast_install=yes
+fast_install=needless
 
 # The host system.
 host_alias=
-host=i686-pc-linux-gnu
-host_os=linux-gnu
+host=i686-pc-cygwin
+host_os=cygwin
 
 # The build system.
 build_alias=
-build=i686-pc-linux-gnu
-build_os=linux-gnu
+build=i686-pc-cygwin
+build_os=cygwin
 
 # An echo program that does not interpret backslashes.
 echo="echo"
@@ -7329,10 +7339,10 @@ CC="g++"
 with_gcc=yes
 
 # An ERE matcher.
-EGREP="/bin/grep -E"
+EGREP="/usr/bin/grep -E"
 
 # The linker used to build libraries.
-LD="/usr/bin/ld"
+LD="/usr/i686-pc-cygwin/bin/ld.exe"
 
 # Whether we need hard or soft links.
 LN_S="ln -s"
@@ -7372,17 +7382,17 @@ objext="o"
 libext="a"
 
 # Shared library suffix (normally ".so").
-shrext_cmds='.so'
+shrext_cmds='.dll'
 
 # Executable file suffix (normally "").
 exeext=""
 
 # Additional compiler flags for building library objects.
-pic_flag=" -fPIC -DPIC"
+pic_flag=" -DDLL_EXPORT -DPIC"
 pic_mode=default
 
 # What is the maximum length of a command?
-max_cmd_len=32768
+max_cmd_len=8192
 
 # Does compiler simultaneously support -c and -o options?
 compiler_c_o="yes"
@@ -7421,17 +7431,17 @@ whole_archive_flag_spec="\${wl}--whole-archive\$convenience \${wl}--no-whole-arc
 thread_safe_flag_spec=""
 
 # Library versioning type.
-version_type=linux
+version_type=windows
 
 # Format of library name prefix.
 libname_spec="lib\$name"
 
 # List of archive names.  First name is the real one, the rest are links.
 # The last name is the one that the linker finds with -lNAME.
-library_names_spec="\${libname}\${release}\${shared_ext}\$versuffix \${libname}\${release}\${shared_ext}\$major \$libname\${shared_ext}"
+library_names_spec="\$libname.dll.a"
 
 # The coded name of the library, if different from the real name.
-soname_spec="\${libname}\${release}\${shared_ext}\$major"
+soname_spec="\`echo \${libname} | sed -e s/^lib/cyg/\`\`echo \${release} | \$SED -e s/[.]/-/g\`\${versuffix}\${shared_ext}"
 
 # Commands used to build and install an old-style archive.
 RANLIB="ranlib"
@@ -7446,10 +7456,23 @@ old_archive_from_new_cmds=""
 old_archive_from_expsyms_cmds=""
 
 # Commands used to build and install a shared archive.
-archive_cmds="\$CC -shared -nostdlib \$predep_objects \$libobjs \$deplibs \$postdep_objects \$compiler_flags \${wl}-soname \$wl\$soname -o \$lib"
-archive_expsym_cmds="\$CC -shared -nostdlib \$predep_objects \$libobjs \$deplibs \$postdep_objects \$compiler_flags \${wl}-soname \$wl\$soname \${wl}-retain-symbols-file \$wl\$export_symbols -o \$lib"
-postinstall_cmds=""
-postuninstall_cmds=""
+archive_cmds="\$CC -shared -nostdlib \$predep_objects \$libobjs \$deplibs \$postdep_objects \$compiler_flags -o \$output_objdir/\$soname \${wl}--enable-auto-image-base -Xlinker --out-implib -Xlinker \$lib"
+archive_expsym_cmds="if test \\\"x\\\`\$SED 1q \$export_symbols\\\`\\\" = xEXPORTS; then
+	cp \$export_symbols \$output_objdir/\$soname.def;
+      else
+	echo EXPORTS > \$output_objdir/\$soname.def;
+	cat \$export_symbols >> \$output_objdir/\$soname.def;
+      fi~
+      \$CC -shared -nostdlib \$output_objdir/\$soname.def \$predep_objects \$libobjs \$deplibs \$postdep_objects \$compiler_flags -o \$output_objdir/\$soname \${wl}--enable-auto-image-base -Xlinker --out-implib -Xlinker \$lib"
+postinstall_cmds="base_file=\\\`basename \\\${file}\\\`~
+      dlpath=\\\`\$SHELL 2>&1 -c '. \$dir/'\\\${base_file}'i;echo \\\$dlname'\\\`~
+      dldir=\$destdir/\\\`dirname \\\$dlpath\\\`~
+      test -d \\\$dldir || mkdir -p \\\$dldir~
+      \$install_prog \$dir/\$dlname \\\$dldir/\$dlname~
+      chmod a+x \\\$dldir/\$dlname"
+postuninstall_cmds="dldll=\\\`\$SHELL 2>&1 -c '. \$file; echo \\\$dlname'\\\`~
+      dlpath=\$dir/\\\$dldll~
+       \$rm \\\$dlpath"
 
 # Commands used to build a loadable module (assumed same as above if empty)
 module_cmds=""
@@ -7461,11 +7484,11 @@ striplib="strip --strip-unneeded"
 
 # Dependencies to place before the objects being linked to create a
 # shared library.
-predep_objects="/usr/lib/gcc/i486-linux-gnu/4.1.3/../../../../lib/crti.o /usr/lib/gcc/i486-linux-gnu/4.1.3/crtbeginS.o"
+predep_objects=""
 
 # Dependencies to place after the objects being linked to create a
 # shared library.
-postdep_objects="/usr/lib/gcc/i486-linux-gnu/4.1.3/crtendS.o /usr/lib/gcc/i486-linux-gnu/4.1.3/../../../../lib/crtn.o"
+postdep_objects=""
 
 # Dependencies to place before the objects being linked to create a
 # shared library.
@@ -7473,35 +7496,35 @@ predeps=""
 
 # Dependencies to place after the objects being linked to create a
 # shared library.
-postdeps="-lstdc++ -lm -lgcc_s -lc -lgcc_s"
+postdeps="-lstdc++ -lgcc -lcygwin -luser32 -lkernel32 -ladvapi32 -lshell32 -lgcc"
 
 # The library search path used internally by the compiler when linking
 # a shared library.
-compiler_lib_search_path="-L/usr/lib/gcc/i486-linux-gnu/4.1.3 -L/usr/lib/gcc/i486-linux-gnu/4.1.3 -L/usr/lib/gcc/i486-linux-gnu/4.1.3/../../../../lib -L/lib/../lib -L/usr/lib/../lib"
+compiler_lib_search_path="-L/usr/lib/gcc/i686-pc-cygwin/3.4.4 -L/usr/lib/gcc/i686-pc-cygwin/3.4.4 -L/usr/lib/gcc/i686-pc-cygwin/3.4.4/../../.."
 
 # Method to check whether dependent libraries are shared objects.
-deplibs_check_method="pass_all"
+deplibs_check_method="file_magic ^x86 archive import|^x86 DLL"
 
 # Command to use when deplibs_check_method == file_magic.
-file_magic_cmd="\$MAGIC_CMD"
+file_magic_cmd="func_win32_libid"
 
 # Flag that allows shared libraries with undefined symbols to be built.
-allow_undefined_flag=""
+allow_undefined_flag="unsupported"
 
 # Flag that forces no undefined symbols.
 no_undefined_flag=""
 
 # Commands used to finish a libtool library installation in a directory.
-finish_cmds="PATH=\\\"\\\$PATH:/sbin\\\" ldconfig -n \$libdir"
+finish_cmds=""
 
 # Same as above, but a single script fragment to be evaled but not shown.
 finish_eval=""
 
 # Take the output of nm and produce a listing of raw symbols and C names.
-global_symbol_pipe="sed -n -e 's/^.*[ 	]\\([ABCDGIRSTW][ABCDGIRSTW]*\\)[ 	][ 	]*\\([_A-Za-z][_A-Za-z0-9]*\\)\$/\\1 \\2 \\2/p'"
+global_symbol_pipe=""
 
 # Transform the output of nm in a proper C declaration
-global_symbol_to_cdecl="sed -n -e 's/^. .* \\(.*\\)\$/extern int \\1;/p'"
+global_symbol_to_cdecl=""
 
 # Transform the output of nm in a C name address pair
 global_symbol_to_c_name_address="sed -n -e 's/^: \\([^ ]*\\) \$/  {\\\"\\1\\\", (lt_ptr) 0},/p' -e 's/^[BCDEGRST] \\([^ ]*\\) \\([^ ]*\\)\$/  {\"\\2\", (lt_ptr) \\&\\2},/p'"
@@ -7510,20 +7533,20 @@ global_symbol_to_c_name_address="sed -n -e 's/^: \\([^ ]*\\) \$/  {\\\"\\1\\\", 
 runpath_var=LD_RUN_PATH
 
 # This is the shared library path variable.
-shlibpath_var=LD_LIBRARY_PATH
+shlibpath_var=PATH
 
 # Is shlibpath searched before the hard-coded library search path?
-shlibpath_overrides_runpath=no
+shlibpath_overrides_runpath=yes
 
 # How to hardcode a shared library path into an executable.
 hardcode_action=immediate
 
 # Whether we should hardcode library paths into libraries.
-hardcode_into_libs=yes
+hardcode_into_libs=no
 
 # Flag to hardcode $libdir into a binary during linking.
 # This must work even if $libdir does not exist.
-hardcode_libdir_flag_spec="\${wl}--rpath \${wl}\$libdir"
+hardcode_libdir_flag_spec="-L\$libdir"
 
 # If ld is used when linking, flag to hardcode $libdir into
 # a binary during linking. This must work even if $libdir does
@@ -7551,16 +7574,16 @@ hardcode_automatic=no
 
 # Variables whose values should be saved in libtool wrapper scripts and
 # restored at relink time.
-variables_saved_for_relink="PATH LD_LIBRARY_PATH LD_RUN_PATH GCC_EXEC_PREFIX COMPILER_PATH LIBRARY_PATH"
+variables_saved_for_relink="PATH PATH LD_RUN_PATH GCC_EXEC_PREFIX COMPILER_PATH LIBRARY_PATH"
 
 # Whether libtool must link a program against all its dependency libraries.
-link_all_deplibs=no
+link_all_deplibs=unknown
 
 # Compile-time system search path for libraries
-sys_lib_search_path_spec=" /usr/lib/gcc/i486-linux-gnu/4.1.3/ /usr/lib/gcc/i486-linux-gnu/4.1.3/ /usr/lib/gcc/i486-linux-gnu/4.1.3/../../../../i486-linux-gnu/lib/i486-linux-gnu/4.1.3/ /usr/lib/gcc/i486-linux-gnu/4.1.3/../../../../i486-linux-gnu/lib/ /usr/lib/gcc/i486-linux-gnu/4.1.3/../../../i486-linux-gnu/4.1.3/ /usr/lib/gcc/i486-linux-gnu/4.1.3/../../../ /lib/i486-linux-gnu/4.1.3/ /lib/ /usr/lib/i486-linux-gnu/4.1.3/ /usr/lib/"
+sys_lib_search_path_spec="/usr/lib /lib/w32api /lib /usr/local/lib"
 
 # Run-time system search path for libraries
-sys_lib_dlsearch_path_spec="/lib /usr/lib /usr/X11R6/lib/Xaw3d /usr/X11R6/lib /usr/i486-linuxlibc1/lib /usr/local/lib /lib/i486-linux-gnu /usr/lib/i486-linux-gnu "
+sys_lib_dlsearch_path_spec="/lib /usr/lib"
 
 # Fix the shell variable $srcfile for the compiler.
 fix_srcfile_path=""
@@ -7569,7 +7592,7 @@ fix_srcfile_path=""
 always_export_symbols=no
 
 # The commands to list exported symbols.
-export_symbols_cmds="\$NM \$libobjs \$convenience | \$global_symbol_pipe | \$SED 's/.* //' | sort | uniq > \$export_symbols"
+export_symbols_cmds="\$NM \$libobjs \$convenience | \$global_symbol_pipe | \$SED -e '/^[BCDGRS][ ]/s/.*[ ]\\\\([^ ]*\\\\)/\\\\1 DATA/;/^.*[ ]__nm__/s/^.*[ ]__nm__\\\\([^ ]*\\\\)[ ][^ ]*/\\\\1 DATA/;/^I /d;/^[AITW][ ]/s/.*[ ]//' | sort | uniq > \$export_symbols"
 
 # The commands to extract the exported symbol list from a shared archive.
 extract_expsyms_cmds=""
@@ -7581,4 +7604,322 @@ exclude_expsyms=""
 include_expsyms=""
 
 # ### END LIBTOOL TAG CONFIG: CXX
+
+# ### BEGIN LIBTOOL TAG CONFIG: F77
+
+# Libtool was configured on host Enterprise:
+
+# Shell to use when invoking shell scripts.
+SHELL="/bin/sh"
+
+# Whether or not to build shared libraries.
+build_libtool_libs=yes
+
+# Whether or not to build static libraries.
+build_old_libs=yes
+
+# Whether or not to add -lc for building shared libraries.
+build_libtool_need_lc=no
+
+# Whether or not to disallow shared libs when runtime libs are static
+allow_libtool_libs_with_static_runtimes=yes
+
+# Whether or not to optimize for fast installation.
+fast_install=needless
+
+# The host system.
+host_alias=
+host=i686-pc-cygwin
+host_os=cygwin
+
+# The build system.
+build_alias=
+build=i686-pc-cygwin
+build_os=cygwin
+
+# An echo program that does not interpret backslashes.
+echo="echo"
+
+# The archiver.
+AR="ar"
+AR_FLAGS="cru"
+
+# A C compiler.
+LTCC="gcc"
+
+# LTCC compiler flags.
+LTCFLAGS="-g -O2"
+
+# A language-specific compiler.
+CC="g77"
+
+# Is the compiler the GNU C compiler?
+with_gcc=yes
+
+# An ERE matcher.
+EGREP="/usr/bin/grep -E"
+
+# The linker used to build libraries.
+LD="/usr/i686-pc-cygwin/bin/ld.exe"
+
+# Whether we need hard or soft links.
+LN_S="ln -s"
+
+# A BSD-compatible nm program.
+NM="/usr/bin/nm -B"
+
+# A symbol stripping program
+STRIP="strip"
+
+# Used to examine libraries when file_magic_cmd begins "file"
+MAGIC_CMD=file
+
+# Used on cygwin: DLL creation program.
+DLLTOOL="dlltool"
+
+# Used on cygwin: object dumper.
+OBJDUMP="objdump"
+
+# Used on cygwin: assembler.
+AS="as"
+
+# The name of the directory that contains temporary libtool files.
+objdir=.libs
+
+# How to create reloadable object files.
+reload_flag=" -r"
+reload_cmds="\$LD\$reload_flag -o \$output\$reload_objs"
+
+# How to pass a linker flag through the compiler.
+wl="-Wl,"
+
+# Object file suffix (normally "o").
+objext="o"
+
+# Old archive suffix (normally "a").
+libext="a"
+
+# Shared library suffix (normally ".so").
+shrext_cmds='.dll'
+
+# Executable file suffix (normally "").
+exeext=""
+
+# Additional compiler flags for building library objects.
+pic_flag=" -DDLL_EXPORT"
+pic_mode=default
+
+# What is the maximum length of a command?
+max_cmd_len=8192
+
+# Does compiler simultaneously support -c and -o options?
+compiler_c_o="yes"
+
+# Must we lock files when doing compilation?
+need_locks="no"
+
+# Do we need the lib prefix for modules?
+need_lib_prefix=no
+
+# Do we need a version for libraries?
+need_version=no
+
+# Whether dlopen is supported.
+dlopen_support=unknown
+
+# Whether dlopen of programs is supported.
+dlopen_self=unknown
+
+# Whether dlopen of statically linked programs is supported.
+dlopen_self_static=unknown
+
+# Compiler flag to prevent dynamic linking.
+link_static_flag="-static"
+
+# Compiler flag to turn off builtin functions.
+no_builtin_flag=""
+
+# Compiler flag to allow reflexive dlopens.
+export_dynamic_flag_spec="\${wl}--export-dynamic"
+
+# Compiler flag to generate shared objects directly from archives.
+whole_archive_flag_spec="\${wl}--whole-archive\$convenience \${wl}--no-whole-archive"
+
+# Compiler flag to generate thread-safe objects.
+thread_safe_flag_spec=""
+
+# Library versioning type.
+version_type=windows
+
+# Format of library name prefix.
+libname_spec="lib\$name"
+
+# List of archive names.  First name is the real one, the rest are links.
+# The last name is the one that the linker finds with -lNAME.
+library_names_spec="\$libname.dll.a"
+
+# The coded name of the library, if different from the real name.
+soname_spec="\`echo \${libname} | sed -e s/^lib/cyg/\`\`echo \${release} | \$SED -e s/[.]/-/g\`\${versuffix}\${shared_ext}"
+
+# Commands used to build and install an old-style archive.
+RANLIB="ranlib"
+old_archive_cmds="\$AR \$AR_FLAGS \$oldlib\$oldobjs\$old_deplibs~\$RANLIB \$oldlib"
+old_postinstall_cmds="chmod 644 \$oldlib~\$RANLIB \$oldlib"
+old_postuninstall_cmds=""
+
+# Create an old-style archive from a shared archive.
+old_archive_from_new_cmds=""
+
+# Create a temporary old-style archive to link instead of a shared archive.
+old_archive_from_expsyms_cmds=""
+
+# Commands used to build and install a shared archive.
+archive_cmds="\$CC -shared \$libobjs \$deplibs \$compiler_flags -o \$output_objdir/\$soname \${wl}--enable-auto-image-base -Xlinker --out-implib -Xlinker \$lib"
+archive_expsym_cmds="if test \\\"x\\\`\$SED 1q \$export_symbols\\\`\\\" = xEXPORTS; then
+	  cp \$export_symbols \$output_objdir/\$soname.def;
+	else
+	  echo EXPORTS > \$output_objdir/\$soname.def;
+	  cat \$export_symbols >> \$output_objdir/\$soname.def;
+	fi~
+	\$CC -shared \$output_objdir/\$soname.def \$libobjs \$deplibs \$compiler_flags -o \$output_objdir/\$soname \${wl}--enable-auto-image-base -Xlinker --out-implib -Xlinker \$lib"
+postinstall_cmds="base_file=\\\`basename \\\${file}\\\`~
+      dlpath=\\\`\$SHELL 2>&1 -c '. \$dir/'\\\${base_file}'i;echo \\\$dlname'\\\`~
+      dldir=\$destdir/\\\`dirname \\\$dlpath\\\`~
+      test -d \\\$dldir || mkdir -p \\\$dldir~
+      \$install_prog \$dir/\$dlname \\\$dldir/\$dlname~
+      chmod a+x \\\$dldir/\$dlname"
+postuninstall_cmds="dldll=\\\`\$SHELL 2>&1 -c '. \$file; echo \\\$dlname'\\\`~
+      dlpath=\$dir/\\\$dldll~
+       \$rm \\\$dlpath"
+
+# Commands used to build a loadable module (assumed same as above if empty)
+module_cmds=""
+module_expsym_cmds=""
+
+# Commands to strip libraries.
+old_striplib="strip --strip-debug"
+striplib="strip --strip-unneeded"
+
+# Dependencies to place before the objects being linked to create a
+# shared library.
+predep_objects=""
+
+# Dependencies to place after the objects being linked to create a
+# shared library.
+postdep_objects=""
+
+# Dependencies to place before the objects being linked to create a
+# shared library.
+predeps=""
+
+# Dependencies to place after the objects being linked to create a
+# shared library.
+postdeps=""
+
+# The library search path used internally by the compiler when linking
+# a shared library.
+compiler_lib_search_path=""
+
+# Method to check whether dependent libraries are shared objects.
+deplibs_check_method="file_magic ^x86 archive import|^x86 DLL"
+
+# Command to use when deplibs_check_method == file_magic.
+file_magic_cmd="func_win32_libid"
+
+# Flag that allows shared libraries with undefined symbols to be built.
+allow_undefined_flag="unsupported"
+
+# Flag that forces no undefined symbols.
+no_undefined_flag=""
+
+# Commands used to finish a libtool library installation in a directory.
+finish_cmds=""
+
+# Same as above, but a single script fragment to be evaled but not shown.
+finish_eval=""
+
+# Take the output of nm and produce a listing of raw symbols and C names.
+global_symbol_pipe=""
+
+# Transform the output of nm in a proper C declaration
+global_symbol_to_cdecl=""
+
+# Transform the output of nm in a C name address pair
+global_symbol_to_c_name_address="sed -n -e 's/^: \\([^ ]*\\) \$/  {\\\"\\1\\\", (lt_ptr) 0},/p' -e 's/^[BCDEGRST] \\([^ ]*\\) \\([^ ]*\\)\$/  {\"\\2\", (lt_ptr) \\&\\2},/p'"
+
+# This is the shared library runtime path variable.
+runpath_var=LD_RUN_PATH
+
+# This is the shared library path variable.
+shlibpath_var=PATH
+
+# Is shlibpath searched before the hard-coded library search path?
+shlibpath_overrides_runpath=yes
+
+# How to hardcode a shared library path into an executable.
+hardcode_action=immediate
+
+# Whether we should hardcode library paths into libraries.
+hardcode_into_libs=no
+
+# Flag to hardcode $libdir into a binary during linking.
+# This must work even if $libdir does not exist.
+hardcode_libdir_flag_spec="-L\$libdir"
+
+# If ld is used when linking, flag to hardcode $libdir into
+# a binary during linking. This must work even if $libdir does
+# not exist.
+hardcode_libdir_flag_spec_ld=""
+
+# Whether we need a single -rpath flag with a separated argument.
+hardcode_libdir_separator=""
+
+# Set to yes if using DIR/libNAME during linking hardcodes DIR into the
+# resulting binary.
+hardcode_direct=no
+
+# Set to yes if using the -LDIR flag during linking hardcodes DIR into the
+# resulting binary.
+hardcode_minus_L=no
+
+# Set to yes if using SHLIBPATH_VAR=DIR during linking hardcodes DIR into
+# the resulting binary.
+hardcode_shlibpath_var=unsupported
+
+# Set to yes if building a shared library automatically hardcodes DIR into the library
+# and all subsequent libraries and executables linked against it.
+hardcode_automatic=no
+
+# Variables whose values should be saved in libtool wrapper scripts and
+# restored at relink time.
+variables_saved_for_relink="PATH PATH LD_RUN_PATH GCC_EXEC_PREFIX COMPILER_PATH LIBRARY_PATH"
+
+# Whether libtool must link a program against all its dependency libraries.
+link_all_deplibs=unknown
+
+# Compile-time system search path for libraries
+sys_lib_search_path_spec="/usr/lib /lib/w32api /lib /usr/local/lib"
+
+# Run-time system search path for libraries
+sys_lib_dlsearch_path_spec="/lib /usr/lib"
+
+# Fix the shell variable $srcfile for the compiler.
+fix_srcfile_path=""
+
+# Set to yes if exported symbols are required.
+always_export_symbols=no
+
+# The commands to list exported symbols.
+export_symbols_cmds="\$NM \$libobjs \$convenience | \$global_symbol_pipe | \$SED -e '/^[BCDGRS][ ]/s/.*[ ]\\\\([^ ]*\\\\)/\\\\1 DATA/' -e '/^[AITW][ ]/s/.*[ ]//' | sort | uniq > \$export_symbols"
+
+# The commands to extract the exported symbol list from a shared archive.
+extract_expsyms_cmds=""
+
+# Symbols that should not be listed in the preloaded symbols.
+exclude_expsyms="_GLOBAL_OFFSET_TABLE_"
+
+# Symbols that must always be exported.
+include_expsyms=""
+
+# ### END LIBTOOL TAG CONFIG: F77
 
