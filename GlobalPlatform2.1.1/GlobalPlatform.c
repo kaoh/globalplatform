@@ -65,6 +65,7 @@
 #include "unzip/unzip.h"
 #include "unzip/zip.h"
 
+// 255 bytes minus 8 byte MAC minus 8 byte encryption padding
 #define MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING 239
 
 #ifndef MAX_PATH
@@ -3014,6 +3015,9 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 	DWORD total=0;
 	DWORD fileSizeSize;
 	DWORD j,k,i=0,count;
+#ifdef DEBUG
+	DWORD g;
+#endif
 	PBYTE loadFileBuf = NULL;
 	DWORD loadFileBufSize;
 	BYTE sequenceNumber=0x00;
@@ -3048,8 +3052,8 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 			//sendBuffer[sendBufferLength-1] = 0x00;
 #ifdef DEBUG
 			log_Log(_T("load: Data to send: "));
-			for (i=0; i<sendBufferLength; i++) {
-				log_Log(_T(" 0x%02x"), sendBuffer[i]);
+			for (g=0; g<sendBufferLength; g++) {
+				log_Log(_T(" 0x%02x"), sendBuffer[g]);
 			}
 
 #endif
@@ -3059,13 +3063,15 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 			}
 #ifdef DEBUG
 			log_Log(_T("load: Data: "));
-			for (i=0; i<recvBufferLength; i++) {
-				log_Log(_T(" 0x%02x"), recvBuffer[i]);
+			for (g=0; g<recvBufferLength; g++) {
+				log_Log(_T(" 0x%02x"), recvBuffer[g]);
 			}
 
 #endif
-			/* Next data block has size k */
-			j=k;
+			/* Start with new APDU */
+			j=0;
+			// The current data block i is not sent so must be handled again
+			i--;
 		}
 	}
 	// send load file data block
@@ -3079,22 +3085,24 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 	if (result != OPGP_ERROR_SUCCESS) {
 		goto end;
 	}
-
-	if (result) {
-		{ result = errno; goto end; }
-	}
 	if (loadFileBufSize < 128L) {
 		fileSizeSize=1;
 	}
 	else if (loadFileBufSize < 256L) {
 		fileSizeSize=2;
 	}
-	else if (loadFileBufSize < 32536L) {
+	else if (loadFileBufSize < 65536L) {
 		fileSizeSize=3;
 	}
 	else {
 		{ result = OPGP_ERROR_APPLICATION_TOO_BIG; goto end; }
 	}
+	// load file can only have 256 blocks (minus the already sent blocks) 
+	// times the maximum APDU size minus the tag and length and the current position in the APDU
+	if (((256-sequenceNumber) * MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING - j - 1 - fileSizeSize) < loadFileBufSize) {
+		{ result = OPGP_ERROR_APPLICATION_TOO_BIG; goto end; }
+	}
+
 	// Enough space left to start load file data block
 
 	if ((MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING-j) > fileSizeSize+1+1) { // At least one byte of the load file data block must be sent.
