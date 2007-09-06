@@ -87,8 +87,8 @@ clean:
 	-@rd /S /Q Debug
 	-@rd /S /Q Release
 	-@del version.res
-	
-VERSION=1.4.1
+
+VERSION=1.4.2	
 DIR=GPShell-$(VERSION)
 
 PREBUILD:	clean_package bin_package
