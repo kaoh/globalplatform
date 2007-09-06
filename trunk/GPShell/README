@@ -13,6 +13,8 @@ Version 1.1.1	9/24/2005
 Version 1.3.0	02/09/2006
 Version 1.3.1	3/24/2006
 Version 1.4.0	12/28/2006
+Version 1.4.1	08/22/2007
+Version 1.4.2	06/09/2007
 
 *** Summary
 
@@ -87,19 +89,13 @@ select -f AID // select applet instance
 install -file appletfile -priv privilege -sdAID zzz -AID AID_in_pkg -pkgAID package_AID -instAID instanceAID -nvCodeLimit yyy -nvDataLimit xxx // Load and installs in one step
 
 The parameters -AID -instAID -pkgAID -nvCodeLimit can be detected automatically and the -AID and -instAID is set to the first applet in appletfile.
-If -sdAID is not specified the Card Manager AID is assumed 
-on OpenPlatform 2.0.1' cards which defaults to a0000000030000. 
-Sometimes you muss use a000000003000000. For GlobalPlatform cards the Issuer 
-Security Domain AID must be specified, it is usually not the default.
+for the sdAID the AID selected with the select command is chosen if not given. Otherwise the default Card Manager / Security Issuer Domain AID is chosen. So usually you do not have to pass it.
 
 ---
 
 install_for_load -pkgAID xxx -sdAID zzz -nvCodeLimit yyy // Install for Load
 
-If -sdAID is not specified the Card Manager AID is assumed 
-on OpenPlatform 2.0.1' cards which defaults to a0000000030000. 
-Sometimes you muss use a000000003000000. For GlobalPlatform cards the Issuer 
-Security Domain AID must be specified, it is usually not the default.
+for the sdAID the AID selected with the select command is chosen if not given. Otherwise the default Card Manager / Security Issuer Domain AID is chosen. So usually you do not have to pass it.
 
 ---
 
@@ -179,6 +175,7 @@ IBM JCOP v2.2 41
 IBM JCOP 31 (36k)
 Nokia 6131 NFC Phone
 Axalto Cyberflex Access 64k
+Gemalto Generations Flexible
 
 We have tested this with GlobalPlatform.dll and HelloWorld.cap (sample applet from JavaCard development kit 2.1.2).  See helloInstall.txt, helloDelete.txt, and list.txt and the other script files (.txt) for samples. If a CAP file cannot be used, please see the later section (How to convert a .cap file into a .bin file).
 
