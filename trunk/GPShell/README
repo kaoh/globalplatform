@@ -14,7 +14,7 @@ Version 1.3.0	02/09/2006
 Version 1.3.1	3/24/2006
 Version 1.4.0	12/28/2006
 Version 1.4.1	08/22/2007
-Version 1.4.2	06/09/2007
+Version 1.4.2	10/03/2007
 
 *** Summary
 
@@ -59,9 +59,9 @@ gemXpressoPro // If you have a GemXpresso Pro card you must set this.
 
 enable_trace // Enable APDU trace
 
-You will see the sent APDUs in clear text. The last two bytes of the 
-reponse are the response code. A reponse code of 9000 means success, 
-otherwise the response code indicates an error. This may be OK when 
+You will see the sent APDUs in clear text. The last two bytes of the
+reponse are the response code. A reponse code of 9000 means success,
+otherwise the response code indicates an error. This may be OK when
 deleting a non existing applet or package.
 
 ---
@@ -195,7 +195,7 @@ For Cyberflex example, please see:
 	replacekey-cflex.txt	// Replace the default key set (key set version 1, value 404142...4f) with a new key (505152...5f)
 	putdefault-cflex.txt	// Replace the new key (505152...5f) with the default key (404142...4f)
 
-For CosmopoliC 64K, you need to add a key set first. See 
+For CosmopoliC 64K, you need to add a key set first. See
 replacekey-cosmo-gp211.txt. I have not tested this particular sample. Please use it as a sample.
 
 This would add a key set 1, and at the same time delete the initialization key set. After the initialization key set is used, you can replace and add key sets as in Cyberflex.
@@ -212,11 +212,11 @@ For GemXpresso R3.2 E64, you need to specify the Security Domain AID (Card Manag
 
 * CyberFlex cards
 
-For the Cyberflex you also need the CAP transformer (I believe this is 
-a kind of obfuscator) which you must apply to the CAP file. Download it 
-from http://www.trusted-logic.fr/down.php and use it. For Cyberflex 
-e-gate 32k the simple install command does not work. Unfortunately some 
-parameters are not accepted by the card. You must execute the single 
+For the Cyberflex you also need the CAP transformer (I believe this is
+a kind of obfuscator) which you must apply to the CAP file. Download it
+from http://www.trusted-logic.fr/down.php and use it. For Cyberflex
+e-gate 32k the simple install command does not work. Unfortunately some
+parameters are not accepted by the card. You must execute the single
 steps:
 
 install_for_load
