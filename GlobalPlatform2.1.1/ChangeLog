@@ -1,13 +1,14 @@
 History
 =======
 
-4.2.3 - Sun Aug 19, 2007, Karsten Ohme
+4.2.3 - Wed Oct 03, 2007, Karsten Ohme
 	Bug in card_connect fixed
 	Cygwin is supported
 	Key types usage fixed
 	Support Card Specification 2.1.1 Amendment A
 		- new Secure Channel Implementation Protocols
 		- Key Type definitions
+	Changed license to LGPL
 
 4.1.3 - Fri Dec 29 2006, Karsten Ohme
 	CAP support for JavaCard 2.2.x was buggy - fixed
