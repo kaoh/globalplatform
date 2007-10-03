@@ -41,10 +41,11 @@ History
 12/24/2006       1.4.0	GemXpresso support
                         CAP file support is now default in examples
                         Compiled against GlobalPlatform 4.0.3
-                        
+
 08/20/2007	     1.4.1	Parameters for install_for_load added and fixed
                         ico file added
-                        
-09/06/2007	     1.4.2	Security Domain AID is automatically chosen based 
-                        on AID given to the select command or default Card 
-                        Manager / Security Issuer Domain AID is chosen
+
+10/03/2007	     1.4.2  Security Domain AID is automatically chosen based
+                        on AID given to the select command or default Card Manager /
+                        Security Issuer Domain AID is chosen
+                        Changed License to LGPL
