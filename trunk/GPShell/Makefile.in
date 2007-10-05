@@ -40,8 +40,9 @@ LIBOBJDIR =
 bin_PROGRAMS = gpshell$(EXEEXT)
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(top_srcdir)/configure AUTHORS COPYING \
-	ChangeLog INSTALL NEWS myaux/compile myaux/config.guess \
-	myaux/config.sub myaux/depcomp myaux/install-sh myaux/missing
+	COPYING.LESSER ChangeLog INSTALL NEWS myaux/compile \
+	myaux/config.guess myaux/config.sub myaux/depcomp \
+	myaux/install-sh myaux/missing
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.in

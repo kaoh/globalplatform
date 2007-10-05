@@ -40,8 +40,9 @@ LIBOBJDIR =
 bin_PROGRAMS = gpshell$(EXEEXT)
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(top_srcdir)/configure AUTHORS COPYING \
-	ChangeLog INSTALL NEWS myaux/compile myaux/config.guess \
-	myaux/config.sub myaux/depcomp myaux/install-sh myaux/missing
+	COPYING.LESSER ChangeLog INSTALL NEWS myaux/compile \
+	myaux/config.guess myaux/config.sub myaux/depcomp \
+	myaux/install-sh myaux/missing
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.in
@@ -93,13 +94,8 @@ CCDEPMODE = depmode=gcc3
 CFLAGS = -g -O2
 CPP = gcc -E
 CPPFLAGS = 
-<<<<<<< Makefile
 CYGPATH_W = cygpath -w
 DEFS = -DPACKAGE_NAME=\"GPShell\" -DPACKAGE_TARNAME=\"gpshell\" -DPACKAGE_VERSION=\"1.4.2\" -DPACKAGE_STRING=\"GPShell\ 1.4.2\" -DPACKAGE_BUGREPORT=\"Karsten\ Ohme\ \<k_o_@users.sourceforge.net\>\ or\ snitmo@gmail.com\" -DPACKAGE=\"gpshell\" -DVERSION=\"1.4.2\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DLSTAT_FOLLOWS_SLASHED_SYMLINK=1 -DHAVE_STDLIB_H=1 -DHAVE_MALLOC=1 -DHAVE_ATOI=1 -DHAVE_FGETS=1 -DDEBUG=1
-=======
-CYGPATH_W = echo
-DEFS = -DPACKAGE_NAME=\"GPShell\" -DPACKAGE_TARNAME=\"gpshell\" -DPACKAGE_VERSION=\"1.4.1\" -DPACKAGE_STRING=\"GPShell\ 1.4.1\" -DPACKAGE_BUGREPORT=\"snitmo@gmail.com\" -DPACKAGE=\"gpshell\" -DVERSION=\"1.4.1\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DLSTAT_FOLLOWS_SLASHED_SYMLINK=1 -DHAVE_STDLIB_H=1 -DHAVE_MALLOC=1 -DHAVE_ATOI=1 -DHAVE_FGETS=1 -DDEBUG=1 -DHAVE_LIBGLOBALPLATFORM=1
->>>>>>> 1.11
 DEPDIR = .deps
 ECHO_C = 
 ECHO_N = -n

@@ -17,6 +17,8 @@ OUTDIR=Debug
 OUTDIR=Release
 !ENDIF
 
+!include makefile.inc
+
 # replace with your path to the GlobalPlatform header files
 # or specify on command line
 GLOBALPLATFORM_INC=..\GlobalPlatform
@@ -72,6 +74,7 @@ create_dirs:
 # compilation and linking
 $(OUTDIR)/$(APP_NAME).exe: $(OBJS) version.res
 	$(LINK) $(LFLAGS) $(OBJS) version.res
+	$(_VC_MANIFEST_EMBED_EXE)
 
 $(OBJS): $(@B).c
 	$(CPP) $(CPPFLAGS) /c /Fd$(OUTDIR)/%|pfF %|pfF.c
@@ -87,6 +90,7 @@ clean:
 	-@rd /S /Q Debug
 	-@rd /S /Q Release
 	-@del version.res
+	$(_VC_MANIFEST_CLEAN)
 
 VERSION=1.4.2
 DIR=GPShell-$(VERSION)
@@ -97,7 +101,7 @@ bin_package:
 	rm -rf $(DIR)
 	mkdir $(DIR)
 	cp Debug/GPShell.exe GlobalPlatform.dll ssleay32.dll \
-	libeay32.dll zlib1.dll LICENSE README CHANGES COPYING AUTHORS \
+	libeay32.dll zlib1.dll LICENSE README CHANGES COPYING COPYING.LESSER AUTHORS \
 	helloInstall.txt helloDelete.txt helloInstallGP211.txt helloDeleteGP211.txt \
 	list.txt listgp211.txt replacekey-cosmo-gp211.txt recyclekey-cosmo-gp211.txt \
 	helloDeletegemXpressoProR3_2E64.txt  helloInstallgemXpressoProR3_2E64.txt \
@@ -108,3 +112,5 @@ bin_package:
 
 clean_package:
 	rm -rf "GPShell-$(VERSION).zip" "$(DIR)" "$(SRCDIR)"
+
+!include makefile.targ.inc
