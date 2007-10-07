@@ -14,7 +14,7 @@ Version 1.3.0	02/09/2006
 Version 1.3.1	3/24/2006
 Version 1.4.0	12/28/2006
 Version 1.4.1	08/22/2007
-Version 1.4.2	10/03/2007
+Version 1.4.2	10/07/2007
 
 *** Summary
 
@@ -152,7 +152,12 @@ Options:
 -vDataLimit	Volatile data size limit
 -file		File name
 -instParam	Installation parameter
--element	Element type to be listed in hex (e0 for all)
+-element	Element type to be listed in hex
+			80 - Card Manager / Card Issuer Security Domain only.
+			40 - Applications (and Security Domains only in GP211).
+			20 - Executable Load Files only.
+			10 - Executable Load Files and their Executable Modules only (Only 
+GP211)
 -sc			Secure Channel mode (0 off, 1 on)
 -APDU		APDU to be sent
 -priv		(DWORD) Privilege.  // e.g. 0x04 Default Selected

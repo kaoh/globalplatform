@@ -1,60 +1,11 @@
 Installation Instructions
 *************************
 
-GlobalPlatform specific
-=======================
+Copyright (C) 1994, 1995, 1996, 1999, 2000, 2001, 2002, 2004, 2005 Free
+Software Foundation, Inc.
 
-Apart from the instructions below which are worth reading, I would like 
-to emphasize the following parameters to the ./configure script.
-
---enable-debug: 
-
-    If you need to get debugging output you must have built a debug version
-and enable the debugging by setting the environment variable
-GLOBALPLATFORM_DEBUG=1. If you explicitly set a log file with
-the environment variable GLOBALPLATFORM_LOGFILE, this log file will be used.
-The default log file is /tmp/GlobalPlatform.log. This must be writable for the 
-user. But if syslog is available during compile time the defualt for debugging 
-statement is to get syslogged. Keep in mind that the debugging output may 
-contain sensitive information, e.g. keys!
-
---prefix=/...:
-
-   Usually this points to /usr/local. This is the place the files will be 
-installed. On some system the default place for installation is different, 
-e.g. Debian uses just /usr. So specify an appropriate place for seemless 
-integration into your system.
-
-Usually pkg-config should be installed and should find the compilation 
-requirements for PCSC-Lite. If this is not the case you must specify 
-PCSCLITE_CFLAGS=-I/... where the headers are located and PCSCLITE_LIBS=-L/...
-where the library is located.
-
-If something is missing configure should complain about the cause.
-
-If you must regenerate the Makefile file you can use the following command:
-
-./reconf
-
-You must have libtool (1.5.23a), automake (1.9.6), autoconf (2.61) and 
-pkg-config (0.21) installed. The version in parentheses are my used version. 
-Use compatible versions.
-
-If you use Cygwin there are some special Windows specific requirements:
-
-    You may have to install the w32api package.
-
-    configure has problems with pathnames with spaces. If you want to build it 
-install it into a directory with no spaces in the pathname.
-The reconf script generates under Windows Vista files which are not accessible 
-for the owning user. You should execute something like "chmod u+rwx " on all files 
-affected by this.
-
-    There is no port for Windows of PCSC-Lite. You must set WINSCARD_LIB_PATH 
-and PCSCLITE_H_PATH. WINSCARD_LIB_PATH must point to the path where 
-WinSCard.lib is located. PCSCLITE_H_PATH must point to the path where the 
-PCSC-Lite header are located. For convenience the include files for PCSC-Lite are 
-contained in the directory pcsclite-include. Use it.
+This file is free documentation; the Free Software Foundation gives
+unlimited permission to copy, distribute and modify it.
 
 Basic Installation
 ==================
