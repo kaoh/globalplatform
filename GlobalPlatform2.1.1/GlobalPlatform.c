@@ -2938,6 +2938,7 @@ LONG GP211_get_status(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYT
 						recvBuffer+j, executableData[i].executableModules[k].AIDLength);
 					j+=executableData[i].executableModules[k].AIDLength;
 				}
+				executableData[i].numExecutableModules = numExecutableModules;
 			}
 			else {
 				applData[i].AIDLength = recvBuffer[j++];

@@ -11,6 +11,8 @@
 !MESSAGE PREBUILD - Builds a prebuild zipped version. VERSION= must be set.
 !MESSAGE
 
+!include makefile.inc
+
 # replace with your path to the OpenSSL header files
 # or specify on command line
 OPENSSL_INC=C:\Users\widerstand_2\Libs\C\openssl-0.9.8e\include
@@ -95,6 +97,7 @@ create_dirs:
 # compilation and linking
 $(OUTDIR)/$(LIB_NAME).dll: $(OBJS) $(MINIZIP) version.res
 	$(LINK) $(LFLAGS) $(OBJS) $(MINIZIP) version.res
+	$(_VC_MANIFEST_EMBED_DLL)
 
 $(OBJS): $(@B).c
 	$(CPP) $(CPPFLAGS) /c /Fd$(OUTDIR)/%|pfF %|pfF.c
@@ -119,7 +122,7 @@ prebuild: all
 	-@del /S /F /Q $(PREBUILDDIR)
 	-@mkdir $(PREBUILDDIR)
 	-@mkdir $(PREBUILDDIR)/GlobalPlatform
-	cp LICENSE zlib1.dll ssleay32.dll libeay32.dll Debug/GlobalPlatform.dll Debug/GlobalPlatform.lib ChangeLog README COPYING AUTHORS  $(PREBUILDDIR)
+	cp LICENSE zlib1.dll ssleay32.dll libeay32.dll Debug/GlobalPlatform.dll Debug/GlobalPlatform.lib ChangeLog README COPYING COPYING.LESSER AUTHORS  $(PREBUILDDIR)
 	cp GlobalPlatform/GlobalPlatform.h GlobalPlatform/unicode.h $(PREBUILDDIR)/GlobalPlatform
 	zip -r $(PREBUILDDIR).zip $(PREBUILDDIR)/*
 
@@ -128,6 +131,7 @@ clean:
 	-@rd /S /Q Release
 	-@rd /S /Q Doc
 	-@del version.res
+	$(_VC_MANIFEST_CLEAN)
 
 do-doc:
 	-@mkdir Doc
@@ -137,3 +141,5 @@ do-doc:
 !ELSE
 	$(DOXYGEN) Doxyfile.cfg
 !ENDIF
+
+!include makefile.targ.inc

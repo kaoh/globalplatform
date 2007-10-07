@@ -9,6 +9,7 @@ History
 		- new Secure Channel Implementation Protocols
 		- Key Type definitions
 	Changed license to LGPL
+	Executable Modules were not reported correctly
 
 4.1.3 - Fri Dec 29 2006, Karsten Ohme
 	CAP support for JavaCard 2.2.x was buggy - fixed

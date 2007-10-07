@@ -1091,17 +1091,39 @@ static int handleCommands(FILE *fd)
 #ifdef DEBUG
 		    printf ("GP211_get_status() returned %d items\n", numData);
 #endif
-		    printf ("\nList of applets (AID state privileges)\n");
-		    for (i=0; i<(int)numData; i++) {
-			int j;
-
-			for (j=0; j<appData[i].AIDLength; j++) {
-			    printf ("%02x", appData[i].AID[j]);
+			if (optionStr.element == GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES) {
+				printf ("\nList of Ex. Load File (AID state Ex. Module AIDs)\n");
 			}
+			else {
+				printf ("\nList of elements (AID state privileges)\n");
+			}
+		    for (i=0; i<(int)numData; i++) {
+				int j;
+				int k;
 
-			printf ("\t%x", appData[i].lifeCycleState);
-			printf ("\t%x\n", appData[i].privileges);
-		    }
+				if (optionStr.element == GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES) {
+					for (j=0; j<execData[i].AIDLength; j++) {
+						printf ("%02x", execData[i].AID[j]);
+					}
+					printf ("\t%x\n", execData[i].lifeCycleState);
+					for (k=0; k<execData[i].numExecutableModules; k++) {
+						int h;
+						printf("\t");
+						for (h=0; h<execData[i].executableModules[k].AIDLength; h++) {
+							printf ("%02x", execData[i].executableModules[k].AID[h]);
+						}
+					}
+					printf("\n");
+				}
+				else {
+					for (j=0; j<appData[i].AIDLength; j++) {
+						printf ("%02x", appData[i].AID[j]);
+					}
+
+					printf ("\t%x", appData[i].lifeCycleState);
+					printf ("\t%x\n", appData[i].privileges);
+				}
+			}
 		}
 		if (rv != 0) {
 		    _tprintf (_T("get_status() returns 0x%08X (%s)\n"),
