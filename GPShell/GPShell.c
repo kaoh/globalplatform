@@ -1134,9 +1134,9 @@ static int handleCommands(FILE *fd)
 
 
 		break;
-	    } else if (strcmp(token, "send_apdu") == 0) {
-		unsigned char recvAPDU[257];
-                DWORD recvAPDULen = 257;
+	    } else if (strcmp(token, "send_apdu") == 0 || strcmp(token, "send_apdu_nostop") == 0) {
+		unsigned char recvAPDU[258];
+                DWORD recvAPDULen = 258;
                 int i;
 		// Install for Load
 		rv = handleOptions(&optionStr);
@@ -1162,8 +1162,11 @@ static int handleCommands(FILE *fd)
 		if (rv != 0) {
 		    _tprintf (_T("send_APDU() returns 0x%08X (%s)\n"),
 			      rv, stringify_error(rv));
+		    // if the command was nostop, don't quit
+		    if (strcmp(token, "send_apdu_nostop") != 0) {
 			rv = EXIT_FAILURE;
 			goto end;
+		    }
 		}
 
 		printf ("Recv APDU: ");
