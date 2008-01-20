@@ -1,6 +1,11 @@
 History
 =======
 
+5.0.0 - Sat Jan 19, 2008, Karsten Ohme
+	specification version added to OPGP_CARD_INFO
+	Fix in send_APDU
+	SCP verification in mutual_authentication
+
 4.2.3 - Wed Oct 03, 2007, Karsten Ohme
 	Bug in card_connect fixed
 	Cygwin is supported

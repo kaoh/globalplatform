@@ -115,7 +115,7 @@ version.res : version.rc
 # run doxygen
 doc: do-doc
 
-VERSION=4.2.3
+VERSION=5.0.0
 PREBUILDDIR="GlobalPlatform-$(VERSION)"
 
 prebuild: all

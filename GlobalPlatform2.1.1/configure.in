@@ -1,7 +1,7 @@
 # Require autoconf 2.53
 AC_PREREQ(2.53)
 
-AC_INIT(GlobalPlatform, 4.2.3, k_o_@users.sourceforge.net)
+AC_INIT(GlobalPlatform, 5.0.0, k_o_@users.sourceforge.net)
 AC_COPYRIGHT(COPYING)
 AM_INIT_AUTOMAKE([-Wall -Werror])
 
