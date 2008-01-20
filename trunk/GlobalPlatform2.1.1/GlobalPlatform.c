@@ -70,6 +70,15 @@ static unsigned char ENCDerivationConstant[2] = {0x01, 0x82};//!< Constant for e
 static unsigned char DEKDerivationConstant[2] = {0x01, 0x81};//!< Constant for data encryption session key calculation.
 static unsigned char R_MACDerivationConstant[2] = {0x01, 0x02};//!< Constant for R-MAC session key calculation.
 
+static LONG get_key_data_field(GP211_SECURITY_INFO *secInfo,
+							 PBYTE keyData,
+							 DWORD keyDataLength,
+							 BYTE keyType,
+							 BYTE isSensitive,
+							 PBYTE keyDataField,
+							 PDWORD keyDataFieldLength,
+							 BYTE keyCheckValue[3]);
+
 static LONG create_sessionKey_SCP01(unsigned char key[16], unsigned char cardChallenge[8],
 							   unsigned char hostChallenge[8], unsigned char sessionKey[16]);
 
@@ -504,7 +513,7 @@ static LONG readLoadFileDataBlockSignature(PBYTE buf, PDWORD bufLength, GP211_DA
 }
 
 /**
- * \param cardContext OUT The returned POPGP_CARDCONTEXT.
+ * \param cardContext OUT The returned OPGP_CARDCONTEXT.
  * \return OPGP_ERROR_SUCCESS if no error, error code else
  */
 LONG establish_context(OPGP_CARDCONTEXT *cardContext) {
@@ -634,6 +643,7 @@ LONG card_connect(OPGP_CARDCONTEXT cardContext, OPGP_CSTRING readerName, OPGP_CA
 	cardInfo->state = state;
 
 	cardInfo->logicalChannel = 0;
+	cardInfo->specVersion = GP211;
 
 	result = OPGP_ERROR_SUCCESS;
 end:
@@ -686,7 +696,7 @@ static LONG wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrapp
 	DWORD wrappedLength;
 	unsigned char mac[8];
 	unsigned char encryption[240];
-	int encryptionLength = 240;
+	int i, encryptionLength = 240;
 	DWORD caseAPDU;
 	BYTE C_MAC_ICV[8];
 	int C_MAC_ICVLength = 8;
@@ -768,8 +778,6 @@ static LONG wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrapp
 			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i05
 			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i14
 			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i15
-			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i05
-			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i15
 			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i55
 			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i45
 			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i54
@@ -840,8 +848,18 @@ static LONG wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrapp
 				goto end;
 			}
 		}
-		memcpy(secInfo->lastC_MAC, mac, 8);
-		memcpy(wrappedApduCommand+wrappedLength-8, mac, 8);
+#ifdef DEBUG
+		log_Log(_T("ICV for MAC: "));
+		for (i=0; i<8; i++) {
+			log_Log(_T("0x%02x "), C_MAC_ICV[i]);
+		}
+#endif
+#ifdef DEBUG
+		log_Log(_T("Generated MAC: "));
+		for (i=0; i<8; i++) {
+			log_Log(_T("0x%02x "), mac[i]);
+		}
+#endif
 
 		/* C_MAC on unmodified APDU */
 		if (secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i0A
@@ -870,6 +888,9 @@ static LONG wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrapp
 			} // switch (caseAPDU)
 			wrappedApduCommand[0] = apduCommand[0] | 0x04;
 		}
+
+		memcpy(secInfo->lastC_MAC, mac, 8);
+		memcpy(wrappedApduCommand+wrappedLength-8, mac, 8);
 
 		/* Set all remaining fields and length if no encryption is performed */
 		if ((caseAPDU == 2) || (caseAPDU == 4)) {
@@ -1068,7 +1089,7 @@ static LONG send_APDU(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBY
 
 
 	if (traceEnable) {
-		_ftprintf(traceFile, _T("--> "));
+		_ftprintf(traceFile, _T("Command --> "));
 		for (i=0; i<capduLength; i++) {
 			_ftprintf(traceFile, _T("%02X"), capdu[i]);
 		}
@@ -1084,6 +1105,14 @@ static LONG send_APDU(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBY
 	}
 
 	apduCommand[0] |= cardInfo.logicalChannel;
+
+	if (traceEnable) {
+		_ftprintf(traceFile, _T("Wrapped command --> "));
+		for (i=0; i<apduCommandLength; i++) {
+			_ftprintf(traceFile, _T("%02X"), apduCommand[i]);
+		}
+		_ftprintf(traceFile, _T("\n"));
+	}
 
 	// if T=1 or else T=0
 	if (cardInfo.protocol == OPGP_CARD_PROTOCOL_T1) {
@@ -1151,16 +1180,16 @@ static LONG send_APDU(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBY
 		switch (caseAPDU) {
 			case 2: {
 
-				while ((responseData[responseDataLength + offset - 2] == 0x61)
-					|| (responseData[responseDataLength + offset - 2] == 0x6c)) {
+				while ((responseData[offset] == 0x61)
+					|| (responseData[offset] == 0x6c)) {
 
 					//Le is not accepted by the card and the card indicates the available length La.
 					//The response TPDU from the card indicates that the command is aborted due to
 					//a wrong length and that the right length is La: (SW1='6C' and SW2 codes La).
 
-					if (responseData[responseDataLength + offset - 2] == 0x6c) {
+					if (responseData[offset] == 0x6c) {
 
-						la = responseData[responseDataLength + offset - 1];
+						la = responseData[offset + 1];
 
 						apduCommand[apduCommandLength-1] = la; // P3
 
@@ -1198,7 +1227,7 @@ static LONG send_APDU(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBY
 
 					// if (61)
 
-					if (responseData[responseDataLength + offset - 2] == 0x61) {
+					if (responseData[offset] == 0x61) {
 
 						// Lr < Le
 						// 1. The card sends <0x61,Lr> completion status bytes
@@ -1221,7 +1250,7 @@ static LONG send_APDU(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBY
 						// Applet.process method.
 
 						// These two cases behave the same way
-						la = responseData[responseDataLength + offset - 1];
+						la = responseData[offset + 1];
 
 						apduCommand[0] = 0x00;;
 						apduCommand[1] = 0xC0; // INS (Get Response)
@@ -1265,9 +1294,9 @@ static LONG send_APDU(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBY
 
 				// if 61 etc.
 
-				if (responseData[responseDataLength + offset - 2] == 0x61
-					|| responseData[responseDataLength + offset - 2] == 0x90
-					|| responseData[responseDataLength + offset - 2] == 0x9F) {
+				if (responseData[offset] == 0x61
+					|| responseData[offset] == 0x90
+					|| responseData[offset] == 0x9F) {
 
 					apduCommand[0] = 0x00;
 					apduCommand[1] = 0xC0; // INS (Get Response)
@@ -1281,12 +1310,12 @@ static LONG send_APDU(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBY
 
 					// verify if we have La < Le in the case of sw2 = 0x61 or 0x9f
 
-					if (responseData[responseDataLength + offset - 2] != 0x90) {
-						if (convertByte(responseData[responseDataLength + offset - 1]) < convertByte(le)) {
+					if (responseData[offset] != 0x90) {
+						if (convertByte(responseData[offset + 1]) < convertByte(le)) {
 						// La is requested in the get response
 
-						apduCommand[4] = responseData[responseDataLength + offset - 1];
-						le = responseData[responseDataLength + offset - 1];
+						apduCommand[4] = responseData[offset + 1];
+						le = responseData[offset + 1];
 						}
 					}
 
@@ -1308,15 +1337,15 @@ static LONG send_APDU(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBY
 
 				} // if (61 etc.)
 
-				while ((responseData[responseDataLength + offset - 2] == 0x61)
-					|| (responseData[responseDataLength + offset - 2] == 0x6c)
-					|| (responseData[responseDataLength + offset - 2] == 0x9f)) {
+				while ((responseData[offset] == 0x61)
+					|| (responseData[offset] == 0x6c)
+					|| (responseData[offset] == 0x9f)) {
 
 					// if (6c)
 
-					if (responseData[responseDataLength + offset - 2] == 0x6c) {
+					if (responseData[offset ] == 0x6c) {
 
-						la = responseData[responseDataLength + offset - 1];
+						la = responseData[offset + 1];
 						apduCommand[apduCommandLength -1] = la; // P3
 
 						// T=0 transmition (command w/ La)
@@ -1351,8 +1380,8 @@ static LONG send_APDU(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBY
 
 					// if (61) || (9f)
 
-					if ((responseData[responseDataLength + offset - 2] == 0x61)
-					|| (responseData[responseDataLength + offset - 2] == 0x9f)) {
+					if ((responseData[offset] == 0x61)
+					|| (responseData[offset] == 0x9f)) {
 
 						// Lr < Le
 						// 1. The card sends <0x61,Lr> completion status bytes
@@ -1374,7 +1403,7 @@ static LONG send_APDU(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBY
 						// 6. The card sends <SW1,SW2> completion status on completion of the
 						// Applet.process method.
 
-						la = responseData[responseDataLength + offset - 1];
+						la = responseData[offset + 1];
 
 						apduCommand[0] = 0x00;
 						apduCommand[1] = 0xC0; // INS (Get Response)
@@ -1413,9 +1442,9 @@ static LONG send_APDU(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBY
 
 	// if the case 3 command is actually a case 4 command and the cards wants to responds something.
 
-	if (responseData[responseDataLength + offset - 2] == 0x61) {
+	if (responseData[offset] == 0x61) {
 
-		la = responseData[responseDataLength + offset - 1];
+		la = responseData[offset + 1];
 
 		apduCommand[0] = 0x00;;
 		apduCommand[1] = 0xC0; // INS (Get Response)
@@ -1450,7 +1479,7 @@ static LONG send_APDU(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBY
 	}
 
 	if (traceEnable) {
-		_ftprintf(traceFile, _T("<-- "));
+		_ftprintf(traceFile, _T("Response <-- "));
 		for (i=0; i<*rapduLength; i++) {
 			_ftprintf(traceFile, _T("%02X"), rapdu[i]);
 		}
@@ -1599,26 +1628,14 @@ static LONG put_rsa_key(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 	sendBuffer[i++] = 0; // Lc later calculated
 	sendBuffer[i++] = newKeySetVersion;
 	// modulus
-	if (secInfo->secureChannelProtocol == GP211_SCP01
-		|| secInfo->secureChannelProtocol == GP211_SCP02) {
-			sendBuffer[i++] = GP211_KEY_TYPE_RSA_PUB_N;
-	}
-	else {
-		sendBuffer[i++] = OP201_KEY_TYPE_RSA_PUP_N;
-	}
+	sendBuffer[i++] = GP211_KEY_TYPE_RSA_PUB_N;
 	sendBuffer[i++] = 0x80; // length of RSA modulus
 	memcpy(sendBuffer+i, rsa_modulus, 128); // modulus
 	i+=128;
-	// exponent
-	if (secInfo->secureChannelProtocol == GP211_SCP01
-		|| secInfo->secureChannelProtocol == GP211_SCP02) {
-			sendBuffer[i++] = GP211_KEY_TYPE_RSA_PUB_E;
-	}
-	else {
-		sendBuffer[i++] = OP201_KEY_TYPE_RSA_PUP_E;
-	}
 	// key check value
 	sendBuffer[i++] = 0;
+	// exponent
+	sendBuffer[i++] = GP211_KEY_TYPE_RSA_PUB_E;
 	if (rsa_exponent == 3) {
 		sendBuffer[i++] = 1; // length of public exponent
 		sendBuffer[i++] = 3;
@@ -1686,12 +1703,11 @@ static LONG put_3des_key(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 	DWORD sendBufferLength = 29;
 	DWORD recvBufferLength=256;
 	BYTE recvBuffer[256];
-	BYTE keyCheckValue[8];
-	BYTE encrypted_3des_key[16];
-	int encrypted_3des_key_length;
-	int keyCheckValueLength;
-	BYTE keyCheckTest[8] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
+	BYTE keyCheckValue[3];
+	BYTE keyDataField[22];
+	DWORD keyDataFieldLength=22;
 	DWORD i=0;
+	BYTE keyType;
 	LOG_START(_T("put_3des_key"));
         /*
 	if (keySetVersion > 0x7f)
@@ -1707,37 +1723,21 @@ static LONG put_3des_key(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 	sendBuffer[i++] = keyIndex;
 	sendBuffer[i++] = 0x17;
 	sendBuffer[i++] = newKeySetVersion;
-	if (secInfo->secureChannelProtocol == GP211_SCP01
-		|| secInfo->secureChannelProtocol == GP211_SCP02) {
-		sendBuffer[i++] = GP211_KEY_TYPE_DES;
+
+	if (cardInfo.specVersion == OP201) {
+		keyType = OP201_KEY_TYPE_DES_ECB;
 	}
 	else {
-		sendBuffer[i++] = OP201_KEY_TYPE_DES;
+		keyType = GP211_KEY_TYPE_DES;
 	}
 
-	sendBuffer[i++] = 0x10; // length of 3DES key
-	if (secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i0B
-		|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i1B) {
-			result = calculate_enc_cbc_SCP02(secInfo->dataEncryptionSessionKey, _3DESKey, 16,
-				encrypted_3des_key, &encrypted_3des_key_length);
-		}
-	else {
-		result = calculate_enc_ecb_two_key_triple_des(secInfo->dataEncryptionSessionKey, _3DESKey,
-			16, encrypted_3des_key, &encrypted_3des_key_length);
-	}
-
+	result = get_key_data_field(secInfo, _3DESKey, 16, keyType, 1, keyDataField, &keyDataFieldLength, keyCheckValue);
 	if ( OPGP_ERROR_SUCCESS != result) {
 		goto end;
 	}
-	memcpy(sendBuffer+i, encrypted_3des_key, 16); // key
-	i+=16;
-	sendBuffer[i++] = 0x03; // length of key check value
-	result = calculate_enc_ecb_two_key_triple_des(_3DESKey, keyCheckTest, 8, keyCheckValue, &keyCheckValueLength);
-	if ( OPGP_ERROR_SUCCESS != result) {
-		goto end;
-	}
-	memcpy(sendBuffer+i, keyCheckValue, 3);
-	i+=3;
+	memcpy(sendBuffer+i, keyDataField, keyDataFieldLength); // key
+	i+=keyDataFieldLength;
+
 	sendBuffer[i] = 0x00; // Le
 #ifdef DEBUG
 	log_Log(_T("put_3des_key: Data to send: "));
@@ -1768,7 +1768,7 @@ end:
 /**
  * A keySetVersion value of 0x00 adds a new secure channel key set.
  * Any other value between 0x01 and 0x7f must match an existing key set version.
- * The new key set version defines the key set version a the new secure channel keys belongs to.
+ * The new key set version defines the key set version the new secure channel keys belongs to.
  * This can be the same key version or a new not existing key set version.
  * \param cardInfo IN The OPGP_CARD_INFO structure returned by card_connect().
  * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
@@ -1797,6 +1797,76 @@ LONG GP211_put_secure_channel_keys(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO 
 							 newS_MAC, newDEK);
 }
 
+static LONG get_key_data_field(GP211_SECURITY_INFO *secInfo,
+							 PBYTE keyData,
+							 DWORD keyDataLength,
+							 BYTE keyType,
+							 BYTE isSensitive,
+							 PBYTE keyDataField,
+							 PDWORD keyDataFieldLength,
+							 BYTE keyCheckValue[3]) {
+	LONG result;
+	DWORD sizeNeeded=0, i=0;
+	BYTE encrypted_key[24];
+	int encrypted_key_length;
+	BYTE dummy[16];
+	int dummyLength;
+	BYTE keyCheckTest[8] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
+	LOG_START(_T("get_key_data_field"));
+	// key type + length + key data + length + key check value 
+	sizeNeeded = 1 + 1 + keyDataLength + 1;
+	if (isSensitive) {
+		// 3 byte key check value
+		sizeNeeded+=3;
+	}
+	if (sizeNeeded > *keyDataFieldLength) {
+		result = OPGP_ERROR_INSUFFICIENT_BUFFER;
+		goto end;
+	}
+	// set key type
+	keyDataField[i++] = keyType;
+	keyDataField[i++] = (BYTE)keyDataLength;
+	if (isSensitive) {
+		// sensitive - encrypt
+		// Initiation mode implicit
+		if (secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i0B
+			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i1B
+			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i1A
+			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i0A) {
+				result = calculate_enc_cbc_SCP02(secInfo->dataEncryptionSessionKey, keyData, keyDataLength, encrypted_key, &encrypted_key_length);
+		}
+		else {
+			result = calculate_enc_ecb_two_key_triple_des(secInfo->dataEncryptionSessionKey, keyData, keyDataLength, encrypted_key, &encrypted_key_length);
+		}
+		if ( OPGP_ERROR_SUCCESS != result) {
+			goto end;
+		}
+		// we assume that each key is a multiple of 8 bytes.
+		memcpy(keyDataField+i, encrypted_key, keyDataLength);
+		i+=keyDataLength;
+
+	}
+	else {
+		// not sensitive - copy directly
+		memcpy(keyDataField+i, keyData, keyDataLength);
+		i+=keyDataLength;
+	}
+	// we always use key check values
+	keyDataField[i++] = 0x03; // length of key check value
+	result = calculate_enc_ecb_two_key_triple_des(keyData, keyCheckTest, 8, dummy, &dummyLength);
+	if ( OPGP_ERROR_SUCCESS != result) {
+		goto end;
+	}
+	memcpy(keyDataField+i, dummy, 3);
+	memcpy(keyCheckValue, dummy, 3);
+	i+=3;
+	*keyDataFieldLength = i;
+	{ result = OPGP_ERROR_SUCCESS; goto end; }
+end:
+	LOG_END(_T("get_key_data_field"), result);
+	return result;
+}
+
 static LONG put_secure_channel_keys(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 							 BYTE keySetVersion,
 							 BYTE newKeySetVersion, BYTE newBaseKey[16],
@@ -1807,14 +1877,13 @@ static LONG put_secure_channel_keys(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO
 	DWORD sendBufferLength=73;
 	DWORD recvBufferLength=256;
 	BYTE recvBuffer[256];
-	BYTE keyCheckValue1[8];
-	BYTE keyCheckValue2[8];
-	BYTE keyCheckValue3[8];
-	BYTE encrypted_key[16];
-	int encrypted_key_length;
-	int keyCheckValueLength;
-	BYTE keyCheckTest[8] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
+	BYTE keyDataField[22];
+	DWORD keyDataFieldLength=22;
+	BYTE keyCheckValue1[3];
+	BYTE keyCheckValue2[3];
+	BYTE keyCheckValue3[3];
 	DWORD i=0;
+	BYTE keyType;
 	LOG_START(_T("put_secure_channel_keys"));
         /*
 	if (keySetVersion > 0x7f)
@@ -1829,124 +1898,51 @@ static LONG put_secure_channel_keys(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO
 	sendBuffer[i++] = 0x43;
 
 	sendBuffer[i++] = newKeySetVersion;
-	/* Secure Channel base key */
+	if (cardInfo.specVersion == OP201) {
+		keyType = OP201_KEY_TYPE_DES_ECB;
+	}
+	else {
+		keyType = GP211_KEY_TYPE_DES;
+	}
+	/* only Secure Channel base key */
 	if (secInfo->secureChannelProtocol == GP211_SCP02 &&
 		(secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i04
 			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i14
 			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i0A
-			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i1A)) {
-		sendBuffer[i++] = GP211_KEY_TYPE_DES;
-		sendBuffer[i++] = 0x10; // length of 3DES key
-		if (secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i0A
-			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i1A) {
-				result = calculate_enc_cbc_SCP02(secInfo->dataEncryptionSessionKey, newBaseKey, 16, encrypted_key, &encrypted_key_length);
-			}
-		else {
-			result = calculate_enc_ecb_two_key_triple_des(secInfo->dataEncryptionSessionKey, newBaseKey, 16, encrypted_key, &encrypted_key_length);
-		}
+			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i1A
+			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i54
+			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i44)) {
+		result = get_key_data_field(secInfo, newBaseKey, 16, keyType, 1, keyDataField, &keyDataFieldLength, keyCheckValue1);
 		if ( OPGP_ERROR_SUCCESS != result) {
 			goto end;
 		}
-		memcpy(sendBuffer+i, encrypted_key, 16); // key
-		i+=16;
-		sendBuffer[i++] = 0x03; // length of key check value
-		result = calculate_enc_ecb_two_key_triple_des(newBaseKey, keyCheckTest, 8, keyCheckValue1, &keyCheckValueLength);
-		if ( OPGP_ERROR_SUCCESS != result) {
-			goto end;
-		}
-		memcpy(sendBuffer+i, keyCheckValue1, 3);
-		i+=3;
+		memcpy(sendBuffer+i, keyDataField, keyDataFieldLength); // key
+		i+=keyDataFieldLength;
 	}
 	else {
 		// S-ENC key
-		if (secInfo->secureChannelProtocol == GP211_SCP01
-			|| secInfo->secureChannelProtocol == GP211_SCP02) {
-			sendBuffer[i++] = GP211_KEY_TYPE_DES;
+		result = get_key_data_field(secInfo, newS_ENC, 16, keyType, 1, keyDataField, &keyDataFieldLength, keyCheckValue1);
+		if ( OPGP_ERROR_SUCCESS != result) {
+			goto end;
 		}
-		else {
-			sendBuffer[i++] = OP201_KEY_TYPE_DES;
-		}
-		sendBuffer[i++] = 0x10; // length of 3DES key
-		if (secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i0B
-			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i1B) {
-				result = calculate_enc_cbc_SCP02(secInfo->dataEncryptionSessionKey, newS_ENC, 16, encrypted_key, &encrypted_key_length);
-			}
-		else {
-			result = calculate_enc_ecb_two_key_triple_des(secInfo->dataEncryptionSessionKey, newS_ENC, 16, encrypted_key, &encrypted_key_length);
-		}
+		memcpy(sendBuffer+i, keyDataField, keyDataFieldLength); // key
+		i+=keyDataFieldLength;
 
-		if ( OPGP_ERROR_SUCCESS != result) {
-			goto end;
-		}
-		memcpy(sendBuffer+i, encrypted_key, 16); // key
-		i+=16;
-		sendBuffer[i++] = 0x03; // length of key check value
-		result = calculate_enc_ecb_two_key_triple_des(newS_ENC, keyCheckTest, 8, keyCheckValue1, &keyCheckValueLength);
-		if ( OPGP_ERROR_SUCCESS != result) {
-			goto end;
-		}
-		memcpy(sendBuffer+i, keyCheckValue1, 3);
-		i+=3;
 		// S-MAC key
-
-		if (secInfo->secureChannelProtocol == GP211_SCP01
-			|| secInfo->secureChannelProtocol == GP211_SCP02) {
-			sendBuffer[i++] = GP211_KEY_TYPE_DES;
-		}
-		else {
-			sendBuffer[i++] = OP201_KEY_TYPE_DES;
-		}
-
-		sendBuffer[i++] = 0x10; // length of 3DES key
-		if (secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i0B
-			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i1B) {
-				result = calculate_enc_cbc_SCP02(secInfo->dataEncryptionSessionKey, newS_MAC, 16, encrypted_key, &encrypted_key_length);
-			}
-		else {
-			result = calculate_enc_ecb_two_key_triple_des(secInfo->dataEncryptionSessionKey, newS_MAC, 16, encrypted_key, &encrypted_key_length);
-		}
+		result = get_key_data_field(secInfo, newS_MAC, 16, keyType, 1, keyDataField, &keyDataFieldLength, keyCheckValue2);
 		if ( OPGP_ERROR_SUCCESS != result) {
 			goto end;
 		}
-		memcpy(sendBuffer+i, encrypted_key, 16); // key
-		i+=16;
-		sendBuffer[i++] = 0x03; // length of key check value
-		result = calculate_enc_ecb_two_key_triple_des(newS_MAC, keyCheckTest, 8, keyCheckValue2, &keyCheckValueLength);
-		if ( OPGP_ERROR_SUCCESS != result) {
-			goto end;
-		}
-		memcpy(sendBuffer+i, keyCheckValue2, 3);
-		i+=3;
+		memcpy(sendBuffer+i, keyDataField, keyDataFieldLength); // key
+		i+=keyDataFieldLength;
+
 		// DEK
-
-		if (secInfo->secureChannelProtocol == GP211_SCP01
-			|| secInfo->secureChannelProtocol == GP211_SCP02) {
-			sendBuffer[i++] = GP211_KEY_TYPE_DES;
-		}
-		else {
-			sendBuffer[i++] = OP201_KEY_TYPE_DES;
-		}
-
-		sendBuffer[i++] = 0x10; // length of 3DES key
-		if (secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i0B
-			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i1B) {
-				result = calculate_enc_cbc_SCP02(secInfo->dataEncryptionSessionKey, newDEK, 16, encrypted_key, &encrypted_key_length);
-			}
-		else {
-			result = calculate_enc_ecb_two_key_triple_des(secInfo->dataEncryptionSessionKey, newDEK, 16, encrypted_key, &encrypted_key_length);
-		}
+		result = get_key_data_field(secInfo, newDEK, 16, keyType, 1, keyDataField, &keyDataFieldLength, keyCheckValue3);
 		if ( OPGP_ERROR_SUCCESS != result) {
 			goto end;
 		}
-		memcpy(sendBuffer+i, encrypted_key, 16); // key
-		i+=16;
-		sendBuffer[i++] = 0x03; // length of key check value
-		result = calculate_enc_ecb_two_key_triple_des(newDEK, keyCheckTest, 8, keyCheckValue3, &keyCheckValueLength);
-		if ( OPGP_ERROR_SUCCESS != result) {
-			goto end;
-		}
-		memcpy(sendBuffer+i, keyCheckValue3, 3);
-		i+=3;
+		memcpy(sendBuffer+i, keyDataField, keyDataFieldLength); // key
+		i+=keyDataFieldLength;
 	}
 	// send the stuff
 
@@ -1971,12 +1967,25 @@ static LONG put_secure_channel_keys(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO
 	}
 
 #endif
-	if (memcmp(keyCheckValue1, recvBuffer+1, 3) != 0)
-		{ result = OPGP_ERROR_KEY_CHECK_VALUE; goto end; }
-	if (memcmp(keyCheckValue2, recvBuffer+1+3, 3) != 0)
-		{ result = OPGP_ERROR_KEY_CHECK_VALUE; goto end; }
-	if (memcmp(keyCheckValue3, recvBuffer+1+6, 3) != 0)
-		{ result = OPGP_ERROR_KEY_CHECK_VALUE; goto end; }
+	/* only Secure Channel base key, so check only first key check value */
+	if (secInfo->secureChannelProtocol == GP211_SCP02 &&
+		(secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i04
+			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i14
+			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i0A
+			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i1A
+			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i54
+			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i44)) {
+		if (memcmp(keyCheckValue1, recvBuffer+1, 3) != 0)
+			{ result = OPGP_ERROR_KEY_CHECK_VALUE; goto end; }
+	}
+	else {
+		if (memcmp(keyCheckValue1, recvBuffer+1, 3) != 0)
+			{ result = OPGP_ERROR_KEY_CHECK_VALUE; goto end; }
+		if (memcmp(keyCheckValue2, recvBuffer+1+3, 3) != 0)
+			{ result = OPGP_ERROR_KEY_CHECK_VALUE; goto end; }
+		if (memcmp(keyCheckValue3, recvBuffer+1+6, 3) != 0)
+			{ result = OPGP_ERROR_KEY_CHECK_VALUE; goto end; }
+	}
 	{ result = OPGP_ERROR_SUCCESS; goto end; }
 end:
 	LOG_END(_T("put_secure_channel_keys"), result);
@@ -2018,15 +2027,18 @@ static LONG put_delegated_management_keys(OPGP_CARD_INFO cardInfo, GP211_SECURIT
 	DWORD recvBufferLength=256;
 	BYTE recvBuffer[256];
 	BYTE keyCheckValue[8];
-	BYTE encrypted_key[16];
-	int encrypted_key_length;
-	int keyCheckValueLength;
+
+	BYTE keyDataField[22];
+	DWORD keyDataFieldLength=22;
 	BYTE keyCheckTest[8] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
+
 	DWORD i=0;
 	EVP_PKEY *key;
 	FILE *PEMKeyFile;
 	BYTE token_verification_rsa_modulus[128];
 	unsigned long token_verification_rsa_exponent;
+	BYTE keyType;
+
 	LOG_START(_T("put_delegated_management_keys"));
 	if (passPhrase == NULL)
 		{ result = OPGP_ERROR_INVALID_PASSWORD; goto end; }
@@ -2057,16 +2069,19 @@ static LONG put_delegated_management_keys(OPGP_CARD_INFO cardInfo, GP211_SECURIT
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xD8;
 	sendBuffer[i++] = keySetVersion;
-	sendBuffer[i++] = 0x81;
+	sendBuffer[i++] = 0x01; // put multiple keys starting at index 1
 	sendBuffer[i++] = 0x00; // Lc later calculated
 
 	sendBuffer[i++] = newKeySetVersion;
+	
 	// Token Verification Key
 
-	sendBuffer[i++] = 0xA1; // alghoritm RSA
+	sendBuffer[i++] = GP211_KEY_TYPE_RSA_PUB_N; // alghoritm RSA modulus
 	sendBuffer[i++] = 0x80; // length of RSA modulus
 	memcpy(sendBuffer+i, token_verification_rsa_modulus, 128); // modulus
 	i+=128;
+	sendBuffer[i++] = 0x00; // no key check value
+	sendBuffer[i++] = GP211_KEY_TYPE_RSA_PUB_E; // alghoritm RSA exponent
 	if (token_verification_rsa_exponent == 3) {
 		sendBuffer[i++] = 1; // length of public exponent
 		sendBuffer[i++] = 3;
@@ -2080,39 +2095,23 @@ static LONG put_delegated_management_keys(OPGP_CARD_INFO cardInfo, GP211_SECURIT
 	else {
 		{ result = OPGP_ERROR_WRONG_EXPONENT; goto end; }
 	}
+	sendBuffer[i++] = 0x00; // no key check value
 
-	// Receipt Generation Key
-
-	if (secInfo->secureChannelProtocol == GP211_SCP01) {
-		sendBuffer[i++] = 0x81; // alghoritm 3DES
+	// key type seems to be used different in OP201 and GP211
+	if (cardInfo.specVersion == OP201) {
+		keyType = OP201_KEY_TYPE_DES_ECB;
 	}
 	else {
-		sendBuffer[i++] = 0x80; // alghoritm 3DES
+		keyType = GP211_KEY_TYPE_DES;
 	}
 
-	sendBuffer[i++] = 0x10; // length of 3DES key
-	if (secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i0B
-		|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i1B) {
-			result = calculate_enc_cbc_SCP02(secInfo->dataEncryptionSessionKey,
-		receiptKey, 16, encrypted_key, &encrypted_key_length);
-		}
-	else {
-		result = calculate_enc_ecb_two_key_triple_des(secInfo->dataEncryptionSessionKey,
-		receiptKey, 16, encrypted_key, &encrypted_key_length);
-	}
-
+	result = get_key_data_field(secInfo, receiptKey, 16, keyType, 1, keyDataField, &keyDataFieldLength, keyCheckValue);
 	if ( OPGP_ERROR_SUCCESS != result) {
 		goto end;
 	}
-	memcpy(sendBuffer+i, encrypted_key, 16); // key
-	i+=16;
-	sendBuffer[i++] = 0x03; // length of key check value
-	result = calculate_enc_ecb_two_key_triple_des(receiptKey, keyCheckTest, 8, keyCheckValue, &keyCheckValueLength);
-	if ( OPGP_ERROR_SUCCESS != result) {
-		goto end;
-	}
-	memcpy(sendBuffer+i, keyCheckValue, 3);
-	i+=3;
+	memcpy(sendBuffer+i, keyDataField, keyDataFieldLength); // key
+	i+=keyDataFieldLength;
+
 	// send the stuff
 
 	sendBuffer[4] = (BYTE)i - 5;
@@ -2148,7 +2147,7 @@ end:
 }
 
 /**
- * If keyIndex is 0x00 all keys within a keySetVersion are deleted.
+ * If keyIndex is 0xFF (=-1) all keys within a keySetVersion are deleted.
  * If keySetVersion is 0x00 all keys with the specified keyIndex are deleted.
 
  * \param cardInfo IN The OPGP_CARD_INFO structure returned by card_connect().
@@ -2185,7 +2184,7 @@ static LONG delete_key(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BY
 		sendBuffer[i++] = 0x01;
 		sendBuffer[i++] = keyIndex;
 	}
-	else if (keyIndex == 0x00) {
+	else if (keyIndex == 0xFF) {
 		sendBuffer[i++] = 0x03;
 		sendBuffer[i++] = 0xD2;
 		sendBuffer[i++] = 0x01;
@@ -2200,7 +2199,7 @@ static LONG delete_key(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BY
 		sendBuffer[i++] = 0x01;
 		sendBuffer[i++] = keySetVersion;
 	}
-	sendBuffer[i++] = 0x01;
+	sendBuffer[i++] = 0x00; // Le
 	sendBufferLength = i;
 #ifdef DEBUG
 	log_Log(_T("delete_key: Data to send: "));
@@ -2611,7 +2610,7 @@ LONG GP211_get_secure_channel_protocol_details(OPGP_CARD_INFO cardInfo,
 #endif
 
 	LOG_START(_T("get_secure_channel_protocol_details"));
-	result = GP211_get_data_iso7816_4(cardInfo, GP211_GET_DATA_CARD_DATA, recvBuffer, &recvBufferLength);
+	result = GP211_get_data(cardInfo, NULL, GP211_GET_DATA_CARD_DATA, recvBuffer, &recvBufferLength);
 	if ( OPGP_ERROR_SUCCESS != result) {
 		goto end;
 	}
@@ -2782,14 +2781,19 @@ static LONG get_key_information_templates(OPGP_CARD_INFO cardInfo, GP211_SECURIT
 #endif
 	i=0;
 	for (j=4; j<cardDataLength-2; j+=2) {
-		if (*keyInformationLength <= i ) {
-			{ result = OPGP_ERROR_MORE_KEY_INFORMATION_TEMPLATES; goto end; };
+		// our key information template is actually wrong, it should be able to 
+		// contain multiple key components
+		// another key component follows
+		while (cardData[j] != 0xC0 && j<cardDataLength-2) {
+			if (*keyInformationLength <= i ) {
+				{ result = OPGP_ERROR_MORE_KEY_INFORMATION_TEMPLATES; goto end; };
+			}
+			keyInformation[i].keyIndex = cardData[j++];
+			keyInformation[i].keySetVersion = cardData[j++];
+			keyInformation[i].keyType = cardData[j++];
+			keyInformation[i].keyLength = cardData[j++];
+			i++;
 		}
-		keyInformation[i].keyIndex = cardData[j++];
-		keyInformation[i].keySetVersion = cardData[j++];
-		keyInformation[i].keyType = cardData[j++];
-		keyInformation[i].keyLength = cardData[j++];
-		i++;
 	}
 
 	*keyInformationLength = i;
@@ -4482,7 +4486,7 @@ LONG GP211_calculate_load_file_data_block_hash(OPGP_STRING executableLoadFileNam
 	PBYTE loadFileBuf = NULL;
 	DWORD loadFileBufSize;
 	EVP_MD_CTX mdctx;
-	LOG_START(_T("GPcalculate_load_file_data_block_hash"));
+	LOG_START(_T("GP211_calculate_load_file_data_block_hash"));
 	EVP_MD_CTX_init(&mdctx);
 	if ((executableLoadFileName == NULL) || (_tcslen(executableLoadFileName) == 0))
 		{ result = OPGP_ERROR_INVALID_FILENAME; goto end; }
@@ -4517,7 +4521,7 @@ end:
 	if (loadFileBuf != NULL) {
 		free(loadFileBuf);
 	}
-	LOG_END(_T("GPcalculate_load_file_data_block_hash"), result);
+	LOG_END(_T("GP211_calculate_load_file_data_block_hash"), result);
 	return result;
 }
 
@@ -5697,7 +5701,14 @@ static LONG mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE baseKey[16],
 
 	/* Augusto: added key information data in secInfo */
 	secInfo->keySetVersion = key_information_data[0];
-	secInfo->keyIndex = key_information_data[1];
+	// the key index is only reported in OP201
+	if (cardInfo.specVersion == OP201) {
+		secInfo->keyIndex = key_information_data[1];
+	}
+	else {
+		// we set it to a dummy value
+		secInfo->keyIndex = 0xFF;
+	}
 	/* end */
 
 	if (secInfo->secureChannelProtocol == GP211_SCP02) {
@@ -5708,6 +5719,14 @@ static LONG mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE baseKey[16],
 		memcpy(cardChallengeSCP01, recvBuffer+12, 8);
 	}
 	memcpy(cardCryptogram, recvBuffer+20, 8);
+	
+	// test if reported SCP is consistent with passed SCP
+	if (cardInfo.specVersion == GP211) {
+		if (secureChannelProtocol != key_information_data[1]) {
+			result = GP211_ERROR_INCONSISTENT_SCP;
+			goto end;
+		}
+	}
 #ifdef DEBUG
 	log_Log(_T("Key Diversification Data: "));
 	for (i=0; i<10; i++) {
@@ -6388,6 +6407,8 @@ OPGP_STRING stringify_error(DWORD errorCode) {
 		return strError;
 #endif
 	}
+	if (errorCode == GP211_ERROR_INCONSISTENT_SCP)
+		return _T("The Secure Channel Protocol passed and reported do not match.");
 	if (errorCode == OPGP_ERROR_CAP_UNZIP)
 		return _T("The CAP file cannot be unzipped.");
 	if (errorCode == OPGP_ERROR_INVALID_LOAD_FILE)
@@ -6553,7 +6574,10 @@ OPGP_STRING stringify_error(DWORD errorCode) {
 			default:
 				FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 					NULL, errorCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (OPGP_STRING) &lpMsgBuf, 0, NULL);
-				if (_tcslen((OPGP_STRING)lpMsgBuf)+1 > strErrorSize ) {
+				if (lpMsgBuf == NULL) {
+					return _T("Unknown error.");
+				}
+				if (_tcslen((OPGP_STRING)lpMsgBuf)+1 > strErrorSize) {
 					_tcsncpy(strError, (OPGP_STRING)lpMsgBuf, strErrorSize-1);
 					strError[strErrorSize-1] = _T('\0');
 				}
@@ -6652,7 +6676,7 @@ LONG OP201_put_3desKey(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 /**
  * A keySetVersion value of 0x00 adds a new secure channel key set.
  * Any other value between 0x01 and 0x7f must match an existing key set version.
- * The new key set version defines the key set version a the new secure channel keys belongs to.
+ * The new key set version defines the key set version the new secure channel keys belongs to.
  * This can be the same key version or a new not existing key set version.
  * \param *secInfo INOUT The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
  * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by card_connect().
@@ -6705,7 +6729,7 @@ LONG OP201_put_delegated_management_keys(OPGP_CARD_INFO cardInfo, OP201_SECURITY
 }
 
 /**
- * If keyIndex is 0x00 all keys within a keySetVersion are deleted.
+ * If keyIndex is 0xFF (=-1) all keys within a keySetVersion are deleted.
  * If keySetVersion is 0x00 all keys with the specified keyIndex are deleted.
  * \param *secInfo INOUT The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
  * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by card_connect().

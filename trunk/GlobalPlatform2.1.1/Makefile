@@ -41,8 +41,8 @@ LIBOBJDIR =
 DIST_COMMON = README $(am__configure_deps) $(include_HEADERS) \
 	$(nobase_include_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(top_srcdir)/configure AUTHORS COPYING \
-	ChangeLog INSTALL NEWS compile config.guess config.sub depcomp \
-	install-sh ltmain.sh missing
+	COPYING.LESSER ChangeLog INSTALL NEWS compile config.guess \
+	config.sub depcomp install-sh ltmain.sh missing
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.in
@@ -117,7 +117,7 @@ CXXCPP = g++ -E
 CXXDEPMODE = depmode=gcc3
 CXXFLAGS = -g -O2
 CYGPATH_W = cygpath -w
-DEFS = -DPACKAGE_NAME=\"GlobalPlatform\" -DPACKAGE_TARNAME=\"globalplatform\" -DPACKAGE_VERSION=\"4.2.3\" -DPACKAGE_STRING=\"GlobalPlatform\ 4.2.3\" -DPACKAGE_BUGREPORT=\"k_o_@users.sourceforge.net\" -DPACKAGE=\"globalplatform\" -DVERSION=\"4.2.3\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_DLFCN_H=1 -DSTDC_HEADERS=1 -DHAVE_STDLIB_H=1 -DHAVE_MALLOC=1 -DHAVE_VPRINTF=1 -DHAVE_MEMCPY=1 -DHAVE_VSYSLOG=1 -DDEBUG=1 -DHAVE_ZCONF_H=1 -DHAVE_ZLIB_H=1 -DHAVE_LIBZ=1 -DHAVE_OPENSSL_RAND_H=1 -DHAVE_OPENSSL_ERR_H=1 -DHAVE_OPENSSL_EVP_H=1 -DHAVE_OPENSSL_PEM_H=1 -DHAVE_LIBCRYPTO=1
+DEFS = -DPACKAGE_NAME=\"GlobalPlatform\" -DPACKAGE_TARNAME=\"globalplatform\" -DPACKAGE_VERSION=\"5.0.0\" -DPACKAGE_STRING=\"GlobalPlatform\ 5.0.0\" -DPACKAGE_BUGREPORT=\"k_o_@users.sourceforge.net\" -DPACKAGE=\"globalplatform\" -DVERSION=\"5.0.0\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_DLFCN_H=1 -DSTDC_HEADERS=1 -DHAVE_STDLIB_H=1 -DHAVE_MALLOC=1 -DHAVE_VPRINTF=1 -DHAVE_MEMCPY=1 -DHAVE_VSYSLOG=1 -DDEBUG=1 -DHAVE_ZCONF_H=1 -DHAVE_ZLIB_H=1 -DHAVE_LIBZ=1 -DHAVE_OPENSSL_RAND_H=1 -DHAVE_OPENSSL_ERR_H=1 -DHAVE_OPENSSL_EVP_H=1 -DHAVE_OPENSSL_PEM_H=1 -DHAVE_LIBCRYPTO=1
 DEPDIR = .deps
 DLLTOOL = dlltool
 ECHO = echo
@@ -145,9 +145,9 @@ OBJEXT = o
 PACKAGE = globalplatform
 PACKAGE_BUGREPORT = k_o_@users.sourceforge.net
 PACKAGE_NAME = GlobalPlatform
-PACKAGE_STRING = GlobalPlatform 4.2.3
+PACKAGE_STRING = GlobalPlatform 5.0.0
 PACKAGE_TARNAME = globalplatform
-PACKAGE_VERSION = 4.2.3
+PACKAGE_VERSION = 5.0.0
 PATH_SEPARATOR = :
 PCSCLITE_CFLAGS = -I./pcsclite-includes
 PCSCLITE_H_PATH = ./pcsclite-includes
@@ -158,7 +158,7 @@ SED = /usr/bin/sed
 SET_MAKE = 
 SHELL = /bin/sh
 STRIP = strip
-VERSION = 4.2.3
+VERSION = 5.0.0
 WINSCARD_LIB_PATH = /cygdrive/c/Program Files/Microsoft Platform SDK for Windows Server 2003 R2/Lib/
 ac_ct_CC = gcc
 ac_ct_CXX = g++

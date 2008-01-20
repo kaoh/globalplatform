@@ -97,7 +97,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy &quot;$(OutDir)\GlobalPlatform.dll&quot;  &quot;GlobalPlatformWrapper\&quot;"
+				CommandLine="copy &quot;$(OutDir)\GlobalPlatform.dll&quot;  &quot;GlobalPlatformWrapper\&quot;&#x0D;&#x0A;copy &quot;$(OutDir)\GlobalPlatform.dll&quot;  &quot;..\GPShell\&quot;&#x0D;&#x0A;"
 				ExcludedFromBuild="false"
 			/>
 		</Configuration>

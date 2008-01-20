@@ -160,7 +160,9 @@ static const BYTE OPGP_GEMXPRESSO_DEFAULT_KEY[16] = {0x47, 0x45, 0x4d, 0x58, 0x5
 #define GP211_SCP02_SECURITY_LEVEL_NO_SECURE_MESSAGING 0x00 //!< Secure Channel Protocol '02': No secure messaging expected.
 
 
-static const BYTE GP211_CARD_MANAGER_AID[8] = {0xA0, 0x00, 0x00, 0x01, 0x51, 0x00, 0x00}; //!< The AID of the Issuer Security Domain defined by GlobalPlatform 2.1.1 specification.
+static const BYTE GP211_CARD_MANAGER_AID[7] = {0xA0, 0x00, 0x00, 0x01, 0x51, 0x00, 0x00}; //!< The AID of the Issuer Security Domain defined by GlobalPlatform 2.1.1 specification.
+
+static const BYTE GP211_CARD_MANAGER_AID_ALT1[8] = {0xA0, 0x00, 0x00, 0x01, 0x51, 0x00, 0x00}; //!< This AID is also used for the Issuer Security Domain, e.g. by JCOP 41 cards.
 
 #define GP211_KEY_TYPE_RSA_PUB_N 0xA1 //!< 'A1' RSA Public Key - modulus N component (clear text).
 #define GP211_KEY_TYPE_RSA_PUB_E 0xA0 //!< 'A0' RSA Public Key - public exponent e component (clear text)
@@ -193,6 +195,8 @@ static const BYTE GP211_CARD_MANAGER_AID[8] = {0xA0, 0x00, 0x00, 0x01, 0x51, 0x0
 #define GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED 0xff //!< Application is personalized.
 #define GP211_LIFE_CYCLE_SECURITY_DOMAIN_LOCKED 0xff //!< Application is locked.
 
+#define OP_201 201 //!< OpenPlatform specification 2.0.1' mode
+#define GP_211 211 //!< GlobalPlatform specification 2.1.1 mode
 
 /* consts for MANAGE CHANNEL */
 
@@ -234,7 +238,7 @@ static const BYTE GP211_GET_DATA_SEQUENCE_COUNTER_DEFAULT_KEY_VERSION[2] = {0x00
 static const BYTE GP211_GET_DATA_CONFIRMATION_COUNTER[2] = {0x00, 0xC2}; //!< Confirmation Counter.
 static const BYTE GP211_GET_DATA_FREE_EEPROM_MEMORY_SPACE[2] = {0x00, 0xC6}; //!< Free EEPROM memory space.
 static const BYTE GP211_GET_DATA_FREE_COR_RAM[2] = {0x00, 0xC7}; //!< Free transient Clear on Reset memory space (COR RAM).
-static const BYTE GP211_DIVERSIFICATION_DATA[2] = {0x00, 0xCF}; //!< Diversification data.
+static const BYTE GP211_GET_DATA_DIVERSIFICATION_DATA[2] = {0x00, 0xCF}; //!< Diversification data.
 
 /**
  * Key Information Template of first 31 keys.
@@ -246,7 +250,7 @@ static const BYTE GP211_GET_DATA_CPLC_PERSONALIZATION_DATE[2] = {0x9F, 0x66}; //
 static const BYTE GP211_GET_DATA_CPLC_PRE_PERSONALIZATION_DATE[2] = {0x9F, 0x67}; //!< CPLC pre-personalization date.
 static const BYTE GP211_GET_DATA_CPLC_ICC_MANUFACTURER_EMBEDDING_DATE[2] = {0x9F, 0x68}; //!< CPLC ICC manufacturer, embedding date.
 static const BYTE GP211_GET_DATA_CPLC_MODULE_FABRICATOR_PACKAGING_DATE[2] = {0x9F, 0x69}; //!< CPLC module fabricator, module packaging date.
-static const BYTE GP211_GET_DATA_CPLC_FABRICATION_DATE_SERIAL_NUMBER_BATCH_IDENTIFIER[2] = {0x9F, 0x6A}; //!< CPLC fabrication date, serail number, batch identifier.
+static const BYTE GP211_GET_DATA_CPLC_FABRICATION_DATE_SERIAL_NUMBER_BATCH_IDENTIFIER[2] = {0x9F, 0x6A}; //!< CPLC fabrication date, serial number, batch identifier.
 static const BYTE GP211_GET_DATA_CPLC_WHOLE_CPLC[2] = {0x9F, 0x7F}; //!< Whole CPLC data from ROM and EEPROM.
 
 static const BYTE GP211_GET_DATA_FCI_DATA[2] = {0xBF, 0x0C}; //!< File Control Information (FCI) discretionary data.
@@ -273,15 +277,15 @@ static const BYTE GP211_GET_DATA_WHOLE_EF_PROD[2] = {0xDF, 0x7F}; //!< Whole EF<
 static const BYTE OP201_CARD_MANAGER_AID[7] = {0xA0, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00}; //!< The AID of the Card Manager defined by Open Platform specification.
 
 
-#define OP201_SECURITY_LEVEL_ENC_MAC 0x03 //!< Command messages are signed and encrypted.
-#define OP201_SECURITY_LEVEL_MAC 0x01 //!< Command messages are signed.
-#define OP201_SECURITY_LEVEL_PLAIN 0x00 //!< Command messages are plaintext.
+#define OP201_SECURITY_LEVEL_ENC_MAC GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC //!< Command messages are signed and encrypted.
+#define OP201_SECURITY_LEVEL_MAC GP211_SCP02_SECURITY_LEVEL_C_MAC //!< Command messages are signed.
+#define OP201_SECURITY_LEVEL_PLAIN GP211_SCP02_SECURITY_LEVEL_NO_SECURE_MESSAGING //!< Command messages are plaintext.
 
-#define OP201_KEY_TYPE_RSA_PUP_N 0xA1 //!< 'A1' RSA Public Key - modulus N component (clear text).
-#define OP201_KEY_TYPE_RSA_PUP_E 0xA0 //!< 'A0' RSA Public Key - public exponent e component (clear text)
-#define OP201_KEY_TYPE_DES 0x80 //!< DES (ECB/CBC) key.
-#define OP201_KEY_TYPE_DES_ECB 0x81 //!< DES ECB.
-#define OP201_KEY_TYPE_DES_CBC 0x82 //!< DES CBC.
+#define OP201_KEY_TYPE_RSA_PUP_N GP211_KEY_TYPE_RSA_PUB_N //!< 'A1' RSA Public Key - modulus N component (clear text).
+#define OP201_KEY_TYPE_RSA_PUP_E GP211_KEY_TYPE_RSA_PUB_E //!< 'A0' RSA Public Key - public exponent e component (clear text)
+#define OP201_KEY_TYPE_DES GP211_KEY_TYPE_DES //!< DES (ECB/CBC) key.
+#define OP201_KEY_TYPE_DES_ECB GP211_KEY_TYPE_3DES //!< DES ECB.
+#define OP201_KEY_TYPE_DES_CBC GP211_KEY_TYPE_3DES_CBC //!< DES CBC.
 #define OP201_LIFE_CYCLE_LOAD_FILE_LOGICALLY_DELETED 0x00 //!< Executable Load File is logically deleted.
 #define OP201_LIFE_CYCLE_LOAD_FILE_LOADED 0x01 //!< Executable Load File is loaded.
 #define OP201_LIFE_CYCLE_CARD_MANAGER_OP_READY 0x01 //!< Card is OP ready.
@@ -305,10 +309,9 @@ static const BYTE OP201_CARD_MANAGER_AID[7] = {0xA0, 0x00, 0x00, 0x00, 0x03, 0x0
 #define OP201_APPLICATION_PRIVILEGE_PIN_CHANGE_PRIVILEGE 0x02 //!< Application can change global PIN.
 #define OP201_APPLICATION_PRIVILEGE_MANDATED_DAP_VERIFICATION 0x01 //!< Security domain requires DAP verification for loading and installating applications.
 
-#define OP201_STATUS_APPLICATIONS 0x40 //!< Indicate Applications or Security Domains in OP201_get_status() or OP201_set_status().
-#define OP201_STATUS_CARD_MANAGER 0x80 //!< Indicate Card Manager in OP201_get_status() or OP201_set_status().
-#define OP201_STATUS_LOAD_FILES 0x20 //!< Request OP201_APPLICATION_DATA for Executable Load Files in OP201_get_status().
-
+#define OP201_STATUS_APPLICATIONS GP211_STATUS_APPLICATIONS //!< Indicate Applications or Security Domains in OP201_get_status() or OP201_set_status().
+#define OP201_STATUS_CARD_MANAGER GP211_STATUS_ISSUER_SECURITY_DOMAIN //!< Indicate Card Manager in OP201_get_status() or OP201_set_status().
+#define OP201_STATUS_LOAD_FILES GP211_STATUS_LOAD_FILES //!< Request OP201_APPLICATION_DATA for Executable Load Files in OP201_get_status().
 
 
 // Some possible identifiers to retrieve card data with get_data() and put_data().
@@ -326,7 +329,7 @@ static const BYTE OP201_GET_DATA_SEQUENCE_COUNTER_DEFAULT_KEY_VERSION[2] = {0x00
 static const BYTE OP201_GET_DATA_CONFIRMATION_COUNTER[2] = {0x00, 0xC2}; //!< Confirmation Counter.
 static const BYTE OP201_GET_DATA_FREE_EEPROM_MEMORY_SPACE[2] = {0x00, 0xC6}; //!< Free EEPROM memory space.
 static const BYTE OP201_GET_DATA_FREE_COR_RAM[2] = {0x00, 0xC7}; //!< Free transient Clear on Reset memory space (COR RAM).
-static const BYTE OP201_DIVERSIFICATION_DATA[2] = {0x00, 0xCF}; //!< Diversification data.
+static const BYTE OP201_GET_DATA_DIVERSIFICATION_DATA[2] = {0x00, 0xCF}; //!< Diversification data.
 
 /**
  * Key Information Template of first 31 keys.
@@ -357,7 +360,6 @@ static const BYTE OP201_GET_DATA_EF_PROD_DATA_PROFILE_WITH_PROFILE_VERSION[2] = 
 static const BYTE OP201_GET_DATA_EF_PROD_DATA_LOCATION_MACHINE_DATE_TIME[2] = {0xDF, 0x7E}; //!< EF<sub>prod</sub> data location, machine number, date, time.
 
 static const BYTE OP201_GET_DATA_WHOLE_EF_PROD[2] = {0xDF, 0x7F}; //!< Whole EF<sub>prod</sub> data block (39 Byte).
-
 
 
 
@@ -562,6 +564,7 @@ typedef struct {
 	DWORD ATRLength; //!< The length of the ATR buffer.
 	OPGP_CARDHANDLE cardHandle; //!< Internal used card handle
 	BYTE logicalChannel; //!< The current logical channel.
+	BYTE specVersion; //!< The specification version, see #OP_201 or #GP_211.
 
 } OPGP_CARD_INFO;
 
@@ -613,6 +616,7 @@ typedef struct {
 #define GP211_ERROR_INVALID_SCP ((DWORD)0x8030F005L) //!< The Secure Channel Protocol is invalid.
 #define GP211_ERROR_INVALID_SCP_IMPL ((DWORD)0x8030F006L) //!< The Secure Channel Protocol Implementation is invalid.
 #define GP211_ERROR_VALIDATION_R_MAC ((DWORD)0x8030F007L) //!< The validation of the R-MAC has failed.
+#define GP211_ERROR_INCONSISTENT_SCP ((DWORD)0x8030F00AL) //!< The Secure Channel Protocol passed and the one reported by the card do not match.
 
 /* Mapping of ISO7816-4 errors to error codes.
  * 0x8020XXXX is the generell meaning error.
