@@ -107,7 +107,7 @@ bin_package:
 	helloDeletegemXpressoProR3_2E64.txt  helloInstallgemXpressoProR3_2E64.txt \
 	listgemXpressoProR3_2E64.txt HelloWorld.bin HelloWorld.cap \
 	helloInstallCyberflexe-gate32k.txt helloInstallCyberflexAccess64k.txt \
-	helloInstallNokia6131NFC.txt HelloWorld.cap.transf $(DIR)
+	helloInstallNokia6131NFC.txt HelloWorld.cap.transf helloInstallOberthurCosmo64.txt $(DIR)
 	zip GPShell-$(VERSION).zip $(DIR)/*
 
 clean_package:

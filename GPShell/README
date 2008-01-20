@@ -14,7 +14,7 @@ Version 1.3.0	02/09/2006
 Version 1.3.1	3/24/2006
 Version 1.4.0	12/28/2006
 Version 1.4.1	08/22/2007
-Version 1.4.2	10/07/2007
+Version 1.4.2	01/20/2008
 
 *** Summary
 
@@ -71,6 +71,8 @@ establish_context // Establish context
 ---
 
 card_connect -reader [Reader Name] // Connect to card in the reader
+card_connect -readerNumber [Reader Number x] // Connect to card in the 
+xth reader in the system
 
 ---
 
@@ -126,6 +128,7 @@ put_sc_key -keyver 1 -newkeyver 0 -mac_key $new_MAC_key -enc_key $new_ENC_key -k
 ---
 
 send_apdu -sc 0 -APDU xxx // Send APDU xxx without secure channel
+send_apdu_nostop -sc 0 -APDU xxx // Does not stop in case of an error
 
 ---
 
