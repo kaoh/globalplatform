@@ -43,10 +43,11 @@
 			Parameters for install_for_load added and fixed
 			ico file added
 
-10/03/2007	1.4.2
+01/19/2008	1.4.2
 			Security Domain AID is automatically chosen based
 			on AID given to the select command or default Card Manager /
 			Security Issuer Domain AID is chosen
 			Changed License to LGPL
 			Executable Modules were not reported correctly
+			Compiled against GlobalPlatform 5.0.0
 

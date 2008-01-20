@@ -15,6 +15,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 /* GPShell.c */
+/* TODO: make Unicode conform */
 #ifdef WIN32
 #include "stdafx.h"
 #else
@@ -42,8 +43,9 @@
 #define INSTPARAMLEN 32
 #define DELIMITER " \t\n,"
 #define DDES_KEY_LEN 16
-#define PLATFORM_MODE_OP_201 201
-#define PLATFORM_MODE_GP_211 211
+#define PLATFORM_MODE_OP_201 OP_201
+#define PLATFORM_MODE_GP_211 GP_211
+#define PASSPHRASELEN 64
 
 /* Data Structures */
 typedef struct _OptionStr {
@@ -74,6 +76,7 @@ typedef struct _OptionStr {
     int nvDataLimit;
     int vDataLimit;
     TCHAR file[FILENAMELEN+1];
+	char passPhrase[PASSPHRASELEN+1];
     char instParam[INSTPARAMLEN+1];
 	int instParamLen;
     BYTE element;
@@ -190,6 +193,7 @@ static int handleOptions(OptionStr *pOptionStr)
     pOptionStr->reader[0] = _T('\0');
 	pOptionStr->readerNumber = 0;
     pOptionStr->file[0] = _T('\0');
+	pOptionStr->passPhrase[0] = _T('\0');
 	pOptionStr->protocol = OPGP_CARD_PROTOCOL_T0 | OPGP_CARD_PROTOCOL_T1;
     pOptionStr->nvCodeLimit = 0;
     pOptionStr->nvDataLimit = 0;
@@ -292,6 +296,19 @@ static int handleOptions(OptionStr *pOptionStr)
 			ConvertCToT (pOptionStr->file, dummy);
 #ifdef DEBUG
 		_tprintf ( _T("file name %s\n"), pOptionStr->file);
+#endif
+	    }
+	} else if (strcmp(token, "-pass") == 0) {
+	    token = strtokCheckComment(NULL);
+	    if (token == NULL) {
+			printf ("Error: option -pass not followed by data\n");
+			rv = EXIT_FAILURE;
+			goto end;
+	    } else {
+			strncpy(pOptionStr->passPhrase, token, PASSPHRASELEN+1);
+			pOptionStr->passPhrase[PASSPHRASELEN] = '\0';
+#ifdef DEBUG
+		printf ( "file name %s\n", pOptionStr->passPhrase[PASSPHRASELEN]);
 #endif
 	    }
 	} else if (strcmp(token, "-key") == 0) {
@@ -581,7 +598,8 @@ static int handleCommands(FILE *fd)
 		    _tprintf (_T("card_connect() returns 0x%08X (%s)\n"), rv,
 			      stringify_error(rv));
 		}
-
+		// set mode for internal use of library
+		cardInfo.specVersion = platform_mode;
 		break;
 	    } if (strcmp(token, "open_sc") == 0) {
 		// open secure channel
@@ -1038,7 +1056,37 @@ static int handleCommands(FILE *fd)
 			goto end;
 		}
 		break;
-	    } else if (strcmp(token, "get_status") == 0) {
+	    } else if (strcmp(token, "put_dm_keys") == 0) {
+		rv = handleOptions(&optionStr);
+		if (rv != EXIT_SUCCESS) {
+			goto end;
+		}
+		if (platform_mode == PLATFORM_MODE_OP_201) {
+		    rv = OP201_put_delegated_management_keys(cardInfo, &securityInfo201,
+						       optionStr.keySetVersion,
+						       optionStr.newKeySetVersion,
+						       optionStr.file,
+							   optionStr.passPhrase,
+						       optionStr.key,
+						       optionStr.current_kek);
+		} else if (platform_mode == PLATFORM_MODE_GP_211) {
+		    rv = GP211_put_delegated_management_keys(cardInfo,
+						       &securityInfo211,
+						       optionStr.keySetVersion,
+						       optionStr.newKeySetVersion,
+						       optionStr.file,
+							   optionStr.passPhrase,
+						       optionStr.key);
+		}
+
+		if (rv != 0) {
+		    _tprintf (_T("put_delegated_management_keys() returns 0x%08X (%s)\n"),
+			      rv, stringify_error(rv));
+			rv = EXIT_FAILURE;
+			goto end;
+		}
+		break;
+		} else if (strcmp(token, "get_status") == 0) {
 #define NUM_APPLICATIONS 64
 		DWORD numData = NUM_APPLICATIONS;
 
@@ -1143,10 +1191,10 @@ static int handleCommands(FILE *fd)
 		if (rv != EXIT_SUCCESS) {
 			goto end;
 		}
-		printf ("Send APDU: ");
-		for (i=0; i<optionStr.APDULen; i++)
-		    printf ("%02X ", optionStr.APDU[i] & 0xFF);
-		printf ("\n");
+		//printf ("Send APDU: ");
+		//for (i=0; i<optionStr.APDULen; i++)
+		//    printf ("%02X ", optionStr.APDU[i] & 0xFF);
+		//printf ("\n");
 
 		if (platform_mode == PLATFORM_MODE_OP_201) {
 		    rv = OP201_send_APDU(cardInfo,
@@ -1169,10 +1217,10 @@ static int handleCommands(FILE *fd)
 		    }
 		}
 
-		printf ("Recv APDU: ");
-		for (i=0; i<(int)recvAPDULen; i++)
-		    printf ("%02x ", recvAPDU[i]);
-		printf ("\n");
+		//printf ("Recv APDU: ");
+		//for (i=0; i<(int)recvAPDULen; i++)
+		//    printf ("%02x ", recvAPDU[i]);
+		//printf ("\n");
 
 		break;
 	    } else if (strcmp(token, "mode_201") == 0) {

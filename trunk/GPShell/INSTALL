@@ -1,11 +1,46 @@
 Installation Instructions
 *************************
 
-Copyright (C) 1994, 1995, 1996, 1999, 2000, 2001, 2002, 2004, 2005 Free
-Software Foundation, Inc.
+GPShell specific
+================
 
-This file is free documentation; the Free Software Foundation gives
-unlimited permission to copy, distribute and modify it.
+This are the installation instruction for Unix or Cygwin under Windows.
+For Windows use the Visual Studio files or the nmake-Makefile Makefile.mak.
+
+Apart from the instructions below which are worth reading, I would like 
+to emphasize the following parameters to the ./configure script.
+If the configure file is not there you must run the script ./reconf
+
+For compiling the library you must have pkg-config installed.
+Usually pkg-config looks in the /usr/local/lib/pkgconfig directory.
+There should placed a file libpcsclite.pc containing
+information about the required libraries, header files and other information.
+If pkgconfig fails and your pkgconfig directory is at a
+different location you have to set the environment variable
+PKG_CONFIG_PATH. E.g. the Debian path for pkgconfig is /usr/lib/pkgconfig.
+
+./configure --prefix=/usr Defines the installation target for everything to
+    start with /usr instead of the default /usr/local
+./configure --help gives you a help of possible options.
+./configure --enable-debug enables debugging output on stdout
+
+If you need to get debugging output run configure with --enable-debug. 
+But at the moment this are only very view outputs. Better is to use the 
+debugging capabilities of the GlobalPlatform library and enable APDU 
+tracing with enable_trace in GPShell. 
+
+If the first possibility is used you must enable the debugging by setting the 
+environment variable GLOBALPLATFORM_DEBUG=1. If during the compilation of the
+GlobalPlatform library vsyslog support was detected, the debugging will be 
+syslogged. If you explicitly set a log file with the environment variable
+GLOBALPLATFORM_LOGFILE, this log file will be used.
+If no vsyslog is available the default log file is /tmp/GlobalPlatform.log.
+
+NOTE: Cygwin can be used under Windows to compile GPShell, but it does not like 
+absolut names. Use relative paths without spaces and the Unix path separator '/'.
+The reconf script generates under Windows Vista files which are not accessible 
+for the owning user. You should execute something like "chmod u+rwx " on all files 
+affected by this.
 
 Basic Installation
 ==================
