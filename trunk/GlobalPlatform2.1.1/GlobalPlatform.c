@@ -625,7 +625,7 @@ LONG card_connect(OPGP_CARDCONTEXT cardContext, OPGP_CSTRING readerName, OPGP_CA
 	LOG_START(_T("card_connect"));
 	result = SCardConnect( cardContext,
 							readerName,
-							SCARD_SHARE_EXCLUSIVE,
+							SCARD_SHARE_SHARED,
 							protocol,
 							&(cardInfo->cardHandle),
 							&activeProtocol );
