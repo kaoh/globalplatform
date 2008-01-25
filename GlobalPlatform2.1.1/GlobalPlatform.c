@@ -696,7 +696,10 @@ static LONG wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrapp
 	DWORD wrappedLength;
 	unsigned char mac[8];
 	unsigned char encryption[240];
-	int i, encryptionLength = 240;
+	#if DEBUG
+	int i;
+	#endif
+	int encryptionLength = 240;
 	DWORD caseAPDU;
 	BYTE C_MAC_ICV[8];
 	int C_MAC_ICVLength = 8;
@@ -1813,7 +1816,7 @@ static LONG get_key_data_field(GP211_SECURITY_INFO *secInfo,
 	int dummyLength;
 	BYTE keyCheckTest[8] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
 	LOG_START(_T("get_key_data_field"));
-	// key type + length + key data + length + key check value 
+	// key type + length + key data + length + key check value
 	sizeNeeded = 1 + 1 + keyDataLength + 1;
 	if (isSensitive) {
 		// 3 byte key check value
@@ -2073,7 +2076,7 @@ static LONG put_delegated_management_keys(OPGP_CARD_INFO cardInfo, GP211_SECURIT
 	sendBuffer[i++] = 0x00; // Lc later calculated
 
 	sendBuffer[i++] = newKeySetVersion;
-	
+
 	// Token Verification Key
 
 	sendBuffer[i++] = GP211_KEY_TYPE_RSA_PUB_N; // alghoritm RSA modulus
@@ -2781,7 +2784,7 @@ static LONG get_key_information_templates(OPGP_CARD_INFO cardInfo, GP211_SECURIT
 #endif
 	i=0;
 	for (j=4; j<cardDataLength-2; j+=2) {
-		// our key information template is actually wrong, it should be able to 
+		// our key information template is actually wrong, it should be able to
 		// contain multiple key components
 		// another key component follows
 		while (cardData[j] != 0xC0 && j<cardDataLength-2) {
@@ -3092,7 +3095,7 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 	else {
 		{ result = OPGP_ERROR_APPLICATION_TOO_BIG; goto end; }
 	}
-	// load file can only have 256 blocks (minus the already sent blocks) 
+	// load file can only have 256 blocks (minus the already sent blocks)
 	// times the maximum APDU size minus the tag and length and the current position in the APDU
 	if (((256-sequenceNumber) * MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING - j - 1 - fileSizeSize) < loadFileBufSize) {
 		{ result = OPGP_ERROR_APPLICATION_TOO_BIG; goto end; }
@@ -3122,7 +3125,7 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 		else {
 			count=loadFileBufSize;
 		}
-		
+
 		memcpy(sendBuffer+5+j, loadFileBuf, count);
 		j+=count;
 		total+=count;
@@ -3210,7 +3213,7 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 		else {
 			count=loadFileBufSize;
 		}
-		
+
 		memcpy(sendBuffer+5+j, loadFileBuf, count);
 		j+=count;
 		total+=count;
@@ -3264,7 +3267,7 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 		else {
 			count=loadFileBufSize-total;
 		}
-		
+
 		memcpy(sendBuffer+5+j, loadFileBuf+total, count);
 		j+=count;
 		total+=count;
@@ -4968,7 +4971,7 @@ end:
   * \param KEK OUT The static Key Encryption Key.
   * \return OPGP_ERROR_SUCCESS if no error, error code else.
   */
-LONG GemXpressoPro_create_daughter_keys(OPGP_CARD_INFO cardInfo, PBYTE AID, DWORD AIDLength, BYTE motherKey[16], 
+LONG GemXpressoPro_create_daughter_keys(OPGP_CARD_INFO cardInfo, PBYTE AID, DWORD AIDLength, BYTE motherKey[16],
 								 BYTE S_ENC[16], BYTE S_MAC[16], BYTE KEK[16]) {
 	LONG result;
 	int outl;
@@ -5010,7 +5013,7 @@ LONG GemXpressoPro_create_daughter_keys(OPGP_CARD_INFO cardInfo, PBYTE AID, DWOR
 	xxh xxh is the last (rightmost) two bytes of the Card Manager AID.
 	IC Serial Number is taken from the CPLC data.
 	*/
-	
+
 	// card manager first 2 AID bytes
 	// does not work on GemXpresso cards
 	//result = OP201_get_data(cardInfo, NULL, (PBYTE)OP201_GET_DATA_CARD_MANAGER_AID,
@@ -5020,7 +5023,7 @@ LONG GemXpressoPro_create_daughter_keys(OPGP_CARD_INFO cardInfo, PBYTE AID, DWOR
 	//}
 	memcpy(cardmanagerAID, AID, AIDLength);
 	cardmanagerAIDLength = AIDLength;
-	
+
 	keyDiversificationData[0] = cardmanagerAID[cardmanagerAIDLength-2];
 	keyDiversificationData[1] = cardmanagerAID[cardmanagerAIDLength-1];
 	keyDiversificationData[8] = cardmanagerAID[cardmanagerAIDLength-2];
@@ -5720,7 +5723,7 @@ static LONG mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE baseKey[16],
 		memcpy(cardChallengeSCP01, recvBuffer+12, 8);
 	}
 	memcpy(cardCryptogram, recvBuffer+20, 8);
-	
+
 	// test if reported SCP is consistent with passed SCP
 	if (cardInfo.specVersion == GP211) {
 		if (secureChannelProtocol != key_information_data[1]) {
@@ -8062,7 +8065,7 @@ LONG read_executable_load_file_parameters(OPGP_STRING loadFileName, OPGP_LOAD_FI
 	}
 	componentSize = get_short(loadFileBuf, offset);
 	offset+=2;
-	
+
 	/* Applet Component */
 	componentOffset+=componentSize+3;
 	offset = componentOffset;
@@ -8143,7 +8146,7 @@ LONG cap_to_ijc(OPGP_CSTRING capFileName, OPGP_STRING ijcFileName) {
 	DWORD loadFileBufSize;
 	FILE *ijcFile = NULL;
 	LOG_START(_T("cap_to_ijc"));
-	
+
 	if ((capFileName == NULL) || (_tcslen(capFileName) == 0))
 		{ rv = OPGP_ERROR_INVALID_FILENAME; goto end; }
 
@@ -8210,7 +8213,7 @@ static LONG handle_load_file(OPGP_CSTRING fileName, PBYTE loadFileBuf, PDWORD lo
 		}
 		rv = fseek(file, 0, SEEK_END);
 		if (rv) {
-			rv = errno; 
+			rv = errno;
 			goto error;
 		}
 		fileSize = ftell(file);
@@ -8220,7 +8223,7 @@ static LONG handle_load_file(OPGP_CSTRING fileName, PBYTE loadFileBuf, PDWORD lo
 		}
 		rv = fseek(file, 0, SEEK_SET);
 		if (rv) {
-			rv = errno; 
+			rv = errno;
 			goto error;
 		}
 		if (loadFileBuf == NULL) {
@@ -8236,7 +8239,7 @@ static LONG handle_load_file(OPGP_CSTRING fileName, PBYTE loadFileBuf, PDWORD lo
 			{ rv = errno; goto error; }
 		}
 		*loadFileBufSize = (DWORD)fileSize;
-	}	
+	}
 end:
 	rv = OPGP_ERROR_SUCCESS;
 error:
@@ -8294,12 +8297,12 @@ static LONG extract_cap_file(OPGP_CSTRING fileName, PBYTE loadFileBuf, PDWORD lo
 	unsigned char *buf;
 	char capFileName[MAX_PATH];
 	DWORD totalSize = 0;
-	
+
 	LOG_START(_T("extract_cap_file"));
 	ConvertTToC(capFileName, fileName);
 	szip = unzOpen((const char *)capFileName);
-	if (szip==NULL) 
-	{ 
+	if (szip==NULL)
+	{
 		rv = OPGP_ERROR_CAP_UNZIP;
 		goto error;
 	}
@@ -8317,10 +8320,10 @@ static LONG extract_cap_file(OPGP_CSTRING fileName, PBYTE loadFileBuf, PDWORD lo
 			goto error;
 		}
 
-		if (unzOpenCurrentFile(szip)!=UNZ_OK) 
-		{ 
+		if (unzOpenCurrentFile(szip)!=UNZ_OK)
+		{
 			rv = OPGP_ERROR_CAP_UNZIP;
-			goto error; 
+			goto error;
 		}
 
 		// write file
@@ -8378,21 +8381,21 @@ static LONG extract_cap_file(OPGP_CSTRING fileName, PBYTE loadFileBuf, PDWORD lo
 			goto next;
 		}
 
-		if ((buf==NULL)&&(unzfi.uncompressed_size!=0)) 
-		{ 
+		if ((buf==NULL)&&(unzfi.uncompressed_size!=0))
+		{
 			rv = ENOMEM;
-			goto error; 
+			goto error;
 		}
 		// read file
 		sz = unzReadCurrentFile(szip, buf, unzfi.uncompressed_size);
-		if ((unsigned int)sz != unzfi.uncompressed_size) 
-		{ 
+		if ((unsigned int)sz != unzfi.uncompressed_size)
+		{
 			rv = OPGP_ERROR_CAP_UNZIP;
 			goto error;
 		}
 
 next:
-		if (unzCloseCurrentFile(szip)==UNZ_CRCERROR) 
+		if (unzCloseCurrentFile(szip)==UNZ_CRCERROR)
 		{
 			rv = OPGP_ERROR_CAP_UNZIP;
 			goto error;
@@ -8403,14 +8406,14 @@ next:
 
 	if ( rv!=UNZ_END_OF_LIST_OF_FILE )	{
 		rv = OPGP_ERROR_CAP_UNZIP;
-		goto error;		
+		goto error;
 	}
-	
+
 	if (loadFileBuf == NULL) {
 		*loadFileBufSize = totalSize;
 		goto end;
 	}
-	
+
 	if (*loadFileBufSize < totalSize) {
 		rv = OPGP_ERROR_INSUFFICIENT_BUFFER;
 		goto error;
