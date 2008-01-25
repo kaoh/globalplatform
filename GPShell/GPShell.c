@@ -1,5 +1,5 @@
 /**
- *  Copyright (c) 2007, Snit Mo, Karsten Ohme 
+ *  Copyright (c) 2007, Snit Mo, Karsten Ohme
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1185,7 +1185,7 @@ static int handleCommands(FILE *fd)
 	    } else if (strcmp(token, "send_apdu") == 0 || strcmp(token, "send_apdu_nostop") == 0) {
 		unsigned char recvAPDU[258];
                 DWORD recvAPDULen = 258;
-                int i;
+        //        int i;
 		// Install for Load
 		rv = handleOptions(&optionStr);
 		if (rv != EXIT_SUCCESS) {
@@ -1276,4 +1276,3 @@ int main(int argc, char* argv[])
 end:
     return rv;
 }
-
