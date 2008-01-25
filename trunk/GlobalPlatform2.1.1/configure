@@ -20754,9 +20754,7 @@ fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$PCSCLITE_PKG_ERRORS" >&5
 
-	{ echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6; }
-                 if test -f /usr/local/lib/pkgconfig/libpcsclite.pc ; then
+	 if test -f /usr/local/lib/pkgconfig/libpcsclite.pc ; then
         { { echo "$as_me:$LINENO: error: install pkg-config or set PKG_CONFIG_PATH to pkgconfig directory" >&5
 echo "$as_me: error: install pkg-config or set PKG_CONFIG_PATH to pkgconfig directory" >&2;}
    { (exit 1); exit 1; }; }
