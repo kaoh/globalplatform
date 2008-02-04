@@ -6,6 +6,9 @@ select -AID a000000003000000
 open_sc -security 1 -keyind 0 -keyver 0 -mac_key 404142434445464748494a4b4c4d4e4f -enc_key 404142434445464748494a4b4c4d4e4f // Open secure channel
 delete -AID a00000006203010c0101
 delete -AID a00000006203010c01
-install -file HelloWorld.cap.transf -sdAID A000000003000000 -nvDataLimit 1000 -instParam 00
+install_for_load -pkgAID a00000006203010c01 -nvCodeLimit 500  -sdAID A000000003000000
+load -file HelloWorld.cap.transf
+install_for_install -instParam 00 -priv 02 -AID A0000003230101 -pkgAID 
+a00000006203010c01 -instAID a00000006203010c0101 -nvDataLimit 500
 card_disconnect
 release_context
