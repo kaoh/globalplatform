@@ -5610,7 +5610,6 @@ LONG GP211_mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE baseKey[16],
 						   BYTE keyIndex, BYTE secureChannelProtocol,
 						   BYTE secureChannelProtocolImpl, BYTE securityLevel,
 						   GP211_SECURITY_INFO *secInfo) {
-	cardInfo.specVersion = GP211;
 	return mutual_authentication(cardInfo, baseKey,
 						   S_ENC, S_MAC,
 						   DEK, keySetVersion,
@@ -7927,7 +7926,6 @@ LONG OP201_mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE encKey[16], BYTE 
 								 BYTE keyIndex, BYTE securityLevel, OP201_SECURITY_INFO *secInfo) {
 	LONG result;
 	GP211_SECURITY_INFO gp211secInfo;
-	cardInfo.specVersion = OP201;
 	result = mutual_authentication(cardInfo, NULL, encKey, macKey, kekKey, keySetVersion,
 		keyIndex, GP211_SCP01, GP211_SCP01_IMPL_i05, securityLevel, &gp211secInfo);
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
