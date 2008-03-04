@@ -92,23 +92,23 @@ static const BYTE OPGP_GEMXPRESSO_DEFAULT_KEY[16] = {0x47, 0x45, 0x4d, 0x58, 0x5
   */
 #define GP211_SCP01_IMPL_i15 0x15
 
-/** Secure Channel Protocol '02': "i" = '44': Initiation mode explicit, C-MAC on modified APDU, 
-  * ICV set to zero, no ICV encryption, 1 Secure Channel base key, 
+/** Secure Channel Protocol '02': "i" = '44': Initiation mode explicit, C-MAC on modified APDU,
+  * ICV set to zero, no ICV encryption, 1 Secure Channel base key,
   * well-known pseudo-random algorithm (card challenge),
   */
 #define GP211_SCP02_IMPL_i44 0x44
-/** Secure Channel Protocol '02': "i" = '45': Initiation mode explicit, C-MAC on modified APDU, 
-  * ICV set to zero, no ICV encryption, 3 Secure Channel Keys, 
+/** Secure Channel Protocol '02': "i" = '45': Initiation mode explicit, C-MAC on modified APDU,
+  * ICV set to zero, no ICV encryption, 3 Secure Channel Keys,
   * well-known pseudo-random algorithm (card challenge),
   */
 #define GP211_SCP02_IMPL_i45 0x45
-/** Secure Channel Protocol '02': "i" = '54': Initiation mode explicit, C-MAC on modified APDU, 
-  * ICV set to zero, ICV encryption for C-MAC session, 1 Secure Channel base key, 
+/** Secure Channel Protocol '02': "i" = '54': Initiation mode explicit, C-MAC on modified APDU,
+  * ICV set to zero, ICV encryption for C-MAC session, 1 Secure Channel base key,
   * well-known pseudo-random algorithm (card challenge),
   */
 #define GP211_SCP02_IMPL_i54 0x54
-/** Secure Channel Protocol '02': "i" = '55': Initiation mode explicit, C-MAC on modified APDU, 
-  * ICV set to zero, ICV encryption for C-MAC session, 3 Secure Channel Keys, 
+/** Secure Channel Protocol '02': "i" = '55': Initiation mode explicit, C-MAC on modified APDU,
+  * ICV set to zero, ICV encryption for C-MAC session, 3 Secure Channel Keys,
   * well-known pseudo-random algorithm (card challenge).”
   */
 #define GP211_SCP02_IMPL_i55 0x55
@@ -450,7 +450,7 @@ typedef struct {
 	BYTE lastR_MAC[8]; //!< The last computed R-MAC.
 	/* Augusto: added two more attributes for key information */
 	BYTE keySetVersion; //!< The keyset version used in secure channel
-	BYTE keyIndex; //! The key index used in secured channel
+	BYTE keyIndex; //!< The key index used in secured channel
 	/* end */
 } GP211_SECURITY_INFO;
 
@@ -843,9 +843,9 @@ LONG GP211_get_extradition_token_signature_data(PBYTE securityDomainAID,
 OPGP_API
 LONG GP211_get_load_token_signature_data(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 								   PBYTE securityDomainAID,
-								   DWORD securityDomainAIDLength, BYTE loadFileDataBlockHash[20], 
-								   DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit, 
-								   DWORD nonVolatileDataSpaceLimit, PBYTE loadTokenSignatureData, 
+								   DWORD securityDomainAIDLength, BYTE loadFileDataBlockHash[20],
+								   DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
+								   DWORD nonVolatileDataSpaceLimit, PBYTE loadTokenSignatureData,
 								   PDWORD loadTokenSignatureDataLength);
 
 //! \brief GlobalPlatform2.1.1: Function to retrieve the data to sign by the Card Issuer in an Install Token.
@@ -1016,7 +1016,7 @@ LONG OP201_set_status(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, BYT
 
 //! \brief Open Platform: Mutual authentication.
 OPGP_API
-LONG OP201_mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE encKey[16], BYTE macKey[16], 
+LONG OP201_mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE encKey[16], BYTE macKey[16],
 								 BYTE kekKey[16], BYTE keySetVersion,
 						   BYTE keyIndex, BYTE securityLevel,
 						   OP201_SECURITY_INFO *secInfo);
@@ -1212,7 +1212,7 @@ LONG read_executable_load_file_parameters(OPGP_STRING loadFileName, OPGP_LOAD_FI
 
 //! \brief Derives the static keys from a mother key for GemXpresso Pro cards.
 OPGP_API
-LONG GemXpressoPro_create_daughter_keys(OPGP_CARD_INFO cardInfo, PBYTE AID, DWORD AIDLength, BYTE motherKey[16], 
+LONG GemXpressoPro_create_daughter_keys(OPGP_CARD_INFO cardInfo, PBYTE AID, DWORD AIDLength, BYTE motherKey[16],
 								 BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
 
 //! \brief Converts a CAP file to an IJC file (Executable Load File).
