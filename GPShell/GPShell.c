@@ -171,7 +171,7 @@ static char *strtokCheckComment(char *buf)
 
 static int handleOptions(OptionStr *pOptionStr)
 {
-	int rv = EXIT_SUCCESS;
+	DWORD rv = EXIT_SUCCESS;
     char *token;
 	char dummy[BUFLEN+1];
 
@@ -518,7 +518,7 @@ end:
 static int handleCommands(FILE *fd)
 {
     char buf[BUFLEN + 1], commandLine[BUFLEN + 1];
-    int rv = EXIT_SUCCESS, i;
+    DWORD rv = EXIT_SUCCESS, i;
     char *token;
     OptionStr optionStr;
 
@@ -1249,7 +1249,7 @@ end:
 int main(int argc, char* argv[])
 {
     FILE *fd = NULL;
-    int rv = EXIT_SUCCESS;
+    DWORD rv = EXIT_SUCCESS;
 
     // take care of input argument
     if (argc == 1) {
