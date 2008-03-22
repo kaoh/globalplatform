@@ -889,6 +889,13 @@ LONG GP211_load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 				 GP211_DAP_BLOCK *dapBlock, DWORD dapBlockLength, OPGP_STRING executableLoadFileName,
 				 GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
 
+//! \brief GlobalPlatform2.1.1: Loads a Executable Load File (containing an application) from a buffer to the card.
+OPGP_API
+LONG GP211_load_from_buffer(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+				 GP211_DAP_BLOCK *dapBlock, DWORD dapBlockLength, 
+				 PBYTE loadFileBuffer, DWORD loadFileBufSize,
+				 GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
+
 //! \brief GlobalPlatform2.1.1: Installs an application on the card.
 OPGP_API
 LONG GP211_install_for_install(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -1124,6 +1131,13 @@ LONG OP201_load(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 				 OP201_DAP_BLOCK *dapBlock, DWORD dapBlockLength, OPGP_STRING executableLoadFileName,
 				 OP201_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
 
+//! \brief Open Platform: Loads a Executable Load File (containing an application) from a buffer to the card.
+OPGP_API
+LONG OP201_load_from_buffer(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
+				 OP201_DAP_BLOCK *dapBlock, DWORD dapBlockLength, 
+				 PBYTE loadFilebuf, DWORD loadFileBufSize,
+				 OP201_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
+
 //! \brief Open Platform: Installs an application on the card.
 OPGP_API
 LONG OP201_install_for_install(OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
@@ -1218,6 +1232,14 @@ LONG GemXpressoPro_create_daughter_keys(OPGP_CARD_INFO cardInfo, PBYTE AID, DWOR
 //! \brief Converts a CAP file to an IJC file (Executable Load File).
 OPGP_API
 LONG cap_to_ijc(OPGP_CSTRING capFileName, OPGP_STRING ijcFileName);
+
+//! \brief Extracts a CAP file into a buffer.
+OPGP_API
+LONG extract_cap_file(OPGP_CSTRING fileName, PBYTE loadFileBuf, PDWORD loadFileBufSize);
+
+//! \brief Receives Executable Load File as a buffer instead of a FILE.
+OPGP_API
+LONG read_executable_load_file_parameters_from_buffer(PBYTE loadFileBuf, DWORD loadFileBufSize, OPGP_LOAD_FILE_PARAMETERS *loadFileParams);
 
 #ifdef __cplusplus
 }
