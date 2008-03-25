@@ -3359,6 +3359,10 @@ static LONG load(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 		goto end;
 	}
 	loadFileBuf = (PBYTE)malloc(sizeof(BYTE) * loadFileBufSize);
+	if (loadFileBuf == NULL) {
+		result = ENOMEM;
+		goto end;
+	}
 	result = handle_load_file((OPGP_CSTRING)executableLoadFileName, loadFileBuf, &loadFileBufSize);
 	if (result != OPGP_ERROR_SUCCESS) {
 		goto end;
@@ -4555,6 +4559,10 @@ LONG GP211_calculate_load_file_data_block_hash(OPGP_STRING executableLoadFileNam
 		goto end;
 	}
 	loadFileBuf = (PBYTE)malloc(sizeof(BYTE) * loadFileBufSize);
+	if (loadFileBuf == NULL) {
+		result = ENOMEM;
+		goto end;
+	}
 	result = handle_load_file((OPGP_CSTRING)executableLoadFileName, loadFileBuf, &loadFileBufSize);
 	if (result != OPGP_ERROR_SUCCESS) {
 		goto end;
@@ -5750,6 +5758,12 @@ static LONG mutual_authentication(OPGP_CARD_INFO cardInfo, BYTE baseKey[16],
 	}
 
 #endif
+
+	// check receive buffer length, including SW it must be 30 bytes
+	if (recvBufferLength != 30) {
+		result = OPGP_ERROR_INVALID_RESPONSE_DATA;
+		goto end;
+	}
 
 	// response of INITIALIZE UPDATE
 	memcpy(key_diversification_data, recvBuffer, 10);
@@ -7598,6 +7612,10 @@ LONG OP201_calculate_load_file_DAP(OP201_DAP_BLOCK *dapBlock, DWORD dapBlockLeng
 		goto end;
 	}
 	loadFileBuf = (PBYTE)malloc(sizeof(BYTE) * loadFileBufSize);
+	if (loadFileBuf == NULL) {
+		result = ENOMEM;
+		goto end;
+	}
 	result = handle_load_file((OPGP_CSTRING)executableLoadFileName, loadFileBuf, &loadFileBufSize);
 	if (result != OPGP_ERROR_SUCCESS) {
 		goto end;
@@ -7741,6 +7759,10 @@ LONG OP201_calculate_3des_DAP(PBYTE securityDomainAID, DWORD securityDomainAIDLe
 		goto end;
 	}
 	loadFileBuf = (PBYTE)malloc(sizeof(BYTE) * loadFileBufSize);
+	if (loadFileBuf == NULL) {
+		result = ENOMEM;
+		goto end;
+	}
 	result = handle_load_file((OPGP_CSTRING)executableLoadFileName, loadFileBuf, &loadFileBufSize);
 	if (result != OPGP_ERROR_SUCCESS) {
 		goto end;
@@ -7853,6 +7875,10 @@ LONG OP201_calculate_rsa_DAP(PBYTE securityDomainAID, DWORD securityDomainAIDLen
 		goto end;
 	}
 	loadFileBuf = (PBYTE)malloc(sizeof(BYTE) * loadFileBufSize);
+	if (loadFileBuf == NULL) {
+		result = ENOMEM;
+		goto end;
+	}
 	result = handle_load_file((OPGP_CSTRING)executableLoadFileName, loadFileBuf, &loadFileBufSize);
 	if (result != OPGP_ERROR_SUCCESS) {
 		goto end;
@@ -8233,6 +8259,10 @@ LONG read_executable_load_file_parameters(OPGP_STRING loadFileName, OPGP_LOAD_FI
 		goto end;
 	}
 	loadFileBuf = (PBYTE)malloc(sizeof(BYTE) * loadFileBufSize);
+	if (loadFileBuf == NULL) {
+		result = ENOMEM;
+		goto end;
+	}
 	result = handle_load_file((OPGP_CSTRING)loadFileName, loadFileBuf, &loadFileBufSize);
 	if (result != OPGP_ERROR_SUCCESS) {
 		goto end;
@@ -8269,6 +8299,10 @@ LONG cap_to_ijc(OPGP_CSTRING capFileName, OPGP_STRING ijcFileName) {
 		goto error;
 	}
 	loadFileBuf = (PBYTE)malloc(sizeof(BYTE) * loadFileBufSize);
+	if (loadFileBuf == NULL) {
+		rv = ENOMEM;
+		goto error;
+	}
 	rv = extract_cap_file(capFileName, loadFileBuf, &loadFileBufSize);
 	if (rv != OPGP_ERROR_SUCCESS) {
 		goto error;
@@ -8493,7 +8527,7 @@ LONG extract_cap_file(OPGP_CSTRING fileName, PBYTE loadFileBuf, PDWORD loadFileB
 			staticfieldbufsz = unzfi.uncompressed_size;
 			buf = staticfieldbuf = (unsigned char *)malloc(unzfi.uncompressed_size);
 		}
-		else if (strcmp(fn + strlen(fn)-15, "Export.cap") == 0) {
+		else if (strcmp(fn + strlen(fn)-10, "Export.cap") == 0) {
 			totalSize+=unzfi.uncompressed_size;
 			exportbufsz = unzfi.uncompressed_size;
 			buf = exportbuf = (unsigned char *)malloc(unzfi.uncompressed_size);
