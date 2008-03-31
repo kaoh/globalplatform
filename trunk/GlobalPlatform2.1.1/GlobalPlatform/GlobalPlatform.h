@@ -27,7 +27,7 @@ extern "C"
 #include "stdafx.h"
 #endif
 
-#ifdef WIN32
+#if defined(WIN32) && !defined(OPGP_LIB)
 #ifdef OPGP_EXPORTS
 #define OPGP_API __declspec(dllexport)
 #else
