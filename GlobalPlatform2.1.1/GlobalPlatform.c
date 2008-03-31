@@ -279,8 +279,35 @@ static LONG load_from_buffer(OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secIn
 static DWORD traceEnable; //!< Enable trace mode.
 static FILE *traceFile; //!< The trace file for trace mode.
 
-#define OP201 0x01 //!< Operation mode for OpenPlatform 2.0.1'
-#define GP211 0x02 //!< Operation mode for GlobalPlatform 2.1.1
+#define OP201 OP_201 //!< Operation mode for OpenPlatform 2.0.1'
+#define GP211 GP_211 //!< Operation mode for GlobalPlatform 2.1.1
+
+/**
+* A TLV object. Only simple objects with tags sizes of 1 byte and lengths <= 127 are supported.
+**/
+typedef struct {
+	BYTE tag; //!< The Tag.
+	BYTE length; //!< The length of the value.
+	BYTE value[127]; //!< The value.
+}
+TLV;
+
+static TLV readTLV(PBYTE buffer, DWORD length);
+
+static TLV readTLV(PBYTE buffer, DWORD length) {
+	LONG result;
+	TLV tlv;
+	if (length < 2) {
+goto end;
+	}
+	tlv.tag = buffer[0];
+	tlv.length = buffer[1];
+	if (tlv.length > 127) {
+		goto end;
+	}
+end:
+	;
+}
 
 static void mapOP201ToGP211SecurityInfo(OP201_SECURITY_INFO op201secInfo,
 										GP211_SECURITY_INFO *gp211secInfo) {
