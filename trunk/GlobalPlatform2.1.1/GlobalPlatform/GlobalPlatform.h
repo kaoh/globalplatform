@@ -603,7 +603,7 @@ typedef struct {
 #define OPGP_ERROR_WRONG_EXPONENT ((DWORD)0x8030F003L) //!< The exponent must be 3 or 65537.
 #define OPGP_ERROR_INVALID_LOAD_FILE ((DWORD)0x8030F008L) //!< The load file has an invalid structure.
 #define OPGP_ERROR_CAP_UNZIP ((DWORD)0x8030F009L) //!< The CAP file cannot be unzipped.
-#define OPGP_ERROR_INVALID_RESPONSE_DATA ((DWORD)0x8030F00BL) //!< The response of a command was invalid.
+#define OPGP_ERROR_INVALID_RESPONSE_DATA ((DWORD)0x8030F00BL) //!< The response of the command was invalid.
 
 /* Open Platform 2.0.1' specific errors */
 
