@@ -292,21 +292,36 @@ typedef struct {
 }
 TLV;
 
-static TLV readTLV(PBYTE buffer, DWORD length);
+static LONG readTLV(PBYTE buffer, DWORD length, TLV *tlv);
 
-static TLV readTLV(PBYTE buffer, DWORD length) {
+
+/**
+ * Reads a TLV struct form the given buffer
+ * \param buffer IN The buffer.
+ * \param length IN The length of the buffer.
+ * \param *tlv OUT the returned TLV struct.
+ * \return -1 in case of error, consumed length otherwise.
+ */
+static LONG readTLV(PBYTE buffer, DWORD length, TLV *tlv) {
 	LONG result;
-	TLV tlv;
 	if (length < 2) {
-goto end;
-	}
-	tlv.tag = buffer[0];
-	tlv.length = buffer[1];
-	if (tlv.length > 127) {
+		result = -1;
 		goto end;
 	}
+	tlv->tag = buffer[0];
+	tlv->length = buffer[1];
+	if (tlv->length > 127) {
+		result = -1;
+		goto end;
+	}
+	if (length - 2 < tlv->length) {
+		result = -1;
+		goto end;
+	}
+	memcpy(tlv->value, buffer+2, tlv->length);
+	result = tlv->length + 2;
 end:
-	;
+	return result;
 }
 
 static void mapOP201ToGP211SecurityInfo(OP201_SECURITY_INFO op201secInfo,
@@ -2626,7 +2641,6 @@ LONG GP211_get_secure_channel_protocol_details(OPGP_CARD_INFO cardInfo,
 	DWORD recvBufferLength = sizeof(recvBuffer);
 	DWORD offset = 0;
 	DWORD length = 0;
-	DWORD totalLength = 0;
 	BYTE OIDCardRecognitionData[256];
 	DWORD OIDCardRecognitionDataLength;
 	BYTE OIDCardManagementTypeAndVersion[256];
@@ -2639,6 +2653,7 @@ LONG GP211_get_secure_channel_protocol_details(OPGP_CARD_INFO cardInfo,
 	DWORD CardConfigurationDetailsLength;
 	BYTE CardChipDetails[256];
 	DWORD CardChipDetailsLength;
+	TLV tlv1, tlv2, _73tlv;
 #ifdef DEBUG
 	DWORD i;
 #endif
@@ -2648,113 +2663,152 @@ LONG GP211_get_secure_channel_protocol_details(OPGP_CARD_INFO cardInfo,
 	if ( OPGP_ERROR_SUCCESS != result) {
 		goto end;
 	}
-	/* start parsing */
-	/* skip 0x66 Card Data Tag and length */
-	if (recvBuffer[0] == 0x66) {
-		offset++;
-		totalLength = recvBuffer[offset++];
-		/* 0x73 Tag and Length for ‘Card Recognition Data’ */
-		offset+=2;
+	// read outer tag, should be one 0x66
+	result = readTLV(recvBuffer, recvBufferLength, &tlv1);
+	if (result == -1) {
+		result = OPGP_ERROR_INVALID_RESPONSE_DATA;
+		goto end;
 	}
-	else {
-		/* 0x73 Tag and Length for ‘Card Recognition Data’ */
-		offset++;
-		totalLength = recvBuffer[offset++];
+	// while tag 0x73 not found look into inner tlv objects
+	while (tlv1.tag != 0x73) {
+		result = readTLV(tlv1.value, tlv1.length, &tlv2);
+		if (result == -1) {
+			result = OPGP_ERROR_INVALID_RESPONSE_DATA;
+			goto end;
+		}
+		tlv1 = tlv2;
 	}
+	// 0x73 must be found, we parse in expected order
+	_73tlv = tlv1;
+
 	/* 0x06 Universal tag for “Object Identifier” (OID) and Length */
-	offset++;
-	length = recvBuffer[offset++];
+	result = readTLV(_73tlv.value+offset, _73tlv.length-offset, &tlv1);
+	if (result == -1) {
+		result = OPGP_ERROR_INVALID_RESPONSE_DATA;
+		goto end;
+	}
+	offset += result;
+
 	/* {globalPlatform 1} OID for Card Recognition Data */
-	memcpy(OIDCardRecognitionData, recvBuffer+offset, length);
-	OIDCardRecognitionDataLength = length;
+	memcpy(OIDCardRecognitionData, tlv1.value, tlv1.length);
+	OIDCardRecognitionDataLength = tlv1.length;
 #ifdef DEBUG
 	log_Log(_T("OIDCardRecognitionData: "));
-	for (i=offset; i<offset+length; i++) {
-		log_Log(_T(" 0x%02x"), recvBuffer[i]);
+	for (i=0; i<OIDCardRecognitionDataLength; i++) {
+		log_Log(_T(" 0x%02x"), OIDCardRecognitionData[i]);
 	}
 #endif
-	offset+=length;
+
 	/* Application tag 0 and length */
-	offset+=2;
-	/* 0x06 Universal tag for “Object Identifier” (OID) and Length */
-	offset++;
-	length = recvBuffer[offset++];
+	result = readTLV(_73tlv.value+offset, _73tlv.length-offset, &tlv1);
+	if (result == -1) {
+		result = OPGP_ERROR_INVALID_RESPONSE_DATA;
+		goto end;
+	}
+	offset += result;
+	/* inner tag: 0x06 Universal tag for “Object Identifier” (OID) and Length */
+	result = readTLV(tlv1.value, tlv1.length, &tlv2);
+	if (result == -1) {
+		result = OPGP_ERROR_INVALID_RESPONSE_DATA;
+		goto end;
+	}
 	/* {globalPlatform 2 v} OID for Card Management Type and Version */
-	memcpy(OIDCardManagementTypeAndVersion, recvBuffer+offset, length);
-	OIDCardManagementTypeAndVersionLength = length;
+	memcpy(OIDCardManagementTypeAndVersion, tlv2.value, tlv2.length);
+	OIDCardManagementTypeAndVersionLength = tlv2.length;
 #ifdef DEBUG
 	log_Log(_T("OIDCardManagementTypeAndVersion: "));
-	for (i=offset; i<offset+length; i++) {
-		log_Log(_T(" 0x%02x"), recvBuffer[i]);
+	for (i=0; i<OIDCardManagementTypeAndVersionLength; i++) {
+		log_Log(_T(" 0x%02x"), OIDCardManagementTypeAndVersion[i]);
 	}
 #endif
-	offset+=length;
+
 	/* Application tag 3 and length */
-	offset+=2;
-	/* 0x06 Universal tag for “Object Identifier” (OID) and Length */
-	offset++;
-	length = recvBuffer[offset++];
+	result = readTLV(_73tlv.value+offset, _73tlv.length-offset, &tlv1);
+	if (result == -1) {
+		result = OPGP_ERROR_INVALID_RESPONSE_DATA;
+		goto end;
+	}
+	offset += result;
+	/* inner tag: 0x06 Universal tag for “Object Identifier” (OID) and Length */
+	result = readTLV(tlv1.value, tlv1.length, &tlv2);
+	if (result == -1) {
+		result = OPGP_ERROR_INVALID_RESPONSE_DATA;
+		goto end;
+	}	
 	/* {globalPlatform 3} OID for Card Identification Scheme */
-	memcpy(OIDCardIdentificationScheme, recvBuffer+offset, length);
-	OIDCardIdentificationSchemeLength = length;
+	memcpy(OIDCardIdentificationScheme, tlv2.value, tlv2.length);
+	OIDCardIdentificationSchemeLength = tlv2.length;
 #ifdef DEBUG
 	log_Log(_T("OIDCardIdentificationScheme: "));
-	for (i=offset; i<offset+length; i++) {
-		log_Log(_T(" 0x%02x"), recvBuffer[i]);
+	for (i=0; i<OIDCardIdentificationSchemeLength; i++) {
+		log_Log(_T(" 0x%02x"), OIDCardIdentificationScheme[i]);
 	}
 #endif
-	offset+=length;
+
 	/* Application tag 4 and length */
-	offset+=2;
-	/* 0x06 Universal tag for “Object Identifier” (OID) and Length */
-	offset++;
-	length = recvBuffer[offset++];
+	result = readTLV(_73tlv.value+offset, _73tlv.length-offset, &tlv1);
+	if (result == -1) {
+		result = OPGP_ERROR_INVALID_RESPONSE_DATA;
+		goto end;
+	}
+	offset += result;
+	/* inner tag: 0x06 Universal tag for “Object Identifier” (OID) and Length */
+	result = readTLV(tlv1.value, tlv1.length, &tlv2);
+	if (result == -1) {
+		result = OPGP_ERROR_INVALID_RESPONSE_DATA;
+		goto end;
+	}	
 	/* {globalPlatform 4 scp i} OID for Secure Channel Protocol of
-	 * the Issuer Security Domain and its implementation options
-	 */
-	memcpy(OIDSecureChannelProtocol, recvBuffer+offset, length);
-	OIDSecureChannelProtocolLength = length;
+	* the Issuer Security Domain and its implementation options
+	*/
+	memcpy(OIDSecureChannelProtocol, tlv2.value, tlv2.length);
+	OIDSecureChannelProtocolLength = tlv2.length;
 #ifdef DEBUG
 	log_Log(_T("OIDSecureChannelProtocol: "));
-	for (i=offset; i<offset+length; i++) {
-		log_Log(_T(" 0x%02x"), recvBuffer[i]);
+	for (i=0; i<OIDSecureChannelProtocolLength; i++) {
+		log_Log(_T(" 0x%02x"), OIDSecureChannelProtocol[i]);
 	}
 #endif
-	offset+=length;
 	*secureChannelProtocol = OIDSecureChannelProtocol[OIDSecureChannelProtocolLength-2];
 	*secureChannelProtocolImpl = OIDSecureChannelProtocol[OIDSecureChannelProtocolLength-1];
 
 	/* optional part */
 
-	if (totalLength > offset) {
+	if (_73tlv.length > offset) {
 		/* Application tag 5 and length */
-		offset++;
-		length = recvBuffer[offset++];
+		result = readTLV(_73tlv.value+offset, _73tlv.length-offset, &tlv1);
+		if (result == -1) {
+			result = OPGP_ERROR_INVALID_RESPONSE_DATA;
+			goto end;
+		}
+		offset += result;
 		/* Card configuration details */
-		memcpy(CardConfigurationDetails, recvBuffer+offset, length);
-		CardConfigurationDetailsLength = length;
-	#ifdef DEBUG
+		memcpy(CardConfigurationDetails, tlv1.value, tlv1.length);
+		CardConfigurationDetailsLength = tlv1.length;
+#ifdef DEBUG
 		log_Log(_T("CardConfigurationDetails: "));
-		for (i=offset; i<offset+length; i++) {
-			log_Log(_T(" 0x%02x"), recvBuffer[i]);
+		for (i=0; i<CardConfigurationDetailsLength; i++) {
+			log_Log(_T(" 0x%02x"), CardConfigurationDetails[i]);
 		}
-	#endif
-		offset+=length;
+#endif
 	}
-	if (totalLength > offset) {
+	if (_73tlv.length > offset) {
 		/* Application tag 6 and length */
-		offset++;
-		length = recvBuffer[offset++];
-		/* Card / chip details */
-		memcpy(CardChipDetails, recvBuffer+offset, length);
-		CardChipDetailsLength = length;
-	#ifdef DEBUG
-		log_Log(_T("CardChipDetails: "));
-		for (i=offset; i<offset+length; i++) {
-			log_Log(_T(" 0x%02x"), recvBuffer[i]);
+		result = readTLV(_73tlv.value+offset, _73tlv.length-offset, &tlv1);
+		if (result == -1) {
+			result = OPGP_ERROR_INVALID_RESPONSE_DATA;
+			goto end;
 		}
-	#endif
-		offset+=length;
+		offset += result;
+		/* Card / chip details */
+		memcpy(CardChipDetails, tlv1.value, tlv1.length);
+		CardChipDetailsLength = tlv1.length;
+#ifdef DEBUG
+		log_Log(_T("CardChipDetails: "));
+		for (i=0; i<CardChipDetailsLength; i++) {
+			log_Log(_T(" 0x%02x"), CardChipDetails[i]);
+		}
+#endif
 	}
 	{ result = OPGP_ERROR_SUCCESS; goto end; }
 end:
@@ -6504,6 +6558,8 @@ OPGP_STRING stringify_error(DWORD errorCode) {
 		return strError;
 #endif
 	}
+	if (errorCode == OPGP_ERROR_INVALID_RESPONSE_DATA)
+		return _T("The response of the command was invalid.");
 	if (errorCode == GP211_ERROR_INCONSISTENT_SCP)
 		return _T("The Secure Channel Protocol passed and reported do not match.");
 	if (errorCode == OPGP_ERROR_CAP_UNZIP)
