@@ -113,7 +113,10 @@ card_disconnect // Disconnect card
 
 ---
 
-get_status -element e0 // list applets
+get_status -element e0 // list applets and packages and security domains
+get_status -element 20 // list packages
+get_status -element 40 // list applets or security domains
+get_status -element 80 // list Card Manager / Security Issuer Domain
 
 ---
 
