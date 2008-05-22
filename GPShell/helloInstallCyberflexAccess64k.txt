@@ -8,7 +8,7 @@ delete -AID a00000006203010c0101
 delete -AID a00000006203010c01
 install_for_load -pkgAID a00000006203010c01 -nvCodeLimit 500  -sdAID A000000003000000
 load -file HelloWorld.cap.transf
-install_for_install -instParam 00 -priv 02 -AID A0000003230101 -pkgAID 
+install_for_install -instParam 00 -priv 02 -AID a00000006203010c0101 -pkgAID 
 a00000006203010c01 -instAID a00000006203010c0101 -nvDataLimit 500
 card_disconnect
 release_context
