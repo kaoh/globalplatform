@@ -4,6 +4,7 @@ AC_PREREQ(2.53)
 AC_INIT(GlobalPlatform, 5.0.0, k_o_@users.sourceforge.net)
 AC_COPYRIGHT(COPYING)
 AM_INIT_AUTOMAKE([-Wall -Werror])
+AM_PATH_CHECK(0.9.2, [], [AC_MSG_WARN([Check version too low, checks may not work properly])])
 
 # check programs
 AC_PROG_CC
@@ -54,7 +55,7 @@ case "$host" in
 	  then AC_MSG_ERROR([WinSCard.lib not found, specify location of WinSCard.lib with
 	./configure WINSCARD_LIB_PATH=<library directory>])
 	fi
-	AC_SUBST(PCSCLITE_LIBS,-L"$WINSCARD_LIB_PATH")
+	AC_SUBST(PCSCLITE_LIBS,"-lWinSCcard -L"$WINSCARD_LIB_PATH"")
   ;;
 *)
     PKG_CHECK_MODULES(PCSCLITE, libpcsclite >= 1.2.9-beta7, [],

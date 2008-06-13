@@ -105,6 +105,9 @@ The default log file is C:\Temp\GlobalPlatform.log. This must be writable for
 the user. Keep in mind that the debugging output may contain sensitive 
 information, e.g. keys!
 
+If you want to use the static library form in an application you can use the switch OPGP_LIB 
+while building your application.
+
 For more information visit:
 
 http://sourceforge.net/projects/globalplatform/

@@ -206,6 +206,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\GlobalPlatformTest.c"
+				>
+			</File>
+			<File
 				RelativePath=".\stdafx.c"
 				>
 			</File>

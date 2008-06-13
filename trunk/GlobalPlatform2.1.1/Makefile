@@ -38,6 +38,7 @@ POST_UNINSTALL = :
 build_triplet = i686-pc-cygwin
 host_triplet = i686-pc-cygwin
 LIBOBJDIR =
+check_PROGRAMS = GlobalPlatformTest$(EXEEXT)
 DIST_COMMON = README $(am__configure_deps) $(include_HEADERS) \
 	$(nobase_include_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(top_srcdir)/configure AUTHORS COPYING \
@@ -68,6 +69,12 @@ am_libGlobalPlatform_la_OBJECTS =  \
 	libGlobalPlatform_la-debug.lo libGlobalPlatform_la-ioapi.lo \
 	libGlobalPlatform_la-unzip.lo libGlobalPlatform_la-zip.lo
 libGlobalPlatform_la_OBJECTS = $(am_libGlobalPlatform_la_OBJECTS)
+am_GlobalPlatformTest_OBJECTS =  \
+	GlobalPlatformTest-GlobalPlatformTest.$(OBJEXT)
+GlobalPlatformTest_OBJECTS = $(am_GlobalPlatformTest_OBJECTS)
+am__DEPENDENCIES_1 =
+GlobalPlatformTest_DEPENDENCIES =  \
+	$(top_builddir)/libGlobalPlatform.la $(am__DEPENDENCIES_1)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -79,8 +86,10 @@ LTCOMPILE = $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(libGlobalPlatform_la_SOURCES)
-DIST_SOURCES = $(libGlobalPlatform_la_SOURCES)
+SOURCES = $(libGlobalPlatform_la_SOURCES) \
+	$(GlobalPlatformTest_SOURCES)
+DIST_SOURCES = $(libGlobalPlatform_la_SOURCES) \
+	$(GlobalPlatformTest_SOURCES)
 includeHEADERS_INSTALL = $(INSTALL_HEADER)
 nobase_includeHEADERS_INSTALL = $(install_sh_DATA)
 HEADERS = $(include_HEADERS) $(nobase_include_HEADERS)
@@ -97,19 +106,21 @@ DIST_ARCHIVES = $(distdir).tar.gz
 GZIP_ENV = --best
 distuninstallcheck_listfiles = find . -type f -print
 distcleancheck_listfiles = find . -type f -print
-ACLOCAL = aclocal-1.9
+ACLOCAL = ${SHELL} /cygdrive/c/Users/widerstand_2/Documents/VisualStudio2005/Projects/GlobalPlatform/missing --run aclocal-1.9
 AMDEP_FALSE = #
 AMDEP_TRUE = 
-AMTAR = tar
+AMTAR = ${SHELL} /cygdrive/c/Users/widerstand_2/Documents/VisualStudio2005/Projects/GlobalPlatform/missing --run tar
 AR = ar
 AS = as
-AUTOCONF = autoconf
-AUTOHEADER = autoheader
-AUTOMAKE = automake-1.9
+AUTOCONF = ${SHELL} /cygdrive/c/Users/widerstand_2/Documents/VisualStudio2005/Projects/GlobalPlatform/missing --run autoconf
+AUTOHEADER = ${SHELL} /cygdrive/c/Users/widerstand_2/Documents/VisualStudio2005/Projects/GlobalPlatform/missing --run autoheader
+AUTOMAKE = ${SHELL} /cygdrive/c/Users/widerstand_2/Documents/VisualStudio2005/Projects/GlobalPlatform/missing --run automake-1.9
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
 CFLAGS = -g -O2
+CHECK_CFLAGS = 
+CHECK_LIBS = -lcheck
 CPP = gcc -E
 CPPFLAGS = 
 CXX = g++
@@ -120,6 +131,7 @@ CYGPATH_W = cygpath -w
 DEFS = -DPACKAGE_NAME=\"GlobalPlatform\" -DPACKAGE_TARNAME=\"globalplatform\" -DPACKAGE_VERSION=\"5.0.0\" -DPACKAGE_STRING=\"GlobalPlatform\ 5.0.0\" -DPACKAGE_BUGREPORT=\"k_o_@users.sourceforge.net\" -DPACKAGE=\"globalplatform\" -DVERSION=\"5.0.0\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_DLFCN_H=1 -DSTDC_HEADERS=1 -DHAVE_STDLIB_H=1 -DHAVE_MALLOC=1 -DHAVE_VPRINTF=1 -DHAVE_MEMCPY=1 -DHAVE_VSYSLOG=1 -DDEBUG=1 -DHAVE_ZCONF_H=1 -DHAVE_ZLIB_H=1 -DHAVE_LIBZ=1 -DHAVE_OPENSSL_RAND_H=1 -DHAVE_OPENSSL_ERR_H=1 -DHAVE_OPENSSL_EVP_H=1 -DHAVE_OPENSSL_PEM_H=1 -DHAVE_LIBCRYPTO=1
 DEPDIR = .deps
 DLLTOOL = dlltool
+DSYMUTIL = 
 ECHO = echo
 ECHO_C = 
 ECHO_N = -n
@@ -139,7 +151,8 @@ LIBS = -lcrypto -lz
 LIBTOOL = $(SHELL) $(top_builddir)/libtool
 LN_S = ln -s
 LTLIBOBJS = 
-MAKEINFO = makeinfo
+MAKEINFO = ${SHELL} /cygdrive/c/Users/widerstand_2/Documents/VisualStudio2005/Projects/GlobalPlatform/missing --run makeinfo
+NMEDIT = 
 OBJDUMP = objdump
 OBJEXT = o
 PACKAGE = globalplatform
@@ -151,7 +164,7 @@ PACKAGE_VERSION = 5.0.0
 PATH_SEPARATOR = :
 PCSCLITE_CFLAGS = -I./pcsclite-includes
 PCSCLITE_H_PATH = ./pcsclite-includes
-PCSCLITE_LIBS = -L/cygdrive/c/Program Files/Microsoft Platform SDK for Windows Server 2003 R2/Lib/
+PCSCLITE_LIBS = -lwinscard2 -Lwinscard-libs
 PKG_CONFIG = 
 RANLIB = ranlib
 SED = /usr/bin/sed
@@ -159,7 +172,7 @@ SET_MAKE =
 SHELL = /bin/sh
 STRIP = strip
 VERSION = 5.0.0
-WINSCARD_LIB_PATH = /cygdrive/c/Program Files/Microsoft Platform SDK for Windows Server 2003 R2/Lib/
+WINSCARD_LIB_PATH = winscard-libs
 ac_ct_CC = gcc
 ac_ct_CXX = g++
 ac_ct_F77 = g77
@@ -191,7 +204,7 @@ host_vendor = pc
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = /cygdrive/c/Users/widerstand_2/Documents/Visual Studio 2005/Projects/GlobalPlatform/install-sh
+install_sh = /cygdrive/c/Users/widerstand_2/Documents/VisualStudio2005/Projects/GlobalPlatform/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -220,8 +233,12 @@ libGlobalPlatform_la_SOURCES = GlobalPlatform/GlobalPlatform.h GlobalPlatform.c 
 debug.c GlobalPlatform/unicode.h unzip/crypt.h unzip/ioapi.c unzip/ioapi.h \
 unzip/unzip.c unzip/unzip.h unzip/zip.c unzip/zip.h
 
-libGlobalPlatform_la_LDFLAGS = -version-info 4:2:3 $(PCSCLITE_LIBS)
+libGlobalPlatform_la_LDFLAGS = -version-info 5:0:0 $(PCSCLITE_LIBS)
 libGlobalPlatform_la_CPPFLAGS = $(AM_CPPFLAGS) $(PCSCLITE_CFLAGS)
+TESTS = GlobalPlatformTest
+GlobalPlatformTest_SOURCES = GlobalPlatformTest.c $(top_builddir)/GlobalPlatform/GlobalPlatform.h
+GlobalPlatformTest_CFLAGS =  $(AM_CPPFLAGS) $(PCSCLITE_CFLAGS)
+GlobalPlatformTest_LDADD = -lcheck $(top_builddir)/libGlobalPlatform.la $(PCSCLITE_LIBS)
 MAINTAINERCLEANFILES = \
 	Makefile.in \
 	configure \
@@ -302,12 +319,23 @@ clean-libLTLIBRARIES:
 libGlobalPlatform.la: $(libGlobalPlatform_la_OBJECTS) $(libGlobalPlatform_la_DEPENDENCIES) 
 	$(LINK) -rpath $(libdir) $(libGlobalPlatform_la_LDFLAGS) $(libGlobalPlatform_la_OBJECTS) $(libGlobalPlatform_la_LIBADD) $(LIBS)
 
+clean-checkPROGRAMS:
+	@list='$(check_PROGRAMS)'; for p in $$list; do \
+	  f=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
+	  echo " rm -f $$p $$f"; \
+	  rm -f $$p $$f ; \
+	done
+GlobalPlatformTest$(EXEEXT): $(GlobalPlatformTest_OBJECTS) $(GlobalPlatformTest_DEPENDENCIES) 
+	@rm -f GlobalPlatformTest$(EXEEXT)
+	$(LINK) $(GlobalPlatformTest_LDFLAGS) $(GlobalPlatformTest_OBJECTS) $(GlobalPlatformTest_LDADD) $(LIBS)
+
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
 
+include ./$(DEPDIR)/GlobalPlatformTest-GlobalPlatformTest.Po
 include ./$(DEPDIR)/libGlobalPlatform_la-GlobalPlatform.Plo
 include ./$(DEPDIR)/libGlobalPlatform_la-debug.Plo
 include ./$(DEPDIR)/libGlobalPlatform_la-ioapi.Plo
@@ -369,6 +397,20 @@ libGlobalPlatform_la-zip.lo: unzip/zip.c
 #	source='unzip/zip.c' object='libGlobalPlatform_la-zip.lo' libtool=yes \
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
 #	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libGlobalPlatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libGlobalPlatform_la-zip.lo `test -f 'unzip/zip.c' || echo '$(srcdir)/'`unzip/zip.c
+
+GlobalPlatformTest-GlobalPlatformTest.o: GlobalPlatformTest.c
+	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(GlobalPlatformTest_CFLAGS) $(CFLAGS) -MT GlobalPlatformTest-GlobalPlatformTest.o -MD -MP -MF "$(DEPDIR)/GlobalPlatformTest-GlobalPlatformTest.Tpo" -c -o GlobalPlatformTest-GlobalPlatformTest.o `test -f 'GlobalPlatformTest.c' || echo '$(srcdir)/'`GlobalPlatformTest.c; \
+	then mv -f "$(DEPDIR)/GlobalPlatformTest-GlobalPlatformTest.Tpo" "$(DEPDIR)/GlobalPlatformTest-GlobalPlatformTest.Po"; else rm -f "$(DEPDIR)/GlobalPlatformTest-GlobalPlatformTest.Tpo"; exit 1; fi
+#	source='GlobalPlatformTest.c' object='GlobalPlatformTest-GlobalPlatformTest.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(GlobalPlatformTest_CFLAGS) $(CFLAGS) -c -o GlobalPlatformTest-GlobalPlatformTest.o `test -f 'GlobalPlatformTest.c' || echo '$(srcdir)/'`GlobalPlatformTest.c
+
+GlobalPlatformTest-GlobalPlatformTest.obj: GlobalPlatformTest.c
+	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(GlobalPlatformTest_CFLAGS) $(CFLAGS) -MT GlobalPlatformTest-GlobalPlatformTest.obj -MD -MP -MF "$(DEPDIR)/GlobalPlatformTest-GlobalPlatformTest.Tpo" -c -o GlobalPlatformTest-GlobalPlatformTest.obj `if test -f 'GlobalPlatformTest.c'; then $(CYGPATH_W) 'GlobalPlatformTest.c'; else $(CYGPATH_W) '$(srcdir)/GlobalPlatformTest.c'; fi`; \
+	then mv -f "$(DEPDIR)/GlobalPlatformTest-GlobalPlatformTest.Tpo" "$(DEPDIR)/GlobalPlatformTest-GlobalPlatformTest.Po"; else rm -f "$(DEPDIR)/GlobalPlatformTest-GlobalPlatformTest.Tpo"; exit 1; fi
+#	source='GlobalPlatformTest.c' object='GlobalPlatformTest-GlobalPlatformTest.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(GlobalPlatformTest_CFLAGS) $(CFLAGS) -c -o GlobalPlatformTest-GlobalPlatformTest.obj `if test -f 'GlobalPlatformTest.c'; then $(CYGPATH_W) 'GlobalPlatformTest.c'; else $(CYGPATH_W) '$(srcdir)/GlobalPlatformTest.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -463,6 +505,79 @@ GTAGS:
 
 distclean-tags:
 	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH tags
+
+check-TESTS: $(TESTS)
+	@failed=0; all=0; xfail=0; xpass=0; skip=0; \
+	srcdir=$(srcdir); export srcdir; \
+	list='$(TESTS)'; \
+	if test -n "$$list"; then \
+	  for tst in $$list; do \
+	    if test -f ./$$tst; then dir=./; \
+	    elif test -f $$tst; then dir=; \
+	    else dir="$(srcdir)/"; fi; \
+	    if $(TESTS_ENVIRONMENT) $${dir}$$tst; then \
+	      all=`expr $$all + 1`; \
+	      case " $(XFAIL_TESTS) " in \
+	      *" $$tst "*) \
+		xpass=`expr $$xpass + 1`; \
+		failed=`expr $$failed + 1`; \
+		echo "XPASS: $$tst"; \
+	      ;; \
+	      *) \
+		echo "PASS: $$tst"; \
+	      ;; \
+	      esac; \
+	    elif test $$? -ne 77; then \
+	      all=`expr $$all + 1`; \
+	      case " $(XFAIL_TESTS) " in \
+	      *" $$tst "*) \
+		xfail=`expr $$xfail + 1`; \
+		echo "XFAIL: $$tst"; \
+	      ;; \
+	      *) \
+		failed=`expr $$failed + 1`; \
+		echo "FAIL: $$tst"; \
+	      ;; \
+	      esac; \
+	    else \
+	      skip=`expr $$skip + 1`; \
+	      echo "SKIP: $$tst"; \
+	    fi; \
+	  done; \
+	  if test "$$failed" -eq 0; then \
+	    if test "$$xfail" -eq 0; then \
+	      banner="All $$all tests passed"; \
+	    else \
+	      banner="All $$all tests behaved as expected ($$xfail expected failures)"; \
+	    fi; \
+	  else \
+	    if test "$$xpass" -eq 0; then \
+	      banner="$$failed of $$all tests failed"; \
+	    else \
+	      banner="$$failed of $$all tests did not behave as expected ($$xpass unexpected passes)"; \
+	    fi; \
+	  fi; \
+	  dashes="$$banner"; \
+	  skipped=""; \
+	  if test "$$skip" -ne 0; then \
+	    skipped="($$skip tests were not run)"; \
+	    test `echo "$$skipped" | wc -c` -le `echo "$$banner" | wc -c` || \
+	      dashes="$$skipped"; \
+	  fi; \
+	  report=""; \
+	  if test "$$failed" -ne 0 && test -n "$(PACKAGE_BUGREPORT)"; then \
+	    report="Please report to $(PACKAGE_BUGREPORT)"; \
+	    test `echo "$$report" | wc -c` -le `echo "$$banner" | wc -c` || \
+	      dashes="$$report"; \
+	  fi; \
+	  dashes=`echo "$$dashes" | sed s/./=/g`; \
+	  echo "$$dashes"; \
+	  echo "$$banner"; \
+	  test -z "$$skipped" || echo "$$skipped"; \
+	  test -z "$$report" || echo "$$report"; \
+	  echo "$$dashes"; \
+	  test "$$failed" -eq 0; \
+	else :; fi
 
 distdir: $(DISTFILES)
 	$(am__remove_distdir)
@@ -592,6 +707,8 @@ distcleancheck: distclean
 	       $(distcleancheck_listfiles) ; \
 	       exit 1; } >&2
 check-am: all-am
+	$(MAKE) $(AM_MAKEFLAGS) $(check_PROGRAMS)
+	$(MAKE) $(AM_MAKEFLAGS) check-TESTS
 check: check-am
 all-am: Makefile $(LTLIBRARIES) $(HEADERS)
 installdirs:
@@ -625,8 +742,8 @@ maintainer-clean-generic:
 	-test -z "$(MAINTAINERCLEANFILES)" || rm -f $(MAINTAINERCLEANFILES)
 clean: clean-am
 
-clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
-	mostlyclean-am
+clean-am: clean-checkPROGRAMS clean-generic clean-libLTLIBRARIES \
+	clean-libtool mostlyclean-am
 
 distclean: distclean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
@@ -678,15 +795,16 @@ ps-am:
 uninstall-am: uninstall-includeHEADERS uninstall-info-am \
 	uninstall-libLTLIBRARIES uninstall-nobase_includeHEADERS
 
-.PHONY: CTAGS GTAGS all all-am am--refresh check check-am clean \
-	clean-generic clean-libLTLIBRARIES clean-libtool ctags dist \
-	dist-all dist-bzip2 dist-gzip dist-shar dist-tarZ dist-zip \
-	distcheck distclean distclean-compile distclean-generic \
-	distclean-libtool distclean-tags distcleancheck distdir \
-	distuninstallcheck dvi dvi-am html html-am info info-am \
-	install install-am install-data install-data-am install-exec \
-	install-exec-am install-includeHEADERS install-info \
-	install-info-am install-libLTLIBRARIES install-man \
+.PHONY: CTAGS GTAGS all all-am am--refresh check check-TESTS check-am \
+	clean clean-checkPROGRAMS clean-generic clean-libLTLIBRARIES \
+	clean-libtool ctags dist dist-all dist-bzip2 dist-gzip \
+	dist-shar dist-tarZ dist-zip distcheck distclean \
+	distclean-compile distclean-generic distclean-libtool \
+	distclean-tags distcleancheck distdir distuninstallcheck dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-data install-data-am install-exec install-exec-am \
+	install-includeHEADERS install-info install-info-am \
+	install-libLTLIBRARIES install-man \
 	install-nobase_includeHEADERS install-strip installcheck \
 	installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \

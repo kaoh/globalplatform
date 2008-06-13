@@ -6,6 +6,7 @@
 !MESSAGE
 !MESSAGE Possible Targets:
 !MESSAGE ALL [DEBUG=] - Build version.
+!MESSAGE   -- Use nmake with STATIC= if you want to build a static library. --
 !MESSAGE CLEAN - Delete Debug and Release directories
 !MESSAGE DOC - Create documentation.
 !MESSAGE PREBUILD - Builds a prebuild zipped version. VERSION= must be set.
@@ -69,17 +70,39 @@ LIB_NAME=GlobalPlatform # the name of the library
 CPP=cl
 
 !IFDEF DEBUG
+!IFDEF STATIC
+CPPFLAGS=/Od /I $(OPENSSL_INC) /I $(ZLIB_INC) /D "WIN32" /D "_DEBUG" /D "DEBUG" /D "_CONSOLE" /D "OPGP_LIB" /D "_UNICODE" \
+/D "UNICODE" /GZ /MD /Fo$(OUTDIR)/ /W3 /nologo /ZI /TC
+!ELSE
 CPPFLAGS=/Od /I $(OPENSSL_INC) /I $(ZLIB_INC) /D "WIN32" /D "_DEBUG" /D "DEBUG" /D "_CONSOLE" /D "OPGP_EXPORTS" /D "_UNICODE" \
 /D "_WINDLL" /D "UNICODE" /GZ /MD /Fo$(OUTDIR)/ /W3 /nologo /ZI /TC
+!ENDIF
+!ELSE
+!IFDEF STATIC
+CPPFLAGS=/O2 /I "$(OPENSSL_INC)" /I $(ZLIB_INC) /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "OPGP_LIB" /D "_UNICODE" \
+/D "UNICODE" /FD /MD /Fo$(OUTDIR)/ /W3 /nologo /Zi /TC
 !ELSE
 CPPFLAGS=/O2 /I "$(OPENSSL_INC)" /I $(ZLIB_INC) /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "OPGP_EXPORTS" /D "_UNICODE" \
 /D "_WINDLL" /D "UNICODE" /FD /MD /Fo$(OUTDIR)/ /W3 /nologo /Zi /TC
 !ENDIF
+!ENDIF
 
 LINK=link
+LIB=lib
 
 !IFDEF DEBUG
+!IFDEF STATIC
+LIBFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).lib /NOLOGO /LIBPATH:$(OPENSSL_LIB) /LIBPATH:$(ZLIB_LIB) \
+/SUBSYSTEM:CONSOLE /MACHINE:X86 zdll.lib ssleay32.lib libeay32.lib winscard.lib kernel32.lib user32.lib gdi32.lib winspool.lib \
+comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib
+!ELSE
 LFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).dll /NOLOGO /LIBPATH:$(OPENSSL_LIB) /LIBPATH:$(ZLIB_LIB) /DLL /DEBUG /PDB:$(OUTDIR)/$(LIB_NAME).pdb \
+/SUBSYSTEM:CONSOLE /MACHINE:X86 zdll.lib ssleay32.lib libeay32.lib winscard.lib kernel32.lib user32.lib gdi32.lib winspool.lib \
+comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib
+!ENDIF
+!ELSE
+!IFDEF STATIC
+LIBFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).lib /NOLOGO /LIBPATH:$(OPENSSL_LIB) /LIBPATH:$(ZLIB_LIB) \
 /SUBSYSTEM:CONSOLE /MACHINE:X86 zdll.lib ssleay32.lib libeay32.lib winscard.lib kernel32.lib user32.lib gdi32.lib winspool.lib \
 comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib
 !ELSE
@@ -87,8 +110,13 @@ LFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).dll /INCREMENTAL:NO /NOLOGO /LIBPATH:$(OPENSSL
 /OPT:REF /OPT:ICF /MACHINE:X86 zdll.lib ssleay32.lib libeay32.lib winscard.lib kernel32.lib user32.lib gdi32.lib \
 winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib
 !ENDIF
+!ENDIF
 
+!IFDEF STATIC
+all: create_dirs $(OUTDIR)/$(LIB_NAME).lib
+!ELSE
 all: create_dirs $(OUTDIR)/$(LIB_NAME).dll
+!ENDIF
 
 create_dirs:
 	-@mkdir $(OUTDIR)
@@ -97,6 +125,10 @@ create_dirs:
 # compilation and linking
 $(OUTDIR)/$(LIB_NAME).dll: $(OBJS) $(MINIZIP) version.res
 	$(LINK) $(LFLAGS) $(OBJS) $(MINIZIP) version.res
+	$(_VC_MANIFEST_EMBED_DLL)
+	
+$(OUTDIR)/$(LIB_NAME).lib: $(OBJS) $(MINIZIP) version.res
+	$(LIB) $(LIBFLAGS) $(OBJS) $(MINIZIP) version.res
 	$(_VC_MANIFEST_EMBED_DLL)
 
 $(OBJS): $(@B).c
