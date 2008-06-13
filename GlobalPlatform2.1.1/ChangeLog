@@ -5,6 +5,7 @@ History
 	specification version added to OPGP_CARD_INFO
 	Fix in send_APDU
 	SCP verification in mutual_authentication
+	Check tests included
 
 4.2.3 - Wed Oct 03, 2007, Karsten Ohme
 	Bug in card_connect fixed
