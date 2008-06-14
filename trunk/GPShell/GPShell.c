@@ -607,17 +607,18 @@ static int handleCommands(FILE *fd)
 		if (rv != EXIT_SUCCESS) {
 			goto end;
 		}
-		if (platform_mode == PLATFORM_MODE_OP_201) {
-			if (gemXpressoPro) {
-				rv = GemXpressoPro_create_daughter_keys(cardInfo, selectedAID, selectedAIDLength, optionStr.key,
-								 optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
-				if (rv != 0) {
-					_tprintf (_T("GemXpressoPro_create_daughter_keys() returns 0x%08X (%s)\n"),
-						rv, stringify_error(rv));
-					rv = EXIT_FAILURE;
-					goto end;
-				}
+		if (gemXpressoPro) {
+			rv = GemXpressoPro_create_daughter_keys(cardInfo, selectedAID, selectedAIDLength, optionStr.key,
+				optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
+			if (rv != 0) {
+				_tprintf (_T("GemXpressoPro_create_daughter_keys() returns 0x%08X (%s)\n"),
+					rv, stringify_error(rv));
+				rv = EXIT_FAILURE;
+				goto end;
 			}
+		}
+
+		if (platform_mode == PLATFORM_MODE_OP_201) {
 		    rv = OP201_mutual_authentication(cardInfo,
 						     optionStr.enc_key,
 						     optionStr.mac_key,
