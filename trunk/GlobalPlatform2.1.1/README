@@ -15,6 +15,17 @@ You need also the libraries zlib 1.2.3 (zlib1.dll) and OpenSSL 0.9.7e
 in the system directory (C:\Windows\System32 or /usr/(local/)lib 
 usually) or application directory.
 
+If you experience problems a DEBUG output is always helpful.
+Set the varibale GLOBALPLATFORM_DEBUG=1 in the environment. You can set  
+the logfile with GLOBALPLATFORM_LOGFILE=<file>. Under Windows by 
+default C:\Temp\GlobalPlatform.log is chosen. The log file must be 
+writable for the user. The default log file under Unix systems is 
+/tmp/GlobalPlatform.log. But usually syslog is available and this will 
+be used by default, so you may have to specify the log file manually, 
+if you don't have access to the syslog or don't want to use it. 
+Keep in mind that the debugging output may contain sensitive information, 
+e.g. keys!
+
 For more information contact the author through the mailinglist at:
 
 http://sourceforge.net/projects/globalplatform/
