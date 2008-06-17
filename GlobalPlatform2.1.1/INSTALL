@@ -18,7 +18,7 @@ and enable the debugging by setting the environment variable
 GLOBALPLATFORM_DEBUG=1. If you explicitly set a log file with
 the environment variable GLOBALPLATFORM_LOGFILE, this log file will be used.
 The default log file is /tmp/GlobalPlatform.log. This must be writable for the 
-user. But if syslog is available during compile time the defualt for debugging 
+user. But if syslog is available during compile time the default for debugging 
 statement is to get syslogged. Keep in mind that the debugging output may 
 contain sensitive information, e.g. keys!
 
