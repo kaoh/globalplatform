@@ -51,3 +51,7 @@ History
                         Changed License to LGPL
                         Executable Modules were not reported correctly
                         Compiled against GlobalPlatform 5.0.0
+                        
+06/19/2008	     1.4.3  Key Derivation available for all cards
+                        Changed License to GPL (LGPL does not make sense)
+                        Compiled against GlobalPlatform 6.0.0
