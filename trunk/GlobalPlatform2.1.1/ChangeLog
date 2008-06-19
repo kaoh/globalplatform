@@ -1,6 +1,12 @@
 History
 =======
 
+6.0.0 - Fri, June 19, 2008, Karsten Ohme
+	VISA 2 key derivation support
+	Support for other transport protocols than PC/SC
+	internal TLV parsing
+	memory leaks fixed
+
 5.0.0 - Sat Jan 19, 2008, Karsten Ohme
 	specification version added to OPGP_CARD_INFO
 	Fix in send_APDU
@@ -24,7 +30,7 @@ History
 	CAP file support
 	GemXpresso support fixed
 	CAP to IFC file conversion function
-	
+
 3.0.2 - Sat Mar 25 2006, Karsten Ohme
 	GemXpresso support
 	bug fixes
