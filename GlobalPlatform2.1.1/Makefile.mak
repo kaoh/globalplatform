@@ -17,7 +17,7 @@
 # replace with your path to the OpenSSL header files
 # or specify on command line
 OPENSSL_INC=C:\Users\widerstand_2\Libs\C\openssl-0.9.8e\include
-               
+
 # replace with your path to the OpenSSL library files
 # or specify on command line
 OPENSSL_LIB=C:\Users\widerstand_2\Libs\C\openssl-0.9.8e\out32dll
@@ -92,21 +92,22 @@ LIB=lib
 
 !IFDEF DEBUG
 !IFDEF STATIC
-LIBFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).lib /NOLOGO /LIBPATH:$(OPENSSL_LIB) /LIBPATH:$(ZLIB_LIB) \
+LIBFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).lib /NOLOGO /LIBPATH:$(OPENSSL_LIB) /LIBPATH:$(ZLIB_LIB) /LIBPATH:"$(SDK_LIB1)" /LIBPATH:"$(SDK_LIB2)" \
 /SUBSYSTEM:CONSOLE /MACHINE:X86 zdll.lib ssleay32.lib libeay32.lib winscard.lib kernel32.lib user32.lib gdi32.lib winspool.lib \
 comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib
 !ELSE
-LFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).dll /NOLOGO /LIBPATH:$(OPENSSL_LIB) /LIBPATH:$(ZLIB_LIB) /DLL /DEBUG /PDB:$(OUTDIR)/$(LIB_NAME).pdb \
+LFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).dll /NOLOGO /LIBPATH:$(OPENSSL_LIB) /LIBPATH:$(ZLIB_LIB) /LIBPATH:"$(SDK_LIB1)" /LIBPATH:"$(SDK_LIB2)" /DLL /DEBUG /PDB:$(OUTDIR)/$(LIB_NAME).pdb \
 /SUBSYSTEM:CONSOLE /MACHINE:X86 zdll.lib ssleay32.lib libeay32.lib winscard.lib kernel32.lib user32.lib gdi32.lib winspool.lib \
 comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib
 !ENDIF
 !ELSE
 !IFDEF STATIC
-LIBFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).lib /NOLOGO /LIBPATH:$(OPENSSL_LIB) /LIBPATH:$(ZLIB_LIB) \
+LIBFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).lib /NOLOGO /LIBPATH:$(OPENSSL_LIB) /LIBPATH:$(ZLIB_LIB) /LIBPATH:"$(SDK_LIB1)" /LIBPATH:"$(SDK_LIB2)" \
 /SUBSYSTEM:CONSOLE /MACHINE:X86 zdll.lib ssleay32.lib libeay32.lib winscard.lib kernel32.lib user32.lib gdi32.lib winspool.lib \
 comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib
 !ELSE
-LFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).dll /INCREMENTAL:NO /NOLOGO /LIBPATH:$(OPENSSL_LIB) /LIBPATH:$(ZLIB_LIB) /DLL /SUBSYSTEM:CONSOLE \
+LFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).dll /INCREMENTAL:NO /NOLOGO /LIBPATH:"$(SDK_LIB1)" /LIBPATH:"$(SDK_LIB2)" \
+/LIBPATH:$(OPENSSL_LIB) /LIBPATH:$(ZLIB_LIB) /DLL /SUBSYSTEM:CONSOLE \
 /OPT:REF /OPT:ICF /MACHINE:X86 zdll.lib ssleay32.lib libeay32.lib winscard.lib kernel32.lib user32.lib gdi32.lib \
 winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib
 !ENDIF
@@ -126,7 +127,7 @@ create_dirs:
 $(OUTDIR)/$(LIB_NAME).dll: $(OBJS) $(MINIZIP) version.res
 	$(LINK) $(LFLAGS) $(OBJS) $(MINIZIP) version.res
 	$(_VC_MANIFEST_EMBED_DLL)
-	
+
 $(OUTDIR)/$(LIB_NAME).lib: $(OBJS) $(MINIZIP) version.res
 	$(LIB) $(LIBFLAGS) $(OBJS) $(MINIZIP) version.res
 	$(_VC_MANIFEST_EMBED_DLL)
@@ -147,7 +148,7 @@ version.res : version.rc
 # run doxygen
 doc: do-doc
 
-VERSION=5.0.0
+VERSION=6.0.0
 PREBUILDDIR="GlobalPlatform-$(VERSION)"
 
 prebuild: all

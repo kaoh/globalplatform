@@ -1,7 +1,7 @@
 # Require autoconf 2.53
 AC_PREREQ(2.53)
 
-AC_INIT(GlobalPlatform, 5.0.0, k_o_@users.sourceforge.net)
+AC_INIT(GlobalPlatform, 6.0.0, k_o_@users.sourceforge.net)
 AC_COPYRIGHT(COPYING)
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AM_PATH_CHECK(0.9.2, [], [AC_MSG_WARN([Check version too low, checks may not work properly])])
