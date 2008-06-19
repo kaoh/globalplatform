@@ -92,7 +92,7 @@ clean:
 	-@del version.res
 	$(_VC_MANIFEST_CLEAN)
 
-VERSION=1.4.2
+VERSION=1.4.3
 DIR=GPShell-$(VERSION)
 
 PREBUILD:	clean_package bin_package
@@ -107,7 +107,9 @@ bin_package:
 	helloDeletegemXpressoProR3_2E64.txt  helloInstallgemXpressoProR3_2E64.txt \
 	listgemXpressoProR3_2E64.txt HelloWorld.bin HelloWorld.cap \
 	helloInstallCyberflexe-gate32k.txt helloInstallCyberflexAccess64k.txt \
-	helloInstallNokia6131NFC.txt HelloWorld.cap.transf helloInstallOberthurCosmo64.txt $(DIR)
+	helloInstallNokia6131NFC.txt HelloWorld.cap.transf helloInstallOberthurCosmo64.txt \
+	listJCOP10.txt listPalmeraProtectV5.txt helloInstallPalmeraProtectV5.txt \
+	helloInstallJCOP10.txt helloInstallJCOP31.txt installJCOP21OrJTopV15.txt $(DIR)
 	zip GPShell-$(VERSION).zip $(DIR)/*
 
 clean_package:
