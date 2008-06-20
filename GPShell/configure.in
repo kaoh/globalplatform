@@ -1,7 +1,7 @@
 # Require autoconf 2.52
 AC_PREREQ(2.52)
 
-AC_INIT(GPShell, 1.4.2, Karsten Ohme <k_o_@users.sourceforge.net> or snitmo@gmail.com)
+AC_INIT(GPShell, 1.4.3, Karsten Ohme <k_o_@users.sourceforge.net> or snitmo@gmail.com)
 AC_CONFIG_AUX_DIR(myaux)
 AC_COPYRIGHT(COPYING)
 
@@ -13,6 +13,8 @@ AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_INSTALL
+
+AM_PROG_CC_C_O
 
 # check header files
 AC_HEADER_STDC
