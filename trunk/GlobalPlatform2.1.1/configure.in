@@ -21,6 +21,7 @@ case "$host" in
 esac
 
 AC_PROG_LIBTOOL
+AM_PROG_CC_C_O
 
 # check header files
 AC_HEADER_STDC
