@@ -1,0 +1,12 @@
+enable_trace
+establish_context
+card_connect
+select -AID a0000000030000
+open_sc -security 1 -keyind 0 -keyver 0 -mac_key 404142434445464748494a4b4c4d4e4f -enc_key 404142434445464748494a4b4c4d4e4f // Open secure channel
+delete -AID a00000006203010c0101
+delete -AID a00000006203010c01
+install_for_load -pkgAID a00000006203010c01 -nvCodeLimit 500 
+load -file HelloWorld.cap.transf
+install_for_install -instParam 00 -priv 02 -AID a00000006203010c0101 -pkgAID a00000006203010c01 -instAID a00000006203010c0101 -nvDataLimit 500
+card_disconnect
+release_context

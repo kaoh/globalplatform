@@ -1,0 +1,11 @@
+mode_201
+gemXpressoPro
+enable_trace
+establish_context
+card_connect
+select -AID A000000018434D00
+
+open_sc -security 3 -keyind 0 -keyver 0 -key 47454d5850524553534f53414d504c45 // Open secure channel
+get_status -element 20
+card_disconnect
+release_context

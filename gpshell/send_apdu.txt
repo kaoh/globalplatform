@@ -1,0 +1,5 @@
+establish_context
+card_connect
+send_apdu -sc 0 -APDU 00a4040007a0000000030000
+card_disconnect
+release_context

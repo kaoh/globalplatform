@@ -1,0 +1,385 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="GlobalPlatform" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Script file="lib_finder.script" />
+			<Target title="Debug Win32">
+				<Option platforms="Windows;" />
+				<Option output="Debug/GlobalPlatform" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Debug" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Option createStaticLib="1" />
+				<Compiler>
+					<Add option="-pedantic" />
+					<Add option="-Wfatal-errors" />
+					<Add option="-W" />
+					<Add option="-g" />
+					<Add option="-O0" />
+					<Add option="-DWIN32" />
+					<Add option="-DDEBUG" />
+					<Add option="-D_DEBUG" />
+					<Add option="-D_CONSOLE" />
+					<Add option="-DOPGP_EXPORTS" />
+					<Add option="-D_UNICODE" />
+					<Add option="-DUNICODE" />
+					<Add directory="C:/Program Files/Microsoft Platform SDK for Windows Server 2003 R2/Include/mfc" />
+					<Add directory="C:/Program Files/Microsoft Platform SDK for Windows Server 2003 R2/Include" />
+					<Add directory="C:/Users/widerstand_2/Libs/C/zlib123-dll/include" />
+					<Add directory="C:/Users/widerstand_2/Libs/C/openssl-0.9.8e/include" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="C:/Program Files/Microsoft Platform SDK for Windows Server 2003 R2/Include/mfc" />
+					<Add directory="C:/Program Files/Microsoft Platform SDK for Windows Server 2003 R2/Include" />
+					<Add directory="C:/Users/widerstand_2/Libs/C/zlib123-dll/include" />
+					<Add directory="C:/Users/widerstand_2/Libs/C/openssl-0.9.8e/include" />
+				</ResourceCompiler>
+				<Linker>
+					<Add library="ssleay32" />
+					<Add library="libeay32" />
+					<Add library="winscard" />
+					<Add library="zdll" />
+					<Add directory="C:/Program Files/Microsoft Platform SDK for Windows Server 2003 R2/Lib" />
+					<Add directory="C:/Users/widerstand_2/Libs/C/zlib123-dll/lib" />
+					<Add directory="C:/Users/widerstand_2/Libs/C/openssl-0.9.8e/out32dll" />
+				</Linker>
+				<ExtraCommands>
+					<Add after="copy Debug\GlobalPlatform.dll  GlobalPlatformWrapper\" />
+					<Add after="copy Debug\GlobalPlatform.dll  ..\GPShell\" />
+				</ExtraCommands>
+			</Target>
+			<Target title="Release Win32">
+				<Option platforms="Windows;" />
+				<Option output="Release/GlobalPlatform" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Release" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Option createStaticLib="1" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-pedantic" />
+					<Add option="-Wfatal-errors" />
+					<Add option="-W" />
+					<Add option="-DWIN32" />
+					<Add option="-DNDEBUG" />
+					<Add option="-D_CONSOLE" />
+					<Add option="-DOPGP_EXPORTS" />
+					<Add option="-D_UNICODE" />
+					<Add option="-DUNICODE" />
+					<Add directory="C:/Program Files/Microsoft Platform SDK for Windows Server 2003 R2/Include/mfc" />
+					<Add directory="C:/Program Files/Microsoft Platform SDK for Windows Server 2003 R2/Include" />
+					<Add directory="C:/Users/widerstand_2/Libs/C/zlib123-dll/include" />
+					<Add directory="C:/Users/widerstand_2/Libs/C/openssl-0.9.8e/include" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="C:/Program Files/Microsoft Platform SDK for Windows Server 2003 R2/Include/mfc" />
+					<Add directory="C:/Program Files/Microsoft Platform SDK for Windows Server 2003 R2/Include" />
+					<Add directory="C:/Users/widerstand_2/Libs/C/zlib123-dll/include" />
+					<Add directory="C:/Users/widerstand_2/Libs/C/openssl-0.9.8e/include" />
+				</ResourceCompiler>
+				<Linker>
+					<Add option="-s" />
+					<Add library="ssleay32" />
+					<Add library="libeay32" />
+					<Add library="winscard" />
+					<Add library="zdll" />
+					<Add directory="C:/Program Files/Microsoft Platform SDK for Windows Server 2003 R2/Lib" />
+					<Add directory="C:/Users/widerstand_2/Libs/C/zlib123-dll/lib" />
+					<Add directory="C:/Users/widerstand_2/Libs/C/openssl-0.9.8e/out32dll" />
+				</Linker>
+				<ExtraCommands>
+					<Add after="copy Release\GlobalPlatform.dll  GlobalPlatformWrapper\" />
+				</ExtraCommands>
+			</Target>
+			<Target title="Linux">
+				<Option platforms="Unix;Mac;" />
+				<Option output="GlobalPlatform" prefix_auto="1" extension_auto="1" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Option createStaticLib="1" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-Wfatal-errors" />
+					<Add option="-W" />
+					<Add option="-g" />
+					<Add option="-fPIC" />
+					<Add option="-DDEBUG" />
+					<Add option="-D_DEBUG" />
+					<Add option="-DOPGP_EXPORTS" />
+					<Add option="-D_UNICODE" />
+					<Add option="-DUNICODE" />
+					<Add option="-DHAVE_DLFCN_H" />
+				</Compiler>
+			</Target>
+			<Target title="Linux Test">
+				<Option platforms="Unix;Mac;" />
+				<Option output="GlobalPlatformTest" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-Wfatal-errors" />
+					<Add option="-W" />
+					<Add option="-g" />
+					<Add option="-DDEBUG" />
+					<Add option="-D_DEBUG" />
+					<Add option="-D_UNICODE" />
+					<Add option="-DUNICODE" />
+				</Compiler>
+				<Linker>
+					<Add library="./GlobalPlatform.so" />
+					<Add directory="../../GlobalPlatform" />
+				</Linker>
+			</Target>
+		</Build>
+		<Unit filename="AUTHORS">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="COPYING">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="COPYING.LESSER">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="ChangeLog">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="INSTALL">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="Install.w32">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="Makefile.am">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="NEWS">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="README">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="configure.in">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="main/DLLMain.c">
+			<Option compilerVar="CC" />
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+		</Unit>
+		<Unit filename="main/GlobalPlatform.c">
+			<Option compilerVar="CC" />
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/GlobalPlatform/GlobalPlatform.h">
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/GlobalPlatform/connection.h">
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/GlobalPlatform/connectionplugin.h">
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/GlobalPlatform/debug.h">
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/GlobalPlatform/error.h">
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/GlobalPlatform/errorcodes.h">
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/GlobalPlatform/library.h">
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/GlobalPlatform/security.h">
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/GlobalPlatform/stringify.h">
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/GlobalPlatform/types.h">
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/GlobalPlatform/unicode.h">
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/GlobalPlatformTest.c">
+			<Option compilerVar="CC" />
+			<Option target="Linux Test" />
+		</Unit>
+		<Unit filename="main/HelloWorld.cap">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="main/Makefile.am">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="main/connection.c">
+			<Option compilerVar="CC" />
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/crypto.c">
+			<Option compilerVar="CC" />
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/crypto.h">
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/debug.c">
+			<Option compilerVar="CC" />
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/dyn_generic.h">
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/dyn_unix.c">
+			<Option compilerVar="CC" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/dyn_win32.c">
+			<Option compilerVar="CC" />
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+		</Unit>
+		<Unit filename="main/loadfile.c">
+			<Option compilerVar="CC" />
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/loadfile.h">
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/resource.h">
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+		</Unit>
+		<Unit filename="main/stdafx.c">
+			<Option compilerVar="CC" />
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+		</Unit>
+		<Unit filename="main/stdafx.h">
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+		</Unit>
+		<Unit filename="main/stringify.c">
+			<Option compilerVar="CC" />
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/unzip/crypt.h">
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/unzip/ioapi.c">
+			<Option compilerVar="CC" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/unzip/ioapi.h">
+			<Option target="Debug Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/unzip/iowin32.c">
+			<Option compilerVar="CC" />
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+		</Unit>
+		<Unit filename="main/unzip/iowin32.h">
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+		</Unit>
+		<Unit filename="main/unzip/unzip.c">
+			<Option compilerVar="CC" />
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/unzip/unzip.h">
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/unzip/zip.c">
+			<Option compilerVar="CC" />
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/unzip/zip.h">
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/util.c">
+			<Option compilerVar="CC" />
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/util.h">
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="main/version.rc">
+			<Option target="Debug Win32" />
+			<Option target="Release Win32" />
+		</Unit>
+		<Extensions>
+			<envvars set="globalplatform" />
+			<code_completion />
+			<lib_finder disable_auto="1">
+				<lib name="libpcsclite" />
+				<lib name="openssl" />
+				<lib name="check" />
+			</lib_finder>
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

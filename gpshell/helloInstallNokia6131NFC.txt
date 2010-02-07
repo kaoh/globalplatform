@@ -1,0 +1,16 @@
+mode_211
+enable_trace
+establish_context
+card_connect
+# If you have an Omnikey CardMan 5x21 reader, the contactless reader is 
+# the next even number, e.g. 2 if this is you first reader device in 
+# the system
+#card_connect -readerNumber 2
+select -AID a000000003000000
+open_sc -security 3 -keyver 42 -mac_key 404142434445464748494A4B4C4D4E4F -enc_key 404142434445464748494A4B4C4D4E4F -kek_key 404142434445464748494A4B4C4D4E4F
+delete -AID a00000006203010c0101
+delete -AID a00000006203010c01
+delete -AID a00000006203010c0101
+install -file HelloWorld.cap -priv 2
+card_disconnect
+release_context

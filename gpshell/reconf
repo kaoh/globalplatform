@@ -1,0 +1,10 @@
+#!/bin/sh
+
+set -v
+if [ -e Makefile ]
+then
+	make distclean
+fi
+
+# use with --force when autoconf/automake/libtool change
+autoreconf --verbose --install $@

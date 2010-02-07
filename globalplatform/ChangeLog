@@ -1,0 +1,54 @@
+History
+=======
+
+6.0.0 - Sun, Jan 31, 2010, Karsten Ohme
+	Connection plugin architecture, support for other transport protocols than PC/SC
+	Improved error handling in API
+	Callback support for long running functions
+	Code much more modular
+	Check unit tests
+	VISA 2 key derivation support
+	internal TLV parsing
+	memory leaks fixed
+
+5.0.0 - Sat Jan 19, 2008, Karsten Ohme
+	specification version added to OPGP_CARD_INFO
+	Fix in send_APDU
+	SCP verification in mutual_authentication
+	Check tests included
+
+4.2.3 - Wed Oct 03, 2007, Karsten Ohme
+	Bug in card_connect fixed
+	Cygwin is supported
+	Key types usage fixed
+	Support Card Specification 2.1.1 Amendment A
+		- new Secure Channel Implementation Protocols
+		- Key Type definitions
+	Changed license to LGPL
+	Executable Modules were not reported correctly
+
+4.1.3 - Fri Dec 29 2006, Karsten Ohme
+	CAP support for JavaCard 2.2.x was buggy - fixed
+
+4.0.3 - Sun Dec 24 2006, Karsten Ohme
+	CAP file support
+	GemXpresso support fixed
+	CAP to IFC file conversion function
+
+3.0.2 - Sat Mar 25 2006, Karsten Ohme
+	GemXpresso support
+	bug fixes
+
+2.0.1 - Wed Dec 14 2005, Karsten Ohme
+	R-MAC support
+	BEGIN R-MAC
+	END R-MAC
+	automatic detection of load file parameters
+
+1.1.0 - Sat Nov 05 2005, Karsten Ohme
+	Bug in determining filesize with fseek() for Unix fixed
+
+1.0.0 - Fri Aug 26 2005, Karsten Ohme
+	- first revision
+
+

@@ -1,0 +1,10 @@
+mode_201
+gemXpressoPro
+enable_trace
+establish_context
+card_connect -readerNumber 3
+select -AID a0000000030000
+open_sc -security 1 -keyind 0 -keyver 0 -key 404142434445464748494a4b4c4d4e4f
+get_status -element 20
+card_disconnect
+release_context
