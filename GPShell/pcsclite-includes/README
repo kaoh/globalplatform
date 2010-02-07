@@ -1,7 +1,0 @@
-To support easy compilation under cygwin the files:
-
-wintypes.h
-winscard.h
-pcsclite.h
-
-were taken from PC/SC Lite.
