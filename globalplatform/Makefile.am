@@ -1,6 +1,6 @@
 ## Process this file with automake to create Makefile.in.
 
-EXTRA_DIST = Makefile.mak Install.w32 reconf GlobalPlatform.sln.old \
+EXTRA_DIST = PCSCConnectionPlugin.cbp GlobalPlatform.cbp GlobalPlatform.workspace GlobalPlatform.depend Install.w32 reconf GlobalPlatform.sln.old \
 GlobalPlatform.vcproj.7.10.old GlobalPlatform.sln GlobalPlatform.vcproj
 
 SUBDIRS = plugins/pcsc main

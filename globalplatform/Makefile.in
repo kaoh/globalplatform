@@ -188,7 +188,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-EXTRA_DIST = Makefile.mak Install.w32 reconf GlobalPlatform.sln.old \
+EXTRA_DIST = PCSCConnectionPlugin.cbp GlobalPlatform.cbp GlobalPlatform.workspace GlobalPlatform.depend Install.w32 reconf GlobalPlatform.sln.old \
 GlobalPlatform.vcproj.7.10.old GlobalPlatform.sln GlobalPlatform.vcproj
 
 SUBDIRS = plugins/pcsc main

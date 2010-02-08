@@ -1,0 +1,9 @@
+#!/bin/sh -e
+
+mkdir /usr/share/doc/globalplatform/html
+cp -R main/Doc/html /usr/share/doc/globalplatform/html
+
+#DEBHELPER#
+
+
+

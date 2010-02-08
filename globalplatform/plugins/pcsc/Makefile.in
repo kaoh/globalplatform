@@ -218,7 +218,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-EXTRA_DIST = stdafx.c stdafx.h resource.h version.rc DLLMain.c Makefile.mak
+EXTRA_DIST = stdafx.c stdafx.h resource.h version.rc $(top_builddir)/main/DLLMain.c
 lib_LTLIBRARIES = libgppcscconnectionplugin.la
 include_HEADERS = 
 nobase_include_HEADERS = 
@@ -228,7 +228,7 @@ libgppcscconnectionplugin_la_SOURCES = pcscconnectionplugin.h pcscconnectionplug
 
 libgppcscconnectionplugin_la_LDFLAGS = -version-info 1:0:0 $(PCSCLITE_LIBS)
 libgppcscconnectionplugin_la_CPPFLAGS = $(AM_CPPFLAGS) $(PCSCLITE_CFLAGS)
-pcscconnectionpluginTest_SOURCES = pcscconnectionpluginTest.c $(top_builddir)/GlobalPlatform/GlobalPlatform.h
+pcscconnectionpluginTest_SOURCES = pcscconnectionpluginTest.c $(top_builddir)/main/GlobalPlatform/GlobalPlatform.h
 pcscconnectionpluginTest_CFLAGS = @CHECK_CFLAGS@ $(AM_CPPFLAGS) $(PCSCLITE_CFLAGS)
 pcscconnectionpluginTest_LDADD = @CHECK_LIBS@ $(builddir)/libgppcscconnectionplugin.la $(PCSCLITE_LIBS)
 MAINTAINERCLEANFILES = \

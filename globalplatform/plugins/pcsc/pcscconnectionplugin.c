@@ -35,7 +35,7 @@
  * Handles the error status for the result.
  */
 #define HANDLE_STATUS(status, result) if (result != SCARD_S_SUCCESS) {\
-		OPGP_ERROR_CREATE_ERROR(status,result,OPGP_PL_stringify_error(result));\
+		OPGP_ERROR_CREATE_ERROR(status,result,OPGP_PL_stringify_error((DWORD)result));\
 	}\
 	else {\
 		OPGP_ERROR_CREATE_NO_ERROR(status);\

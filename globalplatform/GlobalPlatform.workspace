@@ -2,6 +2,6 @@
 <CodeBlocks_workspace_file>
 	<Workspace title="Workspace">
 		<Project filename="GlobalPlatform.cbp" />
-		<Project filename="plugins/pcsc/PCSCConnectionPlugin.cbp" active="1" />
+		<Project filename="PCSCConnectionPlugin.cbp" active="1" />
 	</Workspace>
 </CodeBlocks_workspace_file>

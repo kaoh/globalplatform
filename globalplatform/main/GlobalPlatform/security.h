@@ -29,8 +29,8 @@ extern "C"
 
 #include "types.h"
 
-static const BYTE OP_201 = 201; //!< OpenPlatform specification 2.0.1' mode
-static const BYTE GP_211 = 211; //!< GlobalPlatform specification 2.1.1 mode
+static const BYTE OP_201 = (BYTE)201; //!< OpenPlatform specification 2.0.1' mode
+static const BYTE GP_211 = (BYTE)211; //!< GlobalPlatform specification 2.1.1 mode
 
 /* Secure Channel stuff */
 
