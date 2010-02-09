@@ -12674,6 +12674,10 @@ fi
 done
 
 
+####################
+#Debug Configuration
+####################
+
 # Check whether --enable-debug was given.
 if test "${enable_debug+set}" = set; then
   enableval=$enable_debug;  case "${enableval}" in
@@ -12697,6 +12701,10 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 fi
+
+#######################
+#pcsclite Configuration
+#######################
 
 
 
@@ -13063,7 +13071,9 @@ esac
 LDFLAGS="$OLD_LDFLAGS"
 
 
-
+###################
+#zlib Configuration
+###################
 
 
 
@@ -13306,6 +13316,10 @@ found, install zlib 1.2.3 or later" >&2;}
 fi
 
 
+
+######################
+#OpenSSL Configuration
+######################
 
 
 
@@ -13550,10 +13564,14 @@ found, install OpenSSL 0.9.7e or later" >&2;}
 fi
 
 
+###############
+#Output results
+###############
+
 { $as_echo "$as_me:$LINENO: result: enable debug     : $debug" >&5
 $as_echo "enable debug     : $debug" >&6; }
 
-ac_config_files="$ac_config_files Makefile src/Makefile"
+ac_config_files="$ac_config_files Makefile src/Makefile src/globalplatform.pc"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -14449,6 +14467,7 @@ do
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
+    "src/globalplatform.pc") CONFIG_FILES="$CONFIG_FILES src/globalplatform.pc" ;;
 
   *) { { $as_echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 $as_echo "$as_me: error: invalid argument: $ac_config_target" >&2;}

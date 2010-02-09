@@ -65,7 +65,7 @@ PCSC-Lite header are located. For convenience the include files for PCSC-Lite ar
 contained in the directory pcsclite-include. Use it.
 
 Is it possible the generate Ubuntu/Debian packages. To do this you must run the two
-commands:
+commands after you have created the library with make:
 
 make dist
 make deb

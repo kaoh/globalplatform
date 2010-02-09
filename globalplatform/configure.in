@@ -37,6 +37,10 @@ AC_FUNC_MALLOC
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(memcpy vsyslog, [], [AC_MSG_ERROR([Necessary function is not supported.])])
 
+####################
+#Debug Configuration
+####################
+
 AC_ARG_ENABLE(debug,
 [  --enable-debug          enable debug messages.],
 [ case "${enableval}" in
@@ -50,6 +54,10 @@ AC_ARG_ENABLE(debug,
 if test x${debug} = xtrue ; then
   AC_DEFINE(DEBUG, 1, [enable full debug messaging])
 fi
+
+#######################
+#pcsclite Configuration
+#######################
 
 dnl Check for pcsclite
 AC_ARG_VAR(WINSCARD_LIB_PATH, [Specifies the location of WinSCard.lib for Windows])
@@ -110,7 +118,9 @@ esac
 LDFLAGS="$OLD_LDFLAGS"
 
 
-
+###################
+#zlib Configuration
+###################
 
 dnl Check for zlib headers
 AC_CHECK_HEADERS(zconf.h zlib.h, [],
@@ -122,6 +132,10 @@ AC_CHECK_LIB(z, gzopen, [],
 found, install zlib 1.2.3 or later])])
 
 
+######################
+#OpenSSL Configuration
+######################
+
 dnl Check for OpenSSL headers
 AC_CHECK_HEADERS(openssl/rand.h openssl/err.h openssl/evp.h openssl/pem.h, [],
         [AC_MSG_ERROR([OpenSSL headers not found, install OpenSSL
@@ -131,10 +145,15 @@ AC_CHECK_LIB(crypto, PEM_read_PrivateKey, [],
         [AC_MSG_ERROR([PEM_read_PrivateKey() not
 found, install OpenSSL 0.9.7e or later])])
 
+###############
+#Output results
+###############
+
 AC_MSG_RESULT([enable debug     : $debug])
 
 AC_OUTPUT([
 Makefile
 src/Makefile
+src/globalplatform.pc
 ])
 
