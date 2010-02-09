@@ -85,7 +85,7 @@ CHECK_LIBS = -lcheck
 CPP = gcc -E
 CPPFLAGS = 
 CYGPATH_W = echo
-DEFS = -DPACKAGE_NAME=\"GlobalPlatform\" -DPACKAGE_TARNAME=\"globalplatform\" -DPACKAGE_VERSION=\"6.0.0\" -DPACKAGE_STRING=\"GlobalPlatform\ 6.0.0\" -DPACKAGE_BUGREPORT=\"k_o_@users.sourceforge.net\" -DPACKAGE=\"globalplatform\" -DVERSION=\"6.0.0\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_DLFCN_H=1 -DLT_OBJDIR=\".libs/\" -DSTDC_HEADERS=1 -DHAVE_STDLIB_H=1 -DHAVE_MALLOC=1 -DHAVE_VPRINTF=1 -DHAVE_MEMCPY=1 -DHAVE_VSYSLOG=1 -DDEBUG=1 -DHAVE_LIBPCSCLITE=1 -DHAVE_ZCONF_H=1 -DHAVE_ZLIB_H=1 -DHAVE_LIBZ=1 -DHAVE_OPENSSL_RAND_H=1 -DHAVE_OPENSSL_ERR_H=1 -DHAVE_OPENSSL_EVP_H=1 -DHAVE_OPENSSL_PEM_H=1 -DHAVE_LIBCRYPTO=1
+DEFS = -DPACKAGE_NAME=\"globalplatform\" -DPACKAGE_TARNAME=\"globalplatform\" -DPACKAGE_VERSION=\"6.0.0\" -DPACKAGE_STRING=\"globalplatform\ 6.0.0\" -DPACKAGE_BUGREPORT=\"k_o_@users.sourceforge.net\" -DPACKAGE=\"globalplatform\" -DVERSION=\"6.0.0\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_DLFCN_H=1 -DLT_OBJDIR=\".libs/\" -DSTDC_HEADERS=1 -DHAVE_STDLIB_H=1 -DHAVE_MALLOC=1 -DHAVE_VPRINTF=1 -DHAVE_MEMCPY=1 -DHAVE_VSYSLOG=1 -DDEBUG=1 -DHAVE_LIBPCSCLITE=1 -DHAVE_ZCONF_H=1 -DHAVE_ZLIB_H=1 -DHAVE_LIBZ=1 -DHAVE_OPENSSL_RAND_H=1 -DHAVE_OPENSSL_ERR_H=1 -DHAVE_OPENSSL_EVP_H=1 -DHAVE_OPENSSL_PEM_H=1 -DHAVE_LIBCRYPTO=1
 DEPDIR = .deps
 DLLTOOL = 
 DSYMUTIL = 
@@ -120,8 +120,8 @@ OTOOL =
 OTOOL64 = 
 PACKAGE = globalplatform
 PACKAGE_BUGREPORT = k_o_@users.sourceforge.net
-PACKAGE_NAME = GlobalPlatform
-PACKAGE_STRING = GlobalPlatform 6.0.0
+PACKAGE_NAME = globalplatform
+PACKAGE_STRING = globalplatform 6.0.0
 PACKAGE_TARNAME = globalplatform
 PACKAGE_VERSION = 6.0.0
 PATH_SEPARATOR = :
@@ -639,6 +639,16 @@ uninstall-am:
 
 doc:
 	cd main && $(MAKE) $(AM_MAKEFLAGS) doc
+
+deb:
+	tar xzf $(PACKAGE)-$(VERSION).tar.gz
+	rm $(PACKAGE)_$(VERSION).orig.tar.gz
+	cd $(PACKAGE)-$(VERSION) && dh_make -l -c lgpl -e "k_o_@users.sourceforge.net" -f ../$(PACKAGE)-$(VERSION).tar.gz
+	cd $(PACKAGE)-$(VERSION) && rm -rf debian
+	cd $(PACKAGE)-$(VERSION) && mkdir debian
+	cd $(PACKAGE)-$(VERSION) && cp ../debian/* debian/
+	cd $(PACKAGE)-$(VERSION) && chmod 755 debian/rules
+	cd $(PACKAGE)-$(VERSION) && dpkg-buildpackage -rfakeroot
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

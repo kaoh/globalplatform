@@ -8,6 +8,9 @@ These are the installation instruction for Unix or Cygwin under Windows.
 For Windows see the file Install.w32, use the Code::Blocks or Visual Studio
 files or the nmake-Makefile Makefile.mak.
 
+If you checked out from SVN some scripts for Áutoconf/Automake/Libtool
+which must be marked executable might be not. You must change this.
+
 Apart from the instructions below which are worth reading, I would like
 to emphasize the following parameters to the ./configure script.
 If the configure file is not there you must run the script ./reconf
@@ -60,6 +63,12 @@ and PCSCLITE_H_PATH. WINSCARD_LIB_PATH must point to the path where
 WinSCard.lib is located. PCSCLITE_H_PATH must point to the path where the
 PCSC-Lite header are located. For convenience the include files for PCSC-Lite are
 contained in the directory pcsclite-include. Use it.
+
+Is it possible the generate Ubuntu/Debian packages. To do this you must run the two
+commands:
+
+make dist
+make deb
 
 Basic Installation
 ==================

@@ -134,7 +134,7 @@ found, install OpenSSL 0.9.7e or later])])
 AC_MSG_RESULT([enable GlobalPlatform debug     : $debug])
 
 AC_OUTPUT([
-Makefile 
+Makefile
 main/Makefile
 plugins/pcsc/Makefile
 ])
