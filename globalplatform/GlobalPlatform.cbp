@@ -245,6 +245,9 @@
 		<Unit filename="main/Makefile.am">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
+		<Unit filename="main/Makefile.mak">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
 		<Unit filename="main/connection.c">
 			<Option compilerVar="CC" />
 			<Option target="Debug Win32" />

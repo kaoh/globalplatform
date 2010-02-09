@@ -221,7 +221,8 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 EXTRA_DIST = stdafx.c stdafx.h resource.h version.rc DLLMain.c Doxyfile.cfg Makefile.mak \
 unzip/iowin32.c unzip/iowin32.h pcsclite-includes/pcsclite.h \
-pcsclite-includes/README pcsclite-includes/wintypes.h pcsclite-includes/winscard.h
+pcsclite-includes/README pcsclite-includes/wintypes.h pcsclite-includes/winscard.h \
+GlobalPlatform/connectionplugin.h
 
 lib_LTLIBRARIES = libGlobalPlatform.la
 include_HEADERS = 
@@ -763,7 +764,7 @@ uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES \
 	uninstall-libLTLIBRARIES uninstall-nobase_includeHEADERS
 
 
-doc : GlobalPlatform.c GlobalPlatform/GlobalPlatform.h GlobalPlatform/unicode.h
+doc : GlobalPlatform.c GlobalPlatform/GlobalPlatform.h GlobalPlatform/unicode.h GlobalPlatform/connectionplugin.h
 	doxygen Doxyfile.cfg
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

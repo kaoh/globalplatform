@@ -2,7 +2,8 @@
 
 EXTRA_DIST = stdafx.c stdafx.h resource.h version.rc DLLMain.c Doxyfile.cfg Makefile.mak \
 unzip/iowin32.c unzip/iowin32.h pcsclite-includes/pcsclite.h \
-pcsclite-includes/README pcsclite-includes/wintypes.h pcsclite-includes/winscard.h
+pcsclite-includes/README pcsclite-includes/wintypes.h pcsclite-includes/winscard.h \
+GlobalPlatform/connectionplugin.h
 
 lib_LTLIBRARIES = libGlobalPlatform.la
 
@@ -28,7 +29,7 @@ GlobalPlatformTest_SOURCES = GlobalPlatformTest.c
 GlobalPlatformTest_CFLAGS = @CHECK_CFLAGS@ $(AM_CPPFLAGS) $(PCSCLITE_CFLAGS)
 GlobalPlatformTest_LDADD = @CHECK_LIBS@ libGlobalPlatform.la $(PCSCLITE_LIBS)
 
-doc : GlobalPlatform.c GlobalPlatform/GlobalPlatform.h GlobalPlatform/unicode.h
+doc : GlobalPlatform.c GlobalPlatform/GlobalPlatform.h GlobalPlatform/unicode.h GlobalPlatform/connectionplugin.h
 	doxygen Doxyfile.cfg
 
 MAINTAINERCLEANFILES = \

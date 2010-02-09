@@ -10,16 +10,10 @@ Requires : PC/SC Lite http://www.musclecard.com/ (for UNIXes)
 This is a library for providing access to OpenPlatform 2.0.1' and
 GlobalPlatform 2.1.1 conforming smart cards.
 
-You need also the libraries zlib 1.2.3 (zlib1.dll) and OpenSSL 0.9.7e
-(libeay32.dll and ssleay32.dll) or compatible. Best is to place them
-in the system directory (C:\Windows\System32 or /usr/(local/)lib
-usually) or application directory.
+You need also the libraries zlib 1.2.3 (zlib1.dll in Windows) and OpenSSL 0.9.7e
+(libeay32.dll and ssleay32.dll in Windows) or compatible.
 
-If you compile this on your own:
-
-See the files INSTALL and Install.w32 for details.
-
-For the unit tests a JCOP v2.2 41 card is used.
+------------------
 
 If you experience problems a DEBUG output is always helpful.
 Set the variable GLOBALPLATFORM_DEBUG=1 in the environment. You can set
@@ -31,6 +25,16 @@ be used by default, so you may have to specify the log file manually,
 if you don't have access to the syslog or don't want to use it.
 Keep in mind that the debugging output may contain sensitive information,
 e.g. keys!
+
+------------------
+
+If you compile this on your own:
+
+See the files INSTALL and Install.w32 for details.
+
+For the unit tests a JCOP v2.2 41 card is used.
+
+------------------
 
 For more information contact the author through the mailinglist at:
 

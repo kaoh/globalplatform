@@ -1,4 +1,4 @@
-globalplatform (6.0.0-0ubuntu1) jaunty; urgency=low
+libglobalplatform6 (6.0.0-0ubuntu1) jaunty; urgency=low
 
   * Initial release
 
