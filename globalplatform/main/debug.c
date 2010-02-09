@@ -27,8 +27,8 @@
 #include <time.h>
 #include <stdarg.h>
 #include <string.h>
-#include "GlobalPlatform/debug.h"
-#include "GlobalPlatform/error.h"
+#include "globalplatform/debug.h"
+#include "globalplatform/error.h"
 
 #ifdef HAVE_VSYSLOG
 #include <syslog.h>

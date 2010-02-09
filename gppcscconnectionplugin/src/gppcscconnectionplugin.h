@@ -23,7 +23,7 @@
 #define OPGP_PCSC_CONNECTION_PLUGIN_H
 
 #include <PCSC/winscard.h>
-#include "../../main/GlobalPlatform/library.h"
+#include "../../globalplatform/main/globalplatform/library.h"
 
 /**
  * PC/SC specific context information. Used in #OPGP_CARD_CONTEXT.librarySpecific.

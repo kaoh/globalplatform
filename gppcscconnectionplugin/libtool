@@ -1,7 +1,7 @@
 #! /bin/bash
 
 # libtool - Provide generalized library-building support services.
-# Generated automatically by config.status (globalplatform) 6.0.0
+# Generated automatically by config.status (gppcscconnectionplugin) 1.0.0
 # Libtool was configured on host enterprise:
 # NOTE: Changes made to this file will be lost: look at ltmain.sh.
 #
@@ -95,7 +95,7 @@ NM="/usr/bin/nm -B"
 LN_S="ln -s"
 
 # What is the maximum length of a command?
-max_cmd_len=3458764513820540925
+max_cmd_len=1572864
 
 # Object file suffix (normally "o").
 objext=o

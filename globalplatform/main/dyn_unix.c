@@ -29,8 +29,8 @@
 #include <dlfcn.h>
 #include <stdlib.h>
 
-#include "GlobalPlatform/debug.h"
-#include "GlobalPlatform/error.h"
+#include "globalplatform/debug.h"
+#include "globalplatform/error.h"
 #include "dyn_generic.h"
 
 #define MAX_LIBRARY_NAME_SIZE 64

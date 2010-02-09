@@ -82,9 +82,9 @@ BEGIN
             VALUE "FileVersion", "1, 0, 0, 0"
             VALUE "Info", "k_o_@users.sourceforge.net"
             VALUE "InternalName", "GlobalPlatform PC/SC Plugin"
-            VALUE "LegalCopyright", "Copyright (C) Karsten Ohme 2009"
+            VALUE "LegalCopyright", "Copyright (C) Karsten Ohme 2010"
             VALUE "License", "LGPL"
-            VALUE "OriginalFilename", "pcscconnectionplugin.dll"
+            VALUE "OriginalFilename", "GPPCSCConnectionPlugin.dll"
             VALUE "ProductVersion", "1, 0, 0, 0"
         END
     END

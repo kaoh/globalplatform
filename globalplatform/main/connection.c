@@ -15,12 +15,12 @@
  *  along with GlobalPlatform.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "GlobalPlatform/connection.h"
+#include "globalplatform/connection.h"
 #include "dyn_generic.h"
-#include "GlobalPlatform/GlobalPlatform.h"
-#include "GlobalPlatform/debug.h"
-#include "GlobalPlatform/stringify.h"
-#include "GlobalPlatform/error.h"
+#include "globalplatform/globalplatform.h"
+#include "globalplatform/debug.h"
+#include "globalplatform/stringify.h"
+#include "globalplatform/error.h"
 #include "crypto.h"
 #include <string.h>
 

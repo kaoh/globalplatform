@@ -32,9 +32,9 @@ extern "C"
 {
 #endif
 
-#include "GlobalPlatform/unicode.h"
-#include "GlobalPlatform/types.h"
-#include "GlobalPlatform/error.h"
+#include "globalplatform/unicode.h"
+#include "globalplatform/types.h"
+#include "globalplatform/error.h"
 
 //! \brief Loads a library.
 OPGP_NO_API

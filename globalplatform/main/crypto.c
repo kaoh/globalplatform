@@ -16,10 +16,10 @@
  */
 
 #include "crypto.h"
-#include "GlobalPlatform/stringify.h"
-#include "GlobalPlatform/errorcodes.h"
-#include "GlobalPlatform/error.h"
-#include "GlobalPlatform/debug.h"
+#include "globalplatform/stringify.h"
+#include "globalplatform/errorcodes.h"
+#include "globalplatform/error.h"
+#include "globalplatform/debug.h"
 #include "util.h"
 
 #include <string.h>

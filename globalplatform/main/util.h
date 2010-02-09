@@ -31,8 +31,8 @@ extern "C"
 #include "stdafx.h"
 #endif
 
-#include "GlobalPlatform/types.h"
-#include "GlobalPlatform/library.h"
+#include "globalplatform/types.h"
+#include "globalplatform/library.h"
 
 /**
  * A TLV object. Only simple objects with tags sizes of 1 byte and lengths <= 127 are supported.

@@ -15,8 +15,8 @@
  *  along with GlobalPlatform.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "GlobalPlatform/stringify.h"
-#include "GlobalPlatform/errorcodes.h"
+#include "globalplatform/stringify.h"
+#include "globalplatform/errorcodes.h"
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>

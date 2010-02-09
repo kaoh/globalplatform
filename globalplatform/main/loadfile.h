@@ -31,10 +31,10 @@ extern "C"
 #include "stdafx.h"
 #endif
 
-#include "GlobalPlatform/types.h"
-#include "GlobalPlatform/error.h"
-#include "GlobalPlatform/library.h"
-#include "GlobalPlatform/GlobalPlatform.h"
+#include "globalPlatform/types.h"
+#include "globalPlatform/error.h"
+#include "globalPlatform/library.h"
+#include "globalplatform/globalplatform.h"
 
 //! \brief Handles a CAP or IJC file and copies the Executable Load File contents.
 OPGP_NO_API

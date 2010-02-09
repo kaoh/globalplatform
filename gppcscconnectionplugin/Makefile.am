@@ -1,12 +1,11 @@
 ## Process this file with automake to create Makefile.in.
 
-EXTRA_DIST = GlobalPlatform.cbp lib_finder.script GlobalPlatform.workspace GlobalPlatform.depend Install.w32 reconf GlobalPlatform.sln.old \
-GlobalPlatform.vcproj.7.10.old GlobalPlatform.sln GlobalPlatform.vcproj
+EXTRA_DIST = GPPCSCConnectionPlugin.cbp lib_finder.script INSTALL.w32 reconf
 
-SUBDIRS = main
+SUBDIRS = src
 
 doc:
-	cd main && $(MAKE) $(AM_MAKEFLAGS) doc
+	cd src && $(MAKE) $(AM_MAKEFLAGS) doc
 
 deb:
 	tar xzf $(PACKAGE)-$(VERSION).tar.gz
@@ -29,4 +28,7 @@ MAINTAINERCLEANFILES = \
 	config.guess \
 	config.sub \
 	compile \
-	depcomp
+	depcomp \
+	m4 \
+	globalplatform
+

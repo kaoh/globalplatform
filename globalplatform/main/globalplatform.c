@@ -33,7 +33,7 @@
  * Obey that this library supports Unicode. If you develop an application you should use Unicode
  * strings. OPGP_STRING and OPGP_CSTRING are wrapping this for you. Use the <code>LPTSTR</code>, <code>TCHAR</code> and the <code>_T()</code> macro,
  * use Unicode functions and compile your application with the switches UNICODE and _UNICODE in your own code. Under Unixes
- * only ASCII is supported for now but to be portable use the mappings in GlobalPlatform/unicode.h
+ * only ASCII is supported for now but to be portable use the mappings in globalplatform/unicode.h
  * </p>
  *
  */
@@ -42,13 +42,13 @@
 #endif
 #include <stdio.h>
 #include <stdlib.h>
-#include "GlobalPlatform/GlobalPlatform.h"
+#include "globalplatform/globalplatform.h"
 #ifndef WIN32
 #include <sys/stat.h>
 #include <string.h>
 #include <errno.h>
 #endif
-#include "GlobalPlatform/debug.h"
+#include "globalplatform/debug.h"
 #include "unzip/unzip.h"
 #include "unzip/zip.h"
 #include "util.h"

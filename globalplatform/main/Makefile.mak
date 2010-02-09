@@ -169,9 +169,9 @@ PREBUILDDIR="GlobalPlatform-$(VERSION)"
 prebuild: all
 	-@del /S /F /Q $(PREBUILDDIR)
 	-@mkdir $(PREBUILDDIR)
-	-@mkdir $(PREBUILDDIR)/GlobalPlatform
-	cp LICENSE zlib1.dll ssleay32.dll libeay32.dll Debug/GlobalPlatform.dll Debug/GlobalPlatform.lib ChangeLog README COPYING COPYING.LESSER AUTHORS  $(PREBUILDDIR)
-	cp GlobalPlatform/GlobalPlatform.h GlobalPlatform/unicode.h $(PREBUILDDIR)/GlobalPlatform
+	-@mkdir $(PREBUILDDIR)/globalplatform
+	cp LICENSE zlib1.dll ssleay32.dll libeay32.dll Debug/globalplatform.dll Debug/globalplatform.lib ChangeLog README COPYING COPYING.LESSER AUTHORS  $(PREBUILDDIR)
+	cp globalplatform/globalplatform.h globalPlatform/unicode.h $(PREBUILDDIR)/globalplatform
 	zip -r $(PREBUILDDIR).zip $(PREBUILDDIR)/*
 
 clean:

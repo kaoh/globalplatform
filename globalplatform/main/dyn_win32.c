@@ -30,8 +30,8 @@
 #include <windows.h>
 #include <winscard.h>
 #include "dyn_generic.h"
-#include "GlobalPlatform/debug.h"
-#include "GlobalPlatform/stringify.h"
+#include "globalplatform/debug.h"
+#include "globalplatform/stringify.h"
 
 /**
  * \param libraryHandle OUT The returned library handle

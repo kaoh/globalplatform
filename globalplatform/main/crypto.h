@@ -31,11 +31,11 @@ extern "C"
 #include "stdafx.h"
 #endif
 
-#include "GlobalPlatform/types.h"
-#include "GlobalPlatform/library.h"
-#include "GlobalPlatform/unicode.h"
-#include "GlobalPlatform/error.h"
-#include "GlobalPlatform/security.h"
+#include "globalplatform/types.h"
+#include "globalplatform/library.h"
+#include "globalplatform/unicode.h"
+#include "globalplatform/error.h"
+#include "globalplatform/security.h"
 
 static unsigned char padding[8] = {(char)0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; //!< Applied padding pattern.
 static unsigned char icv[8] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00}; //!< First initial chaining vector.

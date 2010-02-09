@@ -20,7 +20,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
-#include "GlobalPlatform/debug.h"
+#include "globalplatform/debug.h"
 #include "unzip/zip.h"
 #include "unzip/unzip.h"
 

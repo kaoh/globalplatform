@@ -15,13 +15,13 @@
  *  along with GlobalPlatform.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../main/GlobalPlatform/connectionplugin.h"
-#include "pcscconnectionplugin.h"
-#include "../../main/GlobalPlatform/debug.h"
-#include "../../main/GlobalPlatform/error.h"
-#include "../../main/GlobalPlatform/errorcodes.h"
-#include "../../main/GlobalPlatform/unicode.h"
-#include "../../main/GlobalPlatform/stringify.h"
+#include "../../globalplatform/main/globalplatform/connectionplugin.h"
+#include "gppcscconnectionplugin.h"
+#include "../../globalplatform/main/globalplatform/debug.h"
+#include "../../globalplatform/main/globalplatform/error.h"
+#include "../../globalplatform/main/globalplatform/errorcodes.h"
+#include "../../globalplatform/main/globalplatform/unicode.h"
+#include "../../globalplatform/main/globalplatform/stringify.h"
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>

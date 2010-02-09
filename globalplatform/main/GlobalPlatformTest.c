@@ -16,7 +16,7 @@
  */
 #include <check.h>
 #include <stdlib.h>
-#include "GlobalPlatform/GlobalPlatform.h"
+#include "globalplatform/globalplatform.h"
 #include <stdio.h>
 #include <string.h>
 
