@@ -188,10 +188,10 @@ target_alias =
 top_build_prefix = 
 top_builddir = .
 top_srcdir = .
-EXTRA_DIST = PCSCConnectionPlugin.cbp GlobalPlatform.cbp GlobalPlatform.workspace GlobalPlatform.depend Install.w32 reconf GlobalPlatform.sln.old \
+EXTRA_DIST = GlobalPlatform.cbp lib_finder.script GlobalPlatform.workspace GlobalPlatform.depend INSTALL.w32 reconf GlobalPlatform.sln.old \
 GlobalPlatform.vcproj.7.10.old GlobalPlatform.sln GlobalPlatform.vcproj
 
-SUBDIRS = plugins/pcsc main
+SUBDIRS = main
 MAINTAINERCLEANFILES = \
 	Makefile.in \
 	configure \
@@ -642,7 +642,7 @@ doc:
 
 deb:
 	tar xzf $(PACKAGE)-$(VERSION).tar.gz
-	rm $(PACKAGE)_$(VERSION).orig.tar.gz
+	rm -f $(PACKAGE)_$(VERSION).orig.tar.gz
 	cd $(PACKAGE)-$(VERSION) && dh_make -l -c lgpl -e "k_o_@users.sourceforge.net" -f ../$(PACKAGE)-$(VERSION).tar.gz
 	cd $(PACKAGE)-$(VERSION) && rm -rf debian
 	cd $(PACKAGE)-$(VERSION) && mkdir debian

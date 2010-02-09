@@ -31,9 +31,9 @@ extern "C"
 #include "stdafx.h"
 #endif
 
-#include "globalPlatform/types.h"
-#include "globalPlatform/error.h"
-#include "globalPlatform/library.h"
+#include "globalplatform/types.h"
+#include "globalplatform/error.h"
+#include "globalplatform/library.h"
 #include "globalplatform/globalplatform.h"
 
 //! \brief Handles a CAP or IJC file and copies the Executable Load File contents.

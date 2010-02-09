@@ -11,16 +11,17 @@ Section: libdevel
 Architecture: any
 Depends: libglobalplatform6 (= ${binary:Version})
 Description: GlobalPlatform Smart Card Management Library Dev Files
- GlobalPlatform is a standard for the management of the contents on a smart card. 
- Mainly this comprises the installation and the removal of applications. 
+ GlobalPlatform is a standard for the management of the contents on a smart card.
+ Mainly this comprises the installation and the removal of applications.
  This project offers a C library and a command shell.
  These are the development files.
 
 Package: libglobalplatform6
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
+Recommends: gppcscconnectionplugin
 Suggests: gpshell
 Description: GlobalPlatform Smart Card Management Library
- GlobalPlatform is a standard for the management of the contents on a smart card. 
- Mainly this comprises the installation and the removal of applications. 
+ GlobalPlatform is a standard for the management of the contents on a smart card.
+ Mainly this comprises the installation and the removal of applications.
  This project offers a C library and a command shell.
