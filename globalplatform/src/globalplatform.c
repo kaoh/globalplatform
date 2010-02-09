@@ -15,7 +15,7 @@
  *  along with GlobalPlatform.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*! \mainpage mainpage GlobalPlatform Library
+/*! \mainpage GlobalPlatform Library
  *
  * \author Karsten Ohme
  * \section intro_sec Introduction
@@ -2482,7 +2482,7 @@ end:
  * In the case of delegated management an Install Token authorizing the INSTALL [for make selectable] must be included.
  * Otherwise installToken must be NULL.
  * For Security domains look in your manual what parameters are necessary.
-
+ * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by establish_context()
  * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
  * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * \param applicationAID IN The AID of the installed application or security domain.
@@ -3195,6 +3195,7 @@ end:
 
 /**
   * E.g. GemXpresso cards, JCOP-10 cards or Palmera Protect V5 cards use this scheme.
+  * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
   * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
   * \param AID IN The AID of the Card Manager.
   * \param AIDLength IN The length of the Card Manager AID / Issuer Security Domain AID.
@@ -3345,7 +3346,7 @@ end:
  * \param secureChannelProtocol IN The Secure Channel Protocol.
  * \param secureChannelProtocolImpl IN The Secure Channel Protocol Implementation.
  * \param securityLevel IN The requested security level.
- * See #GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC and so on.
+ * See security.h#GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC and others.
  * \param *secInfo OUT The returned GP211_SECURITY_INFO structure.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
@@ -3898,7 +3899,7 @@ end:
 
 /**
  * If STORE DATA is used for personalizing an application, a GP211_install_for_personalization().
-
+ * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
  * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * \param *data IN Data to send to application or Security Domain.
@@ -3957,7 +3958,6 @@ end:
 
 /**
  * You must track on your own, what channels are open.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param *cardInfo INOUT The OPGP_CARD_INFO structure returned by OPGP_card_connect().
  * \param channelNumber IN The Logical Channel number to select.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
@@ -4416,6 +4416,7 @@ end:
  * this structure contains the according data.
  * Can be validated with validate_load_receipt().
  * \param receiptDataAvailable OUT 0 if no receiptData is available.
+ * \param *callback IN A pointer to a #OPGP_PROGRESS_CALLBACK defining the callback function and optional parameters for it.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_load(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
@@ -4462,6 +4463,7 @@ end:
  * this structure contains the according data.
  * Can be validated with validate_load_receipt().
  * \param receiptDataAvailable OUT 0 if no receiptData is available.
+ * \param *callback IN A pointer to a #OPGP_PROGRESS_CALLBACK defining the callback function and optional parameters for it.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_load_from_buffer(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
@@ -4640,6 +4642,7 @@ OPGP_ERROR_STATUS OP201_install_for_install_and_make_selectable(OPGP_CARD_CONTEX
  * In the case of delegated management an Install Token authorizing the INSTALL [for make selectable] must be included.
  * Otherwise installToken must be NULL.
  * For Security domains look in your manual what parameters are necessary.
+ * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param *secInfo INOUT The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
  * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
  * \param applicationInstanceAID IN The AID of the installed application or security domain.
@@ -5221,6 +5224,7 @@ OPGP_ERROR_STATUS OP201_validate_delete_receipt(DWORD confirmationCounter, BYTE 
  * The tryLimit must be in the range of 0x03 and x0A.
  * The PIN must comprise at least 6 numbers and not exceeding 12 numbers.
  * To unblock the PIN use tryLimit with a value of 0x00. In this case newPIN buffer and newPINLength are ignored.
+ * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param *secInfo INOUT The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
  * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
  * \param tryLimit IN The try limit for the PIN.

@@ -135,6 +135,6 @@ AC_MSG_RESULT([enable debug     : $debug])
 
 AC_OUTPUT([
 Makefile
-main/Makefile
+src/Makefile
 ])
 

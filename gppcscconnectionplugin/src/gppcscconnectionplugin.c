@@ -15,6 +15,14 @@
  *  along with GlobalPlatform.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*! \mainpage GlobalPlatform PC/SC Connection Plugin
+ *
+ * \author Karsten Ohme
+ * \section intro_sec Introduction
+ * This plugin uses PC/SC to connect to a smart card.
+ *
+ */
+
 #include "../../globalplatform/main/globalplatform/connectionplugin.h"
 #include "gppcscconnectionplugin.h"
 #include "../../globalplatform/main/globalplatform/debug.h"

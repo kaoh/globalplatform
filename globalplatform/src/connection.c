@@ -195,6 +195,7 @@ end:
  * If the transmission is successful then the APDU status word is returned as errorCode in the OPGP_ERROR_STATUS structure.
  * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * \param capdu IN The command APDU.
  * \param capduLength IN The length of the command APDU.
  * \param rapdu OUT The response APDU.

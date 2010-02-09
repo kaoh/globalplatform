@@ -42,7 +42,7 @@ extern "C"
 #define OPGP_PL_ERROR_PREFIX ((DWORD) 0x80500000) //!< Error prefix for errors of the plugin.
 
 #define OPGP_PL_ERROR_NO_CARD_CONTEXT_INITIALIZED (OPGP_PL_ERROR_PREFIX | (DWORD)0x0001L) //!< The plugin is not initialized by executing #OPGP_PL_establish_context. Specific error message must be stringified in plugin implementation.
-#define OPGP_PL_ERROR_NO_CARD_INFO_INITIALIZED (OPGP_PL_ERROR_PREFIX | (DWORD)0x0002L) //!< The plugin is not initialized by executing #OPGP_PL_connect_card. Specific error message must be stringified in plugin implementation.
+#define OPGP_PL_ERROR_NO_CARD_INFO_INITIALIZED (OPGP_PL_ERROR_PREFIX | (DWORD)0x0002L) //!< The plugin is not initialized by executing #OPGP_PL_card_connect. Specific error message must be stringified in plugin implementation.
 
 
 //! \brief This function establishes a context to connection layer.

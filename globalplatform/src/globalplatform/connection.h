@@ -60,7 +60,7 @@ typedef struct
 } OPGP_CONNECTION_FUNCTIONS;
 
 /**
- * Card context necessary for #establish_context().
+ * Card context necessary for #OPGP_establish_context().
  */
 typedef struct {
 	PVOID librarySpecific; //!< Library specific data.
@@ -70,7 +70,7 @@ typedef struct {
 } OPGP_CARD_CONTEXT;
 
 /**
- * The card information returned by a card_connect() and modified by select_channel().
+ * The card information returned by a #OPGP_card_connect() and modified by select_channel().
  */
 typedef struct {
 	BYTE ATR[MAX_ATR_SIZE]; //!< The Answer To Reset from the card.
@@ -90,7 +90,7 @@ void OPGP_enable_trace_mode(DWORD enable, FILE *out);
 OPGP_API
 OPGP_ERROR_STATUS OPGP_establish_context(OPGP_CARD_CONTEXT *cardContext);
 
-//! \brief This function releases the context to the connection layer established by establish_context().
+//! \brief This function releases the context to the connection layer established by #OPGP_establish_context().
 OPGP_API
 OPGP_ERROR_STATUS OPGP_release_context(OPGP_CARD_CONTEXT *cardContext);
 

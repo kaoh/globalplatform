@@ -3,10 +3,10 @@
 EXTRA_DIST = GlobalPlatform.cbp lib_finder.script GlobalPlatform.workspace GlobalPlatform.depend INSTALL.w32 reconf GlobalPlatform.sln.old \
 GlobalPlatform.vcproj.7.10.old GlobalPlatform.sln GlobalPlatform.vcproj
 
-SUBDIRS = main
+SUBDIRS = src
 
 doc:
-	cd main && $(MAKE) $(AM_MAKEFLAGS) doc
+	cd src && $(MAKE) $(AM_MAKEFLAGS) doc
 
 deb:
 	tar xzf $(PACKAGE)-$(VERSION).tar.gz

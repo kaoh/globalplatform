@@ -126,7 +126,7 @@ static const BYTE GP_211 = (BYTE)211; //!< GlobalPlatform specification 2.1.1 mo
 
 
 #define GP211_KEY_TYPE_3DES 0x81 //!< Reserved (triple DES).
-#define GP211_KEY_TYPE_DES 0x80 //!< '80' DES � mode (EBC/CBC) implicitly known.
+#define GP211_KEY_TYPE_DES 0x80 //!< '80' DES mode (EBC/CBC) implicitly known.
 #define GP211_KEY_TYPE_3DES_CBC 0x82 //!<'82' Triple DES in CBC mode.
 #define GP211_KEY_TYPE_DES_ECB 0x83 //!<'83' DES in ECB mode.
 #define GP211_KEY_TYPE_DES_CBC 0x84 //!<'84' DES in CBC mode.
