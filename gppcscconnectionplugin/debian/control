@@ -1,0 +1,13 @@
+Source: libgppcscconnectionplugin1
+Priority: extra
+Maintainer: Karsten Ohme <k_o_@users.sourceforge.net>
+Build-Depends: debhelper (>= 7), autotools-dev, libpcsclite-dev (>=1.2.9), libssl-dev (>= 0.9.7e), doxygen (>=1.5.0), pkg-config (>=0.22), check (>=0.9.2), libglobalplatform6-dev
+Standards-Version: 3.8.0
+Section: libs
+Homepage: http://globalplatform.sourceforge.net
+
+Package: libgppcscconnectionplugin1
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: GlobalPlatform PC/SC Connection Plugin
+ This is a plugin for the GlobalPlatform Library. This plugin uses PC/SC for the connection.

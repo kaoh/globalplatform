@@ -2,6 +2,7 @@ usr/include/*
 usr/lib/lib*.a
 usr/lib/lib*.so
 src/globalplatform.pc usr/lib/pkgconfig/
+src/globalplatform/connectionplugin.h usr/include/globalplatform/
 usr/lib/*.la
 
 

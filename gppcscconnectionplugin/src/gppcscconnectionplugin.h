@@ -23,17 +23,17 @@
 #define OPGP_PCSC_CONNECTION_PLUGIN_H
 
 #include <PCSC/winscard.h>
-#include "../../globalplatform/main/globalplatform/library.h"
+#include <globalplatform/library.h>
 
 /**
- * PC/SC specific context information. Used in #OPGP_CARD_CONTEXT.librarySpecific.
+ * PC/SC specific context information. Used in OPGP_CARD_CONTEXT.librarySpecific.
  */
 typedef struct {
 	SCARDCONTEXT cardContext; //!<  Reference to the reader resource manager.
 } PCSC_CARD_CONTEXT_SPECIFIC;
 
 /**
- * PC/SC specific card information. Used in #OPGP_CARD_INFO.librarySpecific.
+ * PC/SC specific card information. Used in OPGP_CARD_INFO.librarySpecific.
  */
 typedef struct {
 	DWORD state; //!<  The mechanical state of the card.

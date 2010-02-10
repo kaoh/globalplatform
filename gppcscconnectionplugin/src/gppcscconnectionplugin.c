@@ -23,16 +23,17 @@
  *
  */
 
-#include "../../globalplatform/main/globalplatform/connectionplugin.h"
+#include <globalplatform/connectionplugin.h>
 #include "gppcscconnectionplugin.h"
-#include "../../globalplatform/main/globalplatform/debug.h"
-#include "../../globalplatform/main/globalplatform/error.h"
-#include "../../globalplatform/main/globalplatform/errorcodes.h"
-#include "../../globalplatform/main/globalplatform/unicode.h"
-#include "../../globalplatform/main/globalplatform/stringify.h"
+#include <globalplatform/debug.h>
+#include <globalplatform/error.h>
+#include <globalplatform/errorcodes.h>
+#include <globalplatform/unicode.h>
+#include <globalplatform/stringify.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include "util.h"
 
 
 #define CHECK_CARD_CONTEXT_INITIALIZATION(cardContext, status)	if (cardContext.librarySpecific == NULL) { OPGP_ERROR_CREATE_ERROR(status, OPGP_PL_ERROR_NO_CARD_CONTEXT_INITIALIZED, OPGP_PL_stringify_error(OPGP_PL_ERROR_NO_CARD_CONTEXT_INITIALIZED)); goto end;}
