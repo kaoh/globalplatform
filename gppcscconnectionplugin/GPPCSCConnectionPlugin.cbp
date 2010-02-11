@@ -105,6 +105,33 @@
 		<Unit filename="configure.in">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
+		<Unit filename="debian/changelog">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="debian/compat">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="debian/control">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="debian/copyright">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="debian/dirs">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="debian/libgppcscconnectionplugin1.docs">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="debian/libgppcscconnectionplugin1.install">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="debian/rules">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="debian/watch">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
 		<Unit filename="lib_finder.script">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
@@ -150,6 +177,17 @@
 		<Unit filename="src/stdafx.h">
 			<Option target="Debug" />
 			<Option target="Release" />
+		</Unit>
+		<Unit filename="src/util.c">
+			<Option compilerVar="CC" />
+			<Option target="Debug" />
+			<Option target="Release" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="src/util.h">
+			<Option target="Debug" />
+			<Option target="Release" />
+			<Option target="Linux" />
 		</Unit>
 		<Unit filename="src/version.rc">
 			<Option target="Debug" />

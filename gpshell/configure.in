@@ -32,6 +32,9 @@ AC_FUNC_MALLOC
 AC_CHECK_FUNCS(atoi fgets, [],
 [AC_MSG_ERROR([Necessary function is not supported.])])
 
+#######################
+#pcsclite Configuration
+#######################
 
 AC_ARG_VAR(WINSCARD_LIB_PATH, [Specifies the location of WinSCard.lib for Windows])
 
@@ -79,6 +82,9 @@ esac
 CFLAGS="$OLD_CFLAGS"
 
 
+####################
+#Debug Configuration
+####################
 
 AC_ARG_ENABLE(debug,
 [  --enable-debug          enable debug messages from GPShell application.],
@@ -94,52 +100,71 @@ if test x${debug} = xtrue ; then
   AC_DEFINE(DEBUG, 1, [enable full debug messaging.])
 fi
 
-AC_ARG_VAR(GLOBALPLATFORM_H_PATH, [Specifies the location of GlobalPlatform/GlobalPlatform.h])
+#############################
+#GlobalPlatform Configuration
+#############################
+
+dnl Check for GlobalPlatform
+AC_ARG_VAR(GLOBALPLATFORM_LIB_PATH, [Specifies the location of GlobalPlatform.lib for Windows])
+
+# Windows must be handled different
+case "$host" in
+*-*-cygwin*)
+	if ! test -f "$GLOBALPLATFORM_LIB_PATH"/GlobalPlatform.lib;
+	  then AC_MSG_ERROR([GlobalPlatform.lib not found, specify location of GlobalPlatform.lib with
+	./configure GLOBALPLATFORM_LIB_PATH=<library directory>])
+	fi
+	AC_SUBST(GLOBALPLATFORM_LIBS,"-lGlobalPlatform -L"GLOBALPLATFORM_LIB_PATH"")
+  ;;
+*)
+    PKG_CHECK_MODULES(GLOBALPLATFORM, globalplatform >= 6.0.0, [],
+      [
+		AC_MSG_ERROR([install GlobalPlatform 6.0.0 or later])
+      ]
+    )
+  ;;
+esac
+
+AC_ARG_VAR(GLOBALPLATFORM_H_PATH, [Specifies the location of pcsclite.h for Windows])
 
 OLD_CFLAGS="$CFLAGS"
 case "$host" in
 *-*-cygwin*)
-	if ! test -f "$GLOBALPLATFORM_H_PATH"/GlobalPlatform/GlobalPlatform.h;
-	  then AC_MSG_ERROR([GlobalPlatform/GlobalPlatform.h not found, specify location of
-    GlobalPlatform/GlobalPlatform.h with ./configure GLOBALPLATFORM_H_PATH=<directory>])
+	if ! test -f "$GLOBALPLATFORM_H_PATH/globalplatform.h";
+	  then AC_MSG_ERROR([globalplatform.h not found, specify location of globalplatform.h with
+	./configure GLOBALPLATFORM_H_PATH=<include directory>])
 	fi
-    AC_SUBST(GLOBALPLATFORM_CFLAGS,-I"$GLOBALPLATFORM_H_PATH")
+	AC_SUBST(GLOBALPLATFORM_CFLAGS,-I"$GLOBALPLATFORM__H_PATH")
   ;;
-*)
-  CFLAGS="$CFLAGS $PCSCLITE_CFLAGS"
-  AC_CHECK_HEADER(GlobalPlatform/GlobalPlatform.h, [],
-  [AC_MSG_ERROR([GlobalPlatform/GlobalPlatform.h not found or usable, install GlobalPlatform 4.0.3
-    or later, or use ./configure CFLAGS=-I<include directory>])])
-    AC_SUBST(GLOBALPLATFORM_CFLAGS,)
+  *)
+    CFLAGS="$CFLAGS $GLOBALPLATFORM_CFLAGS"
+    AC_CHECK_HEADER(globalplatform.h, [],
+  	  [AC_MSG_ERROR([globalplatform.h not found or usable, install GlobalPlatform 6.0.0
+    or later, or use ./configure GLOBALPLATFORM_CFLAGS=-I<include directory>])])
   ;;
 esac
 CFLAGS="$OLD_CFLAGS"
 
-
-
-AC_ARG_VAR(GLOBALPLATFORM_LIB_PATH, [Specifies the location of GlobalPlatform library])
-
 OLD_LDFLAGS="$LDFLAGS"
+# Windows must be handled different
 case "$host" in
 *-*-cygwin*)
-	if ! test -f "$GLOBALPLATFORM_LIB_PATH"/GlobalPlatform.lib;
-	  then AC_MSG_ERROR([GlobalPlatform.lib not found, specify location of
-    GlobalPlatform.lib with ./configure GLOBALPLATFORM_LIB_PATH=<directory>])
-	fi
-    AC_SUBST(GLOBALPLATFORM_LDFLAGS,-L"$GLOBALPLATFORM_LIB_PATH")
   ;;
 *)
-  AC_CHECK_LIB(GlobalPlatform, GemXpressoPro_create_daughter_keys, [],
-    [AC_MSG_ERROR([GemXpressoPro_create_daughter_keys() not found, install GlobalPlatform 4.0.3 or
-    later, or use ./configure LDFLAGS=-L<library directory>])], [-lz])
-    AC_SUBST(GLOBALPLATFORM_LDFLAGS,)
+	LDFLAGS="$LDFLAGS $GLOBALPLATFORM_LIBS"
+	AC_CHECK_LIB(globalplatform, OPGP_VISA2_derive_keys, [],
+        [AC_MSG_ERROR([OPGP_VISA2_derive_keys() not found, install GlobalPlatform 6.0.0 or later])])
   ;;
 esac
 LDFLAGS="$OLD_LDFLAGS"
 
+###############
+#Output results
+###############
 
 AC_MSG_RESULT([Debug output enabled                  : $debug])
 
 AC_OUTPUT([
 Makefile
+src/Makefile
 ])

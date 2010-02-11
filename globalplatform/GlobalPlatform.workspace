@@ -2,6 +2,7 @@
 <CodeBlocks_workspace_file>
 	<Workspace title="Workspace">
 		<Project filename="GlobalPlatform.cbp" />
-		<Project filename="../gppcscconnectionplugin/GPPCSCConnectionPlugin.cbp" active="1" />
+		<Project filename="../gppcscconnectionplugin/GPPCSCConnectionPlugin.cbp" />
+		<Project filename="../gpshell/GPShell.cbp" active="1" />
 	</Workspace>
 </CodeBlocks_workspace_file>

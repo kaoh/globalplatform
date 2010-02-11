@@ -25,7 +25,10 @@ You need also the libraries GlobalPlatform 4.3.2, zlib 1.2.3 (zlib1.dll) and Ope
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-PLEASE OBEY THAT EVERY CARD GETS LOCKED AFTER A FEW (USUALLY 10) UNSUCCESSFUL MUTUAL AUTHENTICATIONS. THE CONTENTS OF A LOCKED CARD CANNOT BE MANAGED ANYMORE (DELETED, INSTALLED)!!! IF YOU EXPERIENCE SOME UNSUCCESSFUL MUTUAL AUTHENTICATION ATTEMPS FIRST EXECUTE A SUCCESSFUL MUTUAL AUTHENTICATION WITH A KNOWN WORKING PROGRAM TO RESET THE RETRY COUNTER BEFORE YOU PROCEED WITH GPSHELL. CHECK THE PARAMETERS FOR MUTUAL AUTHENTICATION (KEYS, SECURITY PROTOCOL) AND ASK IF ANYBODY KNOWS IF THE CARD IS SUPPORTED.
+PLEASE OBEY THAT EVERY CARD GETS LOCKED AFTER A FEW (USUALLY 10) UNSUCCESSFUL MUTUAL AUTHENTICATIONS.
+THE CONTENTS OF A LOCKED CARD CANNOT BE MANAGED ANYMORE (DELETED, INSTALLED)!!!
+IF YOU EXPERIENCE SOME UNSUCCESSFUL MUTUAL AUTHENTICATION ATTEMPS FIRST EXECUTE A SUCCESSFUL MUTUAL AUTHENTICATION WITH A KNOWN WORKING PROGRAM
+TO RESET THE RETRY COUNTER BEFORE YOU PROCEED WITH GPSHELL. CHECK THE PARAMETERS FOR MUTUAL AUTHENTICATION (KEYS, SECURITY PROTOCOL) AND ASK IF ANYBODY KNOWS IF THE CARD IS SUPPORTED.
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -54,7 +57,8 @@ mode_211 // Set protocol mode to GlobalPlatform 2.1.1
 
 ---
 
-gemXpressoPro // If you have a GemXpresso Pro card you must set this.
+
+visa_key_derivation // If you have a card which uses the VISA key derivation scheme for the key calculation, like GemXpresso Pro or some JCOP cards you must set this.
 
 ---
 
@@ -64,6 +68,12 @@ You will see the sent APDUs in clear text. The last two bytes of the
 reponse are the response code. A reponse code of 9000 means success,
 otherwise the response code indicates an error. This may be OK when
 deleting a non existing applet or package.
+
+---
+
+enable_timer
+
+Enables the logging of the execution time of a command.
 
 ---
 
@@ -80,7 +90,7 @@ xth reader in the system
 open_sc -keyind x -keyver x -key xyz -mac_key xyz -enc_key xyz -kek_key xyz -security x -scp x -scpimpl x // Open secure channel
 
 For OpenPlatform 2.0.1' card only -keyind -keyver -mac_key and enc_key are necessary.
-If you have an GemXpresso Pro card set gemXpressoPro and you MUST specify with -key the master (mother) key. -mac_key and -enc_key are not relevant.
+If you have an card which uses the VISA key derivation scheme, like a GemXpresso Pro or soem JCOP cards, set visa_key_derivation and you MUST specify with -key the master (mother) key. -mac_key and -enc_key are not relevant.
 For GlobalPlatform 2.1.1 cards -scp and -scpimpl should be not necessary to supply. You must also specify -kek_key. If your card supports a Secure Channel Protocol Implementation with only one base key, specify this key with -key and omit the others.
 
 ---
@@ -185,15 +195,18 @@ Axalto Cyberflex e-gate 32k
 GemXpresso R3.2 E64
 IBM JCOP v2.2 41 (GP211)
 IBM JCOP 31 (36k)
+JCOP 10
+Palmera Protect V5
+JTopV15
 Nokia 6131 NFC Phone (GP211)
 Axalto Cyberflex Access 64k
 Gemalto Generations Flexible
 
 We have tested this with GlobalPlatform.dll and HelloWorld.cap (sample applet from JavaCard development kit 2.1.2).  See helloInstall.txt, helloDelete.txt, and list.txt and the other script files (.txt) for samples. If a CAP file cannot be used, please see the later section (How to convert a .cap file into a .bin file).
 
-	GPShell.exe helloInstall.txt	// install HelloWorld.cap
-	GPShell.exe helloDelete.txt	// delete HelloWorld.cap
-	GPShell.exe list.txt		// list applets on a smart card
+	gpshell.exe helloInstall.txt	// install HelloWorld.cap
+	gpshell.exe helloDelete.txt	// delete HelloWorld.cap
+	gpshell.exe list.txt		// list applets on a smart card
 
 Make sure the script file (helloInstall.txt, etc.) and applet file HelloWorld.cap are in your current directory.
 

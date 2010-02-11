@@ -28,7 +28,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "GlobalPlatform/GlobalPlatform.h"
+#include "globalPlatform/globalPlatform.h"
 
 #ifndef WIN32
 #define _snprintf snprintf
@@ -84,7 +84,6 @@ typedef struct _OptionStr {
     BYTE privilege;
     BYTE scp;
     BYTE scpImpl;
-	int apduTime;
 } OptionStr;
 
 /* Global Variables */
@@ -93,7 +92,8 @@ static OPGP_CARD_INFO cardInfo;
 static OP201_SECURITY_INFO securityInfo201;
 static GP211_SECURITY_INFO securityInfo211;
 static int platform_mode = PLATFORM_MODE_OP_201;
-static int gemXpressoPro = 0;
+static int visaKeyDerivation = 0;
+static int timer = 0;
 static char selectedAID[AIDLEN+1];
 static int selectedAIDLength = 0;
 
@@ -216,7 +216,6 @@ static int handleOptions(OptionStr *pOptionStr)
     pOptionStr->privilege = 0;
     pOptionStr->scp = 0;
     pOptionStr->scpImpl = 0;
-	pOptionStr->apduTime = 0;
 
     token = strtokCheckComment(NULL);
 
@@ -520,8 +519,6 @@ static int handleOptions(OptionStr *pOptionStr)
 	    } else {
               pOptionStr->scpImpl = (int)strtol(token, dummy, 0);
 	    }
-	} else if (strcmp(token, "-time") == 0) {
-		pOptionStr->apduTime = 1;
 	} else {
 	    // unknown option
 	    printf ("Error: unknown option %s\n", token);
@@ -552,12 +549,19 @@ static int handleCommands(FILE *fd)
 	    if (token[0] == '#' || strncmp (token, "//", 2) == 0)
 		break;
 
+		// get the initial time
+		if (timer) {
+			it = GetTime();
+		}
+
 	    // print command line
 	    printf ("%s", commandLine);
 
 	    if (strcmp(token, "establish_context") == 0) {
 		// Establish context
-		rv = establish_context(&cardContext);
+		_tcsncpy(cardContext.libraryName, _T("gppcscconnectionplugin"),
+				sizeof(cardContext.libraryName));
+		rv = OPGP_establish_context(&cardContext);
 		if (rv != OPGP_ERROR_SUCCESS) {
 		    printf ("establish_context failed with error 0x%08X (%s)\n", rv, stringify_error(rv));
 			rv = EXIT_FAILURE;
@@ -566,7 +570,7 @@ static int handleCommands(FILE *fd)
 		break;
 	    } else if (strcmp(token, "release_context") == 0) {
 		// Release context
-		rv = release_context(cardContext);
+		rv = OPGP_release_context(cardContext);
 		if (rv != OPGP_ERROR_SUCCESS) {
 		    printf ("release_context failed with error 0x%08X (%s)\n", rv, stringify_error(rv));
 			rv = EXIT_FAILURE;
@@ -607,7 +611,7 @@ static int handleCommands(FILE *fd)
 					if (rv == 0) {
 						break;
 					}
-				} 
+				}
 				else if (k == optionStr.readerNumber) {
 					break;
 				}
@@ -639,7 +643,7 @@ static int handleCommands(FILE *fd)
 		if (rv != EXIT_SUCCESS) {
 			goto end;
 		}
-		if (gemXpressoPro) {
+		if (visaKeyDerivation) {
 			rv = GemXpressoPro_create_daughter_keys(cardInfo, selectedAID, selectedAIDLength, optionStr.key,
 				optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
 			if (rv != 0) {
@@ -711,7 +715,7 @@ static int handleCommands(FILE *fd)
 		memcpy(selectedAID, optionStr.AID, optionStr.AIDLen);
 		selectedAIDLength = optionStr.AIDLen;
 		break;
-	    } else if (strcmp(token, "getdata") == 0) {
+	    } else if (strcmp(token, "get_data") == 0) {
 		// Get Data
 		rv = handleOptions(&optionStr);
 		if (rv != EXIT_SUCCESS) {
@@ -1219,20 +1223,10 @@ static int handleCommands(FILE *fd)
 		unsigned char recvAPDU[258];
                 DWORD recvAPDULen = 258;
 				unsigned int it, ft;
-        //        int i;
 		// Install for Load
 		rv = handleOptions(&optionStr);
 		if (rv != EXIT_SUCCESS) {
 			goto end;
-		}
-		//printf ("Send APDU: ");
-		//for (i=0; i<optionStr.APDULen; i++)
-		//    printf ("%02X ", optionStr.APDU[i] & 0xFF);
-		//printf ("\n");
-
-		// get the initial time
-		if (optionStr.apduTime) {
-			it = GetTime();
 		}
 
 		if (platform_mode == PLATFORM_MODE_OP_201) {
@@ -1257,15 +1251,11 @@ static int handleCommands(FILE *fd)
 		}
 
 		// get the final time and calculate the total time of the command
-		if (optionStr.apduTime) {
+		if (timer) {
 			ft = GetTime();
 			_tprintf(_T("command time: %u ms\n"), (ft - it));
 		}
 
-		//printf ("Recv APDU: ");
-		//for (i=0; i<(int)recvAPDULen; i++)
-		//    printf ("%02x ", recvAPDU[i]);
-		//printf ("\n");
 
 		break;
 	    } else if (strcmp(token, "mode_201") == 0) {
@@ -1274,8 +1264,13 @@ static int handleCommands(FILE *fd)
 			platform_mode = PLATFORM_MODE_GP_211;
 	    } else if (strcmp(token, "enable_trace") == 0) {
 			enableTraceMode(OPGP_TRACE_MODE_ENABLE, NULL);
+			// gemXpressoPro and visa_key_derivation are the same, gemXpressoPro is for backward compatibility
 	    } else if (strcmp(token, "gemXpressoPro") == 0) {
-			gemXpressoPro = 1;
+			visaKeyDerivation = 1;
+        } else if (strcmp(token, "visa_key_derivation") == 0) {
+			visaKeyDerivation = 1;
+	    } else if (strcmp(token, "enable_timer") == 0) {
+			timer = 1;
 	    }
 
 	    else {
@@ -1311,7 +1306,7 @@ int main(int argc, char* argv[])
         }
     } else {
 	// error
-		fprintf (stderr, "Usage: GPShell [scriptfile]\n");
+		fprintf (stderr, "Usage: gpshell [scriptfile]\n");
 		rv = EXIT_FAILURE;
 		goto end;
     }
