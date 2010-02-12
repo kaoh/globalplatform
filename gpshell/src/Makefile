@@ -44,7 +44,7 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_gpshell_OBJECTS = gpshell-GPShell.$(OBJEXT)
+am_gpshell_OBJECTS = gpshell-gpshell.$(OBJEXT)
 gpshell_OBJECTS = $(am_gpshell_OBJECTS)
 am__DEPENDENCIES_1 =
 gpshell_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -162,7 +162,7 @@ target_alias =
 top_build_prefix = ../
 top_builddir = ..
 top_srcdir = ..
-gpshell_SOURCES = GPShell.c
+gpshell_SOURCES = gpshell.c
 gpshell_CPPFLAGS = $(AM_CPPFLAGS) $(PCSCLITE_CFLAGS) $(GLOBALPLATFORM_CFLAGS)
 gpshell_LDADD = $(AM_CPPFLAGS) $(GLOBALPLATFORM_LIBS)
 MAINTAINERCLEANFILES = \
@@ -244,7 +244,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-include ./$(DEPDIR)/gpshell-GPShell.Po
+include ./$(DEPDIR)/gpshell-gpshell.Po
 
 .c.o:
 	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -260,19 +260,19 @@ include ./$(DEPDIR)/gpshell-GPShell.Po
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
 #	$(COMPILE) -c `$(CYGPATH_W) '$<'`
 
-gpshell-GPShell.o: GPShell.c
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gpshell_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT gpshell-GPShell.o -MD -MP -MF $(DEPDIR)/gpshell-GPShell.Tpo -c -o gpshell-GPShell.o `test -f 'GPShell.c' || echo '$(srcdir)/'`GPShell.c
-	mv -f $(DEPDIR)/gpshell-GPShell.Tpo $(DEPDIR)/gpshell-GPShell.Po
-#	source='GPShell.c' object='gpshell-GPShell.o' libtool=no \
+gpshell-gpshell.o: gpshell.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gpshell_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT gpshell-gpshell.o -MD -MP -MF $(DEPDIR)/gpshell-gpshell.Tpo -c -o gpshell-gpshell.o `test -f 'gpshell.c' || echo '$(srcdir)/'`gpshell.c
+	mv -f $(DEPDIR)/gpshell-gpshell.Tpo $(DEPDIR)/gpshell-gpshell.Po
+#	source='gpshell.c' object='gpshell-gpshell.o' libtool=no \
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gpshell_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o gpshell-GPShell.o `test -f 'GPShell.c' || echo '$(srcdir)/'`GPShell.c
+#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gpshell_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o gpshell-gpshell.o `test -f 'gpshell.c' || echo '$(srcdir)/'`gpshell.c
 
-gpshell-GPShell.obj: GPShell.c
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gpshell_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT gpshell-GPShell.obj -MD -MP -MF $(DEPDIR)/gpshell-GPShell.Tpo -c -o gpshell-GPShell.obj `if test -f 'GPShell.c'; then $(CYGPATH_W) 'GPShell.c'; else $(CYGPATH_W) '$(srcdir)/GPShell.c'; fi`
-	mv -f $(DEPDIR)/gpshell-GPShell.Tpo $(DEPDIR)/gpshell-GPShell.Po
-#	source='GPShell.c' object='gpshell-GPShell.obj' libtool=no \
+gpshell-gpshell.obj: gpshell.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gpshell_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT gpshell-gpshell.obj -MD -MP -MF $(DEPDIR)/gpshell-gpshell.Tpo -c -o gpshell-gpshell.obj `if test -f 'gpshell.c'; then $(CYGPATH_W) 'gpshell.c'; else $(CYGPATH_W) '$(srcdir)/gpshell.c'; fi`
+	mv -f $(DEPDIR)/gpshell-gpshell.Tpo $(DEPDIR)/gpshell-gpshell.Po
+#	source='gpshell.c' object='gpshell-gpshell.obj' libtool=no \
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gpshell_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o gpshell-GPShell.obj `if test -f 'GPShell.c'; then $(CYGPATH_W) 'GPShell.c'; else $(CYGPATH_W) '$(srcdir)/GPShell.c'; fi`
+#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gpshell_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o gpshell-gpshell.obj `if test -f 'gpshell.c'; then $(CYGPATH_W) 'gpshell.c'; else $(CYGPATH_W) '$(srcdir)/gpshell.c'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
