@@ -229,7 +229,7 @@ lib_LTLIBRARIES = libglobalplatform.la
 include_HEADERS = 
 nobase_include_HEADERS = globalplatform/globalplatform.h globalplatform/unicode.h globalplatform/error.h \
 globalplatform/connection.h globalplatform/debug.h globalplatform/errorcodes.h globalplatform/library.h \
-globalplatform/types.h globalplatform/stringify.h globalplatform/security.h
+globalplatform/types.h globalplatform/stringify.h globalplatform/security.h globalplatform/connectionplugin.h
 
 libglobalplatform_la_SOURCES = globalplatform.c globalplatform/connection.h globalplatform/security.h globalplatform/globalplatform.h globalplatform/debug.h \
 globalplatform/unicode.h unzip/crypt.h unzip/ioapi.c unzip/ioapi.h \
@@ -239,7 +239,7 @@ dyn_generic.h dyn_unix.c connection.c stringify.c crypto.h debug.c util.c util.h
 
 libglobalplatform_la_LDFLAGS = -version-info 6:0:0 $(PCSCLITE_LIBS)
 libglobalplatform_la_CPPFLAGS = $(AM_CPPFLAGS) $(PCSCLITE_CFLAGS)
-TESTS_ENVIRONMENT = export LD_LIBRARY_PATH=$(top_builddir)/../gppcscconnectionplugin/.libs/:$LD_LIBRARY_PATH;
+TESTS_ENVIRONMENT = ls -la $(top_builddir)/../gppcscconnectionplugin/src/.libs/; export LD_LIBRARY_PATH=$(top_builddir)/../gppcscconnectionplugin/src/.libs/:$LD_LIBRARY_PATH;
 globalplatformTest_SOURCES = globalplatformTest.c
 globalplatformTest_CFLAGS =   $(AM_CPPFLAGS) $(PCSCLITE_CFLAGS)
 globalplatformTest_LDADD = -lcheck   libglobalplatform.la $(PCSCLITE_LIBS)

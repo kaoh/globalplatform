@@ -38,7 +38,7 @@ extern "C"
 
 //! \brief Loads a library.
 OPGP_NO_API
-OPGP_ERROR_STATUS DYN_LoadLibrary(PVOID *libraryHandle, LPCTSTR libraryName);
+OPGP_ERROR_STATUS DYN_LoadLibrary(PVOID *libraryHandle, LPCTSTR libraryName, LPCTSTR version);
 
 //! \brief Unloads a library.
 OPGP_NO_API

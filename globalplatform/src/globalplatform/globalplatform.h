@@ -345,11 +345,11 @@ OPGP_ERROR_STATUS close_implicit_secure_channel(GP211_SECURITY_INFO *secInfo);
 //! \brief GlobalPlatform2.1.1: Retrieve card data.
 OPGP_API
 OPGP_ERROR_STATUS GP211_get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-			  const BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength);
+			  BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength);
 
 //! \brief Retrieve card data according ISO/IEC 7816-4 command not within a secure channel.
 OPGP_API
-OPGP_ERROR_STATUS GP211_get_data_iso7816_4(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, const BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength);
+OPGP_ERROR_STATUS GP211_get_data_iso7816_4(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength);
 
 //! \brief GlobalPlatform2.1.1: This returns the Secure Channel Protocol and the Secure Channel Protocol implementation.
 OPGP_API

@@ -82,15 +82,14 @@ establish_context // Establish context
 ---
 
 card_connect -reader [Reader Name] // Connect to card in the reader
-card_connect -readerNumber [Reader Number x] // Connect to card in the
-xth reader in the system
+card_connect -readerNumber [Reader Number x] // Connect to card in the xth reader in the system
 
 ---
 
 open_sc -keyind x -keyver x -key xyz -mac_key xyz -enc_key xyz -kek_key xyz -security x -scp x -scpimpl x // Open secure channel
 
 For OpenPlatform 2.0.1' card only -keyind -keyver -mac_key and enc_key are necessary.
-If you have an card which uses the VISA key derivation scheme, like a GemXpresso Pro or soem JCOP cards, set visa_key_derivation and you MUST specify with -key the master (mother) key. -mac_key and -enc_key are not relevant.
+If you have an card which uses the VISA key derivation scheme, like a GemXpresso Pro or some JCOP cards, set visa_key_derivation and you MUST specify with -key the master (mother) key. -mac_key and -enc_key are not relevant.
 For GlobalPlatform 2.1.1 cards -scp and -scpimpl should be not necessary to supply. You must also specify -kek_key. If your card supports a Secure Channel Protocol Implementation with only one base key, specify this key with -key and omit the others.
 
 ---
@@ -135,9 +134,15 @@ release_context // Release context
 
 ---
 
-put_sc_key -keyver 0 -newkeyver 0 -mac_key $new_MAC_key -enc_key $new_ENC_key -kek_key $new_KEK_key -cur_kek $current_KEK_key // add new key set version 2
+put_sc_key -keyver 0 -newkeyver 2 -mac_key $new_MAC_key -enc_key $new_ENC_key -kek_key $new_KEK_key -cur_kek $current_KEK_key // add new key set version 2
 
-put_sc_key -keyver 1 -newkeyver 0 -mac_key $new_MAC_key -enc_key $new_ENC_key -kek_key $new_KEK_key -cur_kek $current_KEK_key // replace key set version 1
+put_sc_key -keyver 1 -newkeyver 1 -mac_key $new_MAC_key -enc_key $new_ENC_key -kek_key $new_KEK_key -cur_kek $current_KEK_key // replace key set version 1
+
+---
+
+put_dm_keys -keyver 0 -newkeyver 2 -file $public_rsa_key_file -pass $password -key $new_receipt_generation_key // put delegated management keys for GP 2.1.1 in version 2
+
+put_dm_keys -keyver 0 -newkeyver 2 -file $public_rsa_key_file -pass $password -key $new_receipt_generation_key -cur_kek $current_KEK_key // put delegated management keys for OP 2.0.1' in version 2
 
 ---
 
@@ -182,6 +187,7 @@ GP211)
 			Should not be necessary to be stated explicitly.
 -scpimpl	Secure Channel Implementation (default not set)
 			Should not be necessary to be stated explicitly.
+-pass		Password for key decryption
 
 Parameters containing spaces, e.g. file names or reader names must be quoted in "".
 

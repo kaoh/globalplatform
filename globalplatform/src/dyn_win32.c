@@ -36,9 +36,10 @@
 /**
  * \param libraryHandle OUT The returned library handle
  * \param libraryName IN The length of the Security Domain AID.
+ * \param version IN The version of the library to use.
  * \return The error status.
  */
-OPGP_ERROR_STATUS DYN_LoadLibrary(PVOID *libraryHandle, LPCTSTR libraryName)
+OPGP_ERROR_STATUS DYN_LoadLibrary(PVOID *libraryHandle, LPCTSTR libraryName, LPTCTSTR version)
 {
 	*libraryHandle = NULL;
 	OPGP_ERROR_STATUS errorStatus;

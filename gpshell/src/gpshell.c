@@ -14,8 +14,6 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
-/* GPShell.c */
-/* TODO: make Unicode conform */
 #ifdef WIN32
 #include "stdafx.h"
 #else
@@ -236,7 +234,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -keyind not followed by data\n");
+                _tprintf(_T("Error: option -keyind not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -250,7 +248,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -keyver not followed by data\n");
+                _tprintf(_T("Error: option -keyver not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -264,7 +262,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -newkeyver not followed by data\n");
+                _tprintf(_T("Error: option -newkeyver not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -278,7 +276,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -sc not followed by data\n");
+                _tprintf(_T("Error: option -sc not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -290,7 +288,7 @@ static int handleOptions(OptionStr *pOptionStr)
                     pOptionStr->secureChannel = 1;
                 else
                 {
-                    printf ("Error: option -sc not followed 0 (secure channel off) or 1 (secure channel on)\n");
+                    _tprintf(_T("Error: option -sc not followed 0 (secure channel off) or 1 (secure channel on)\n"));
                     rv = EXIT_FAILURE;
                     goto end;
                 }
@@ -301,7 +299,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -security not followed by data\n");
+                _tprintf(_T("Error: option -security not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -315,7 +313,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -readerNumber not followed by data\n");
+                _tprintf(_T("Error: option -readerNumber not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -323,7 +321,7 @@ static int handleOptions(OptionStr *pOptionStr)
             {
                 if (strcmp(token,"0") == 0)
                 {
-                    printf("Error: option -readerNumber must be followed by number > 0\n");
+                    _tprintf(_T("Error: option -readerNumber must be followed by number > 0\n"));
                     rv = EXIT_FAILURE;
                     goto end;
                 }
@@ -335,7 +333,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -reader not followed by data\n");
+                _tprintf(_T("Error: option -reader not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -354,7 +352,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -file not followed by data\n");
+                _tprintf(_T("Error: option -file not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -373,7 +371,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -pass not followed by data\n");
+                _tprintf(_T("Error: option -pass not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -381,9 +379,6 @@ static int handleOptions(OptionStr *pOptionStr)
             {
                 strncpy(pOptionStr->passPhrase, token, PASSPHRASELEN+1);
                 pOptionStr->passPhrase[PASSPHRASELEN] = '\0';
-#ifdef DEBUG
-                printf ( "file name %s\n", pOptionStr->passPhrase[PASSPHRASELEN]);
-#endif
             }
         }
         else if (strcmp(token, "-key") == 0)
@@ -391,7 +386,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -key not followed by data\n");
+                _tprintf(_T("Error: option -key not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -406,7 +401,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -key not followed by data\n");
+                _tprintf(_T("Error: option -key not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -421,7 +416,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -enc_key not followed by data\n");
+                _tprintf(_T("Error: option -enc_key not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -436,7 +431,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -kek_key not followed by data\n");
+                _tprintf(_T("Error: option -kek_key not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -451,7 +446,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -current_kek not followed by data\n");
+                _tprintf(_T("Error: option -current_kek not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -466,7 +461,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -AID not followed by data\n");
+                _tprintf(_T("Error: option -AID not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -480,7 +475,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -sdAID not followed by data\n");
+                _tprintf(_T("Error: option -sdAID not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -494,7 +489,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -pkgAID not followed by data\n");
+                _tprintf(_T("Error: option -pkgAID not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -508,7 +503,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -instAID not followed by data\n");
+                _tprintf(_T("Error: option -instAID not followed by data\n"));
                 exit (EXIT_FAILURE);
             }
             else
@@ -521,7 +516,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -APDU not followed by data\n");
+                _tprintf(_T("Error: option -APDU not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -535,7 +530,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -protocol not followed by data\n");
+                _tprintf(_T("Error: option -protocol not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -551,7 +546,7 @@ static int handleOptions(OptionStr *pOptionStr)
                 }
                 else
                 {
-                    printf ("Unknown protocol type %s\n", token);
+                    _tprintf(_T("Unknown protocol type %s\n"), token);
                     rv = EXIT_FAILURE;
                     goto end;
                 }
@@ -562,7 +557,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -nvCodeLimit not followed by data\n");
+                _tprintf(_T("Error: option -nvCodeLimit not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -576,7 +571,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -nvDataLimit not followed by data\n");
+                _tprintf(_T("Error: option -nvDataLimit not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -590,7 +585,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -vDataLimit not followed by data\n");
+                _tprintf(_T("Error: option -vDataLimit not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -604,7 +599,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -instParam not followed by data\n");
+                _tprintf(_T("Error: option -instParam not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -619,14 +614,14 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -element not followed by data\n");
+                _tprintf(_T("Error: option -element not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
 
             if (sscanf (token, "%02x", &temp) <= 0)
             {
-                printf ("Error: option -element followed by an illegal string %s\n",
+                _tprintf(_T("Error: option -element followed by an illegal string %s\n"),
                         token);
                 rv = EXIT_FAILURE;
                 goto end;
@@ -638,7 +633,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -priv not followed by data\n");
+                _tprintf(_T("Error: option -priv not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -652,7 +647,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -scp not followed by data\n");
+                _tprintf(_T("Error: option -scp not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -667,7 +662,7 @@ static int handleOptions(OptionStr *pOptionStr)
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
-                printf ("Error: option -scpimpl not followed by data\n");
+                _tprintf(_T("Error: option -scpimpl not followed by data\n"));
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -679,7 +674,7 @@ static int handleOptions(OptionStr *pOptionStr)
         else
         {
             // unknown option
-            printf ("Error: unknown option %s\n", token);
+            _tprintf(_T("Error: unknown option %s\n"), token);
             rv = EXIT_FAILURE;
             goto end;
         }
@@ -694,6 +689,7 @@ static int handleCommands(FILE *fd)
 {
     char buf[BUFLEN + 1], commandLine[BUFLEN + 1];
     int rv = EXIT_SUCCESS, i;
+	unsigned int it, ft;
     OPGP_ERROR_STATUS status;
     char *token;
     OptionStr optionStr;
@@ -717,17 +713,19 @@ static int handleCommands(FILE *fd)
             }
 
             // print command line
-            printf ("%s", commandLine);
+            printf("%s", commandLine);
 
             if (strcmp(token, "establish_context") == 0)
             {
                 // Establish context
                 _tcsncpy(cardContext.libraryName, _T("gppcscconnectionplugin"),
                          sizeof(cardContext.libraryName));
+                _tcsncpy(cardContext.libraryVersion, _T("1.0.0"),
+                         sizeof(cardContext.libraryVersion));
                 status = OPGP_establish_context(&cardContext);
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    printf ("establish_context failed with error 0x%08X (%s)\n", status.errorCode, status.errorMessage);
+                    _tprintf (_T("establish_context failed with error 0x%08lX (%s)\n"), status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
                 }
@@ -736,10 +734,10 @@ static int handleCommands(FILE *fd)
             else if (strcmp(token, "release_context") == 0)
             {
                 // Release context
-                status = OPGP_release_context(cardContext);
+                status = OPGP_release_context(&cardContext);
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    printf ("release_context failed with error 0x%08X (%s)\n", status.errorCode, status.errorMessage);
+                    _tprintf (_T("release_context failed with error 0x%08lX (%s)\n"), status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
                 }
@@ -765,7 +763,7 @@ static int handleCommands(FILE *fd)
                     status = OPGP_list_readers (cardContext, buf, &readerStrLen);
                     if (OPGP_ERROR_CHECK(status))
                     {
-                        printf ("list_readers failed with error 0x%08X (%s)\n", status.errorCode, status.errorMessage);
+                        _tprintf(_T("list_readers failed with error 0x%08lX (%s)\n"), status.errorCode, status.errorMessage);
                         rv = EXIT_FAILURE;
                         goto end;
                     }
@@ -809,8 +807,7 @@ static int handleCommands(FILE *fd)
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("card_connect() returns 0x%08X (%s)\n"), rv,
-                              stringify_error(rv));
+                    _tprintf (_T("card_connect() returns 0x%08lX (%s)\n"), status.errorCode, status.errorMessage);
                 }
                 // set mode for internal use of library
                 cardInfo.specVersion = platform_mode;
@@ -830,7 +827,7 @@ static int handleCommands(FILE *fd)
                                                 optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
                     if (OPGP_ERROR_CHECK(status))
                     {
-                        _tprintf (_T("OPGP_VISA2_derive_keys() returns 0x%08X (%s)\n"),
+                        _tprintf (_T("OPGP_VISA2_derive_keys() returns 0x%08lX (%s)\n"),
                                   status.errorCode, status.errorMessage);
                         rv = EXIT_FAILURE;
                         goto end;
@@ -839,7 +836,7 @@ static int handleCommands(FILE *fd)
 
                 if (platform_mode == PLATFORM_MODE_OP_201)
                 {
-                    status = OP201_mutual_authentication(cardInfo,
+                    status = OP201_mutual_authentication(cardContext, cardInfo,
                                                      optionStr.enc_key,
                                                      optionStr.mac_key,
                                                      optionStr.kek_key,
@@ -857,7 +854,7 @@ static int handleCommands(FILE *fd)
                                 &optionStr.scpImpl);
                         if (OPGP_ERROR_CHECK(status))
                         {
-                            _tprintf (_T("GP211_get_secure_channel_protocol_details() returns 0x%08X (%s)\n"),
+                            _tprintf (_T("GP211_get_secure_channel_protocol_details() returns 0x%08lX (%s)\n"),
                                       status.errorCode, status.errorMessage);
                             rv = EXIT_FAILURE;
                             goto end;
@@ -880,7 +877,7 @@ static int handleCommands(FILE *fd)
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("mutual_authentication() returns 0x%08X (%s)\n"),
+                    _tprintf (_T("mutual_authentication() returns 0x%08lX (%s)\n"),
                               status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
@@ -900,7 +897,7 @@ static int handleCommands(FILE *fd)
                                               (PBYTE)optionStr.AID, optionStr.AIDLen);
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("select_application() returns 0x%08X (%s)\n"),
+                    _tprintf (_T("select_application() returns 0x%08lX (%s)\n"),
                               status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
@@ -934,19 +931,19 @@ static int handleCommands(FILE *fd)
                     status = OP201_load(cardContext, cardInfo, &securityInfo201,
                                     NULL, 0,
                                     optionStr.file,
-                                    NULL, &receiptDataLen);
+                                    NULL, &receiptDataLen, NULL);
                 }
                 else if (platform_mode == PLATFORM_MODE_GP_211)
                 {
                     status = GP211_load(cardContext, cardInfo, &securityInfo211,
                                     NULL, 0,
                                     optionStr.file,
-                                    NULL, &receiptDataLen);
+                                    NULL, &receiptDataLen, NULL);
                 }
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("load_applet() returns 0x%08X (%s)\n"),
+                    _tprintf (_T("load_applet() returns 0x%08lX (%s)\n"),
                               status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
@@ -989,7 +986,7 @@ static int handleCommands(FILE *fd)
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("delete_applet() returns 0x%08X (%s)\n"),
+                    _tprintf (_T("delete_applet() returns 0x%08lX (%s)\n"),
                               status.errorCode, status.errorMessage);
                 }
                 break;
@@ -1025,7 +1022,7 @@ static int handleCommands(FILE *fd)
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("delete_key() return 0x%08x (%s)\n"),
+                    _tprintf (_T("delete_key() return 0x%08lX (%s)\n"),
                               status.errorCode, status.errorMessage);
                 }
                 break;
@@ -1048,7 +1045,7 @@ static int handleCommands(FILE *fd)
                 status = OPGP_read_executable_load_file_parameters(optionStr.file, &loadFileParams);
                 if (rv != EXIT_SUCCESS)
                 {
-                    _tprintf (_T("read_executable_load_file_parameters() returns 0x%08X (%s)\n"),
+                    _tprintf (_T("read_executable_load_file_parameters() returns 0x%08lX (%s)\n"),
                               status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
@@ -1121,7 +1118,7 @@ static int handleCommands(FILE *fd)
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("install_for_load() returns 0x%08X (%s)\n"),
+                    _tprintf (_T("install_for_load() returns 0x%08lX (%s)\n"),
                               status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
@@ -1131,19 +1128,19 @@ static int handleCommands(FILE *fd)
                     status = OP201_load(cardContext, cardInfo, &securityInfo201,
                                     NULL, 0,
                                     optionStr.file,
-                                    NULL, &receiptDataLen);
+                                    NULL, &receiptDataLen, NULL);
                 }
                 else if (platform_mode == PLATFORM_MODE_GP_211)
                 {
                     status = GP211_load(cardContext, cardInfo, &securityInfo211,
                                     NULL, 0,
                                     optionStr.file,
-                                    NULL, &receiptDataLen);
+                                    NULL, &receiptDataLen, NULL);
                 }
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("load_applet() returns 0x%08X (%s)\n"),
+                    _tprintf (_T("load_applet() returns 0x%08lX (%s)\n"),
                               status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
@@ -1187,7 +1184,7 @@ static int handleCommands(FILE *fd)
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("install_for_install_and_make_selectable() returns 0x%08X (%s)\n"),
+                    _tprintf (_T("install_for_install_and_make_selectable() returns 0x%08lX (%s)\n"),
                               status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
@@ -1251,7 +1248,7 @@ static int handleCommands(FILE *fd)
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("install_for_load() returns 0x%08X (%s)\n"),
+                    _tprintf (_T("install_for_load() returns 0x%08lX (%s)\n"),
                               status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
@@ -1310,7 +1307,7 @@ static int handleCommands(FILE *fd)
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("install_for_install_and_make_selectable() returns 0x%08X (%s)\n"),
+                    _tprintf (_T("install_for_install_and_make_selectable() returns 0x%08lX (%s)\n"),
                               status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
@@ -1321,7 +1318,7 @@ static int handleCommands(FILE *fd)
             else if (strcmp(token, "card_disconnect") == 0)
             {
                 // disconnect card
-                card_disconnect(cardInfo);
+                OPGP_card_disconnect(cardContext, &cardInfo);
 
                 break;
             }
@@ -1356,7 +1353,7 @@ static int handleCommands(FILE *fd)
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("put_secure_channel_keys() returns 0x%08X (%s)\n"),
+                    _tprintf (_T("put_secure_channel_keys() returns 0x%08lX (%s)\n"),
                               status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
@@ -1393,7 +1390,7 @@ static int handleCommands(FILE *fd)
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("put_delegated_management_keys() returns 0x%08X (%s)\n"),
+                    _tprintf (_T("put_delegated_management_keys() returns 0x%08lX (%s)\n"),
                               status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
@@ -1420,24 +1417,24 @@ static int handleCommands(FILE *fd)
 
                     if (OPGP_ERROR_CHECK(status))
                     {
-                        _tprintf (_T("get_status() returns 0x%08X (%s)\n"),
+                        _tprintf (_T("get_status() returns 0x%08lX (%s)\n"),
                                   status.errorCode, status.errorMessage);
                         rv = EXIT_FAILURE;
                         goto end;
                     }
 
-                    printf ("\nList of applets (AID state privileges)\n");
+                    _tprintf(_T("\nList of applets (AID state privileges)\n"));
                     for (i=0; i<(int)numData; i++)
                     {
                         int j;
 
                         for (j=0; j<data[i].AIDLength; j++)
                         {
-                            printf ("%02x", data[i].AID[j]);
+                            _tprintf(_T("%02x"), data[i].AID[j]);
                         }
 
-                        printf ("\t%x", data[i].lifeCycleState);
-                        printf ("\t%x\n", data[i].privileges);
+                        _tprintf(_T("\t%x"), data[i].lifeCycleState);
+                        _tprintf(_T("\t%x\n"), data[i].privileges);
                     }
                 }
                 else if (platform_mode == PLATFORM_MODE_GP_211)
@@ -1452,7 +1449,7 @@ static int handleCommands(FILE *fd)
 
                     if (OPGP_ERROR_CHECK(status))
                     {
-                        _tprintf (_T("get_status() returns 0x%08X (%s)\n"),
+                        _tprintf (_T("get_status() returns 0x%08lX (%s)\n"),
                                   status.errorCode, status.errorMessage);
                         rv = EXIT_FAILURE;
                         goto end;
@@ -1460,11 +1457,11 @@ static int handleCommands(FILE *fd)
 
                     if (optionStr.element == GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES)
                     {
-                        printf ("\nList of Ex. Load File (AID state Ex. Module AIDs)\n");
+                        _tprintf(_T("\nList of Ex. Load File (AID state Ex. Module AIDs)\n"));
                     }
                     else
                     {
-                        printf ("\nList of elements (AID state privileges)\n");
+                        _tprintf(_T("\nList of elements (AID state privileges)\n"));
                     }
                     for (i=0; i<(int)numData; i++)
                     {
@@ -1475,29 +1472,29 @@ static int handleCommands(FILE *fd)
                         {
                             for (j=0; j<execData[i].AIDLength; j++)
                             {
-                                printf ("%02x", execData[i].AID[j]);
+                                _tprintf(_T("%02x"), execData[i].AID[j]);
                             }
-                            printf ("\t%x\n", execData[i].lifeCycleState);
+                            _tprintf(_T("\t%x\n"), execData[i].lifeCycleState);
                             for (k=0; k<execData[i].numExecutableModules; k++)
                             {
                                 int h;
                                 printf("\t");
                                 for (h=0; h<execData[i].executableModules[k].AIDLength; h++)
                                 {
-                                    printf ("%02x", execData[i].executableModules[k].AID[h]);
+                                    _tprintf(_T("%02x"), execData[i].executableModules[k].AID[h]);
                                 }
                             }
-                            printf("\n");
+                            _tprintf(_T("\n"));
                         }
                         else
                         {
                             for (j=0; j<appData[i].AIDLength; j++)
                             {
-                                printf ("%02x", appData[i].AID[j]);
+                                _tprintf(_T("%02x"), appData[i].AID[j]);
                             }
 
-                            printf ("\t%x", appData[i].lifeCycleState);
-                            printf ("\t%x\n", appData[i].privileges);
+                            _tprintf(_T("\t%x"), appData[i].lifeCycleState);
+                            _tprintf(_T("\t%x\n"), appData[i].privileges);
                         }
                     }
                 }
@@ -1508,7 +1505,6 @@ static int handleCommands(FILE *fd)
             {
                 unsigned char recvAPDU[258];
                 DWORD recvAPDULen = 258;
-                unsigned int it, ft;
                 // Install for Load
                 rv = handleOptions(&optionStr);
                 if (rv != EXIT_SUCCESS)
@@ -1532,7 +1528,7 @@ static int handleCommands(FILE *fd)
                 }
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("send_APDU() returns 0x%08X (%s)\n"),
+                    _tprintf (_T("send_APDU() returns 0x%08lX (%s)\n"),
                               status.errorCode, status.errorMessage);
                     // if the command was nostop, don't quit
                     if (strcmp(token, "send_apdu_nostop") != 0)
@@ -1542,48 +1538,53 @@ static int handleCommands(FILE *fd)
                     }
                 }
 
-                // get the final time and calculate the total time of the command
-                if (timer)
-                {
-                    ft = GetTime();
-                    _tprintf(_T("command time: %u ms\n"), (ft - it));
-                }
-
-
                 break;
             }
             else if (strcmp(token, "mode_201") == 0)
             {
                 platform_mode = PLATFORM_MODE_OP_201;
+                break;
             }
             else if (strcmp(token, "mode_211") == 0)
             {
                 platform_mode = PLATFORM_MODE_GP_211;
+                break;
             }
             else if (strcmp(token, "enable_trace") == 0)
             {
-                enableTraceMode(OPGP_TRACE_MODE_ENABLE, NULL);
+                OPGP_enable_trace_mode(OPGP_TRACE_MODE_ENABLE, NULL);
+                break;
                 // gemXpressoPro and visa_key_derivation are the same, gemXpressoPro is for backward compatibility
             }
             else if (strcmp(token, "gemXpressoPro") == 0)
             {
                 visaKeyDerivation = 1;
+                break;
             }
             else if (strcmp(token, "visa_key_derivation") == 0)
             {
                 visaKeyDerivation = 1;
+                break;
             }
             else if (strcmp(token, "enable_timer") == 0)
             {
                 timer = 1;
+                break;
             }
 
             else
             {
-                printf ("Unknown command %s\n", token);
+                _tprintf(_T("Unknown command %s\n"), token);
                 rv = EXIT_FAILURE;
                 goto end;
             }
+
+			// get the final time and calculate the total time of the command
+			if (timer)
+			{
+				ft = GetTime();
+				_tprintf(_T("command time: %u ms\n"), (ft - it));
+			}
 
             token = strtokCheckComment(NULL);
         }

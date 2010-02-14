@@ -3,15 +3,10 @@ Title    : GlobalPlatform
 Authors  : Karsten Ohme <k_o_@users.sourceforge.net>
 License  : See file COPYING
 Requires : PC/SC Lite http://www.musclecard.com/ (for UNIXes)
-           OpenSSL http://www.openssl.org/
-           zlib http://www.zlib.net/
+           GlobalPlatformn http://globalplatform.sourceforge.net
 ******************************************************
 
-This is a library for providing access to OpenPlatform 2.0.1' and
-GlobalPlatform 2.1.1 conforming smart cards.
-
-You need also the libraries zlib 1.2.3 (zlib1.dll in Windows) and OpenSSL 0.9.7e
-(libeay32.dll and ssleay32.dll in Windows) or compatible.
+This is a PC/SC connection plugin for the GlobalPlatform Library.
 
 ------------------
 
@@ -31,8 +26,6 @@ e.g. keys!
 If you compile this on your own:
 
 See the files INSTALL and Install.w32 for details.
-
-For the unit tests a JCOP v2.2 41 card is used.
 
 ------------------
 

@@ -16,7 +16,7 @@
  */
 #include <check.h>
 #include <stdlib.h>
-#include <globalplatform/main/globalplatform/globalplatform.h>
+#include <globalplatform/globalplatform.h>
 #include <globalplatform/connectionplugin.h>
 #include "gppcscconnectionplugin.h"
 #include <string.h>

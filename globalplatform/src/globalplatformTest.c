@@ -107,6 +107,8 @@ static OPGP_ERROR_STATUS internal_establish_context() {
 	OPGP_ERROR_STATUS status;
 	_tcsncpy(cardContext.libraryName, _T("gppcscconnectionplugin"),
 			sizeof(cardContext.libraryName));
+	_tcsncpy(cardContext.libraryVersion, _T("1.0.0"),
+			sizeof(cardContext.libraryName));
 	status = OPGP_establish_context(&cardContext);
 	if (OPGP_ERROR_CHECK(status)) {
 		return status;
@@ -125,7 +127,7 @@ static OPGP_ERROR_STATUS internal_mutual_authentication() {
 		return status;
 	}
 	status = GP211_mutual_authentication(cardContext, cardInfo, NULL,
-			(PBYTE) OPGP_VISA_DEFAULT_KEY, (PBYTE) OPGP_VISA_DEFAULT_KEY,
+			(PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE) OPGP_VISA_DEFAULT_KEY,
 			(PBYTE) OPGP_VISA_DEFAULT_KEY, 0, 0, scp, scpImpl,
 			GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC, &securityInfo211);
 	if (OPGP_ERROR_CHECK(status)) {

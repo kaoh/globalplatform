@@ -107,7 +107,7 @@ OPGP_ERROR_STATUS delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_IN
 
 OPGP_NO_API
 OPGP_ERROR_STATUS get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-			  const BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength);
+			  BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS put_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE identifier[2], PBYTE dataObject, DWORD dataObjectLength);
@@ -1095,7 +1095,7 @@ end:
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-			  const BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength) {
+			  BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength) {
 				  return get_data(cardContext, cardInfo, secInfo, identifier, recvBuffer, recvBufferLength);
 }
 
@@ -1184,7 +1184,7 @@ end:
 }
 
 OPGP_ERROR_STATUS get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-			  const BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength) {
+			  BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength) {
 	OPGP_ERROR_STATUS status;
 	BYTE sendBuffer[5];
 	DWORD sendBufferLength = 5;
@@ -1230,7 +1230,7 @@ end:
  * \param recvBufferLength INOUT The length of the received card data.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
-OPGP_ERROR_STATUS GP211_get_data_iso7816_4(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, const BYTE identifier[2], PBYTE recvBuffer,
+OPGP_ERROR_STATUS GP211_get_data_iso7816_4(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE identifier[2], PBYTE recvBuffer,
 						PDWORD recvBufferLength) {
 	OPGP_ERROR_STATUS status;
 	BYTE sendBuffer[5];
@@ -1296,7 +1296,7 @@ OPGP_ERROR_STATUS GP211_get_secure_channel_protocol_details(OPGP_CARD_CONTEXT ca
 #endif
 
 	OPGP_LOG_START(_T("GP211_get_secure_channel_protocol_details"));
-	status = GP211_get_data(cardContext, cardInfo, NULL, GP211_GET_DATA_CARD_DATA, recvBuffer, &recvBufferLength);
+	status = GP211_get_data(cardContext, cardInfo, NULL, (PBYTE)GP211_GET_DATA_CARD_DATA, recvBuffer, &recvBufferLength);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -3799,7 +3799,7 @@ OPGP_ERROR_STATUS GP211_get_sequence_counter(OPGP_CARD_CONTEXT cardContext, OPGP
 	DWORD recvBufferLength = sizeof(recvBuffer);
 
 	OPGP_LOG_START(_T("get_sequence_counter"));
-	status = GP211_get_data_iso7816_4(cardContext, cardInfo, GP211_GET_DATA_SEQUENCE_COUNTER_DEFAULT_KEY_VERSION,
+	status = GP211_get_data_iso7816_4(cardContext, cardInfo, (PBYTE)GP211_GET_DATA_SEQUENCE_COUNTER_DEFAULT_KEY_VERSION,
 		recvBuffer, &recvBufferLength);
 	if ( OPGP_ERROR_CHECK(status) ) {
 		goto end;

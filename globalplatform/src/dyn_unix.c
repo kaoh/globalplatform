@@ -36,17 +36,36 @@
 #define MAX_LIBRARY_NAME_SIZE 64
 #define LIBRARY_NAME_PREFIX _T("lib")
 #define LIBRARY_NAME_EXTENSION _T(".so")
+#define LIBRARY_NAME_VERSION_SEPARATOR _T(".")
 
-OPGP_ERROR_STATUS DYN_LoadLibrary(PVOID *libraryHandle, LPCTSTR libraryName)
+/**
+ * \param libraryHandle OUT The returned library handle
+ * \param libraryName IN The length of the Security Domain AID.
+ * \param version IN The version of the library to use.
+ * \return The error status.
+ */
+OPGP_ERROR_STATUS DYN_LoadLibrary(PVOID *libraryHandle, LPCTSTR libraryName, LPCTSTR version)
 {
 	OPGP_ERROR_STATUS errorStatus;
+	int offset = 0;
 	*libraryHandle = NULL;
 	TCHAR internalLibraryName[MAX_LIBRARY_NAME_SIZE];
 	OPGP_LOG_START(_T("DYN_LoadLibrary"));
 
+	OPGP_log_Msg(_T("DYN_LoadLibrary: Using library name \"%s\" and version \"%s\"."), libraryName, version);
+
 	_tcsncpy(internalLibraryName, LIBRARY_NAME_PREFIX, MAX_LIBRARY_NAME_SIZE);
-	_tcsncpy(internalLibraryName + _tcslen(LIBRARY_NAME_PREFIX), libraryName, MAX_LIBRARY_NAME_SIZE - _tcslen(LIBRARY_NAME_PREFIX));
-	_tcsncpy(internalLibraryName + _tcslen(LIBRARY_NAME_PREFIX) + _tcslen(libraryName), LIBRARY_NAME_EXTENSION, MAX_LIBRARY_NAME_SIZE - (_tcslen(LIBRARY_NAME_PREFIX) + _tcslen(libraryName)));
+	offset += _tcslen(LIBRARY_NAME_PREFIX);
+	_tcsncpy(internalLibraryName + offset, libraryName, MAX_LIBRARY_NAME_SIZE - offset);
+	offset +=  _tcslen(libraryName);
+	_tcsncpy(internalLibraryName + offset, LIBRARY_NAME_EXTENSION, MAX_LIBRARY_NAME_SIZE - offset);
+	offset += _tcslen(LIBRARY_NAME_EXTENSION);
+	if (version != NULL) {
+		_tcsncpy(internalLibraryName + offset, LIBRARY_NAME_VERSION_SEPARATOR, MAX_LIBRARY_NAME_SIZE - offset);
+		offset += _tcslen(LIBRARY_NAME_VERSION_SEPARATOR);
+		_tcsncpy(internalLibraryName + offset, version, MAX_LIBRARY_NAME_SIZE - offset);
+		offset += _tcslen(version);
+	}
 	internalLibraryName[MAX_LIBRARY_NAME_SIZE-1] = _T('\0');
 	*libraryHandle = dlopen(internalLibraryName, RTLD_LAZY);
 
@@ -62,6 +81,10 @@ end:
 	return errorStatus;
 }
 
+/**
+ * \param libraryHandle IN The library handle
+ * \return The error status.
+ */
 OPGP_ERROR_STATUS DYN_CloseLibrary(PVOID *libraryHandle)
 {
 	int ret;
@@ -82,6 +105,12 @@ end:
 	return errorStatus;
 }
 
+/**
+ * \param libraryHandle IN The returned library handle
+ * \param functionHandle OUT The returned function handle.
+ * \param functionName IN The function name to search.
+ * \return The error status.
+ */
 OPGP_ERROR_STATUS DYN_GetAddress(PVOID libraryHandle, PVOID *functionHandle, LPCTSTR functionName)
 {
 	OPGP_ERROR_STATUS errorStatus;
