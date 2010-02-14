@@ -30,6 +30,8 @@
 
 #ifndef WIN32
 #define _snprintf snprintf
+#define _fgetts fgets
+#define _tcscmp strcmp
 #endif
 
 /* Constants */
@@ -229,7 +231,7 @@ static int handleOptions(OptionStr *pOptionStr)
 
     while (token != NULL)
     {
-        if (strcmp(token, "-keyind") == 0)
+        if (_tcscmp(token, _T("-keyind")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -243,7 +245,7 @@ static int handleOptions(OptionStr *pOptionStr)
                 pOptionStr->keyIndex = atoi(token);
             }
         }
-        else if (strcmp(token, "-keyver") == 0)
+        else if (_tcscmp(token, _T("-keyver")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -257,7 +259,7 @@ static int handleOptions(OptionStr *pOptionStr)
                 pOptionStr->keySetVersion = atoi(token);
             }
         }
-        else if (strcmp(token, "-newkeyver") == 0)
+        else if (_tcscmp(token, _T("-newkeyver")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -271,7 +273,7 @@ static int handleOptions(OptionStr *pOptionStr)
                 pOptionStr->newKeySetVersion = atoi(token);
             }
         }
-        else if (strcmp(token, "-sc") == 0)
+        else if (_tcscmp(token, _T("-sc")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -294,7 +296,7 @@ static int handleOptions(OptionStr *pOptionStr)
                 }
             }
         }
-        else if (strcmp(token, "-security") == 0)
+        else if (_tcscmp(token, _T("-security")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -308,7 +310,7 @@ static int handleOptions(OptionStr *pOptionStr)
                 pOptionStr->securityLevel = atoi(token);
             }
         }
-        else if (strcmp(token, "-readerNumber") == 0)
+        else if (_tcscmp(token, _T("-readerNumber")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -319,7 +321,7 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-                if (strcmp(token,"0") == 0)
+                if (_tcscmp(token,"0") == 0)
                 {
                     _tprintf(_T("Error: option -readerNumber must be followed by number > 0\n"));
                     rv = EXIT_FAILURE;
@@ -328,7 +330,7 @@ static int handleOptions(OptionStr *pOptionStr)
                 pOptionStr->readerNumber = atoi(token)-1;
             }
         }
-        else if (strcmp(token, "-reader") == 0)
+        else if (_tcscmp(token, _T("-reader")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -347,7 +349,7 @@ static int handleOptions(OptionStr *pOptionStr)
 #endif
             }
         }
-        else if (strcmp(token, "-file") == 0)
+        else if (_tcscmp(token, _T("-file")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -366,7 +368,7 @@ static int handleOptions(OptionStr *pOptionStr)
 #endif
             }
         }
-        else if (strcmp(token, "-pass") == 0)
+        else if (_tcscmp(token, _T("-pass")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -381,7 +383,7 @@ static int handleOptions(OptionStr *pOptionStr)
                 pOptionStr->passPhrase[PASSPHRASELEN] = '\0';
             }
         }
-        else if (strcmp(token, "-key") == 0)
+        else if (_tcscmp(token, _T("-key")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -396,7 +398,7 @@ static int handleOptions(OptionStr *pOptionStr)
                 ConvertStringToByteArray(token, DDES_KEY_LEN, pOptionStr->key);
             }
         }
-        else if (strcmp(token, "-mac_key") == 0)
+        else if (_tcscmp(token, _T("-mac_key")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -411,7 +413,7 @@ static int handleOptions(OptionStr *pOptionStr)
                 ConvertStringToByteArray(token, DDES_KEY_LEN, pOptionStr->mac_key);
             }
         }
-        else if (strcmp(token, "-enc_key") == 0)
+        else if (_tcscmp(token, _T("-enc_key")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -426,7 +428,7 @@ static int handleOptions(OptionStr *pOptionStr)
                 ConvertStringToByteArray(token, DDES_KEY_LEN, pOptionStr->enc_key);
             }
         }
-        else if (strcmp(token, "-kek_key") == 0)
+        else if (_tcscmp(token, _T("-kek_key")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -441,7 +443,7 @@ static int handleOptions(OptionStr *pOptionStr)
                 ConvertStringToByteArray(token, DDES_KEY_LEN, pOptionStr->kek_key);
             }
         }
-        else if (strcmp(token, "-current_kek") == 0)
+        else if (_tcscmp(token, _T("-current_kek")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -456,7 +458,7 @@ static int handleOptions(OptionStr *pOptionStr)
                 ConvertStringToByteArray(token, DDES_KEY_LEN, pOptionStr->current_kek);
             }
         }
-        else if (strcmp(token, "-AID") == 0)
+        else if (_tcscmp(token, _T("-AID")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -470,7 +472,7 @@ static int handleOptions(OptionStr *pOptionStr)
                 pOptionStr->AIDLen = ConvertStringToByteArray(token, AIDLEN, pOptionStr->AID);
             }
         }
-        else if (strcmp(token, "-sdAID") == 0)
+        else if (_tcscmp(token, _T("-sdAID")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -484,7 +486,7 @@ static int handleOptions(OptionStr *pOptionStr)
                 pOptionStr->sdAIDLen = ConvertStringToByteArray(token, AIDLEN, pOptionStr->sdAID);
             }
         }
-        else if (strcmp(token, "-pkgAID") == 0)
+        else if (_tcscmp(token, _T("-pkgAID")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -498,7 +500,7 @@ static int handleOptions(OptionStr *pOptionStr)
                 pOptionStr->pkgAIDLen = ConvertStringToByteArray(token, AIDLEN, pOptionStr->pkgAID);
             }
         }
-        else if (strcmp(token, "-instAID") == 0)
+        else if (_tcscmp(token, _T("-instAID")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -511,7 +513,7 @@ static int handleOptions(OptionStr *pOptionStr)
                 pOptionStr->instAIDLen = ConvertStringToByteArray(token, AIDLEN, pOptionStr->instAID);
             }
         }
-        else if (strcmp(token, "-APDU") == 0)
+        else if (_tcscmp(token, _T("-APDU")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -525,7 +527,7 @@ static int handleOptions(OptionStr *pOptionStr)
                 pOptionStr->APDULen = ConvertStringToByteArray(token, APDULEN, pOptionStr->APDU);
             }
         }
-        else if (strcmp(token, "-protocol") == 0)
+        else if (_tcscmp(token, _T("-protocol")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -552,7 +554,7 @@ static int handleOptions(OptionStr *pOptionStr)
                 }
             }
         }
-        else if (strcmp(token, "-nvCodeLimit") == 0)
+        else if (_tcscmp(token, _T("-nvCodeLimit")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -566,7 +568,7 @@ static int handleOptions(OptionStr *pOptionStr)
                 pOptionStr->nvCodeLimit = atoi(token);
             }
         }
-        else if (strcmp(token, "-nvDataLimit") == 0)
+        else if (_tcscmp(token, _T("-nvDataLimit")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -580,7 +582,7 @@ static int handleOptions(OptionStr *pOptionStr)
                 pOptionStr->nvDataLimit = atoi(token);
             }
         }
-        else if (strcmp(token, "-vDataLimit") == 0)
+        else if (_tcscmp(token, _T("-vDataLimit")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -594,7 +596,7 @@ static int handleOptions(OptionStr *pOptionStr)
                 pOptionStr->vDataLimit = atoi(token);
             }
         }
-        else if (strcmp(token, "-instParam") == 0)
+        else if (_tcscmp(token, _T("-instParam")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -608,7 +610,7 @@ static int handleOptions(OptionStr *pOptionStr)
                 pOptionStr->instParamLen = ConvertStringToByteArray(token, INSTPARAMLEN, pOptionStr->instParam);
             }
         }
-        else if (strcmp(token, "-element") == 0)
+        else if (_tcscmp(token, _T("-element")) == 0)
         {
             int temp;
             token = strtokCheckComment(NULL);
@@ -628,7 +630,7 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             pOptionStr->element = temp;
         }
-        else if (strcmp(token, "-priv") == 0)
+        else if (_tcscmp(token, _T("-priv")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -642,7 +644,7 @@ static int handleOptions(OptionStr *pOptionStr)
                 pOptionStr->privilege = atoi(token);
             }
         }
-        else if (strcmp(token, "-scp") == 0)
+        else if (_tcscmp(token, _T("-scp")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -656,7 +658,7 @@ static int handleOptions(OptionStr *pOptionStr)
                 pOptionStr->scp = atoi(token);
             }
         }
-        else if (strcmp(token, "-scpimpl") == 0)
+        else if (_tcscmp(token, _T("-scpimpl")) == 0)
         {
             char **dummy = NULL;
             token = strtokCheckComment(NULL);
@@ -687,14 +689,14 @@ end:
 
 static int handleCommands(FILE *fd)
 {
-    char buf[BUFLEN + 1], commandLine[BUFLEN + 1];
+    TCHAR buf[BUFLEN + 1], commandLine[BUFLEN + 1];
     int rv = EXIT_SUCCESS, i;
 	unsigned int it, ft;
     OPGP_ERROR_STATUS status;
-    char *token;
+    TCHAR *token;
     OptionStr optionStr;
 
-    while (fgets (buf, BUFLEN, fd) != NULL)
+    while (_fgetts (buf, BUFLEN, fd) != NULL)
     {
 
         // copy command line for printing it out later
@@ -703,7 +705,7 @@ static int handleCommands(FILE *fd)
         token = strtokCheckComment(buf);
         while (token != NULL)
         {
-            if (token[0] == '#' || strncmp (token, "//", 2) == 0)
+            if (token[0] == _T('#') || strncmp (token, _T("//"), 2) == 0)
                 break;
 
             // get the initial time
@@ -715,7 +717,7 @@ static int handleCommands(FILE *fd)
             // print command line
             printf("%s", commandLine);
 
-            if (strcmp(token, "establish_context") == 0)
+            if (_tcscmp(token, "establish_context") == 0)
             {
                 // Establish context
                 _tcsncpy(cardContext.libraryName, _T("gppcscconnectionplugin"),
@@ -731,7 +733,7 @@ static int handleCommands(FILE *fd)
                 }
                 break;
             }
-            else if (strcmp(token, "release_context") == 0)
+            else if (_tcscmp(token, "release_context") == 0)
             {
                 // Release context
                 status = OPGP_release_context(&cardContext);
@@ -744,7 +746,7 @@ static int handleCommands(FILE *fd)
 
                 break;
             }
-            else if (strcmp(token, "card_connect") == 0)
+            else if (_tcscmp(token, "card_connect") == 0)
             {
                 TCHAR buf[BUFLEN + 1];
                 DWORD readerStrLen = BUFLEN;
@@ -813,7 +815,7 @@ static int handleCommands(FILE *fd)
                 cardInfo.specVersion = platform_mode;
                 break;
             }
-            if (strcmp(token, "open_sc") == 0)
+            if (_tcscmp(token, "open_sc") == 0)
             {
                 // open secure channel
                 rv = handleOptions(&optionStr);
@@ -885,7 +887,7 @@ static int handleCommands(FILE *fd)
 
                 break;
             }
-            else if (strcmp(token, "select") == 0)
+            else if (_tcscmp(token, "select") == 0)
             {
                 // select instance
                 rv = handleOptions(&optionStr);
@@ -906,7 +908,7 @@ static int handleCommands(FILE *fd)
                 selectedAIDLength = optionStr.AIDLen;
                 break;
             }
-            else if (strcmp(token, "get_data") == 0)
+            else if (_tcscmp(token, "get_data") == 0)
             {
                 // Get Data
                 rv = handleOptions(&optionStr);
@@ -917,7 +919,7 @@ static int handleCommands(FILE *fd)
                 // TODO: get data
                 break;
             }
-            else if (strcmp(token, "load") == 0)
+            else if (_tcscmp(token, "load") == 0)
             {
                 // Load Applet
                 DWORD receiptDataLen = 0;
@@ -951,7 +953,7 @@ static int handleCommands(FILE *fd)
 
                 break;
             }
-            else if (strcmp(token, "delete") == 0)
+            else if (_tcscmp(token, "delete") == 0)
             {
                 // Delete Applet
                 OPGP_AID AIDs[1];
@@ -992,7 +994,7 @@ static int handleCommands(FILE *fd)
                 break;
                 /* Augusto: added delete_key command support */
             }
-            else if (strcmp(token, "delete_key") == 0)
+            else if (_tcscmp(token, "delete_key") == 0)
             {
 
                 rv = handleOptions(&optionStr);
@@ -1028,7 +1030,7 @@ static int handleCommands(FILE *fd)
                 break;
                 /* end */
             }
-            else if (strcmp(token, "install") == 0)
+            else if (_tcscmp(token, "install") == 0)
             {
                 // One step install
                 OPGP_LOAD_FILE_PARAMETERS loadFileParams;
@@ -1191,7 +1193,7 @@ static int handleCommands(FILE *fd)
                 }
                 break;
             }
-            else if (strcmp(token, "install_for_load") == 0)
+            else if (_tcscmp(token, "install_for_load") == 0)
             {
                 // Install for Load
                 rv = handleOptions(&optionStr);
@@ -1255,7 +1257,7 @@ static int handleCommands(FILE *fd)
                 }
                 break;
             }
-            else if (strcmp(token, "install_for_install") == 0)
+            else if (_tcscmp(token, "install_for_install") == 0)
             {
 
 
@@ -1315,14 +1317,14 @@ static int handleCommands(FILE *fd)
 
                 break;
             }
-            else if (strcmp(token, "card_disconnect") == 0)
+            else if (_tcscmp(token, "card_disconnect") == 0)
             {
                 // disconnect card
                 OPGP_card_disconnect(cardContext, &cardInfo);
 
                 break;
             }
-            else if (strcmp(token, "put_sc_key") == 0)
+            else if (_tcscmp(token, "put_sc_key") == 0)
             {
                 rv = handleOptions(&optionStr);
                 if (rv != EXIT_SUCCESS)
@@ -1360,7 +1362,7 @@ static int handleCommands(FILE *fd)
                 }
                 break;
             }
-            else if (strcmp(token, "put_dm_keys") == 0)
+            else if (_tcscmp(token, "put_dm_keys") == 0)
             {
                 rv = handleOptions(&optionStr);
                 if (rv != EXIT_SUCCESS)
@@ -1397,7 +1399,7 @@ static int handleCommands(FILE *fd)
                 }
                 break;
             }
-            else if (strcmp(token, "get_status") == 0)
+            else if (_tcscmp(token, "get_status") == 0)
             {
 #define NUM_APPLICATIONS 64
                 DWORD numData = NUM_APPLICATIONS;
@@ -1501,7 +1503,7 @@ static int handleCommands(FILE *fd)
 
                 break;
             }
-            else if (strcmp(token, "send_apdu") == 0 || strcmp(token, "send_apdu_nostop") == 0)
+            else if (_tcscmp(token, "send_apdu") == 0 || _tcscmp(token, "send_apdu_nostop") == 0)
             {
                 unsigned char recvAPDU[258];
                 DWORD recvAPDULen = 258;
@@ -1531,7 +1533,7 @@ static int handleCommands(FILE *fd)
                     _tprintf (_T("send_APDU() returns 0x%08lX (%s)\n"),
                               status.errorCode, status.errorMessage);
                     // if the command was nostop, don't quit
-                    if (strcmp(token, "send_apdu_nostop") != 0)
+                    if (_tcscmp(token, "send_apdu_nostop") != 0)
                     {
                         rv = EXIT_FAILURE;
                         goto end;
@@ -1540,33 +1542,33 @@ static int handleCommands(FILE *fd)
 
                 break;
             }
-            else if (strcmp(token, "mode_201") == 0)
+            else if (_tcscmp(token, "mode_201") == 0)
             {
                 platform_mode = PLATFORM_MODE_OP_201;
                 break;
             }
-            else if (strcmp(token, "mode_211") == 0)
+            else if (_tcscmp(token, "mode_211") == 0)
             {
                 platform_mode = PLATFORM_MODE_GP_211;
                 break;
             }
-            else if (strcmp(token, "enable_trace") == 0)
+            else if (_tcscmp(token, "enable_trace") == 0)
             {
                 OPGP_enable_trace_mode(OPGP_TRACE_MODE_ENABLE, NULL);
                 break;
                 // gemXpressoPro and visa_key_derivation are the same, gemXpressoPro is for backward compatibility
             }
-            else if (strcmp(token, "gemXpressoPro") == 0)
+            else if (_tcscmp(token, "gemXpressoPro") == 0)
             {
                 visaKeyDerivation = 1;
                 break;
             }
-            else if (strcmp(token, "visa_key_derivation") == 0)
+            else if (_tcscmp(token, "visa_key_derivation") == 0)
             {
                 visaKeyDerivation = 1;
                 break;
             }
-            else if (strcmp(token, "enable_timer") == 0)
+            else if (_tcscmp(token, "enable_timer") == 0)
             {
                 timer = 1;
                 break;
