@@ -1,5 +1,6 @@
 mode_211
 enable_trace
+enable_timer
 
 establish_context
 card_connect

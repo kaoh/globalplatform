@@ -32,6 +32,10 @@
 #define _snprintf snprintf
 #define _fgetts fgets
 #define _tcscmp strcmp
+#define _tcstok strtok
+#define _stscanf sscanf
+#define _tstoi atoi
+#define _tcsnccmp strncmp
 #endif
 
 /* Constants */
@@ -54,33 +58,33 @@ typedef struct _OptionStr
     BYTE keyIndex;
     BYTE keySetVersion;
     BYTE newKeySetVersion;
-    unsigned char key[DDES_KEY_LEN];
-    unsigned char mac_key[DDES_KEY_LEN];
-    unsigned char enc_key[DDES_KEY_LEN];
-    unsigned char kek_key[DDES_KEY_LEN];
-    unsigned char current_kek[DDES_KEY_LEN];
+    BYTE key[DDES_KEY_LEN];
+    BYTE mac_key[DDES_KEY_LEN];
+    BYTE enc_key[DDES_KEY_LEN];
+    BYTE kek_key[DDES_KEY_LEN];
+    BYTE current_kek[DDES_KEY_LEN];
     BYTE securityLevel;
-    char AID[AIDLEN+1];
-    int AIDLen;
-    char sdAID[AIDLEN+1];
-    int sdAIDLen;
-    char pkgAID[AIDLEN+1];
-    int pkgAIDLen;
-    char instAID[AIDLEN+1];
-    int instAIDLen;
-    char APDU[APDULEN+1];
-    int APDULen;
-    int secureChannel;
+    BYTE AID[AIDLEN+1];
+    DWORD AIDLen;
+    BYTE sdAID[AIDLEN+1];
+    DWORD sdAIDLen;
+    BYTE pkgAID[AIDLEN+1];
+    DWORD pkgAIDLen;
+    BYTE instAID[AIDLEN+1];
+    DWORD instAIDLen;
+    BYTE APDU[APDULEN+1];
+    DWORD APDULen;
+    BYTE secureChannel;
     TCHAR reader[READERNAMELEN+1];
-    int readerNumber;
-    int protocol;
-    int nvCodeLimit;
-    int nvDataLimit;
-    int vDataLimit;
+    DWORD readerNumber;
+    DWORD protocol;
+    DWORD nvCodeLimit;
+    DWORD nvDataLimit;
+    DWORD vDataLimit;
     TCHAR file[FILENAMELEN+1];
     char passPhrase[PASSPHRASELEN+1];
-    char instParam[INSTPARAMLEN+1];
-    int instParamLen;
+    BYTE instParam[INSTPARAMLEN+1];
+    DWORD instParamLen;
     BYTE element;
     BYTE privilege;
     BYTE scp;
@@ -124,7 +128,7 @@ static void ConvertCToT(TCHAR* pszDest, const char* pszSrc)
 {
     unsigned int i;
 
-    for (i = 0; i < strlen(pszSrc); i++)
+    for (i = 0; i < _tcslen(pszSrc); i++)
     {
         pszDest[i] = (TCHAR) pszSrc[i];
     }
@@ -132,13 +136,13 @@ static void ConvertCToT(TCHAR* pszDest, const char* pszSrc)
     pszDest[strlen(pszSrc)] = _T('\0');
 }
 
-static int ConvertStringToByteArray(char *src, int maxLength, char *dest)
+static int ConvertStringToByteArray(TCHAR *src, int maxLength, BYTE *dest)
 {
-    char dummy[BUFLEN+1];
+    TCHAR dummy[BUFLEN+1];
     int temp, i = 0;
-    strncpy(dummy, src, maxLength*2+1);
-    dummy[maxLength*2] = '\0';
-    while (sscanf (&(dummy[i*2]), "%02x", &temp) > 0)
+    _tcsncpy(dummy, src, maxLength*2+1);
+    dummy[maxLength*2] = _T('\0');
+    while (_stscanf(&(dummy[i*2]), _T("%02x"), &temp) > 0)
     {
         dest[i] = temp;
         i++;
@@ -146,41 +150,41 @@ static int ConvertStringToByteArray(char *src, int maxLength, char *dest)
     return i;
 }
 
-static char *strtokCheckComment(char *buf)
+static TCHAR *strtokCheckComment(TCHAR *buf)
 {
-    char *token;
-    char dummy[BUFLEN];
+    TCHAR *token;
+    TCHAR dummy[BUFLEN];
     int avail = sizeof(dummy);
     int size = 0, read = 0;
 
-    token = strtok (buf, DELIMITER);
+    token = _tcstok(buf, DELIMITER);
 
     if (token == NULL)
         return NULL;
 
     /* Check for quoted string */
-    if (token[0] == '"')
+    if (token[0] == _T('"'))
     {
-        size = _snprintf(dummy, avail, "%s", token+1);
+        size = _sntprintf(dummy, avail, _T("%s"), token+1);
         avail -= size;
         read += size;
-        token = strtok (buf, "\"");
+        token = _tcstok(buf, _T("\""));
         if (token == NULL)
             return NULL;
         if (size > 0)
         {
-            _snprintf(dummy+read, avail, " %s", token);
+            _sntprintf(dummy+read, avail, _T(" %s"), token);
         }
-        dummy[sizeof(dummy)-1] = '\0';
+        dummy[sizeof(dummy)-1] = _T('\0');
 
         /* Skip next delimiter */
-        token = strtok (buf, DELIMITER);
+        token = _tcstok(buf, DELIMITER);
 
         token = dummy;
         return token;
     }
 
-    if (strcmp(token, "//") == 0 || strcmp(token, "#") == 0)
+    if (_tcscmp(token, _T("//")) == 0 || _tcscmp(token, _T("#")) == 0)
     {
         return NULL;
     }
@@ -194,8 +198,8 @@ static char *strtokCheckComment(char *buf)
 static int handleOptions(OptionStr *pOptionStr)
 {
     int rv = EXIT_SUCCESS;
-    char *token;
-    char dummy[BUFLEN+1];
+    TCHAR *token;
+    TCHAR dummy[BUFLEN+1];
 
     pOptionStr->keyIndex = 0;
     pOptionStr->keySetVersion = 0;
@@ -242,7 +246,7 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-                pOptionStr->keyIndex = atoi(token);
+                pOptionStr->keyIndex = _tstoi(token);
             }
         }
         else if (_tcscmp(token, _T("-keyver")) == 0)
@@ -256,7 +260,7 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-                pOptionStr->keySetVersion = atoi(token);
+                pOptionStr->keySetVersion = _tstoi(token);
             }
         }
         else if (_tcscmp(token, _T("-newkeyver")) == 0)
@@ -270,7 +274,7 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-                pOptionStr->newKeySetVersion = atoi(token);
+                pOptionStr->newKeySetVersion = _tstoi(token);
             }
         }
         else if (_tcscmp(token, _T("-sc")) == 0)
@@ -284,9 +288,9 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-                if (atoi(token) == 0)
+                if (_tstoi(token) == 0)
                     pOptionStr->secureChannel = 0;
-                else if (atoi(token) == 1)
+                else if (_tstoi(token) == 1)
                     pOptionStr->secureChannel = 1;
                 else
                 {
@@ -307,7 +311,7 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-                pOptionStr->securityLevel = atoi(token);
+                pOptionStr->securityLevel = _tstoi(token);
             }
         }
         else if (_tcscmp(token, _T("-readerNumber")) == 0)
@@ -327,7 +331,7 @@ static int handleOptions(OptionStr *pOptionStr)
                     rv = EXIT_FAILURE;
                     goto end;
                 }
-                pOptionStr->readerNumber = atoi(token)-1;
+                pOptionStr->readerNumber = _tstoi(token)-1;
             }
         }
         else if (_tcscmp(token, _T("-reader")) == 0)
@@ -341,7 +345,7 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-                strncpy(dummy, token, READERNAMELEN+1);
+                _tcsncpy(dummy, token, READERNAMELEN+1);
                 dummy[READERNAMELEN] = '\0';
                 ConvertCToT (pOptionStr->reader, dummy);
 #ifdef DEBUG
@@ -360,7 +364,7 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-                strncpy(dummy, token, FILENAMELEN+1);
+                _tcsncpy(dummy, token, FILENAMELEN+1);
                 dummy[FILENAMELEN] = '\0';
                 ConvertCToT (pOptionStr->file, dummy);
 #ifdef DEBUG
@@ -379,7 +383,7 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-                strncpy(pOptionStr->passPhrase, token, PASSPHRASELEN+1);
+                _tcsncpy(pOptionStr->passPhrase, token, PASSPHRASELEN+1);
                 pOptionStr->passPhrase[PASSPHRASELEN] = '\0';
             }
         }
@@ -538,11 +542,11 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-                if (atoi(token) == 0)
+                if (_tstoi(token) == 0)
                 {
                     pOptionStr->protocol = OPGP_CARD_PROTOCOL_T0;
                 }
-                else if (atoi(token) == 1)
+                else if (_tstoi(token) == 1)
                 {
                     pOptionStr->protocol = OPGP_CARD_PROTOCOL_T1;
                 }
@@ -565,7 +569,7 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-                pOptionStr->nvCodeLimit = atoi(token);
+                pOptionStr->nvCodeLimit = _tstoi(token);
             }
         }
         else if (_tcscmp(token, _T("-nvDataLimit")) == 0)
@@ -579,7 +583,7 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-                pOptionStr->nvDataLimit = atoi(token);
+                pOptionStr->nvDataLimit = _tstoi(token);
             }
         }
         else if (_tcscmp(token, _T("-vDataLimit")) == 0)
@@ -593,7 +597,7 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-                pOptionStr->vDataLimit = atoi(token);
+                pOptionStr->vDataLimit = _tstoi(token);
             }
         }
         else if (_tcscmp(token, _T("-instParam")) == 0)
@@ -641,7 +645,7 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-                pOptionStr->privilege = atoi(token);
+                pOptionStr->privilege = _tstoi(token);
             }
         }
         else if (_tcscmp(token, _T("-scp")) == 0)
@@ -655,7 +659,7 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-                pOptionStr->scp = atoi(token);
+                pOptionStr->scp = _tstoi(token);
             }
         }
         else if (_tcscmp(token, _T("-scpimpl")) == 0)
@@ -700,12 +704,12 @@ static int handleCommands(FILE *fd)
     {
 
         // copy command line for printing it out later
-        strncpy (commandLine, buf, BUFLEN);
+        _tcsncpy (commandLine, buf, BUFLEN);
 
         token = strtokCheckComment(buf);
         while (token != NULL)
         {
-            if (token[0] == _T('#') || strncmp (token, _T("//"), 2) == 0)
+            if (token[0] == _T('#') || _tcsnccmp(token, _T("//"), 2) == 0)
                 break;
 
             // get the initial time
@@ -715,9 +719,9 @@ static int handleCommands(FILE *fd)
             }
 
             // print command line
-            printf("%s", commandLine);
+            _tprintf(_T("%s"), commandLine);
 
-            if (_tcscmp(token, "establish_context") == 0)
+            if (_tcscmp(token, _T("establish_context")) == 0)
             {
                 // Establish context
                 _tcsncpy(cardContext.libraryName, _T("gppcscconnectionplugin"),
@@ -731,9 +735,9 @@ static int handleCommands(FILE *fd)
                     rv = EXIT_FAILURE;
                     goto end;
                 }
-                break;
+                goto timer;
             }
-            else if (_tcscmp(token, "release_context") == 0)
+            else if (_tcscmp(token, _T("release_context")) == 0)
             {
                 // Release context
                 status = OPGP_release_context(&cardContext);
@@ -743,10 +747,9 @@ static int handleCommands(FILE *fd)
                     rv = EXIT_FAILURE;
                     goto end;
                 }
-
-                break;
+                goto timer;
             }
-            else if (_tcscmp(token, "card_connect") == 0)
+            else if (_tcscmp(token, _T("card_connect")) == 0)
             {
                 TCHAR buf[BUFLEN + 1];
                 DWORD readerStrLen = BUFLEN;
@@ -813,9 +816,9 @@ static int handleCommands(FILE *fd)
                 }
                 // set mode for internal use of library
                 cardInfo.specVersion = platform_mode;
-                break;
+                goto timer;
             }
-            if (_tcscmp(token, "open_sc") == 0)
+            else if (_tcscmp(token, _T("open_sc")) == 0)
             {
                 // open secure channel
                 rv = handleOptions(&optionStr);
@@ -884,8 +887,7 @@ static int handleCommands(FILE *fd)
                     rv = EXIT_FAILURE;
                     goto end;
                 }
-
-                break;
+                goto timer;
             }
             else if (_tcscmp(token, "select") == 0)
             {
@@ -906,9 +908,9 @@ static int handleCommands(FILE *fd)
                 }
                 memcpy(selectedAID, optionStr.AID, optionStr.AIDLen);
                 selectedAIDLength = optionStr.AIDLen;
-                break;
+                goto timer;
             }
-            else if (_tcscmp(token, "get_data") == 0)
+            else if (_tcscmp(token, _T("get_data")) == 0)
             {
                 // Get Data
                 rv = handleOptions(&optionStr);
@@ -917,9 +919,9 @@ static int handleCommands(FILE *fd)
                     goto end;
                 }
                 // TODO: get data
-                break;
+                goto timer;
             }
-            else if (_tcscmp(token, "load") == 0)
+            else if (_tcscmp(token, _T("load")) == 0)
             {
                 // Load Applet
                 DWORD receiptDataLen = 0;
@@ -950,10 +952,9 @@ static int handleCommands(FILE *fd)
                     rv = EXIT_FAILURE;
                     goto end;
                 }
-
-                break;
+                goto timer;
             }
-            else if (_tcscmp(token, "delete") == 0)
+            else if (_tcscmp(token, _T("delete")) == 0)
             {
                 // Delete Applet
                 OPGP_AID AIDs[1];
@@ -991,10 +992,10 @@ static int handleCommands(FILE *fd)
                     _tprintf (_T("delete_applet() returns 0x%08lX (%s)\n"),
                               status.errorCode, status.errorMessage);
                 }
-                break;
                 /* Augusto: added delete_key command support */
+                goto timer;
             }
-            else if (_tcscmp(token, "delete_key") == 0)
+            else if (_tcscmp(token, _T("delete_key")) == 0)
             {
 
                 rv = handleOptions(&optionStr);
@@ -1027,10 +1028,9 @@ static int handleCommands(FILE *fd)
                     _tprintf (_T("delete_key() return 0x%08lX (%s)\n"),
                               status.errorCode, status.errorMessage);
                 }
-                break;
-                /* end */
+                goto timer;
             }
-            else if (_tcscmp(token, "install") == 0)
+            else if (_tcscmp(token, _T("install")) == 0)
             {
                 // One step install
                 OPGP_LOAD_FILE_PARAMETERS loadFileParams;
@@ -1191,9 +1191,9 @@ static int handleCommands(FILE *fd)
                     rv = EXIT_FAILURE;
                     goto end;
                 }
-                break;
+                goto timer;
             }
-            else if (_tcscmp(token, "install_for_load") == 0)
+            else if (_tcscmp(token, _T("install_for_load")) == 0)
             {
                 // Install for Load
                 rv = handleOptions(&optionStr);
@@ -1255,9 +1255,8 @@ static int handleCommands(FILE *fd)
                     rv = EXIT_FAILURE;
                     goto end;
                 }
-                break;
             }
-            else if (_tcscmp(token, "install_for_install") == 0)
+            else if (_tcscmp(token, _T("install_for_install")) == 0)
             {
 
 
@@ -1314,17 +1313,22 @@ static int handleCommands(FILE *fd)
                     rv = EXIT_FAILURE;
                     goto end;
                 }
-
-                break;
+                goto timer;
             }
-            else if (_tcscmp(token, "card_disconnect") == 0)
+            else if (_tcscmp(token, _T("card_disconnect")) == 0)
             {
                 // disconnect card
-                OPGP_card_disconnect(cardContext, &cardInfo);
-
-                break;
+                status = OPGP_card_disconnect(cardContext, &cardInfo);
+                if (OPGP_ERROR_CHECK(status))
+                {
+                    _tprintf (_T("card_disconnect() returns 0x%08lX (%s)\n"),
+                              status.errorCode, status.errorMessage);
+                    rv = EXIT_FAILURE;
+                    goto end;
+                }
+                goto timer;
             }
-            else if (_tcscmp(token, "put_sc_key") == 0)
+            else if (_tcscmp(token, _T("put_sc_key")) == 0)
             {
                 rv = handleOptions(&optionStr);
                 if (rv != EXIT_SUCCESS)
@@ -1360,9 +1364,9 @@ static int handleCommands(FILE *fd)
                     rv = EXIT_FAILURE;
                     goto end;
                 }
-                break;
+                goto timer;
             }
-            else if (_tcscmp(token, "put_dm_keys") == 0)
+            else if (_tcscmp(token, _T("put_dm_keys")) == 0)
             {
                 rv = handleOptions(&optionStr);
                 if (rv != EXIT_SUCCESS)
@@ -1397,9 +1401,9 @@ static int handleCommands(FILE *fd)
                     rv = EXIT_FAILURE;
                     goto end;
                 }
-                break;
+                goto timer;
             }
-            else if (_tcscmp(token, "get_status") == 0)
+            else if (_tcscmp(token, _T("get_status")) == 0)
             {
 #define NUM_APPLICATIONS 64
                 DWORD numData = NUM_APPLICATIONS;
@@ -1500,10 +1504,9 @@ static int handleCommands(FILE *fd)
                         }
                     }
                 }
-
-                break;
+                goto timer;
             }
-            else if (_tcscmp(token, "send_apdu") == 0 || _tcscmp(token, "send_apdu_nostop") == 0)
+            else if (_tcscmp(token, _T("send_apdu")) == 0 || _tcscmp(token, _T("send_apdu_nostop")) == 0)
             {
                 unsigned char recvAPDU[258];
                 DWORD recvAPDULen = 258;
@@ -1539,56 +1542,53 @@ static int handleCommands(FILE *fd)
                         goto end;
                     }
                 }
-
-                break;
+                goto timer;
             }
-            else if (_tcscmp(token, "mode_201") == 0)
+            else if (_tcscmp(token, _T("mode_201")) == 0)
             {
                 platform_mode = PLATFORM_MODE_OP_201;
                 break;
             }
-            else if (_tcscmp(token, "mode_211") == 0)
+            else if (_tcscmp(token, _T("mode_211")) == 0)
             {
                 platform_mode = PLATFORM_MODE_GP_211;
                 break;
             }
-            else if (_tcscmp(token, "enable_trace") == 0)
+            else if (_tcscmp(token, _T("enable_trace")) == 0)
             {
                 OPGP_enable_trace_mode(OPGP_TRACE_MODE_ENABLE, NULL);
-                break;
                 // gemXpressoPro and visa_key_derivation are the same, gemXpressoPro is for backward compatibility
+                break;
             }
-            else if (_tcscmp(token, "gemXpressoPro") == 0)
+            else if (_tcscmp(token, _T("gemXpressoPro")) == 0)
             {
                 visaKeyDerivation = 1;
                 break;
             }
-            else if (_tcscmp(token, "visa_key_derivation") == 0)
+            else if (_tcscmp(token, _T("visa_key_derivation")) == 0)
             {
                 visaKeyDerivation = 1;
                 break;
             }
-            else if (_tcscmp(token, "enable_timer") == 0)
+            else if (_tcscmp(token, _T("enable_timer")) == 0)
             {
                 timer = 1;
                 break;
             }
-
             else
             {
                 _tprintf(_T("Unknown command %s\n"), token);
                 rv = EXIT_FAILURE;
                 goto end;
             }
-
+timer:
 			// get the final time and calculate the total time of the command
 			if (timer)
 			{
 				ft = GetTime();
 				_tprintf(_T("command time: %u ms\n"), (ft - it));
 			}
-
-            token = strtokCheckComment(NULL);
+			break;
         }
     }
 end:
