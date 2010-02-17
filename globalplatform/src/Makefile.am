@@ -22,6 +22,9 @@ dyn_generic.h dyn_unix.c connection.c stringify.c crypto.h debug.c util.c util.h
 libglobalplatform_la_LDFLAGS = -version-info 6:0:0 $(PCSCLITE_LIBS)
 libglobalplatform_la_CPPFLAGS = $(AM_CPPFLAGS) $(PCSCLITE_CFLAGS)
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = globalplatform.pc
+
 TESTS = globalplatformTest
 TESTS_ENVIRONMENT = ls -la $(top_builddir)/../gppcscconnectionplugin/src/.libs/; export LD_LIBRARY_PATH=$(top_builddir)/../gppcscconnectionplugin/src/.libs/:$LD_LIBRARY_PATH;
 check_PROGRAMS = globalplatformTest
