@@ -986,15 +986,14 @@ static int handleCommands(FILE *fd)
                                                   &receiptLen);
 
                 }
-
                 if (OPGP_ERROR_CHECK(status))
                 {
                     _tprintf (_T("delete_applet() returns 0x%08lX (%s)\n"),
                               status.errorCode, status.errorMessage);
                 }
-                /* Augusto: added delete_key command support */
                 goto timer;
             }
+            /* Augusto: added delete_key command support */
             else if (_tcscmp(token, _T("delete_key")) == 0)
             {
 

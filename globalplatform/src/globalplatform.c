@@ -1612,7 +1612,7 @@ OPGP_ERROR_STATUS GP211_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 				j++;
 				/* Number of associated Executable Modules */
 				numExecutableModules = recvBuffer[j++];
-				for (k=0; k<numExecutableModules; k++) {
+				for (k=0; k<numExecutableModules && (j<recvBufferLength-2); k++) {
 					/* Length of Executable Module AID */
 					executableData[i].executableModules[k].AIDLength = recvBuffer[j++];
 					/* Executable Module AID */
@@ -4221,13 +4221,17 @@ OPGP_ERROR_STATUS OP201_delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_C
 
 	status = delete_application(cardContext, cardInfo, &gp211secInfo, AIDs, AIDsLength,
 		gp211receiptData, receiptDataLength, OP_201);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
 	for (i=0; i<*receiptDataLength; i++) {
 		mapGP211ToOP201ReceiptData(gp211receiptData[i], &(receiptData[i]));
 	}
-	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 end:
-	if (gp211receiptData)
+	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
+	if (gp211receiptData) {
 		free(gp211receiptData);
+	}
 	return status;
 }
 

@@ -1,6 +1,7 @@
 mode_211
-gemXpressoPro
+visa_key_derivation
 enable_trace
+enable_timer
 establish_context
 card_connect -readerNumber 3
 select -AID a000000003000000

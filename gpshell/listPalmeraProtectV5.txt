@@ -1,5 +1,5 @@
 mode_201
-gemXpressoPro
+visa_key_derivation
 enable_trace
 establish_context
 card_connect -readerNumber 3
