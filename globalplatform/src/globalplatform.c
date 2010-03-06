@@ -195,6 +195,10 @@ OPGP_ERROR_STATUS load_from_buffer(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 	goto end; \
 }
 
+/**
+ * ATR for a broken JCOP21 to handle it correctly.
+ */
+static const BYTE JCOP21V22_ATR[14] = {0x3B, 0x79, 0x18, 0x00, 0x00, 0x4A, 0x43, 0x4F, 0x50, 0x32, 0x31, 0x56, 0x32, 0x32};
 
 OPGP_NO_API
 void mapOP201ToGP211SecurityInfo(OP201_SECURITY_INFO op201secInfo,
@@ -2335,7 +2339,9 @@ OPGP_ERROR_STATUS install_for_install_and_make_selectable(OPGP_CARD_CONTEXT card
 		sendBuffer[i++] = 0x00; // Length of install token
 	}
 	sendBuffer[4] = (BYTE)i-5; // Lc
-	sendBuffer[i++] = 0x00; // Le
+	if (memcmp(JCOP21V22_ATR, cardInfo.ATR, max(cardInfo.ATRLength, sizeof(JCOP21V22_ATR))) != 0) {
+		sendBuffer[i++] = 0x00; // Le
+	}
 	sendBufferLength = i;
 
 	status = OPGP_send_APDU(cardContext, cardInfo, secInfo,sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
@@ -2546,7 +2552,9 @@ OPGP_ERROR_STATUS install_for_make_selectable(OPGP_CARD_CONTEXT cardContext, OPG
 		sendBuffer[i++] = 0x00; // Length of install token
 	}
 	sendBuffer[4] = (BYTE)i-5; // Lc
-	sendBuffer[i++] = 0x00; // Le
+	if (memcmp(JCOP21V22_ATR, cardInfo.ATR, max(cardInfo.ATRLength, sizeof(JCOP21V22_ATR))) != 0) {
+		sendBuffer[i++] = 0x00; // Le
+	}
 	sendBufferLength = i;
 
 	status = OPGP_send_APDU(cardContext, cardInfo, secInfo,sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
