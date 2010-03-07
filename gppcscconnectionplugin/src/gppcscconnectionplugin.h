@@ -22,7 +22,11 @@
 #ifndef OPGP_PCSC_CONNECTION_PLUGIN_H
 #define OPGP_PCSC_CONNECTION_PLUGIN_H
 
+#ifdef WIN32
+#include <WinSCard.h>
+#else
 #include <PCSC/winscard.h>
+#endif
 #include <globalplatform/library.h>
 
 /**
@@ -45,7 +49,7 @@ typedef struct {
 /**
  * \brief Stringifies an error code.
  */
-OPGP_API
+OPGP_NO_API
 OPGP_STRING OPGP_PL_stringify_error(DWORD errorCode);
 
 #endif

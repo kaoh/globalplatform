@@ -7,42 +7,80 @@
 		<Option compiler="gcc" />
 		<Build>
 			<Script file="lib_finder.script" />
-			<Target title="Debug">
+			<Target title="Debug Win">
 				<Option platforms="Windows;" />
-				<Option output="Debug/GPPCSCConnectionPlugin" prefix_auto="1" extension_auto="1" />
-				<Option object_output="Debug/" />
+				<Option output="Debug\GPPCSCConnectionPlugin" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Debug\" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="msvc8" />
 				<Option createDefFile="1" />
 				<Option createStaticLib="1" />
 				<Compiler>
-					<Add option="-O2" />
-					<Add option="-Wfatal-errors" />
-					<Add option="-W" />
-					<Add option="-g" />
+					<Add option="/MDd" />
+					<Add option="/TC" />
+					<Add option="/Gd" />
+					<Add option="/RTC1" />
+					<Add option="/W2" />
+					<Add option="/Zi /D_DEBUG" />
+					<Add option="/DDEBUG" />
+					<Add option="/DUNICODE" />
+					<Add option="/DWIN32" />
+					<Add option="/DOPGP_EXPORT" />
+					<Add directory="..\globalplatform\src" />
+					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include" />
+					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include\crt" />
 				</Compiler>
-			</Target>
-			<Target title="Release">
-				<Option platforms="Windows;" />
-				<Option output="Release/GPPCSCConnectionPlugin" prefix_auto="1" extension_auto="1" />
-				<Option object_output="Release/" />
-				<Option type="3" />
-				<Option compiler="gcc" />
-				<Option createDefFile="1" />
-				<Option createStaticLib="1" />
-				<Compiler>
-					<Add option="-O2" />
-					<Add option="-Wfatal-errors" />
-					<Add option="-W" />
-				</Compiler>
+				<ResourceCompiler>
+					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include" />
+					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include\mfc" />
+				</ResourceCompiler>
 				<Linker>
-					<Add option="-s" />
+					<Add option="/DEBUG" />
+					<Add library="winscard" />
+					<Add library="globalplatform" />
+					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Lib" />
+					<Add directory="C:\Programme\Microsoft Visual Studio 9.0\VC\lib" />
+					<Add directory="..\globalplatform\Debug" />
+				</Linker>
+			</Target>
+			<Target title="Release Win">
+				<Option platforms="Windows;" />
+				<Option output="Release\GPPCSCConnectionPlugin" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Release\" />
+				<Option type="3" />
+				<Option compiler="msvc8" />
+				<Option createDefFile="1" />
+				<Option createStaticLib="1" />
+				<Compiler>
+					<Add option="/MD" />
+					<Add option="/TC" />
+					<Add option="/Gd" />
+					<Add option="/GS" />
+					<Add option="/O2" />
+					<Add option="/W2" />
+					<Add option="/DUNICODE" />
+					<Add option="/DWIN32" />
+					<Add option="/DOPGP_EXPORT" />
+					<Add directory="..\globalplatform\src" />
+					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include" />
+					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include\crt" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include" />
+					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include\mfc" />
+				</ResourceCompiler>
+				<Linker>
+					<Add library="winscard" />
+					<Add library="globalplatform" />
+					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Lib" />
+					<Add directory="C:\Programme\Microsoft Visual Studio 9.0\VC\lib" />
+					<Add directory="..\globalplatform\Release" />
 				</Linker>
 			</Target>
 			<Target title="Linux">
 				<Option platforms="Unix;Mac;" />
 				<Option output="GPPCSCConnectionPlugin" prefix_auto="1" extension_auto="1" />
-				<Option object_output="./objs" />
+				<Option object_output=".\objs" />
 				<Option type="3" />
 				<Option compiler="gcc" />
 				<Option createDefFile="1" />
@@ -58,7 +96,7 @@
 			<Target title="Linux Test">
 				<Option platforms="Unix;Mac;" />
 				<Option output="GPPCSCConnectionPluginTest" prefix_auto="1" extension_auto="1" />
-				<Option object_output="./objs" />
+				<Option object_output=".\objs" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
@@ -105,31 +143,31 @@
 		<Unit filename="configure.in">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/changelog">
+		<Unit filename="debian\changelog">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/compat">
+		<Unit filename="debian\compat">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/control">
+		<Unit filename="debian\control">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/copyright">
+		<Unit filename="debian\copyright">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/dirs">
+		<Unit filename="debian\dirs">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/libgppcscconnectionplugin1.docs">
+		<Unit filename="debian\libgppcscconnectionplugin1.docs">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/libgppcscconnectionplugin1.install">
+		<Unit filename="debian\libgppcscconnectionplugin1.install">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/rules">
+		<Unit filename="debian\rules">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/watch">
+		<Unit filename="debian\watch">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
 		<Unit filename="lib_finder.script">
@@ -138,67 +176,66 @@
 		<Unit filename="reconf">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="src/Doxyfile.cfg">
+		<Unit filename="src\Doxyfile.cfg">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="src/Makefile">
+		<Unit filename="src\Makefile">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="src/Makefile.am">
+		<Unit filename="src\Makefile.am">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="src/Makefile.in">
+		<Unit filename="src\Makefile.in">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="src/gppcscconnectionplugin.c">
+		<Unit filename="src\gppcscconnectionplugin.c">
 			<Option compilerVar="CC" />
-			<Option target="Debug" />
-			<Option target="Release" />
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/gppcscconnectionplugin.h">
-			<Option target="Debug" />
-			<Option target="Release" />
+		<Unit filename="src\gppcscconnectionplugin.h">
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/gppcscconnectionpluginTest.c">
+		<Unit filename="src\gppcscconnectionpluginTest.c">
 			<Option compilerVar="CC" />
 			<Option target="Linux Test" />
 		</Unit>
-		<Unit filename="src/resource.h">
-			<Option target="Debug" />
-			<Option target="Release" />
+		<Unit filename="src\resource.h">
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
 		</Unit>
-		<Unit filename="src/stdafx.c">
+		<Unit filename="src\stdafx.c">
 			<Option compilerVar="CC" />
-			<Option target="Debug" />
-			<Option target="Release" />
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
 		</Unit>
-		<Unit filename="src/stdafx.h">
-			<Option target="Debug" />
-			<Option target="Release" />
+		<Unit filename="src\stdafx.h">
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
 		</Unit>
-		<Unit filename="src/util.c">
+		<Unit filename="src\util.c">
 			<Option compilerVar="CC" />
-			<Option target="Debug" />
-			<Option target="Release" />
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/util.h">
-			<Option target="Debug" />
-			<Option target="Release" />
+		<Unit filename="src\util.h">
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/version.rc">
-			<Option target="Debug" />
-			<Option target="Release" />
+		<Unit filename="src\version.rc">
+			<Option compilerVar="WINDRES" />
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
 		</Unit>
 		<Extensions>
 			<envvars set="globalplatform" />
 			<code_completion />
-			<lib_finder disable_auto="1">
-				<lib name="libpcsclite" />
-			</lib_finder>
+			<lib_finder disable_auto="1" />
 			<debugger />
 		</Extensions>
 	</Project>

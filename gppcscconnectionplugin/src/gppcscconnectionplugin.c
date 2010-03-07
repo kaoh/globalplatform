@@ -132,7 +132,7 @@ end:
  */
 OPGP_ERROR_STATUS OPGP_PL_list_readers(OPGP_CARD_CONTEXT cardContext, OPGP_STRING readerNames, PDWORD readerNamesLength) {
 	OPGP_ERROR_STATUS status;
-	LONG result;
+	LONG result = SCARD_S_SUCCESS;
 	DWORD readersSize = 0;
 	OPGP_STRING readers = NULL;
 	OPGP_LOG_START(_T("OPGP_PL_list_readers"));
@@ -169,7 +169,6 @@ OPGP_ERROR_STATUS OPGP_PL_list_readers(OPGP_CARD_CONTEXT cardContext, OPGP_STRIN
 		memcpy(readerNames, readers, sizeof(TCHAR)*readersSize);
 		*readerNamesLength = readersSize;
 	}
-	result = SCARD_S_SUCCESS;
 end:
 	if (readers) {
 		free(readers);
@@ -191,10 +190,8 @@ end:
 OPGP_ERROR_STATUS OPGP_PL_card_connect(OPGP_CARD_CONTEXT cardContext, OPGP_CSTRING readerName, OPGP_CARD_INFO *cardInfo,
 				  DWORD protocol) {
 	OPGP_ERROR_STATUS status;
-	LONG result;
-#ifdef DEBUG
-	int i;
-#endif
+	LONG result = SCARD_S_SUCCESS;
+    PCSC_CARD_INFO_SPECIFIC *pcscCardInfo;
 	DWORD activeProtocol;
 	DWORD state;
 	DWORD dummy;
@@ -212,7 +209,7 @@ OPGP_ERROR_STATUS OPGP_PL_card_connect(OPGP_CARD_CONTEXT cardContext, OPGP_CSTRI
 		goto end;
 	}
 
-	PCSC_CARD_INFO_SPECIFIC *pcscCardInfo = GET_PCSC_CARD_INFO_SPECIFIC_P(cardInfo);
+	pcscCardInfo = GET_PCSC_CARD_INFO_SPECIFIC_P(cardInfo);
 
 	result = SCardConnect( GET_SCARDCONTEXT(cardContext),
 							readerName,
@@ -241,7 +238,6 @@ OPGP_ERROR_STATUS OPGP_PL_card_connect(OPGP_CARD_CONTEXT cardContext, OPGP_CSTRI
 
 	cardInfo->logicalChannel = 0;
 
-	result = SCARD_S_SUCCESS;
 end:
 	HANDLE_STATUS(status, result);
 	OPGP_LOG_END(_T("OPGP_PL_card_connect"), status);
@@ -289,7 +285,7 @@ OPGP_ERROR_STATUS OPGP_PL_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 	DWORD result;
 	DWORD caseAPDU;
 	BYTE lc;
-	BYTE le;
+	BYTE le=0;
 	BYTE la;
 
 	DWORD i;
