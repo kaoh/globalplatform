@@ -37,7 +37,9 @@
 OPGP_STRING OPGP_stringify_error(DWORD errorCode) {
 	static TCHAR strError[256];
 	unsigned int strErrorSize = 256;
-
+#ifndef WIN32
+	DWORD rv;
+#endif
 #ifdef _WIN32
 #ifdef _UNICODE
 	char str1[256];
