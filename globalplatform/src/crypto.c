@@ -833,16 +833,10 @@ OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE
 	DWORD wrappedLength;
 	unsigned char mac[8];
 	unsigned char encryption[240];
-	#if DEBUG
-	int i;
-	#endif
 	int encryptionLength = 240;
 	DWORD caseAPDU;
 	BYTE C_MAC_ICV[8];
 	int C_MAC_ICVLength = 8;
-//#ifdef DEBUG
-//	DWORD i;
-//#endif
 	OPGP_LOG_START(_T("wrap_command"));
 	if (*wrappedApduCommandLength < apduCommandLength)
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
@@ -1253,9 +1247,6 @@ OPGP_ERROR_STATUS GP211_check_R_MAC(PBYTE apduCommand, DWORD apduCommandLength, 
 	DWORD le;
 	BYTE mac[8];
 	DWORD caseAPDU;
-#ifdef DEBUG
-	DWORD i;
-#endif
 	OPGP_LOG_START(_T("GP211_check_R_MAC"));
 
 	// no security level defined, just return

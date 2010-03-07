@@ -39,18 +39,18 @@
  * \param version IN The version of the library to use.
  * \return The error status.
  */
-OPGP_ERROR_STATUS DYN_LoadLibrary(PVOID *libraryHandle, LPCTSTR libraryName, LPTCTSTR version)
+OPGP_ERROR_STATUS DYN_LoadLibrary(PVOID *libraryHandle, LPCTSTR libraryName, LPCTSTR version)
 {
-	*libraryHandle = NULL;
 	OPGP_ERROR_STATUS errorStatus;
 
 	OPGP_LOG_START(_T("DYN_LoadLibrary"));
+	*libraryHandle = NULL;
 	*libraryHandle = LoadLibrary(libraryName);
 
 	if (*libraryHandle == NULL)
 	{
 		DWORD errorCode = GetLastError();
-		OPGP_ERROR_CREATE_ERROR(errorStatus, errorCode, stringify_error(errorCode));
+		OPGP_ERROR_CREATE_ERROR(errorStatus, errorCode, OPGP_stringify_error(errorCode));
 		goto end;
 	}
 	OPGP_ERROR_CREATE_NO_ERROR(errorStatus);
@@ -78,7 +78,7 @@ OPGP_ERROR_STATUS DYN_CloseLibrary(PVOID *libraryHandle)
 	if (ret == 0)
 	{
 		DWORD errorCode = GetLastError();
-		OPGP_ERROR_CREATE_ERROR(errorStatus, errorCode, stringify_error(errorCode));
+		OPGP_ERROR_CREATE_ERROR(errorStatus, errorCode, OPGP_stringify_error(errorCode));
 		goto end;
 	}
 	OPGP_ERROR_CREATE_NO_ERROR(errorStatus);
@@ -100,12 +100,12 @@ OPGP_ERROR_STATUS DYN_GetAddress(PVOID libraryHandle, PVOID *functionHandle, LPC
 	OPGP_LOG_START(_T("DYN_GetAddress"));
 
 	*functionHandle = NULL;
-	*functionHandle = GetProcAddress(libraryHandle, functionName);
+	*functionHandle = GetProcAddress(libraryHandle, (LPCSTR)functionName);
 
 	if (*functionHandle == NULL)
 	{
 		DWORD errorCode = GetLastError();
-		OPGP_ERROR_CREATE_ERROR(errorStatus, errorCode, stringify_error(errorCode));
+		OPGP_ERROR_CREATE_ERROR(errorStatus, errorCode, OPGP_stringify_error(errorCode));
 		goto end;
 	}
 	OPGP_ERROR_CREATE_NO_ERROR(errorStatus);

@@ -59,7 +59,7 @@ void OPGP_log_Hex(OPGP_STRING msg, PBYTE buffer, DWORD bufferLength) {
 		return;
 	}
 	for (i=0; (DWORD)i<bufferLength; i++) {
-		_sntprintf(bufferMsg+(i*2), (bufferLength-i)*sizeof(TCHAR)*2+1, "%02X", (buffer[i] & 0x00FF));
+		_sntprintf(bufferMsg+(i*2), (bufferLength-i)*sizeof(TCHAR)*2+1, _T("%02X"), (buffer[i] & 0x00FF));
 	}
 	// print msg or not
 	if ((msg == NULL) || (_tcslen(msg) == 0)) {

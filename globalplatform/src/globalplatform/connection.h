@@ -29,7 +29,11 @@ extern "C"
 #endif
 
 #include <stdio.h>
+#ifdef WIN32
+#include <WinSCard.h>
+#else
 #include <PCSC/winscard.h>
+#endif
 #include "types.h"
 #include "library.h"
 #include "security.h"

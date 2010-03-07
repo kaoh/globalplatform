@@ -35,6 +35,7 @@ extern "C"
 #include "globalplatform/unicode.h"
 #include "globalplatform/types.h"
 #include "globalplatform/error.h"
+#include "globalplatform/library.h"
 
 //! \brief Loads a library.
 OPGP_NO_API

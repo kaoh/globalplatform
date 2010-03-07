@@ -20,11 +20,12 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+#include "util.h"
 #include "globalplatform/debug.h"
 #include "unzip/zip.h"
 #include "unzip/unzip.h"
 
-#define MAX_PATH 256 //!< Max path length
+#define MAX_PATH_LENGTH 256 //!< Max path length
 
 //! \brief Detects if a file is a CAP file.
 OPGP_NO_API
@@ -144,7 +145,7 @@ OPGP_ERROR_STATUS extract_cap_file(OPGP_CSTRING fileName, PBYTE loadFileBuf, PDW
 	int exportbufsz = 0;
 
 	unsigned char *buf;
-	char capFileName[MAX_PATH];
+	char capFileName[MAX_PATH_LENGTH];
 	DWORD totalSize = 0;
 
 	OPGP_LOG_START(_T("extract_cap_file"));
@@ -162,10 +163,10 @@ OPGP_ERROR_STATUS extract_cap_file(OPGP_CSTRING fileName, PBYTE loadFileBuf, PDW
 	{
 		// get zipped file info
 		unz_file_info unzfi;
-		char fn[MAX_PATH];
+		char fn[MAX_PATH_LENGTH];
 		int sz;
 
-		if (unzGetCurrentFileInfo(szip, &unzfi, fn, MAX_PATH, NULL, 0, NULL, 0) != UNZ_OK)
+		if (unzGetCurrentFileInfo(szip, &unzfi, fn, MAX_PATH_LENGTH, NULL, 0, NULL, 0) != UNZ_OK)
 		{
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CAP_UNZIP, OPGP_stringify_error(OPGP_ERROR_CAP_UNZIP)); goto end;
 		}
@@ -416,7 +417,6 @@ end:
  */
 OPGP_ERROR_STATUS read_executable_load_file_parameters(OPGP_STRING loadFileName, OPGP_LOAD_FILE_PARAMETERS *loadFileParams) {
 	OPGP_ERROR_STATUS status;
-	LONG result;
 	PBYTE loadFileBuf = NULL;
 	DWORD loadFileBufSize;
 	OPGP_LOG_START(_T("read_executable_load_file_parameters"));
@@ -457,7 +457,6 @@ end:
  */
 OPGP_ERROR_STATUS cap_to_ijc(OPGP_CSTRING capFileName, OPGP_STRING ijcFileName) {
 	OPGP_ERROR_STATUS status;
-	LONG rv;
 	PBYTE loadFileBuf = NULL;
 	DWORD loadFileBufSize;
 	FILE *ijcFile = NULL;
@@ -511,15 +510,11 @@ end:
  */
 OPGP_ERROR_STATUS read_executable_load_file_parameters_from_buffer(PBYTE loadFileBuf, DWORD loadFileBufSize, OPGP_LOAD_FILE_PARAMETERS *loadFileParams) {
 	OPGP_ERROR_STATUS status;
-	LONG result;
 	DWORD fileSize;
 	BYTE packageAID[16];
 	BYTE packageAIDLength;
 	BYTE appletCount;
 	DWORD i, offset=0;
-#if DEBUG
-	DWORD j;
-#endif
 	OPGP_AID appletAIDs[32];
 	DWORD componentSize;
 	DWORD componentOffset=0;
@@ -688,7 +683,6 @@ OPGP_ERROR_STATUS get_load_data(PBYTE executableLoadFileAID, DWORD executableLoa
 	DWORD i=0;
 	DWORD hiByte, loByte;
 	DWORD staticSize;
-	LONG result;
 	OPGP_LOG_START(_T("get_load_data"));
 	buf[i++] = 0x02;
 	buf[i++] = 0x00;

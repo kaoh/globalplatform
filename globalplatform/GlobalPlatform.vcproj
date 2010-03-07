@@ -42,8 +42,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Include\mfc&quot;;&quot;C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;;&quot;C:\Users\widerstand_2\Libs\C\zlib123-dll\include&quot;;&quot;C:\Users\widerstand_2\Libs\C\openssl-0.9.8e\include&quot;"
-				PreprocessorDefinitions="WIN32;DEBUG;_DEBUG;_CONSOLE;OPGP_EXPORTS;_UNICODE;UNICODE"
+				AdditionalIncludeDirectories="&quot;C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include\mfc&quot;;&quot;C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;;C:\Programme\OpenSSL\include;src;C:\Programme\GnuWin32\include"
+				PreprocessorDefinitions="WIN32;DEBUG;_DEBUG;_CONSOLE;OPGP_EXPORTS;_UNICODE;UNICODE;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="2"
@@ -59,17 +59,17 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Include\mfc&quot;;&quot;C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
+				AdditionalIncludeDirectories="&quot;C:\Programm\Microsoft Platform SDK for Windows Server 2003 R2\Include\mfc&quot;;&quot;C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ssleay32.lib libeay32.lib winscard.lib zdll.lib"
+				AdditionalDependencies="ssleay32.lib libeay32.lib winscard.lib zlib.lib"
 				OutputFile="$(OutDir)/GlobalPlatform.dll"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;;&quot;C:\Users\widerstand_2\Libs\C\zlib123-dll\lib&quot;;&quot;C:\Users\widerstand_2\Libs\C\openssl-0.9.8e\out32dll&quot;"
+				AdditionalLibraryDirectories="&quot;C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;;C:\Programme\OpenSSL\lib;C:\Programme\GnuWin32\lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/GlobalPlatform.pdb"
 				SubSystem="1"
@@ -97,7 +97,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy &quot;$(OutDir)\GlobalPlatform.dll&quot;  &quot;GlobalPlatformWrapper\&quot;&#x0D;&#x0A;copy &quot;$(OutDir)\GlobalPlatform.dll&quot;  &quot;..\GPShell\&quot;&#x0D;&#x0A;"
+				CommandLine=""
 				ExcludedFromBuild="false"
 			/>
 		</Configuration>
@@ -126,8 +126,8 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Include\mfc&quot;;&quot;C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;;&quot;C:\Users\widerstand_2\Libs\C\zlib123-dll\include&quot;;&quot;C:\Users\widerstand_2\Libs\C\openssl-0.9.8e\include&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;OPGP_EXPORTS;_UNICODE;UNICODE"
+				AdditionalIncludeDirectories="&quot;C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include\mfc&quot;;&quot;C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;;C:\Programme\OpenSSL\include;src;C:\Programme\GnuWin32\include"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;OPGP_EXPORTS;_UNICODE;UNICODE;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -140,17 +140,17 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Include\mfc&quot;;&quot;C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
+				AdditionalIncludeDirectories="&quot;C:\Programm\Microsoft Platform SDK for Windows Server 2003 R2\Include\mfc&quot;;&quot;C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ssleay32.lib libeay32.lib winscard.lib zdll.lib"
+				AdditionalDependencies="ssleay32.lib libeay32.lib winscard.lib zlib.lib"
 				OutputFile="$(OutDir)/GlobalPlatform.dll"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;;&quot;C:\Users\widerstand_2\Libs\C\zlib123-dll\lib&quot;;&quot;C:\Users\widerstand_2\Libs\C\openssl-0.9.8e\out32dll&quot;"
+				AdditionalLibraryDirectories="&quot;C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;;C:\Programme\OpenSSL\lib;C:\Programme\GnuWin32\lib"
 				GenerateDebugInformation="false"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -179,7 +179,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy &quot;$(OutDir)\GlobalPlatform.dll&quot;  &quot;GlobalPlatformWrapper\&quot;"
+				CommandLine=""
 				ExcludedFromBuild="true"
 			/>
 		</Configuration>
@@ -197,6 +197,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\crypto.c"
+				>
+			</File>
+			<File
 				RelativePath=".\src\debug.c"
 				>
 			</File>
@@ -205,27 +209,43 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\dyn_unix.c"
-				>
-			</File>
-			<File
 				RelativePath=".\src\dyn_win32.c"
 				>
 			</File>
 			<File
-				RelativePath=".\src\GlobalPlatform.c"
+				RelativePath=".\src\globalplatform.c"
 				>
 			</File>
 			<File
-				RelativePath=".\src\GlobalPlatformTest.c"
+				RelativePath=".\src\unzip\ioapi.c"
 				>
 			</File>
 			<File
-				RelativePath=".\src\pcscconnectionplugin.c"
+				RelativePath=".\src\unzip\iowin32.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\loadfile.c"
 				>
 			</File>
 			<File
 				RelativePath=".\src\stdafx.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\stringify.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\unzip\unzip.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\util.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\unzip\zip.c"
 				>
 			</File>
 		</Filter>
@@ -235,15 +255,23 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\src\GlobalPlatform\connection.h"
+				RelativePath=".\src\globalplatform\connection.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\GlobalPlatform\connectionplugin.h"
+				RelativePath=".\src\globalplatform\connectionplugin.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\GlobalPlatform\debug.h"
+				RelativePath=".\src\unzip\crypt.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\crypto.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\globalplatform\debug.h"
 				>
 			</File>
 			<File
@@ -251,23 +279,31 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\GlobalPlatform\error.h"
+				RelativePath=".\src\globalplatform\error.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\GlobalPlatform\errorcodes.h"
+				RelativePath=".\src\globalplatform\errorcodes.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\GlobalPlatform\GlobalPlatform.h"
+				RelativePath=".\src\globalplatform\globalplatform.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\GlobalPlatform\library.h"
+				RelativePath=".\src\unzip\ioapi.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\pcscconnectionplugin.h"
+				RelativePath=".\src\unzip\iowin32.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\globalplatform\library.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\loadfile.h"
 				>
 			</File>
 			<File
@@ -275,15 +311,35 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\globalplatform\security.h"
+				>
+			</File>
+			<File
 				RelativePath=".\src\stdafx.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\GlobalPlatform\types.h"
+				RelativePath=".\src\globalplatform\stringify.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\GlobalPlatform\unicode.h"
+				RelativePath=".\src\globalplatform\types.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\globalplatform\unicode.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\unzip\unzip.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\util.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\unzip\zip.h"
 				>
 			</File>
 		</Filter>
@@ -293,7 +349,7 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 			<File
-				RelativePath=".\version.rc"
+				RelativePath=".\src\version.rc"
 				>
 			</File>
 		</Filter>

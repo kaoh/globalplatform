@@ -69,7 +69,7 @@ typedef struct {
  * \param status Must be the #OPGP_ERROR_STATUS structure.
  */
 #define OPGP_ERROR_CREATE_NO_ERROR(status) status.errorStatus = OPGP_ERROR_STATUS_SUCCESS; status.errorCode = 0; \
-	_tcsncpy(status.errorMessage, "Success", ERROR_MESSAGE_LENGTH); status.errorMessage[ERROR_MESSAGE_LENGTH] = '\0'
+	_tcsncpy(status.errorMessage, _T("Success"), ERROR_MESSAGE_LENGTH); status.errorMessage[ERROR_MESSAGE_LENGTH] = '\0'
 
 /**
  * Sets the status in case of no error but includes a code e.g. for APDU status word codes.
@@ -78,6 +78,6 @@ typedef struct {
  */
 #define OPGP_ERROR_CREATE_NO_ERROR_WITH_CODE(status, code) status.errorStatus = OPGP_ERROR_STATUS_SUCCESS; \
 	status.errorCode = code; \
-	_tcsncpy(status.errorMessage, "Success", ERROR_MESSAGE_LENGTH); status.errorMessage[ERROR_MESSAGE_LENGTH] = '\0'
+	_tcsncpy(status.errorMessage, _T("Success"), ERROR_MESSAGE_LENGTH); status.errorMessage[ERROR_MESSAGE_LENGTH] = '\0'
 
 #endif

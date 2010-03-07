@@ -77,12 +77,12 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "Comment", "Library for accessing OpenPlatform 2.0.1' and GlobalPlatform 2.1.1 compliant smart cards\n"
+            VALUE "Comment", "Library for accessing OpenPlatform 2.0.1' and GlobalPlatform 2.1.1 compliant smart cards"
             VALUE "Description", "GlobalPlatform for Windows Library"
             VALUE "FileVersion", "6, 0, 0, 0"
             VALUE "Info", "k_o_@users.sourceforge.net"
             VALUE "InternalName", "GlobalPlatform"
-            VALUE "LegalCopyright", "Copyright (C) Karsten Ohme 2009"
+            VALUE "LegalCopyright", "Copyright (C) Karsten Ohme 2010"
             VALUE "License", "LGPL"
             VALUE "OriginalFilename", "GlobalPlatform.dll"
             VALUE "ProductVersion", "6, 0, 0, 0"

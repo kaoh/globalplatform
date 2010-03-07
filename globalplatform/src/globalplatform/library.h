@@ -22,12 +22,6 @@
 #ifndef OPGP_LIBRARY_H
 #define OPGP_LIBRARY_H
 
-// static library
-#ifdef OPGP_LIB
-	#define OPGP_API
-	#define OPGP_NO_API
-#else
-
 // dynamic library
 #if (defined(WIN32) || defined __CYGWIN__)
 	#ifdef OPGP_EXPORTS
@@ -43,7 +37,7 @@
 		  #define OPGP_API __declspec(dllimport)
 		#endif
 	#endif
-	#define OPGP_NO_API static
+	#define OPGP_NO_API 
 #else
 	#if defined __GNUC__ && (__GNUC__ >= 4 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3))
 		#define OPGP_API __attribute__ ((visibility("default")))
@@ -53,8 +47,6 @@
 		#define OPGP_NO_API static
 	#endif
 #endif // #if (defined(WIN32) || defined __CYGWIN__)
-
-#endif // #ifdef OPGP_LIB
 
 #if defined __GNUC__
 

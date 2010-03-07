@@ -46,8 +46,8 @@
 #ifndef WIN32
 #include <sys/stat.h>
 #include <string.h>
-#include <errno.h>
 #endif
+#include <errno.h>
 #include "globalplatform/debug.h"
 #include "unzip/unzip.h"
 #include "unzip/zip.h"
@@ -1295,9 +1295,6 @@ OPGP_ERROR_STATUS GP211_get_secure_channel_protocol_details(OPGP_CARD_CONTEXT ca
 	BYTE CardChipDetails[256];
 	DWORD CardChipDetailsLength;
 	TLV tlv1, tlv2, _73tlv;
-#ifdef DEBUG
-	DWORD i;
-#endif
 
 	OPGP_LOG_START(_T("GP211_get_secure_channel_protocol_details"));
 	status = GP211_get_data(cardContext, cardInfo, NULL, (PBYTE)GP211_GET_DATA_CARD_DATA, recvBuffer, &recvBufferLength);
@@ -1762,9 +1759,6 @@ OPGP_ERROR_STATUS load_from_buffer(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 	DWORD fileSizeSize;
 	DWORD j,k,i=0,count;
 	OPGP_PROGRESS_CALLBACK_PARAMETERS callbackParameters;
-#ifdef DEBUG
-	DWORD g;
-#endif
 	BYTE sequenceNumber=0x00;
     INIT_PROGRESS_CALLBACK_PARAMETERS(callbackParameters, callback);
 	OPGP_LOG_START(_T("load_from_buffer"));
@@ -3217,9 +3211,6 @@ OPGP_ERROR_STATUS OPGP_VISA2_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CAR
 							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]) {
 	OPGP_ERROR_STATUS status;
 	int outl;
-#ifdef DEBUG
-	DWORD i;
-#endif
 	BYTE cardCPLCData[50];
 	DWORD cplcDataLen = 50;
 	BYTE keyDiversificationData[16];
@@ -3380,7 +3371,6 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 						   GP211_SECURITY_INFO *secInfo) {
 	OPGP_ERROR_STATUS status;
 	DWORD i=0;
-	int result;
 
 	unsigned char hostChallenge[8];
 
@@ -5061,9 +5051,6 @@ OPGP_ERROR_STATUS OP201_calculate_3des_DAP(PBYTE securityDomainAID, DWORD securi
 						BYTE DAP_verification_key[16], OP201_DAP_BLOCK *dapBlock)
 {
 	OPGP_ERROR_STATUS status;
-	DWORD i;
-	int outl;
-	unsigned char des_key[8];
 	PBYTE loadFileBuf = NULL;
 	DWORD loadFileBufSize;
 	OPGP_LOG_START(_T("calculate_3des_DAP"));
@@ -5302,7 +5289,6 @@ OPGP_ERROR_STATUS calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, 
 							 BYTE applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 							 PBYTE installParameters, DWORD installParametersLength,
 							 BYTE installToken[128], OPGP_STRING PEMKeyFileName, char *passPhrase) {
-	LONG result;
 	OPGP_ERROR_STATUS status;
 	BYTE installTokenSignatureData[256];
 	DWORD installTokenSignatureDataLength = 256;

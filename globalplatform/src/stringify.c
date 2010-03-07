@@ -20,10 +20,13 @@
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>
+#ifndef WIN32
 #include <getopt.h>
 #include <syslog.h>
 #include <sys/ioctl.h>
+#endif
 #include <string.h>
+#include <openssl/err.h>
 
 
 /**
@@ -33,7 +36,6 @@
  */
 OPGP_STRING OPGP_stringify_error(DWORD errorCode) {
 	static TCHAR strError[256];
-	int rv;
 	unsigned int strErrorSize = 256;
 
 #ifdef _WIN32
