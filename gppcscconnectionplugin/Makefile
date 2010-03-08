@@ -192,7 +192,7 @@ target_alias =
 top_build_prefix = 
 top_builddir = .
 top_srcdir = .
-EXTRA_DIST = GPPCSCConnectionPlugin.cbp lib_finder.script INSTALL.w32 reconf
+EXTRA_DIST = GPPCSCConnectionPlugin.cbp Makefile.mak make.bat lib_finder.script INSTALL.w32 reconf GPPCSCConnectionPlugin.vcproj
 SUBDIRS = src
 MAINTAINERCLEANFILES = \
 	Makefile.in \

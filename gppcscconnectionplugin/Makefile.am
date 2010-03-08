@@ -1,6 +1,6 @@
 ## Process this file with automake to create Makefile.in.
 
-EXTRA_DIST = GPPCSCConnectionPlugin.cbp Makefile.mak make.bat lib_finder.script INSTALL.w32 reconf
+EXTRA_DIST = GPPCSCConnectionPlugin.cbp Makefile.mak make.bat lib_finder.script INSTALL.w32 reconf GPPCSCConnectionPlugin.vcproj
 
 SUBDIRS = src
 
