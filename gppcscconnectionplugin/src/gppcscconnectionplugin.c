@@ -82,7 +82,6 @@
 OPGP_ERROR_STATUS OPGP_PL_establish_context(OPGP_CARD_CONTEXT *cardContext) {
 	OPGP_ERROR_STATUS status;
 	LONG result;
-	PCSC_CARD_CONTEXT_SPECIFIC cardContextSpecific;
 	OPGP_LOG_START(_T("OPGP_PL_establish_context"));
 	cardContext->librarySpecific = malloc(sizeof(PCSC_CARD_CONTEXT_SPECIFIC));
 	if (cardContext->librarySpecific == NULL) {
@@ -287,8 +286,6 @@ OPGP_ERROR_STATUS OPGP_PL_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 	BYTE lc;
 	BYTE le=0;
 	BYTE la;
-
-	DWORD i;
 
 	DWORD offset = 0;
 

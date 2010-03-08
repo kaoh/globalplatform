@@ -25,14 +25,12 @@
 					<Add option="/DDEBUG" />
 					<Add option="/DUNICODE" />
 					<Add option="/DWIN32" />
-					<Add option="/DOPGP_EXPORT" />
+					<Add option="/DOPGP_PL_EXPORTS" />
 					<Add directory="..\globalplatform\src" />
-					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include" />
-					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include\crt" />
+					<Add directory="C:\Programme\Microsoft Visual Studio 9.0\VC\include" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include" />
-					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include\mfc" />
+					<Add directory="C:\Programme\Microsoft Visual Studio 9.0\VC\include" />
 				</ResourceCompiler>
 				<Linker>
 					<Add option="/DEBUG" />
@@ -60,14 +58,12 @@
 					<Add option="/W2" />
 					<Add option="/DUNICODE" />
 					<Add option="/DWIN32" />
-					<Add option="/DOPGP_EXPORT" />
+					<Add option="/DOPGP_PL_EXPORTS" />
 					<Add directory="..\globalplatform\src" />
-					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include" />
-					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include\crt" />
+					<Add directory="C:\Programme\Microsoft Visual Studio 9.0\VC\include" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include" />
-					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include\mfc" />
+					<Add directory="C:\Programme\Microsoft Visual Studio 9.0\VC\include" />
 				</ResourceCompiler>
 				<Linker>
 					<Add library="winscard" />
