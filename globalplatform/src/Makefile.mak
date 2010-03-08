@@ -132,8 +132,8 @@ prebuild: all
 	-@del /S /F /Q $(PREBUILDDIR)
 	-@mkdir $(PREBUILDDIR)
 	-@mkdir $(PREBUILDDIR)/globalplatform
-	cp LICENSE zlib1.dll ssleay32.dll libeay32.dll Debug/globalplatform.dll Debug/globalplatform.lib ChangeLog README COPYING COPYING.LESSER AUTHORS  $(PREBUILDDIR)
-	cp globalplatform/globalplatform.h globalplatform/unicode.h $(PREBUILDDIR)/globalplatform
+	cp $(OPENSSL_LIB)/../license* $(ZLIB_LIB)/../bin/zlib1.dll $(OPENSSL_LIB)/../ssleay32.dll $(OPENSSL_LIB)/../libeay32.dll Debug/globalplatform.dll Debug/globalplatform.lib ../ChangeLog ../README ../COPYING ../NEWS ../COPYING.LESSER ../AUTHORS  $(PREBUILDDIR)
+	cp globalplatform/*.h $(PREBUILDDIR)/globalplatform
 	zip -r $(PREBUILDDIR).zip $(PREBUILDDIR)/*
 
 clean:

@@ -1,7 +1,7 @@
 ## Process this file with automake to create Makefile.in.
 
 EXTRA_DIST = stdafx.c stdafx.h resource.h version.rc DLLMain.c Doxyfile.cfg Makefile.mak \
-unzip/iowin32.c unzip/iowin32.h pcsclite-includes/pcsclite.h \
+unzip/iowin32.c unzip/iowin32.h pcsclite-includes/pcsclite.h makefile.targ.inc makefile.inc \
 pcsclite-includes/README pcsclite-includes/wintypes.h pcsclite-includes/winscard.h \
 globalplatform/connectionplugin.h
 

@@ -130,6 +130,9 @@
 		<Unit filename="Makefile.in">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
+		<Unit filename="Makefile.mak">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
 		<Unit filename="NEWS">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
@@ -169,8 +172,16 @@
 		<Unit filename="lib_finder.script">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
+		<Unit filename="make.bat">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
 		<Unit filename="reconf">
 			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="src\DLLMain.c">
+			<Option compilerVar="CC" />
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
 		</Unit>
 		<Unit filename="src\Doxyfile.cfg">
 			<Option target="&lt;{~None~}&gt;" />
@@ -182,6 +193,9 @@
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
 		<Unit filename="src\Makefile.in">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="src\Makefile.mak">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
 		<Unit filename="src\gppcscconnectionplugin.c">

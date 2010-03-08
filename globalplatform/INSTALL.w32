@@ -67,7 +67,7 @@ because the GlobalPlatform Library is compiled with Unicode support.
 2. 	Change into this directory (The directory with the GlobalPlatform sources).
 
 3. 	Run nmake -f Makefile.mak to build a release version without debugging information.
-	or run nmake -f Makefile.mak DEBUG= to build a debug version with debugging information.
+	or run nmake -f Makefile.mak all "DEBUG=1" to build a debug version with debugging information.
 	There are some arguments which are displayed in the beginning of the makefile. You
 	can change them if you specify them on the command line or in the makefile.
 
@@ -92,17 +92,24 @@ because the GlobalPlatform Library is compiled with Unicode support.
 
     There is a file called make.bat which does this compilation step.
 
-4.	Copy the GlobalPlatform.dll library from the Release or Debug directory to
+4.	Optional
+    Copy the GlobalPlatform.dll library from the Release or Debug directory to
     a location, where the application(s) using it can find it. This is a directory
     included in the %PATH% environment, usually at least e.g. Windows\System32
     You may also need the GlobalPlatform.lib from the appropriate directory
 	if your are linking applications against the library.
 
-5.	Build the documentation with nmake -f Makefile.mak doc
+5.	Optional
+    Build the documentation with nmake -f Makefile.mak DOC
 
 	Doxygen must be in the PATH environment variable.
 
 6.  Optional
+    Build a prebuilt package with nmake -f Makefile.mak PREBUILD
+    You also need the cp and zip command from Cygwin Setup http://cygwin.com/
+    Add the Cygwin bin directory to you %PATH% environment.
+
+7.  Optional
 	Run nmake -f Makefile.mak clean to delete the Debug and Release directories.
 
 If you need to get debugging output you must have built a debug version and

@@ -212,6 +212,9 @@
 		<Unit filename="debian\watch">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
+		<Unit filename="make.bat">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
 		<Unit filename="src\DLLMain.c">
 			<Option compilerVar="CC" />
 			<Option target="Debug Win" />

@@ -1,5 +1,5 @@
 ******************************************************
-Title    : GlobalPlatform
+Title    : GlobalPlatform PC/SC Connection Plugin
 Authors  : Karsten Ohme <k_o_@users.sourceforge.net>
 License  : See file COPYING
 Requires : PC/SC Lite http://www.musclecard.com/ (for UNIXes)
@@ -25,11 +25,11 @@ e.g. keys!
 
 If you compile this on your own:
 
-See the files INSTALL and Install.w32 for details.
+See the files INSTALL and INSTALL.w32 for details.
 
 ------------------
 
-For more information contact the author through the mailinglist at:
+For more information contact the author through the mailing list at:
 
 http://sourceforge.net/projects/globalplatform/
 

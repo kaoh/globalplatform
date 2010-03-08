@@ -4,40 +4,33 @@
 This will be a some work ...
 
 1.	You need a Microsoft C/C++-Compiler including the libraries, includes and
- build tools. You may use the compiler included in Visual Studio 6.0,
- Microsoft Visual Studio .NET 2003, Visual Studio 2005, Visual Studio 2008 etc.
- If you have Cygwin installed you can also also use it. See the file
-	INSTALL for the compilation.
-	Obey, that you will have problems with the portability on older systems if you
- use newer compiler suites, i.e. on systems without a installed
- .NET framework some libraries linked against are missing (e.g. there is
- a problem with newer versions of msvcrt, e.g. msvcr80 and msvcr90 which are
- not available under previous versions of Windows).
+    build tools. You may use the compiler included in Visual Studio 6.0,
+    Microsoft Visual Studio .NET 2003, Visual Studio 2005, Visual Studio 2008 etc.
+    If you have Cygwin installed you can also also use it. See the file
+    INSTALL for the compilation.
+    Obey, that you will have problems with the portability on older systems if you
+    use newer compiler suites, i.e. on systems without a installed
+    .NET framework some libraries linked against are missing (e.g. there is
+    a problem with newer versions of msvcrt, e.g. msvcr80 and msvcr90 which are
+    not available under previous versions of Windows).
 
 	For a free way to build you need:
 
-	Microsoft Visual C++ 2008 Express Edition
+	Microsoft® Visual C++ 2008 Express Edition
 	http://www.microsoft.com/express/vc/
 
-	to get a C/C++ compiler suite.
+    to get a C/C++ compiler suite.
 
- You also need the Platform SDK to get the libraries for linking (in first line
- msvcrt.lib).
+    You also need the Platform SDK to get the libraries for linking.
 
- Windows SDK for Windows Server 2008 and .NET Framework 3.5
- http://www.microsoft.com/downloads/details.aspx?FamilyId=E6E1C3DF-A74F-4207-8586-711EBE331CDC&displaylang=en
+    Download the Windows Server 2003 R2 Platform SDK.
 
- The SDK integrates automatically into Visual C++ 2008 Express.
+    http://www.microsoft.com/downloads/details.aspx?FamilyID=0baf2b35-c656-4969-ace8-e4c0c0716adb&DisplayLang=en
 
-2.	You need OpenSSL. Download it from http://www.openssl.org/ and build the
-  library. A prebuild package is enough.
-	The headers and the linker libraries ssleay32.lib and libeay32.lib must be
-  available. For using the library the files libeay32.dll and ssleay32.dll must
-  be installed in a common library search path, e.g. Windows/System32 or the
-  directory of the program which uses it.
+    The SDK integrates automatically into Visual C++ 2008 Express.
 
-3.	You need Doxygen for generating the documentation.
-	www.doxygen.org/
+2.	You need Doxygen for generating the documentation.
+    www.doxygen.org/
 
 
 Installation:
@@ -47,17 +40,18 @@ a) nmake compilation
 --------------------
 
 
-1.	Set the environment (These are include files and libraries and programms of
- the building environment) for compilation and open a command prompt. If you
- have Visual Studio 200x or (Microsoft Visual Studio 6.0 or
- .NET 2003) there is a file vcvars32.bat which does this for you	and opens a
- command prompt. There is also a link in the Start menu of Windows. For Visual
- Studio 2008 Express this also works.
+1.	Set the environment (These are include files and libraries and programs of
+    the building environment) for compilation and open a command prompt. If you
+    have Visual Studio 200x or there is a file vcvars32.bat in the bin directory
+    which does this for you	and opens a command prompt. There is also a link in
+    the Start menu of Windows. For Visual C++ 2008 Express Edition this also works.
+    Now also set the environment vars for the Platform SDK with SetEnv.Cmd located in
+    the SDK directory
 
-2. 	Change into this directory (The directory with the GlobalPlatform sources).
+2. 	Change into this directory (The directory with the GlobalPlatform PC/SC Connection Plugin sources).
 
 3. 	Run nmake -f Makefile.mak to build a release version without debugging information.
-	or run nmake -f Makefile.mak DEBUG= to build a debug version with debugging information.
+	or run nmake -f Makefile.mak all "DEBUG=1" to build a debug version with debugging information.
 	There are some arguments which are displayed in the beginning of the makefile. You
 	can change them if you specify them on the command line or in the makefile.
 
@@ -67,22 +61,29 @@ a) nmake compilation
 	SDK_LIB2      - A path to an SDK directory with additional libraries
 
 	E.g. nmake -f Makefile.mak
- SDK_LIB1="C:\Program Files\Microsoft SDKs\Windows\v6.1\Lib"
- SDK_LIB2="C:\Program Files\Microsoft Visual Studio 9.0\VC\lib"
+    SDK_LIB1="Microsoft Platform SDK for Windows Server 2003 R2\Lib"
+    SDK_LIB2="C:\Program Files\Microsoft Visual Studio 9.0\VC\lib"
 
- The parameters SDK_LIB1 and SDK_LIB2 might be not necessary if you have a full
- version of Visual Studio. For Visual Studio 2008 Express these both
- directories must point to the WinSCard.Lib and msvcrt.lib libraries.
+    The parameters SDK_LIB1 and SDK_LIB2 might be not necessary if you have a full
+    version of Visual Studio. For Visual Studio 2008 Express these both
+    directories must point to the WinSCard.Lib and msvcrt.lib libraries.
 
-4.	Copy the GPPCSCConnectionPlugin.dll library from the Release or Debug directory to
- a location, where the application(s) using it, i.e. the GlobalPlatform Library, can find it. This is a directory
- included in the %PATH% environment, usually at least e.g. Windows\System32
+4.	Optional
+    Copy the GPPCSCConnectionPlugin.dll library from the Release or Debug directory to
+    a location, where the application(s) using it, i.e. the GlobalPlatform Library, can find it.
+    This is a directoryincluded in the %PATH% environment, usually at least e.g. Windows\System32
 
-5.	Build the documentation with nmake -f Makefile.mak doc
+5.	Optional
+    Build the documentation with nmake -f Makefile.mak DOC
 
 	Doxygen must be in the PATH environment variable.
 
 6.  Optional
+    Build a prebuilt package with nmake -f Makefile.mak PREBUILD
+    You also need the cp and zip command from Cygwin Setup http://cygwin.com/
+    Add the Cygwin bin directory to you %PATH% environment.
+
+7.  Optional
 	Run nmake -f Makefile.mak clean to delete the Debug and Release directories.
 
 If you need to get debugging output you must have built a debug version and
@@ -91,6 +92,27 @@ If you explicitly set a log file with the environment variable
 GLOBALPLATFORM_LOGFILE, this log file will be used. The default log file is
 C:\Temp\GlobalPlatform.log. This must be writable for the user. Keep in mind
 that the debugging output may contain sensitive information, e.g. keys!
+
+b) Optional: Visual Studio solution file
+----------------------------------------
+
+You can also use the solution file .sln file for Visual C++ 2008 Express Edition
+ (may also work under the full version) if you prefer a comfortable IDE or for
+development needs. When using the solution file then you have to adjust the
+C/C++->General->Additional Include Directories,
+Linker->General->Additional Library Directories, Linker->Input->Additional
+Dependencies and Resources->General->Additional Include Directories fields.
+
+c) Optional: Code::Blocks workspace file
+----------------------------------------
+
+Code::Blocks is a free IDE.
+
+http://www.codeblocks.org/downloads/binaries
+
+You can open the .cbp project or the .workspace file of the GlobalPlatform
+main project. You must adjust your Compiler, Linker and Resource Compiler
+search directories under the Build Options.
 
 
 Further information
