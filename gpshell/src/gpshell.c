@@ -810,6 +810,8 @@ static int handleCommands(FILE *fd)
                 if (OPGP_ERROR_CHECK(status))
                 {
                     _tprintf (_T("card_connect() returns 0x%08lX (%s)\n"), status.errorCode, status.errorMessage);
+					rv = EXIT_FAILURE;
+                    goto end;
                 }
                 // set mode for internal use of library
                 cardInfo.specVersion = platform_mode;
@@ -1527,10 +1529,11 @@ static int handleCommands(FILE *fd)
                                          (PBYTE)(optionStr.APDU), optionStr.APDULen,
                                          recvAPDU, &recvAPDULen);
                 }
+				_tprintf (_T("send_APDU() returns 0x%08lX (%s)\n"),
+						  status.errorCode, status.errorMessage);
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("send_APDU() returns 0x%08lX (%s)\n"),
-                              status.errorCode, status.errorMessage);
+
                     // if the command was nostop, don't quit
                     if (_tcscmp(token, _T("send_apdu_nostop")) != 0)
                     {

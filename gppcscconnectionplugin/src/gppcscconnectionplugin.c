@@ -674,7 +674,7 @@ OPGP_ERROR_STATUS OPGP_PL_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 	// get SW
 	result = get_short(rapdu, *rapduLength-2);
 
-	OPGP_ERROR_CREATE_NO_ERROR_WITH_CODE(status, OPGP_ISO7816_ERROR_PREFIX | result);
+	OPGP_ERROR_CREATE_NO_ERROR_WITH_CODE(status, OPGP_ISO7816_ERROR_PREFIX | result, OPGP_stringify_error(OPGP_ISO7816_ERROR_PREFIX | result));
 end:
 	if (responseData) {
 		free(responseData);
@@ -696,7 +696,7 @@ OPGP_STRING OPGP_PL_stringify_error(DWORD errorCode) {
 	}
 	#ifndef WIN32
 		if ((errorCode & ((DWORD)0xFFF00000L)) == ((DWORD)0x80100000L)) {
-			return (OPGP_STRING)pcsc_stringify_error((long)errorCode);
+			return (OPGP_STRING)pcsc_stringify_error((long)(errorCode & 0xFFFFFFFF));
 		}
 	#endif
 	// delegate to general stringify function

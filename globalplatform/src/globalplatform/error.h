@@ -62,22 +62,22 @@ typedef struct {
  */
 #define OPGP_ERROR_CREATE_ERROR(status, code, message) status.errorStatus = OPGP_ERROR_STATUS_FAILURE; \
 	status.errorCode = code; \
-	_tcsncpy(status.errorMessage, message, ERROR_MESSAGE_LENGTH); status.errorMessage[ERROR_MESSAGE_LENGTH] = '\0'
+	_tcsncpy(status.errorMessage, message, ERROR_MESSAGE_LENGTH); status.errorMessage[ERROR_MESSAGE_LENGTH] = _T('\0')
 
 /**
  * Sets the status in case of no error.
  * \param status Must be the #OPGP_ERROR_STATUS structure.
  */
 #define OPGP_ERROR_CREATE_NO_ERROR(status) status.errorStatus = OPGP_ERROR_STATUS_SUCCESS; status.errorCode = 0; \
-	_tcsncpy(status.errorMessage, _T("Success"), ERROR_MESSAGE_LENGTH); status.errorMessage[ERROR_MESSAGE_LENGTH] = '\0'
+	_tcsncpy(status.errorMessage, _T("Success"), ERROR_MESSAGE_LENGTH); status.errorMessage[ERROR_MESSAGE_LENGTH] = _T('\0')
 
 /**
  * Sets the status in case of no error but includes a code e.g. for APDU status word codes.
  * \param status Must be the #OPGP_ERROR_STATUS structure.
  * \param code Must be the error code.
  */
-#define OPGP_ERROR_CREATE_NO_ERROR_WITH_CODE(status, code) status.errorStatus = OPGP_ERROR_STATUS_SUCCESS; \
+#define OPGP_ERROR_CREATE_NO_ERROR_WITH_CODE(status, code, message) status.errorStatus = OPGP_ERROR_STATUS_SUCCESS; \
 	status.errorCode = code; \
-	_tcsncpy(status.errorMessage, _T("Success"), ERROR_MESSAGE_LENGTH); status.errorMessage[ERROR_MESSAGE_LENGTH] = '\0'
+	_tcsncpy(status.errorMessage, message, ERROR_MESSAGE_LENGTH); status.errorMessage[ERROR_MESSAGE_LENGTH] = _T('\0')
 
 #endif
