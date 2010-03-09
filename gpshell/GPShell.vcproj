@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="9,00"
 	Name="GPShell"
 	ProjectGUID="{335EE32C-3F99-4EFF-81C1-BBE1658B704A}"
 	RootNamespace="GPShell"
 	Keyword="Win32Proj"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -17,8 +18,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="Debug"
-			IntermediateDirectory="Debug"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="2"
@@ -41,8 +42,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\GlobalPlatform;&quot;C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_UNICODE;UNICODE"
+				AdditionalIncludeDirectories="..\globalplatform\src;&quot;C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_UNICODE;UNICODE;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="2"
@@ -57,7 +58,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Include\mfc&quot;;&quot;C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
+				AdditionalIncludeDirectories="&quot;C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include\mfc&quot;;&quot;C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -67,12 +68,14 @@
 				AdditionalDependencies="globalplatform.lib"
 				OutputFile="$(OutDir)/GPShell.exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;;..\GlobalPlatform\Debug"
+				AdditionalLibraryDirectories="&quot;..\globalplatform\$(ConfigurationName)&quot;;&quot;C:\Programme\Microsoft Visual Studio 9.0\VC\lib&quot;"
 				EmbedManagedResourceFile=""
 				AssemblyLinkResource=""
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/GPShell.pdb"
 				SubSystem="1"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -94,16 +97,13 @@
 				Name="VCAppVerifierTool"
 			/>
 			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="Release"
-			IntermediateDirectory="Release"
+			OutputDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="2"
@@ -125,8 +125,8 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="..\GlobalPlatform;&quot;C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_UNICODE;UNICODE"
+				AdditionalIncludeDirectories="..\globalplatform\src;&quot;C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_UNICODE;UNICODE;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -139,7 +139,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Include\mfc&quot;;&quot;C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
+				AdditionalIncludeDirectories="&quot;C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include\mfc&quot;;&quot;C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include&quot;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -149,12 +149,14 @@
 				AdditionalDependencies="globalplatform.lib"
 				OutputFile="$(OutDir)/GPShell.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\GlobalPlatform\Release;&quot;C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Lib&quot;"
+				AdditionalLibraryDirectories="&quot;..\globalplatform\$(ConfigurationName)&quot;;&quot;C:\Programme\Microsoft Visual Studio 9.0\VC\lib&quot;"
 				EmbedManagedResourceFile=""
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -176,9 +178,6 @@
 				Name="VCAppVerifierTool"
 			/>
 			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
@@ -192,11 +191,11 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\GPShell.c"
+				RelativePath=".\src\gpshell.c"
 				>
 			</File>
 			<File
-				RelativePath=".\stdafx.c"
+				RelativePath=".\src\stdafx.c"
 				>
 			</File>
 		</Filter>
@@ -206,7 +205,11 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\stdafx.h"
+				RelativePath=".\src\resource.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\stdafx.h"
 				>
 			</File>
 		</Filter>
@@ -216,7 +219,7 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 			<File
-				RelativePath=".\version.rc"
+				RelativePath=".\src\version.rc"
 				>
 			</File>
 		</Filter>

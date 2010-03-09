@@ -28,7 +28,7 @@ _VC_MANIFEST_AUTO_RES=
 ####################################################
 # _VC_MANIFEST_EMBED_EXE - command to embed manifest in EXE:
 
-!if "$(_VC_MANIFEST_INC)" == "1"
+!if "$(_VC_MANIFEST_INC)" == "2"
 
 #MT_SPECIAL_RETURN=1090650113
 #MT_SPECIAL_SWITCH=-notify_resource_update

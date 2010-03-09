@@ -36,6 +36,7 @@
 #define _stscanf sscanf
 #define _tstoi atoi
 #define _tcsnccmp strncmp
+#define _tcstol strtol
 #endif
 
 /* Constants */
@@ -45,7 +46,7 @@
 #define AIDLEN 16
 #define APDULEN 261
 #define INSTPARAMLEN 32
-#define DELIMITER " \t\n,"
+#define DELIMITER _T(" \t\n,")
 #define DDES_KEY_LEN 16
 #define PLATFORM_MODE_OP_201 OP_201
 #define PLATFORM_MODE_GP_211 GP_211
@@ -128,7 +129,7 @@ static void ConvertCToT(TCHAR* pszDest, const char* pszSrc)
 {
     unsigned int i;
 
-    for (i = 0; i < _tcslen(pszSrc); i++)
+    for (i = 0; i < strlen(pszSrc); i++)
     {
         pszDest[i] = (TCHAR) pszSrc[i];
     }
@@ -199,7 +200,6 @@ static int handleOptions(OptionStr *pOptionStr)
 {
     int rv = EXIT_SUCCESS;
     TCHAR *token;
-    TCHAR dummy[BUFLEN+1];
 
     pOptionStr->keyIndex = 0;
     pOptionStr->keySetVersion = 0;
@@ -325,7 +325,7 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-                if (_tcscmp(token,"0") == 0)
+                if (_tcscmp(token,_T("0")) == 0)
                 {
                     _tprintf(_T("Error: option -readerNumber must be followed by number > 0\n"));
                     rv = EXIT_FAILURE;
@@ -345,9 +345,7 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-                _tcsncpy(dummy, token, READERNAMELEN+1);
-                dummy[READERNAMELEN] = '\0';
-                ConvertCToT (pOptionStr->reader, dummy);
+                _tcsncpy(pOptionStr->reader, token, READERNAMELEN+1);
 #ifdef DEBUG
                 _tprintf ( _T("reader name %s\n"), pOptionStr->reader);
 #endif
@@ -364,9 +362,7 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-                _tcsncpy(dummy, token, FILENAMELEN+1);
-                dummy[FILENAMELEN] = '\0';
-                ConvertCToT (pOptionStr->file, dummy);
+                _tcsncpy(pOptionStr->file, token, FILENAMELEN+1);
 #ifdef DEBUG
                 _tprintf ( _T("file name %s\n"), pOptionStr->file);
 #endif
@@ -383,7 +379,7 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-                _tcsncpy(pOptionStr->passPhrase, token, PASSPHRASELEN+1);
+                ConvertTToC(pOptionStr->passPhrase, token);
                 pOptionStr->passPhrase[PASSPHRASELEN] = '\0';
             }
         }
@@ -625,7 +621,7 @@ static int handleOptions(OptionStr *pOptionStr)
                 goto end;
             }
 
-            if (sscanf (token, "%02x", &temp) <= 0)
+            if (_stscanf (token, _T("%02x"), &temp) <= 0)
             {
                 _tprintf(_T("Error: option -element followed by an illegal string %s\n"),
                         token);
@@ -674,7 +670,7 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-                pOptionStr->scpImpl = (int)strtol(token, dummy, 0);
+                pOptionStr->scpImpl = (int)_tcstol(token, NULL, 0);
             }
         }
         else
@@ -695,10 +691,11 @@ static int handleCommands(FILE *fd)
 {
     TCHAR buf[BUFLEN + 1], commandLine[BUFLEN + 1];
     int rv = EXIT_SUCCESS, i;
-	unsigned int it, ft;
+	unsigned int it=0, ft=0;
     OPGP_ERROR_STATUS status;
     TCHAR *token;
     OptionStr optionStr;
+    OPGP_ERROR_CREATE_NO_ERROR(status);
 
     while (_fgetts (buf, BUFLEN, fd) != NULL)
     {
@@ -889,7 +886,7 @@ static int handleCommands(FILE *fd)
                 }
                 goto timer;
             }
-            else if (_tcscmp(token, "select") == 0)
+            else if (_tcscmp(token, _T("select")) == 0)
             {
                 // select instance
                 rv = handleOptions(&optionStr);
@@ -967,7 +964,7 @@ static int handleCommands(FILE *fd)
                     goto end;
                 }
                 memcpy (AIDs[0].AID, optionStr.AID, optionStr.AIDLen);
-                AIDs[0].AIDLength = optionStr.AIDLen;
+                AIDs[0].AIDLength = (BYTE)optionStr.AIDLen;
 
                 if (platform_mode == PLATFORM_MODE_OP_201)
                 {
@@ -1535,7 +1532,7 @@ static int handleCommands(FILE *fd)
                     _tprintf (_T("send_APDU() returns 0x%08lX (%s)\n"),
                               status.errorCode, status.errorMessage);
                     // if the command was nostop, don't quit
-                    if (_tcscmp(token, "send_apdu_nostop") != 0)
+                    if (_tcscmp(token, _T("send_apdu_nostop")) != 0)
                     {
                         rv = EXIT_FAILURE;
                         goto end;

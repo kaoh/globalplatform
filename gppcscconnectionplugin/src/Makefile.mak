@@ -41,12 +41,12 @@ TARGET_ARCH=X86
 !ENDIF
 
 !IFDEF DEBUG
-LFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).dll /NOLOGO /LIBPATH:../../globalplatform/$(OUTDIR) /LIBPATH:"$(SDK_LIB1)" /LIBPATH:"$(SDK_LIB2)" /DLL /DEBUG /PDB:$(OUTDIR)/$(LIB_NAME).pdb \
+LFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).dll /NOLOGO /LIBPATH:../../globalplatform/src/$(OUTDIR) /LIBPATH:"$(SDK_LIB1)" /LIBPATH:"$(SDK_LIB2)" /DLL /DEBUG /PDB:$(OUTDIR)/$(LIB_NAME).pdb \
 /SUBSYSTEM:CONSOLE /MACHINE:$(TARGET_ARCH) globalplatform.lib winscard.lib kernel32.lib user32.lib gdi32.lib winspool.lib \
 comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib
 !ELSE
 LFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).dll /INCREMENTAL:NO /NOLOGO /LIBPATH:"$(SDK_LIB1)" /LIBPATH:"$(SDK_LIB2)" \
-/LIBPATH:../../globalplatform/$(OUTDIR) /DLL /SUBSYSTEM:CONSOLE \
+/LIBPATH:../../globalplatform/src/$(OUTDIR) /DLL /SUBSYSTEM:CONSOLE \
 /OPT:REF /OPT:ICF /MACHINE:$(TARGET_ARCH) globalplatform.lib winscard.lib kernel32.lib user32.lib gdi32.lib \
 winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib
 !ENDIF

@@ -79,14 +79,14 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "Comment", "Shell for accessing OpenPlatform 2.0.1' and GlobalPlatform 2.1.1 compliant smart cards with the GlobalPlatform library\n"
-            VALUE "Description", "GPShell for Windows32"
+            VALUE "Comment", "Shell for accessing OpenPlatform 2.0.1' and GlobalPlatform 2.1.1 compliant smart cards with the GlobalPlatform library"
+            VALUE "Description", "GPShell for Windows"
             VALUE "FileVersion", "1, 4, 2, 0"
             VALUE "ProductName", "GPShell"
             VALUE "Info", "k_o_@users.sourceforge.net"
             VALUE "InternalName", "GPShell"
-            VALUE "LegalCopyright", "Copyright (C) 2007, Snit Mo, Karsten Ohme"
-            VALUE "License", "LGPL"
+            VALUE "LegalCopyright", "Copyright (C) 2010, Snit Mo, Karsten Ohme"
+            VALUE "License", "GPL"
             VALUE "OriginalFilename", "GPShell.exe"
             VALUE "ProductVersion", "1, 4, 2, 0"
         END
