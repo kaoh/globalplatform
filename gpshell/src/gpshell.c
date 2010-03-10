@@ -1090,7 +1090,7 @@ static int handleCommands(FILE *fd)
                                                 NULL, NULL,
                                                 optionStr.nvCodeLimit,
                                                 optionStr.vDataLimit,  // jvictor
-                                                optionStr.nvDataLimit); // jvictor
+                                                0); // jvictor, k_o_: we also use 0, e.g. y Cyberflex refuses to install an applet if something else is given.
                 }
                 else if (platform_mode == PLATFORM_MODE_GP_211)
                 {
