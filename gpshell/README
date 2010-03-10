@@ -108,14 +108,19 @@ for the sdAID the AID selected with the select command is chosen if not given. O
 install_for_load -pkgAID xxx -sdAID zzz -nvCodeLimit yyy // Install for Load
 
 for the sdAID the AID selected with the select command is chosen if not given. Otherwise the default Card Manager / Security Issuer Domain AID is chosen. So usually you do not have to pass it.
+You may need to use this command if the combined install command does not work.
 
 ---
 
 load -file appletfile // Load applet
 
+You may need to use this command if the combined install command does not work.
+
 ---
 
 install_for_install -priv privilege -AID AID_in_pkg -pkgAID package_AID -instAID instanceAID -nvDataLimit xxx // Instantiate applet
+
+You may need to use this command if the combined install command does not work. Or you want to install a preinstalled Security Domain.
 
 ---
 
@@ -245,16 +250,7 @@ For GemXpresso R3.2 E64, you need to specify the Security Domain AID (Card Manag
 
 For the Cyberflex you also need the CAP transformer (I believe this is
 a kind of obfuscator) which you must apply to the CAP file. Download it
-from http://www.trusted-logic.fr/down.php and use it. For Cyberflex
-e-gate 32k the simple install command does not work. Unfortunately some
-parameters are not accepted by the card. You must execute the single
-steps:
-
-install_for_load
-load
-install_for_install
-
-See the sample file helloInstallCyberflexe-gate32k.txt.
+from http://www.trusted-logic.fr/down.php and use it.
 
 *** Debug output
 
