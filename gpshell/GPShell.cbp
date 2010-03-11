@@ -138,9 +138,6 @@
 		<Unit filename="helloInstallgemXpressoProR3_2E64.txt">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="installJCOP21OrJTopV15.txt">
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
 		<Unit filename="list.txt">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
@@ -175,6 +172,9 @@
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
 		<Unit filename="src/Makefile.am">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="src/gpshell.1">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
 		<Unit filename="src/gpshell.c">
