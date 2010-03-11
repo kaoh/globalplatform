@@ -39,9 +39,9 @@
 #define LIBRARY_NAME_VERSION_SEPARATOR _T(".")
 
 /**
- * \param libraryHandle OUT The returned library handle
- * \param libraryName IN The length of the Security Domain AID.
- * \param version IN The version of the library to use.
+ * \param libraryHandle [out] The returned library handle
+ * \param libraryName [in] The length of the Security Domain AID.
+ * \param version [in] The version of the library to use.
  * \return The error status.
  */
 OPGP_ERROR_STATUS DYN_LoadLibrary(PVOID *libraryHandle, LPCTSTR libraryName, LPCTSTR version)
@@ -82,7 +82,7 @@ end:
 }
 
 /**
- * \param libraryHandle IN The library handle
+ * \param libraryHandle [in] The library handle
  * \return The error status.
  */
 OPGP_ERROR_STATUS DYN_CloseLibrary(PVOID *libraryHandle)
@@ -106,9 +106,9 @@ end:
 }
 
 /**
- * \param libraryHandle IN The returned library handle
- * \param functionHandle OUT The returned function handle.
- * \param functionName IN The function name to search.
+ * \param libraryHandle [in] The returned library handle
+ * \param functionHandle [out] The returned function handle.
+ * \param functionName [in] The function name to search.
  * \return The error status.
  */
 OPGP_ERROR_STATUS DYN_GetAddress(PVOID libraryHandle, PVOID *functionHandle, LPCTSTR functionName)

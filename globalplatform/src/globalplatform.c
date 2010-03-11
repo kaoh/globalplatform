@@ -62,10 +62,10 @@
 #define MAX_PATH 257
 #endif
 
-static unsigned char C_MACDerivationConstant[2] = {0x01, 0x01}; //!< Constant for C-MAC session key calculation.
-static unsigned char ENCDerivationConstant[2] = {0x01, 0x82};//!< Constant for encryption session key calculation.
-static unsigned char DEKDerivationConstant[2] = {0x01, 0x81};//!< Constant for data encryption session key calculation.
-static unsigned char R_MACDerivationConstant[2] = {0x01, 0x02};//!< Constant for R-MAC session key calculation.
+static BYTE C_MACDerivationConstant[2] = {0x01, 0x01}; //!< Constant for C-MAC session key calculation.
+static BYTE ENCDerivationConstant[2] = {0x01, 0x82};//!< Constant for encryption session key calculation.
+static BYTE DEKDerivationConstant[2] = {0x01, 0x81};//!< Constant for data encryption session key calculation.
+static BYTE R_MACDerivationConstant[2] = {0x01, 0x02};//!< Constant for R-MAC session key calculation.
 
 OPGP_NO_API
 OPGP_ERROR_STATUS calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
@@ -351,8 +351,8 @@ OPGP_ERROR_STATUS readDAPBlock(PBYTE buf, PDWORD bufLength, OP201_DAP_BLOCK dapB
 
 /**
  * Reads a valid buffer containing a (delete, load, install) receipt and parses it in a GP211_RECEIPT_DATA.
- * \param buf IN The buffer to parse.
- * \param receiptData OUT The receipt data.
+ * \param buf [in] The buffer to parse.
+ * \param receiptData [out] The receipt data.
  * \return The number of bytes which were consumed while parsing the buffer.
  */
 OPGP_NO_API
@@ -374,13 +374,13 @@ DWORD fillReceipt(PBYTE buf, GP211_RECEIPT_DATA *receiptData) {
 
 /**
  * The secInfo pointer can also be null and so this function can be used for arbitrary cards.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param capdu IN The command APDU.
- * \param capduLength IN The length of the command APDU.
- * \param rapdu OUT The response APDU.
- * \param rapduLength INOUT The length of the the response APDU.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param capdu [in] The command APDU.
+ * \param capduLength [in] The length of the command APDU.
+ * \param rapdu [out] The response APDU.
+ * \param rapduLength [in, out] The length of the the response APDU.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBYTE capdu, DWORD capduLength, PBYTE rapdu, PDWORD rapduLength) {
@@ -388,10 +388,10 @@ OPGP_ERROR_STATUS GP211_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO 
 }
 
 /**
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param AID IN The AID.
- * \param AIDLength IN The length of the AID.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param AID [in] The AID.
+ * \param AIDLength [in] The length of the AID.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OPGP_select_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, PBYTE AID, DWORD AIDLength) {
@@ -441,14 +441,14 @@ end:
  * Any other value between 0x01 and 0x7f must match an existing key set version.
  * The new key set version defines the key set version a new key belongs to.
  * This can be the same key version or a new not existing key set version.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param keySetVersion IN An existing key set version.
- * \param keyIndex IN The position of the key in the key set version.
- * \param newKeySetVersion IN The new key set version.
- * \param PEMKeyFileName IN A PEM file name with the public RSA key.
- * \param *passPhrase IN The passphrase. Must be an ASCII string.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param keySetVersion [in] An existing key set version.
+ * \param keyIndex [in] The position of the key in the key set version.
+ * \param newKeySetVersion [in] The new key set version.
+ * \param PEMKeyFileName [in] A PEM file name with the public RSA key.
+ * \param *passPhrase [in] The passphrase. Must be an ASCII string.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_put_rsa_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -475,7 +475,7 @@ OPGP_ERROR_STATUS put_rsa_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO card
 	BYTE recvBuffer[256];
 	DWORD i=0;
 	BYTE rsa_modulus[128];
-	unsigned long rsa_exponent;
+	LONG rsa_exponent;
 	OPGP_LOG_START(_T("put_rsa_key"));
 
 	status = read_public_rsa_key(PEMKeyFileName, passPhrase, rsa_modulus, &rsa_exponent);
@@ -540,13 +540,13 @@ end:
  * Any other value between 0x01 and 0x7f must match an existing key set version.
  * The new key set version defines the key set version a new key belongs to.
  * This can be the same key version or a new not existing key set version.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param keySetVersion IN An existing key set version.
- * \param keyIndex IN The position of the key in the key set version.
- * \param newKeySetVersion IN The new key set version.
- * \param _3DESKey IN The new 3DES key.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param keySetVersion [in] An existing key set version.
+ * \param keyIndex [in] The position of the key in the key set version.
+ * \param newKeySetVersion [in] The new key set version.
+ * \param _3DESKey [in] The new 3DES key.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_put_3des_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -633,11 +633,10 @@ OPGP_ERROR_STATUS put_delegated_management_keys(OPGP_CARD_CONTEXT cardContext, O
 
 	BYTE keyDataField[22];
 	DWORD keyDataFieldLength=22;
-	BYTE keyCheckTest[8] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
 
 	DWORD i=0;
 	BYTE token_verification_rsa_modulus[128];
-	unsigned long token_verification_rsa_exponent;
+	LONG token_verification_rsa_exponent;
 	BYTE keyType;
 
 	OPGP_LOG_START(_T("put_delegated_management_keys"));
@@ -726,21 +725,21 @@ end:
  * Any other value between 0x01 and 0x7f must match an existing key set version.
  * The new key set version defines the key set version the new secure channel keys belongs to.
  * This can be the same key version or a new not existing key set version.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * It depends on the supported protocol implementation by the card what keys must be passed as parameters.
  * baseKey must be NULL if the protocol uses 3 Secure Channel Keys
  * (Secure Channel Encryption Key, Secure Channel Message Authentication Code Key and
  * Data Encryption Key) and vice versa.
  * Details about the supported Secure Channel Protocol and its implementation can be
  * obtained by a call to the function get_secure_channel_protocol_details().
- * \param keySetVersion IN An existing key set version.
- * \param newKeySetVersion IN The new key set version.
- * \param newBaseKey IN The new Secure Channel base key.
- * \param newS_ENC IN The new S-ENC key.
- * \param newS_MAC IN The new S-MAC key.
- * \param newDEK IN The new DEK.
+ * \param keySetVersion [in] An existing key set version.
+ * \param newKeySetVersion [in] The new key set version.
+ * \param newBaseKey [in] The new Secure Channel base key.
+ * \param newS_ENC [in] The new S-ENC key.
+ * \param newS_MAC [in] The new S-MAC key.
+ * \param newDEK [in] The new DEK.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -785,7 +784,7 @@ OPGP_ERROR_STATUS put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CA
 	sendBuffer[i++] = 0x43;
 
 	sendBuffer[i++] = newKeySetVersion;
-	if (cardContext, cardInfo.specVersion == OP_201) {
+	if (cardInfo.specVersion == OP_201) {
 		keyType = OP201_KEY_TYPE_DES_ECB;
 	}
 	else {
@@ -872,14 +871,14 @@ end:
  * Any other value between 0x01 and 0x7f must match an existing key set version.
  * The new key set version defines the key set version a the new secure channel keys belongs to.
  * This can be the same key version or a new not existing key set version.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param keySetVersion IN An existing key set version.
- * \param newKeySetVersion IN The new key set version.
- * \param PEMKeyFileName IN A PEM file name with the public RSA key.
- * \param *passPhrase IN The passphrase. Must be an ASCII string.
- * \param receiptKey IN The new Receipt Generation key.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param keySetVersion [in] An existing key set version.
+ * \param newKeySetVersion [in] The new key set version.
+ * \param PEMKeyFileName [in] A PEM file name with the public RSA key.
+ * \param *passPhrase [in] The passphrase. Must be an ASCII string.
+ * \param receiptKey [in] The new Receipt Generation key.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_put_delegated_management_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -895,11 +894,11 @@ OPGP_ERROR_STATUS GP211_put_delegated_management_keys(OPGP_CARD_CONTEXT cardCont
 /**
  * If keyIndex is 0xFF (=-1) all keys within a keySetVersion are deleted.
  * If keySetVersion is 0x00 all keys with the specified keyIndex are deleted.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param keySetVersion IN An existing key set version.
- * \param keyIndex IN An existing key index.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param keySetVersion [in] An existing key set version.
+ * \param keyIndex [in] An existing key index.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_delete_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE keySetVersion, BYTE keyIndex) {
@@ -961,15 +960,15 @@ end:
 }
 
 /**
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param AIDs IN A pointer to the an array of OPGP_AID structures describing the applications and load files to delete.
- * \param AIDsLength IN The number of OPGP_AID structures.
- * \param *receiptData OUT A GP211_RECEIPT_DATA array. If the deletion is performed by a
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param AIDs [in] A pointer to the an array of OPGP_AID structures describing the applications and load files to delete.
+ * \param AIDsLength [in] The number of OPGP_AID structures.
+ * \param *receiptData [out] A GP211_RECEIPT_DATA array. If the deletion is performed by a
  * security domain with delegated management privilege
  * this structure contains the according data for each deleted application or package.
- * \param receiptDataLength INOUT A pointer to the length of the receiptData array.
+ * \param receiptDataLength [in, out] A pointer to the length of the receiptData array.
  * If no receiptData is available this length is 0;
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
@@ -1042,12 +1041,12 @@ end:
  * Some cards do not provide some data objects. Some possible identifiers are predefined.
  * See #GP211_GET_DATA_CPLC_WHOLE_CPLC. For details about the coding of the dataObject see the programmer's manual
  * of your card.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param identifier IN Two byte buffer with high and low order tag value for identifying card data object.
- * \param dataObject IN The coded data object.
- * \param dataObjectLength IN The length of the data object.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param identifier [in] Two byte buffer with high and low order tag value for identifying card data object.
+ * \param dataObject [in] The coded data object.
+ * \param dataObjectLength [in] The length of the data object.
   * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_put_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE identifier[2], PBYTE dataObject, DWORD dataObjectLength) {
@@ -1090,12 +1089,12 @@ end:
  * of your card.
  * There is a convenience method get_key_information_templates() to get the key information template(s)
  * containing key set version, key index, key type and key length of the keys.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param identifier IN Two byte buffer with high and low order tag value for identifying card data object.
- * \param recvBuffer OUT The buffer for the card data object.
- * \param recvBufferLength INOUT The length of the received card data object.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param identifier [in] Two byte buffer with high and low order tag value for identifying card data object.
+ * \param recvBuffer [out] The buffer for the card data object.
+ * \param recvBufferLength [in, out] The length of the received card data object.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -1105,16 +1104,16 @@ OPGP_ERROR_STATUS GP211_get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO c
 
 
 /**
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * \param securityLevel Level of security for all subsequent commands
  * <ul>
  * <li>GP211_SCP02_SECURITY_LEVEL_R_MAC - Each APDU response contains a R-MAC during the session.</li>
  * <li>GP211_SCP02_SECURITY_LEVEL_NO_SECURE_MESSAGING - Only the END R-MAC SESSION response message will contain a R-MAC.</li>
  * </ul>
- * \param data IN Data for the BEGIN R-MAC SESSION command, e.g. extra challenge.
- * \param dataLength IN Length of data.
+ * \param data [in] Data for the BEGIN R-MAC SESSION command, e.g. extra challenge.
+ * \param dataLength [in] Length of data.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_begin_R_MAC(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE securityLevel, PBYTE data, DWORD dataLength)
@@ -1153,9 +1152,9 @@ end:
 }
 
 /**
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_end_R_MAC(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo)
@@ -1227,11 +1226,11 @@ end:
  * For getting the Secure Channel Protocol and Secure Channel Protocol implementation there is the
  * convenience function get_secure_channel_protocol_details().
  * See also data objects identified in ISO 7816-6.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param identifier IN Two byte buffer with high and low order tag value for identifying card data.
- * \param recvBuffer OUT The buffer for the card data.
- * \param recvBufferLength INOUT The length of the received card data.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param identifier [in] Two byte buffer with high and low order tag value for identifying card data.
+ * \param recvBuffer [out] The buffer for the card data.
+ * \param recvBufferLength [in, out] The length of the received card data.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_get_data_iso7816_4(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE identifier[2], PBYTE recvBuffer,
@@ -1268,10 +1267,10 @@ end:
 }
 
 /**
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secureChannelProtocol OUT A pointer to the Secure Channel Protocol to use.
- * \param *secureChannelProtocolImpl OUT A pointer to the implementation of the Secure Channel Protocol.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secureChannelProtocol [out] A pointer to the Secure Channel Protocol to use.
+ * \param *secureChannelProtocolImpl [out] A pointer to the implementation of the Secure Channel Protocol.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_get_secure_channel_protocol_details(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
@@ -1281,7 +1280,6 @@ OPGP_ERROR_STATUS GP211_get_secure_channel_protocol_details(OPGP_CARD_CONTEXT ca
 	BYTE recvBuffer[256];
 	DWORD recvBufferLength = sizeof(recvBuffer);
 	DWORD offset = 0;
-	DWORD length = 0;
 	BYTE OIDCardRecognitionData[256];
 	DWORD OIDCardRecognitionDataLength;
 	BYTE OIDCardManagementTypeAndVersion[256];
@@ -1441,12 +1439,12 @@ end:
 
 /**
  * The card must support the optional report of key information templates.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param keyInformationTemplate IN The number of the key information template.
- * \param *keyInformation OUT A pointer to an array of GP211_KEY_INFORMATION structures.
- * \param keyInformationLength INOUT The number of GP211_KEY_INFORMATION structures.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param keyInformationTemplate [in] The number of the key information template.
+ * \param *keyInformation [out] A pointer to an array of GP211_KEY_INFORMATION structures.
+ * \param keyInformationLength [in, out] The number of GP211_KEY_INFORMATION structures.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_get_key_information_templates(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -1513,13 +1511,13 @@ end:
 }
 
 /**
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param cardElement IN Identifier for Load Files, Applications or the Card Manager.
- * \param AID IN The AID.
- * \param AIDLength IN The length of the AID.
- * \param lifeCycleState IN The new life cycle state.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param cardElement [in] Identifier for Load Files, Applications or the Card Manager.
+ * \param AID [in] The AID.
+ * \param AIDLength [in] The length of the AID.
+ * \param lifeCycleState [in] The new life cycle state.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_set_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE cardElement, PBYTE AID, DWORD AIDLength, BYTE lifeCycleState) {
@@ -1559,14 +1557,14 @@ end:
  * or an array of GP211_EXECUTABLE_MODULES_DATA structures must be passed to this function.
  * For the card element #GP211_EXECUTABLE_MODULES_DATA executableData must not
  * be NULL, else applData must not be NULL.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param cardElement IN Identifier to retrieve data for Load Files, Applications or the Card Manager.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param cardElement [in] Identifier to retrieve data for Load Files, Applications or the Card Manager.
  * See #GP211_STATUS_APPLICATIONS and related.
- * \param *applData OUT The GP211_APPLICATION_DATA structure.
- * \param *executableData OUT The GP211_APPLICATION_DATA structure.
- * \param dataLength INOUT The number of GP211_APPLICATION_DATA or GP211_EXECUTABLE_MODULES_DATA passed and returned.
+ * \param *applData [out] The GP211_APPLICATION_DATA structure.
+ * \param *executableData [out] The GP211_APPLICATION_DATA structure.
+ * \param dataLength [in, out] The number of GP211_APPLICATION_DATA or GP211_EXECUTABLE_MODULES_DATA passed and returned.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE cardElement, GP211_APPLICATION_DATA *applData, GP211_EXECUTABLE_MODULES_DATA *executableData, PDWORD dataLength) {
@@ -1651,9 +1649,9 @@ end:
 /**
  * If loadFileBuf is NULL the loadFileBufSize is ignored and the necessary buffer size
  * is returned in loadFileBufSize and the functions returns.
- * \param fileName IN The name of the CAP file.
- * \param loadFileBuf OUT The destination buffer with the Executable Load File contents.
- * \param loadFileBufSize INOUT The size of the loadFileBuf.
+ * \param fileName [in] The name of the CAP file.
+ * \param loadFileBuf [out] The destination buffer with the Executable Load File contents.
+ * \param loadFileBufSize [in, out] The size of the loadFileBuf.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OPGP_extract_cap_file(OPGP_CSTRING fileName, PBYTE loadFileBuf, PDWORD loadFileBufSize) {
@@ -1661,8 +1659,8 @@ OPGP_ERROR_STATUS OPGP_extract_cap_file(OPGP_CSTRING fileName, PBYTE loadFileBuf
 }
 
 /**
- * \param capFileName IN The name of the CAP file.
- * \param ijcFileName IN The name of the destination IJC file.
+ * \param capFileName [in] The name of the CAP file.
+ * \param ijcFileName [in] The name of the destination IJC file.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OPGP_cap_to_ijc(OPGP_CSTRING capFileName, OPGP_STRING ijcFileName) {
@@ -1670,8 +1668,8 @@ OPGP_ERROR_STATUS OPGP_cap_to_ijc(OPGP_CSTRING capFileName, OPGP_STRING ijcFileN
 }
 
 /**
- * \param loadFileName The load file name to parse.
- * \param *loadFileParams The parsed parameters.
+ * \param loadFileName [in] The load file name to parse.
+ * \param *loadFileParams [out] The parsed parameters.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OPGP_read_executable_load_file_parameters(OPGP_STRING loadFileName, OPGP_LOAD_FILE_PARAMETERS *loadFileParams)  {
@@ -1679,9 +1677,9 @@ OPGP_ERROR_STATUS OPGP_read_executable_load_file_parameters(OPGP_STRING loadFile
 }
 
 /**
- * \param loadFileBuf The load file buffer.
- * \param loadFileBufSize The size of the load file buffer.
- * \param *loadFileParams The parsed parameters.
+ * \param loadFileBuf [in] The load file buffer.
+ * \param loadFileBufSize [in] The size of the load file buffer.
+ * \param *loadFileParams [out] The parsed parameters.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OPGP_read_executable_load_file_parameters_from_buffer(PBYTE loadFileBuf, DWORD loadFileBufSize, OPGP_LOAD_FILE_PARAMETERS *loadFileParams) {
@@ -1692,17 +1690,17 @@ OPGP_ERROR_STATUS OPGP_read_executable_load_file_parameters_from_buffer(PBYTE lo
  * An GP211_install_for_load() must precede.
  * The Load File Data Block Signature(s) must be the same block(s) and in the same order like in calculate_load_file_data_block_hash().
  * If no Load File Data Block Signatures are necessary the loadFileDataBlockSignature must be NULL and the loadFileDataBlockSignatureLength 0.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param *loadFileDataBlockSignature IN A pointer to GP211_DAP_BLOCK structure(s).
- * \param loadFileDataBlockSignatureLength IN The number of GP211_DAP_BLOCK structure(s).
- * \param executableLoadFileName IN The name of the CAP or IJC file (Executable Load File) to load.
- * \param *receiptData OUT If the deletion is performed by a security domain with delegated management privilege
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param *loadFileDataBlockSignature [in] A pointer to GP211_DAP_BLOCK structure(s).
+ * \param loadFileDataBlockSignatureLength [in] The number of GP211_DAP_BLOCK structure(s).
+ * \param executableLoadFileName [in] The name of the CAP or IJC file (Executable Load File) to load.
+ * \param *receiptData [out] If the deletion is performed by a security domain with delegated management privilege
  * this structure contains the according data.
  * Can be validated with validate_load_receipt().
- * \param receiptDataAvailable OUT 0 if no receiptData is available.
- * \param *callback IN An optional callback for measuring the progress. Can be NULL if not needed.
+ * \param receiptDataAvailable [out] 0 if no receiptData is available.
+ * \param *callback [in] An optional callback for measuring the progress. Can be NULL if not needed.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_load(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -1719,18 +1717,18 @@ OPGP_ERROR_STATUS GP211_load(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardI
  * An GP211_install_for_load() must precede.
  * The Load File Data Block Signature(s) must be the same block(s) and in the same order like in calculate_load_file_data_block_hash().
  * If no Load File Data Block Signatures are necessary the loadFileDataBlockSignature must be NULL and the loadFileDataBlockSignatureLength 0.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param *loadFileDataBlockSignature IN A pointer to GP211_DAP_BLOCK structure(s).
- * \param loadFileDataBlockSignatureLength IN The number of GP211_DAP_BLOCK structure(s).
- * \param loadFileBuf IN buffer with the contents of a Executable Load File.
- * \param loadFileBufSize IN size of loadFileBuf.
- * \param *receiptData OUT If the deletion is performed by a security domain with delegated management privilege
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param *loadFileDataBlockSignature [in] A pointer to GP211_DAP_BLOCK structure(s).
+ * \param loadFileDataBlockSignatureLength [in] The number of GP211_DAP_BLOCK structure(s).
+ * \param loadFileBuf [in] buffer with the contents of a Executable Load File.
+ * \param loadFileBufSize [in] size of loadFileBuf.
+ * \param *receiptData [out] If the deletion is performed by a security domain with delegated management privilege
  * this structure contains the according data.
  * Can be validated with validate_load_receipt().
- * \param receiptDataAvailable OUT 0 if no receiptData is available.
- * \param *callback IN An optional callback for measuring the progress. Can be NULL if not needed.
+ * \param receiptDataAvailable [out] 0 if no receiptData is available.
+ * \param *callback [in] An optional callback for measuring the progress. Can be NULL if not needed.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_load_from_buffer(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -2068,18 +2066,18 @@ end:
  * Otherwise loadToken must be NULL. See GP211_calculate_load_token().
  * The term Executable Load File is equivalent to the GlobalPlatform term Load File Data Block.
  * volatileDataSpaceLimit and nonVolatileDataSpaceLimit can be 0, if the card does not need or support this tags.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param executableLoadFileAID IN A buffer with AID of the Executable Load File to INSTALL [for load].
- * \param executableLoadFileAIDLength IN The length of the Executable Load File AID.
- * \param securityDomainAID IN A buffer containing the AID of the intended associated Security Domain.
- * \param securityDomainAIDLength IN The length of the Security Domain AID.
- * \param loadFileDataBlockHash IN The Load File Data Block Hash of the Executable Load File to INSTALL [for load].
- * \param loadToken IN The Load Token. This is a 1024 bit (=128 byte) RSA Signature.
- * \param nonVolatileCodeSpaceLimit IN The minimum amount of space that must be available to store the package.
- * \param volatileDataSpaceLimit IN The minimum amount of RAM space that must be available.
- * \param nonVolatileDataSpaceLimit IN The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param executableLoadFileAID [in] A buffer with AID of the Executable Load File to INSTALL [for load].
+ * \param executableLoadFileAIDLength [in] The length of the Executable Load File AID.
+ * \param securityDomainAID [in] A buffer containing the AID of the intended associated Security Domain.
+ * \param securityDomainAIDLength [in] The length of the Security Domain AID.
+ * \param loadFileDataBlockHash [in] The Load File Data Block Hash of the Executable Load File to INSTALL [for load].
+ * \param loadToken [in] The Load Token. This is a 1024 bit (=128 byte) RSA Signature.
+ * \param nonVolatileCodeSpaceLimit [in] The minimum amount of space that must be available to store the package.
+ * \param volatileDataSpaceLimit [in] The minimum amount of RAM space that must be available.
+ * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -2152,24 +2150,24 @@ end:
  * If the tag for application install parameters is mandatory for your card, but you have no install parameters
  * for the install() method of the application anyway you have to use at least a dummy parameter.
  * If executableModuleAID is NULL and executableModuleAIDLength is 0 applicationAID is assumed for executableModuleAID.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param executableLoadFileAID IN A buffer with AID of the Executable Load File to INSTALL [for install].
- * \param executableLoadFileAIDLength IN The length of the Executable Load File AID.
- * \param executableModuleAID IN The AID of the application class in the package.
- * \param executableModuleAIDLength IN The length of the executableModuleAID buffer.
- * \param applicationAID IN The AID of the installed application.
- * \param applicationAIDLength IN The length of the application instance AID.
- * \param applicationPrivileges IN The application privileges. Can be an OR of multiple privileges. See #GP211_APPLICATION_PRIVILEGE_SECURITY_DOMAIN.
- * \param volatileDataSpaceLimit IN The minimum amount of RAM space that must be available.
- * \param nonVolatileDataSpaceLimit IN The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
- * \param installParameters IN Applet install parameters for the install() method of the application.
- * \param installParametersLength IN The length of the installParameters buffer.
- * \param installToken IN The Install Token. This is a 1024 bit (=128 byte) RSA Signature.
- * \param *receiptData OUT If the deletion is performed by a security domain with delegated management privilege
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param executableLoadFileAID [in] A buffer with AID of the Executable Load File to INSTALL [for install].
+ * \param executableLoadFileAIDLength [in] The length of the Executable Load File AID.
+ * \param executableModuleAID [in] The AID of the application class in the package.
+ * \param executableModuleAIDLength [in] The length of the executableModuleAID buffer.
+ * \param applicationAID [in] The AID of the installed application.
+ * \param applicationAIDLength [in] The length of the application instance AID.
+ * \param applicationPrivileges [in] The application privileges. Can be an OR of multiple privileges. See #GP211_APPLICATION_PRIVILEGE_SECURITY_DOMAIN.
+ * \param volatileDataSpaceLimit [in] The minimum amount of RAM space that must be available.
+ * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
+ * \param installParameters [in] Applet install parameters for the install() method of the application.
+ * \param installParametersLength [in] The length of the installParameters buffer.
+ * \param installToken [in] The Install Token. This is a 1024 bit (=128 byte) RSA Signature.
+ * \param *receiptData [out] If the deletion is performed by a security domain with delegated management privilege
  * this structure contains the according data.
- * \param receiptDataAvailable OUT 0 if no receiptData is available.
+ * \param receiptDataAvailable [out] 0 if no receiptData is available.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -2256,24 +2254,24 @@ end:
  * If the tag for application install parameters is mandatory for your card, but you have no install parameters
  * for the install() method of the application anyway you have to use at least a dummy parameter.
  * If executableModuleAID is NULL and executableModuleAIDLength is 0 applicationAID is assumed for executableModuleAID.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param executableLoadFileAID IN A buffer with AID of the Executable Load File to INSTALL [for install].
- * \param executableLoadFileAIDLength IN The length of the Executable Load File AID.
- * \param executableModuleAID IN The AID of the application class in the package.
- * \param executableModuleAIDLength IN The length of the executableModuleAID buffer.
- * \param applicationAID IN The AID of the installed application.
- * \param applicationAIDLength IN The length of the application instance AID.
- * \param applicationPrivileges IN The application privileges. Can be an OR of multiple privileges. See #GP211_APPLICATION_PRIVILEGE_SECURITY_DOMAIN.
- * \param volatileDataSpaceLimit IN The minimum amount of RAM space that must be available.
- * \param nonVolatileDataSpaceLimit IN The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
- * \param installParameters IN Applet install parameters for the install() method of the application.
- * \param installParametersLength IN The length of the installParameters buffer.
- * \param installToken IN The Install Token. This is a 1024 bit (=128 byte) RSA Signature.
- * \param *receiptData OUT If the deletion is performed by a security domain with delegated management privilege
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param executableLoadFileAID [in] A buffer with AID of the Executable Load File to INSTALL [for install].
+ * \param executableLoadFileAIDLength [in] The length of the Executable Load File AID.
+ * \param executableModuleAID [in] The AID of the application class in the package.
+ * \param executableModuleAIDLength [in] The length of the executableModuleAID buffer.
+ * \param applicationAID [in] The AID of the installed application.
+ * \param applicationAIDLength [in] The length of the application instance AID.
+ * \param applicationPrivileges [in] The application privileges. Can be an OR of multiple privileges. See #GP211_APPLICATION_PRIVILEGE_SECURITY_DOMAIN.
+ * \param volatileDataSpaceLimit [in] The minimum amount of RAM space that must be available.
+ * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
+ * \param installParameters [in] Applet install parameters for the install() method of the application.
+ * \param installParametersLength [in] The length of the installParameters buffer.
+ * \param installToken [in] The Install Token. This is a 1024 bit (=128 byte) RSA Signature.
+ * \param *receiptData [out] If the deletion is performed by a security domain with delegated management privilege
  * this structure contains the according data.
- * \param receiptDataAvailable OUT 0 if no receiptData is available.
+ * \param receiptDataAvailable [out] 0 if no receiptData is available.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_install_for_install_and_make_selectable(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -2358,18 +2356,18 @@ end:
  * In the case of delegated management an Extradition Token authorizing the
  * INSTALL [for extradition] must be included.
  * Otherwise extraditionToken must be NULL. See calculate_install_token().
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param securityDomainAID IN A buffer containing the Security Domain AID.
- * \param securityDomainAIDLength IN The length of the Security Domain AID.
- * \param applicationAID IN The AID of the installed application.
- * \param applicationAIDLength IN The length of the application instance AID.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param securityDomainAID [in] A buffer containing the Security Domain AID.
+ * \param securityDomainAIDLength [in] The length of the Security Domain AID.
+ * \param applicationAID [in] The AID of the installed application.
+ * \param applicationAIDLength [in] The length of the application instance AID.
 GP211_APPLICATION_PRIVILEGE_SECURITY_DOMAIN.
- * \param extraditionToken IN The Install Token. This is a 1024 bit (=128 byte) RSA Signature.
- * \param *receiptData OUT If the deletion is performed by a security domain with delegated management privilege
+ * \param extraditionToken [in] The Install Token. This is a 1024 bit (=128 byte) RSA Signature.
+ * \param *receiptData [out] If the deletion is performed by a security domain with delegated management privilege
  * this structure contains the according data.
- * \param receiptDataAvailable OUT 0 if no receiptData is available.
+ * \param receiptDataAvailable [out] 0 if no receiptData is available.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_install_for_extradition(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -2428,11 +2426,11 @@ end:
 }
 
 /**
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param applicationAID IN The AID of the installed application.
- * \param applicationAIDLength IN The length of the application instance AID.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param applicationAID [in] The AID of the installed application.
+ * \param applicationAIDLength [in] The length of the application instance AID.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_install_for_personalization(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -2482,16 +2480,16 @@ end:
  * In the case of delegated management an Install Token authorizing the INSTALL [for make selectable] must be included.
  * Otherwise installToken must be NULL.
  * For Security domains look in your manual what parameters are necessary.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param applicationAID IN The AID of the installed application or security domain.
- * \param applicationAIDLength IN The length of the application instance AID.
- * \param applicationPrivileges IN The application privileges. Can be an OR of multiple privileges. See #GP211_APPLICATION_PRIVILEGE_SECURITY_DOMAIN.
- * \param installToken IN The Install Token. This is a 1024 bit (=128 byte) RSA Signature.
- * \param *receiptData OUT If the deletion is performed by a security domain with delegated management privilege
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param applicationAID [in] The AID of the installed application or security domain.
+ * \param applicationAIDLength [in] The length of the application instance AID.
+ * \param applicationPrivileges [in] The application privileges. Can be an OR of multiple privileges. See #GP211_APPLICATION_PRIVILEGE_SECURITY_DOMAIN.
+ * \param installToken [in] The Install Token. This is a 1024 bit (=128 byte) RSA Signature.
+ * \param *receiptData [out] If the deletion is performed by a security domain with delegated management privilege
  * this structure contains the according data.
- * \param receiptDataAvailable OUT 0 if no receiptData is available.
+ * \param receiptDataAvailable [out] 0 if no receiptData is available.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_install_for_make_selectable(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -2572,25 +2570,25 @@ end:
  * Card Issuer and obtain the RSA signature of the data, i.e. the Install Token.
  * volatileDataSpaceLimit can be 0, if the card does not need or support this tag.
  * The parameters must match the parameters of a later GP211_install_for_install() and GP211_install_for_make_selectable() method.
- * \param P1 IN The parameter P1 in the APDU command.
+ * \param P1 [in] The parameter P1 in the APDU command.
  * <ul>
  * <li> 0x04 for a INSTALL [for install] command </li>
  * <li> 0x08 for an INSTALL [for make selectable] command </li>
  * <li> 0x0C for an INSTALL [for install and make selectable] </li>
  * </ul>
- * \param executableLoadFileAID IN A buffer with AID of the Executable Load File to INSTALL [for load].
- * \param executableLoadFileAIDLength IN The length of the Executable Load File AID.
- * \param executableModuleAID IN The AID of the application class in the package.
- * \param executableModuleAIDLength IN The length of the executableModuleAID buffer.
- * \param applicationAID IN The AID of the installed application.
- * \param applicationAIDLength IN The length of the application instance AID.
- * \param applicationPrivileges IN The application privileges. Can be an OR of multiple privileges. See #GP211_APPLICATION_PRIVILEGE_SECURITY_DOMAIN.
- * \param volatileDataSpaceLimit IN The minimum amount of RAM space that must be available.
- * \param nonVolatileDataSpaceLimit IN The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
- * \param installParameters IN Applet install parameters for the install() method of the application.
- * \param installParametersLength IN The length of the installParameters buffer.
- * \param installTokenSignatureData OUT The data to sign in a Install Token.
- * \param installTokenSignatureDataLength INOUT The length of the installTokenSignatureData buffer.
+ * \param executableLoadFileAID [in] A buffer with AID of the Executable Load File to INSTALL [for load].
+ * \param executableLoadFileAIDLength [in] The length of the Executable Load File AID.
+ * \param executableModuleAID [in] The AID of the application class in the package.
+ * \param executableModuleAIDLength [in] The length of the executableModuleAID buffer.
+ * \param applicationAID [in] The AID of the installed application.
+ * \param applicationAIDLength [in] The length of the application instance AID.
+ * \param applicationPrivileges [in] The application privileges. Can be an OR of multiple privileges. See #GP211_APPLICATION_PRIVILEGE_SECURITY_DOMAIN.
+ * \param volatileDataSpaceLimit [in] The minimum amount of RAM space that must be available.
+ * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
+ * \param installParameters [in] Applet install parameters for the install() method of the application.
+ * \param installParametersLength [in] The length of the installParameters buffer.
+ * \param installTokenSignatureData [out] The data to sign in a Install Token.
+ * \param installTokenSignatureDataLength [in, out] The length of the installTokenSignatureData buffer.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_get_install_token_signature_data(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE executableModuleAID,
@@ -2613,7 +2611,7 @@ OPGP_ERROR_STATUS get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD e
 									  DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 									  PBYTE installParameters, DWORD installParametersLength,
 									  PBYTE installData, PDWORD installDataLength) {
-	unsigned char buf[256];
+	BYTE buf[256];
 	DWORD i=0;
 	DWORD hiByte, loByte;
 	OPGP_ERROR_STATUS status;
@@ -2693,12 +2691,12 @@ end:
  * If you are not the Card Issuer and do not know the token verification private key send this data to the
  * Card Issuer and obtain the RSA signature of the data, i.e. the Extradition Token.
  * The parameters must match the parameters of a later GP211_install_for_extradition() method.
- * \param securityDomainAID IN A buffer containing the Security Domain AID.
- * \param securityDomainAIDLength IN The length of the Security Domain AID.
- * \param applicationAID IN The AID of the installed application.
- * \param applicationAIDLength IN The length of the application instance AID.
- * \param extraditionTokenSignatureData OUT The data to sign in a Install Token.
- * \param extraditionTokenSignatureDataLength INOUT The length of the installTokenSignatureData buffer.
+ * \param securityDomainAID [in] A buffer containing the Security Domain AID.
+ * \param securityDomainAIDLength [in] The length of the Security Domain AID.
+ * \param applicationAID [in] The AID of the installed application.
+ * \param applicationAIDLength [in] The length of the application instance AID.
+ * \param extraditionTokenSignatureData [out] The data to sign in a Install Token.
+ * \param extraditionTokenSignatureDataLength [in, out] The length of the installTokenSignatureData buffer.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_get_extradition_token_signature_data(PBYTE securityDomainAID,
@@ -2706,7 +2704,7 @@ OPGP_ERROR_STATUS GP211_get_extradition_token_signature_data(PBYTE securityDomai
 										  PBYTE applicationAID, DWORD applicationAIDLength,
 										  PBYTE extraditionTokenSignatureData,
 										  PDWORD extraditionTokenSignatureDataLength) {
-	unsigned char buf[258];
+	BYTE buf[258];
 	DWORD i=0;
 	OPGP_ERROR_STATUS status;
 
@@ -2738,27 +2736,27 @@ end:
 
 /**
  * The parameters must match the parameters of a later GP211_install_for_install(), GP211_install_for_make_selectable() and GP211_install_for_install_and_make_selectable() method.
- * \param P1 IN The parameter P1 in the APDU command.
+ * \param P1 [in] The parameter P1 in the APDU command.
  * <ul>
  * <li> 0x04 for a INSTALL [for install] command </li>
  * <li> 0x08 for an INSTALL [for make selectable] command </li>
  * <li> 0x0C for an INSTALL [for install and make selectable] </li>
  * <li> 0x10 for an INSTALL [for extradiction] </li>
  * </ul>
- * \param executableLoadFileAID IN A buffer with AID of the Executable Load File to INSTALL [for install].
- * \param executableLoadFileAIDLength IN The length of the Executable Load File AID.
- * \param executableModuleAID IN The AID of the application class in the package.
- * \param executableModuleAIDLength IN The length of the executableModuleAID buffer.
- * \param applicationAID IN The AID of the installed application.
- * \param applicationAIDLength IN The length of the application instance AID.
- * \param applicationPrivileges IN The application privileges. Can be an OR of multiple privileges. See #GP211_APPLICATION_PRIVILEGE_SECURITY_DOMAIN.
- * \param volatileDataSpaceLimit IN The minimum amount of RAM space that must be available.
- * \param nonVolatileDataSpaceLimit IN The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
- * \param installParameters IN Applet install parameters for the install() method of the application.
- * \param installParametersLength IN The length of the installParameters buffer.
- * \param installToken OUT The calculated Install Token. A 1024 bit RSA signature.
- * \param PEMKeyFileName IN A PEM file name with the private RSA key.
- * \param *passPhrase IN The passphrase. Must be an ASCII string.
+ * \param executableLoadFileAID [in] A buffer with AID of the Executable Load File to INSTALL [for install].
+ * \param executableLoadFileAIDLength [in] The length of the Executable Load File AID.
+ * \param executableModuleAID [in] The AID of the application class in the package.
+ * \param executableModuleAIDLength [in] The length of the executableModuleAID buffer.
+ * \param applicationAID [in] The AID of the installed application.
+ * \param applicationAIDLength [in] The length of the application instance AID.
+ * \param applicationPrivileges [in] The application privileges. Can be an OR of multiple privileges. See #GP211_APPLICATION_PRIVILEGE_SECURITY_DOMAIN.
+ * \param volatileDataSpaceLimit [in] The minimum amount of RAM space that must be available.
+ * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
+ * \param installParameters [in] Applet install parameters for the install() method of the application.
+ * \param installParametersLength [in] The length of the installParameters buffer.
+ * \param installToken [out] The calculated Install Token. A 1024 bit RSA signature.
+ * \param PEMKeyFileName [in] A PEM file name with the private RSA key.
+ * \param *passPhrase [in] The passphrase. Must be an ASCII string.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
@@ -2780,16 +2778,16 @@ OPGP_ERROR_STATUS GP211_calculate_install_token(BYTE P1, PBYTE executableLoadFil
  * Card Issuer and obtain the RSA signature of the data, i.e. the Load Token.
  * volatileDataSpaceLimit and nonVolatileDataSpaceLimit can be 0, if the card does not need or support this tags.
  * The parameters must match the parameters of a later GP211_install_for_load() command.
- * \param executableLoadFileAID IN A buffer containing the Executable Load File AID.
- * \param executableLoadFileAIDLength IN The length of the Executable Load File AID.
- * \param securityDomainAID IN A buffer containing the Security Domain AID.
- * \param securityDomainAIDLength IN The length of the Security Domain AID.
- * \param loadFileDataBlockHash IN The Load File Data Block Hash. The same calculated as in GP211_install_for_load().
- * \param nonVolatileCodeSpaceLimit IN The minimum space required to store the application code.
- * \param volatileDataSpaceLimit IN The minimum amount of RAM space that must be available.
- * \param nonVolatileDataSpaceLimit IN The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
- * \param loadTokenSignatureData OUT The data to sign in a Load Token.
- * \param loadTokenSignatureDataLength INOUT The length of the loadTokenSignatureData buffer.
+ * \param executableLoadFileAID [in] A buffer containing the Executable Load File AID.
+ * \param executableLoadFileAIDLength [in] The length of the Executable Load File AID.
+ * \param securityDomainAID [in] A buffer containing the Security Domain AID.
+ * \param securityDomainAIDLength [in] The length of the Security Domain AID.
+ * \param loadFileDataBlockHash [in] The Load File Data Block Hash. The same calculated as in GP211_install_for_load().
+ * \param nonVolatileCodeSpaceLimit [in] The minimum space required to store the application code.
+ * \param volatileDataSpaceLimit [in] The minimum amount of RAM space that must be available.
+ * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
+ * \param loadTokenSignatureData [out] The data to sign in a Load Token.
+ * \param loadTokenSignatureDataLength [in, out] The length of the loadTokenSignatureData buffer.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_get_load_token_signature_data(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE securityDomainAID,
@@ -2797,7 +2795,7 @@ OPGP_ERROR_STATUS GP211_get_load_token_signature_data(PBYTE executableLoadFileAI
 								   DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
 								   DWORD nonVolatileDataSpaceLimit, PBYTE loadTokenSignatureData,
 								   PDWORD loadTokenSignatureDataLength) {
-	unsigned char buf[258];
+	BYTE buf[258];
 	DWORD i=0;
 #ifdef DEBUG
 	DWORD j=0;
@@ -2906,17 +2904,17 @@ end:
 
 /**
  * The parameters must match the parameters of a later GP211_install_for_load() method.
- * \param executableLoadFileAID IN A buffer containing the Executable Load File AID.
- * \param executableLoadFileAIDLength IN The length of the Executable Load File AID.
- * \param securityDomainAID IN A buffer containing the Security Domain AID.
- * \param securityDomainAIDLength IN The length of the Security Domain AID.
- * \param loadFileDataBlockHash IN The Load File DAP. The same calculated as in GP211_install_for_load().
- * \param nonVolatileCodeSpaceLimit IN The minimum space required to store the package.
- * \param volatileDataSpaceLimit IN The minimum amount of RAM space that must be available.
- * \param nonVolatileDataSpaceLimit IN The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
- * \param loadToken OUT The calculated Load Token. A 1024 bit RSA signature.
- * \param PEMKeyFileName IN A PEM file name with the private RSA key.
- * \param *passPhrase IN The passphrase. Must be an ASCII string.
+ * \param executableLoadFileAID [in] A buffer containing the Executable Load File AID.
+ * \param executableLoadFileAIDLength [in] The length of the Executable Load File AID.
+ * \param securityDomainAID [in] A buffer containing the Security Domain AID.
+ * \param securityDomainAIDLength [in] The length of the Security Domain AID.
+ * \param loadFileDataBlockHash [in] The Load File DAP. The same calculated as in GP211_install_for_load().
+ * \param nonVolatileCodeSpaceLimit [in] The minimum space required to store the package.
+ * \param volatileDataSpaceLimit [in] The minimum amount of RAM space that must be available.
+ * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
+ * \param loadToken [out] The calculated Load Token. A 1024 bit RSA signature.
+ * \param PEMKeyFileName [in] A PEM file name with the private RSA key.
+ * \param *passPhrase [in] The passphrase. Must be an ASCII string.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_calculate_load_token(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
@@ -2947,15 +2945,13 @@ end:
 
 /**
  * This is a hash of the Load File Data Block with SHA-1.
- * \param executableLoadFileName IN The name of the Executable Load File to hash.
- * \param hash OUT The hash value.
+ * \param executableLoadFileName [in] The name of the Executable Load File to hash.
+ * \param hash [out] The hash value.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_calculate_load_file_data_block_hash(OPGP_STRING executableLoadFileName,
-							 unsigned char hash[20]) {
+							 BYTE hash[20]) {
 	OPGP_ERROR_STATUS status;
-	PBYTE dapBuf = NULL;
-	DWORD dapBufSize=0;
 	PBYTE loadFileBuf = NULL;
 	DWORD loadFileBufSize;
 	OPGP_LOG_START(_T("GP211_calculate_load_file_data_block_hash"));
@@ -2991,11 +2987,11 @@ end:
 /**
  * If a security domain has DAP verification privilege the security domain validates this DAP.
  * The loadFileDataBlockHash can be calculated using calculate_load_file_data_block_hash().
- * \param loadFileDataBlockHash IN The Load File Data Block Hash.
- * \param securityDomainAID IN A buffer containing the Security Domain AID.
- * \param securityDomainAIDLength IN The length of the Security Domain AID.
- * \param DAPCalculationKey IN The key to calculate the DAP.
- * \param *loadFileDataBlockSignature OUT A pointer to the returned GP211_DAP_BLOCK structure.
+ * \param loadFileDataBlockHash [in] The Load File Data Block Hash.
+ * \param securityDomainAID [in] A buffer containing the Security Domain AID.
+ * \param securityDomainAIDLength [in] The length of the Security Domain AID.
+ * \param DAPCalculationKey [in] The key to calculate the DAP.
+ * \param *loadFileDataBlockSignature [out] A pointer to the returned GP211_DAP_BLOCK structure.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_calculate_3des_DAP(BYTE loadFileDataBlockHash[20], PBYTE securityDomainAID,
@@ -3021,12 +3017,12 @@ end:
 /**
  * If a security domain has DAP verification privilege the security domain validates this DAP.
  * The loadFileDataBlockHash can be calculated using calculate_load_file_data_block_hash().
- * \param loadFileDataBlockHash IN The Load File Data Block Hash.
- * \param securityDomainAID IN A buffer containing the Security Domain AID.
- * \param securityDomainAIDLength IN The length of the Security Domain AID.
- * \param PEMKeyFileName IN A PEM file name with the DAP Verification private RSA key.
- * \param *passPhrase IN The passphrase. Must be an ASCII string.
- * \param *loadFileDataBlockSignature OUT A pointer to the returned GP211_DAP_BLOCK structure.
+ * \param loadFileDataBlockHash [in] The Load File Data Block Hash.
+ * \param securityDomainAID [in] A buffer containing the Security Domain AID.
+ * \param securityDomainAIDLength [in] The length of the Security Domain AID.
+ * \param PEMKeyFileName [in] A PEM file name with the DAP Verification private RSA key.
+ * \param *passPhrase [in] The passphrase. Must be an ASCII string.
+ * \param *loadFileDataBlockSignature [out] A pointer to the returned GP211_DAP_BLOCK structure.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_calculate_rsa_DAP(BYTE loadFileDataBlockHash[20], PBYTE securityDomainAID,
@@ -3053,16 +3049,16 @@ end:
 /**
  * Each time a receipt is generated the confirmation counter is incremented by the Card Manager.
  * You may keep track of it. Returns OPGP_ERROR_SUCCESS if receipt is valid.
- * \param confirmationCounter IN The confirmation counter.
- * \param cardUniqueData IN The card unique data.
- * \param cardUniqueDataLength IN The length of the card unique data buffer.
- * \param receiptKey IN The 3DES key to generate the receipt.
- * \param receiptData IN The GP211_RECEIPT_DATA structure containing the receipt returned
+ * \param confirmationCounter [in] The confirmation counter.
+ * \param cardUniqueData [in] The card unique data.
+ * \param cardUniqueDataLength [in] The length of the card unique data buffer.
+ * \param receiptKey [in] The 3DES key to generate the receipt.
+ * \param receiptData [in] The GP211_RECEIPT_DATA structure containing the receipt returned
  * from load() to verify.
- * \param executableLoadFileAID IN A buffer with AID of the Executable Load File which was INSTALL [for load].
- * \param executableLoadFileAIDLength IN The length of the Executable Load File AID.
- * \param securityDomainAID IN A buffer containing the AID of the associated Security Domain.
- * \param securityDomainAIDLength IN The length of the Security Domain AID.
+ * \param executableLoadFileAID [in] A buffer with AID of the Executable Load File which was INSTALL [for load].
+ * \param executableLoadFileAIDLength [in] The length of the Executable Load File AID.
+ * \param securityDomainAID [in] A buffer containing the AID of the associated Security Domain.
+ * \param securityDomainAIDLength [in] The length of the Security Domain AID.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_validate_load_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
@@ -3081,16 +3077,16 @@ OPGP_ERROR_STATUS GP211_validate_load_receipt(DWORD confirmationCounter, PBYTE c
 /**
  * Each time a receipt is generated the confirmation counter is incremented by the Card Manager.
  * You may keep track of it. Returns OPGP_ERROR_SUCCESS if receipt is valid.
- * \param confirmationCounter IN The confirmation counter.
- * \param cardUniqueData IN The card unique data.
- * \param cardUniqueDataLength IN The length of the card unique data buffer.
- * \param receiptKey IN The 3DES key to generate the receipt.
- * \param receiptData IN The GP211_RECEIPT_DATA structure containing the receipt returned
+ * \param confirmationCounter [in] The confirmation counter.
+ * \param cardUniqueData [in] The card unique data.
+ * \param cardUniqueDataLength [in] The length of the card unique data buffer.
+ * \param receiptKey [in] The 3DES key to generate the receipt.
+ * \param receiptData [in] The GP211_RECEIPT_DATA structure containing the receipt returned
  * from GP211_install_for_install() to verify.
- * \param executableLoadFileAID IN A buffer with AID of the Executable Load File which was INSTALL [for install].
- * \param executableLoadFileAIDLength IN The length of the Executable Load File AID.
- * \param applicationAID IN The AID of the installed application.
- * \param applicationAIDLength IN The length of the application instance AID.
+ * \param executableLoadFileAID [in] A buffer with AID of the Executable Load File which was INSTALL [for install].
+ * \param executableLoadFileAIDLength [in] The length of the Executable Load File AID.
+ * \param applicationAID [in] The AID of the installed application.
+ * \param applicationAIDLength [in] The length of the application instance AID.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_validate_install_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
@@ -3109,14 +3105,14 @@ OPGP_ERROR_STATUS GP211_validate_install_receipt(DWORD confirmationCounter, PBYT
 /**
  * Each time a receipt is generated the confirmation counter is incremented by the Card Manager.
  * You may keep track of it. Returns OPGP_ERROR_SUCCESS if receipt is valid.
- * \param confirmationCounter IN The confirmation counter.
- * \param cardUniqueData IN The card unique data.
- * \param cardUniqueDataLength IN The length of the card unique data buffer.
- * \param receiptKey IN The 3DES key to generate the receipt.
- * \param receiptData IN The GP211_RECEIPT_DATA structure containing the receipt returned
+ * \param confirmationCounter [in] The confirmation counter.
+ * \param cardUniqueData [in] The card unique data.
+ * \param cardUniqueDataLength [in] The length of the card unique data buffer.
+ * \param receiptKey [in] The 3DES key to generate the receipt.
+ * \param receiptData [in] The GP211_RECEIPT_DATA structure containing the receipt returned
  * from delete_application() to verify.
- * \param AID IN A buffer with AID of the application which was deleted.
- * \param AIDLength IN The length of the AID.
+ * \param AID [in] A buffer with AID of the application which was deleted.
+ * \param AIDLength [in] The length of the AID.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_validate_delete_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
@@ -3132,18 +3128,18 @@ OPGP_ERROR_STATUS GP211_validate_delete_receipt(DWORD confirmationCounter, PBYTE
 /**
  * Each time a receipt is generated the confirmation counter is incremented by the Card Manager.
  * You may keep track of it. Returns OPGP_ERROR_SUCCESS if receipt is valid.
- * \param confirmationCounter IN The confirmation counter.
- * \param cardUniqueData IN The card unique data.
- * \param cardUniqueDataLength IN The length of the card unique data buffer.
- * \param receiptKey IN The 3DES key to generate the receipt.
- * \param receiptData IN The GP211_RECEIPT_DATA structure containing the receipt returned
+ * \param confirmationCounter [in] The confirmation counter.
+ * \param cardUniqueData [in] The card unique data.
+ * \param cardUniqueDataLength [in] The length of the card unique data buffer.
+ * \param receiptKey [in] The 3DES key to generate the receipt.
+ * \param receiptData [in] The GP211_RECEIPT_DATA structure containing the receipt returned
  * from GP211_install_for_extradition() to verify.
- * \param oldSecurityDomainAID IN The AID of the old associated Security Domain.
- * \param oldSecurityDomainAIDLength IN The length of the oldSecurityDomainAID buffer.
- * \param newSecurityDomainAID IN The AID of the new associated Security Domain.
- * \param newSecurityDomainAIDLength IN The length of the newSecurityDomainAID buffer.
- * \param applicationOrExecutableLoadFileAID IN A buffer with AID of the Executable Load File which was INSTALL [for install].
- * \param applicationOrExecutableLoadFileAIDLength IN The length of the Executable Load File AID.
+ * \param oldSecurityDomainAID [in] The AID of the old associated Security Domain.
+ * \param oldSecurityDomainAIDLength [in] The length of the oldSecurityDomainAID buffer.
+ * \param newSecurityDomainAID [in] The AID of the new associated Security Domain.
+ * \param newSecurityDomainAIDLength [in] The length of the newSecurityDomainAID buffer.
+ * \param applicationOrExecutableLoadFileAID [in] A buffer with AID of the Executable Load File which was INSTALL [for install].
+ * \param applicationOrExecutableLoadFileAIDLength [in] The length of the Executable Load File AID.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_validate_extradition_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
@@ -3197,14 +3193,14 @@ end:
 
 /**
   * E.g. GemXpresso cards, JCOP-10 cards or Palmera Protect V5 cards use this scheme.
-  * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
-  * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
-  * \param AID IN The AID of the Card Manager.
-  * \param AIDLength IN The length of the Card Manager AID / Issuer Security Domain AID.
-  * \param masterKey IN The master key.
-  * \param S_ENC OUT The static Encryption key.
-  * \param S_MAC OUT The static Message Authentication Code key.
-  * \param DEK OUT The static Key Encryption Key.
+  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+  * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
+  * \param AID [in] The AID of the Card Manager.
+  * \param AIDLength [in] The length of the Card Manager AID / Issuer Security Domain AID.
+  * \param masterKey [in] The master key.
+  * \param S_ENC [out] The static Encryption key.
+  * \param S_MAC [out] The static Message Authentication Code key.
+  * \param DEK [out] The static Key Encryption Key.
   * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
   */
 OPGP_ERROR_STATUS OPGP_VISA2_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, PBYTE AID, DWORD AIDLength, BYTE masterKey[16],
@@ -3333,20 +3329,20 @@ end:
  * Details about the supported Secure Channel Protocol and its implementation can be
  * obtained by a call to the function get_secure_channel_protocol_details().
  * New cards usually use the VISA default key for all DES keys. See #OPGP_VISA_DEFAULT_KEY.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param baseKey IN Secure Channel base key.
- * \param S_ENC IN Secure Channel Encryption Key.
- * \param S_MAC IN Secure Channel Message Authentication Code Key.
- * \param DEK IN Data Encryption Key.
- * \param keySetVersion IN The key set version on the card to use for mutual authentication.
- * \param keyIndex IN The key index of the encryption key in the key set version on the card to use for
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param baseKey [in] Secure Channel base key.
+ * \param S_ENC [in] Secure Channel Encryption Key.
+ * \param S_MAC [in] Secure Channel Message Authentication Code Key.
+ * \param DEK [in] Data Encryption Key.
+ * \param keySetVersion [in] The key set version on the card to use for mutual authentication.
+ * \param keyIndex [in] The key index of the encryption key in the key set version on the card to use for
  * mutual authentication.
- * \param secureChannelProtocol IN The Secure Channel Protocol.
- * \param secureChannelProtocolImpl IN The Secure Channel Protocol Implementation.
- * \param securityLevel IN The requested security level.
+ * \param secureChannelProtocol [in] The Secure Channel Protocol.
+ * \param secureChannelProtocolImpl [in] The Secure Channel Protocol Implementation.
+ * \param securityLevel [in] The requested security level.
  * See security.h#GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC and others.
- * \param *secInfo OUT The returned GP211_SECURITY_INFO structure.
+ * \param *secInfo [out] The returned GP211_SECURITY_INFO structure.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE baseKey[16],
@@ -3372,18 +3368,18 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	OPGP_ERROR_STATUS status;
 	DWORD i=0;
 
-	unsigned char hostChallenge[8];
+	BYTE hostChallenge[8];
 
-	unsigned char key_diversification_data[10];
-	unsigned char key_information_data[2];
-	unsigned char sequenceCounter[2];
-	unsigned char cardChallengeSCP02[6];
-	unsigned char cardChallengeSCP01[8];
-	unsigned char cardCryptogram[8];
+	BYTE key_diversification_data[10];
+	BYTE key_information_data[2];
+	BYTE sequenceCounter[2];
+	BYTE cardChallengeSCP02[6];
+	BYTE cardChallengeSCP01[8];
+	BYTE cardCryptogram[8];
 
-	unsigned char card_cryptogram_ver[8];
-	unsigned char hostCryptogram[8];
-	unsigned char mac[8];
+	BYTE card_cryptogram_ver[8];
+	BYTE hostCryptogram[8];
+	BYTE mac[8];
 
 	DWORD sendBufferLength=256;
 	DWORD recvBufferLength=256;
@@ -3442,7 +3438,7 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	/* Augusto: added key information data in secInfo */
 	secInfo->keySetVersion = key_information_data[0];
 	// the key index is only reported in OP201
-	if (cardContext, cardInfo.specVersion == OP_201) {
+	if (cardInfo.specVersion == OP_201) {
 		secInfo->keyIndex = key_information_data[1];
 	}
 	else {
@@ -3461,7 +3457,7 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	memcpy(cardCryptogram, recvBuffer+20, 8);
 
 	// test if reported SCP is consistent with passed SCP
-	if (cardContext, cardInfo.specVersion == GP_211) {
+	if (cardInfo.specVersion == GP_211) {
 		if (secureChannelProtocol != key_information_data[1]) {
 			OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_INCONSISTENT_SCP, OPGP_stringify_error(GP211_ERROR_INCONSISTENT_SCP));
 			goto end;
@@ -3549,7 +3545,7 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 			goto end;
 		}
 	}
-	else if (secInfo->secureChannelProtocol = GP211_SCP01) {
+	else if (secInfo->secureChannelProtocol == GP211_SCP01) {
 		if (secInfo->secureChannelProtocolImpl == GP211_SCP01_IMPL_i05
 			|| secInfo->secureChannelProtocolImpl == GP211_SCP01_IMPL_i15) {
 			// calculation of ENC session key
@@ -3651,13 +3647,13 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	i+=8;
 
 	if (secInfo->secureChannelProtocol == GP211_SCP02) {
-		status = calculate_MAC_des_3des(secInfo->C_MACSessionKey, sendBuffer, sendBufferLength-8, icv, mac);
+		status = calculate_MAC_des_3des(secInfo->C_MACSessionKey, sendBuffer, sendBufferLength-8, (PBYTE)icv, mac);
 		if (OPGP_ERROR_CHECK(status)) {
 			goto end;
 		}
 	}
 	else {
-		calculate_MAC(secInfo->C_MACSessionKey, sendBuffer, sendBufferLength-8, icv, mac);
+		calculate_MAC(secInfo->C_MACSessionKey, sendBuffer, sendBufferLength-8, (PBYTE)icv, mac);
 		if (OPGP_ERROR_CHECK(status)) {
 			goto end;
 		}
@@ -3694,13 +3690,13 @@ end:
  * SCP02 is implicitly set and the security level is set to C-MAC only.
  * \param AID The AID needed for the calculation of the ICV.
  * \param AIDLength The length of the AID buffer.
- * \param baseKey IN Secure Channel base key.
- * \param S_ENC IN Secure Channel Encryption Key.
- * \param S_MAC IN Secure Channel Message Authentication Code Key.
- * \param DEK IN Data Encryption Key.
- * \param secureChannelProtocolImpl IN The Secure Channel Protocol Implementation.
- * \param sequenceCounter IN The sequence counter.
- * \param *secInfo OUT The returned GP211_SECURITY_INFO structure.
+ * \param baseKey [in] Secure Channel base key.
+ * \param S_ENC [in] Secure Channel Encryption Key.
+ * \param S_MAC [in] Secure Channel Message Authentication Code Key.
+ * \param DEK [in] Data Encryption Key.
+ * \param secureChannelProtocolImpl [in] The Secure Channel Protocol Implementation.
+ * \param sequenceCounter [in] The sequence counter.
+ * \param *secInfo [out] The returned GP211_SECURITY_INFO structure.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_init_implicit_secure_channel(PBYTE AID, DWORD AIDLength, BYTE baseKey[16],
@@ -3774,7 +3770,7 @@ OPGP_ERROR_STATUS GP211_init_implicit_secure_channel(PBYTE AID, DWORD AIDLength,
 		goto end;
 	}
 
-	status = calculate_MAC_des_3des(secInfo->C_MACSessionKey, AID, AIDLength, icv, secInfo->lastC_MAC);
+	status = calculate_MAC_des_3des(secInfo->C_MACSessionKey, AID, AIDLength, (PBYTE)icv, secInfo->lastC_MAC);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -3785,9 +3781,9 @@ end:
 }
 
 /**
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param sequenceCounter OUT The sequence counter.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param sequenceCounter [out] The sequence counter.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_get_sequence_counter(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
@@ -3810,7 +3806,7 @@ end:
 }
 
 /**
- * \param *secInfo OUT The returned GP211_SECURITY_INFO structure.
+ * \param *secInfo [out] The returned GP211_SECURITY_INFO structure.
  */
 OPGP_ERROR_STATUS GP211_close_implicit_secure_channel(GP211_SECURITY_INFO *secInfo) {
 	OPGP_ERROR_STATUS status;
@@ -3827,12 +3823,12 @@ end:
  * The tryLimit must be in the range of 0x03 and x0A.
  * The PIN must comprise at least 6 numbers and not exceeding 12 numbers.
  * To unblock the PIN use tryLimit with a value of 0x00. In this case newPIN buffer and newPINLength are ignored.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param tryLimit IN The try limit for the PIN.
- * \param newPIN IN The new PIN.
- * \param newPINLength IN The length of the new PIN.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param tryLimit [in] The try limit for the PIN.
+ * \param newPIN [in] The new PIN.
+ * \param newPINLength [in] The length of the new PIN.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_pin_change(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE tryLimit,
@@ -3897,11 +3893,11 @@ end:
 
 /**
  * If STORE DATA is used for personalizing an application, a GP211_install_for_personalization().
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param *data IN Data to send to application or Security Domain.
- * \param dataLength IN The length of the data buffer.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param *data [in] Data to send to application or Security Domain.
+ * \param dataLength [in] The length of the data buffer.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_store_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -3911,7 +3907,6 @@ OPGP_ERROR_STATUS GP211_store_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 	DWORD recvBufferLength=256;
 	BYTE recvBuffer[256];
 	BYTE sendBuffer[261];
-	DWORD i=0;
 	DWORD left, read;
 	BYTE blockNumber=0x00;
 	OPGP_LOG_START(_T("GP211_store_data"));
@@ -3956,8 +3951,8 @@ end:
 
 /**
  * You must track on your own, what channels are open.
- * \param *cardInfo INOUT The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param channelNumber IN The Logical Channel number to select.
+ * \param *cardInfo [in, out] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param channelNumber [in] The Logical Channel number to select.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OPGP_select_channel(OPGP_CARD_INFO *cardInfo, BYTE channelNumber) {
@@ -3974,12 +3969,12 @@ end:
  * For an OPEN command, the channelNumberToClose is ignored.
  * For an CLOSE command, the channelNumberOpened is returned.
  * After closing a Logical Channel the Basic Logical Channel is assumed for the next transmissions.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param *cardInfo INOUT The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param openClose IN Logical Channel should be opened or closed. See #GP211_MANAGE_CHANNEL_OPEN.
- * \param channelNumberToClose IN The Logical Channel number to close.
- * \param channelNumberOpened OUT The Logical Channel number opened.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param *cardInfo [in, out] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param openClose [in] Logical Channel should be opened or closed. See #GP211_MANAGE_CHANNEL_OPEN.
+ * \param channelNumberToClose [in] The Logical Channel number to close.
+ * \param channelNumberOpened [out] The Logical Channel number opened.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OPGP_manage_channel(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO *cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -4034,13 +4029,13 @@ end:
 
 /**
  * The secInfo pointer can also be null and so this function can be used for arbitrary cards.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
- * \param *secInfo IN The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
- * \param capdu IN The command APDU.
- * \param capduLength IN The length of the command APDU.
- * \param rapdu OUT The response APDU.
- * \param rapduLength INOUT The length of the the response APDU.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
+ * \param *secInfo [in] The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
+ * \param capdu [in] The command APDU.
+ * \param capduLength [in] The length of the command APDU.
+ * \param rapdu [out] The response APDU.
+ * \param rapduLength [in, out] The length of the the response APDU.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
@@ -4064,14 +4059,14 @@ OPGP_ERROR_STATUS OP201_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO 
  * Any other value between 0x01 and 0x7f must match an existing key set version.
  * The new key set version defines the key set version a new key belongs to.
  * This can be the same key version or a new not existing key set version.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
- * \param keySetVersion IN An existing key set version.
- * \param keyIndex IN The position of the key in the key set version.
- * \param newKeySetVersion IN The new key set version.
- * \param PEMKeyFileName IN A PEM file name with the public RSA key.
- * \param *passPhrase IN The passphrase. Must be an ASCII string.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
+ * \param keySetVersion [in] An existing key set version.
+ * \param keyIndex [in] The position of the key in the key set version.
+ * \param newKeySetVersion [in] The new key set version.
+ * \param PEMKeyFileName [in] A PEM file name with the public RSA key.
+ * \param *passPhrase [in] The passphrase. Must be an ASCII string.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_put_rsa_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
@@ -4091,14 +4086,14 @@ OPGP_ERROR_STATUS OP201_put_rsa_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
  * Any other value between 0x01 and 0x7f must match an existing key set version.
  * The new key set version defines the key set version a new key belongs to.
  * This can be the same key version or a new not existing key set version.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
- * \param keySetVersion IN An existing key set version.
- * \param keyIndex IN The position of the key in the key set version.
- * \param newKeySetVersion IN The new key set version.
- * \param _3desKey IN The new 3DES key.
- * \param KEK IN The key encryption key (KEK) to encrypt the _3desKey.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
+ * \param keySetVersion [in] An existing key set version.
+ * \param keyIndex [in] The position of the key in the key set version.
+ * \param newKeySetVersion [in] The new key set version.
+ * \param _3desKey [in] The new 3DES key.
+ * \param KEK [in] The key encryption key (KEK) to encrypt the _3desKey.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_put_3desKey(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
@@ -4117,15 +4112,15 @@ OPGP_ERROR_STATUS OP201_put_3desKey(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
  * Any other value between 0x01 and 0x7f must match an existing key set version.
  * The new key set version defines the key set version the new secure channel keys belongs to.
  * This can be the same key version or a new not existing key set version.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
- * \param keySetVersion IN An existing key set version.
- * \param newKeySetVersion IN The new key set version.
- * \param new_encKey IN The new Encryption key.
- * \param new_macKey IN The new MAC key.
- * \param new_KEK IN The new key encryption key.
- * \param KEK IN The key encryption key (KEK).
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
+ * \param keySetVersion [in] An existing key set version.
+ * \param newKeySetVersion [in] The new key set version.
+ * \param new_encKey [in] The new Encryption key.
+ * \param new_macKey [in] The new MAC key.
+ * \param new_KEK [in] The new key encryption key.
+ * \param KEK [in] The key encryption key (KEK).
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, BYTE keySetVersion, BYTE newKeySetVersion, BYTE new_encKey[16], BYTE new_macKey[16], BYTE new_KEK[16], BYTE KEK[16]) {
@@ -4144,15 +4139,15 @@ OPGP_ERROR_STATUS OP201_put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, O
  * Any other value between 0x01 and 0x7f must match an existing key set version.
  * The new key set version defines the key set version a the new secure channel keys belongs to.
  * This can be the same key version or a new not existing key set version.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
- * \param keySetVersion IN An existing key set version.
- * \param newKeySetVersion IN The new key set version.
- * \param PEMKeyFileName IN A PEM file name with the public RSA key.
- * \param *passPhrase IN The passphrase. Must be an ASCII string.
- * \param receiptGenerationKey IN The new Receipt Generation key.
- * \param KEK IN The key encryption key (KEK).
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
+ * \param keySetVersion [in] An existing key set version.
+ * \param newKeySetVersion [in] The new key set version.
+ * \param PEMKeyFileName [in] A PEM file name with the public RSA key.
+ * \param *passPhrase [in] The passphrase. Must be an ASCII string.
+ * \param receiptGenerationKey [in] The new Receipt Generation key.
+ * \param KEK [in] The key encryption key (KEK).
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_put_delegated_management_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
@@ -4172,11 +4167,11 @@ OPGP_ERROR_STATUS OP201_put_delegated_management_keys(OPGP_CARD_CONTEXT cardCont
 /**
  * If keyIndex is 0xFF (=-1) all keys within a keySetVersion are deleted.
  * If keySetVersion is 0x00 all keys with the specified keyIndex are deleted.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
- * \param keySetVersion IN An existing key set version.
- * \param keyIndex IN An existing key index.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
+ * \param keySetVersion [in] An existing key set version.
+ * \param keyIndex [in] An existing key index.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_delete_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, BYTE keySetVersion, BYTE keyIndex) {
@@ -4189,15 +4184,15 @@ OPGP_ERROR_STATUS OP201_delete_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 }
 
 /**
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
- * \param AIDs IN A pointer to the an array of OPGP_AID structures describing the applications and load files to delete.
- * \param AIDsLength IN The number of OPGP_AID structures.
- * \param *receiptData OUT A OP201_RECEIPT_DATA array. If the deletion is performed by a
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
+ * \param AIDs [in] A pointer to the an array of OPGP_AID structures describing the applications and load files to delete.
+ * \param AIDsLength [in] The number of OPGP_AID structures.
+ * \param *receiptData [out] A OP201_RECEIPT_DATA array. If the deletion is performed by a
  * security domain with delegated management privilege
  * this structure contains the according data for each deleted application or package.
- * \param receiptDataLength INOUT A pointer to the length of the receiptData array.
+ * \param receiptDataLength [in, out] A pointer to the length of the receiptData array.
  * If no receiptData is available this length is 0;
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
@@ -4238,12 +4233,12 @@ end:
  * Some cards do not provide some data objects. Some possible identifiers are predefined.
  * See #OP201_GET_DATA_ISSUER_BIN. For details about the coding of the dataObject see the programmer's manual
  * of your card.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
- * \param identifier IN Two byte buffer with high and low order tag value for identifying card data object.
- * \param dataObject IN The coded data object.
- * \param dataObjectLength IN The length of the data object.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
+ * \param identifier [in] Two byte buffer with high and low order tag value for identifying card data object.
+ * \param dataObject [in] The coded data object.
+ * \param dataObjectLength [in] The length of the data object.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_put_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
@@ -4263,12 +4258,12 @@ OPGP_ERROR_STATUS OP201_put_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO c
  * of your card.
  * There is a convenience method get_key_information_templates() to get the key information template(s)
  * containing key set version, key index, key type and key length of the keys.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
- * \param identifier IN Two byte buffer with high and low order tag value for identifying card data object.
- * \param recvBuffer IN The buffer for the card data object.
- * \param recvBufferLength IN The length of the received card data object.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
+ * \param identifier [in] Two byte buffer with high and low order tag value for identifying card data object.
+ * \param recvBuffer [in] The buffer for the card data object.
+ * \param recvBufferLength [in] The length of the received card data object.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength) {
@@ -4290,12 +4285,12 @@ OPGP_ERROR_STATUS OP201_get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO c
 
 /**
  * The card must support the optional report of key information templates.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
- * \param keyInformationTemplate IN The number of the key information template.
- * \param *keyInformation OUT A pointer to an array of OP201_KEY_INFORMATION structures.
- * \param keyInformationLength INOUT The number of OP201_KEY_INFORMATION structures.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
+ * \param keyInformationTemplate [in] The number of the key information template.
+ * \param *keyInformation [out] A pointer to an array of OP201_KEY_INFORMATION structures.
+ * \param keyInformationLength [in, out] The number of OP201_KEY_INFORMATION structures.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_get_key_information_templates(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
@@ -4328,13 +4323,13 @@ end:
 
 /**
  *
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
- * \param cardElement IN Identifier for Load Files, Applications or the Card Manager.
- * \param AID IN The AID.
- * \param AIDLength IN The length of the AID.
- * \param lifeCycleState IN The new life cycle state.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
+ * \param cardElement [in] Identifier for Load Files, Applications or the Card Manager.
+ * \param AID [in] The AID.
+ * \param AIDLength [in] The length of the AID.
+ * \param lifeCycleState [in] The new life cycle state.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_set_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, BYTE cardElement, PBYTE AID, DWORD AIDLength, BYTE lifeCycleState) {
@@ -4347,12 +4342,12 @@ OPGP_ERROR_STATUS OP201_set_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 }
 
 /**
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
- * \param cardElement IN Identifier to retrieve data for Load Files, Applications or the Card Manager.
- * \param *applData OUT The OP201_APPLICATION_DATA structure containing AID, life cycle state and privileges.
- * \param applDataLength INOUT The number of OP201_APPLICATION_DATA passed and returned.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
+ * \param cardElement [in] Identifier to retrieve data for Load Files, Applications or the Card Manager.
+ * \param *applData [out] The OP201_APPLICATION_DATA structure containing AID, life cycle state and privileges.
+ * \param applDataLength [in, out] The number of OP201_APPLICATION_DATA passed and returned.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, BYTE cardElement, OP201_APPLICATION_DATA *applData, PDWORD applDataLength) {
@@ -4408,17 +4403,17 @@ end:
  * An install_for_load() must precede.
  * The Load File Data Block DAP block(s) must be the same block(s) and in the same order like in calculate_load_file_DAP().
  * If no Load File Data Block DAP blocks are necessary the dapBlock must be NULL and the dapBlockLength 0.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
- * \param *dapBlock IN A pointer to OP201_DAP_BLOCK structure(s).
- * \param dapBlockLength IN The number of OP201_DAP_BLOCK structure(s).
- * \param executableLoadFileName IN The name of the CAP or IJC file to load.
- * \param *receiptData OUT If the deletion is performed by a security domain with delegated management privilege
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
+ * \param *dapBlock [in] A pointer to OP201_DAP_BLOCK structure(s).
+ * \param dapBlockLength [in] The number of OP201_DAP_BLOCK structure(s).
+ * \param executableLoadFileName [in] The name of the CAP or IJC file to load.
+ * \param *receiptData [out] If the deletion is performed by a security domain with delegated management privilege
  * this structure contains the according data.
  * Can be validated with validate_load_receipt().
- * \param receiptDataAvailable OUT 0 if no receiptData is available.
- * \param *callback IN A pointer to a #OPGP_PROGRESS_CALLBACK defining the callback function and optional parameters for it.
+ * \param receiptDataAvailable [out] 0 if no receiptData is available.
+ * \param *callback [in] A pointer to a #OPGP_PROGRESS_CALLBACK defining the callback function and optional parameters for it.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_load(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
@@ -4454,18 +4449,18 @@ end:
  * An install_for_load() must precede.
  * The Load File Data Block DAP block(s) must be the same block(s) and in the same order like in calculate_load_file_DAP().
  * If no Load File Data Block DAP blocks are necessary the dapBlock must be NULL and the dapBlockLength 0.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
- * \param *dapBlock IN A pointer to OP201_DAP_BLOCK structure(s).
- * \param dapBlockLength IN The number of OP201_DAP_BLOCK structure(s).
- * \param loadFileBuf IN buffer with the contents of a Executable Load File.
- * \param loadFileBufSize IN size of loadFileBuf.
- * \param *receiptData OUT If the deletion is performed by a security domain with delegated management privilege
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
+ * \param *dapBlock [in] A pointer to OP201_DAP_BLOCK structure(s).
+ * \param dapBlockLength [in] The number of OP201_DAP_BLOCK structure(s).
+ * \param loadFileBuf [in] buffer with the contents of a Executable Load File.
+ * \param loadFileBufSize [in] size of loadFileBuf.
+ * \param *receiptData [out] If the deletion is performed by a security domain with delegated management privilege
  * this structure contains the according data.
  * Can be validated with validate_load_receipt().
- * \param receiptDataAvailable OUT 0 if no receiptData is available.
- * \param *callback IN A pointer to a #OPGP_PROGRESS_CALLBACK defining the callback function and optional parameters for it.
+ * \param receiptDataAvailable [out] 0 if no receiptData is available.
+ * \param *callback [in] A pointer to a #OPGP_PROGRESS_CALLBACK defining the callback function and optional parameters for it.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_load_from_buffer(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
@@ -4508,18 +4503,18 @@ end:
  * Otherwise loadToken must be NULL. See calculate_load_token().
  * The term Executable Load File is equivalent to the Open Platform term Load File Data Block.
  * volatileDataSpaceLimit and nonVolatileDataSpaceLimit can be 0, if the card does not need or support this tags.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
- * \param executableLoadFileAID IN A buffer with AID of the Executable Load File to INSTALL [for load].
- * \param executableLoadFileAIDLength IN The length of the Executable Load File AID.
- * \param securityDomainAID IN A buffer containing the AID of the intended associated Security Domain.
- * \param securityDomainAIDLength IN The length of the Security Domain AID.
- * \param loadFileDAP IN The load file DAP of the Executable Load File to INSTALL [for load].
- * \param loadToken IN The Load Token. This is a 1024 bit (=128 byte) RSA Signature.
- * \param nonVolatileCodeSpaceLimit IN The minimum amount of space that must be available to store the package.
- * \param volatileDataSpaceLimit IN The minimum amount of RAM space that must be available.
- * \param nonVolatileDataSpaceLimit IN The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
+ * \param executableLoadFileAID [in] A buffer with AID of the Executable Load File to INSTALL [for load].
+ * \param executableLoadFileAIDLength [in] The length of the Executable Load File AID.
+ * \param securityDomainAID [in] A buffer containing the AID of the intended associated Security Domain.
+ * \param securityDomainAIDLength [in] The length of the Security Domain AID.
+ * \param loadFileDAP [in] The load file DAP of the Executable Load File to INSTALL [for load].
+ * \param loadToken [in] The Load Token. This is a 1024 bit (=128 byte) RSA Signature.
+ * \param nonVolatileCodeSpaceLimit [in] The minimum amount of space that must be available to store the package.
+ * \param volatileDataSpaceLimit [in] The minimum amount of RAM space that must be available.
+ * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
@@ -4546,24 +4541,24 @@ OPGP_ERROR_STATUS OP201_install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CAR
  * If the tag for application install parameters is mandatory for your card, but you have no install parameters
  * for the install() method of the application anyway you have to use at least a dummy parameter.
  * If AIDWithinLoadFileAID is NULL and AIDWithinLoadFileAIDLength is 0 applicationInstanceAID is assumed for AIDWithinLoadFileAID
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
- * \param executableLoadFileAID IN A buffer with AID of the Executable Load File to INSTALL [for install].
- * \param executableLoadFileAIDLength IN The length of the Executable Load File AID.
- * \param AIDWithinLoadFileAID IN The AID of the application class in the package.
- * \param AIDWithinLoadFileAIDLength IN The length of the AIDWithinLoadFileAID buffer.
- * \param applicationInstanceAID IN The AID of the installed application.
- * \param applicationInstanceAIDLength IN The length of the application instance AID.
- * \param applicationPrivileges IN The application privileges. Can be an OR of multiple privileges. See OP201_APPLICATION_PRIVILEGE_SECURITY_DOMAIN.
- * \param volatileDataSpaceLimit IN The minimum amount of RAM space that must be available.
- * \param nonVolatileDataSpaceLimit IN The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
- * \param applicationInstallParameters IN Applet install parameters for the install() method of the application.
- * \param applicationInstallParametersLength IN The length of the applicationInstallParameters buffer.
- * \param installToken IN The Install Token. This is a 1024 bit (=128 byte) RSA Signature.
- * \param *receiptData OUT If the deletion is performed by a security domain with delegated management privilege
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
+ * \param executableLoadFileAID [in] A buffer with AID of the Executable Load File to INSTALL [for install].
+ * \param executableLoadFileAIDLength [in] The length of the Executable Load File AID.
+ * \param AIDWithinLoadFileAID [in] The AID of the application class in the package.
+ * \param AIDWithinLoadFileAIDLength [in] The length of the AIDWithinLoadFileAID buffer.
+ * \param applicationInstanceAID [in] The AID of the installed application.
+ * \param applicationInstanceAIDLength [in] The length of the application instance AID.
+ * \param applicationPrivileges [in] The application privileges. Can be an OR of multiple privileges. See OP201_APPLICATION_PRIVILEGE_SECURITY_DOMAIN.
+ * \param volatileDataSpaceLimit [in] The minimum amount of RAM space that must be available.
+ * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
+ * \param applicationInstallParameters [in] Applet install parameters for the install() method of the application.
+ * \param applicationInstallParametersLength [in] The length of the applicationInstallParameters buffer.
+ * \param installToken [in] The Install Token. This is a 1024 bit (=128 byte) RSA Signature.
+ * \param *receiptData [out] If the deletion is performed by a security domain with delegated management privilege
  * this structure contains the according data.
- * \param receiptDataAvailable OUT 0 if no receiptData is available.
+ * \param receiptDataAvailable [out] 0 if no receiptData is available.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
@@ -4597,24 +4592,24 @@ OPGP_ERROR_STATUS OP201_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_
  * If the tag for application install parameters is mandatory for your card, but you have no install parameters
  * for the install() method of the application anyway you have to use at least a dummy parameter.
  * If AIDWithinLoadFileAID is NULL and AIDWithinLoadFileAIDLength is 0 applicationInstanceAID is assumed for AIDWithinLoadFileAID.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
- * \param executableLoadFileAID IN A buffer with AID of the Executable Load File to INSTALL [for install].
- * \param executableLoadFileAIDLength IN The length of the Executable Load File AID.
- * \param AIDWithinLoadFileAID IN The AID of the application class in the package.
- * \param AIDWithinLoadFileAIDLength IN The length of the AIDWithinLoadFileAID buffer.
- * \param applicationInstanceAID IN The AID of the installed application.
- * \param applicationInstanceAIDLength IN The length of the application instance AID.
- * \param applicationPrivileges IN The application privileges. Can be an OR of multiple privileges. See OP201_APPLICATION_PRIVILEGE_SECURITY_DOMAIN.
- * \param volatileDataSpaceLimit IN The minimum amount of RAM space that must be available.
- * \param nonVolatileDataSpaceLimit IN The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
- * \param applicationInstallParameters IN Applet install parameters for the install() method of the application.
- * \param applicationInstallParametersLength IN The length of the applicationInstallParameters buffer.
- * \param installToken IN The Install Token. This is a 1024 bit (=128 byte) RSA Signature.
- * \param *receiptData OUT If the deletion is performed by a security domain with delegated management privilege
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
+ * \param executableLoadFileAID [in] A buffer with AID of the Executable Load File to INSTALL [for install].
+ * \param executableLoadFileAIDLength [in] The length of the Executable Load File AID.
+ * \param AIDWithinLoadFileAID [in] The AID of the application class in the package.
+ * \param AIDWithinLoadFileAIDLength [in] The length of the AIDWithinLoadFileAID buffer.
+ * \param applicationInstanceAID [in] The AID of the installed application.
+ * \param applicationInstanceAIDLength [in] The length of the application instance AID.
+ * \param applicationPrivileges [in] The application privileges. Can be an OR of multiple privileges. See OP201_APPLICATION_PRIVILEGE_SECURITY_DOMAIN.
+ * \param volatileDataSpaceLimit [in] The minimum amount of RAM space that must be available.
+ * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
+ * \param applicationInstallParameters [in] Applet install parameters for the install() method of the application.
+ * \param applicationInstallParametersLength [in] The length of the applicationInstallParameters buffer.
+ * \param installToken [in] The Install Token. This is a 1024 bit (=128 byte) RSA Signature.
+ * \param *receiptData [out] If the deletion is performed by a security domain with delegated management privilege
  * this structure contains the according data.
- * \param receiptDataAvailable OUT 0 if no receiptData is available.
+ * \param receiptDataAvailable [out] 0 if no receiptData is available.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_install_for_install_and_make_selectable(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
@@ -4644,16 +4639,16 @@ OPGP_ERROR_STATUS OP201_install_for_install_and_make_selectable(OPGP_CARD_CONTEX
  * In the case of delegated management an Install Token authorizing the INSTALL [for make selectable] must be included.
  * Otherwise installToken must be NULL.
  * For Security domains look in your manual what parameters are necessary.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param *secInfo INOUT The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
- * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
- * \param applicationInstanceAID IN The AID of the installed application or security domain.
- * \param applicationInstanceAIDLength IN The length of the application instance AID.
- * \param applicationPrivileges IN The application privileges. Can be an OR of multiple privileges. See OP201_APPLICATION_PRIVILEGE_SECURITY_DOMAIN.
- * \param installToken IN The Install Token. This is a 1024 bit (=128 byte) RSA Signature.
- * \param *receiptData OUT If the deletion is performed by a security domain with delegated management privilege
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param *secInfo [in, out] The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
+ * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
+ * \param applicationInstanceAID [in] The AID of the installed application or security domain.
+ * \param applicationInstanceAIDLength [in] The length of the application instance AID.
+ * \param applicationPrivileges [in] The application privileges. Can be an OR of multiple privileges. See OP201_APPLICATION_PRIVILEGE_SECURITY_DOMAIN.
+ * \param installToken [in] The Install Token. This is a 1024 bit (=128 byte) RSA Signature.
+ * \param *receiptData [out] If the deletion is performed by a security domain with delegated management privilege
  * this structure contains the according data.
- * \param receiptDataAvailable OUT 0 if no receiptData is available.
+ * \param receiptDataAvailable [out] 0 if no receiptData is available.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_install_for_make_selectable(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
@@ -4678,25 +4673,25 @@ OPGP_ERROR_STATUS OP201_install_for_make_selectable(OPGP_CARD_CONTEXT cardContex
  * Card Issuer and obtain the RSA signature of the data, i.e. the Install Token.
  * volatileDataSpaceLimit can be 0, if the card does not need or support this tag.
  * The parameters must match the parameters of a later install_for_install() and install_for_make_selectable() method.
- * \param P1 IN The parameter P1 in the APDU command.
+ * \param P1 [in] The parameter P1 in the APDU command.
  * <ul>
  * <li> 0x04 for a INSTALL [for install] command </li>
  * <li> 0x08 for an INSTALL [for make selectable] command </li>
  * <li> 0x0C for an INSTALL [for install and make selectable] </li>
  * </ul>
- * \param executableLoadFileAID IN A buffer with AID of the Executable Load File to INSTALL [for load].
- * \param executableLoadFileAIDLength IN The length of the Executable Load File AID.
- * \param AIDWithinLoadFileAID IN The AID of the application class in the package.
- * \param AIDWithinLoadFileAIDLength IN The length of the AIDWithinLoadFileAID buffer.
- * \param applicationInstanceAID IN The AID of the installed application.
- * \param applicationInstanceAIDLength IN The length of the application instance AID.
- * \param applicationPrivileges IN The application privileges. Can be an OR of multiple privileges. See OP201_APPLICATION_PRIVILEGE_SECURITY_DOMAIN.
- * \param volatileDataSpaceLimit IN The minimum amount of RAM space that must be available.
- * \param nonVolatileDataSpaceLimit IN The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
- * \param applicationInstallParameters IN Applet install parameters for the install() method of the application.
- * \param applicationInstallParametersLength IN The length of the applicationInstallParameters buffer.
- * \param installTokenSignatureData OUT The data to sign in a Install Token.
- * \param installTokenSignatureDataLength INOUT The length of the installTokenSignatureData buffer.
+ * \param executableLoadFileAID [in] A buffer with AID of the Executable Load File to INSTALL [for load].
+ * \param executableLoadFileAIDLength [in] The length of the Executable Load File AID.
+ * \param AIDWithinLoadFileAID [in] The AID of the application class in the package.
+ * \param AIDWithinLoadFileAIDLength [in] The length of the AIDWithinLoadFileAID buffer.
+ * \param applicationInstanceAID [in] The AID of the installed application.
+ * \param applicationInstanceAIDLength [in] The length of the application instance AID.
+ * \param applicationPrivileges [in] The application privileges. Can be an OR of multiple privileges. See OP201_APPLICATION_PRIVILEGE_SECURITY_DOMAIN.
+ * \param volatileDataSpaceLimit [in] The minimum amount of RAM space that must be available.
+ * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
+ * \param applicationInstallParameters [in] Applet install parameters for the install() method of the application.
+ * \param applicationInstallParametersLength [in] The length of the applicationInstallParameters buffer.
+ * \param installTokenSignatureData [out] The data to sign in a Install Token.
+ * \param installTokenSignatureDataLength [in, out] The length of the installTokenSignatureData buffer.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_get_install_token_signature_data(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE AIDWithinLoadFileAID,
@@ -4716,26 +4711,26 @@ OPGP_ERROR_STATUS OP201_get_install_token_signature_data(BYTE P1, PBYTE executab
 
 /**
  * The parameters must match the parameters of a later install_for_install(), install_for_make_selectable() and install_for_install_and_make_selectable() method.
- * \param P1 IN The parameter P1 in the APDU command.
+ * \param P1 [in] The parameter P1 in the APDU command.
  * <ul>
  * <li> 0x04 for a INSTALL [for install] command </li>
  * <li> 0x08 for an INSTALL [for make selectable] command </li>
  * <li> 0x0C for an INSTALL [for install and make selectable] </li>
  * </ul>
- * \param executableLoadFileAID IN A buffer with AID of the Executable Load File to INSTALL [for install].
- * \param executableLoadFileAIDLength IN The length of the Executable Load File AID.
- * \param AIDWithinLoadFileAID IN The AID of the application class in the package.
- * \param AIDWithinLoadFileAIDLength IN The length of the AIDWithinLoadFileAID buffer.
- * \param applicationInstanceAID IN The AID of the installed application.
- * \param applicationInstanceAIDLength IN The length of the application instance AID.
- * \param applicationPrivileges IN The application privileges. Can be an OR of multiple privileges. See OP201_APPLICATION_PRIVILEGE_SECURITY_DOMAIN.
- * \param volatileDataSpaceLimit IN The minimum amount of RAM space that must be available.
- * \param nonVolatileDataSpaceLimit IN The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
- * \param applicationInstallParameters IN Applet install parameters for the install() method of the application.
- * \param applicationInstallParametersLength IN The length of the applicationInstallParameters buffer.
- * \param installToken OUT The calculated Install Token. A 1024 bit RSA signature.
- * \param PEMKeyFileName IN A PEM file name with the private RSA key.
- * \param *passPhrase IN The passphrase. Must be an ASCII string.
+ * \param executableLoadFileAID [in] A buffer with AID of the Executable Load File to INSTALL [for install].
+ * \param executableLoadFileAIDLength [in] The length of the Executable Load File AID.
+ * \param AIDWithinLoadFileAID [in] The AID of the application class in the package.
+ * \param AIDWithinLoadFileAIDLength [in] The length of the AIDWithinLoadFileAID buffer.
+ * \param applicationInstanceAID [in] The AID of the installed application.
+ * \param applicationInstanceAIDLength [in] The length of the application instance AID.
+ * \param applicationPrivileges [in] The application privileges. Can be an OR of multiple privileges. See OP201_APPLICATION_PRIVILEGE_SECURITY_DOMAIN.
+ * \param volatileDataSpaceLimit [in] The minimum amount of RAM space that must be available.
+ * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
+ * \param applicationInstallParameters [in] Applet install parameters for the install() method of the application.
+ * \param applicationInstallParametersLength [in] The length of the applicationInstallParameters buffer.
+ * \param installToken [out] The calculated Install Token. A 1024 bit RSA signature.
+ * \param PEMKeyFileName [in] A PEM file name with the private RSA key.
+ * \param *passPhrase [in] The passphrase. Must be an ASCII string.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE AIDWithinLoadFileAID,
@@ -4757,16 +4752,16 @@ OPGP_ERROR_STATUS OP201_calculate_install_token(BYTE P1, PBYTE executableLoadFil
  * Card Issuer and obtain the RSA signature of the data, i.e. the Load Token.
  * volatileDataSpaceLimit and nonVolatileDataSpaceLimit can be 0, if the card does not need or support this tags.
  * The parameters must match the parameters of a later install_for_load() command.
- * \param executableLoadFileAID IN A buffer containing the Executable Load File AID.
- * \param executableLoadFileAIDLength IN The length of the Executable Load File AID.
- * \param securityDomainAID IN A buffer containing the Security Domain AID.
- * \param securityDomainAIDLength IN The length of the Security Domain AID.
- * \param loadFileDAP IN The Load File DAP. The same calculated as in install_for_load().
- * \param nonVolatileCodeSpaceLimit IN The minimum space required to store the application code.
- * \param volatileDataSpaceLimit IN The minimum amount of RAM space that must be available.
- * \param nonVolatileDataSpaceLimit IN The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
- * \param loadTokenSignatureData OUT The data to sign in a Load Token.
- * \param loadTokenSignatureDataLength INOUT The length of the loadTokenSignatureData buffer.
+ * \param executableLoadFileAID [in] A buffer containing the Executable Load File AID.
+ * \param executableLoadFileAIDLength [in] The length of the Executable Load File AID.
+ * \param securityDomainAID [in] A buffer containing the Security Domain AID.
+ * \param securityDomainAIDLength [in] The length of the Security Domain AID.
+ * \param loadFileDAP [in] The Load File DAP. The same calculated as in install_for_load().
+ * \param nonVolatileCodeSpaceLimit [in] The minimum space required to store the application code.
+ * \param volatileDataSpaceLimit [in] The minimum amount of RAM space that must be available.
+ * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
+ * \param loadTokenSignatureData [out] The data to sign in a Load Token.
+ * \param loadTokenSignatureDataLength [in, out] The length of the loadTokenSignatureData buffer.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_get_load_token_signature_data(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE securityDomainAID,
@@ -4774,7 +4769,7 @@ OPGP_ERROR_STATUS OP201_get_load_token_signature_data(PBYTE executableLoadFileAI
 								   DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
 								   DWORD nonVolatileDataSpaceLimit, PBYTE loadTokenSignatureData,
 								   PDWORD loadTokenSignatureDataLength) {
-	unsigned char buf[258];
+	BYTE buf[258];
 	DWORD i=0;
 #ifdef DEBUG
 	DWORD j=0;
@@ -4878,17 +4873,17 @@ end:
 
 /**
  * The parameters must match the parameters of a later install_for_load() method.
- * \param executableLoadFileAID IN A buffer containing the Executable Load File AID.
- * \param executableLoadFileAIDLength IN The length of the Executable Load File AID.
- * \param securityDomainAID IN A buffer containing the Security Domain AID.
- * \param securityDomainAIDLength IN The length of the Security Domain AID.
- * \param loadFileDAP IN The Load File DAP. The same calculated as in install_for_load().
- * \param nonVolatileCodeSpaceLimit IN The minimum space required to store the package.
- * \param volatileDataSpaceLimit IN The minimum amount of RAM space that must be available.
- * \param nonVolatileDataSpaceLimit IN The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
- * \param loadToken OUT The calculated Load Token. A 1024 bit RSA signature.
- * \param PEMKeyFileName IN A PEM file name with the private RSA key.
- * \param *passPhrase IN The passphrase. Must be an ASCII string.
+ * \param executableLoadFileAID [in] A buffer containing the Executable Load File AID.
+ * \param executableLoadFileAIDLength [in] The length of the Executable Load File AID.
+ * \param securityDomainAID [in] A buffer containing the Security Domain AID.
+ * \param securityDomainAIDLength [in] The length of the Security Domain AID.
+ * \param loadFileDAP [in] The Load File DAP. The same calculated as in install_for_load().
+ * \param nonVolatileCodeSpaceLimit [in] The minimum space required to store the package.
+ * \param volatileDataSpaceLimit [in] The minimum amount of RAM space that must be available.
+ * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
+ * \param loadToken [out] The calculated Load Token. A 1024 bit RSA signature.
+ * \param PEMKeyFileName [in] A PEM file name with the private RSA key.
+ * \param *passPhrase [in] The passphrase. Must be an ASCII string.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_calculate_load_token(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE securityDomainAID,
@@ -4925,14 +4920,14 @@ end:
  * If the Load File Data Block DAP block(s) are already calculated they must be parsed into a OP201_DAP_BLOCK structure.
  * If the Load File Data Block DAP block(s) are already prefixing the CAPFile following the Open Platform Specification 2.0.1',
  * the whole CAPFile including the Load File Data Block DAP block(s) is sufficient, the dapBlock must be NULL and the dapBlockLength 0.
- * \param *dapBlock IN A pointer to OP201_DAP_BLOCK structure(s).
- * \param dapBlockLength IN The number of OP201_DAP_BLOCK structure(s).
- * \param executableLoadFileName IN The name of the CAP or IJC file to hash.
- * \param hash OUT The hash value. This are 20 bytes.
+ * \param *dapBlock [in] A pointer to OP201_DAP_BLOCK structure(s).
+ * \param dapBlockLength [in] The number of OP201_DAP_BLOCK structure(s).
+ * \param executableLoadFileName [in] The name of the CAP or IJC file to hash.
+ * \param hash [out] The hash value. This are 20 bytes.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_calculate_load_file_DAP(OP201_DAP_BLOCK *dapBlock, DWORD dapBlockLength, OPGP_STRING executableLoadFileName,
-							 unsigned char hash[20])
+							 BYTE hash[20])
 {
 	OPGP_ERROR_STATUS status;
 	int count;
@@ -5040,11 +5035,11 @@ end:
 
 /**
  * If a security domain has DAP verification privilege the security domain validates this DAP.
- * \param securityDomainAID IN A buffer containing the Security Domain AID.
- * \param securityDomainAIDLength IN The length of the Security Domain AID.
- * \param executableLoadFileName IN The name of the CAP or IJC file to calculate the DAP for.
- * \param DAP_verification_key IN The key to calculate the DAP.
- * \param *dapBlock OUT A pointer to the returned OP201_DAP_BLOCK structure.
+ * \param securityDomainAID [in] A buffer containing the Security Domain AID.
+ * \param securityDomainAIDLength [in] The length of the Security Domain AID.
+ * \param executableLoadFileName [in] The name of the CAP or IJC file to calculate the DAP for.
+ * \param DAP_verification_key [in] The key to calculate the DAP.
+ * \param *dapBlock [out] A pointer to the returned OP201_DAP_BLOCK structure.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_calculate_3des_DAP(PBYTE securityDomainAID, DWORD securityDomainAIDLength, OPGP_STRING executableLoadFileName,
@@ -5091,19 +5086,18 @@ end:
 
 /**
  * If a security domain has DAP verification privilege the security domain validates this DAP.
- * \param securityDomainAID IN A buffer containing the Security Domain AID.
- * \param securityDomainAIDLength IN The length of the Security Domain AID.
- * \param executableLoadFileName IN The name of the CAP or IJC file to calculate the DAP for.
- * \param PEMKeyFileName IN A PEM file name with the private RSA key.
- * \param *passPhrase IN The passphrase. Must be an ASCII string.
- * \param *dapBlock OUT A pointer to the returned OP201_DAP_BLOCK structure.
+ * \param securityDomainAID [in] A buffer containing the Security Domain AID.
+ * \param securityDomainAIDLength [in] The length of the Security Domain AID.
+ * \param executableLoadFileName [in] The name of the CAP or IJC file to calculate the DAP for.
+ * \param PEMKeyFileName [in] A PEM file name with the private RSA key.
+ * \param *passPhrase [in] The passphrase. Must be an ASCII string.
+ * \param *dapBlock [out] A pointer to the returned OP201_DAP_BLOCK structure.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_calculate_rsa_DAP(PBYTE securityDomainAID, DWORD securityDomainAIDLength, OPGP_STRING executableLoadFileName,
 					   OPGP_STRING PEMKeyFileName, char *passPhrase, OP201_DAP_BLOCK *dapBlock)
 {
 	OPGP_ERROR_STATUS status;
-	unsigned int signatureLength=0;
 	PBYTE loadFileBuf = NULL;
 	DWORD loadFileBufSize;
 
@@ -5144,15 +5138,15 @@ end:
 /**
  * Each time a receipt is generated the confirmation counter is incremented by the Card Manager.
  * You may keep track of it. Returns OPGP_ERROR_SUCCESS if receipt is valid.
- * \param confirmationCounter IN The confirmation counter.
- * \param cardUniqueData IN The card unique data (?).
- * \param receiptGenerationKey IN The 3DES key to generate the receipt.
- * \param receiptData IN The OP201_RECEIPT_DATA structure containing the receipt returned
+ * \param confirmationCounter [in] The confirmation counter.
+ * \param cardUniqueData [in] The card unique data (?).
+ * \param receiptGenerationKey [in] The 3DES key to generate the receipt.
+ * \param receiptData [in] The OP201_RECEIPT_DATA structure containing the receipt returned
  * from load_application() to verify.
- * \param executableLoadFileAID IN A buffer with AID of the Executable Load File which was INSTALL [for load].
- * \param executableLoadFileAIDLength IN The length of the Executable Load File AID.
- * \param securityDomainAID IN A buffer containing the AID of the associated Security Domain.
- * \param securityDomainAIDLength IN The length of the Security Domain AID.
+ * \param executableLoadFileAID [in] A buffer with AID of the Executable Load File which was INSTALL [for load].
+ * \param executableLoadFileAIDLength [in] The length of the Executable Load File AID.
+ * \param securityDomainAID [in] A buffer containing the AID of the associated Security Domain.
+ * \param securityDomainAIDLength [in] The length of the Security Domain AID.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_validate_load_receipt(DWORD confirmationCounter, BYTE cardUniqueData[10],
@@ -5171,15 +5165,15 @@ OPGP_ERROR_STATUS OP201_validate_load_receipt(DWORD confirmationCounter, BYTE ca
 /**
  * Each time a receipt is generated the confirmation counter is incremented by the Card Manager.
  * You may keep track of it. Returns OPGP_ERROR_SUCCESS if receipt is valid.
- * \param confirmationCounter IN The confirmation counter.
- * \param cardUniqueData IN The card unique data (?).
- * \param receiptGenerationKey IN The 3DES key to generate the receipt.
- * \param receiptData IN The OP201_RECEIPT_DATA structure containing the receipt returned
+ * \param confirmationCounter [in] The confirmation counter.
+ * \param cardUniqueData [in] The card unique data (?).
+ * \param receiptGenerationKey [in] The 3DES key to generate the receipt.
+ * \param receiptData [in] The OP201_RECEIPT_DATA structure containing the receipt returned
  * from install_for_install() to verify.
- * \param executableLoadFileAID IN A buffer with AID of the Executable Load File which was INSTALL [for install].
- * \param executableLoadFileAIDLength IN The length of the Executable Load File AID.
- * \param applicationInstanceAID IN The AID of the installed application.
- * \param applicationInstanceAIDLength IN The length of the application instance AID.
+ * \param executableLoadFileAID [in] A buffer with AID of the Executable Load File which was INSTALL [for install].
+ * \param executableLoadFileAIDLength [in] The length of the Executable Load File AID.
+ * \param applicationInstanceAID [in] The AID of the installed application.
+ * \param applicationInstanceAIDLength [in] The length of the application instance AID.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_validate_install_receipt(DWORD confirmationCounter, BYTE cardUniqueData[10],
@@ -5198,13 +5192,13 @@ OPGP_ERROR_STATUS OP201_validate_install_receipt(DWORD confirmationCounter, BYTE
 /**
  * Each time a receipt is generated the confirmation counter is incremented by the Card Manager.
  * You may keep track of it. Returns OPGP_ERROR_SUCCESS if receipt is valid.
- * \param confirmationCounter IN The confirmation counter.
- * \param cardUniqueData IN The card unique data (?).
- * \param receiptGenerationKey IN The 3DES key to generate the receipt.
- * \param receiptData IN The OP201_RECEIPT_DATA structure containing the receipt returned
+ * \param confirmationCounter [in] The confirmation counter.
+ * \param cardUniqueData [in] The card unique data (?).
+ * \param receiptGenerationKey [in] The 3DES key to generate the receipt.
+ * \param receiptData [in] The OP201_RECEIPT_DATA structure containing the receipt returned
  * from delete_application() to verify.
- * \param AID IN A buffer with AID of the application which was deleted.
- * \param AIDLength IN The length of the AID.
+ * \param AID [in] A buffer with AID of the application which was deleted.
+ * \param AIDLength [in] The length of the AID.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_validate_delete_receipt(DWORD confirmationCounter, BYTE cardUniqueData[10],
@@ -5223,13 +5217,13 @@ OPGP_ERROR_STATUS OP201_validate_delete_receipt(DWORD confirmationCounter, BYTE 
  * The tryLimit must be in the range of 0x03 and x0A.
  * The PIN must comprise at least 6 numbers and not exceeding 12 numbers.
  * To unblock the PIN use tryLimit with a value of 0x00. In this case newPIN buffer and newPINLength are ignored.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param *secInfo INOUT The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
- * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
- * \param tryLimit IN The try limit for the PIN.
- * \param newPIN IN The new PIN.
- * \param newPINLength IN The length of the new PIN.
- * \param KEK IN The Key Encryption key (KEK).
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param *secInfo [in, out] The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
+ * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
+ * \param tryLimit [in] The try limit for the PIN.
+ * \param newPIN [in] The new PIN.
+ * \param newPINLength [in] The length of the new PIN.
+ * \param KEK [in] The Key Encryption key (KEK).
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_pin_change(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, BYTE tryLimit,
@@ -5245,9 +5239,9 @@ OPGP_ERROR_STATUS OP201_pin_change(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 
 /**
  * Reads a DAP block and parses it to the buffer buf.
- * \param buf OUT The buffer.
- * \param bufLength INOUT The length of the buffer and the returned data.
- * \param dapBlock IN The Load File Data Block DAP block.
+ * \param buf [out] The buffer.
+ * \param bufLength [in, out] The length of the buffer and the returned data.
+ * \param dapBlock [in] The Load File Data Block DAP block.
  * \return OPGP_ERROR_SUCCESS if no error, error code else
  */
 OPGP_ERROR_STATUS readDAPBlock(PBYTE buf, PDWORD bufLength, OP201_DAP_BLOCK dapBlock) {
@@ -5260,15 +5254,15 @@ OPGP_ERROR_STATUS readDAPBlock(PBYTE buf, PDWORD bufLength, OP201_DAP_BLOCK dapB
 
 /**
  * A keySetVersion and keyIndex of 0x00 selects the first available key set version and key index.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
- * \param encKey IN The static encryption key.
- * \param macKey IN The static MAC key.
- * \param kekKey IN The static Key Encryption key.
- * \param keySetVersion IN The key set version on the card to use for mutual authentication.
- * \param keyIndex IN The key index of the encryption key in the key set version on the card to use for mutual authentication.
- * \param securityLevel IN The requested security level.
- * \param *secInfo OUT The returned OP201_SECURITY_INFO structure.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
+ * \param encKey [in] The static encryption key.
+ * \param macKey [in] The static MAC key.
+ * \param kekKey [in] The static Key Encryption key.
+ * \param keySetVersion [in] The key set version on the card to use for mutual authentication.
+ * \param keyIndex [in] The key index of the encryption key in the key set version on the card to use for mutual authentication.
+ * \param securityLevel [in] The requested security level.
+ * \param *secInfo [out] The returned OP201_SECURITY_INFO structure.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE encKey[16], BYTE macKey[16],

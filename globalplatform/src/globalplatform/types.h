@@ -38,10 +38,10 @@ typedef LPDWORD PDWORD; //!< A Microsoft LPDWORD/Muscle pointer to a double word
 #endif
 typedef char *OPGP_STRING; //!< A Microsoft/Muscle LPTSTR.
 typedef const char *OPGP_CSTRING; //!< A Microsoft/Muscle LPCTSTR.
-typedef char *PBYTE; //!< A Microsoft/Muscle LPBYTE, pointer to unsigned char.
+typedef unsigned char *PBYTE; //!< A Microsoft/Muscle LPBYTE, pointer to unsigned char.
 #if !defined(__wintypes_h__)
 typedef unsigned long *PDWORD; //!< A Microsoft LPDWORD/Muscle pointer to a DWORD.
-typedef char BYTE; //!< A Microsoft/Muscle BYTE definition.
+typedef unsigned char BYTE; //!< A Microsoft/Muscle BYTE definition.
 typedef unsigned long DWORD; //!< A Microsoft/Muscle DWORD definition.
 #endif
 typedef long LONG; //!< A long value.

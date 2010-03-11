@@ -19,7 +19,7 @@
 #include <string.h>
 
 /**
- * \param b IN The Le BYTE.
+ * \param b [in] The Le BYTE.
  * \return Value of b.
  */
 DWORD convert_byte(BYTE b) {
@@ -27,8 +27,8 @@ DWORD convert_byte(BYTE b) {
 }
 
 /**
- * \param buf IN The buffer.
- * \param offset IN The offset in the buffer.
+ * \param buf [in] The buffer.
+ * \param offset [in] The offset in the buffer.
  * \return the short int value.
  */
 DWORD get_short(PBYTE buf, DWORD offset) {
@@ -36,9 +36,9 @@ DWORD get_short(PBYTE buf, DWORD offset) {
 }
 
 /**
- * \param buffer IN The buffer.
- * \param length IN The length of the buffer.
- * \param *tlv OUT the returned TLV struct.
+ * \param buffer [in] The buffer.
+ * \param length [in] The length of the buffer.
+ * \param *tlv [out] the returned TLV struct.
  * \return -1 in case of error, consumed length otherwise.
  */
 LONG read_TLV(PBYTE buffer, DWORD length, TLV *tlv) {

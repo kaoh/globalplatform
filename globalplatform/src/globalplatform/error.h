@@ -75,6 +75,7 @@ typedef struct {
  * Sets the status in case of no error but includes a code e.g. for APDU status word codes.
  * \param status Must be the #OPGP_ERROR_STATUS structure.
  * \param code Must be the error code.
+ * \param message Is the associated error message.
  */
 #define OPGP_ERROR_CREATE_NO_ERROR_WITH_CODE(status, code, message) status.errorStatus = OPGP_ERROR_STATUS_SUCCESS; \
 	status.errorCode = code; \

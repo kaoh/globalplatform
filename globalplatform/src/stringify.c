@@ -31,7 +31,7 @@
 
 /**
  * This method can stringify many general purpose error codes defined in #errorcodes.h and system error codes.
- * \param errorCode IN The error code.
+ * \param errorCode [in] The error code.
  * \return OPGP_STRING representation of the error code.
  */
 OPGP_STRING OPGP_stringify_error(DWORD errorCode) {

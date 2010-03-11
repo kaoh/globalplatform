@@ -79,7 +79,7 @@ AUTOMAKE = ${SHELL} /home/widerstand/Dokumente/GlobalPlatform/branches/globalpla
 AWK = mawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -g -O2
+CFLAGS = -g -O2 -Wall
 CHECK_CFLAGS =  
 CHECK_LIBS = -lcheck  
 CPP = gcc -E

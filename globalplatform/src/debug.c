@@ -44,9 +44,9 @@ void OPGP_log_Start(OPGP_STRING func, OPGP_STRING file, int line)
 }
 
 /**
- * \param msg The message to print in front of the message. If NULL or empty nothing is printed.
- * \param buffer The buffer to print.
- * \param bufferLength The length of the buffer.
+ * \param msg [in] The message to print in front of the message. If NULL or empty nothing is printed.
+ * \param buffer [in] The buffer to print.
+ * \param bufferLength [in] The length of the buffer.
  */
 void OPGP_log_Hex(OPGP_STRING msg, PBYTE buffer, DWORD bufferLength) {
 	TCHAR *bufferMsg;
@@ -72,8 +72,8 @@ void OPGP_log_Hex(OPGP_STRING msg, PBYTE buffer, DWORD bufferLength) {
 
 /**
 * The call is redirected to log_Log().
-* \param func The function name
-* \param rv The return value of the function
+* \param func [in] The function name
+* \param rv [in] The return value of the function
 */
 void OPGP_log_End(OPGP_STRING func, OPGP_STRING file, int line, OPGP_ERROR_STATUS status)
 {
@@ -88,7 +88,7 @@ void OPGP_log_End(OPGP_STRING func, OPGP_STRING file, int line, OPGP_ERROR_STATU
 * or <code>C:\TEMP\GlobalPlatform.log</code> under Windows will be used. If a log file name
 * is given the syslog if available will not be used.
 * \param msg The formatted message which will be stored.
-* \prama ... Variable argument list
+* \param ... Variable argument list
 */
 void OPGP_log_Msg(OPGP_STRING msg, ...)
 {

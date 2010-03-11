@@ -34,9 +34,9 @@ int detect_cap_file(OPGP_CSTRING fileName);
 /**
  * If loadFileBuf is NULL the loadFileBufSize is ignored and the necessary buffer size
  * is returned in loadFileBufSize and the functions returns.
- * \param fileName IN The name of the CAP or IJC file.
- * \param loadFileBuf OUT The destination buffer with the Executable Load File contents.
- * \param loadFileBufSize INOUT The size of the loadFileBuf.
+ * \param fileName [in] The name of the CAP or IJC file.
+ * \param loadFileBuf [out] The destination buffer with the Executable Load File contents.
+ * \param loadFileBufSize [in, out] The size of the loadFileBuf.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
 OPGP_ERROR_STATUS handle_load_file(OPGP_CSTRING fileName, PBYTE loadFileBuf, PDWORD loadFileBufSize)
@@ -110,9 +110,9 @@ void convertT_to_C(char* pszDest, const TCHAR* pszSrc)
 /**
  * If loadFileBuf is NULL the loadFileBufSize is ignored and the necessary buffer size
  * is returned in loadFileBufSize and the functions returns.
- * \param fileName IN The name of the CAP file.
- * \param loadFileBuf OUT The destination buffer with the Executable Load File contents.
- * \param loadFileBufSize INOUT The size of the loadFileBuf.
+ * \param fileName [in] The name of the CAP file.
+ * \param loadFileBuf [out] The destination buffer with the Executable Load File contents.
+ * \param loadFileBufSize [in, out] The size of the loadFileBuf.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
 OPGP_ERROR_STATUS extract_cap_file(OPGP_CSTRING fileName, PBYTE loadFileBuf, PDWORD loadFileBufSize)
@@ -369,7 +369,7 @@ end:
 
 /**
  * Returns 1 if the file is a CAP file 0 otherwise.
- * \param fileName IN The name of the file.
+ * \param fileName [in] The name of the file.
  * \return 1 if CAP file, 0 otherwise.
  */
 int detect_cap_file(OPGP_CSTRING fileName) {
@@ -411,8 +411,8 @@ end:
 }
 
 /**
- * \param loadFileName IN The name of the Executable Load File.
- * \param loadFileParams OUT The parameters of the Executable Load File.
+ * \param loadFileName [in] The name of the Executable Load File.
+ * \param loadFileParams [out] The parameters of the Executable Load File.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
 OPGP_ERROR_STATUS read_executable_load_file_parameters(OPGP_STRING loadFileName, OPGP_LOAD_FILE_PARAMETERS *loadFileParams) {
@@ -451,8 +451,8 @@ end:
 }
 
 /**
- * \param capFileName IN The name of the CAP file.
- * \param ijcFileName IN The name of the destination IJC file.
+ * \param capFileName [in] The name of the CAP file.
+ * \param ijcFileName [in] The name of the destination IJC file.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
 OPGP_ERROR_STATUS cap_to_ijc(OPGP_CSTRING capFileName, OPGP_STRING ijcFileName) {
@@ -503,9 +503,9 @@ end:
 
 
 /**
- * \param loadFileBuf IN contents of a Executable Load File.
- * \param loadFileBufSize IN size of loadFileBuf.
- * \param loadFileParams OUT The parameters of the Executable Load File.
+ * \param loadFileBuf [in] contents of a Executable Load File.
+ * \param loadFileBufSize [in] size of loadFileBuf.
+ * \param loadFileParams [out] The parameters of the Executable Load File.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
 OPGP_ERROR_STATUS read_executable_load_file_parameters_from_buffer(PBYTE loadFileBuf, DWORD loadFileBufSize, OPGP_LOAD_FILE_PARAMETERS *loadFileParams) {
@@ -660,16 +660,16 @@ end:
 
 /**
  * volatileDataSpaceLimit and nonVolatileDataSpaceLimit can be 0, if the card does not need or support this tags.
- * \param executableLoadFileAID IN A buffer containing the Executable Load File AID.
- * \param executableLoadFileAIDLength IN The length of the Executable Load File AID.
- * \param securityDomainAID IN A buffer containing the Security Domain AID.
- * \param securityDomainAIDLength IN The length of the Security Domain AID.
- * \param loadFileDataBlockHash IN The Load File DAP.
- * \param nonVolatileCodeSpaceLimit IN The minimum space required to store the application code.
- * \param volatileDataSpaceLimit IN The minimum amount of RAM space that must be available.
- * \param nonVolatileDataSpaceLimit IN The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
- * \param loadData OUT The data to sign in a load data.
- * \param loadDataLength INOUT The length of the loadData buffer.
+ * \param executableLoadFileAID [in] A buffer containing the Executable Load File AID.
+ * \param executableLoadFileAIDLength [in] The length of the Executable Load File AID.
+ * \param securityDomainAID [in] A buffer containing the Security Domain AID.
+ * \param securityDomainAIDLength [in] The length of the Security Domain AID.
+ * \param loadFileDataBlockHash [in] The Load File DAP.
+ * \param nonVolatileCodeSpaceLimit [in] The minimum space required to store the application code.
+ * \param volatileDataSpaceLimit [in] The minimum amount of RAM space that must be available.
+ * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
+ * \param loadData [out] The data to sign in a load data.
+ * \param loadDataLength [in, out] The length of the loadData buffer.
  * \return OPGP_ERROR_SUCCESS if no error, error code else.
  */
 OPGP_ERROR_STATUS get_load_data(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
@@ -762,9 +762,9 @@ end:
 
 /**
  * Reads a DAP block and parses it to the buffer buf.
- * \param buf OUT The buffer.
- * \param bufLength INOUT The length of the buffer and the returned data.
- * \param loadFileDataBlockSignature IN The Load File Data Block Signature.
+ * \param buf [out] The buffer.
+ * \param bufLength [in, out] The length of the buffer and the returned data.
+ * \param loadFileDataBlockSignature [in] The Load File Data Block Signature.
  * \return OPGP_ERROR_SUCCESS if no error, error code else
  */
 OPGP_ERROR_STATUS read_load_file_data_block_signature(PBYTE buf, PDWORD bufLength, GP211_DAP_BLOCK loadFileDataBlockSignature) {

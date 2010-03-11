@@ -28,12 +28,12 @@ static DWORD traceEnable; //!< Enable trace mode.
 static FILE *traceFile; //!< The trace file for trace mode.
 
 /**
- * \param enable IN Enables or disables the trace mode.
+ * \param enable [in] Enables or disables the trace mode.
  * <ul>
  * <li>#OPGP_TRACE_MODE_ENABLE
  * <li>#OPGP_TRACE_MODE_DISABLE
  * </ul>
- * \param *out OUT The pointer to to FILE to print result.
+ * \param *out [out] The pointer to to FILE to print result.
  */
 void OPGP_enable_trace_mode(DWORD enable, FILE *out) {
     if (out == NULL)
@@ -45,7 +45,7 @@ void OPGP_enable_trace_mode(DWORD enable, FILE *out) {
 
 /**
  * #OPGP_release_context MUST be called to release allocated resources.
- * \param cardContext OUT The returned OPGP_CARD_CONTEXT.
+ * \param cardContext [out] The returned OPGP_CARD_CONTEXT.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OPGP_establish_context(OPGP_CARD_CONTEXT *cardContext) {
@@ -97,7 +97,7 @@ end:
 }
 
 /**
- * \param cardContext INOUT The valid OPGP_CARD_CONTEXT returned by establish_context()
+ * \param cardContext [in, out] The valid OPGP_CARD_CONTEXT returned by establish_context()
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OPGP_release_context(OPGP_CARD_CONTEXT *cardContext) {
@@ -134,12 +134,12 @@ end:
 }
 
 /**
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by establish_context()
- * \param readerNames OUT The reader names will be a multi-string and separated by a NULL character and ended by a double NULL.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by establish_context()
+ * \param readerNames [out] The reader names will be a multi-string and separated by a NULL character and ended by a double NULL.
  *  (ReaderA\\0ReaderB\\0\\0). If this value is NULL, list_readers ignores the buffer length supplied in
  *  readerNamesLength, writes the length of the multi-string that would have been returned if this parameter
  *  had not been NULL to readerNamesLength.
- * \param readerNamesLength INOUT The length of the multi-string including all trailing null characters.
+ * \param readerNamesLength [in, out] The length of the multi-string including all trailing null characters.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OPGP_list_readers(OPGP_CARD_CONTEXT cardContext, OPGP_STRING readerNames, PDWORD readerNamesLength) {
@@ -155,10 +155,10 @@ OPGP_ERROR_STATUS OPGP_list_readers(OPGP_CARD_CONTEXT cardContext, OPGP_STRING r
 /**
  * #OPGP_card_disconnect MUST be called to release allocated resources.
  * If something is not working, you may want to change the protocol type.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by establish_context()
- * \param readerName IN The name of the reader to connect.
- * \param *cardInfo OUT The returned OPGP_CARD_INFO.
- * \param protocol IN The transmit protocol type to use. Can be OPGP_CARD_PROTOCOL_T0 or OPGP_CARD_PROTOCOL_T1 or both ORed.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by establish_context()
+ * \param readerName [in] The name of the reader to connect.
+ * \param *cardInfo [out] The returned OPGP_CARD_INFO.
+ * \param protocol [in] The transmit protocol type to use. Can be OPGP_CARD_PROTOCOL_T0 or OPGP_CARD_PROTOCOL_T1 or both ORed.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OPGP_card_connect(OPGP_CARD_CONTEXT cardContext, OPGP_CSTRING readerName, OPGP_CARD_INFO *cardInfo, DWORD protocol) {
@@ -174,8 +174,8 @@ OPGP_ERROR_STATUS OPGP_card_connect(OPGP_CARD_CONTEXT cardContext, OPGP_CSTRING 
 }
 
 /**
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by establish_context()
- * \param cardInfo INOUT The OPGP_CARD_INFO structure returned by card_connect().
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by establish_context()
+ * \param cardInfo [in, out] The OPGP_CARD_INFO structure returned by card_connect().
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OPGP_card_disconnect(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO *cardInfo) {
@@ -190,13 +190,13 @@ OPGP_ERROR_STATUS OPGP_card_disconnect(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_
 
 /**
  * If the transmission is successful then the APDU status word is returned as errorCode in the OPGP_ERROR_STATUS structure.
- * \param cardContext IN The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo IN The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo INOUT The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param capdu IN The command APDU.
- * \param capduLength IN The length of the command APDU.
- * \param rapdu OUT The response APDU.
- * \param rapduLength INOUT The length of the the response APDU.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param capdu [in] The command APDU.
+ * \param capduLength [in] The length of the command APDU.
+ * \param rapdu [out] The response APDU.
+ * \param rapduLength [in, out] The length of the the response APDU.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OPGP_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBYTE capdu, DWORD capduLength, PBYTE rapdu, PDWORD rapduLength) {
@@ -206,9 +206,6 @@ OPGP_ERROR_STATUS OPGP_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO c
 	BYTE apduCommand[261];
 	DWORD apduCommandLength = 261;
 	int i=0;
-
-	PBYTE responseData = NULL;
-	DWORD responseDataLength = *rapduLength;
 
 	OPGP_LOG_START(_T("OPGP_send_APDU"));
 	plugin_sendAPDUFunction = (OPGP_ERROR_STATUS(*)(OPGP_CARD_CONTEXT, OPGP_CARD_INFO, PBYTE, DWORD, PBYTE, PDWORD)) cardContext.connectionFunctions.sendAPDU;
