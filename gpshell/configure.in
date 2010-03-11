@@ -32,6 +32,8 @@ AC_FUNC_MALLOC
 AC_CHECK_FUNCS(atoi fgets, [],
 [AC_MSG_ERROR([Necessary function is not supported.])])
 
+AX_CFLAGS_WARN_ALL
+
 #######################
 #pcsclite Configuration
 #######################

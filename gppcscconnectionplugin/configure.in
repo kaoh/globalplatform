@@ -37,6 +37,8 @@ AC_FUNC_MALLOC
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(memcpy vsyslog, [], [AC_MSG_ERROR([Necessary function is not supported.])])
 
+AX_CFLAGS_WARN_ALL
+
 ####################
 #Debug Configuration
 ####################

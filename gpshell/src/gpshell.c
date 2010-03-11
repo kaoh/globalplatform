@@ -25,6 +25,7 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 
 #include "globalplatform/globalplatform.h"
 
@@ -100,7 +101,7 @@ static GP211_SECURITY_INFO securityInfo211;
 static int platform_mode = OP_201;
 static int visaKeyDerivation = 0;
 static int timer = 0;
-static char selectedAID[AIDLEN+1];
+static BYTE selectedAID[AIDLEN+1];
 static int selectedAIDLength = 0;
 
 static unsigned int GetTime()
@@ -123,18 +124,6 @@ static void ConvertTToC(char* pszDest, const TCHAR* pszSrc)
         pszDest[i] = (char) pszSrc[i];
 
     pszDest[_tcslen(pszSrc)] = '\0';
-}
-
-static void ConvertCToT(TCHAR* pszDest, const char* pszSrc)
-{
-    unsigned int i;
-
-    for (i = 0; i < strlen(pszSrc); i++)
-    {
-        pszDest[i] = (TCHAR) pszSrc[i];
-    }
-
-    pszDest[strlen(pszSrc)] = _T('\0');
 }
 
 static int ConvertStringToByteArray(TCHAR *src, int maxLength, BYTE *dest)
@@ -660,7 +649,6 @@ static int handleOptions(OptionStr *pOptionStr)
         }
         else if (_tcscmp(token, _T("-scpimpl")) == 0)
         {
-            char **dummy = NULL;
             token = strtokCheckComment(NULL);
             if (token == NULL)
             {
