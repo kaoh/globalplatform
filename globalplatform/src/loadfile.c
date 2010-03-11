@@ -460,6 +460,7 @@ OPGP_ERROR_STATUS cap_to_ijc(OPGP_CSTRING capFileName, OPGP_STRING ijcFileName) 
 	PBYTE loadFileBuf = NULL;
 	DWORD loadFileBufSize;
 	FILE *ijcFile = NULL;
+	size_t written = 0;
 	OPGP_LOG_START(_T("cap_to_ijc"));
 
 	if ((capFileName == NULL) || (_tcslen(capFileName) == 0))
@@ -483,8 +484,8 @@ OPGP_ERROR_STATUS cap_to_ijc(OPGP_CSTRING capFileName, OPGP_STRING ijcFileName) 
 		OPGP_ERROR_CREATE_ERROR(status, errno, OPGP_stringify_error(errno));
 		goto end;
 	}
-	fwrite(loadFileBuf, sizeof(BYTE), loadFileBufSize, ijcFile);
-	if (ferror(ijcFile)) {
+	written = fwrite(loadFileBuf, sizeof(BYTE), loadFileBufSize, ijcFile);
+	if (ferror(ijcFile) || (loadFileBufSize != written)) {
 		OPGP_ERROR_CREATE_ERROR(status, errno, OPGP_stringify_error(errno));
 		goto end;
 	}

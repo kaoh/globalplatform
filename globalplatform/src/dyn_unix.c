@@ -118,7 +118,6 @@ OPGP_ERROR_STATUS DYN_GetAddress(PVOID libraryHandle, PVOID *functionHandle, LPC
 	OPGP_LOG_START(_T("DYN_GetAddress"));
 
 	char pcFunctionName[256];
-	int rv;
 
 	/* Some platforms might need a leading underscore for the symbol */
 	snprintf(pcFunctionName, sizeof(pcFunctionName), "_%s", functionName);
