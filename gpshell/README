@@ -81,44 +81,44 @@ establish_context // Establish context
 
 ---
 
-card_connect -reader [Reader Name] // Connect to card in the reader
-card_connect -readerNumber [Reader Number x] // Connect to card in the xth reader in the system
+card_connect -reader readerName // Connect to card in the reader with readerName
+card_connect -readerNumber x // Connect to card in the xth reader in the system
 
 ---
 
 open_sc -keyind x -keyver x -key xyz -mac_key xyz -enc_key xyz -kek_key xyz -security x -scp x -scpimpl x // Open secure channel
 
-For OpenPlatform 2.0.1' card only -keyind -keyver -mac_key and enc_key are necessary.
+For OpenPlatform 2.0.1' card only -keyind -keyver -mac_key and -enc_key are necessary.
 If you have an card which uses the VISA key derivation scheme, like a GemXpresso Pro or some JCOP cards, set visa_key_derivation and you MUST specify with -key the master (mother) key. -mac_key and -enc_key are not relevant.
 For GlobalPlatform 2.1.1 cards -scp and -scpimpl should be not necessary to supply. You must also specify -kek_key. If your card supports a Secure Channel Protocol Implementation with only one base key, specify this key with -key and omit the others.
 
 ---
 
-select -f AID // select applet instance
+select -AID AID // Select applet instance
 
 ---
 
-install -file appletfile -priv privilege -sdAID zzz -AID AID_in_pkg -pkgAID package_AID -instAID instanceAID -nvCodeLimit yyy -nvDataLimit xxx // Load and installs in one step
+install -file appletFile -priv privilege -sdAID sdAID -AID AIDInPkg -pkgAID packageAID -instAID instanceAID -nvCodeLimit x -nvDataLimit x // Load and installs in one step
 
 The parameters -AID -instAID -pkgAID -nvCodeLimit can be detected automatically and the -AID and -instAID is set to the first applet in appletfile.
-for the sdAID the AID selected with the select command is chosen if not given. Otherwise the default Card Manager / Security Issuer Domain AID is chosen. So usually you do not have to pass it.
+For the sdAID the AID selected with the select command is chosen if not given. Otherwise the default Card Manager / Security Issuer Domain AID is chosen. So usually you do not have to pass it.
 
 ---
 
-install_for_load -pkgAID xxx -sdAID zzz -nvCodeLimit yyy // Install for Load
+install_for_load -pkgAID x -sdAID sdAID -nvCodeLimit x // Install for Load
 
-for the sdAID the AID selected with the select command is chosen if not given. Otherwise the default Card Manager / Security Issuer Domain AID is chosen. So usually you do not have to pass it.
+For the sdAID the AID selected with the select command is chosen if not given. Otherwise the default Card Manager / Security Issuer Domain AID is chosen. So usually you do not have to pass it.
 You may need to use this command if the combined install command does not work.
 
 ---
 
-load -file appletfile // Load applet
+load -file appletFile // Load applet
 
 You may need to use this command if the combined install command does not work.
 
 ---
 
-install_for_install -priv privilege -AID AID_in_pkg -pkgAID package_AID -instAID instanceAID -nvDataLimit xxx // Instantiate applet
+install_for_install -priv privilege -AID AIDInPkg -pkgAID packageAID -instAID instanceAID -nvDataLimit x // Instantiate applet
 
 You may need to use this command if the combined install command does not work. Or you want to install a preinstalled Security Domain.
 
@@ -128,10 +128,10 @@ card_disconnect // Disconnect card
 
 ---
 
-get_status -element e0 // list applets and packages and security domains
-get_status -element 20 // list packages
-get_status -element 40 // list applets or security domains
-get_status -element 80 // list Card Manager / Security Issuer Domain
+get_status -element e0 // List applets and packages and security domains
+get_status -element 20 // List packages
+get_status -element 40 // List applets or security domains
+get_status -element 80 // List Card Manager / Security Issuer Domain
 
 ---
 
@@ -139,60 +139,67 @@ release_context // Release context
 
 ---
 
-put_sc_key -keyver 0 -newkeyver 2 -mac_key $new_MAC_key -enc_key $new_ENC_key -kek_key $new_KEK_key -cur_kek $current_KEK_key // add new key set version 2
+put_sc_key -keyver 0 -newkeyver 2 -mac_key new_MAC_key -enc_key new_ENC_key -kek_key new_KEK_key -cur_kek current_KEK_key // Add new key set version 2
 
-put_sc_key -keyver 1 -newkeyver 1 -mac_key $new_MAC_key -enc_key $new_ENC_key -kek_key $new_KEK_key -cur_kek $current_KEK_key // replace key set version 1
-
----
-
-put_dm_keys -keyver 0 -newkeyver 2 -file $public_rsa_key_file -pass $password -key $new_receipt_generation_key // put delegated management keys for GP 2.1.1 in version 2
-
-put_dm_keys -keyver 0 -newkeyver 2 -file $public_rsa_key_file -pass $password -key $new_receipt_generation_key -cur_kek $current_KEK_key // put delegated management keys for OP 2.0.1' in version 2
+put_sc_key -keyver 1 -newkeyver 1 -mac_key new_MAC_key -enc_key new_ENC_key -kek_key new_KEK_key -cur_kek current_KEK_key // Replace key set version 1
 
 ---
 
-send_apdu -sc 0 -APDU xxx // Send APDU xxx without secure channel
-send_apdu_nostop -sc 0 -APDU xxx // Does not stop in case of an error
+put_dm_keys -keyver 0 -newkeyver 2 -file public_rsa_key_file -pass password -key new_receipt_generation_key // Put delegated management keys for GP 2.1.1 in version 2
+
+put_dm_keys -keyver 0 -newkeyver 2 -file public_rsa_key_file -pass password -key new_receipt_generation_key -cur_kek current_KEK_key // Put delegated management keys for OP 2.0.1' in version 2
+
+---
+
+send_apdu -sc 0 -APDU x // Send APDU x without secure channel
+
+The APDU is given as hex without spaces and without leadings 0x.
+
+---
+
+send_apdu_nostop -sc 0 -APDU x // Does not stop in case of an error
+
+The APDU is given as hex without spaces and without leadings 0x.
 
 ---
 
 Options:
--keyind 	Key index
--keyver		Key set version
--newkeyver	New key set version
--key		Key value in hex
--mac_key	MAC key value in hex
--enc_key	ENC key value in hex
--kek_key	KEK key value in hex
--security	0: clear, 1: MAC, 3: MAC+ENC
--reader		Smart card reader name
--readerNumber Number of the reader in the system to connect to.
-			If -reader is given this is ignored.
--protocol	Protocol, 0:T=0, 1:T=1
-			Should not be necessary to be stated explicitly.
--AID		Applet ID
--sdAID		Security Domain AID
--pkgAID		Package AID
--instAID	Instance AID
--nvCodeLimit	Non-volatile code size limit
--nvDataLimit	Non-volatile data size limit
--vDataLimit	Volatile data size limit
--file		File name
--instParam	Installation parameter
--element	Element type to be listed in hex
-			80 - Card Manager / Card Issuer Security Domain only.
-			40 - Applications (and Security Domains only in GP211).
-			20 - Executable Load Files only.
-			10 - Executable Load Files and their Executable Modules only (Only
+-keyind x		Key index
+-keyver	x		Key set version
+-newkeyver x	New key set version
+-key key		Key value in hex
+-mac_key key	MAC key value in hex
+-enc_key key	ENC key value in hex
+-kek_key key	KEK key value in hex
+-security x		0: clear, 1: MAC, 3: MAC+ENC
+-reader readerName	Smart card reader name
+-readerNumber x	Number of the reader in the system to connect to.
+				If -reader is given this is ignored.
+-protocol x		Protocol, 0:T=0, 1:T=1
+				Should not be necessary to be stated explicitly.
+-AID aid		Applet ID
+-sdAID aid		Security Domain AID
+-pkgAID	aid		Package AID
+-instAID aid	Instance AID
+-nvCodeLimit x	Non-volatile code size limit
+-nvDataLimit x	Non-volatile data size limit
+-vDataLimit	x	Volatile data size limit
+-file file		File name
+-instParam param	Installation parameter
+-element x		Element type to be listed in hex
+				80 - Card Manager / Card Issuer Security Domain only.
+				40 - Applications (and Security Domains only in GP211).
+				20 - Executable Load Files only.
+				10 - Executable Load Files and their Executable Modules only (Only
 GP211)
--sc			Secure Channel mode (0 off, 1 on)
--APDU		APDU to be sent
--priv		(DWORD) Privilege.  // e.g. 0x04 Default Selected
--scp 		Secure Channel Protocol (1 SCP01, 2 SCP02, default no set).
-			Should not be necessary to be stated explicitly.
--scpimpl	Secure Channel Implementation (default not set)
-			Should not be necessary to be stated explicitly.
--pass		Password for key decryption
+-sc	x			Secure Channel mode (0 off, 1 on)
+-APDU apdu		APDU to be sent
+-priv x			Privilege. E.g. 0x04 Default Selected
+-scp x			Secure Channel Protocol (1 SCP01, 2 SCP02, default no set).
+				Should not be necessary to be stated explicitly.
+-scpimpl x		Secure Channel Implementation (default not set)
+				Should not be necessary to be stated explicitly.
+-pass password	Password for key decryption
 
 Parameters containing spaces, e.g. file names or reader names must be quoted in "".
 
