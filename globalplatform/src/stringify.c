@@ -209,6 +209,8 @@ OPGP_STRING OPGP_stringify_error(DWORD errorCode) {
 				return _T("9484: Algorithm not supported.");
 			case OPGP_ISO7816_ERROR_INVALID_KEY_CHECK_VALUE:
 				return _T("9485: Invalid key check value.");
+			case OPGP_ISO7816_ERROR_SUCCESS:
+				return _T("9000: Success. No error.");
 // 0x94
 
 			default:

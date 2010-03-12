@@ -68,7 +68,7 @@
 
 /* Normal processing */
 
-
+#define OPGP_ISO7816_ERROR_SUCCESS (OPGP_ISO7816_ERROR_PREFIX | (DWORD)0x9000L) //!< Success. No error.
 #define OPGP_ISO7816_ERROR_RESPONSE_LENGTH (OPGP_ISO7816_ERROR_PREFIX | (DWORD)0x6100L) //!< Response bytes available indicated the last 2 Bytes.
 
 // State of non-volatile memory unchanged

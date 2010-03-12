@@ -38,7 +38,7 @@
 /**
  * Test load file
  */
-#define TEST_LOAD_FILE "HelloWorld.cap"
+#define TEST_LOAD_FILE "helloworld.cap"
 
 /**
  * Global card context for the test.
@@ -58,12 +58,12 @@ static GP211_SECURITY_INFO securityInfo211;
 /**
  * Package AID for test to delete.
  */
-static const BYTE packageAID[9] = {0xa0, 0x00, 0x00, 0x00, 0x62, 0x03, 0x01, 0x0c, 0x01};
+static const BYTE packageAID[7] = {0xD0,0xD1,0xD2,0xD3,0xD4,0xD5,0x01};
 
 /**
  * Applet AID for test to delete.
  */
-static const BYTE appletAID[10] = {0xa0, 0x00, 0x00, 0x00, 0x62, 0x03, 0x01, 0x0c, 0x01, 0x01};
+static const BYTE appletAID[8] = {0xD0,0xD1,0xD2,0xD3,0xD4,0xD5,0x01,0x01};
 
 /**
  * Readername for the test.
@@ -417,8 +417,8 @@ START_TEST (test_get_status) {
 		OPGP_ERROR_STATUS status;
 		GP211_APPLICATION_DATA appData[10];
 		GP211_EXECUTABLE_MODULES_DATA modulesData[10];
-		BYTE appAID[8] = {0xa0,0,0,0,4,0x10,0x10};
-		BYTE loadFileAID[8] = {0xa0,0,0,0,3,0x53,0x50};
+		BYTE appAID[7] = {0xa0,0,0,0,4,0x10,0x10};
+		BYTE loadFileAID[7] = {0xa0,0,0,0,3,0x53,0x50};
 		BYTE domainAID[8] = {0xa0,00,00,00,03,00,00,00};
 		DWORD dataLength = 10;
 		status = internal_connect();
@@ -573,8 +573,8 @@ START_TEST (test_install_callback) {
 			fail("GP211_load() failed: ", status.errorMessage);
 		}
 
-        fail_unless(totalWork == 411, "Incorrect total size");
-        fail_unless(currentWork == 411, "Incorrect currentWork");
+        fail_unless(totalWork == 343, "Incorrect total size");
+        fail_unless(currentWork == 343, "Incorrect currentWork");
         fail_unless(finished == OPGP_TASK_FINISHED, "Incorrect finished state");
 
 		status = internal_disconnect();
