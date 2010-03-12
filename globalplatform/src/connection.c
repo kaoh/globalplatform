@@ -179,13 +179,13 @@ OPGP_ERROR_STATUS OPGP_card_connect(OPGP_CARD_CONTEXT cardContext, OPGP_CSTRING 
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OPGP_card_disconnect(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO *cardInfo) {
-	OPGP_ERROR_STATUS errorStatus;
-	OPGP_ERROR_STATUS(*plugin_cardDisconnectFunction) (OPGP_CARD_INFO *);
-	OPGP_LOG_START(_T("OPGP_card_disconnect"));
-	plugin_cardDisconnectFunction = (OPGP_ERROR_STATUS(*)(OPGP_CARD_INFO *)) cardContext.connectionFunctions.cardDisconnect;
-	errorStatus = (*plugin_cardDisconnectFunction) (cardInfo);
-	OPGP_LOG_END(_T("OPGP_card_disconnect"), errorStatus);
-	return errorStatus;
+    OPGP_ERROR_STATUS errorStatus;
+    OPGP_ERROR_STATUS(*plugin_cardDisconnectFunction) (OPGP_CARD_CONTEXT, OPGP_CARD_INFO *);
+    OPGP_LOG_START(_T("OPGP_card_disconnect"));
+    plugin_cardDisconnectFunction = (OPGP_ERROR_STATUS(*)(OPGP_CARD_CONTEXT, OPGP_CARD_INFO *)) cardContext.connectionFunctions.cardDisconnect; ///<same here
+    errorStatus = (*plugin_cardDisconnectFunction) (cardContext, cardInfo);
+    OPGP_LOG_END(_T("OPGP_card_disconnect"), errorStatus);
+    return errorStatus;
 }
 
 /**

@@ -140,7 +140,7 @@ static OPGP_ERROR_STATUS internal_mutual_authentication() {
 static OPGP_ERROR_STATUS internal_list_readers() {
 	OPGP_ERROR_STATUS status;
 	TCHAR buf[BUFLEN + 1];
-	int j, k;
+	int j;
 	DWORD readerStrLen = BUFLEN;
 	status = OPGP_list_readers(cardContext, buf, &readerStrLen);
 	if (OPGP_ERROR_CHECK(status)) {
@@ -437,7 +437,7 @@ START_TEST (test_get_status) {
 		fail_unless(dataLength == 4, "Incorrect application status length");
 		fail_unless(appData[0].lifeCycleState == 7, "Incorrect application status life cycle state");
 		fail_unless(appData[0].privileges == 2, "Incorrect application status privileges");
-		fail_unless(strncmp(appData[0].AID, appAID, sizeof(appAID))==0, "Incorrect application status AID");
+		fail_unless(memcmp(appData[0].AID, appAID, sizeof(appAID))==0, "Incorrect application status AID");
 
         dataLength = 10;
 		status = GP211_get_status(cardContext, cardInfo, &securityInfo211, GP211_STATUS_LOAD_FILES, appData, modulesData, &dataLength);
@@ -447,7 +447,7 @@ START_TEST (test_get_status) {
 		fail_unless(dataLength == 5, "Incorrect load file status");
 		fail_unless(appData[0].lifeCycleState == 1, "Incorrect load file status");
 		fail_unless(appData[0].privileges == 0, "Incorrect load file status");
-		fail_unless(strncmp(appData[0].AID, loadFileAID, sizeof(loadFileAID))==0, "Incorrect load file status");
+		fail_unless(memcmp(appData[0].AID, loadFileAID, sizeof(loadFileAID))==0, "Incorrect load file status");
 
         dataLength = 10;
 		status = GP211_get_status(cardContext, cardInfo, &securityInfo211, GP211_STATUS_ISSUER_SECURITY_DOMAIN, appData, modulesData, &dataLength);
@@ -459,7 +459,7 @@ START_TEST (test_get_status) {
 		fail_unless(appData[0].privileges == 0x9e, "Incorrect issuer security status");
 
 
-		fail_unless(strncmp(appData[0].AID, domainAID, sizeof(domainAID)) == 0, "Incorrect issuer security status");
+		fail_unless(memcmp(appData[0].AID, domainAID, sizeof(domainAID)) == 0, "Incorrect issuer security status");
 
 		status = internal_disconnect();
 		if (OPGP_ERROR_CHECK(status)) {
@@ -489,6 +489,8 @@ START_TEST (test_put_3des_key) {
 		}
 } END_TEST
 
+/*
+Not supported on most cards
 START_TEST (test_delete_key) {
 		OPGP_ERROR_STATUS status;
 		status = internal_connect();
@@ -508,6 +510,7 @@ START_TEST (test_delete_key) {
 			fail("Could not disconnect: %s", status.errorMessage);
 		}
 } END_TEST
+*/
 
 static DWORD totalWork;
 static DWORD currentWork;
@@ -527,7 +530,6 @@ static void callback_function(OPGP_PROGRESS_CALLBACK_PARAMETERS parameters) {
  */
 START_TEST (test_install_callback) {
 		OPGP_LOAD_FILE_PARAMETERS loadFileParams;
-		DWORD receiptDataAvailable = 0;
 		DWORD receiptDataLen = 0;
 		OPGP_PROGRESS_CALLBACK callback;
 
@@ -535,7 +537,6 @@ START_TEST (test_install_callback) {
 		installParam[0] = 0;
 
 		OPGP_ERROR_STATUS status;
-		GP211_RECEIPT_DATA receipt;
 
 		status = internal_connect();
 		if (OPGP_ERROR_CHECK(status)) {

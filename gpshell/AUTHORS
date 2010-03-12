@@ -2,10 +2,13 @@ Snit Mo <snitmo@gmail.com>
 
 Karsten Ohme <k_o_@users.sourceforge.net>
 
-Matheus Ribeiro <mfribeiro@gmail.com> for GemXpresso support, Timer proposal
+Matheus Ribeiro <mfribeiro@gmail.com> for GemXpresso support, Timer proposal, auto-detection of card
 
 Augusto Makiyama <augusto.cesar.makiyama@gmail.com> for delete key command
 
 João Victor <jvictor32@gmail.com> for install_for_load parameter fixes
 
 Kjell M. Myksvoll <kmyksvo@online.no> for 64 Bit fix
+
+Sergio Campos <sergio.campos@grupoquali.com.br> for auto-detection of card
+
