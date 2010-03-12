@@ -102,7 +102,7 @@ static int platform_mode = OP_201;
 static int visaKeyDerivation = 0;
 static int timer = 0;
 static BYTE selectedAID[AIDLEN+1];
-static int selectedAIDLength = 0;
+static DWORD selectedAIDLength = 0;
 
 static unsigned int GetTime()
 {
@@ -1494,7 +1494,7 @@ static int handleCommands(FILE *fd)
             }
             else if (_tcscmp(token, _T("send_apdu")) == 0 || _tcscmp(token, _T("send_apdu_nostop")) == 0)
             {
-                unsigned char recvAPDU[258];
+                BYTE recvAPDU[258];
                 DWORD recvAPDULen = 258;
                 // Install for Load
                 rv = handleOptions(&optionStr);
