@@ -220,13 +220,13 @@ Nokia 6131 NFC Phone (GP211)
 Axalto Cyberflex Access 64k
 Gemalto Generations Flexible
 
-We have tested this with GlobalPlatform.dll and HelloWorld.cap (sample applet from JavaCard development kit 2.1.2).  See helloInstall.txt, helloDelete.txt, and list.txt and the other script files (.txt) for samples. If a CAP file cannot be used, please see the later section (How to convert a .cap file into a .bin file).
+We have tested this with GlobalPlatform.dll and helloworld.cap.  See helloInstall.txt, helloDelete.txt, and list.txt and the other script files (.txt) for samples. If a CAP file cannot be used, please see the later section (How to convert a .cap file into a .bin file).
 
-	gpshell.exe helloInstall.txt	// install HelloWorld.cap
-	gpshell.exe helloDelete.txt	// delete HelloWorld.cap
+	gpshell.exe helloInstall.txt	// install helloworld.cap
+	gpshell.exe helloDelete.txt	// delete helloworld.cap
 	gpshell.exe list.txt		// list applets on a smart card
 
-Make sure the script file (helloInstall.txt, etc.) and applet file HelloWorld.cap are in your current directory.
+Make sure the script file (helloInstall.txt, etc.) and applet file helloworld.cap are in your current directory.
 
 It should work with other smart cards that support JavaCard 2.x.y and OpenPlatform 2.0.1 or GlobalPlatform 2.1.1.  You need to tweak options in the script files.  Please let us know how it works with the smart cards you have.
 
@@ -247,11 +247,11 @@ This would add a key set 1, and at the same time delete the initialization key s
 
 For CosmopoliC 64K (tested on V5.2), you need to specify the Security Domain AID. For example,
 
-  install -file HelloWorld.cap -sdAID A000000003000000 -nvCodeLimit 4000
+  install -file helloworld.cap -sdAID A000000003000000 -nvCodeLimit 4000
 
 For GemXpresso R3.2 E64, you need to specify the Security Domain AID (Card Manager AID).  For example,
 
-  install -file HelloWorld.cap -sdAID A000000018434D00 -nvCodeLimit 4000
+  install -file helloworld.cap -sdAID A000000018434D00 -nvCodeLimit 4000
 
 * CyberFlex cards
 
@@ -269,14 +269,18 @@ if you don't have access to the syslog or don't want to use it. Keep in mind tha
 
 *** How to convert a .cap file into a .ijc (.bin) file
 
-JavaCard applets are in CAP files. For example, JavaCard Toolkit generates one. CAP files are the official container format for JavaCard applets and they should work with GPShell. This was tested successfully with all of the above cards. The actual load format which is used to bring the applet to the card is the IJC format. If this does not work here is an guide how to transform a CAP file into a IJC file. Sometimes for IJC files the extension .bin is used.
+JavaCard applets are in CAP files. For example, JavaCard Toolkit generates one. CAP files are the
+official container format for JavaCard applets and they should work with GPShell. This was tested
+successfully with all of the above cards. The actual load format which is used to bring the applet
+to the card is the IJC format. If this does not work here is an guide how to transform a CAP file
+into a IJC file. Sometimes for IJC files the extension .bin is used.
 
 Fortunately, the conversion is straightforward.
 
 Take the cap file, unjar it.  This results in many smaller cap files.  Concatenate all of them into one .bin file.  Here's an example.
 
-cp com/sun/javacard/samples/HelloWorld/javacard/HelloWorld.cap .
-jar xvf HelloWorld.cap
+cp com/sun/javacard/samples/HelloWorld/javacard/helloworld.cap .
+jar xvf helloworld.cap
 extracted: com/sun/javacard/samples/HelloWorld/javacard/Header.cap
 extracted: com/sun/javacard/samples/HelloWorld/javacard/Directory.cap
 extracted: com/sun/javacard/samples/HelloWorld/javacard/Applet.cap
@@ -300,7 +304,7 @@ com/sun/javacard/samples/HelloWorld/javacard/RefLocation.cap
 com/sun/javacard/samples/HelloWorld/javacard/Descriptor.cap >
 HelloWorld.bin
 
-I have run this in cygwin.  You can see I have opened up HelloWorld.cap and concatanated all the resulting .cap files into one file, HelloWorld.bin.  Try the same thing to your .cap file, and please let us know if it doesn't work.
+I have run this in cygwin.  You can see I have opened up helloworld.cap and concatanated all the resulting .cap files into one file, HelloWorld.bin.  Try the same thing to your .cap file, and please let us know if it doesn't work.
 
 *** Contact
 

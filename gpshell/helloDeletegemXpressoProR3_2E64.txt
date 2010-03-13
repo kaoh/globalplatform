@@ -6,7 +6,7 @@ establish_context
 card_connect
 select -AID A000000018434D00
 open_sc -security 0 -keyind 0 -keyver 0 -key 47454d5850524553534f53414d504c45 // Open secure channel
-delete -AID a00000006203010c0101
-delete -AID a00000006203010c01
+delete -AID D0D1D2D3D4D50101
+delete -AID D0D1D2D3D4D501
 card_disconnect
 release_context

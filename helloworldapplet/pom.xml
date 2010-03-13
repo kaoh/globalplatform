@@ -35,7 +35,7 @@
     </profiles>
 
     <properties>
-        <jc.home>${env.JC221_HOME}</jc.home>
+        <jc.home>${env.JC212_HOME}</jc.home>
         <javacard.package.name>net.sourceforge.globalplatform.jc.helloworld</javacard.package.name>
         <javacard.package.aid>0xD0:0xD1:0xD2:0xD3:0xD4:0xD5:0x01</javacard.package.aid>
         <javacard.applet.aid>0xD0:0xD1:0xD2:0xD3:0xD4:0xD5:0x01:0x01</javacard.applet.aid>
@@ -53,9 +53,9 @@
         <dependency>
             <groupId>com.sun</groupId>
             <artifactId>javacard</artifactId>
-            <version>2.1.1</version>
+            <version>2.1.2</version>
             <scope>system</scope>
-            <systemPath>${jc.home}/lib/api.jar</systemPath>
+            <systemPath>${jc.home}/lib/api21.jar</systemPath>
         </dependency>
     </dependencies>
 
@@ -89,7 +89,7 @@
                             <arg value="${javacard.major.version}.${javacard.minor.version}" />
                             <arg value="-nowarn" />
                             <classpath>
-                                <pathelement location="${jc.home}/api_export_files" />
+                                <pathelement location="${jc.home}/api21_export_files" />
                                 <pathelement location="${jc.home}/lib/apduio.jar" />
                                 <pathelement location="${jc.home}/lib/apdutool.jar" />
                                 <pathelement location="${jc.home}/lib/jcwde.jar" />

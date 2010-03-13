@@ -18,28 +18,34 @@ package net.sourceforge.globalplatform.jc.helloworld;
 
 import javacard.framework.APDU;
 import javacard.framework.Applet;
+import javacard.framework.ISO7816;
+import javacard.framework.ISOException;
 import javacard.framework.Util;
 
 /**
- * Hello World Applet.
  */
-public class HelloWorldApplet extends Applet {
-    
-    private final static byte[] HELLO_WORLD = new byte[] {'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', '!'};
 
-    private HelloWorldApplet() {
+public class HelloWorldApplet extends Applet {
+    private byte[] echoBytes;
+    private static final short LENGTH_ECHO_BYTES = 256;
+
+    /**
+     * Only this class's install method should create the applet object.
+     */
+    protected HelloWorldApplet() {
+        echoBytes = new byte[LENGTH_ECHO_BYTES];
         register();
     }
 
     /**
-     * Installs the applet.
-     * 
+     * Installs this applet.
+     *
      * @param bArray
-     *            array with installation parameters.
+     *            the array containing installation parameters
      * @param bOffset
-     *            offset into array.
+     *            the starting offset in bArray
      * @param bLength
-     *            the length of the parameters.
+     *            the length in bytes of the parameter data in bArray
      */
     public static void install(byte[] bArray, short bOffset, byte bLength) {
         new HelloWorldApplet();
@@ -47,15 +53,74 @@ public class HelloWorldApplet extends Applet {
 
     /**
      * Processes an incoming APDU.
-     * 
+     *
+     * @see APDU
      * @param apdu
-     *            the APDU.
+     *            the incoming APDU
+     * @exception ISOException
+     *                with the response bytes per ISO 7816-4
      */
     public void process(APDU apdu) {
         byte buffer[] = apdu.getBuffer();
-        apdu.setIncomingAndReceive();
-        Util.arrayCopyNonAtomic(HELLO_WORLD, (short) 0, buffer, (short)0, (short)HELLO_WORLD.length);
-        apdu.setOutgoingAndSend((short)0, (short)HELLO_WORLD.length);
-    }
 
+        short bytesRead = apdu.setIncomingAndReceive();
+        short echoOffset = (short) 0;
+
+        while (bytesRead > 0) {
+            Util.arrayCopyNonAtomic(buffer, ISO7816.OFFSET_CDATA, echoBytes, echoOffset, bytesRead);
+            echoOffset += bytesRead;
+            bytesRead = apdu.receiveBytes(ISO7816.OFFSET_CDATA);
+        }
+
+        apdu.setOutgoing();
+        apdu.setOutgoingLength((short) (echoOffset + 5));
+
+        // echo header
+        apdu.sendBytes((short) 0, (short) 5);
+        // echo data
+        apdu.sendBytesLong(echoBytes, (short) 0, echoOffset);
+    }
 }
+//import javacard.framework.APDU;
+//import javacard.framework.Applet;
+////import javacard.framework.Util;
+//
+///**
+// * Hello World Applet.
+// */
+//public class HelloWorldApplet extends Applet {
+//
+////    private final static byte[] HELLO_WORLD = new byte[] {'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', '!'};
+//
+//    public HelloWorldApplet() {
+//        register();
+//    }
+//
+//    /**
+//     * Installs the applet.
+//     *
+//     * @param bArray
+//     *            array with installation parameters.
+//     * @param bOffset
+//     *            offset into array.
+//     * @param bLength
+//     *            the length of the parameters.
+//     */
+//    public static void install(byte[] bArray, short bOffset, byte bLength) {
+//        new HelloWorldApplet();
+//    }
+//
+//    /**
+//     * Processes an incoming APDU.
+//     *
+//     * @param apdu
+//     *            the APDU.
+//     */
+//    public void process(APDU apdu) {
+//        byte buffer[] = apdu.getBuffer();
+//        apdu.setIncomingAndReceive();
+////        Util.arrayCopyNonAtomic(HELLO_WORLD, (short) 0, buffer, (short)0, (short)HELLO_WORLD.length);
+////        apdu.setOutgoingAndSend((short)0, (short)HELLO_WORLD.length);
+//    }
+//
+//}

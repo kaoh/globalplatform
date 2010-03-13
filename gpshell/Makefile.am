@@ -3,12 +3,12 @@
 EXTRA_DIST = lib_finder.script GPShell.cbp \
 GPShell.dep INSTALL.w32 \
 reconf list.txt helloDelete.txt helloInstall.txt HelloWorld.bin \
-HelloWorld.cap putdefault-cflex.txt replacekey-cflex.txt send_apdu.txt \
+helloworld.cap putdefault-cflex.txt replacekey-cflex.txt send_apdu.txt \
 listgp211.txt helloInstallGP211.txt helloDeleteGP211.txt Makefile.mak \
 helloDeletegemXpressoProR3_2E64.txt make.bat GPShell.vcproj \
 helloInstallgemXpressoProR3_2E64.txt listgemXpressoProR3_2E64.txt \
 helloInstallCyberflexe-gate32k.txt helloInstallCyberflexAccess64k.txt \
-helloInstallNokia6131NFC.txt HelloWorld.cap.transf helloInstallOberthurCosmo64.txt \
+helloInstallNokia6131NFC.txt helloworld.cap.transf helloInstallOberthurCosmo64.txt \
 listJCOP10.txt listPalmeraProtectV5.txt helloInstallPalmeraProtectV5.txt \
 helloInstallJCOP10.txt helloInstallJCOP31.txt helloInstallJCOP21OrJTopV15.txt
 
