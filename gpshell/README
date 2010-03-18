@@ -19,9 +19,12 @@ Version 1.4.3	06/19/2008
 
 *** Summary
 
-GPShell is a script interpreter which talks to a smart card.  It is written on top of the GlobalPlatform library, which was developed by Karsten Ohme.  It uses smart card communication protocols ISO-7816-4 and OpenPlatform 2.0.1 and GlobalPlatform 2.1.1.  It can establish a secure channel with a smart card, load, instantiate, delete, list applets on a smart card.
+GPShell is a script interpreter which talks to a smart card.  It is written on top of the GlobalPlatform library, which was developed by Karsten Ohme.
+It uses smart card communication protocols ISO-7816-4 and OpenPlatform 2.0.1 and GlobalPlatform 2.1.1.
+It can establish a secure channel with a smart card, load, instantiate, delete, list applets on a smart card.
 
-You need also the libraries GlobalPlatform 4.3.2, zlib 1.2.3 (zlib1.dll) and OpenSSL 0.97e (libeay32.dll and ssleay32.dll) or compatible and must place them in the directory where GPShell is called or better the system directory (C:\Windows\System32 or /usr/(local/)lib usually).
+You need also the libraries GlobalPlatform 6.0.0, zlib 1.2.3 (zlib1.dll) and OpenSSL 0.97e (libeay32.dll and ssleay32.dll) or
+compatible and must place them in the directory where GPShell is called or better the system directory (C:\Windows\System32 or /usr/(local/)lib usually).
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -266,6 +269,12 @@ Set the variable GLOBALPLATFORM_DEBUG=1 in the environment. You can set the logf
 Under Windows by default C:\Temp\GlobalPlatform.log is chosen. The log file must be writable for the user. The default log file under Unix systems is
 /tmp/GlobalPlatform.log. But usually syslog is available and this will be used by default, so you may have to specify the log file manually,
 if you don't have access to the syslog or don't want to use it. Keep in mind that the debugging output may contain sensitive information, e.g. keys!
+
+If you have Linux this can also help a lot to get a more complete insight into what's going on.
+You can run the PC/SC daemon in foreground debugging mode so that the whole traffic can be examined.
+You can also install a (prepackaged) virtual image of a Linux system under Windows.
+
+Stop the pcscd daemon and run pcscd -a -d -f. Now you can see the whole traffic.
 
 *** How to convert a .cap file into a .ijc (.bin) file
 

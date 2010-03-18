@@ -105,6 +105,17 @@
                                 <include name="**/*.cap" />
                             </fileset>
                         </copy>
+                        <echo message="Transforming for Cyberflex"/>
+                        <java jar="${jc.home}/lib/captransf.jar"
+							failonerror="true" fork="true">
+                            <arg value="${jc.home}/api21_export_files/java/lang/javacard/lang.exp" />
+                            <arg value="${jc.home}/api21_export_files/javacard/framework/javacard/framework.exp" />
+                            <arg value="${jc.home}/api21_export_files/javacard/security/javacard/security.exp" />
+                            <arg value="${jc.home}/api21_export_files/java/lang/javacard/lang.exp" />
+                            <arg value="-s" />
+                            <arg value="-noint" />
+                            <arg value="target/${artifactId}.cap" />
+                        </java>
                     </tasks>
                 </configuration>
             </plugin>
