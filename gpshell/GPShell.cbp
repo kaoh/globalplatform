@@ -99,6 +99,30 @@
 		<Unit filename="configure.in">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
+		<Unit filename="debian/changelog">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="debian/compat">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="debian/control">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="debian/copyright">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="debian/gpshell.docs">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="debian/gpshell.install">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="debian/rules">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="debian/watch">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
 		<Unit filename="helloDelete.txt">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
