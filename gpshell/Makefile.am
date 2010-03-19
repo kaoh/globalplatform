@@ -2,9 +2,9 @@
 
 EXTRA_DIST = lib_finder.script GPShell.cbp \
 GPShell.dep INSTALL.w32 \
-reconf list.txt helloDelete.txt helloInstall.txt HelloWorld.bin \
+reconf list.txt helloDelete.txt helloInstall.txt \
 helloworld.cap putdefault-cflex.txt replacekey-cflex.txt send_apdu.txt \
-listgp211.txt helloInstallGP211.txt helloDeleteGP211.txt Makefile.mak \
+listGP211.txt helloInstallGP211.txt helloDeleteGP211.txt Makefile.mak \
 helloDeletegemXpressoProR3_2E64.txt make.bat GPShell.vcproj \
 helloInstallgemXpressoProR3_2E64.txt listgemXpressoProR3_2E64.txt \
 helloInstallCyberflexe-gate32k.txt helloInstallCyberflexAccess64k.txt \
@@ -17,7 +17,7 @@ SUBDIRS = src
 deb:
 	tar xzf $(PACKAGE)-$(VERSION).tar.gz
 	rm -f $(PACKAGE)_$(VERSION).orig.tar.gz
-	cd $(PACKAGE)-$(VERSION) && dh_make -l -c lgpl -e "k_o_@users.sourceforge.net" -f ../$(PACKAGE)-$(VERSION).tar.gz
+	cd $(PACKAGE)-$(VERSION) && dh_make -s -c gpl -e "k_o_@users.sourceforge.net" -f ../$(PACKAGE)-$(VERSION).tar.gz
 	cd $(PACKAGE)-$(VERSION) && rm -rf debian
 	cd $(PACKAGE)-$(VERSION) && mkdir debian
 	cd $(PACKAGE)-$(VERSION) && cp ../debian/* debian/
