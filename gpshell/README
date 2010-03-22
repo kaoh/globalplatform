@@ -15,7 +15,7 @@ Version 1.3.1	3/24/2006
 Version 1.4.0	12/28/2006
 Version 1.4.1	08/22/2007
 Version 1.4.2	01/20/2008
-Version 1.4.3	06/19/2008
+Version 1.4.3	03/22/2010
 
 *** Summary
 
@@ -37,7 +37,7 @@ TO RESET THE RETRY COUNTER BEFORE YOU PROCEED WITH GPSHELL. CHECK THE PARAMETERS
 
 *** Usage
 
-Make sure both GPShell.exe (or gpshell on UNIX) and GlobalPlatform.dll (or .so) are in your PATH.
+Make sure both GPShell.exe (or gpshell on UNIX) and GlobalPlatform.dll (or globalplatform.so) are in your PATH.
 
 UNIX:
 gpshell scriptfile, or
@@ -223,13 +223,15 @@ Nokia 6131 NFC Phone (GP211)
 Axalto Cyberflex Access 64k
 Gemalto Generations Flexible
 
-We have tested this with GlobalPlatform.dll and helloworld.cap.  See helloInstall.txt, helloDelete.txt, and list.txt and the other script files (.txt) for samples. If a CAP file cannot be used, please see the later section (How to convert a .cap file into a .bin file).
+We have tested this with the helloworld.cap example file. See helloInstall.txt, helloDelete.txt, and list.txt and the other script files (.txt) for samples. If a CAP file cannot be used, please see the later section (How to convert a .cap file into a .bin file).
 
 	gpshell.exe helloInstall.txt	// install helloworld.cap
 	gpshell.exe helloDelete.txt	// delete helloworld.cap
 	gpshell.exe list.txt		// list applets on a smart card
 
 Make sure the script file (helloInstall.txt, etc.) and applet file helloworld.cap are in your current directory.
+
+The sources for helloworld.cap can be obtained from the SVN from the SourceForge project page.
 
 It should work with other smart cards that support JavaCard 2.x.y and OpenPlatform 2.0.1 or GlobalPlatform 2.1.1.  You need to tweak options in the script files.  Please let us know how it works with the smart cards you have.
 
