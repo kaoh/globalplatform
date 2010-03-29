@@ -33,6 +33,16 @@
 #include "globalplatform/debug.h"
 #include "globalplatform/stringify.h"
 
+static void ConvertTToC(char* pszDest, const TCHAR* pszSrc, unsigned int maxSize)
+{
+    unsigned int i;
+
+    for (i = 0; i < _tcslen(pszSrc); i++)
+        pszDest[i] = (char) pszSrc[i];
+
+    pszDest[min(_tcslen(pszSrc), maxSize)] = '\0';
+}
+
 /**
  * \param libraryHandle [out] The returned library handle
  * \param libraryName [in] The length of the Security Domain AID.
@@ -44,7 +54,6 @@ OPGP_ERROR_STATUS DYN_LoadLibrary(PVOID *libraryHandle, LPCTSTR libraryName, LPC
 	OPGP_ERROR_STATUS errorStatus;
 
 	OPGP_LOG_START(_T("DYN_LoadLibrary"));
-	*libraryHandle = NULL;
 	*libraryHandle = LoadLibrary(libraryName);
 
 	if (*libraryHandle == NULL)
@@ -96,11 +105,19 @@ end:
 OPGP_ERROR_STATUS DYN_GetAddress(PVOID libraryHandle, PVOID *functionHandle, LPCTSTR functionName)
 {
 	OPGP_ERROR_STATUS errorStatus;
+	CHAR functionAsciiName[256];
 
 	OPGP_LOG_START(_T("DYN_GetAddress"));
 
+#if DEBUG
+	OPGP_log_Msg(_T("DYN_GetAddress: Getting address for function \"%s\""), functionName);
+#endif
+
+	// convert to ascii
+	ConvertTToC(functionAsciiName, functionName, 255);
+
 	*functionHandle = NULL;
-	*functionHandle = GetProcAddress(libraryHandle, (LPCSTR)functionName);
+	*functionHandle = GetProcAddress(libraryHandle, (LPCSTR)functionAsciiName);
 
 	if (*functionHandle == NULL)
 	{

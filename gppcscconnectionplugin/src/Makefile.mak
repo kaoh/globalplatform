@@ -11,7 +11,7 @@ OUTDIR=Release
 OBJS=$(OUTDIR)/stdafx.obj $(OUTDIR)/DLLMain.obj $(OUTDIR)/gppcscconnectionplugin.obj \
 $(OUTDIR)/util.obj
 
-LIB_NAME=gppcscconnectionplugin # the name of the library
+LIB_NAME=GPPcScConnectionPlugin # the name of the library
 
 CPP=cl
 

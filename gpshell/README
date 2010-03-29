@@ -313,7 +313,7 @@ com/sun/javacard/samples/HelloWorld/javacard/StaticField.cap
 com/sun/javacard/samples/HelloWorld/javacard/ConstantPool.cap
 com/sun/javacard/samples/HelloWorld/javacard/RefLocation.cap
 com/sun/javacard/samples/HelloWorld/javacard/Descriptor.cap >
-HelloWorld.bin
+helloworld.bin
 
 I have run this in cygwin.  You can see I have opened up helloworld.cap and concatanated all the resulting .cap files into one file, HelloWorld.bin.  Try the same thing to your .cap file, and please let us know if it doesn't work.
 

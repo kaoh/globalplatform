@@ -70,14 +70,15 @@ PREBUILD:	clean_package bin_package
 bin_package:
 	rm -rf $(DIR)
 	mkdir $(DIR)
-	cp Debug/GPShell.exe ../../globalplatform/Debug/GlobalPlatform.dll ../../globalplatform\src\GlobalPlatform-6.0.0\ssleay32.dll \
-	../../globalplatform\src\GlobalPlatform-6.0.0\libeay32.dll ../../globalplatform\src\GlobalPlatform-6.0.0/zlib1.dll ../../globalplatform\src\GlobalPlatform-6.0.0/license* ../README ../COPYING ../AUTHORS \
+	cp Debug/GPShell.exe ../../globalplatform/src/Debug/GlobalPlatform.dll ../../globalplatform\src\GlobalPlatform-6.0.0\ssleay32.dll \
+	../../gppcscconnectionplugin/src/Debug/GPPcScConnectionPlugin.dll \
+	../../globalplatform\src\GlobalPlatform-6.0.0\libeay32.dll ../../globalplatform\src\GlobalPlatform-6.0.0/zlib1.dll ../../globalplatform/src/GlobalPlatform-6.0.0/license* ../README ../COPYING ../AUTHORS \
 	../helloInstall.txt ../helloDelete.txt ../helloInstallGP211.txt ../helloDeleteGP211.txt \
 	../list.txt ../listgp211.txt ../replacekey-cosmo-gp211.txt ../recyclekey-cosmo-gp211.txt \
 	../helloDeletegemXpressoProR3_2E64.txt  ../helloInstallgemXpressoProR3_2E64.txt \
-	../listgemXpressoProR3_2E64.txt ../HelloWorld.bin ../HelloWorld.cap \
+	../listgemXpressoProR3_2E64.txt ../helloworld.cap \
 	../helloInstallCyberflexe-gate32k.txt ../helloInstallCyberflexAccess64k.txt \
-	../helloInstallNokia6131NFC.txt ../HelloWorld.cap.transf ../helloInstallOberthurCosmo64.txt \
+	../helloInstallNokia6131NFC.txt ../helloworld.cap.transf ../helloInstallOberthurCosmo64.txt \
 	../listJCOP10.txt ../listPalmeraProtectV5.txt ../helloInstallPalmeraProtectV5.txt \
 	../helloInstallJCOP10.txt ../helloInstallJCOP31.txt ../helloInstallJCOP21OrJTopV15.txt $(DIR)
 	zip GPShell-$(VERSION).zip $(DIR)/*
