@@ -3316,32 +3316,31 @@ end:
   * E.g. Sm@rtCafe Export 3.0 cards use this scheme.
   * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
   * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
-  * \param AID [in] The AID of the Card Manager.
-  * \param AIDLength [in] The length of the Card Manager AID / Issuer Security Domain AID.
   * \param masterKey [in] The master key.
   * \param S_ENC [out] The static Encryption key.
   * \param S_MAC [out] The static Message Authentication Code key.
   * \param DEK [out] The static Key Encryption Key.
   * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
   */
-OPGP_ERROR_STATUS OPGP_EMV_CPS11_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, PBYTE AID, DWORD AIDLength, BYTE masterKey[16],
+OPGP_ERROR_STATUS OPGP_EMV_CPS11_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE masterKey[16],
 							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]) {
 	OPGP_ERROR_STATUS status;
 	int outl;
-	BYTE cardCPLCData[50];
-	DWORD cplcDataLen = 50;
+	BYTE diversificationData[50];
+	DWORD diversificationDataLen = 50;
 	BYTE keyDiversificationData[16];
-	BYTE cardmanagerAID[16];
-	DWORD cardmanagerAIDLength = 16;
 
 	OPGP_LOG_START(_T("OPGP_EMV_CPS11_derive_keys"));
 
-#ifdef DEBUG
-	OPGP_log_Hex(_T("OPGP_EMV_CPS11_derive_keys: Card Manager AID: "), AID, AIDLength);
-#endif
+	/*
+	The 6 byte KMCID (e.g. IIN right justified and left padded with 1111b per quartet)
+	concatenated with the 4 byte CSN (least significant bytes) form the key
+	diversification data that must be placed in tag ‘CF’. This same data must be used to
+	form the response to the INITIALIZE UPDATE command.
+	*/
 
-	status = OP201_get_data(cardContext, cardInfo, NULL, (PBYTE)OP201_GET_DATA_CPLC_WHOLE_CPLC,
-		cardCPLCData, &cplcDataLen);
+	status = OP201_get_data(cardContext, cardInfo, NULL, (PBYTE)OP201_GET_DATA_DIVERSIFICATION_DATA,
+		diversificationData, &diversificationDataLen);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -3354,13 +3353,6 @@ OPGP_ERROR_STATUS OPGP_EMV_CPS11_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP
         If the CSN does not ensure the uniqueness of KEYDATA across different batches of cards other unique data (e.g. 2
 		right most bytes of IC serial number and 2 bytes of IC batch identifier) should be used instead.
     */
-
-	/*
-	The 6 byte KMCID (e.g. IIN right justified and left padded with 1111b per quartet)
-	concatenated with the 4 byte CSN (least significant bytes) form the key
-	diversification data that must be placed in tag ‘CF’. This same data must be used to
-	form the response to the INITIALIZE UPDATE command.
-	*/
 
 	/* KENC := DES3(KMC)[Six least
 	significant bytes of the KEYDATA || ’F0’ || ‘01’ ]|| DES3(KMC)[ Six least
@@ -3378,20 +3370,12 @@ OPGP_ERROR_STATUS OPGP_EMV_CPS11_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP
 	least significant bytes of the KEYDATA || ‘0F’ || ‘03’].
 	*/
 
-	memcpy(cardmanagerAID, AID, AIDLength);
-	cardmanagerAIDLength = AIDLength;
-
-	keyDiversificationData[0] = cardmanagerAID[cardmanagerAIDLength-2];
-	keyDiversificationData[1] = cardmanagerAID[cardmanagerAIDLength-1];
-	keyDiversificationData[8] = cardmanagerAID[cardmanagerAIDLength-2];
-	keyDiversificationData[9] = cardmanagerAID[cardmanagerAIDLength-1];
-
  	// left
- 	memcpy(keyDiversificationData+2, cardCPLCData+15, 4);
+ 	memcpy(keyDiversificationData, diversificationData+5, 6);
  	keyDiversificationData[6] = 0xF0;
  	keyDiversificationData[7] = 0x01;
  	// right
- 	memcpy(keyDiversificationData+10, cardCPLCData+15, 4);
+ 	memcpy(keyDiversificationData+10, diversificationData+5, 6);
  	keyDiversificationData[14] = 0x0F;
  	keyDiversificationData[15] = 0x01;
 
