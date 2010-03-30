@@ -24,6 +24,8 @@ Set protocol mode to GlobalPlatform 2.1.1
 .IP visa_key_derivation
 If you have a card which uses the VISA key derivation scheme for the key calculation,
 like GemXpresso Pro or some JCOP cards you must set this.
+.IP  emv_cps11_key_derivation
+If you have a card which uses the EMV CPS 1.1 key derivation scheme for the key calculation, like a Sm@rtCafe Expert 3.0 you must set this.
 .IP enable_trace
 Enable APDU trace
 
@@ -222,8 +224,18 @@ Password for key decryption
 Enables debugging output from the underlying GlobalPlatform library.
 .IP GLOBALPLATFORM_LOGFILE
 Sets the log file name for the debugging output.
+.SH Key Derivation
+.IP VISA
+For the VISA key derivation scheme, like used in a GemXpresso Pro or some JCOP cards, set visa_key_derivation
+.IP "EMV CPS 1.1 / CDK (CPG 2.04)"
+For the key derivation according to EMV CPS 1.1 / CDK (CPG 2.04), like Sm@rtCafe Expert 3.0, set emv_cps11_key_derivation.
+
+Known unsupported key derivation schemes are:
+.IP "CDK (CPG 2.02)"
+.IP ISK(D)
 .SH BUGS
-None known.
+.IP "JCOP 10"
+install_for_load fails for unknown reason, so nothing can be installed.
 .SH AUTHOR
 Karsten Ohme <k_o_@users.sourceforge.net>
 

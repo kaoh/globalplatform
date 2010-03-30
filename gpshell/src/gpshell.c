@@ -102,6 +102,7 @@ static OP201_SECURITY_INFO securityInfo201;
 static GP211_SECURITY_INFO securityInfo211;
 static int platform_mode = OP_201;
 static int visaKeyDerivation = 0;
+static int emvCps11KeyDerivation = 0;
 static int timer = 0;
 static BYTE selectedAID[AIDLEN+1];
 static DWORD selectedAIDLength = 0;
@@ -822,6 +823,17 @@ static int handleCommands(FILE *fd)
                     if (OPGP_ERROR_CHECK(status))
                     {
                         _tprintf (_T("OPGP_VISA2_derive_keys() returns 0x%08lX (%s)\n"),
+                                  status.errorCode, status.errorMessage);
+                        rv = EXIT_FAILURE;
+                        goto end;
+                    }
+                }
+                else if (emvCps11KeyDerivation) {
+					status = OPGP_EMV_CPS11_derive_keys(cardContext, cardInfo, optionStr.key,
+                                                optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
+                    if (OPGP_ERROR_CHECK(status))
+                    {
+                        _tprintf (_T("OPGP_EMV_CPS11_derive_keys() returns 0x%08lX (%s)\n"),
                                   status.errorCode, status.errorMessage);
                         rv = EXIT_FAILURE;
                         goto end;
@@ -1557,6 +1569,11 @@ static int handleCommands(FILE *fd)
             else if (_tcscmp(token, _T("visa_key_derivation")) == 0)
             {
                 visaKeyDerivation = 1;
+                break;
+            }
+            else if (_tcscmp(token, _T("emv_cps11_key_derivation")) == 0)
+            {
+                emvCps11KeyDerivation = 1;
                 break;
             }
             else if (_tcscmp(token, _T("enable_timer")) == 0)

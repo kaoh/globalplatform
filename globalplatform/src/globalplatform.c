@@ -3370,14 +3370,14 @@ OPGP_ERROR_STATUS OPGP_EMV_CPS11_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP
 	least significant bytes of the KEYDATA || ‘0F’ || ‘03’].
 	*/
 
- 	// left
- 	memcpy(keyDiversificationData, diversificationData+5, 6);
- 	keyDiversificationData[6] = 0xF0;
- 	keyDiversificationData[7] = 0x01;
- 	// right
- 	memcpy(keyDiversificationData+10, diversificationData+5, 6);
- 	keyDiversificationData[14] = 0x0F;
- 	keyDiversificationData[15] = 0x01;
+	// left
+    memcpy(keyDiversificationData, diversificationData+6, 6);
+    keyDiversificationData[6] = 0xF0;
+    keyDiversificationData[7] = 0x01;
+    // right
+    memcpy(keyDiversificationData+8, diversificationData+6, 6);
+    keyDiversificationData[14] = 0x0F;
+    keyDiversificationData[15] = 0x01;
 
 #ifdef DEBUG
 	OPGP_log_Hex(_T("OPGP_EMV_CPS11_derive_keys: Key Diversification Data: "), keyDiversificationData, 16);
