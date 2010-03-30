@@ -216,12 +216,16 @@ Axalto Cyberflex e-gate 32k
 GemXpresso R3.2 E64
 IBM JCOP v2.2 41 (GP211)
 IBM JCOP 31 (36k)
-JCOP 10
 Palmera Protect V5
 JTopV15
 Nokia 6131 NFC Phone (GP211)
 Axalto Cyberflex Access 64k
 Gemalto Generations Flexible
+
+Problems:
+
+JCOP 10 - install_for_load fails for unknown reason.
+
 
 We have tested this with the helloworld.cap example file. See helloInstall.txt, helloDelete.txt, and list.txt and the other script files (.txt) for samples. If a CAP file cannot be used, please see the later section (How to convert a .cap file into a .bin file).
 
@@ -233,7 +237,7 @@ Make sure the script file (helloInstall.txt, etc.) and applet file helloworld.ca
 
 The sources for helloworld.cap can be obtained from the SVN from the SourceForge project page.
 
-It should work with other smart cards that support JavaCard 2.x.y and OpenPlatform 2.0.1 or GlobalPlatform 2.1.1.  You need to tweak options in the script files.  Please let us know how it works with the smart cards you have.
+It should work with other smart cards that support Java Card 2.x.y and OpenPlatform 2.0.1 or GlobalPlatform 2.1.1.  You need to tweak options in the script files.  Please let us know how it works with the smart cards you have.
 
 * About put_sc_key
 

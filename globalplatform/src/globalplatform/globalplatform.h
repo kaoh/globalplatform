@@ -819,6 +819,11 @@ OPGP_ERROR_STATUS OPGP_extract_cap_file(OPGP_CSTRING fileName, PBYTE loadFileBuf
 OPGP_API
 OPGP_ERROR_STATUS OPGP_read_executable_load_file_parameters_from_buffer(PBYTE loadFileBuf, DWORD loadFileBufSize, OPGP_LOAD_FILE_PARAMETERS *loadFileParams);
 
+//! \brief Derives the static keys from a master key according the EMV CPS 1.1 key derivation scheme.
+OPGP_API
+OPGP_ERROR_STATUS OPGP_EMV_CPS11_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, PBYTE AID, DWORD AIDLength, BYTE masterKey[16],
+							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
+
 #ifdef __cplusplus
 }
 #endif
