@@ -792,9 +792,7 @@ static int handleCommands(FILE *fd)
                     _tprintf ( _T("* reader name %s\n"), optionStr.reader);
 #endif
                 }
-
-                if (optionStr.readerNumber != AUTOREADER)
-                {
+                else {
                     status = OPGP_card_connect (cardContext, optionStr.reader, &cardInfo, optionStr.protocol);
                 }
 
