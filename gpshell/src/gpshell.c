@@ -93,6 +93,7 @@ typedef struct _OptionStr
     BYTE privilege;
     BYTE scp;
     BYTE scpImpl;
+    BYTE identifier[2];
 } OptionStr;
 
 /* Global Variables */
@@ -197,15 +198,10 @@ static int handleOptions(OptionStr *pOptionStr)
     pOptionStr->keySetVersion = 0;
     pOptionStr->newKeySetVersion = 0;
     pOptionStr->securityLevel = 0;
-    pOptionStr->AID[0] = '\0';
     pOptionStr->AIDLen = 0;
-    pOptionStr->sdAID[0] = '\0';
     pOptionStr->sdAIDLen = 0;
-    pOptionStr->pkgAID[0] = '\0';
     pOptionStr->pkgAIDLen = 0;
-    pOptionStr->instAID[0] = '\0';
     pOptionStr->instAIDLen = 0;
-    pOptionStr->APDU[0] = '\0';
     pOptionStr->APDULen = 0;
     pOptionStr->secureChannel = 0;
     pOptionStr->reader[0] = _T('\0');
@@ -222,12 +218,34 @@ static int handleOptions(OptionStr *pOptionStr)
     pOptionStr->privilege = 0;
     pOptionStr->scp = 0;
     pOptionStr->scpImpl = 0;
+	pOptionStr->identifier[0] = 0;
+	pOptionStr->identifier[1] = 0;
 
     token = strtokCheckComment(NULL);
 
     while (token != NULL)
     {
-        if (_tcscmp(token, _T("-keyind")) == 0)
+        if (_tcscmp(token, _T("-identifier")) == 0)
+        {
+            token = strtokCheckComment(NULL);
+            if (token == NULL)
+            {
+                _tprintf(_T("Error: option -identifier not followed by data\n"));
+                rv = EXIT_FAILURE;
+                goto end;
+            }
+            else
+            {
+            	BYTE temp;
+            	ConvertStringToByteArray(token, 2, pOptionStr->identifier);
+            	if (_tcslen(token) == 2) {
+					temp = pOptionStr->identifier[0];
+					pOptionStr->identifier[0] = pOptionStr->identifier[1];
+					pOptionStr->identifier[1] = temp;
+            	}
+            }
+        }
+        else if (_tcscmp(token, _T("-keyind")) == 0)
         {
             token = strtokCheckComment(NULL);
             if (token == NULL)
@@ -401,7 +419,6 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-
                 ConvertStringToByteArray(token, DDES_KEY_LEN, pOptionStr->mac_key);
             }
         }
@@ -416,7 +433,6 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-
                 ConvertStringToByteArray(token, DDES_KEY_LEN, pOptionStr->enc_key);
             }
         }
@@ -912,12 +928,38 @@ static int handleCommands(FILE *fd)
             else if (_tcscmp(token, _T("get_data")) == 0)
             {
                 // Get Data
+                BYTE data[256];
+                DWORD dataLen = 256;
+                DWORD i=0;
                 rv = handleOptions(&optionStr);
                 if (rv != EXIT_SUCCESS)
                 {
                     goto end;
                 }
-                // TODO: get data
+                if (platform_mode == PLATFORM_MODE_OP_201)
+                {
+                    status = OP201_get_data(cardContext, cardInfo, &securityInfo201,
+                                    optionStr.identifier,
+                                    data, &dataLen);
+                }
+                else if (platform_mode == PLATFORM_MODE_GP_211)
+                {
+                    status = GP211_get_data(cardContext, cardInfo, &securityInfo211,
+                                    optionStr.identifier,
+                                    data, &dataLen);
+                }
+
+                if (OPGP_ERROR_CHECK(status))
+                {
+                    _tprintf (_T("get_data() returns 0x%08lX (%s)\n"),
+                              status.errorCode, status.errorMessage);
+                    rv = EXIT_FAILURE;
+                    goto end;
+                }
+				for (i=0; i<dataLen; i++) {
+					_tprintf (_T("%02X"), data[i]);
+				}
+				_tprintf (_T("\n"));
                 goto timer;
             }
             else if (_tcscmp(token, _T("load")) == 0)
@@ -946,7 +988,7 @@ static int handleCommands(FILE *fd)
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("load_applet() returns 0x%08lX (%s)\n"),
+                    _tprintf (_T("load() returns 0x%08lX (%s)\n"),
                               status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
@@ -987,7 +1029,7 @@ static int handleCommands(FILE *fd)
                 }
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("delete_applet() returns 0x%08lX (%s)\n"),
+                    _tprintf (_T("delete() returns 0x%08lX (%s)\n"),
                               status.errorCode, status.errorMessage);
                 }
                 goto timer;
@@ -1140,7 +1182,7 @@ static int handleCommands(FILE *fd)
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("load_applet() returns 0x%08lX (%s)\n"),
+                    _tprintf (_T("load() returns 0x%08lX (%s)\n"),
                               status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;

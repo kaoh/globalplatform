@@ -2,6 +2,7 @@ establish_context
 enable_trace
 enable_timer
 card_connect
-send_apdu -APDU 80CA00CF00
+get_data -identifier 9F7F
+get_data -identifier 66
 card_disconnect
 release_context

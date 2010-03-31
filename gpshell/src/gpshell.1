@@ -121,6 +121,9 @@ The APDU is given as hex without spaces and without leadings 0x.
 Does not stop in case of an error
 
 The APDU is given as hex without spaces and without leadings 0x.
+.IP get_data
+.I "-identifier identifier"
+A GET DATA command returning the data for the given identifier.
 .SH OPTIONS
 .IP -keyind
 .I x
@@ -204,7 +207,7 @@ Element type to be listed in hex
 Secure Channel mode (0 off, 1 on)
 .IP -APDU
 .I apdu
-APDU to be sent
+APDU to be sent. Must be in hex format, e.g. 80CA00CF00.
 .IP -priv
 .I x
 Privilege. E.g. 0x04 Default Selected
@@ -219,6 +222,9 @@ Should not be necessary to be stated explicitly.
 .IP -pass
 .I password
 Password for key decryption
+.IP -identifier
+.I identifier
+Identifer for the tag for the get_data command. Must be in hex format, e.g. 9F7F.
 .SH ENVIRONMENT
 .IP GLOBALPLATFORM_DEBUG
 Enables debugging output from the underlying GlobalPlatform library.

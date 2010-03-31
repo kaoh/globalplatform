@@ -132,6 +132,10 @@ You may need to use this command if the combined install command does not work. 
 
 ---
 
+get_data -identifier identifier // A GET DATA command returning the data for the given identifier.
+
+---
+
 card_disconnect // Disconnect card
 
 ---
@@ -201,13 +205,14 @@ Options:
 				10 - Executable Load Files and their Executable Modules only (Only
 GP211)
 -sc	x			Secure Channel mode (0 off, 1 on)
--APDU apdu		APDU to be sent
+-APDU apdu		APDU to be sent. Must be in hex format, e.g. 80CA00CF00.
 -priv x			Privilege. E.g. 0x04 Default Selected
 -scp x			Secure Channel Protocol (1 SCP01, 2 SCP02, default no set).
 				Should not be necessary to be stated explicitly.
 -scpimpl x		Secure Channel Implementation (default not set)
 				Should not be necessary to be stated explicitly.
 -pass password	Password for key decryption
+-identifier		Identifer for the tag for the get_data command. Must be in hex format, e.g. 9F7F.
 
 Parameters containing spaces, e.g. file names or reader names must be quoted in "".
 
