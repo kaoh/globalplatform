@@ -729,9 +729,9 @@ static int handleCommands(FILE *fd)
             {
                 // Establish context
                 _tcsncpy(cardContext.libraryName, _T("gppcscconnectionplugin"),
-                         sizeof(cardContext.libraryName));
+                         _tcslen(_T("gppcscconnectionplugin")));
                 _tcsncpy(cardContext.libraryVersion, _T("1.0.0"),
-                         sizeof(cardContext.libraryVersion));
+                         _tcslen( _T("1.0.0")));
                 status = OPGP_establish_context(&cardContext);
                 if (OPGP_ERROR_CHECK(status))
                 {

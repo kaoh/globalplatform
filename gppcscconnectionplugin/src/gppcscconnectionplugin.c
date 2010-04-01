@@ -127,7 +127,7 @@ end:
  *  readerNamesLength, writes the length of the multi-string that would have been returned if this parameter
  *  had not been NULL to readerNamesLength.
  * \param readerNamesLength [in, out] The length of the multi-string including all trailing null characters.
- * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OPGP_PL_list_readers(OPGP_CARD_CONTEXT cardContext, OPGP_STRING readerNames, PDWORD readerNamesLength) {
 	OPGP_ERROR_STATUS status;
