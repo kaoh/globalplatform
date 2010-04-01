@@ -213,7 +213,8 @@ helloInstallgemXpressoProR3_2E64.txt listgemXpressoProR3_2E64.txt \
 helloInstallCyberflexe-gate32k.txt helloInstallCyberflexAccess64k.txt \
 helloInstallNokia6131NFC.txt helloworld.cap.transf helloInstallOberthurCosmo64.txt \
 listJCOP10.txt listPalmeraProtectV5.txt helloInstallPalmeraProtectV5.txt \
-helloInstallJCOP10.txt helloInstallJCOP31.txt helloInstallJCOP21OrJTopV15.txt
+helloInstallJCOP10.txt helloInstallJCOP31.txt helloInstallJCOP21OrJTopV15.txt \
+get_data.txt
 
 SUBDIRS = src
 MAINTAINERCLEANFILES = \
