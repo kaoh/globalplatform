@@ -9,8 +9,8 @@
 			<Script file="lib_finder.script" />
 			<Target title="Debug Win">
 				<Option platforms="Windows;" />
-				<Option output="Debug\GPShell" prefix_auto="1" extension_auto="1" />
-				<Option object_output="Debug\" />
+				<Option output="Debug/GPShell" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Debug/" />
 				<Option type="1" />
 				<Option compiler="msvc8" />
 				<Option use_console_runner="0" />
@@ -24,23 +24,23 @@
 					<Add option="/DDEBUG" />
 					<Add option="/DUNICODE" />
 					<Add option="/DWIN32" />
-					<Add directory="C:\Programme\Microsoft Visual Studio 9.0\VC\include" />
-					<Add directory="..\globalplatform\src" />
+					<Add directory="C:/Programme/Microsoft Visual Studio 9.0/VC/include" />
+					<Add directory="../globalplatform/src" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include\mfc" />
+					<Add directory="C:/Programme/Microsoft Platform SDK for Windows Server 2003 R2/Include/mfc" />
 				</ResourceCompiler>
 				<Linker>
 					<Add option="/DEBUG" />
 					<Add library="globalplatform" />
-					<Add directory="C:\Programme\Microsoft Visual Studio 9.0\VC\lib" />
-					<Add directory="..\globalplatform\Debug" />
+					<Add directory="C:/Programme/Microsoft Visual Studio 9.0/VC/lib" />
+					<Add directory="../globalplatform/Debug" />
 				</Linker>
 			</Target>
 			<Target title="Release Win">
 				<Option platforms="Windows;" />
-				<Option output="Release\GPShell" prefix_auto="1" extension_auto="1" />
-				<Option object_output="Release\" />
+				<Option output="Release/GPShell" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Release/" />
 				<Option type="1" />
 				<Option compiler="msvc8" />
 				<Option use_console_runner="0" />
@@ -53,23 +53,23 @@
 					<Add option="/Zi /D_DEBUG" />
 					<Add option="/DUNICODE" />
 					<Add option="/DWIN32" />
-					<Add directory="C:\Programme\Microsoft Visual Studio 9.0\VC\include" />
-					<Add directory="..\globalplatform\src" />
+					<Add directory="C:/Programme/Microsoft Visual Studio 9.0/VC/include" />
+					<Add directory="../globalplatform/src" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include\mfc" />
+					<Add directory="C:/Programme/Microsoft Platform SDK for Windows Server 2003 R2/Include/mfc" />
 				</ResourceCompiler>
 				<Linker>
 					<Add option="/DEBUG" />
 					<Add library="globalplatform" />
-					<Add directory="C:\Programme\Microsoft Visual Studio 9.0\VC\lib" />
-					<Add directory="..\globalplatform\Release" />
+					<Add directory="C:/Programme/Microsoft Visual Studio 9.0/VC/lib" />
+					<Add directory="../globalplatform/Release" />
 				</Linker>
 			</Target>
 			<Target title="Linux">
 				<Option platforms="Unix;Mac;" />
 				<Option output="GPPCSCConnectionPlugin" prefix_auto="1" extension_auto="1" />
-				<Option object_output=".\objs" />
+				<Option object_output="./objs" />
 				<Option type="3" />
 				<Option compiler="gcc" />
 				<Option createDefFile="1" />
@@ -85,7 +85,7 @@
 			<Target title="Linux Test">
 				<Option platforms="Unix;Mac;" />
 				<Option output="GPPCSCConnectionPluginTest" prefix_auto="1" extension_auto="1" />
-				<Option object_output=".\objs" />
+				<Option object_output="./objs" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
@@ -153,6 +153,9 @@
 		<Unit filename="debian/watch">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
+		<Unit filename="get_data.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
 		<Unit filename="helloDelete.txt">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
@@ -189,6 +192,9 @@
 		<Unit filename="helloInstallPalmeraProtectV5.txt">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
+		<Unit filename="helloInstallSmartCafeExpert30.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
 		<Unit filename="helloInstallgemXpressoProR3_2E64.txt">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
@@ -202,9 +208,6 @@
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
 		<Unit filename="listgemXpressoProR3_2E64.txt">
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="listgp211.txt">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
 		<Unit filename="make.bat">
@@ -228,35 +231,38 @@
 		<Unit filename="send_apdu.txt">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="src\Makefile.am">
+		<Unit filename="src/Makefile.am">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="src\Makefile.mak">
+		<Unit filename="src/Makefile.mak">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="src\gpshell.c">
+		<Unit filename="src/gpshell.1">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="src/gpshell.c">
 			<Option compilerVar="CC" />
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src\resource.h">
+		<Unit filename="src/resource.h">
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src\stdafx.c">
+		<Unit filename="src/stdafx.c">
 			<Option compilerVar="CC" />
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src\stdafx.h">
+		<Unit filename="src/stdafx.h">
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src\version.rc">
+		<Unit filename="src/version.rc">
 			<Option compilerVar="WINDRES" />
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
