@@ -1,7 +1,0 @@
-establish_context
-card_connect
-select -AID a0000000030000
-open_sc -security 1 -keyver 1 -keyind 1 -mac_key 505152535455565758595a5b5c5d5e5f -enc_key 505152535455565758595a5b5c5d5e5f // Open secure channel
-put_sc_key -keyver 1 -newkeyver 0 -mac_key 404142434445464748494a4b4c4d4e4f -enc_key 404142434445464748494a4b4c4d4e4f -kek_key 404142434445464748494a4b4c4d4e4f -current_kek 505152535455565758595a5b5c5d5e5f // Put secure channel keys
-card_disconnect
-release_context
