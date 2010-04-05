@@ -1,0 +1,13 @@
+Source: gpshell
+Priority: extra
+Maintainer: Karsten Ohme <k_o_@users.sourceforge.net>
+Build-Depends: debhelper (>= 7), libglobalplatform6
+Standards-Version: 3.8.0
+Section: devel
+Homepage: http://globalplatform.sourceforge.net
+
+Package: gpshell
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: GPShell
+ GPShell is a command line shell for GlobalPlatform conform smart cards.

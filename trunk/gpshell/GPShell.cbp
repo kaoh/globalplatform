@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="GPShell" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Script file="lib_finder.script" />
+			<Target title="Debug Win">
+				<Option platforms="Windows;" />
+				<Option output="Debug/GPShell" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Debug/" />
+				<Option type="1" />
+				<Option compiler="msvc8" />
+				<Option use_console_runner="0" />
+				<Compiler>
+					<Add option="/MTd" />
+					<Add option="/TC" />
+					<Add option="/Gd" />
+					<Add option="/RTC1" />
+					<Add option="/W2" />
+					<Add option="/Zi /D_DEBUG" />
+					<Add option="/DDEBUG" />
+					<Add option="/DUNICODE" />
+					<Add option="/DWIN32" />
+					<Add directory="C:/Programme/Microsoft Visual Studio 9.0/VC/include" />
+					<Add directory="../globalplatform/src" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="C:/Programme/Microsoft Platform SDK for Windows Server 2003 R2/Include/mfc" />
+				</ResourceCompiler>
+				<Linker>
+					<Add option="/DEBUG" />
+					<Add library="globalplatform" />
+					<Add directory="C:/Programme/Microsoft Visual Studio 9.0/VC/lib" />
+					<Add directory="../globalplatform/Debug" />
+				</Linker>
+			</Target>
+			<Target title="Release Win">
+				<Option platforms="Windows;" />
+				<Option output="Release/GPShell" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Release/" />
+				<Option type="1" />
+				<Option compiler="msvc8" />
+				<Option use_console_runner="0" />
+				<Compiler>
+					<Add option="/MT" />
+					<Add option="/TC" />
+					<Add option="/Gd" />
+					<Add option="/O2" />
+					<Add option="/W2" />
+					<Add option="/Zi /D_DEBUG" />
+					<Add option="/DUNICODE" />
+					<Add option="/DWIN32" />
+					<Add directory="C:/Programme/Microsoft Visual Studio 9.0/VC/include" />
+					<Add directory="../globalplatform/src" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add directory="C:/Programme/Microsoft Platform SDK for Windows Server 2003 R2/Include/mfc" />
+				</ResourceCompiler>
+				<Linker>
+					<Add option="/DEBUG" />
+					<Add library="globalplatform" />
+					<Add directory="C:/Programme/Microsoft Visual Studio 9.0/VC/lib" />
+					<Add directory="../globalplatform/Release" />
+				</Linker>
+			</Target>
+			<Target title="Linux">
+				<Option platforms="Unix;Mac;" />
+				<Option output="GPPCSCConnectionPlugin" prefix_auto="1" extension_auto="1" />
+				<Option object_output="./objs" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Option createStaticLib="1" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-Wfatal-errors" />
+					<Add option="-W" />
+					<Add option="-g" />
+					<Add option="-fPIC" />
+				</Compiler>
+			</Target>
+			<Target title="Linux Test">
+				<Option platforms="Unix;Mac;" />
+				<Option output="GPPCSCConnectionPluginTest" prefix_auto="1" extension_auto="1" />
+				<Option object_output="./objs" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-Wfatal-errors" />
+					<Add option="-W" />
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+		</Compiler>
+		<Unit filename="AUTHORS">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="COPYING">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="ChangeLog">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="INSTALL">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="INSTALL.w32">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="Makefile.am">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="Makefile.mak">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="NEWS">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="README">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="configure.in">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="debian/changelog">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="debian/compat">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="debian/control">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="debian/copyright">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="debian/gpshell.docs">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="debian/gpshell.install">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="debian/rules">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="debian/watch">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="get_data.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="helloDelete.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="helloDeleteGP211.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="helloDeletegemXpressoProR3_2E64.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="helloInstall.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="helloInstallCyberflexAccess64k.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="helloInstallCyberflexe-gate32k.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="helloInstallGP211.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="helloInstallJCOP10.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="helloInstallJCOP31.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="helloInstallNokia6131NFC.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="helloInstallOberthurCosmo64.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="helloInstallPalmeraProtectV5.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="helloInstallSmartCafeExpert30.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="helloInstallgemXpressoProR3_2E64.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="list.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="listJCOP10.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="listPalmeraProtectV5.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="listgemXpressoProR3_2E64.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="make.bat">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="putdefault-cflex.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="reconf">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="recyclekey-cosmo-gp211.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="replacekey-cflex.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="replacekey-cosmo-gp211.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="send_apdu.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="src/Makefile.am">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="src/Makefile.mak">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="src/gpshell.1">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="src/gpshell.c">
+			<Option compilerVar="CC" />
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="src/resource.h">
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="src/stdafx.c">
+			<Option compilerVar="CC" />
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="src/stdafx.h">
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="src/version.rc">
+			<Option compilerVar="WINDRES" />
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
+			<Option target="Linux" />
+		</Unit>
+		<Extensions>
+			<envvars set="globalplatform" />
+			<code_completion />
+			<lib_finder disable_auto="1" />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
