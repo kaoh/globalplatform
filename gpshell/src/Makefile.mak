@@ -79,7 +79,7 @@ bin_package:
 	../listgemXpressoProR3_2E64.txt ../helloworld.cap \
 	../helloInstallCyberflexe-gate32k.txt ../helloInstallCyberflexAccess64k.txt \
 	../helloInstallNokia6131NFC.txt ../helloworld.cap.transf ../helloInstallOberthurCosmo64.txt \
-	../listJCOP10.txt ../listPalmeraProtectV5.txt ../helloInstallPalmeraProtectV5.txt \
+	../listJCOP10.txt ../listPalmeraProtectV5.txt ../helloInstallPalmeraProtectV5.txt ../helloInstallSmartCafeExpert30.txt \
 	../helloInstallJCOP10.txt ../helloInstallJCOP31.txt ../helloInstallJCOP21OrJTopV15.txt ../get_data.txt ../send_APDU.txt $(DIR)
 	zip GPShell-$(VERSION).zip $(DIR)/*
 
