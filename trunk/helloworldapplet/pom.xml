@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<project
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>net.sourceforge.globalplatform.jc</groupId>
+    <artifactId>helloworld</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+    <name>Hello World Java Card Applet</name>
+
+    <developers>
+        <developer>
+            <name>Karsten Ohme</name>
+            <id>k_o_</id>
+            <email>k_o_@users.sourceforge.net</email>
+            <roles>
+                <role>Developer</role>
+            </roles>
+        </developer>
+    </developers>
+
+    <profiles>
+        <profile>
+            <id>default</id>
+            <properties>
+                <sourcedirectory>src/main/java</sourcedirectory>
+                <javacard.applet.name>HelloWorldApplet</javacard.applet.name>
+            </properties>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+        </profile>
+    </profiles>
+
+    <properties>
+        <jc.home>${env.JC212_HOME}</jc.home>
+        <javacard.package.name>net.sourceforge.globalplatform.jc.helloworld</javacard.package.name>
+        <javacard.package.aid>0xD0:0xD1:0xD2:0xD3:0xD4:0xD5:0x01</javacard.package.aid>
+        <javacard.applet.aid>0xD0:0xD1:0xD2:0xD3:0xD4:0xD5:0x01:0x01</javacard.applet.aid>
+        <javacard.major.version>1</javacard.major.version>
+        <javacard.minor.version>0</javacard.minor.version>
+    </properties>
+	
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>3.8.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.sun</groupId>
+            <artifactId>javacard</artifactId>
+            <version>2.1.2</version>
+            <scope>system</scope>
+            <systemPath>${jc.home}/lib/api21.jar</systemPath>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <sourceDirectory>${sourcedirectory}</sourceDirectory>
+        <plugins>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+				<!-- Convert to cap file -->
+                <configuration>
+                    <tasks>
+                        <echo message="Converting to CAP file" />
+                        <java classname="com.sun.javacard.converter.Converter"
+							failonerror="true" fork="true">
+                            <arg value="-verbose" />
+                            <arg value="-classdir" />
+                            <arg value="target/classes/" />
+                            <arg value="-applet" />
+                            <arg value="${javacard.applet.aid}" />
+                            <arg value="${javacard.applet.name}" />
+                            <arg value="${javacard.package.name}" />
+                            <arg value="${javacard.package.aid}" />
+                            <arg value="${javacard.major.version}.${javacard.minor.version}" />
+                            <arg value="-nowarn" />
+                            <classpath>
+                                <pathelement location="${jc.home}/api21_export_files" />
+                                <pathelement location="${jc.home}/lib/apduio.jar" />
+                                <pathelement location="${jc.home}/lib/apdutool.jar" />
+                                <pathelement location="${jc.home}/lib/jcwde.jar" />
+                                <pathelement location="${jc.home}/lib/converter.jar" />
+                                <pathelement location="${jc.home}/lib/scriptgen.jar" />
+                                <pathelement location="${jc.home}/lib/offcardverifier.jar" />
+                                <pathelement location="${jc.home}/lib/capdump.jar" />
+                            </classpath>
+                        </java>
+                        <copy todir="target/">
+                            <flattenmapper />
+                            <fileset dir="target/classes/">
+                                <include name="**/*.cap" />
+                            </fileset>
+                        </copy>
+                        <echo message="Transforming for Cyberflex"/>
+                        <java jar="${jc.home}/lib/captransf.jar"
+							failonerror="true" fork="true">
+                            <arg value="${jc.home}/api21_export_files/java/lang/javacard/lang.exp" />
+                            <arg value="${jc.home}/api21_export_files/javacard/framework/javacard/framework.exp" />
+                            <arg value="${jc.home}/api21_export_files/javacard/security/javacard/security.exp" />
+                            <arg value="${jc.home}/api21_export_files/java/lang/javacard/lang.exp" />
+                            <arg value="-s" />
+                            <arg value="-noint" />
+                            <arg value="target/${artifactId}.cap" />
+                        </java>
+                    </tasks>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.2</source>
+                    <target>1.1</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-eclipse-plugin</artifactId>
+                <configuration>
+					<!--useProjectReferences>false</useProjectReferences-->
+                    <buildcommands>
+                        <buildcommand> org.eclipse.jdt.core.javabuilder </buildcommand>
+                    </buildcommands>
+                    <projectnatures>
+                        <projectnature> org.eclipse.jdt.core.javanature </projectnature>
+                    </projectnatures>
+                    <classpathContainers>
+                        <classpathContainer> org.eclipse.jdt.launching.JRE_CONTAINER
+                        </classpathContainer>
+                    </classpathContainers>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                    <testFailureIgnore>true</testFailureIgnore>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
