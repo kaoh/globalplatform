@@ -1,0 +1,4 @@
+Support for other transport protocols than PC/SC by usage of plugins
+Improved error status report for functions
+Callback support for longer running functions
+Check Unit tests

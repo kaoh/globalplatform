@@ -1,0 +1,7 @@
+usr/include/*
+usr/lib/lib*.a
+usr/lib/lib*.so
+src/globalplatform.pc usr/lib/pkgconfig/
+usr/lib/*.la
+
+
