@@ -16,6 +16,7 @@ get_data.txt helloInstallSmartCafeExpert30.txt
 SUBDIRS = src
 
 deb:
+	rm -rf $(PACKAGE)-$(VERSION)
 	tar xzf $(PACKAGE)-$(VERSION).tar.gz
 	rm -f $(PACKAGE)_$(VERSION).orig.tar.gz
 	cd $(PACKAGE)-$(VERSION) && dh_make -s -c gpl -e "k_o_@users.sourceforge.net" -f ../$(PACKAGE)-$(VERSION).tar.gz
@@ -23,7 +24,7 @@ deb:
 	cd $(PACKAGE)-$(VERSION) && mkdir debian
 	cd $(PACKAGE)-$(VERSION) && cp ../debian/* debian/
 	cd $(PACKAGE)-$(VERSION) && chmod 755 debian/rules
-	cd $(PACKAGE)-$(VERSION) && dpkg-buildpackage -rfakeroot
+	cd $(PACKAGE)-$(VERSION) && debuild -S
 
 MAINTAINERCLEANFILES = \
 	Makefile.in \
