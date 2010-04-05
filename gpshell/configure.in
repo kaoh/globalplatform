@@ -1,0 +1,172 @@
+# Require autoconf 2.52
+AC_PREREQ(2.52)
+
+AC_INIT(GPShell, 1.4.3, Karsten Ohme <k_o_@users.sourceforge.net> or snitmo@gmail.com)
+AC_CONFIG_AUX_DIR(myaux)
+AC_COPYRIGHT(COPYING)
+
+AC_CANONICAL_HOST
+
+AM_INIT_AUTOMAKE([-Wall -Werror])
+
+# check programs
+AC_PROG_CC
+AC_PROG_CPP
+AC_PROG_INSTALL
+
+AM_PROG_CC_C_O
+
+# check header files
+AC_HEADER_STDC
+AC_HEADER_STAT
+AC_CHECK_HEADER(stdio.h, , [],
+[AC_MSG_ERROR([stdio.h not found.])])
+AC_CHECK_HEADER(fcntl.h, , [],
+[AC_MSG_ERROR([fcntl.h not found.])])
+AC_CHECK_HEADER(io.h, , [],
+[AC_MSG_ERROR([io.h not found.])])
+
+# check library functions
+AC_FUNC_STAT
+AC_FUNC_MALLOC
+AC_CHECK_FUNCS(atoi fgets, [],
+[AC_MSG_ERROR([Necessary function is not supported.])])
+
+AX_CFLAGS_WARN_ALL
+
+#######################
+#pcsclite Configuration
+#######################
+
+AC_ARG_VAR(WINSCARD_LIB_PATH, [Specifies the location of WinSCard.lib for Windows])
+
+# Windows must be handled different
+case "$host" in
+*-*-cygwin*)
+	if ! test -f "$WINSCARD_LIB_PATH"/WinSCard.lib;
+	  then AC_MSG_ERROR([WinSCard.lib not found, specify location of WinSCard.lib with
+	./configure WINSCARD_LIB_PATH=<library directory>])
+	fi
+	AC_SUBST(PCSCLITE_LIBS,-L"$WINSCARD_LIB_PATH")
+  ;;
+*)
+    PKG_CHECK_MODULES(PCSCLITE, libpcsclite >= 1.2.9-beta7, [],
+      [ if test -f /usr/local/lib/pkgconfig/libpcsclite.pc ; then
+        AC_MSG_ERROR([install pkg-config or set PKG_CONFIG_PATH to pkgconfig directory])
+          else
+                AC_MSG_WARN([install pcsc-lite 1.2.9-beta7 or later])
+          fi
+      ]
+    )
+  ;;
+esac
+
+
+
+AC_ARG_VAR(PCSCLITE_H_PATH, [Specifies the location of pcsclite.h for Windows])
+
+OLD_CFLAGS="$CFLAGS"
+case "$host" in
+*-*-cygwin*)
+	if ! test -f "$PCSCLITE_H_PATH/pcsclite.h";
+	  then AC_MSG_ERROR([pcsclite.h not found, specify location of pcsclite.h with
+	./configure PCSCLITE_H_PATH=<include directory>])
+	fi
+	AC_SUBST(PCSCLITE_CFLAGS,-I"$PCSCLITE_H_PATH")
+  ;;
+  *)
+    CFLAGS="$CFLAGS $PCSCLITE_CFLAGS"
+    AC_CHECK_HEADER(winscard.h, [],
+  	  [AC_MSG_ERROR([winscard.h not found or usable, install pcsc-lite 1.2.9-beta7
+    or later, or use ./configure PCSCLITE_CFLAGS=-I<include directory>])])
+  ;;
+esac
+CFLAGS="$OLD_CFLAGS"
+
+
+####################
+#Debug Configuration
+####################
+
+AC_ARG_ENABLE(debug,
+[  --enable-debug          enable debug messages from GPShell application.],
+[ case "${enableval}" in
+  yes)
+    debug=true ;;
+  no)
+    debug=false ;;
+  *) AC_MSG_ERROR([bad value ${enableval} for --enable-debug]) ;;
+ esac], [debug=false])
+
+if test x${debug} = xtrue ; then
+  AC_DEFINE(DEBUG, 1, [enable full debug messaging.])
+fi
+
+#############################
+#GlobalPlatform Configuration
+#############################
+
+dnl Check for GlobalPlatform
+AC_ARG_VAR(GLOBALPLATFORM_LIB_PATH, [Specifies the location of GlobalPlatform.lib for Windows])
+
+# Windows must be handled different
+case "$host" in
+*-*-cygwin*)
+	if ! test -f "$GLOBALPLATFORM_LIB_PATH"/GlobalPlatform.lib;
+	  then AC_MSG_ERROR([GlobalPlatform.lib not found, specify location of GlobalPlatform.lib with
+	./configure GLOBALPLATFORM_LIB_PATH=<library directory>])
+	fi
+	AC_SUBST(GLOBALPLATFORM_LIBS,"-lGlobalPlatform -L"GLOBALPLATFORM_LIB_PATH"")
+  ;;
+*)
+    PKG_CHECK_MODULES(GLOBALPLATFORM, globalplatform >= 6.0.0, [],
+      [
+		AC_MSG_ERROR([install GlobalPlatform 6.0.0 or later])
+      ]
+    )
+  ;;
+esac
+
+AC_ARG_VAR(GLOBALPLATFORM_H_PATH, [Specifies the location of pcsclite.h for Windows])
+
+OLD_CFLAGS="$CFLAGS"
+case "$host" in
+*-*-cygwin*)
+	if ! test -f "$GLOBALPLATFORM_H_PATH/globalplatform.h";
+	  then AC_MSG_ERROR([globalplatform.h not found, specify location of globalplatform.h with
+	./configure GLOBALPLATFORM_H_PATH=<include directory>])
+	fi
+	AC_SUBST(GLOBALPLATFORM_CFLAGS,-I"$GLOBALPLATFORM__H_PATH")
+  ;;
+  *)
+    CFLAGS="$CFLAGS $GLOBALPLATFORM_CFLAGS"
+    AC_CHECK_HEADER(globalplatform.h, [],
+  	  [AC_MSG_ERROR([globalplatform.h not found or usable, install GlobalPlatform 6.0.0
+    or later, or use ./configure GLOBALPLATFORM_CFLAGS=-I<include directory>])])
+  ;;
+esac
+CFLAGS="$OLD_CFLAGS"
+
+OLD_LDFLAGS="$LDFLAGS"
+# Windows must be handled different
+case "$host" in
+*-*-cygwin*)
+  ;;
+*)
+	LDFLAGS="$LDFLAGS $GLOBALPLATFORM_LIBS"
+	AC_CHECK_LIB(globalplatform, OPGP_VISA2_derive_keys, [],
+        [AC_MSG_ERROR([OPGP_VISA2_derive_keys() not found, install GlobalPlatform 6.0.0 or later])])
+  ;;
+esac
+LDFLAGS="$OLD_LDFLAGS"
+
+###############
+#Output results
+###############
+
+AC_MSG_RESULT([Debug output enabled                  : $debug])
+
+AC_OUTPUT([
+Makefile
+src/Makefile
+])

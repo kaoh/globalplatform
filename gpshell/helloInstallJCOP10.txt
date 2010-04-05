@@ -1,0 +1,17 @@
+mode_211
+visa_key_derivation
+enable_trace
+enable_timer
+establish_context
+card_connect
+select -AID a000000003000000
+open_sc -security 1 -keyind 0 -keyver 0 -key 404142434445464748494a4b4c4d4e4f
+delete -AID D0D1D2D3D4D50101
+delete -AID D0D1D2D3D4D501
+delete -AID D0D1D2D3D4D50101
+install -file helloworld.cap -instParam 00 -priv 02 -nvDataLimit 500
+#install_for_load -pkgAID D0D1D2D3D4D501
+#load -file helloworld.cap
+#install_for_install -instParam 00 -priv 02 -AID D0D1D2D3D4D50101 -pkgAID D0D1D2D3D4D501 -instAID D0D1D2D3D4D50101 -nvDataLimit 500
+card_disconnect
+release_context

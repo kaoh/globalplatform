@@ -1,0 +1,8 @@
+establish_context
+enable_trace
+enable_timer
+card_connect
+get_data -identifier 9F7F
+get_data -identifier 66
+card_disconnect
+release_context
