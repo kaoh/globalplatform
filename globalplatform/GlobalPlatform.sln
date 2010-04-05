@@ -1,0 +1,31 @@
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual C++ Express 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GlobalPlatform", "GlobalPlatform.vcproj", "{1ECD7D44-4233-42CD-A4BB-EE2EB0BD12C7}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GPPCSCConnectionPlugin", "..\gppcscconnectionplugin\GPPCSCConnectionPlugin.vcproj", "{17193EC6-CDC5-422E-9DD9-F2F6CF4D4E5F}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GPShell", "..\gpshell\GPShell.vcproj", "{335EE32C-3F99-4EFF-81C1-BBE1658B704A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1ECD7D44-4233-42CD-A4BB-EE2EB0BD12C7}.Debug|Win32.ActiveCfg = Debug|Win32
+		{1ECD7D44-4233-42CD-A4BB-EE2EB0BD12C7}.Debug|Win32.Build.0 = Debug|Win32
+		{1ECD7D44-4233-42CD-A4BB-EE2EB0BD12C7}.Release|Win32.ActiveCfg = Release|Win32
+		{1ECD7D44-4233-42CD-A4BB-EE2EB0BD12C7}.Release|Win32.Build.0 = Release|Win32
+		{17193EC6-CDC5-422E-9DD9-F2F6CF4D4E5F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{17193EC6-CDC5-422E-9DD9-F2F6CF4D4E5F}.Debug|Win32.Build.0 = Debug|Win32
+		{17193EC6-CDC5-422E-9DD9-F2F6CF4D4E5F}.Release|Win32.ActiveCfg = Release|Win32
+		{17193EC6-CDC5-422E-9DD9-F2F6CF4D4E5F}.Release|Win32.Build.0 = Release|Win32
+		{335EE32C-3F99-4EFF-81C1-BBE1658B704A}.Debug|Win32.ActiveCfg = Debug|Win32
+		{335EE32C-3F99-4EFF-81C1-BBE1658B704A}.Debug|Win32.Build.0 = Debug|Win32
+		{335EE32C-3F99-4EFF-81C1-BBE1658B704A}.Release|Win32.ActiveCfg = Release|Win32
+		{335EE32C-3F99-4EFF-81C1-BBE1658B704A}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
