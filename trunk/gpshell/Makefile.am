@@ -11,7 +11,7 @@ helloInstallCyberflexe-gate32k.txt helloInstallCyberflexAccess64k.txt \
 helloInstallNokia6131NFC.txt helloworld.cap.transf helloInstallOberthurCosmo64.txt \
 listJCOP10.txt listPalmeraProtectV5.txt helloInstallPalmeraProtectV5.txt \
 helloInstallJCOP10.txt helloInstallJCOP31.txt helloInstallJCOP21OrJTopV15.txt \
-get_data.txt
+get_data.txt helloInstallSmartCafeExpert30.txt
 
 SUBDIRS = src
 
