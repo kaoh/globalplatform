@@ -217,6 +217,7 @@ helloInstallJCOP10.txt helloInstallJCOP31.txt helloInstallJCOP21OrJTopV15.txt \
 get_data.txt helloInstallSmartCafeExpert30.txt
 
 SUBDIRS = src
+UBUNTU_DISTS = dapper edgy feisty gutsy hardy intrepid jaunty karmic lucid
 MAINTAINERCLEANFILES = \
 	Makefile.in \
 	configure \
@@ -703,9 +704,15 @@ deb:
 	cd $(PACKAGE)-$(VERSION) && dh_make -s -c gpl -e "k_o_@users.sourceforge.net" -f ../$(PACKAGE)-$(VERSION).tar.gz
 	cd $(PACKAGE)-$(VERSION) && rm -rf debian
 	cd $(PACKAGE)-$(VERSION) && mkdir debian
-	cd $(PACKAGE)-$(VERSION) && cp ../debian/* debian/
+	cd $(PACKAGE)-$(VERSION) && cp ../debian/* debian/;
 	cd $(PACKAGE)-$(VERSION) && chmod 755 debian/rules
-	cd $(PACKAGE)-$(VERSION) && debuild -S
+	for d in $(UBUNTU_DISTS); \
+	do \
+		cd $(PACKAGE)-$(VERSION) && cp ../debian/changelog debian/; \
+		sed -e "s/DISTRO/$$d/g" debian/changelog > debian/changelog.tmp; \
+		mv debian/changelog.tmp debian/changelog; \
+		debuild -S; \
+	done
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

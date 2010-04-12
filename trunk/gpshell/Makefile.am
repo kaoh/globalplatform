@@ -15,6 +15,8 @@ get_data.txt helloInstallSmartCafeExpert30.txt
 
 SUBDIRS = src
 
+UBUNTU_DISTS = dapper edgy feisty gutsy hardy intrepid jaunty karmic lucid
+
 deb:
 	rm -rf $(PACKAGE)-$(VERSION)
 	tar xzf $(PACKAGE)-$(VERSION).tar.gz
@@ -22,9 +24,16 @@ deb:
 	cd $(PACKAGE)-$(VERSION) && dh_make -s -c gpl -e "k_o_@users.sourceforge.net" -f ../$(PACKAGE)-$(VERSION).tar.gz
 	cd $(PACKAGE)-$(VERSION) && rm -rf debian
 	cd $(PACKAGE)-$(VERSION) && mkdir debian
-	cd $(PACKAGE)-$(VERSION) && cp ../debian/* debian/
+	cd $(PACKAGE)-$(VERSION) && cp ../debian/* debian/;
 	cd $(PACKAGE)-$(VERSION) && chmod 755 debian/rules
-	cd $(PACKAGE)-$(VERSION) && debuild -S
+	for d in $(UBUNTU_DISTS); \
+	do \
+		cd $(PACKAGE)-$(VERSION); \
+		cp ../debian/changelog debian/; \
+		sed -e "s/DISTRO/$$d/g" debian/changelog > debian/changelog.tmp; \
+		mv debian/changelog.tmp debian/changelog; \
+		debuild -S; \
+	done
 
 MAINTAINERCLEANFILES = \
 	Makefile.in \
