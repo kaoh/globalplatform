@@ -10,7 +10,30 @@ doc:
 
 UBUNTU_DISTS = dapper edgy feisty gutsy hardy intrepid jaunty karmic lucid
 
-deb:
+SNAPSHOT_VERSION=-SNAPSHOT-`date +%F-%0k-%0M-%0S%z`
+
+deb-snapshot:
+	rm -rf $(PACKAGE)-$(VERSION)
+	tar xzf $(PACKAGE)-$(VERSION).tar.gz
+	rm -f $(PACKAGE)_$(VERSION).orig.tar.gz
+	cd $(PACKAGE)-$(VERSION) && dh_make -s -c gpl -e "k_o_@users.sourceforge.net" -f ../$(PACKAGE)-$(VERSION).tar.gz
+	cp $(PACKAGE)_$(VERSION).orig.tar.gz lib$(PACKAGE)6_$(VERSION).orig.tar.gz
+	cd $(PACKAGE)-$(VERSION) && rm -rf debian
+	cd $(PACKAGE)-$(VERSION) && mkdir debian
+	cd $(PACKAGE)-$(VERSION) && cp ../debian/* debian/
+	cd $(PACKAGE)-$(VERSION) && chmod 755 debian/rules
+	for d in $(UBUNTU_DISTS); \
+	do \
+		cd $(PACKAGE)-$(VERSION); \
+		cp ../debian/changelog debian/; \
+		sed -e "s/DISTRO/$$d/g" debian/changelog > debian/changelog.tmp; \
+		mv debian/changelog.tmp debian/changelog; \
+		sed -e "s/VERSION/$(SNAPSHOT_VERSION)/g" debian/changelog > debian/changelog.tmp; \
+		mv debian/changelog.tmp debian/changelog; \
+		debuild --no-tgz-check -S; \
+	done
+
+deb-dist:
 	rm -rf $(PACKAGE)-$(VERSION)
 	tar xzf $(PACKAGE)-$(VERSION).tar.gz
 	rm -f $(PACKAGE)_$(VERSION).orig.tar.gz
@@ -25,6 +48,8 @@ deb:
 		cd $(PACKAGE)-$(VERSION); \
 		cp ../debian/changelog debian/; \
 		sed -e "s/DISTRO/$$d/g" debian/changelog > debian/changelog.tmp; \
+		mv debian/changelog.tmp debian/changelog; \
+		sed -e "s/VERSION//g" debian/changelog > debian/changelog.tmp; \
 		mv debian/changelog.tmp debian/changelog; \
 		debuild -S; \
 	done

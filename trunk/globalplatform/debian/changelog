@@ -1,4 +1,4 @@
-libglobalplatform6 (6.0.0-0ubuntu1~DISTRO) DISTRO; urgency=low
+libglobalplatform6 (6.0.0-0ubuntu2+3VERSION~DISTRO) DISTRO; urgency=low
 
   * Initial release
 

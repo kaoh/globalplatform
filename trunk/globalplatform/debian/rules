@@ -45,7 +45,7 @@ endif
 
 
 build: build-stamp
-build-stamp:  config.status 
+build-stamp:  config.status
 	dh_testdir
 
 	# Add here commands to compile the package.
@@ -53,21 +53,21 @@ build-stamp:  config.status
 
 	touch $@
 
-clean: 
+clean:
 	dh_testdir
 	dh_testroot
-	rm -f build-stamp 
+	rm -f build-stamp
 
 	# Add here commands to clean up after the build process.
 	[ ! -f Makefile ] || $(MAKE) distclean
 	rm -f config.sub config.guess
 
-	dh_clean 
+	dh_clean
 
 install: build
 	dh_testdir
 	dh_testroot
-	dh_prep  
+	if test -x /usr/bin/dh_prep; then dh_prep; else dh_clean -k; fi
 	dh_installdirs
 
 	# Add here commands to install the package into debian/tmp
@@ -111,4 +111,4 @@ binary-arch: install
 	dh_builddeb
 
 binary: binary-indep binary-arch
-.PHONY: build clean binary-indep binary-arch binary install 
+.PHONY: build clean binary-indep binary-arch binary install
