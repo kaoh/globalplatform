@@ -132,8 +132,6 @@ AWK = mawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
 CFLAGS = -g -O2 -Wall
-CHECK_CFLAGS =  
-CHECK_LIBS = -lcheck  
 CPP = gcc -E
 CPPFLAGS = 
 CYGPATH_W = echo
@@ -264,8 +262,8 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = globalplatform.pc
 TESTS_ENVIRONMENT = ls -la $(top_builddir)/../gppcscconnectionplugin/src/.libs/; export LD_LIBRARY_PATH=$(top_builddir)/../gppcscconnectionplugin/src/.libs/:$LD_LIBRARY_PATH;
 globalplatformTest_SOURCES = globalplatformTest.c
-globalplatformTest_CFLAGS =   $(AM_CPPFLAGS) $(PCSCLITE_CFLAGS)
-globalplatformTest_LDADD = -lcheck   libglobalplatform.la $(PCSCLITE_LIBS)
+globalplatformTest_CFLAGS = @CHECK_CFLAGS@ $(AM_CPPFLAGS) $(PCSCLITE_CFLAGS)
+globalplatformTest_LDADD = @CHECK_LIBS@ libglobalplatform.la $(PCSCLITE_LIBS)
 MAINTAINERCLEANFILES = \
 	Makefile.in
 
