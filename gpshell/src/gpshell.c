@@ -785,7 +785,7 @@ static int handleCommands(FILE *fd)
                         _tcsncpy(optionStr.reader, buf+j, READERNAMELEN+1);
 
 
-                        // if auto reader, connects now
+                        // if auto reader, connect now
                         if (optionStr.readerNumber == AUTOREADER)
                         {
                             status = OPGP_card_connect(cardContext, optionStr.reader, &cardInfo, optionStr.protocol);
@@ -796,6 +796,8 @@ static int handleCommands(FILE *fd)
                         }
                         else if (k == optionStr.readerNumber)
                         {
+                        	// connect the this reader number
+                        	status = OPGP_card_connect (cardContext, optionStr.reader, &cardInfo, optionStr.protocol);
                             break;
                         }
 
@@ -1085,7 +1087,7 @@ static int handleCommands(FILE *fd)
                     goto end;
                 }
                 status = OPGP_read_executable_load_file_parameters(optionStr.file, &loadFileParams);
-                if (rv != EXIT_SUCCESS)
+                if (OPGP_ERROR_CHECK(status))
                 {
                     _tprintf (_T("read_executable_load_file_parameters() returns 0x%08lX (%s)\n"),
                               status.errorCode, status.errorMessage);

@@ -67,7 +67,7 @@ clean:
 install: build
 	dh_testdir
 	dh_testroot
-	dh_prep
+	if test -x /usr/bin/dh_prep; then dh_prep; else dh_clean -k; fi
 	dh_installdirs
 
 	# Add here commands to install the package into debian/tmp

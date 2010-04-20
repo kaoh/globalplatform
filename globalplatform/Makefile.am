@@ -8,7 +8,7 @@ SUBDIRS = src
 doc:
 	cd src && $(MAKE) $(AM_MAKEFLAGS) doc
 
-UBUNTU_DISTS = dapper edgy feisty gutsy hardy intrepid jaunty karmic lucid
+UBUNTU_DISTS = dapper gutsy hardy intrepid jaunty karmic lucid
 
 SNAPSHOT_VERSION=-SNAPSHOT-`date +%F-%0k-%0M-%0S%z`
 
@@ -16,7 +16,7 @@ deb-snapshot:
 	rm -rf $(PACKAGE)-$(VERSION)
 	tar xzf $(PACKAGE)-$(VERSION).tar.gz
 	rm -f $(PACKAGE)_$(VERSION).orig.tar.gz
-	cd $(PACKAGE)-$(VERSION) && dh_make -l -c gpl -e "k_o_@users.sourceforge.net" -f ../$(PACKAGE)-$(VERSION).tar.gz
+	cd $(PACKAGE)-$(VERSION) && dh_make -l -c lgpl -e "k_o_@users.sourceforge.net" -f ../$(PACKAGE)-$(VERSION).tar.gz
 	cp $(PACKAGE)_$(VERSION).orig.tar.gz lib$(PACKAGE)6_$(VERSION).orig.tar.gz
 	cd $(PACKAGE)-$(VERSION) && rm -rf debian
 	cd $(PACKAGE)-$(VERSION) && mkdir debian
@@ -39,13 +39,12 @@ deb-snapshot:
 		fi; \
 		debuild --no-tgz-check -S; \
 	done
-	dpkg
 
 deb-dist:
 	rm -rf $(PACKAGE)-$(VERSION)
 	tar xzf $(PACKAGE)-$(VERSION).tar.gz
 	rm -f $(PACKAGE)_$(VERSION).orig.tar.gz
-	cd $(PACKAGE)-$(VERSION) && dh_make -l -c gpl -e "k_o_@users.sourceforge.net" -f ../$(PACKAGE)-$(VERSION).tar.gz
+	cd $(PACKAGE)-$(VERSION) && dh_make -l -c lgpl -e "k_o_@users.sourceforge.net" -f ../$(PACKAGE)-$(VERSION).tar.gz
 	cp $(PACKAGE)_$(VERSION).orig.tar.gz lib$(PACKAGE)6_$(VERSION).orig.tar.gz
 	cd $(PACKAGE)-$(VERSION) && rm -rf debian
 	cd $(PACKAGE)-$(VERSION) && mkdir debian
