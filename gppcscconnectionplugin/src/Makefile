@@ -126,8 +126,6 @@ AWK = mawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
 CFLAGS = -g -O2 -Wall
-CHECK_CFLAGS =  
-CHECK_LIBS = -lcheck  
 CPP = gcc -E
 CPPFLAGS = 
 CYGPATH_W = echo
@@ -247,8 +245,8 @@ libgppcscconnectionplugin_la_SOURCES = gppcscconnectionplugin.h gppcscconnection
 libgppcscconnectionplugin_la_LDFLAGS = -version-info 1:0:0 $(PCSCLITE_LIBS) $(GLOBALPLATFORM_LIBS)
 libgppcscconnectionplugin_la_CPPFLAGS = $(AM_CPPFLAGS) $(PCSCLITE_CFLAGS) $(GLOBALPLATFORM_CFLAGS)
 gppcscconnectionpluginTest_SOURCES = gppcscconnectionpluginTest.c
-gppcscconnectionpluginTest_CFLAGS =   $(AM_CPPFLAGS) $(PCSCLITE_CFLAGS) $(GLOBALPLATFORM_CFLAGS)
-gppcscconnectionpluginTest_LDADD = -lcheck   $(builddir)/libgppcscconnectionplugin.la $(PCSCLITE_LIBS) $(GLOBALPLATFORM_LIBS)
+gppcscconnectionpluginTest_CFLAGS = @CHECK_CFLAGS@ $(AM_CPPFLAGS) $(PCSCLITE_CFLAGS) $(GLOBALPLATFORM_CFLAGS)
+gppcscconnectionpluginTest_LDADD = @CHECK_LIBS@ $(builddir)/libgppcscconnectionplugin.la $(PCSCLITE_LIBS) $(GLOBALPLATFORM_LIBS)
 MAINTAINERCLEANFILES = \
 	Makefile.in
 
