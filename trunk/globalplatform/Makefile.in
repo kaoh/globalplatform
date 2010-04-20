@@ -222,7 +222,7 @@ EXTRA_DIST = GlobalPlatform.cbp lib_finder.script GlobalPlatform.workspace Globa
 GlobalPlatform.sln GlobalPlatform.vcproj
 
 SUBDIRS = src
-UBUNTU_DISTS = dapper edgy feisty gutsy hardy intrepid jaunty karmic lucid
+UBUNTU_DISTS = dapper gutsy hardy intrepid jaunty karmic lucid
 SNAPSHOT_VERSION = -SNAPSHOT-`date +%F-%0k-%0M-%0S%z`
 MAINTAINERCLEANFILES = \
 	Makefile.in \
@@ -744,7 +744,6 @@ deb-snapshot:
 		fi; \
 		debuild --no-tgz-check -S; \
 	done
-	dpkg
 
 deb-dist:
 	rm -rf $(PACKAGE)-$(VERSION)

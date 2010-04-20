@@ -689,10 +689,10 @@ end:
  */
 OPGP_STRING OPGP_PL_stringify_error(DWORD errorCode) {
 	if (errorCode == OPGP_PL_ERROR_NO_CARD_CONTEXT_INITIALIZED) {
-		return (OPGP_STRING)_T("PC/SC plugin is not initialized. A card context must be established.");
+		return (OPGP_STRING)_T("PC/SC plugin is not initialized. A card context must be established first.");
 	}
 	if (errorCode == OPGP_PL_ERROR_NO_CARD_INFO_INITIALIZED) {
-		return (OPGP_STRING)_T("PC/SC plugin is not initialized. A card connection must be made.");
+		return (OPGP_STRING)_T("PC/SC plugin is not initialized. A card connection must be created first.");
 	}
 	#ifndef WIN32
 		if ((errorCode & ((DWORD)0xFFF00000L)) == ((DWORD)0x80100000L)) {
