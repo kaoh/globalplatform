@@ -721,7 +721,7 @@ deb-snapshot:
 	rm -rf $(PACKAGE)-$(VERSION)
 	tar xzf $(PACKAGE)-$(VERSION).tar.gz
 	rm -f $(PACKAGE)_$(VERSION).orig.tar.gz
-	cd $(PACKAGE)-$(VERSION) && dh_make -l -c gpl -e "k_o_@users.sourceforge.net" -f ../$(PACKAGE)-$(VERSION).tar.gz
+	cd $(PACKAGE)-$(VERSION) && dh_make -l -c lgpl -e "k_o_@users.sourceforge.net" -f ../$(PACKAGE)-$(VERSION).tar.gz
 	cp $(PACKAGE)_$(VERSION).orig.tar.gz lib$(PACKAGE)6_$(VERSION).orig.tar.gz
 	cd $(PACKAGE)-$(VERSION) && rm -rf debian
 	cd $(PACKAGE)-$(VERSION) && mkdir debian
@@ -749,7 +749,7 @@ deb-dist:
 	rm -rf $(PACKAGE)-$(VERSION)
 	tar xzf $(PACKAGE)-$(VERSION).tar.gz
 	rm -f $(PACKAGE)_$(VERSION).orig.tar.gz
-	cd $(PACKAGE)-$(VERSION) && dh_make -l -c gpl -e "k_o_@users.sourceforge.net" -f ../$(PACKAGE)-$(VERSION).tar.gz
+	cd $(PACKAGE)-$(VERSION) && dh_make -l -c lgpl -e "k_o_@users.sourceforge.net" -f ../$(PACKAGE)-$(VERSION).tar.gz
 	cp $(PACKAGE)_$(VERSION).orig.tar.gz lib$(PACKAGE)6_$(VERSION).orig.tar.gz
 	cd $(PACKAGE)-$(VERSION) && rm -rf debian
 	cd $(PACKAGE)-$(VERSION) && mkdir debian

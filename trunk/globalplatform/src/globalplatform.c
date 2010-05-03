@@ -3693,13 +3693,13 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 #endif
 
 #ifdef DEBUG
-	OPGP_log_Msg(_T("mutual_authentication: Session Key: "), secInfo->C_MACSessionKey, 16);
+	OPGP_log_Msg(_T("mutual_authentication: S-MAC Session Key: "), secInfo->C_MACSessionKey, 16);
 
 #endif
 
 #ifdef DEBUG
 	if (secInfo->secureChannelProtocol == GP211_SCP01) {
-		OPGP_log_Hex(_T("secInfo->encryptionSessionKeyData Encryption Key: "), secInfo->dataEncryptionSessionKey, 16);
+		OPGP_log_Hex(_T("mutual_authentication: Data Encryption Key: "), secInfo->dataEncryptionSessionKey, 16);
 	}
 #endif
 
@@ -3963,7 +3963,7 @@ OPGP_ERROR_STATUS pin_change(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardI
 	int encryptionLength;
 	DWORD j,i=0;
 	OPGP_LOG_START(_T("pin_change"));
-	if ((tryLimit != 0) && !((tryLimit > 0x03) && (tryLimit <= 0x0a))) {
+	if ((tryLimit != 0) && !((tryLimit >= 0x03) && (tryLimit <= 0x0a))) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_WRONG_TRY_LIMIT, OPGP_stringify_error(OPGP_ERROR_WRONG_TRY_LIMIT)); goto end; }
 	}
 	if ((newPINLength < 6) || (newPINLength > 12)) {
