@@ -4,5 +4,5 @@ Augusto Makiyama <augusto.cesar.makiyama@gmail.com> for adding the key set versi
 Roger C. Pao <rpao@users.sourceforge.net> bug fixes for GP211_CARD_MANAGER_AID, GP211_store_data, put_sc_key
 João Victor dos Anjos Barbara for segmentation fault fix in OPGP_card_disconnect
 François Kooman <fkooman@tuxed.net> for the Fedora package, compiler warning fixes and compliance issues
-Jacek Trzcinski <jackaleph3@gmail.com> for EMV CPS 1.1 key derivation support
+Jacek Trzcinski <jackaleph3@gmail.com> for EMV CPS 1.1 key derivation support, pin_change fix for OP201
 
