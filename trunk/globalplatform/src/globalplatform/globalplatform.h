@@ -145,6 +145,9 @@ static const BYTE GP211_GET_DATA_EF_PROD_DATA_LOCATION_MACHINE_DATE_TIME[2] = {0
 
 static const BYTE GP211_GET_DATA_WHOLE_EF_PROD[2] = {0xDF, 0x7F}; //!< Whole EF<sub>prod</sub> data block (39 Byte).
 
+static const BYTE GP211_GET_DATA_KEY_DIVERSIFICATION[2] = {0x00, 0xCF}; //!< Key diversification data. KMC_ID (6 bytes) + CSN (4 bytes). KMC_ID is usually the IIN (Issuer identification number). CSN is the card serial number.
+
+
 
 
 
