@@ -3313,7 +3313,7 @@ end:
 }
 
 /**
-  * E.g. Sm@rtCafe Export 3.0 cards use this scheme.
+  * E.g. Sm@rtCafe Expert 3.0 cards use this scheme.
   * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
   * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
   * \param masterKey [in] The master key.

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_workspace_file>
 	<Workspace title="Workspace">
-		<Project filename="..\gppcscconnectionplugin\GPPCSCConnectionPlugin.cbp" />
-		<Project filename="GlobalPlatform.cbp" />
-		<Project filename="..\gpshell\GPShell.cbp" active="1" />
+		<Project filename="../gppcscconnectionplugin/GPPCSCConnectionPlugin.cbp" />
+		<Project filename="GlobalPlatform.cbp" active="1" />
+		<Project filename="../gpshell/GPShell.cbp" />
 	</Workspace>
 </CodeBlocks_workspace_file>
