@@ -94,6 +94,7 @@ typedef struct _OptionStr
     BYTE scp;
     BYTE scpImpl;
     BYTE identifier[2];
+    BYTE keyDerivation;
 } OptionStr;
 
 /* Global Variables */
@@ -102,8 +103,6 @@ static OPGP_CARD_INFO cardInfo;
 static OP201_SECURITY_INFO securityInfo201;
 static GP211_SECURITY_INFO securityInfo211;
 static int platform_mode = OP_201;
-static int visaKeyDerivation = 0;
-static int emvCps11KeyDerivation = 0;
 static int timer = 0;
 static BYTE selectedAID[AIDLEN+1];
 static DWORD selectedAIDLength = 0;
@@ -220,6 +219,7 @@ static int handleOptions(OptionStr *pOptionStr)
     pOptionStr->scpImpl = 0;
 	pOptionStr->identifier[0] = 0;
 	pOptionStr->identifier[1] = 0;
+	pOptionStr->keyDerivation = OPGP_DERIVATION_METHOD_NONE;
 
     token = strtokCheckComment(NULL);
 
@@ -832,39 +832,18 @@ static int handleCommands(FILE *fd)
                 {
                     goto end;
                 }
-                if (visaKeyDerivation)
-                {
-                    status = OPGP_VISA2_derive_keys(cardContext, cardInfo, selectedAID, selectedAIDLength, optionStr.key,
-                                                optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
-                    if (OPGP_ERROR_CHECK(status))
-                    {
-                        _tprintf (_T("OPGP_VISA2_derive_keys() returns 0x%08lX (%s)\n"),
-                                  status.errorCode, status.errorMessage);
-                        rv = EXIT_FAILURE;
-                        goto end;
-                    }
-                }
-                else if (emvCps11KeyDerivation) {
-					status = OPGP_EMV_CPS11_derive_keys(cardContext, cardInfo, optionStr.key,
-                                                optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
-                    if (OPGP_ERROR_CHECK(status))
-                    {
-                        _tprintf (_T("OPGP_EMV_CPS11_derive_keys() returns 0x%08lX (%s)\n"),
-                                  status.errorCode, status.errorMessage);
-                        rv = EXIT_FAILURE;
-                        goto end;
-                    }
-                }
 
                 if (platform_mode == PLATFORM_MODE_OP_201)
                 {
                     status = OP201_mutual_authentication(cardContext, cardInfo,
+													 optionStr.key,
                                                      optionStr.enc_key,
                                                      optionStr.mac_key,
                                                      optionStr.kek_key,
                                                      optionStr.keySetVersion,
                                                      optionStr.keyIndex,
                                                      optionStr.securityLevel,
+													 optionStr.keyDerivation,
                                                      &securityInfo201);
                 }
                 else if (platform_mode == PLATFORM_MODE_GP_211)
@@ -893,6 +872,7 @@ static int handleCommands(FILE *fd)
                                                      optionStr.scp,
                                                      optionStr.scpImpl,
                                                      optionStr.securityLevel,
+                                                     optionStr.keyDerivation,
                                                      &securityInfo211);
 
                 }
@@ -1605,17 +1585,17 @@ static int handleCommands(FILE *fd)
             }
             else if (_tcscmp(token, _T("gemXpressoPro")) == 0)
             {
-                visaKeyDerivation = 1;
+                optionStr.keyDerivation = OPGP_DERIVATION_METHOD_VISA2;
                 break;
             }
             else if (_tcscmp(token, _T("visa_key_derivation")) == 0)
             {
-                visaKeyDerivation = 1;
+                optionStr.keyDerivation = OPGP_DERIVATION_METHOD_VISA2;
                 break;
             }
             else if (_tcscmp(token, _T("emv_cps11_key_derivation")) == 0)
             {
-                emvCps11KeyDerivation = 1;
+                optionStr.keyDerivation = OPGP_DERIVATION_METHOD_EMV_CPS11;
                 break;
             }
             else if (_tcscmp(token, _T("enable_timer")) == 0)
