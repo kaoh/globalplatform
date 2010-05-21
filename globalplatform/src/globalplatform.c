@@ -4077,6 +4077,7 @@ OPGP_ERROR_STATUS pin_change(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardI
 	sendBuffer[i++] = tryLimit;
 	if (tryLimit != 0) {
 		sendBuffer[i++] = 0x08;
+		memset ( PINFormat, 0, sizeof ( PINFormat ));
 		PINFormat[0] = 0x20;
 		PINFormat[0] |= newPINLength & 0x0f;
 		for (j=0; j<newPINLength; j++) {
