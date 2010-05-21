@@ -230,6 +230,10 @@ static const BYTE OP201_GET_DATA_EF_PROD_DATA_LOCATION_MACHINE_DATE_TIME[2] = {0
 
 static const BYTE OP201_GET_DATA_WHOLE_EF_PROD[2] = {0xDF, 0x7F}; //!< Whole EF<sub>prod</sub> data block (39 Byte).
 
+static const BYTE OPGP_DERIVATION_METHOD_NONE = 0; //!< No key derivation is used during mutual authentication.
+static const BYTE OPGP_DERIVATION_METHOD_VISA2 = 1; //!< The VISA2 key derivation is used during mutual authentication.
+static const BYTE OPGP_DERIVATION_METHOD_EMV_CPS11 = 2; //!< The EMV CPS 11 derivation is used during mutual authentication.
+
 #define OPGP_WORK_UNKNOWN -1 //!< The amount of work is not known.
 #define OPGP_TASK_FINISHED 1 //!< The task is finished.
 
@@ -332,7 +336,7 @@ OPGP_ERROR_STATUS GP211_mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPG
 						   BYTE DEK[16], BYTE keySetVersion,
 						   BYTE keyIndex, BYTE secureChannelProtocol,
 						   BYTE secureChannelProtocolImpl,
-						   BYTE securityLevel, GP211_SECURITY_INFO *secInfo);
+						   BYTE securityLevel, BYTE derivationMethod, GP211_SECURITY_INFO *secInfo);
 
 //! \brief GlobalPlatform2.1.1: Inits a Secure Channel implicitly.
 OPGP_API
@@ -608,9 +612,9 @@ OPGP_ERROR_STATUS OP201_set_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 
 //! \brief Open Platform: Mutual authentication.
 OPGP_API
-OPGP_ERROR_STATUS OP201_mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE encKey[16], BYTE macKey[16],
+OPGP_ERROR_STATUS OP201_mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE baseKey[16], BYTE encKey[16], BYTE macKey[16],
 								 BYTE kekKey[16], BYTE keySetVersion,
-						   BYTE keyIndex, BYTE securityLevel,
+						   BYTE keyIndex, BYTE securityLevel, BYTE derivationMethod,
 						   OP201_SECURITY_INFO *secInfo);
 
 //! \brief Open Platform: Retrieve card data.
