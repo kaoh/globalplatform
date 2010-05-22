@@ -222,8 +222,6 @@ static int handleOptions(OptionStr *pOptionStr)
 	pOptionStr->identifier[1] = 0;
 	pOptionStr->keyDerivation = OPGP_DERIVATION_METHOD_NONE;
 
-        	printf("YYYYYYYYYYYYYYY Hier\n");
-
     token = strtokCheckComment(NULL);
 
     while (token != NULL)
@@ -861,14 +859,11 @@ static int handleCommands(FILE *fd)
                 {
                     goto end;
                 }
-
-printf("key: %02X",optionStr.key[0]);
 				if (gemXpressoPro) {
 					optionStr.keyDerivation = OPGP_DERIVATION_METHOD_VISA2;
 				}
                 if (platform_mode == PLATFORM_MODE_OP_201)
                 {
-                	printf("key: %02X",optionStr.key[0]);
                     status = OP201_mutual_authentication(cardContext, cardInfo,
 													 optionStr.key,
                                                      optionStr.enc_key,
@@ -880,7 +875,6 @@ printf("key: %02X",optionStr.key[0]);
 													 optionStr.keyDerivation,
                                                      &securityInfo201);
                 }
-                /*
                 else if (platform_mode == PLATFORM_MODE_GP_211)
                 {
                     if (optionStr.scp == 0 || optionStr.scpImpl == 0)
@@ -911,7 +905,6 @@ printf("key: %02X",optionStr.key[0]);
                                                      &securityInfo211);
 
                 }
-*/
                 if (OPGP_ERROR_CHECK(status))
                 {
                     _tprintf (_T("mutual_authentication() returns 0x%08lX (%s)\n"),
