@@ -784,6 +784,7 @@ static int handleCommands(FILE *fd)
             {
                 TCHAR buf[BUFLEN + 1];
                 DWORD readerStrLen = BUFLEN;
+                int readerFound = 0;
                 // open reader
                 rv = handleOptions(&optionStr);
                 if (rv != EXIT_SUCCESS)
@@ -811,11 +812,14 @@ static int handleCommands(FILE *fd)
                             break;
                         _tcsncpy(optionStr.reader, buf+j, READERNAMELEN+1);
 
-
+#ifdef DEBUG
+						_tprintf ( _T("* reader name %s\n"), optionStr.reader);
+#endif
                         // if auto reader, connect now
                         if (optionStr.readerNumber == AUTOREADER)
                         {
                             status = OPGP_card_connect(cardContext, optionStr.reader, &cardInfo, optionStr.protocol);
+                            readerFound = 1;
                             if (!OPGP_ERROR_CHECK(status))
                             {
                                 break;
@@ -825,6 +829,7 @@ static int handleCommands(FILE *fd)
                         {
                         	// connect the this reader number
                         	status = OPGP_card_connect (cardContext, optionStr.reader, &cardInfo, optionStr.protocol);
+                        	readerFound = 1;
                             break;
                         }
 
@@ -832,10 +837,12 @@ static int handleCommands(FILE *fd)
                         j+=(int)_tcslen(buf+j)+1;
                     }
                     optionStr.reader[READERNAMELEN] = _T('\0');
+                    if (!readerFound) {
+                    	_tprintf (_T("Could not connect to reader number %d\n"), (int)(optionStr.readerNumber+1));
+						rv = EXIT_FAILURE;
+						goto end;
+                    }
 
-#ifdef DEBUG
-                    _tprintf ( _T("* reader name %s\n"), optionStr.reader);
-#endif
                 }
                 else {
                     status = OPGP_card_connect (cardContext, optionStr.reader, &cardInfo, optionStr.protocol);
