@@ -102,6 +102,7 @@ static OPGP_CARD_CONTEXT cardContext;
 static OPGP_CARD_INFO cardInfo;
 static OP201_SECURITY_INFO securityInfo201;
 static GP211_SECURITY_INFO securityInfo211;
+static int gemXpressoPro = 0;
 static int platform_mode = OP_201;
 static int timer = 0;
 static BYTE selectedAID[AIDLEN+1];
@@ -221,10 +222,13 @@ static int handleOptions(OptionStr *pOptionStr)
 	pOptionStr->identifier[1] = 0;
 	pOptionStr->keyDerivation = OPGP_DERIVATION_METHOD_NONE;
 
+        	printf("YYYYYYYYYYYYYYY Hier\n");
+
     token = strtokCheckComment(NULL);
 
     while (token != NULL)
     {
+
         if (_tcscmp(token, _T("-identifier")) == 0)
         {
             token = strtokCheckComment(NULL);
@@ -680,6 +684,31 @@ static int handleOptions(OptionStr *pOptionStr)
                 pOptionStr->scpImpl = (int)_tcstol(token, NULL, 0);
             }
         }
+        else if (_tcscmp(token, _T("-keyDerivation")) == 0)
+        {
+            token = strtokCheckComment(NULL);
+            if (token == NULL)
+            {
+                _tprintf(_T("Error: option -keyDerivation not followed by data\n"));
+                rv = EXIT_FAILURE;
+                goto end;
+            }
+            if (_tcscmp(token, _T("none")) == 0) {
+            	pOptionStr->keyDerivation = OPGP_DERIVATION_METHOD_NONE;
+            }
+            else if (_tcscmp(token, _T("visa2")) == 0) {
+            	pOptionStr->keyDerivation = OPGP_DERIVATION_METHOD_VISA2;
+            }
+            else if (_tcscmp(token, _T("emvcps11")) == 0) {
+            	pOptionStr->keyDerivation = OPGP_DERIVATION_METHOD_EMV_CPS11;
+            }
+            else
+            {
+                _tprintf(_T("Error: Unknown key derivation method\n"));
+                rv = EXIT_FAILURE;
+                goto end;
+            }
+        }
         else
         {
             // unknown option
@@ -833,8 +862,13 @@ static int handleCommands(FILE *fd)
                     goto end;
                 }
 
+printf("key: %02X",optionStr.key[0]);
+				if (gemXpressoPro) {
+					optionStr.keyDerivation = OPGP_DERIVATION_METHOD_VISA2;
+				}
                 if (platform_mode == PLATFORM_MODE_OP_201)
                 {
+                	printf("key: %02X",optionStr.key[0]);
                     status = OP201_mutual_authentication(cardContext, cardInfo,
 													 optionStr.key,
                                                      optionStr.enc_key,
@@ -846,6 +880,7 @@ static int handleCommands(FILE *fd)
 													 optionStr.keyDerivation,
                                                      &securityInfo201);
                 }
+                /*
                 else if (platform_mode == PLATFORM_MODE_GP_211)
                 {
                     if (optionStr.scp == 0 || optionStr.scpImpl == 0)
@@ -876,7 +911,7 @@ static int handleCommands(FILE *fd)
                                                      &securityInfo211);
 
                 }
-
+*/
                 if (OPGP_ERROR_CHECK(status))
                 {
                     _tprintf (_T("mutual_authentication() returns 0x%08lX (%s)\n"),
@@ -1580,24 +1615,14 @@ static int handleCommands(FILE *fd)
             else if (_tcscmp(token, _T("enable_trace")) == 0)
             {
                 OPGP_enable_trace_mode(OPGP_TRACE_MODE_ENABLE, NULL);
-                // gemXpressoPro and visa_key_derivation are the same, gemXpressoPro is for backward compatibility
                 break;
             }
-            else if (_tcscmp(token, _T("gemXpressoPro")) == 0)
-            {
-                optionStr.keyDerivation = OPGP_DERIVATION_METHOD_VISA2;
-                break;
-            }
-            else if (_tcscmp(token, _T("visa_key_derivation")) == 0)
-            {
-                optionStr.keyDerivation = OPGP_DERIVATION_METHOD_VISA2;
-                break;
-            }
-            else if (_tcscmp(token, _T("emv_cps11_key_derivation")) == 0)
-            {
-                optionStr.keyDerivation = OPGP_DERIVATION_METHOD_EMV_CPS11;
-                break;
-            }
+			// for backward combatibility
+			else if (_tcscmp(token, _T("gemXpressoPro")) == 0)
+			{
+				gemXpressoPro = 1;
+				break;
+			}
             else if (_tcscmp(token, _T("enable_timer")) == 0)
             {
                 timer = 1;

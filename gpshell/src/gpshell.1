@@ -44,14 +44,14 @@ Connect to card in the reader with readerName
 .I "-readerNumber x"
 Connect to card in the xth reader in the system
 .IP open_sc
-.I "-keyind x -keyver x -key xyz -mac_key xyz -enc_key xyz -kek_key xyz -security x -scp x -scpimpl x"
+.I "-keyind x -keyver x -key xyz -mac_key xyz -enc_key xyz -kek_key xyz -security x -scp x -scpimpl x -keyDerivation x"
 Open secure channel
 
 For OpenPlatform 2.0.1' card only -keyind -keyver -mac_key and enc_key are necessary.
-If you have an card which uses the VISA key derivation scheme, like a GemXpresso Pro or some JCOP cards,
-set visa_key_derivation and you MUST specify with -key the master (mother) key. -mac_key and -enc_key are not relevant.
 For GlobalPlatform 2.1.1 cards -scp and -scpimpl should be not necessary to supply. You must also specify -kek_key.
 If your card supports a Secure Channel Protocol Implementation with only one base key, specify this key with -key and omit the others.
+If you have a card which uses key derivation you must enable the derivation mode with the -keyDerivation option and you must specify with -key the master (mother) key.
+ -kek_key, -mac_key and -enc_key are not relevant. See the section Options and Key derivation.
 .IP select
 .I "-AID AID"
 Select AID instance
@@ -225,16 +225,22 @@ Password for key decryption
 .IP -identifier
 .I identifier
 Identifer for the tag for the get_data command. Must be in hex format, e.g. 9F7F.
+.IP -keyDerivation
+.I "derivation method"
+Possible values are "none", "visa2" or "emvcps11"
+Choose "visa2" if you have a card which uses the VISA key derivation scheme for the key calculation, like GemXpresso Pro or some JCOP cards you must set this.
+Choose "emvcps11" If you have a card which uses the EMV CPS 1.1 key derivation scheme for the key calculation, like a Sm@rtCafe Expert 3.0 you must set this.
+
 .SH ENVIRONMENT
 .IP GLOBALPLATFORM_DEBUG
 Enables debugging output from the underlying GlobalPlatform library.
 .IP GLOBALPLATFORM_LOGFILE
 Sets the log file name for the debugging output.
 .SH Key Derivation
-.IP VISA
-For the VISA key derivation scheme, like used in a GemXpresso Pro or some JCOP cards, set visa_key_derivation
+.IP VISA2
+For the VISA2 key derivation scheme, like used in a GemXpresso Pro or some JCOP cards, you have to enable it with the -keyDerivation set to "visa2" during open_sc.
 .IP "EMV CPS 1.1 / CDK (CPG 2.04)"
-For the key derivation according to EMV CPS 1.1 / CDK (CPG 2.04), like Sm@rtCafe Expert 3.0, set emv_cps11_key_derivation.
+For the key derivation according to EMV CPS 1.1 (CDK (CPG 2.04)), like Sm@rtCafe Expert 3.0, enable it by passing "emvcps11" to -keyDerivation during open_sc.
 
 Known unsupported key derivation schemes are:
 .IP "CDK (CPG 2.02)"

@@ -3245,7 +3245,8 @@ OPGP_ERROR_STATUS OPGP_VISA2_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CAR
 
 	keyDiversificationData[0] = cardmanagerAID[cardmanagerAIDLength-2];
 	keyDiversificationData[1] = cardmanagerAID[cardmanagerAIDLength-1];
- 	memcpy(keyDiversificationData+2, cardCPLCData+15, 8);
+	// we are using 13 here because VISA2_Dertive_keys skips the first 2 bytes after the card manager AID
+ 	memcpy(keyDiversificationData+2, cardCPLCData+13, 8);
 
 	status = VISA2_derive_keys(cardContext, cardInfo, keyDiversificationData, masterKey, S_ENC, S_MAC, DEK);
 	if (OPGP_ERROR_CHECK(status)) {
@@ -3294,11 +3295,13 @@ OPGP_ERROR_STATUS VISA2_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 	*/
 
  	// left
- 	memcpy(keyDiversificationData, baseKeyDiversificationData, 6);
+ 	memcpy(keyDiversificationData, baseKeyDiversificationData, 2);
+ 	memcpy(keyDiversificationData+2, baseKeyDiversificationData+4, 4);
  	keyDiversificationData[6] = 0xF0;
  	keyDiversificationData[7] = 0x01;
  	// right
- 	memcpy(keyDiversificationData+8, baseKeyDiversificationData, 6);
+ 	memcpy(keyDiversificationData+8, baseKeyDiversificationData, 2);
+ 	memcpy(keyDiversificationData+10, baseKeyDiversificationData+4, 4);
  	keyDiversificationData[14] = 0x0F;
  	keyDiversificationData[15] = 0x01;
 
@@ -5494,7 +5497,7 @@ OPGP_ERROR_STATUS OP201_mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPG
 								 OP201_SECURITY_INFO *secInfo) {
 	OPGP_ERROR_STATUS status;
 	GP211_SECURITY_INFO gp211secInfo;
-	status = mutual_authentication(cardContext, cardInfo, NULL, encKey, macKey, kekKey, keySetVersion,
+	status = mutual_authentication(cardContext, cardInfo, baseKey, encKey, macKey, kekKey, keySetVersion,
 		keyIndex, GP211_SCP01, GP211_SCP01_IMPL_i05, securityLevel, derivationMethod, &gp211secInfo);
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 	return status;
