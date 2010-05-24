@@ -3442,11 +3442,11 @@ OPGP_ERROR_STATUS EMV_CPS11_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	*/
 
 	// left
-    memcpy(keyDiversificationData, baseKeyDiversificationData, 6);
+    memcpy(keyDiversificationData, baseKeyDiversificationData + 4, 6);
     keyDiversificationData[6] = 0xF0;
     keyDiversificationData[7] = 0x01;
     // right
-    memcpy(keyDiversificationData+8, baseKeyDiversificationData, 6);
+    memcpy(keyDiversificationData+8, baseKeyDiversificationData + 4, 6);
     keyDiversificationData[14] = 0x0F;
     keyDiversificationData[15] = 0x01;
 
