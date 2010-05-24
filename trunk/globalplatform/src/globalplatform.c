@@ -3380,7 +3380,7 @@ OPGP_ERROR_STATUS OPGP_EMV_CPS11_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP
 		goto end;
 	}
 
-	status = EMV_CPS11_derive_keys(cardContext, cardInfo, diversificationData, masterKey, S_ENC, S_MAC, DEK);
+	status = EMV_CPS11_derive_keys(cardContext, cardInfo, diversificationData + 2, masterKey, S_ENC, S_MAC, DEK);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -3686,6 +3686,7 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 #endif
 
 
+	
 	if (derivationMethod == OPGP_DERIVATION_METHOD_EMV_CPS11) {
 		status = EMV_CPS11_derive_keys(cardContext, cardInfo, recvBuffer, baseKey, sEnc, sMac, dek);
 		if ( OPGP_ERROR_CHECK(status)) {
