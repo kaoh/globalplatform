@@ -9,14 +9,14 @@
 			<Script file="lib_finder.script" />
 			<Target title="Debug Win">
 				<Option platforms="Windows;" />
-				<Option output="Debug/GlobalPlatform" prefix_auto="1" extension_auto="1" />
+				<Option output="Debug\GlobalPlatform" prefix_auto="1" extension_auto="1" />
 				<Option object_output="Debug" />
 				<Option type="3" />
 				<Option compiler="msvc8" />
 				<Option createDefFile="1" />
 				<Option createStaticLib="1" />
 				<Compiler>
-					<Add option="/MDd" />
+					<Add option="/MD" />
 					<Add option="/TC" />
 					<Add option="/Gd" />
 					<Add option="/RTC1" />
@@ -30,16 +30,16 @@
 					<Add option="/DOPGP_EXPORTS" />
 					<Add option="/D_UNICODE" />
 					<Add option="/DUNICODE" />
-					<Add directory="C:/Programme/Microsoft Platform SDK for Windows Server 2003 R2/Include/mfc" />
-					<Add directory="C:/Programme/Microsoft Platform SDK for Windows Server 2003 R2/Include" />
-					<Add directory="C:/Programme/OpenSSL/include" />
-					<Add directory="C:/Programme/GnuWin32/include" />
-					<Add directory="C:/Programme/Microsoft Platform SDK for Windows Server 2003 R2/Include/crt" />
+					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include\mfc" />
+					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include" />
+					<Add directory="C:\Programme\OpenSSL\include" />
+					<Add directory="C:\Programme\GnuWin32\include" />
+					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include\crt" />
 					<Add directory="src" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="C:/Programme/Microsoft Platform SDK for Windows Server 2003 R2/Include/mfc" />
-					<Add directory="C:/Programme/Microsoft Platform SDK for Windows Server 2003 R2/Include" />
+					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include\mfc" />
+					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include" />
 				</ResourceCompiler>
 				<Linker>
 					<Add option="/DEBUG" />
@@ -47,15 +47,15 @@
 					<Add library="libeay32" />
 					<Add library="winscard" />
 					<Add library="zlib" />
-					<Add directory="C:/Programme/Microsoft Platform SDK for Windows Server 2003 R2/Lib" />
-					<Add directory="C:/Programme/GnuWin32/lib" />
-					<Add directory="C:/Programme/OpenSSL/lib" />
-					<Add directory="C:/Programme/Microsoft Visual Studio 9.0/VC/lib" />
+					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Lib" />
+					<Add directory="C:\Programme\GnuWin32\lib" />
+					<Add directory="C:\Programme\OpenSSL\lib" />
+					<Add directory="C:\Programme\Microsoft Visual Studio 9.0\VC\lib" />
 				</Linker>
 			</Target>
 			<Target title="Release Win">
 				<Option platforms="Windows;" />
-				<Option output="Release/GlobalPlatform" prefix_auto="1" extension_auto="1" />
+				<Option output="Release\GlobalPlatform" prefix_auto="1" extension_auto="1" />
 				<Option object_output="Release" />
 				<Option type="3" />
 				<Option compiler="msvc8" />
@@ -75,26 +75,26 @@
 					<Add option="/DOPGP_EXPORTS" />
 					<Add option="/D_UNICODE" />
 					<Add option="/DUNICODE" />
-					<Add directory="C:/Programme/Microsoft Platform SDK for Windows Server 2003 R2/Include/mfc" />
-					<Add directory="C:/Programme/Microsoft Platform SDK for Windows Server 2003 R2/Include" />
-					<Add directory="C:/Programme/OpenSSL/include" />
-					<Add directory="C:/Programme/GnuWin32/include" />
-					<Add directory="C:/Programme/Microsoft Platform SDK for Windows Server 2003 R2/Include/crt" />
+					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include\mfc" />
+					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include" />
+					<Add directory="C:\Programme\OpenSSL\include" />
+					<Add directory="C:\Programme\GnuWin32\include" />
+					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include\crt" />
 					<Add directory="src" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="C:/Programme/Microsoft Platform SDK for Windows Server 2003 R2/Include/mfc" />
-					<Add directory="C:/Programme/Microsoft Platform SDK for Windows Server 2003 R2/Include" />
+					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include\mfc" />
+					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include" />
 				</ResourceCompiler>
 				<Linker>
 					<Add library="ssleay32" />
 					<Add library="libeay32" />
 					<Add library="winscard" />
 					<Add library="zlib" />
-					<Add directory="C:/Programme/Microsoft Platform SDK for Windows Server 2003 R2/Lib" />
-					<Add directory="C:/Programme/GnuWin32/lib" />
-					<Add directory="C:/Programme/OpenSSL/lib" />
-					<Add directory="C:/Programme/Microsoft Visual Studio 9.0/VC/lib" />
+					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Lib" />
+					<Add directory="C:\Programme\GnuWin32\lib" />
+					<Add directory="C:\Programme\OpenSSL\lib" />
+					<Add directory="C:\Programme\Microsoft Visual Studio 9.0\VC\lib" />
 				</Linker>
 			</Target>
 			<Target title="Linux">
@@ -134,8 +134,8 @@
 					<Add option="-DUNICODE" />
 				</Compiler>
 				<Linker>
-					<Add library="./GlobalPlatform.so" />
-					<Add directory="../../GlobalPlatform" />
+					<Add library=".\GlobalPlatform.so" />
+					<Add directory="..\..\GlobalPlatform" />
 				</Linker>
 			</Target>
 		</Build>
@@ -172,264 +172,264 @@
 		<Unit filename="configure.in">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/changelog">
+		<Unit filename="debian\changelog">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/compat">
+		<Unit filename="debian\compat">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/control">
+		<Unit filename="debian\control">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/copyright">
+		<Unit filename="debian\copyright">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/dirs">
+		<Unit filename="debian\dirs">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/libglobalplatform6-dev.dirs">
+		<Unit filename="debian\libglobalplatform6-dev.dirs">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/libglobalplatform6-dev.doc-base">
+		<Unit filename="debian\libglobalplatform6-dev.doc-base">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/libglobalplatform6-dev.docs">
+		<Unit filename="debian\libglobalplatform6-dev.docs">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/libglobalplatform6-dev.install">
+		<Unit filename="debian\libglobalplatform6-dev.install">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/libglobalplatform6.docs">
+		<Unit filename="debian\libglobalplatform6.docs">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/libglobalplatform6.install">
+		<Unit filename="debian\libglobalplatform6.install">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/rules">
+		<Unit filename="debian\rules">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/watch">
+		<Unit filename="debian\watch">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
 		<Unit filename="make.bat">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="src/DLLMain.c">
+		<Unit filename="src\DLLMain.c">
 			<Option compilerVar="CC" />
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 		</Unit>
-		<Unit filename="src/Doxyfile.cfg">
+		<Unit filename="src\Doxyfile.cfg">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="src/Makefile">
+		<Unit filename="src\Makefile">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="src/Makefile.am">
+		<Unit filename="src\Makefile.am">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="src/Makefile.in">
+		<Unit filename="src\Makefile.in">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="src/Makefile.mak">
+		<Unit filename="src\Makefile.mak">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="src/connection.c">
+		<Unit filename="src\connection.c">
 			<Option compilerVar="CC" />
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/crypto.c">
+		<Unit filename="src\crypto.c">
 			<Option compilerVar="CC" />
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/crypto.h">
+		<Unit filename="src\crypto.h">
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/debug.c">
+		<Unit filename="src\debug.c">
 			<Option compilerVar="CC" />
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/dyn_generic.h">
+		<Unit filename="src\dyn_generic.h">
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/dyn_unix.c">
+		<Unit filename="src\dyn_unix.c">
 			<Option compilerVar="CC" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/dyn_win32.c">
+		<Unit filename="src\dyn_win32.c">
 			<Option compilerVar="CC" />
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 		</Unit>
-		<Unit filename="src/globalplatform.c">
+		<Unit filename="src\globalplatform.c">
 			<Option compilerVar="CC" />
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/globalplatform.pc.in">
+		<Unit filename="src\globalplatform.pc.in">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="src/globalplatform/connection.h">
-			<Option target="Debug Win" />
-			<Option target="Release Win" />
-			<Option target="Linux" />
-		</Unit>
-		<Unit filename="src/globalplatform/connectionplugin.h">
-			<Option target="Debug Win" />
-			<Option target="Release Win" />
-			<Option target="Linux" />
-		</Unit>
-		<Unit filename="src/globalplatform/debug.h">
-			<Option target="Debug Win" />
-			<Option target="Release Win" />
-			<Option target="Linux" />
-		</Unit>
-		<Unit filename="src/globalplatform/error.h">
-			<Option target="Debug Win" />
-			<Option target="Release Win" />
-			<Option target="Linux" />
-		</Unit>
-		<Unit filename="src/globalplatform/errorcodes.h">
-			<Option target="Debug Win" />
-			<Option target="Release Win" />
-			<Option target="Linux" />
-		</Unit>
-		<Unit filename="src/globalplatform/globalplatform.h">
-			<Option target="Debug Win" />
-			<Option target="Release Win" />
-			<Option target="Linux" />
-		</Unit>
-		<Unit filename="src/globalplatform/library.h">
-			<Option target="Debug Win" />
-			<Option target="Release Win" />
-			<Option target="Linux" />
-		</Unit>
-		<Unit filename="src/globalplatform/security.h">
-			<Option target="Debug Win" />
-			<Option target="Release Win" />
-			<Option target="Linux" />
-		</Unit>
-		<Unit filename="src/globalplatform/stringify.h">
-			<Option target="Debug Win" />
-			<Option target="Release Win" />
-			<Option target="Linux" />
-		</Unit>
-		<Unit filename="src/globalplatform/types.h">
-			<Option target="Debug Win" />
-			<Option target="Release Win" />
-			<Option target="Linux" />
-		</Unit>
-		<Unit filename="src/globalplatform/unicode.h">
-			<Option target="Debug Win" />
-			<Option target="Release Win" />
-			<Option target="Linux" />
-		</Unit>
-		<Unit filename="src/globalplatformTest.c">
+		<Unit filename="src\globalplatformTest.c">
 			<Option compilerVar="CC" />
 			<Option target="Linux Test" />
 		</Unit>
-		<Unit filename="src/loadfile.c">
+		<Unit filename="src\globalplatform\connection.h">
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="src\globalplatform\connectionplugin.h">
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="src\globalplatform\debug.h">
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="src\globalplatform\error.h">
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="src\globalplatform\errorcodes.h">
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="src\globalplatform\globalplatform.h">
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="src\globalplatform\library.h">
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="src\globalplatform\security.h">
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="src\globalplatform\stringify.h">
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="src\globalplatform\types.h">
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="src\globalplatform\unicode.h">
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="src\loadfile.c">
 			<Option compilerVar="CC" />
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/loadfile.h">
+		<Unit filename="src\loadfile.h">
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/resource.h">
+		<Unit filename="src\resource.h">
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 		</Unit>
-		<Unit filename="src/stdafx.c">
+		<Unit filename="src\stdafx.c">
 			<Option compilerVar="CC" />
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 		</Unit>
-		<Unit filename="src/stdafx.h">
+		<Unit filename="src\stdafx.h">
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 		</Unit>
-		<Unit filename="src/stringify.c">
-			<Option compilerVar="CC" />
-			<Option target="Debug Win" />
-			<Option target="Release Win" />
-			<Option target="Linux" />
-		</Unit>
-		<Unit filename="src/unzip/crypt.h">
-			<Option target="Debug Win" />
-			<Option target="Release Win" />
-			<Option target="Linux" />
-		</Unit>
-		<Unit filename="src/unzip/ioapi.c">
+		<Unit filename="src\stringify.c">
 			<Option compilerVar="CC" />
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/unzip/ioapi.h">
+		<Unit filename="src\unzip\crypt.h">
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/unzip/iowin32.c">
+		<Unit filename="src\unzip\ioapi.c">
 			<Option compilerVar="CC" />
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/unzip/iowin32.h">
+		<Unit filename="src\unzip\ioapi.h">
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/unzip/unzip.c">
+		<Unit filename="src\unzip\iowin32.c">
 			<Option compilerVar="CC" />
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/unzip/unzip.h">
+		<Unit filename="src\unzip\iowin32.h">
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/unzip/zip.c">
+		<Unit filename="src\unzip\unzip.c">
 			<Option compilerVar="CC" />
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/unzip/zip.h">
+		<Unit filename="src\unzip\unzip.h">
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/util.c">
+		<Unit filename="src\unzip\zip.c">
 			<Option compilerVar="CC" />
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/util.h">
+		<Unit filename="src\unzip\zip.h">
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/version.rc">
+		<Unit filename="src\util.c">
+			<Option compilerVar="CC" />
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="src\util.h">
+			<Option target="Debug Win" />
+			<Option target="Release Win" />
+			<Option target="Linux" />
+		</Unit>
+		<Unit filename="src\version.rc">
 			<Option compilerVar="WINDRES" />
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
