@@ -58,7 +58,7 @@ CPP=cl
 CPPFLAGS=/Od /I $(OPENSSL_INC) /I $(ZLIB_INC) /I . /D "WIN32" /D "_DEBUG" /D "DEBUG" /D "_CONSOLE" /D "OPGP_EXPORTS" /D "_UNICODE" \
 /D "_WINDLL" /D "UNICODE" /RTC1 /MD /Fo$(OUTDIR)/ /W3 /nologo /ZI /TC /D _CRT_SECURE_NO_WARNINGS
 !ELSE
-CPPFLAGS=/O2 /I "$(OPENSSL_INC)" /I $(ZLIB_INC) /I . /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "OPGP_EXPORTS" /D "_UNICODE" \
+CPPFLAGS=/O2 /I "$(OPENSSL_INC)" /I $(ZLIB_INC) /I . /D "WIN32" /D "DEBUG" /D "_CONSOLE" /D "OPGP_EXPORTS" /D "_UNICODE" \
 /D "_WINDLL" /D "UNICODE" /FD /MD /Fo$(OUTDIR)/ /W3 /nologo /Zi /TC /D _CRT_SECURE_NO_WARNINGS
 !ENDIF
 
@@ -75,16 +75,22 @@ SDK_LIB1=C:\DUMMY
 SDK_LIB2=C:\DUMMY
 !ENDIF
 
+# Define dummy SDK_LIB3 for additional libraries if not given
+!IFNDEF SDK_LIB3
+SDK_LIB3=C:\DUMMY
+!ENDIF
+
+
 !IFNDEF TARGET_ARCH
 TARGET_ARCH=X86
 !ENDIF
 
 !IFDEF DEBUG
-LFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).dll /NOLOGO /LIBPATH:$(OPENSSL_LIB) /LIBPATH:$(ZLIB_LIB) /LIBPATH:"$(SDK_LIB1)" /LIBPATH:"$(SDK_LIB2)" /DLL /DEBUG /PDB:$(OUTDIR)/$(LIB_NAME).pdb \
+LFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).dll /NOLOGO /LIBPATH:$(OPENSSL_LIB) /LIBPATH:$(ZLIB_LIB) /LIBPATH:"$(SDK_LIB1)" /LIBPATH:"$(SDK_LIB3)" /DLL /DEBUG /PDB:$(OUTDIR)/$(LIB_NAME).pdb \
 /SUBSYSTEM:CONSOLE /MACHINE:$(TARGET_ARCH) zlib.lib ssleay32.lib libeay32.lib winscard.lib kernel32.lib user32.lib gdi32.lib winspool.lib \
 comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib
 !ELSE
-LFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).dll /INCREMENTAL:NO /NOLOGO /LIBPATH:"$(SDK_LIB1)" /LIBPATH:"$(SDK_LIB2)" \
+LFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).dll /INCREMENTAL:NO /NOLOGO /LIBPATH:"$(SDK_LIB1)" /LIBPATH:"$(SDK_LIB2)" /LIBPATH:"$(SDK_LIB3)" \
 /LIBPATH:$(OPENSSL_LIB) /LIBPATH:$(ZLIB_LIB) /DLL /SUBSYSTEM:CONSOLE \
 /OPT:REF /OPT:ICF /MACHINE:$(TARGET_ARCH) zlib.lib ssleay32.lib libeay32.lib winscard.lib kernel32.lib user32.lib gdi32.lib \
 winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib
@@ -132,7 +138,7 @@ prebuild: all
 	-@del /S /F /Q $(PREBUILDDIR)
 	-@mkdir $(PREBUILDDIR)
 	-@mkdir $(PREBUILDDIR)/globalplatform
-	cp $(OPENSSL_LIB)/../license* $(ZLIB_LIB)/../bin/zlib1.dll $(OPENSSL_LIB)/../ssleay32.dll $(OPENSSL_LIB)/../libeay32.dll Debug/globalplatform.dll Debug/globalplatform.lib ../ChangeLog ../README ../COPYING ../NEWS ../COPYING.LESSER ../AUTHORS  $(PREBUILDDIR)
+	cp $(OPENSSL_LIB)/../license* $(ZLIB_LIB)/../bin/zlib1.dll $(OPENSSL_LIB)/../ssleay32.dll $(OPENSSL_LIB)/../libeay32.dll Release/globalplatform.dll Release/globalplatform.lib ../ChangeLog ../README ../COPYING ../NEWS ../COPYING.LESSER ../AUTHORS  $(PREBUILDDIR)
 	cp globalplatform/*.h $(PREBUILDDIR)/globalplatform
 	zip -r $(PREBUILDDIR).zip $(PREBUILDDIR)/*
 

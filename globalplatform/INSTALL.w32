@@ -78,13 +78,15 @@ because the GlobalPlatform Library is compiled with Unicode support.
 	ZLIB_INC  	  - The path to the headers of zlib
 	ZLIB_LIB  	  - The path to the link library (.lib) of zlib
 	SDK_LIB1      - A path to an SDK directory with additional libraries
-	SDK_LIB2      - A path to an SDK directory with additional libraries
+	SDK_LIB2      - A path to an SDK directory with additional libraries (only used for release version)
+	SDK_LIB3      - A path to an SDK directory with additional libraries
 
 	E.g. nmake -f Makefile.mak OPENSSL_INC=C:\Program Files\OpenSSL\include
 	OPENSSL_LIB=C:\Program Files\OpenSSL\lib ZLIB_INC=C:\Program Files\GnuWin32\include
 	ZLIB_LIB=CProgram Files\GnuWin32\lib
     SDK_LIB1="Microsoft Platform SDK for Windows Server 2003 R2\Lib"
-    SDK_LIB2="C:\Program Files\Microsoft Visual Studio 9.0\VC\lib"
+    SDK_LIB2="C:\WinDDK\7600.16385.1\lib\Crt\i386"
+    SDK_LIB3="C:\Program Files\Microsoft Visual Studio 9.0\VC\lib"
 
     The parameters SDK_LIB1 and SDK_LIB2 might be not necessary if you have a full
     version of Visual Studio. For Visual C++ 2008 Express Edition these both
