@@ -116,6 +116,7 @@
 					<Add option="-D_UNICODE" />
 					<Add option="-DUNICODE" />
 					<Add option="-DHAVE_DLFCN_H" />
+					<Add directory="/usr/include/PCSC" />
 				</Compiler>
 			</Target>
 			<Target title="Linux Test">
@@ -389,12 +390,10 @@
 			<Option compilerVar="CC" />
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
-			<Option target="Linux" />
 		</Unit>
 		<Unit filename="src\unzip\iowin32.h">
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
-			<Option target="Linux" />
 		</Unit>
 		<Unit filename="src\unzip\unzip.c">
 			<Option compilerVar="CC" />

@@ -403,3 +403,182 @@
 	"util.h"
 	<string.h>
 
+1270428205 source:/home/widerstand/Dokumente/GlobalPlatform/trunk/globalplatform/src/connection.c
+	"globalplatform/connection.h"
+	"dyn_generic.h"
+	"globalplatform/globalplatform.h"
+	"globalplatform/debug.h"
+	"globalplatform/stringify.h"
+	"globalplatform/error.h"
+	"crypto.h"
+	<string.h>
+
+1270428204 /home/widerstand/Dokumente/GlobalPlatform/trunk/globalplatform/src/globalplatform/connection.h
+	<stdio.h>
+	<WinSCard.h>
+	<PCSC/winscard.h>
+	"types.h"
+	"library.h"
+	"security.h"
+	"error.h"
+
+1270428204 /home/widerstand/Dokumente/GlobalPlatform/trunk/globalplatform/src/globalplatform/types.h
+	<PCSC/wintypes.h>
+
+1270428204 /home/widerstand/Dokumente/GlobalPlatform/trunk/globalplatform/src/globalplatform/library.h
+
+1270428204 /home/widerstand/Dokumente/GlobalPlatform/trunk/globalplatform/src/globalplatform/security.h
+	"types.h"
+
+1270428204 /home/widerstand/Dokumente/GlobalPlatform/trunk/globalplatform/src/globalplatform/error.h
+	"unicode.h"
+
+1270428204 /home/widerstand/Dokumente/GlobalPlatform/trunk/globalplatform/src/globalplatform/unicode.h
+
+1270428205 /home/widerstand/Dokumente/GlobalPlatform/trunk/globalplatform/src/dyn_generic.h
+	"globalplatform/unicode.h"
+	"globalplatform/types.h"
+	"globalplatform/error.h"
+	"globalplatform/library.h"
+
+1274419475 /home/widerstand/Dokumente/GlobalPlatform/trunk/globalplatform/src/globalplatform/globalplatform.h
+	"stdafx.h"
+	<stdio.h>
+	"types.h"
+	"unicode.h"
+	"error.h"
+	"errorcodes.h"
+	"library.h"
+	"connection.h"
+	"security.h"
+	"stringify.h"
+
+1270428204 /home/widerstand/Dokumente/GlobalPlatform/trunk/globalplatform/src/globalplatform/errorcodes.h
+
+1270428204 /home/widerstand/Dokumente/GlobalPlatform/trunk/globalplatform/src/globalplatform/stringify.h
+	"stdafx.h"
+	"types.h"
+	"library.h"
+	"error.h"
+	"unicode.h"
+
+1270428204 /home/widerstand/Dokumente/GlobalPlatform/trunk/globalplatform/src/globalplatform/debug.h
+	"stdafx.h"
+	"types.h"
+	"library.h"
+	"unicode.h"
+	"error.h"
+
+1270428205 /home/widerstand/Dokumente/GlobalPlatform/trunk/globalplatform/src/crypto.h
+	"stdafx.h"
+	"globalplatform/types.h"
+	"globalplatform/library.h"
+	"globalplatform/unicode.h"
+	"globalplatform/error.h"
+	"globalplatform/security.h"
+
+1270428205 /home/widerstand/Dokumente/GlobalPlatform/trunk/globalplatform/src/stdafx.h
+	<windows.h>
+	<tchar.h>
+	<io.h>
+
+1270428205 source:/home/widerstand/Dokumente/GlobalPlatform/trunk/globalplatform/src/crypto.c
+	"crypto.h"
+	"globalplatform/stringify.h"
+	"globalplatform/errorcodes.h"
+	"globalplatform/error.h"
+	"globalplatform/debug.h"
+	"util.h"
+	<string.h>
+	<openssl/err.h>
+	<openssl/rand.h>
+	<openssl/evp.h>
+	<openssl/pem.h>
+
+1270428205 /home/widerstand/Dokumente/GlobalPlatform/trunk/globalplatform/src/util.h
+	"stdafx.h"
+	"globalplatform/types.h"
+	"globalplatform/library.h"
+
+1270428205 source:/home/widerstand/Dokumente/GlobalPlatform/trunk/globalplatform/src/debug.c
+	"stdafx.h"
+	<stdio.h>
+	<stdlib.h>
+	<time.h>
+	<stdarg.h>
+	<string.h>
+	"globalplatform/debug.h"
+	"globalplatform/error.h"
+	<syslog.h>
+
+1270428205 source:/home/widerstand/Dokumente/GlobalPlatform/trunk/globalplatform/src/dyn_unix.c
+	<stdio.h>
+	<string.h>
+	<dlfcn.h>
+	<stdlib.h>
+	"globalplatform/debug.h"
+	"globalplatform/error.h"
+	"dyn_generic.h"
+
+1274693727 source:/home/widerstand/Dokumente/GlobalPlatform/trunk/globalplatform/src/globalplatform.c
+	"stdafx.h"
+	<stdio.h>
+	<stdlib.h>
+	"globalplatform/globalplatform.h"
+	<sys/stat.h>
+	<string.h>
+	<errno.h>
+	"globalplatform/debug.h"
+	"unzip/unzip.h"
+	"unzip/zip.h"
+	"util.h"
+	"crypto.h"
+	"loadfile.h"
+
+1270428204 /home/widerstand/Dokumente/GlobalPlatform/trunk/globalplatform/src/unzip/unzip.h
+	"zlib.h"
+	"ioapi.h"
+
+1270428204 /home/widerstand/Dokumente/GlobalPlatform/trunk/globalplatform/src/unzip/ioapi.h
+
+1270428204 /home/widerstand/Dokumente/GlobalPlatform/trunk/globalplatform/src/unzip/zip.h
+	"zlib.h"
+	"ioapi.h"
+
+1270428205 /home/widerstand/Dokumente/GlobalPlatform/trunk/globalplatform/src/loadfile.h
+	"stdafx.h"
+	"globalplatform/types.h"
+	"globalplatform/error.h"
+	"globalplatform/library.h"
+	"globalplatform/globalplatform.h"
+
+1270428205 source:/home/widerstand/Dokumente/GlobalPlatform/trunk/globalplatform/src/loadfile.c
+	"loadfile.h"
+	<stdio.h>
+	<errno.h>
+	<string.h>
+	<stdlib.h>
+	"util.h"
+	"globalplatform/debug.h"
+	"unzip/zip.h"
+	"unzip/unzip.h"
+
+1270428205 source:/home/widerstand/Dokumente/GlobalPlatform/trunk/globalplatform/src/stringify.c
+	"globalplatform/stringify.h"
+	"globalplatform/errorcodes.h"
+	<stdio.h>
+	<errno.h>
+	<fcntl.h>
+	<getopt.h>
+	<syslog.h>
+	<sys/ioctl.h>
+	<string.h>
+	<openssl/err.h>
+
+1270428204 source:/home/widerstand/Dokumente/GlobalPlatform/trunk/globalplatform/src/unzip/ioapi.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	"zlib.h"
+	"ioapi.h"
+
