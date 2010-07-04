@@ -148,6 +148,11 @@ AC_CHECK_LIB(crypto, PEM_read_PrivateKey, [],
         [AC_MSG_ERROR([PEM_read_PrivateKey() not
 found, install OpenSSL 0.9.7e or later])])
 
+##################################################################
+#Fix incorrect Makefile generation: undefined reference to `dlsym'
+##################################################################
+LDFLAGS+=-ldl
+
 ###############
 #Output results
 ###############
