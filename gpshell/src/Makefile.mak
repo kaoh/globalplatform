@@ -11,6 +11,21 @@ OUTDIR=Release
 OBJS=$(OUTDIR)/GPShell.obj
 
 
+# Define dummy SDK_LIB1 for additional libraries if not given
+!IFNDEF SDK_LIB1
+SDK_LIB1=C:\DUMMY
+!ENDIF
+
+# Define dummy SDK_LIB2 for additional libraries if not given
+!IFNDEF SDK_LIB2
+SDK_LIB2=C:\DUMMY
+!ENDIF
+
+# Define dummy SDK_LIB3 for additional libraries if not given
+!IFNDEF SDK_LIB3
+SDK_LIB3=C:\DUMMY
+!ENDIF
+
 APP_NAME=GPShell # the name of the application
 
 CPP=cl
@@ -26,11 +41,11 @@ CPPFLAGS=/O2 -I ../../globalplatform/src /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D
 LINK=link
 
 !IFDEF DEBUG
-LFLAGS=/OUT:$(OUTDIR)/$(APP_NAME).exe /NOLOGO /LIBPATH:../../globalplatform/src/$(OUTDIR) /DEBUG /PDB:$(OUTDIR)/$(APP_NAME).pdb \
+LFLAGS=/OUT:$(OUTDIR)/$(APP_NAME).exe /NOLOGO /LIBPATH:../../globalplatform/src/$(OUTDIR) /LIBPATH:"$(SDK_LIB1)" /LIBPATH:"$(SDK_LIB3)" /DEBUG /PDB:$(OUTDIR)/$(APP_NAME).pdb \
 /SUBSYSTEM:CONSOLE /MACHINE:X86 globalplatform.lib winscard.lib kernel32.lib user32.lib gdi32.lib winspool.lib \
 comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib
 !ELSE
-LFLAGS=/OUT:$(OUTDIR)/$(APP_NAME).exe /INCREMENTAL:NO /NOLOGO /LIBPATH:../../globalplatform/src/$(OUTDIR) /SUBSYSTEM:CONSOLE \
+LFLAGS=/OUT:$(OUTDIR)/$(APP_NAME).exe /LIBPATH:"$(SDK_LIB1)" /LIBPATH:"$(SDK_LIB2)" /LIBPATH:"$(SDK_LIB3)" /INCREMENTAL:NO /NOLOGO /LIBPATH:../../globalplatform/src/$(OUTDIR) /SUBSYSTEM:CONSOLE \
 /OPT:REF /OPT:ICF /MACHINE:X86 globalplatform.lib winscard.lib kernel32.lib user32.lib gdi32.lib \
 winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib
 !ENDIF
@@ -70,8 +85,8 @@ PREBUILD:	clean_package bin_package
 bin_package:
 	rm -rf $(DIR)
 	mkdir $(DIR)
-	cp Debug/GPShell.exe ../../globalplatform/src/Debug/GlobalPlatform.dll ../../globalplatform\src\GlobalPlatform-6.0.0\ssleay32.dll \
-	../../gppcscconnectionplugin/src/Debug/GPPcScConnectionPlugin.dll \
+	cp Release/GPShell.exe ../../globalplatform/src/Release/GlobalPlatform.dll ../../globalplatform\src\GlobalPlatform-6.0.0\ssleay32.dll \
+	../../gppcscconnectionplugin/src/Release/GPPcScConnectionPlugin.dll \
 	../../globalplatform\src\GlobalPlatform-6.0.0\libeay32.dll ../../globalplatform\src\GlobalPlatform-6.0.0/zlib1.dll ../../globalplatform/src/GlobalPlatform-6.0.0/license* ../README ../COPYING ../AUTHORS \
 	../helloInstall.txt ../helloDelete.txt ../helloInstallGP211.txt ../helloDeleteGP211.txt \
 	../list.txt ../listgp211.txt ../replacekey-cosmo-gp211.txt ../recyclekey-cosmo-gp211.txt \

@@ -19,7 +19,7 @@ CPP=cl
 CPPFLAGS=/Od -I ../../globalplatform/src /D "WIN32" /D "_DEBUG" /D "DEBUG" /D "_CONSOLE" /D "OPGP_PL_EXPORTS" /D "_UNICODE" \
 /D "_WINDLL" /D "UNICODE" /RTC1 /MD /Fo$(OUTDIR)/ /W3 /nologo /ZI /TC /D _CRT_SECURE_NO_WARNINGS
 !ELSE
-CPPFLAGS=/O2 -I ../../globalplatform/src /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "OPGP_PL_EXPORTS" /D "_UNICODE" \
+CPPFLAGS=/O2 -I ../../globalplatform/src /D "WIN32" /D "DEBUG" /D "_CONSOLE" /D "OPGP_PL_EXPORTS" /D "_UNICODE" \
 /D "_WINDLL" /D "UNICODE" /FD /MD /Fo$(OUTDIR)/ /W3 /nologo /Zi /TC /D _CRT_SECURE_NO_WARNINGS
 !ENDIF
 
@@ -36,16 +36,21 @@ SDK_LIB1=C:\DUMMY
 SDK_LIB2=C:\DUMMY
 !ENDIF
 
+# Define dummy SDK_LIB3 for additional libraries if not given
+!IFNDEF SDK_LIB3
+SDK_LIB3=C:\DUMMY
+!ENDIF
+
 !IFNDEF TARGET_ARCH
 TARGET_ARCH=X86
 !ENDIF
 
 !IFDEF DEBUG
-LFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).dll /NOLOGO /LIBPATH:../../globalplatform/src/$(OUTDIR) /LIBPATH:"$(SDK_LIB1)" /LIBPATH:"$(SDK_LIB2)" /DLL /DEBUG /PDB:$(OUTDIR)/$(LIB_NAME).pdb \
+LFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).dll /NOLOGO /LIBPATH:../../globalplatform/src/$(OUTDIR) /LIBPATH:"$(SDK_LIB1)" /LIBPATH:"$(SDK_LIB3)" /DLL /DEBUG /PDB:$(OUTDIR)/$(LIB_NAME).pdb \
 /SUBSYSTEM:CONSOLE /MACHINE:$(TARGET_ARCH) globalplatform.lib winscard.lib kernel32.lib user32.lib gdi32.lib winspool.lib \
 comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib
 !ELSE
-LFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).dll /INCREMENTAL:NO /NOLOGO /LIBPATH:"$(SDK_LIB1)" /LIBPATH:"$(SDK_LIB2)" \
+LFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).dll /INCREMENTAL:NO /NOLOGO /LIBPATH:"$(SDK_LIB1)" /LIBPATH:"$(SDK_LIB2)" /LIBPATH:"$(SDK_LIB3)" \
 /LIBPATH:../../globalplatform/src/$(OUTDIR) /DLL /SUBSYSTEM:CONSOLE \
 /OPT:REF /OPT:ICF /MACHINE:$(TARGET_ARCH) globalplatform.lib winscard.lib kernel32.lib user32.lib gdi32.lib \
 winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib
@@ -89,7 +94,7 @@ PREBUILDDIR="GPPCSCConnectionPlugin-$(VERSION)"
 prebuild: all
 	-@del /S /F /Q $(PREBUILDDIR)
 	-@mkdir $(PREBUILDDIR)
-	cp Debug/gppcscconnectionplugin.dll ../ChangeLog ../README ../NEWS ../COPYING ../COPYING.LESSER ../AUTHORS  $(PREBUILDDIR)
+	cp Release/gppcscconnectionplugin.dll ../ChangeLog ../README ../NEWS ../COPYING ../COPYING.LESSER ../AUTHORS  $(PREBUILDDIR)
 	zip -r $(PREBUILDDIR).zip $(PREBUILDDIR)/*
 
 clean:
