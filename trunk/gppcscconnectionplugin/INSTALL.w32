@@ -58,11 +58,13 @@ a) nmake compilation
 	This arguments are:
 
 	SDK_LIB1      - A path to an SDK directory with additional libraries
-	SDK_LIB2      - A path to an SDK directory with additional libraries
+	SDK_LIB2      - A path to an SDK directory with additional libraries (only used for release version)
+	SDK_LIB3      - A path to an SDK directory with additional libraries
 
 	E.g. nmake -f Makefile.mak
     SDK_LIB1="Microsoft Platform SDK for Windows Server 2003 R2\Lib"
     SDK_LIB2="C:\Program Files\Microsoft Visual Studio 9.0\VC\lib"
+    SDK_LIB3="C:\Program Files\Microsoft Visual Studio 9.0\VC\lib"
 
     The parameters SDK_LIB1 and SDK_LIB2 might be not necessary if you have a full
     version of Visual Studio. For Visual Studio 2008 Express these both
