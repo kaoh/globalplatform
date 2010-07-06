@@ -26,6 +26,11 @@ SDK_LIB2=C:\DUMMY
 SDK_LIB3=C:\DUMMY
 !ENDIF
 
+# Define dummy SDK_LIB4 for additional libraries if not given
+!IFNDEF SDK_LIB4
+SDK_LIB4=C:\DUMMY
+!ENDIF
+
 APP_NAME=GPShell # the name of the application
 
 CPP=cl
@@ -41,13 +46,11 @@ CPPFLAGS=/O2 -I ../../globalplatform/src /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D
 LINK=link
 
 !IFDEF DEBUG
-LFLAGS=/OUT:$(OUTDIR)/$(APP_NAME).exe /NOLOGO /LIBPATH:../../globalplatform/src/$(OUTDIR) /LIBPATH:"$(SDK_LIB1)" /LIBPATH:"$(SDK_LIB3)" /DEBUG /PDB:$(OUTDIR)/$(APP_NAME).pdb \
-/SUBSYSTEM:CONSOLE /MACHINE:X86 globalplatform.lib winscard.lib kernel32.lib user32.lib gdi32.lib winspool.lib \
-comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib
+LFLAGS=/OUT:$(OUTDIR)/$(APP_NAME).exe /NOLOGO /LIBPATH:../../globalplatform/src/$(OUTDIR) /LIBPATH:"$(SDK_LIB1)" /LIBPATH:"$(SDK_LIB2)" /DEBUG /PDB:$(OUTDIR)/$(APP_NAME).pdb \
+/SUBSYSTEM:CONSOLE /MACHINE:X86 globalplatform.lib winscard.lib kernel32.lib
 !ELSE
-LFLAGS=/OUT:$(OUTDIR)/$(APP_NAME).exe /LIBPATH:"$(SDK_LIB1)" /LIBPATH:"$(SDK_LIB2)" /LIBPATH:"$(SDK_LIB3)" /INCREMENTAL:NO /NOLOGO /LIBPATH:../../globalplatform/src/$(OUTDIR) /SUBSYSTEM:CONSOLE \
-/OPT:REF /OPT:ICF /MACHINE:X86 globalplatform.lib winscard.lib kernel32.lib user32.lib gdi32.lib \
-winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib
+LFLAGS=/OUT:$(OUTDIR)/$(APP_NAME).exe /NODEFAULTLIB /LIBPATH:"$(SDK_LIB1)" /LIBPATH:"$(SDK_LIB3)" /LIBPATH:"$(SDK_LIB4)" /INCREMENTAL:NO /NOLOGO /LIBPATH:../../globalplatform/src/$(OUTDIR) /SUBSYSTEM:CONSOLE \
+/OPT:REF /OPT:ICF /MACHINE:X86 msvcrt_win2000.obj msvcrt.lib globalplatform.lib winscard.lib kernel32.lib
 !ENDIF
 
 all: create_dirs $(OUTDIR)/$(APP_NAME).exe

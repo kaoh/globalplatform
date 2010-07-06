@@ -1,42 +1,48 @@
 Pre-requisite:
+--------------
 
-This will be a lot of work ...
+This will be a some work ...
 
-1.	You need a Microsoft C/C++-Compiler including the libraries, includes and build tools.
-	You may use the compiler included in Visual Studio 6.0, Microsoft Visual Studio .NET 2003 or
-	Visual Studio 2005. If you have Cygwin installed you can also also use it. See the file
-	INSTALL for the compilation.
-	Obey, that you will have problems with the portability on older (rather old) systems if you
-	use newer compiler suites, i.e. on systems without a installed .NET framework some libraries l
-	inked against are missing.
+1.	You need a Microsoft C/C++-Compiler including the libraries, includes and
+    build tools. You may use the compiler included in Visual Studio 6.0,
+    Microsoft Visual Studio .NET 2003, Visual Studio 2005, Visual Studio 2008 etc.
+    If you have Cygwin installed you can also also use it. See the file
+    INSTALL for the compilation.
+    Obey, that you will have problems with the portability on older systems if you
+    use newer compiler suites, i.e. on systems without a installed
+    .NET framework some libraries linked against are missing (e.g. there is
+    a problem with newer versions of msvcrt, e.g. msvcr80 and msvcr90 which are
+    not available under previous versions of Windows).
 
 	For a free way to build you need:
 
-	Visual C++ 2005 Express Edition
-	http://msdn.microsoft.com/vstudio/express/visualc/default.aspx
+	Microsoft® Visual C++ 2008 Express Edition
+	http://www.microsoft.com/express/vc/
 
-	to get a C/C++ compiler suite.
+    to get a C/C++ compiler suite.
 
-	Windows® Server 2003 R2 Platform SDK
-	http://www.microsoft.com/downloads/details.aspx?FamilyId=484269E2-3B89-47E3-8EB7-1F2BE6D7123A&displaylang=en1
+    You also need the Platform SDK to get the libraries for linking.
 
-	to get the libraries for linking and include files for compiling and nmake for the makefile.
+    Download the Windows Server 2003 R2 Platform SDK.
 
-	Follow these steps to integrate the Platform SDK into Visual C++ 2005 Express:
-	http://msdn.microsoft.com/vstudio/express/visualc/usingpsdk/
+    http://www.microsoft.com/downloads/details.aspx?FamilyID=0baf2b35-c656-4969-ace8-e4c0c0716adb&DisplayLang=en
 
-2.	You need the GlobalPlatform library. Download it from http://sourceforge.net/projects/globalplatform
-	where you probably also got this software from. A prebuild package is enough.
-	Install it in a	common library search path, e.g. Windows/System32 or the application directory.
+    The SDK integrates automatically into Visual C++ 2008 Express.
+
+2.  Download the Windows Driver Kit (WDK).
+
+    http://www.microsoft.com/downloads/details.aspx?displaylang=en&FamilyID=36a2630f-5d56-43b5-b996-7633f2ec14ff
+
+    The WDK is needed to build a Windows platform independent version without getting into conflict with different
+    Windows msvcrt DLL versions.
+
+    See http://kobyk.wordpress.com/2007/07/20/dynamically-linking-with-msvcrtdll-using-visual-c-2005/
 
 Installation:
+-------------
 
-You can also use the .sln file for Visual C++ 2005 Express Edition (may also work under the full version).
-For VS 2003 you must rename the files GPShell.sln.old to GlobalPlatform.sln
-and GPShell.vcproj.7.10.old to GPShell.vcproj and use them together.
-Then you have to adjust the C/C++->General->Additional Include Directories,
-Linker->General->Additional Library Directories, Linker->Input->Additional Dependencies and
-Resources->General->Additional Include Directories fields.
+a) nmake compilation
+--------------------
 
 1.	Set the environment (This are include files and libraries and programms of the building environment)
 	for compilation and open a command prompt. If you have Microsoft Visual Studio 6.0
@@ -57,20 +63,45 @@ Resources->General->Additional Include Directories fields.
 
 	This arguments are:
 
-	GLOBALPLATFORM_INC   - The path to the headers of GlobalPlatform
-	GLOBALPLATFORM_LIB   - The path to the link library (.lib) of GlobalPlatform
-	SDK_LIB1      - A path to an SDK directory with additional libraries
-	SDK_LIB2      - A path to an SDK directory with additional libraries (only used for release version)
-	SDK_LIB3      - A path to an SDK directory with additional libraries
+	SDK_LIB1             - A path to the SDK directory with additional libraries (containing the winscard.lib)
+	SDK_LIB2             - A path to the SDK directory with additional libraries (containing msvcrt.lib)
+	SDK_LIB3             - A path to the WDK directory with additional libraries (only used for release version, containing msvcrt_win2000.obj)
+	SDK_LIB4             - A path to the WDK directory with additional libraries (only used for release version, containing msvcrt.lib)
 
 	E.g. nmake -f Makefile.mak GLOBALPLATFORM_INC=..\GlobalPlatform
 	GLOBALPLATFORM_LIB=..\GlobalPlatform\Debug
     SDK_LIB1="Microsoft Platform SDK for Windows Server 2003 R2\Lib"
     SDK_LIB2="C:\Program Files\Microsoft Visual Studio 9.0\VC\lib"
-    SDK_LIB3="C:\Program Files\Microsoft Visual Studio 9.0\VC\lib"
+    SDK_LIB3="C:\WinDDK\7600.16385.1\lib\win7\i386"
+    SDK_LIB4="C:\WinDDK\7600.16385.1\lib\Crt\i386"
 
 4.	(optional)
 	Run nmake -f Makefile.mak clean to delete the Debug and Release directories.
+
+b) Optional: Visual Studio solution file
+----------------------------------------
+
+You can also use the solution file .sln file for Visual C++ 2008 Express Edition
+in the GlobalPlatform project (may also work under the full version) if you prefer
+a comfortable IDE or for development needs. When using the solution file then you
+have to adjust the C/C++->General->Additional Include Directories,
+Linker->General->Additional Library Directories, Linker->Input->Additional
+Dependencies and Resources->General->Additional Include Directories fields.
+
+c) Optional: Code::Blocks workspace file
+----------------------------------------
+
+Code::Blocks is a free IDE.
+
+http://www.codeblocks.org/downloads/binaries
+
+You can open the .cbp project or the .workspace file of the GlobalPlatform
+main project. You must adjust your Compiler, Linker and Resource Compiler
+search directories under the Build Options.
+
+
+Further information
+-------------------
 
 For more information visit:
 
