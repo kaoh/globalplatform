@@ -42,7 +42,16 @@ This will be a some work ...
     installed in a common library search path, e.g. Windows/System32 or the
     directory of the program which uses it.
 
-4.	You need Doxygen for generating the documentation.
+4.  Download the Windows Driver Kit (WDK).
+
+    http://www.microsoft.com/downloads/details.aspx?displaylang=en&FamilyID=36a2630f-5d56-43b5-b996-7633f2ec14ff
+
+    The WDK is needed to build a Windows platform independent version without getting into conflict with different
+    Windows msvcrt DLL versions.
+
+    See http://kobyk.wordpress.com/2007/07/20/dynamically-linking-with-msvcrtdll-using-visual-c-2005/
+
+5.	You need Doxygen for generating the documentation.
     www.doxygen.org/
 
 
@@ -77,20 +86,23 @@ because the GlobalPlatform Library is compiled with Unicode support.
 	OPENSSL_LIB   - The path to the link library (.lib) of OpenSSL
 	ZLIB_INC  	  - The path to the headers of zlib
 	ZLIB_LIB  	  - The path to the link library (.lib) of zlib
-	SDK_LIB1      - A path to an SDK directory with additional libraries
-	SDK_LIB2      - A path to an SDK directory with additional libraries (only used for release version)
-	SDK_LIB3      - A path to an SDK directory with additional libraries
+	SDK_LIB1      - A path to the SDK directory with additional libraries (containing the winscard.lib)
+	SDK_LIB2      - A path to the SDK directory with additional libraries (containing msvcrt.lib)
+	SDK_LIB3      - A path to the WDK directory with additional libraries (only used for release version, containing msvcrt_win2000.obj)
+	SDK_LIB4      - A path to the WDK directory with additional libraries (only used for release version, containing msvcrt.lib)
+
 
 	E.g. nmake -f Makefile.mak OPENSSL_INC=C:\Program Files\OpenSSL\include
 	OPENSSL_LIB=C:\Program Files\OpenSSL\lib ZLIB_INC=C:\Program Files\GnuWin32\include
 	ZLIB_LIB=CProgram Files\GnuWin32\lib
     SDK_LIB1="Microsoft Platform SDK for Windows Server 2003 R2\Lib"
-    SDK_LIB2="C:\WinDDK\7600.16385.1\lib\Crt\i386"
-    SDK_LIB3="C:\Program Files\Microsoft Visual Studio 9.0\VC\lib"
+    SDK_LIB2="C:\Program Files\Microsoft Visual Studio 9.0\VC\lib"
+    SDK_LIB3="C:\WinDDK\7600.16385.1\lib\win7\i386"
+    SDK_LIB4="C:\WinDDK\7600.16385.1\lib\Crt\i386"
 
     The parameters SDK_LIB1 and SDK_LIB2 might be not necessary if you have a full
     version of Visual Studio. For Visual C++ 2008 Express Edition these both
-    directories must point to the WinSCard.Lib and msvcrt.lib libraries.
+    directories must point to the winscard.lib and msvcrt.lib libraries.
 
     There is a file called make.bat which does this compilation step.
 

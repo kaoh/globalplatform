@@ -29,7 +29,16 @@ This will be a some work ...
 
     The SDK integrates automatically into Visual C++ 2008 Express.
 
-2.	You need Doxygen for generating the documentation.
+2.  Download the Windows Driver Kit (WDK).
+
+    http://www.microsoft.com/downloads/details.aspx?displaylang=en&FamilyID=36a2630f-5d56-43b5-b996-7633f2ec14ff
+
+    The WDK is needed to build a Windows platform independent version without getting into conflict with different
+    Windows msvcrt DLL versions.
+
+    See http://kobyk.wordpress.com/2007/07/20/dynamically-linking-with-msvcrtdll-using-visual-c-2005/
+
+3.	You need Doxygen for generating the documentation.
     www.doxygen.org/
 
 
@@ -57,14 +66,16 @@ a) nmake compilation
 
 	This arguments are:
 
-	SDK_LIB1      - A path to an SDK directory with additional libraries
-	SDK_LIB2      - A path to an SDK directory with additional libraries (only used for release version)
-	SDK_LIB3      - A path to an SDK directory with additional libraries
+	SDK_LIB1      - A path to the SDK directory with additional libraries (containing the winscard.lib)
+	SDK_LIB2      - A path to the SDK directory with additional libraries (containing msvcrt.lib)
+	SDK_LIB3      - A path to the WDK directory with additional libraries (only used for release version, containing msvcrt_win2000.obj)
+	SDK_LIB4      - A path to the WDK directory with additional libraries (only used for release version, containing msvcrt.lib)
 
 	E.g. nmake -f Makefile.mak
     SDK_LIB1="Microsoft Platform SDK for Windows Server 2003 R2\Lib"
     SDK_LIB2="C:\Program Files\Microsoft Visual Studio 9.0\VC\lib"
-    SDK_LIB3="C:\Program Files\Microsoft Visual Studio 9.0\VC\lib"
+    SDK_LIB3="C:\WinDDK\7600.16385.1\lib\win7\i386"
+    SDK_LIB4="C:\WinDDK\7600.16385.1\lib\Crt\i386"
 
     The parameters SDK_LIB1 and SDK_LIB2 might be not necessary if you have a full
     version of Visual Studio. For Visual Studio 2008 Express these both
@@ -99,9 +110,9 @@ b) Optional: Visual Studio solution file
 ----------------------------------------
 
 You can also use the solution file .sln file for Visual C++ 2008 Express Edition
- (may also work under the full version) if you prefer a comfortable IDE or for
-development needs. When using the solution file then you have to adjust the
-C/C++->General->Additional Include Directories,
+in the GlobalPlatform project (may also work under the full version) if you prefer
+a comfortable IDE or for development needs. When using the solution file then you
+have to adjust the C/C++->General->Additional Include Directories,
 Linker->General->Additional Library Directories, Linker->Input->Additional
 Dependencies and Resources->General->Additional Include Directories fields.
 

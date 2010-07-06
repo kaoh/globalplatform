@@ -41,19 +41,22 @@ SDK_LIB2=C:\DUMMY
 SDK_LIB3=C:\DUMMY
 !ENDIF
 
+# Define dummy SDK_LIB4 for additional libraries if not given
+!IFNDEF SDK_LIB4
+SDK_LIB4=C:\DUMMY
+!ENDIF
+
 !IFNDEF TARGET_ARCH
 TARGET_ARCH=X86
 !ENDIF
 
 !IFDEF DEBUG
-LFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).dll /NOLOGO /LIBPATH:../../globalplatform/src/$(OUTDIR) /LIBPATH:"$(SDK_LIB1)" /LIBPATH:"$(SDK_LIB3)" /DLL /DEBUG /PDB:$(OUTDIR)/$(LIB_NAME).pdb \
-/SUBSYSTEM:CONSOLE /MACHINE:$(TARGET_ARCH) globalplatform.lib winscard.lib kernel32.lib user32.lib gdi32.lib winspool.lib \
-comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib
+LFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).dll /NOLOGO /LIBPATH:../../globalplatform/src/$(OUTDIR) /LIBPATH:"$(SDK_LIB1)" /LIBPATH:"$(SDK_LIB2)" /DLL /DEBUG /PDB:$(OUTDIR)/$(LIB_NAME).pdb \
+/SUBSYSTEM:CONSOLE /MACHINE:$(TARGET_ARCH) globalplatform.lib winscard.lib kernel32.lib
 !ELSE
-LFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).dll /INCREMENTAL:NO /NOLOGO /LIBPATH:"$(SDK_LIB1)" /LIBPATH:"$(SDK_LIB2)" /LIBPATH:"$(SDK_LIB3)" \
+LFLAGS=/OUT:$(OUTDIR)/$(LIB_NAME).dll /NODEFAULTLIB /INCREMENTAL:NO /NOLOGO /LIBPATH:"$(SDK_LIB1)" /LIBPATH:"$(SDK_LIB3)" /LIBPATH:"$(SDK_LIB4)" \
 /LIBPATH:../../globalplatform/src/$(OUTDIR) /DLL /SUBSYSTEM:CONSOLE \
-/OPT:REF /OPT:ICF /MACHINE:$(TARGET_ARCH) globalplatform.lib winscard.lib kernel32.lib user32.lib gdi32.lib \
-winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib
+/OPT:REF /OPT:ICF /MACHINE:$(TARGET_ARCH) msvcrt_win2000.obj msvcrt.lib globalplatform.lib winscard.lib kernel32.lib
 !ENDIF
 
 !IFDEF STATIC
