@@ -9,8 +9,8 @@
 			<Script file="lib_finder.script" />
 			<Target title="Debug Win">
 				<Option platforms="Windows;" />
-				<Option output="Debug/GPShell" prefix_auto="1" extension_auto="1" />
-				<Option object_output="Debug/" />
+				<Option output="Debug\GPShell" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Debug\" />
 				<Option type="1" />
 				<Option compiler="msvc8" />
 				<Option use_console_runner="0" />
@@ -24,23 +24,23 @@
 					<Add option="/DDEBUG" />
 					<Add option="/DUNICODE" />
 					<Add option="/DWIN32" />
-					<Add directory="C:/Programme/Microsoft Visual Studio 9.0/VC/include" />
-					<Add directory="../globalplatform/src" />
+					<Add directory="C:\Programme\Microsoft Visual Studio 9.0\VC\include" />
+					<Add directory="..\globalplatform\src" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="C:/Programme/Microsoft Platform SDK for Windows Server 2003 R2/Include/mfc" />
+					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include\mfc" />
 				</ResourceCompiler>
 				<Linker>
 					<Add option="/DEBUG" />
 					<Add library="globalplatform" />
-					<Add directory="C:/Programme/Microsoft Visual Studio 9.0/VC/lib" />
-					<Add directory="../globalplatform/Debug" />
+					<Add directory="C:\Programme\Microsoft Visual Studio 9.0\VC\lib" />
+					<Add directory="..\globalplatform\Debug" />
 				</Linker>
 			</Target>
 			<Target title="Release Win">
 				<Option platforms="Windows;" />
-				<Option output="Release/GPShell" prefix_auto="1" extension_auto="1" />
-				<Option object_output="Release/" />
+				<Option output="Release\GPShell" prefix_auto="1" extension_auto="1" />
+				<Option object_output="Release\" />
 				<Option type="1" />
 				<Option compiler="msvc8" />
 				<Option use_console_runner="0" />
@@ -53,23 +53,23 @@
 					<Add option="/Zi /D_DEBUG" />
 					<Add option="/DUNICODE" />
 					<Add option="/DWIN32" />
-					<Add directory="C:/Programme/Microsoft Visual Studio 9.0/VC/include" />
-					<Add directory="../globalplatform/src" />
+					<Add directory="C:\Programme\Microsoft Visual Studio 9.0\VC\include" />
+					<Add directory="..\globalplatform\src" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="C:/Programme/Microsoft Platform SDK for Windows Server 2003 R2/Include/mfc" />
+					<Add directory="C:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\Include\mfc" />
 				</ResourceCompiler>
 				<Linker>
 					<Add option="/DEBUG" />
 					<Add library="globalplatform" />
-					<Add directory="C:/Programme/Microsoft Visual Studio 9.0/VC/lib" />
-					<Add directory="../globalplatform/Release" />
+					<Add directory="C:\Programme\Microsoft Visual Studio 9.0\VC\lib" />
+					<Add directory="..\globalplatform\Release" />
 				</Linker>
 			</Target>
 			<Target title="Linux">
 				<Option platforms="Unix;Mac;" />
 				<Option output="GPPCSCConnectionPlugin" prefix_auto="1" extension_auto="1" />
-				<Option object_output="./objs" />
+				<Option object_output=".\objs" />
 				<Option type="3" />
 				<Option compiler="gcc" />
 				<Option createDefFile="1" />
@@ -85,7 +85,7 @@
 			<Target title="Linux Test">
 				<Option platforms="Unix;Mac;" />
 				<Option output="GPPCSCConnectionPluginTest" prefix_auto="1" extension_auto="1" />
-				<Option object_output="./objs" />
+				<Option object_output=".\objs" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
@@ -129,28 +129,28 @@
 		<Unit filename="configure.in">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/changelog">
+		<Unit filename="debian\changelog">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/compat">
+		<Unit filename="debian\compat">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/control">
+		<Unit filename="debian\control">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/copyright">
+		<Unit filename="debian\copyright">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/gpshell.docs">
+		<Unit filename="debian\gpshell.docs">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/gpshell.install">
+		<Unit filename="debian\gpshell.install">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/rules">
+		<Unit filename="debian\rules">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="debian/watch">
+		<Unit filename="debian\watch">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
 		<Unit filename="get_data.txt">
@@ -201,6 +201,9 @@
 		<Unit filename="list.txt">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
+		<Unit filename="listGP211.txt">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
 		<Unit filename="listJCOP10.txt">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
@@ -231,38 +234,38 @@
 		<Unit filename="send_apdu.txt">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="src/Makefile.am">
+		<Unit filename="src\Makefile.am">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="src/Makefile.mak">
+		<Unit filename="src\Makefile.mak">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="src/gpshell.1">
+		<Unit filename="src\gpshell.1">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="src/gpshell.c">
+		<Unit filename="src\gpshell.c">
 			<Option compilerVar="CC" />
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/resource.h">
+		<Unit filename="src\resource.h">
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/stdafx.c">
+		<Unit filename="src\stdafx.c">
 			<Option compilerVar="CC" />
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/stdafx.h">
+		<Unit filename="src\stdafx.h">
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
 			<Option target="Linux" />
 		</Unit>
-		<Unit filename="src/version.rc">
+		<Unit filename="src\version.rc">
 			<Option compilerVar="WINDRES" />
 			<Option target="Debug Win" />
 			<Option target="Release Win" />
