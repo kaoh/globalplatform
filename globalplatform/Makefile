@@ -223,7 +223,8 @@ GlobalPlatform.sln GlobalPlatform.vcproj
 
 SUBDIRS = src
 UBUNTU_DISTS = dapper hardy jaunty karmic lucid maverick
-SNAPSHOT_VERSION = -SNAPSHOT-`date +%F-%0k-%0M-%0S%z`
+SNAPSHOT_VERSION = 2+3-SNAPSHOT-`date +%F-%0k-%0M-%0S%z`
+RELEASE_VERSION = 3
 MAINTAINERCLEANFILES = \
 	Makefile.in \
 	configure \
@@ -762,7 +763,7 @@ deb-dist:
 		cp ../debian/changelog debian/; \
 		sed -e "s/DISTRO/$$d/g" debian/changelog > debian/changelog.tmp; \
 		mv debian/changelog.tmp debian/changelog; \
-		sed -e "s/VERSION//g" debian/changelog > debian/changelog.tmp; \
+		sed -e "s/VERSION/$(RELEASE_VERSION)/g" debian/changelog > debian/changelog.tmp; \
 		mv debian/changelog.tmp debian/changelog; \
 		# change binary:Version with Source-Version for dapper \
 		if [ $$d == 'dapper' ] ; then \
