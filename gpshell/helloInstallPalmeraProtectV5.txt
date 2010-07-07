@@ -1,11 +1,10 @@
 mode_201
-visa_key_derivation
 enable_trace
 enable_timer
 establish_context
 card_connect
 select -AID a000000003000000
-open_sc -security 1 -keyind 0 -keyver 0 -key 404142434445464748494a4b4c4d4e4f
+open_sc -security 1 -keyind 0 -keyver 0 -key 404142434445464748494a4b4c4d4e4f -keyDerivation visa2
 delete -AID D0D1D2D3D4D50101
 delete -AID D0D1D2D3D4D501
 delete -AID D0D1D2D3D4D50101
