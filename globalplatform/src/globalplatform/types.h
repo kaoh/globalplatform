@@ -43,8 +43,9 @@ typedef unsigned char *PBYTE; //!< A Microsoft/Muscle LPBYTE, pointer to unsigne
 typedef unsigned long *PDWORD; //!< A Microsoft LPDWORD/Muscle pointer to a DWORD.
 typedef unsigned char BYTE; //!< A Microsoft/Muscle BYTE definition.
 typedef unsigned long DWORD; //!< A Microsoft/Muscle DWORD definition.
-#endif
 typedef long LONG; //!< A long value.
+#endif
+
 #endif
 
 #endif

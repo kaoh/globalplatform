@@ -1309,7 +1309,7 @@ end:
  * \param rsaModulus [out] The RSA modulus.
  * \param rsaExponent [out] The RSA exponent.
  */
-OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhrase, BYTE rsaModulus[128], long *rsaExponent) {
+OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhrase, BYTE rsaModulus[128], LONG *rsaExponent) {
 	OPGP_ERROR_STATUS status;
 	EVP_PKEY *key;
 	FILE *PEMKeyFile;
