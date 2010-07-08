@@ -111,6 +111,8 @@ OLD_LDFLAGS="$LDFLAGS"
 case "$host" in
 *-*-cygwin*)
   ;;
+*-*-darwin*)
+  ;;
 *)
 	LDFLAGS="$LDFLAGS $PCSCLITE_LIBS"
 	AC_CHECK_LIB(pcsclite, SCardEstablishContext, [],

@@ -107,9 +107,11 @@ esac
 CFLAGS="$OLD_CFLAGS"
 
 OLD_LDFLAGS="$LDFLAGS"
-# Windows must be handled different
+# Windows and MacOSX must be handled different
 case "$host" in
 *-*-cygwin*)
+  ;;
+*-*-darwin*)
   ;;
 *)
 	LDFLAGS="$LDFLAGS $PCSCLITE_LIBS"
