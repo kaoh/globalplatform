@@ -4201,6 +4201,10 @@ test -z "$OBJDUMP" && OBJDUMP=objdump
 
 	AM_LIBTOOLFLAGS="$AM_LIBTOOLFLAGS -no-undefined"
   ;;
+*-*-darwin*)
+        $as_echo "#define MACOSX 1" >>confdefs.h
+
+  ;;
 *)
   ;;
 esac

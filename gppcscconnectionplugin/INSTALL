@@ -30,13 +30,26 @@ contain sensitive information, e.g. keys!
 
    Usually this points to /usr/local. This is the place the files will be
 installed. On some system the default place for installation is different,
-e.g. Debian uses just /usr. So specify an appropriate place for seemless
-integration into your system.
+e.g. Debian uses just /usr and MacOSX uses /opt/local. So specify an 
+appropriate place for seemless integration into your system.
 
 Usually pkg-config should be installed and should find the compilation
 requirements for PCSC-Lite. If this is not the case you must specify
 PCSCLITE_CFLAGS=-I/... where the headers are located and PCSCLITE_LIBS=-L/...
 where the library is located.
+E.g. for MacOSX you must specify PCSCLITE_CFLAGS=-I/Developer/SDKs/MacOSX10.4u.sdk/System/Library/Frameworks/PCSC.framework/Headers
+
+LDFLAGS=-L...:
+
+For MacOSX you must specify LDFLAGS=-L/opt/local/lib.
+
+CFLAGS=-I/...:
+
+For MacOSX you must specify CFLAGS=-I/opt/local/include.
+
+GLOBALPLATFORM_CFLAGS=-I/...:
+
+GLOBALPLATFORM_CFLAGS=-I/opt/local/include/globalplatform
 
 If something is missing configure should complain about the cause.
 
@@ -69,13 +82,6 @@ commands:
 
 make dist
 make deb-dist
-
-MacOSX
-
-You must specify manually the pcsclite include path:
-
-./configure --enable-debug PCSCLITE_CFLAGS=-I/Developer/SDKs/MacOSX10.4u.sdk/System/Library/Frameworks/PCSC.framework/Head
-ers
 
 Basic Installation
 ==================

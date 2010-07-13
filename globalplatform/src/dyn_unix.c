@@ -35,7 +35,11 @@
 
 #define MAX_LIBRARY_NAME_SIZE 64
 #define LIBRARY_NAME_PREFIX _T("lib")
+#ifdef MACOSX
+#define LIBRARY_NAME_EXTENSION _T(".1.dylib")
+#else
 #define LIBRARY_NAME_EXTENSION _T(".so")
+#endif
 #define LIBRARY_NAME_VERSION_SEPARATOR _T(".")
 
 /**
@@ -60,12 +64,15 @@ OPGP_ERROR_STATUS DYN_LoadLibrary(PVOID *libraryHandle, LPCTSTR libraryName, LPC
 	offset +=  _tcslen(libraryName);
 	_tcsncpy(internalLibraryName + offset, LIBRARY_NAME_EXTENSION, MAX_LIBRARY_NAME_SIZE - offset);
 	offset += _tcslen(LIBRARY_NAME_EXTENSION);
+	// MacOSX uses a different version scheme, so skip it for now
+#ifndef MACOSX
 	if (version != NULL) {
 		_tcsncpy(internalLibraryName + offset, LIBRARY_NAME_VERSION_SEPARATOR, MAX_LIBRARY_NAME_SIZE - offset);
 		offset += _tcslen(LIBRARY_NAME_VERSION_SEPARATOR);
 		_tcsncpy(internalLibraryName + offset, version, MAX_LIBRARY_NAME_SIZE - offset);
 		offset += _tcslen(version);
 	}
+#endif
 	internalLibraryName[MAX_LIBRARY_NAME_SIZE-1] = _T('\0');
 	*libraryHandle = dlopen(internalLibraryName, RTLD_LAZY);
 

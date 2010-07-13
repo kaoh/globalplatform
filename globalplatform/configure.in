@@ -22,6 +22,9 @@ case "$host" in
 	AC_LIBTOOL_WIN32_DLL
 	AM_LIBTOOLFLAGS="$AM_LIBTOOLFLAGS -no-undefined"
   ;;
+*-*-darwin*)
+        AC_DEFINE(MACOSX)
+  ;;
 *)
   ;;
 esac
