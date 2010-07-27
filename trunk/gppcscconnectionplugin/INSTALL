@@ -37,7 +37,9 @@ Usually pkg-config should be installed and should find the compilation
 requirements for PCSC-Lite. If this is not the case you must specify
 PCSCLITE_CFLAGS=-I/... where the headers are located and PCSCLITE_LIBS=-L/...
 where the library is located.
-E.g. for MacOSX you must specify PCSCLITE_CFLAGS=-I/Developer/SDKs/MacOSX10.4u.sdk/System/Library/Frameworks/PCSC.framework/Headers
+E.g. for MacOSX you must specify PCSCLITE_CFLAGS=-I/Developer/SDKs/MacOSX10.5.sdk/System/Library/Frameworks/PCSC.framework/Headers
+The SDK directory must match your MacOSX version. E.g. MacOSX10.5.sdk for 
+Leopard or MacOSX10.4u.sdk for Tiger.
 
 LDFLAGS=-L...:
 
@@ -49,7 +51,7 @@ For MacOSX you must specify CFLAGS=-I/opt/local/include.
 
 GLOBALPLATFORM_CFLAGS=-I/...:
 
-GLOBALPLATFORM_CFLAGS=-I/opt/local/include/globalplatform
+For MacOSX you must specify GLOBALPLATFORM_CFLAGS=-I/opt/local/include/globalplatform
 
 If something is missing configure should complain about the cause.
 

@@ -109,8 +109,8 @@ AUTOHEADER = ${SHELL} /Users/svp/globalplatform/globalplatform/missing --run aut
 AUTOMAKE = ${SHELL} /Users/svp/globalplatform/globalplatform/missing --run automake-1.11
 AWK = awk
 CC = gcc
-CCDEPMODE = depmode=gcc3
-CFLAGS = -g -O2
+CCDEPMODE = depmode=none
+CFLAGS = -O -g -isysroot /Developer/SDKs/MacOSX10.5.sdk
 CPP = gcc -E
 CPPFLAGS = 
 CYGPATH_W = echo
@@ -155,7 +155,7 @@ PACKAGE_TARNAME = globalplatform
 PACKAGE_URL = 
 PACKAGE_VERSION = 6.0.0
 PATH_SEPARATOR = :
-PCSCLITE_CFLAGS = -I/Developer/SDKs/MacOSX10.4u.sdk/System/Library/Frameworks/PCSC.framework/Headers
+PCSCLITE_CFLAGS = -I/Developer/SDKs/MacOSX10.5.sdk/System/Library/Frameworks/PCSC.framework/Headers
 PCSCLITE_H_PATH = 
 PCSCLITE_LIBS = 
 PKG_CONFIG = /opt/local/bin/pkg-config

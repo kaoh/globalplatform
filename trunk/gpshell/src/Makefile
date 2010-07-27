@@ -94,8 +94,8 @@ AUTOHEADER = ${SHELL} /Users/svp/globalplatform/gpshell/myaux/missing --run auto
 AUTOMAKE = ${SHELL} /Users/svp/globalplatform/gpshell/myaux/missing --run automake-1.11
 AWK = awk
 CC = gcc
-CCDEPMODE = depmode=gcc3
-CFLAGS = -I/opt/local/include -Wall
+CCDEPMODE = depmode=none
+CFLAGS = -O -g -isysroot /Developer/SDKs/MacOSX10.5.sdk -I/opt/local/include -Wall
 CPP = gcc -E
 CPPFLAGS = 
 CYGPATH_W = echo
@@ -131,7 +131,7 @@ PACKAGE_TARNAME = gpshell
 PACKAGE_URL = 
 PACKAGE_VERSION = 1.4.3
 PATH_SEPARATOR = :
-PCSCLITE_CFLAGS = -I/Developer/SDKs/MacOSX10.4u.sdk/System/Library/Frameworks/PCSC.framework/Headers
+PCSCLITE_CFLAGS = -I/Developer/SDKs/MacOSX10.5.sdk/System/Library/Frameworks/PCSC.framework/Headers
 PCSCLITE_H_PATH = 
 PCSCLITE_LIBS = 
 PKG_CONFIG = /opt/local/bin/pkg-config
@@ -289,35 +289,35 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-include ./$(DEPDIR)/gpshell-gpshell.Po
+#include ./$(DEPDIR)/gpshell-gpshell.Po
 
 .c.o:
-	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-#	source='$<' object='$@' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(COMPILE) -c $<
+#	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+#	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+#	source='$<' object='$@' libtool=no 
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
+	$(COMPILE) -c $<
 
 .c.obj:
-	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-#	source='$<' object='$@' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(COMPILE) -c `$(CYGPATH_W) '$<'`
+#	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+#	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+#	source='$<' object='$@' libtool=no 
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
+	$(COMPILE) -c `$(CYGPATH_W) '$<'`
 
 gpshell-gpshell.o: gpshell.c
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gpshell_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT gpshell-gpshell.o -MD -MP -MF $(DEPDIR)/gpshell-gpshell.Tpo -c -o gpshell-gpshell.o `test -f 'gpshell.c' || echo '$(srcdir)/'`gpshell.c
-	$(am__mv) $(DEPDIR)/gpshell-gpshell.Tpo $(DEPDIR)/gpshell-gpshell.Po
-#	source='gpshell.c' object='gpshell-gpshell.o' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gpshell_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o gpshell-gpshell.o `test -f 'gpshell.c' || echo '$(srcdir)/'`gpshell.c
+#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gpshell_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT gpshell-gpshell.o -MD -MP -MF $(DEPDIR)/gpshell-gpshell.Tpo -c -o gpshell-gpshell.o `test -f 'gpshell.c' || echo '$(srcdir)/'`gpshell.c
+#	$(am__mv) $(DEPDIR)/gpshell-gpshell.Tpo $(DEPDIR)/gpshell-gpshell.Po
+#	source='gpshell.c' object='gpshell-gpshell.o' libtool=no 
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gpshell_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o gpshell-gpshell.o `test -f 'gpshell.c' || echo '$(srcdir)/'`gpshell.c
 
 gpshell-gpshell.obj: gpshell.c
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gpshell_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT gpshell-gpshell.obj -MD -MP -MF $(DEPDIR)/gpshell-gpshell.Tpo -c -o gpshell-gpshell.obj `if test -f 'gpshell.c'; then $(CYGPATH_W) 'gpshell.c'; else $(CYGPATH_W) '$(srcdir)/gpshell.c'; fi`
-	$(am__mv) $(DEPDIR)/gpshell-gpshell.Tpo $(DEPDIR)/gpshell-gpshell.Po
-#	source='gpshell.c' object='gpshell-gpshell.obj' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gpshell_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o gpshell-gpshell.obj `if test -f 'gpshell.c'; then $(CYGPATH_W) 'gpshell.c'; else $(CYGPATH_W) '$(srcdir)/gpshell.c'; fi`
+#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gpshell_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT gpshell-gpshell.obj -MD -MP -MF $(DEPDIR)/gpshell-gpshell.Tpo -c -o gpshell-gpshell.obj `if test -f 'gpshell.c'; then $(CYGPATH_W) 'gpshell.c'; else $(CYGPATH_W) '$(srcdir)/gpshell.c'; fi`
+#	$(am__mv) $(DEPDIR)/gpshell-gpshell.Tpo $(DEPDIR)/gpshell-gpshell.Po
+#	source='gpshell.c' object='gpshell-gpshell.obj' libtool=no 
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gpshell_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o gpshell-gpshell.obj `if test -f 'gpshell.c'; then $(CYGPATH_W) 'gpshell.c'; else $(CYGPATH_W) '$(srcdir)/gpshell.c'; fi`
 install-man1: $(man_MANS)
 	@$(NORMAL_INSTALL)
 	test -z "$(man1dir)" || $(MKDIR_P) "$(DESTDIR)$(man1dir)"

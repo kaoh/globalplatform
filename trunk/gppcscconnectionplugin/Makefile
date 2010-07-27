@@ -109,8 +109,8 @@ AUTOHEADER = ${SHELL} /Users/svp/globalplatform/gppcscconnectionplugin/missing -
 AUTOMAKE = ${SHELL} /Users/svp/globalplatform/gppcscconnectionplugin/missing --run automake-1.11
 AWK = awk
 CC = gcc
-CCDEPMODE = depmode=gcc3
-CFLAGS = -I/opt/local/include
+CCDEPMODE = depmode=none
+CFLAGS = -O -g -isysroot /Developer/SDKs/MacOSX10.5.sdk -I/opt/local/include
 CPP = gcc -E
 CPPFLAGS = 
 CYGPATH_W = echo
@@ -159,7 +159,7 @@ PACKAGE_TARNAME = gppcscconnectionplugin
 PACKAGE_URL = 
 PACKAGE_VERSION = 1.0.0
 PATH_SEPARATOR = :
-PCSCLITE_CFLAGS = -I/Developer/SDKs/MacOSX10.4u.sdk/System/Library/Frameworks/PCSC.framework/Headers
+PCSCLITE_CFLAGS = -I/Developer/SDKs/MacOSX10.5.sdk/System/Library/Frameworks/PCSC.framework/Headers
 PCSCLITE_H_PATH = 
 PCSCLITE_LIBS = 
 PKG_CONFIG = /opt/local/bin/pkg-config
