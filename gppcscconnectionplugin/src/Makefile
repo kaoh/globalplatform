@@ -124,8 +124,8 @@ AUTOHEADER = ${SHELL} /Users/svp/globalplatform/gppcscconnectionplugin/missing -
 AUTOMAKE = ${SHELL} /Users/svp/globalplatform/gppcscconnectionplugin/missing --run automake-1.11
 AWK = awk
 CC = gcc
-CCDEPMODE = depmode=gcc3
-CFLAGS = -I/opt/local/include
+CCDEPMODE = depmode=none
+CFLAGS = -O -g -isysroot /Developer/SDKs/MacOSX10.5.sdk -I/opt/local/include
 CPP = gcc -E
 CPPFLAGS = 
 CYGPATH_W = echo
@@ -174,7 +174,7 @@ PACKAGE_TARNAME = gppcscconnectionplugin
 PACKAGE_URL = 
 PACKAGE_VERSION = 1.0.0
 PATH_SEPARATOR = :
-PCSCLITE_CFLAGS = -I/Developer/SDKs/MacOSX10.4u.sdk/System/Library/Frameworks/PCSC.framework/Headers
+PCSCLITE_CFLAGS = -I/Developer/SDKs/MacOSX10.5.sdk/System/Library/Frameworks/PCSC.framework/Headers
 PCSCLITE_H_PATH = 
 PCSCLITE_LIBS = 
 PKG_CONFIG = /opt/local/bin/pkg-config
@@ -337,58 +337,58 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-include ./$(DEPDIR)/gppcscconnectionpluginTest-gppcscconnectionpluginTest.Po
-include ./$(DEPDIR)/libgppcscconnectionplugin_la-gppcscconnectionplugin.Plo
-include ./$(DEPDIR)/libgppcscconnectionplugin_la-util.Plo
+#include ./$(DEPDIR)/gppcscconnectionpluginTest-gppcscconnectionpluginTest.Po
+#include ./$(DEPDIR)/libgppcscconnectionplugin_la-gppcscconnectionplugin.Plo
+#include ./$(DEPDIR)/libgppcscconnectionplugin_la-util.Plo
 
 .c.o:
-	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-#	source='$<' object='$@' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(COMPILE) -c $<
+#	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+#	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+#	source='$<' object='$@' libtool=no 
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
+	$(COMPILE) -c $<
 
 .c.obj:
-	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-#	source='$<' object='$@' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(COMPILE) -c `$(CYGPATH_W) '$<'`
+#	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+#	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+#	source='$<' object='$@' libtool=no 
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
+	$(COMPILE) -c `$(CYGPATH_W) '$<'`
 
 .c.lo:
-	$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
-#	source='$<' object='$@' libtool=yes \
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(LTCOMPILE) -c -o $@ $<
+#	$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+#	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+#	source='$<' object='$@' libtool=yes 
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
+	$(LTCOMPILE) -c -o $@ $<
 
 libgppcscconnectionplugin_la-gppcscconnectionplugin.lo: gppcscconnectionplugin.c
-	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgppcscconnectionplugin_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libgppcscconnectionplugin_la-gppcscconnectionplugin.lo -MD -MP -MF $(DEPDIR)/libgppcscconnectionplugin_la-gppcscconnectionplugin.Tpo -c -o libgppcscconnectionplugin_la-gppcscconnectionplugin.lo `test -f 'gppcscconnectionplugin.c' || echo '$(srcdir)/'`gppcscconnectionplugin.c
-	$(am__mv) $(DEPDIR)/libgppcscconnectionplugin_la-gppcscconnectionplugin.Tpo $(DEPDIR)/libgppcscconnectionplugin_la-gppcscconnectionplugin.Plo
-#	source='gppcscconnectionplugin.c' object='libgppcscconnectionplugin_la-gppcscconnectionplugin.lo' libtool=yes \
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgppcscconnectionplugin_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libgppcscconnectionplugin_la-gppcscconnectionplugin.lo `test -f 'gppcscconnectionplugin.c' || echo '$(srcdir)/'`gppcscconnectionplugin.c
+#	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgppcscconnectionplugin_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libgppcscconnectionplugin_la-gppcscconnectionplugin.lo -MD -MP -MF $(DEPDIR)/libgppcscconnectionplugin_la-gppcscconnectionplugin.Tpo -c -o libgppcscconnectionplugin_la-gppcscconnectionplugin.lo `test -f 'gppcscconnectionplugin.c' || echo '$(srcdir)/'`gppcscconnectionplugin.c
+#	$(am__mv) $(DEPDIR)/libgppcscconnectionplugin_la-gppcscconnectionplugin.Tpo $(DEPDIR)/libgppcscconnectionplugin_la-gppcscconnectionplugin.Plo
+#	source='gppcscconnectionplugin.c' object='libgppcscconnectionplugin_la-gppcscconnectionplugin.lo' libtool=yes 
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
+	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgppcscconnectionplugin_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libgppcscconnectionplugin_la-gppcscconnectionplugin.lo `test -f 'gppcscconnectionplugin.c' || echo '$(srcdir)/'`gppcscconnectionplugin.c
 
 libgppcscconnectionplugin_la-util.lo: util.c
-	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgppcscconnectionplugin_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libgppcscconnectionplugin_la-util.lo -MD -MP -MF $(DEPDIR)/libgppcscconnectionplugin_la-util.Tpo -c -o libgppcscconnectionplugin_la-util.lo `test -f 'util.c' || echo '$(srcdir)/'`util.c
-	$(am__mv) $(DEPDIR)/libgppcscconnectionplugin_la-util.Tpo $(DEPDIR)/libgppcscconnectionplugin_la-util.Plo
-#	source='util.c' object='libgppcscconnectionplugin_la-util.lo' libtool=yes \
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgppcscconnectionplugin_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libgppcscconnectionplugin_la-util.lo `test -f 'util.c' || echo '$(srcdir)/'`util.c
+#	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgppcscconnectionplugin_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libgppcscconnectionplugin_la-util.lo -MD -MP -MF $(DEPDIR)/libgppcscconnectionplugin_la-util.Tpo -c -o libgppcscconnectionplugin_la-util.lo `test -f 'util.c' || echo '$(srcdir)/'`util.c
+#	$(am__mv) $(DEPDIR)/libgppcscconnectionplugin_la-util.Tpo $(DEPDIR)/libgppcscconnectionplugin_la-util.Plo
+#	source='util.c' object='libgppcscconnectionplugin_la-util.lo' libtool=yes 
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
+	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libgppcscconnectionplugin_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libgppcscconnectionplugin_la-util.lo `test -f 'util.c' || echo '$(srcdir)/'`util.c
 
 gppcscconnectionpluginTest-gppcscconnectionpluginTest.o: gppcscconnectionpluginTest.c
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(gppcscconnectionpluginTest_CFLAGS) $(CFLAGS) -MT gppcscconnectionpluginTest-gppcscconnectionpluginTest.o -MD -MP -MF $(DEPDIR)/gppcscconnectionpluginTest-gppcscconnectionpluginTest.Tpo -c -o gppcscconnectionpluginTest-gppcscconnectionpluginTest.o `test -f 'gppcscconnectionpluginTest.c' || echo '$(srcdir)/'`gppcscconnectionpluginTest.c
-	$(am__mv) $(DEPDIR)/gppcscconnectionpluginTest-gppcscconnectionpluginTest.Tpo $(DEPDIR)/gppcscconnectionpluginTest-gppcscconnectionpluginTest.Po
-#	source='gppcscconnectionpluginTest.c' object='gppcscconnectionpluginTest-gppcscconnectionpluginTest.o' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(gppcscconnectionpluginTest_CFLAGS) $(CFLAGS) -c -o gppcscconnectionpluginTest-gppcscconnectionpluginTest.o `test -f 'gppcscconnectionpluginTest.c' || echo '$(srcdir)/'`gppcscconnectionpluginTest.c
+#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(gppcscconnectionpluginTest_CFLAGS) $(CFLAGS) -MT gppcscconnectionpluginTest-gppcscconnectionpluginTest.o -MD -MP -MF $(DEPDIR)/gppcscconnectionpluginTest-gppcscconnectionpluginTest.Tpo -c -o gppcscconnectionpluginTest-gppcscconnectionpluginTest.o `test -f 'gppcscconnectionpluginTest.c' || echo '$(srcdir)/'`gppcscconnectionpluginTest.c
+#	$(am__mv) $(DEPDIR)/gppcscconnectionpluginTest-gppcscconnectionpluginTest.Tpo $(DEPDIR)/gppcscconnectionpluginTest-gppcscconnectionpluginTest.Po
+#	source='gppcscconnectionpluginTest.c' object='gppcscconnectionpluginTest-gppcscconnectionpluginTest.o' libtool=no 
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(gppcscconnectionpluginTest_CFLAGS) $(CFLAGS) -c -o gppcscconnectionpluginTest-gppcscconnectionpluginTest.o `test -f 'gppcscconnectionpluginTest.c' || echo '$(srcdir)/'`gppcscconnectionpluginTest.c
 
 gppcscconnectionpluginTest-gppcscconnectionpluginTest.obj: gppcscconnectionpluginTest.c
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(gppcscconnectionpluginTest_CFLAGS) $(CFLAGS) -MT gppcscconnectionpluginTest-gppcscconnectionpluginTest.obj -MD -MP -MF $(DEPDIR)/gppcscconnectionpluginTest-gppcscconnectionpluginTest.Tpo -c -o gppcscconnectionpluginTest-gppcscconnectionpluginTest.obj `if test -f 'gppcscconnectionpluginTest.c'; then $(CYGPATH_W) 'gppcscconnectionpluginTest.c'; else $(CYGPATH_W) '$(srcdir)/gppcscconnectionpluginTest.c'; fi`
-	$(am__mv) $(DEPDIR)/gppcscconnectionpluginTest-gppcscconnectionpluginTest.Tpo $(DEPDIR)/gppcscconnectionpluginTest-gppcscconnectionpluginTest.Po
-#	source='gppcscconnectionpluginTest.c' object='gppcscconnectionpluginTest-gppcscconnectionpluginTest.obj' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(gppcscconnectionpluginTest_CFLAGS) $(CFLAGS) -c -o gppcscconnectionpluginTest-gppcscconnectionpluginTest.obj `if test -f 'gppcscconnectionpluginTest.c'; then $(CYGPATH_W) 'gppcscconnectionpluginTest.c'; else $(CYGPATH_W) '$(srcdir)/gppcscconnectionpluginTest.c'; fi`
+#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(gppcscconnectionpluginTest_CFLAGS) $(CFLAGS) -MT gppcscconnectionpluginTest-gppcscconnectionpluginTest.obj -MD -MP -MF $(DEPDIR)/gppcscconnectionpluginTest-gppcscconnectionpluginTest.Tpo -c -o gppcscconnectionpluginTest-gppcscconnectionpluginTest.obj `if test -f 'gppcscconnectionpluginTest.c'; then $(CYGPATH_W) 'gppcscconnectionpluginTest.c'; else $(CYGPATH_W) '$(srcdir)/gppcscconnectionpluginTest.c'; fi`
+#	$(am__mv) $(DEPDIR)/gppcscconnectionpluginTest-gppcscconnectionpluginTest.Tpo $(DEPDIR)/gppcscconnectionpluginTest-gppcscconnectionpluginTest.Po
+#	source='gppcscconnectionpluginTest.c' object='gppcscconnectionpluginTest-gppcscconnectionpluginTest.obj' libtool=no 
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(gppcscconnectionpluginTest_CFLAGS) $(CFLAGS) -c -o gppcscconnectionpluginTest-gppcscconnectionpluginTest.obj `if test -f 'gppcscconnectionpluginTest.c'; then $(CYGPATH_W) 'gppcscconnectionpluginTest.c'; else $(CYGPATH_W) '$(srcdir)/gppcscconnectionpluginTest.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
