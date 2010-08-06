@@ -32,8 +32,8 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-build_triplet = i386-apple-darwin9.8.0
-host_triplet = i386-apple-darwin9.8.0
+build_triplet = x86_64-unknown-linux-gnu
+host_triplet = x86_64-unknown-linux-gnu
 bin_PROGRAMS = gpshell$(EXEEXT)
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
@@ -87,41 +87,41 @@ MANS = $(man_MANS)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-ACLOCAL = ${SHELL} /Users/svp/globalplatform/gpshell/myaux/missing --run aclocal-1.11
-AMTAR = ${SHELL} /Users/svp/globalplatform/gpshell/myaux/missing --run tar
-AUTOCONF = ${SHELL} /Users/svp/globalplatform/gpshell/myaux/missing --run autoconf
-AUTOHEADER = ${SHELL} /Users/svp/globalplatform/gpshell/myaux/missing --run autoheader
-AUTOMAKE = ${SHELL} /Users/svp/globalplatform/gpshell/myaux/missing --run automake-1.11
-AWK = awk
+ACLOCAL = ${SHELL} /home/widerstand/Dokumente/GlobalPlatform/trunk/gpshell/myaux/missing --run aclocal-1.11
+AMTAR = ${SHELL} /home/widerstand/Dokumente/GlobalPlatform/trunk/gpshell/myaux/missing --run tar
+AUTOCONF = ${SHELL} /home/widerstand/Dokumente/GlobalPlatform/trunk/gpshell/myaux/missing --run autoconf
+AUTOHEADER = ${SHELL} /home/widerstand/Dokumente/GlobalPlatform/trunk/gpshell/myaux/missing --run autoheader
+AUTOMAKE = ${SHELL} /home/widerstand/Dokumente/GlobalPlatform/trunk/gpshell/myaux/missing --run automake-1.11
+AWK = gawk
 CC = gcc
-CCDEPMODE = depmode=none
-CFLAGS = -O -g -isysroot /Developer/SDKs/MacOSX10.5.sdk -I/opt/local/include -Wall
+CCDEPMODE = depmode=gcc3
+CFLAGS = -g -O2 -Wall
 CPP = gcc -E
 CPPFLAGS = 
 CYGPATH_W = echo
-DEFS = -DPACKAGE_NAME=\"GPShell\" -DPACKAGE_TARNAME=\"gpshell\" -DPACKAGE_VERSION=\"1.4.3\" -DPACKAGE_STRING=\"GPShell\ 1.4.3\" -DPACKAGE_BUGREPORT=\"Karsten\ Ohme\ \<k_o_@users.sourceforge.net\>\ or\ snitmo@gmail.com\" -DPACKAGE_URL=\"\" -DPACKAGE=\"gpshell\" -DVERSION=\"1.4.3\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_STDLIB_H=1 -DHAVE_MALLOC=1 -DHAVE_ATOI=1 -DHAVE_FGETS=1 -DDEBUG=1 -DHAVE_LIBGLOBALPLATFORM=1
+DEFS = -DPACKAGE_NAME=\"GPShell\" -DPACKAGE_TARNAME=\"gpshell\" -DPACKAGE_VERSION=\"1.4.3\" -DPACKAGE_STRING=\"GPShell\ 1.4.3\" -DPACKAGE_BUGREPORT=\"Karsten\ Ohme\ \<k_o_@users.sourceforge.net\>\ or\ snitmo@gmail.com\" -DPACKAGE_URL=\"\" -DPACKAGE=\"gpshell\" -DVERSION=\"1.4.3\" -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DLSTAT_FOLLOWS_SLASHED_SYMLINK=1 -DHAVE_STDLIB_H=1 -DHAVE_MALLOC=1 -DHAVE_ATOI=1 -DHAVE_FGETS=1 -DDEBUG=1 -DHAVE_LIBGLOBALPLATFORM=1
 DEPDIR = .deps
-ECHO_C = \c
-ECHO_N = 
+ECHO_C = 
+ECHO_N = -n
 ECHO_T = 
-EGREP = /usr/bin/grep -E
+EGREP = /bin/grep -E
 EXEEXT = 
-GLOBALPLATFORM_CFLAGS = -I/opt/local/include/globalplatform
+GLOBALPLATFORM_CFLAGS = -I/usr/include/globalplatform -I/usr/include/PCSC  
 GLOBALPLATFORM_H_PATH = 
-GLOBALPLATFORM_LIBS = 
+GLOBALPLATFORM_LIBS = -lglobalplatform -lpcsclite  
 GLOBALPLATFORM_LIB_PATH = 
-GREP = /usr/bin/grep
-INSTALL = /opt/local/bin/ginstall -c
+GREP = /bin/grep
+INSTALL = /usr/bin/install -c
 INSTALL_DATA = ${INSTALL} -m 644
 INSTALL_PROGRAM = ${INSTALL}
 INSTALL_SCRIPT = ${INSTALL}
 INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
-LDFLAGS = -L/opt/local/lib
-LIBOBJS =  ${LIBOBJDIR}lstat$U.o
+LDFLAGS = 
+LIBOBJS = 
 LIBS = -lglobalplatform 
-LTLIBOBJS =  ${LIBOBJDIR}lstat$U.lo
-MAKEINFO = ${SHELL} /Users/svp/globalplatform/gpshell/myaux/missing --run makeinfo
-MKDIR_P = /opt/local/bin/gmkdir -p
+LTLIBOBJS = 
+MAKEINFO = ${SHELL} /home/widerstand/Dokumente/GlobalPlatform/trunk/gpshell/myaux/missing --run makeinfo
+MKDIR_P = /bin/mkdir -p
 OBJEXT = o
 PACKAGE = gpshell
 PACKAGE_BUGREPORT = Karsten Ohme <k_o_@users.sourceforge.net> or snitmo@gmail.com
@@ -131,19 +131,19 @@ PACKAGE_TARNAME = gpshell
 PACKAGE_URL = 
 PACKAGE_VERSION = 1.4.3
 PATH_SEPARATOR = :
-PCSCLITE_CFLAGS = -I/Developer/SDKs/MacOSX10.5.sdk/System/Library/Frameworks/PCSC.framework/Headers
+PCSCLITE_CFLAGS = -I/usr/include/PCSC  
 PCSCLITE_H_PATH = 
-PCSCLITE_LIBS = 
-PKG_CONFIG = /opt/local/bin/pkg-config
+PCSCLITE_LIBS = -lpcsclite  
+PKG_CONFIG = /usr/bin/pkg-config
 SET_MAKE = 
-SHELL = /bin/sh
+SHELL = /bin/bash
 STRIP = 
 VERSION = 1.4.3
 WINSCARD_LIB_PATH = 
-abs_builddir = /Users/svp/globalplatform/gpshell/src
-abs_srcdir = /Users/svp/globalplatform/gpshell/src
-abs_top_builddir = /Users/svp/globalplatform/gpshell
-abs_top_srcdir = /Users/svp/globalplatform/gpshell
+abs_builddir = /home/widerstand/Dokumente/GlobalPlatform/trunk/gpshell/src
+abs_srcdir = /home/widerstand/Dokumente/GlobalPlatform/trunk/gpshell/src
+abs_top_builddir = /home/widerstand/Dokumente/GlobalPlatform/trunk/gpshell
+abs_top_srcdir = /home/widerstand/Dokumente/GlobalPlatform/trunk/gpshell
 ac_ct_CC = gcc
 am__include = include
 am__leading_dot = .
@@ -151,35 +151,35 @@ am__quote =
 am__tar = ${AMTAR} chof - "$$tardir"
 am__untar = ${AMTAR} xf -
 bindir = ${exec_prefix}/bin
-build = i386-apple-darwin9.8.0
+build = x86_64-unknown-linux-gnu
 build_alias = 
-build_cpu = i386
-build_os = darwin9.8.0
-build_vendor = apple
+build_cpu = x86_64
+build_os = linux-gnu
+build_vendor = unknown
 builddir = .
 datadir = ${datarootdir}
 datarootdir = ${prefix}/share
 docdir = ${datarootdir}/doc/${PACKAGE_TARNAME}
 dvidir = ${docdir}
 exec_prefix = ${prefix}
-host = i386-apple-darwin9.8.0
+host = x86_64-unknown-linux-gnu
 host_alias = 
-host_cpu = i386
-host_os = darwin9.8.0
-host_vendor = apple
+host_cpu = x86_64
+host_os = linux-gnu
+host_vendor = unknown
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /Users/svp/globalplatform/gpshell/myaux/install-sh
+install_sh = ${SHELL} /home/widerstand/Dokumente/GlobalPlatform/trunk/gpshell/myaux/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
 localstatedir = ${prefix}/var
 mandir = ${datarootdir}/man
-mkdir_p = /opt/local/bin/gmkdir -p
+mkdir_p = /bin/mkdir -p
 oldincludedir = /usr/include
 pdfdir = ${docdir}
-prefix = /opt/local
+prefix = /usr
 program_transform_name = s,x,x,
 psdir = ${docdir}
 sbindir = ${exec_prefix}/sbin
@@ -289,35 +289,35 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-#include ./$(DEPDIR)/gpshell-gpshell.Po
+include ./$(DEPDIR)/gpshell-gpshell.Po
 
 .c.o:
-#	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-#	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-#	source='$<' object='$@' libtool=no 
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
-	$(COMPILE) -c $<
+	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+#	source='$<' object='$@' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(COMPILE) -c $<
 
 .c.obj:
-#	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-#	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-#	source='$<' object='$@' libtool=no 
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
-	$(COMPILE) -c `$(CYGPATH_W) '$<'`
+	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+#	source='$<' object='$@' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(COMPILE) -c `$(CYGPATH_W) '$<'`
 
 gpshell-gpshell.o: gpshell.c
-#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gpshell_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT gpshell-gpshell.o -MD -MP -MF $(DEPDIR)/gpshell-gpshell.Tpo -c -o gpshell-gpshell.o `test -f 'gpshell.c' || echo '$(srcdir)/'`gpshell.c
-#	$(am__mv) $(DEPDIR)/gpshell-gpshell.Tpo $(DEPDIR)/gpshell-gpshell.Po
-#	source='gpshell.c' object='gpshell-gpshell.o' libtool=no 
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gpshell_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o gpshell-gpshell.o `test -f 'gpshell.c' || echo '$(srcdir)/'`gpshell.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gpshell_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT gpshell-gpshell.o -MD -MP -MF $(DEPDIR)/gpshell-gpshell.Tpo -c -o gpshell-gpshell.o `test -f 'gpshell.c' || echo '$(srcdir)/'`gpshell.c
+	$(am__mv) $(DEPDIR)/gpshell-gpshell.Tpo $(DEPDIR)/gpshell-gpshell.Po
+#	source='gpshell.c' object='gpshell-gpshell.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gpshell_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o gpshell-gpshell.o `test -f 'gpshell.c' || echo '$(srcdir)/'`gpshell.c
 
 gpshell-gpshell.obj: gpshell.c
-#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gpshell_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT gpshell-gpshell.obj -MD -MP -MF $(DEPDIR)/gpshell-gpshell.Tpo -c -o gpshell-gpshell.obj `if test -f 'gpshell.c'; then $(CYGPATH_W) 'gpshell.c'; else $(CYGPATH_W) '$(srcdir)/gpshell.c'; fi`
-#	$(am__mv) $(DEPDIR)/gpshell-gpshell.Tpo $(DEPDIR)/gpshell-gpshell.Po
-#	source='gpshell.c' object='gpshell-gpshell.obj' libtool=no 
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gpshell_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o gpshell-gpshell.obj `if test -f 'gpshell.c'; then $(CYGPATH_W) 'gpshell.c'; else $(CYGPATH_W) '$(srcdir)/gpshell.c'; fi`
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gpshell_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT gpshell-gpshell.obj -MD -MP -MF $(DEPDIR)/gpshell-gpshell.Tpo -c -o gpshell-gpshell.obj `if test -f 'gpshell.c'; then $(CYGPATH_W) 'gpshell.c'; else $(CYGPATH_W) '$(srcdir)/gpshell.c'; fi`
+	$(am__mv) $(DEPDIR)/gpshell-gpshell.Tpo $(DEPDIR)/gpshell-gpshell.Po
+#	source='gpshell.c' object='gpshell-gpshell.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gpshell_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o gpshell-gpshell.obj `if test -f 'gpshell.c'; then $(CYGPATH_W) 'gpshell.c'; else $(CYGPATH_W) '$(srcdir)/gpshell.c'; fi`
 install-man1: $(man_MANS)
 	@$(NORMAL_INSTALL)
 	test -z "$(man1dir)" || $(MKDIR_P) "$(DESTDIR)$(man1dir)"
