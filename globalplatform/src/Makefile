@@ -130,8 +130,8 @@ AUTOHEADER = ${SHELL} /Users/svp/globalplatform/globalplatform/missing --run aut
 AUTOMAKE = ${SHELL} /Users/svp/globalplatform/globalplatform/missing --run automake-1.11
 AWK = awk
 CC = gcc
-CCDEPMODE = depmode=none
-CFLAGS = -O -g -isysroot /Developer/SDKs/MacOSX10.5.sdk
+CCDEPMODE = depmode=gcc3
+CFLAGS = -g -O2
 CPP = gcc -E
 CPPFLAGS = 
 CYGPATH_W = echo
@@ -153,7 +153,7 @@ INSTALL_PROGRAM = ${INSTALL}
 INSTALL_SCRIPT = ${INSTALL}
 INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
 LD = /usr/libexec/gcc/i686-apple-darwin9/4.0.1/ld
-LDFLAGS = -ldl
+LDFLAGS = -framework PCSC -ldl
 LIBOBJS = 
 LIBS = -lcrypto -lz 
 LIBTOOL = $(SHELL) $(top_builddir)/libtool
@@ -356,130 +356,130 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-#include ./$(DEPDIR)/globalplatformTest-globalplatformTest.Po
-#include ./$(DEPDIR)/libglobalplatform_la-connection.Plo
-#include ./$(DEPDIR)/libglobalplatform_la-crypto.Plo
-#include ./$(DEPDIR)/libglobalplatform_la-debug.Plo
-#include ./$(DEPDIR)/libglobalplatform_la-dyn_unix.Plo
-#include ./$(DEPDIR)/libglobalplatform_la-globalplatform.Plo
-#include ./$(DEPDIR)/libglobalplatform_la-ioapi.Plo
-#include ./$(DEPDIR)/libglobalplatform_la-loadfile.Plo
-#include ./$(DEPDIR)/libglobalplatform_la-stringify.Plo
-#include ./$(DEPDIR)/libglobalplatform_la-unzip.Plo
-#include ./$(DEPDIR)/libglobalplatform_la-util.Plo
-#include ./$(DEPDIR)/libglobalplatform_la-zip.Plo
+include ./$(DEPDIR)/globalplatformTest-globalplatformTest.Po
+include ./$(DEPDIR)/libglobalplatform_la-connection.Plo
+include ./$(DEPDIR)/libglobalplatform_la-crypto.Plo
+include ./$(DEPDIR)/libglobalplatform_la-debug.Plo
+include ./$(DEPDIR)/libglobalplatform_la-dyn_unix.Plo
+include ./$(DEPDIR)/libglobalplatform_la-globalplatform.Plo
+include ./$(DEPDIR)/libglobalplatform_la-ioapi.Plo
+include ./$(DEPDIR)/libglobalplatform_la-loadfile.Plo
+include ./$(DEPDIR)/libglobalplatform_la-stringify.Plo
+include ./$(DEPDIR)/libglobalplatform_la-unzip.Plo
+include ./$(DEPDIR)/libglobalplatform_la-util.Plo
+include ./$(DEPDIR)/libglobalplatform_la-zip.Plo
 
 .c.o:
-#	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-#	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-#	source='$<' object='$@' libtool=no 
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
-	$(COMPILE) -c $<
+	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+#	source='$<' object='$@' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(COMPILE) -c $<
 
 .c.obj:
-#	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-#	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-#	source='$<' object='$@' libtool=no 
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
-	$(COMPILE) -c `$(CYGPATH_W) '$<'`
+	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+#	source='$<' object='$@' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(COMPILE) -c `$(CYGPATH_W) '$<'`
 
 .c.lo:
-#	$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-#	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
-#	source='$<' object='$@' libtool=yes 
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
-	$(LTCOMPILE) -c -o $@ $<
+	$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+#	source='$<' object='$@' libtool=yes \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(LTCOMPILE) -c -o $@ $<
 
 libglobalplatform_la-globalplatform.lo: globalplatform.c
-#	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libglobalplatform_la-globalplatform.lo -MD -MP -MF $(DEPDIR)/libglobalplatform_la-globalplatform.Tpo -c -o libglobalplatform_la-globalplatform.lo `test -f 'globalplatform.c' || echo '$(srcdir)/'`globalplatform.c
-#	$(am__mv) $(DEPDIR)/libglobalplatform_la-globalplatform.Tpo $(DEPDIR)/libglobalplatform_la-globalplatform.Plo
-#	source='globalplatform.c' object='libglobalplatform_la-globalplatform.lo' libtool=yes 
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
-	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libglobalplatform_la-globalplatform.lo `test -f 'globalplatform.c' || echo '$(srcdir)/'`globalplatform.c
+	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libglobalplatform_la-globalplatform.lo -MD -MP -MF $(DEPDIR)/libglobalplatform_la-globalplatform.Tpo -c -o libglobalplatform_la-globalplatform.lo `test -f 'globalplatform.c' || echo '$(srcdir)/'`globalplatform.c
+	$(am__mv) $(DEPDIR)/libglobalplatform_la-globalplatform.Tpo $(DEPDIR)/libglobalplatform_la-globalplatform.Plo
+#	source='globalplatform.c' object='libglobalplatform_la-globalplatform.lo' libtool=yes \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libglobalplatform_la-globalplatform.lo `test -f 'globalplatform.c' || echo '$(srcdir)/'`globalplatform.c
 
 libglobalplatform_la-ioapi.lo: unzip/ioapi.c
-#	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libglobalplatform_la-ioapi.lo -MD -MP -MF $(DEPDIR)/libglobalplatform_la-ioapi.Tpo -c -o libglobalplatform_la-ioapi.lo `test -f 'unzip/ioapi.c' || echo '$(srcdir)/'`unzip/ioapi.c
-#	$(am__mv) $(DEPDIR)/libglobalplatform_la-ioapi.Tpo $(DEPDIR)/libglobalplatform_la-ioapi.Plo
-#	source='unzip/ioapi.c' object='libglobalplatform_la-ioapi.lo' libtool=yes 
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
-	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libglobalplatform_la-ioapi.lo `test -f 'unzip/ioapi.c' || echo '$(srcdir)/'`unzip/ioapi.c
+	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libglobalplatform_la-ioapi.lo -MD -MP -MF $(DEPDIR)/libglobalplatform_la-ioapi.Tpo -c -o libglobalplatform_la-ioapi.lo `test -f 'unzip/ioapi.c' || echo '$(srcdir)/'`unzip/ioapi.c
+	$(am__mv) $(DEPDIR)/libglobalplatform_la-ioapi.Tpo $(DEPDIR)/libglobalplatform_la-ioapi.Plo
+#	source='unzip/ioapi.c' object='libglobalplatform_la-ioapi.lo' libtool=yes \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libglobalplatform_la-ioapi.lo `test -f 'unzip/ioapi.c' || echo '$(srcdir)/'`unzip/ioapi.c
 
 libglobalplatform_la-unzip.lo: unzip/unzip.c
-#	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libglobalplatform_la-unzip.lo -MD -MP -MF $(DEPDIR)/libglobalplatform_la-unzip.Tpo -c -o libglobalplatform_la-unzip.lo `test -f 'unzip/unzip.c' || echo '$(srcdir)/'`unzip/unzip.c
-#	$(am__mv) $(DEPDIR)/libglobalplatform_la-unzip.Tpo $(DEPDIR)/libglobalplatform_la-unzip.Plo
-#	source='unzip/unzip.c' object='libglobalplatform_la-unzip.lo' libtool=yes 
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
-	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libglobalplatform_la-unzip.lo `test -f 'unzip/unzip.c' || echo '$(srcdir)/'`unzip/unzip.c
+	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libglobalplatform_la-unzip.lo -MD -MP -MF $(DEPDIR)/libglobalplatform_la-unzip.Tpo -c -o libglobalplatform_la-unzip.lo `test -f 'unzip/unzip.c' || echo '$(srcdir)/'`unzip/unzip.c
+	$(am__mv) $(DEPDIR)/libglobalplatform_la-unzip.Tpo $(DEPDIR)/libglobalplatform_la-unzip.Plo
+#	source='unzip/unzip.c' object='libglobalplatform_la-unzip.lo' libtool=yes \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libglobalplatform_la-unzip.lo `test -f 'unzip/unzip.c' || echo '$(srcdir)/'`unzip/unzip.c
 
 libglobalplatform_la-zip.lo: unzip/zip.c
-#	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libglobalplatform_la-zip.lo -MD -MP -MF $(DEPDIR)/libglobalplatform_la-zip.Tpo -c -o libglobalplatform_la-zip.lo `test -f 'unzip/zip.c' || echo '$(srcdir)/'`unzip/zip.c
-#	$(am__mv) $(DEPDIR)/libglobalplatform_la-zip.Tpo $(DEPDIR)/libglobalplatform_la-zip.Plo
-#	source='unzip/zip.c' object='libglobalplatform_la-zip.lo' libtool=yes 
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
-	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libglobalplatform_la-zip.lo `test -f 'unzip/zip.c' || echo '$(srcdir)/'`unzip/zip.c
+	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libglobalplatform_la-zip.lo -MD -MP -MF $(DEPDIR)/libglobalplatform_la-zip.Tpo -c -o libglobalplatform_la-zip.lo `test -f 'unzip/zip.c' || echo '$(srcdir)/'`unzip/zip.c
+	$(am__mv) $(DEPDIR)/libglobalplatform_la-zip.Tpo $(DEPDIR)/libglobalplatform_la-zip.Plo
+#	source='unzip/zip.c' object='libglobalplatform_la-zip.lo' libtool=yes \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libglobalplatform_la-zip.lo `test -f 'unzip/zip.c' || echo '$(srcdir)/'`unzip/zip.c
 
 libglobalplatform_la-dyn_unix.lo: dyn_unix.c
-#	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libglobalplatform_la-dyn_unix.lo -MD -MP -MF $(DEPDIR)/libglobalplatform_la-dyn_unix.Tpo -c -o libglobalplatform_la-dyn_unix.lo `test -f 'dyn_unix.c' || echo '$(srcdir)/'`dyn_unix.c
-#	$(am__mv) $(DEPDIR)/libglobalplatform_la-dyn_unix.Tpo $(DEPDIR)/libglobalplatform_la-dyn_unix.Plo
-#	source='dyn_unix.c' object='libglobalplatform_la-dyn_unix.lo' libtool=yes 
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
-	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libglobalplatform_la-dyn_unix.lo `test -f 'dyn_unix.c' || echo '$(srcdir)/'`dyn_unix.c
+	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libglobalplatform_la-dyn_unix.lo -MD -MP -MF $(DEPDIR)/libglobalplatform_la-dyn_unix.Tpo -c -o libglobalplatform_la-dyn_unix.lo `test -f 'dyn_unix.c' || echo '$(srcdir)/'`dyn_unix.c
+	$(am__mv) $(DEPDIR)/libglobalplatform_la-dyn_unix.Tpo $(DEPDIR)/libglobalplatform_la-dyn_unix.Plo
+#	source='dyn_unix.c' object='libglobalplatform_la-dyn_unix.lo' libtool=yes \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libglobalplatform_la-dyn_unix.lo `test -f 'dyn_unix.c' || echo '$(srcdir)/'`dyn_unix.c
 
 libglobalplatform_la-connection.lo: connection.c
-#	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libglobalplatform_la-connection.lo -MD -MP -MF $(DEPDIR)/libglobalplatform_la-connection.Tpo -c -o libglobalplatform_la-connection.lo `test -f 'connection.c' || echo '$(srcdir)/'`connection.c
-#	$(am__mv) $(DEPDIR)/libglobalplatform_la-connection.Tpo $(DEPDIR)/libglobalplatform_la-connection.Plo
-#	source='connection.c' object='libglobalplatform_la-connection.lo' libtool=yes 
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
-	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libglobalplatform_la-connection.lo `test -f 'connection.c' || echo '$(srcdir)/'`connection.c
+	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libglobalplatform_la-connection.lo -MD -MP -MF $(DEPDIR)/libglobalplatform_la-connection.Tpo -c -o libglobalplatform_la-connection.lo `test -f 'connection.c' || echo '$(srcdir)/'`connection.c
+	$(am__mv) $(DEPDIR)/libglobalplatform_la-connection.Tpo $(DEPDIR)/libglobalplatform_la-connection.Plo
+#	source='connection.c' object='libglobalplatform_la-connection.lo' libtool=yes \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libglobalplatform_la-connection.lo `test -f 'connection.c' || echo '$(srcdir)/'`connection.c
 
 libglobalplatform_la-stringify.lo: stringify.c
-#	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libglobalplatform_la-stringify.lo -MD -MP -MF $(DEPDIR)/libglobalplatform_la-stringify.Tpo -c -o libglobalplatform_la-stringify.lo `test -f 'stringify.c' || echo '$(srcdir)/'`stringify.c
-#	$(am__mv) $(DEPDIR)/libglobalplatform_la-stringify.Tpo $(DEPDIR)/libglobalplatform_la-stringify.Plo
-#	source='stringify.c' object='libglobalplatform_la-stringify.lo' libtool=yes 
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
-	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libglobalplatform_la-stringify.lo `test -f 'stringify.c' || echo '$(srcdir)/'`stringify.c
+	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libglobalplatform_la-stringify.lo -MD -MP -MF $(DEPDIR)/libglobalplatform_la-stringify.Tpo -c -o libglobalplatform_la-stringify.lo `test -f 'stringify.c' || echo '$(srcdir)/'`stringify.c
+	$(am__mv) $(DEPDIR)/libglobalplatform_la-stringify.Tpo $(DEPDIR)/libglobalplatform_la-stringify.Plo
+#	source='stringify.c' object='libglobalplatform_la-stringify.lo' libtool=yes \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libglobalplatform_la-stringify.lo `test -f 'stringify.c' || echo '$(srcdir)/'`stringify.c
 
 libglobalplatform_la-debug.lo: debug.c
-#	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libglobalplatform_la-debug.lo -MD -MP -MF $(DEPDIR)/libglobalplatform_la-debug.Tpo -c -o libglobalplatform_la-debug.lo `test -f 'debug.c' || echo '$(srcdir)/'`debug.c
-#	$(am__mv) $(DEPDIR)/libglobalplatform_la-debug.Tpo $(DEPDIR)/libglobalplatform_la-debug.Plo
-#	source='debug.c' object='libglobalplatform_la-debug.lo' libtool=yes 
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
-	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libglobalplatform_la-debug.lo `test -f 'debug.c' || echo '$(srcdir)/'`debug.c
+	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libglobalplatform_la-debug.lo -MD -MP -MF $(DEPDIR)/libglobalplatform_la-debug.Tpo -c -o libglobalplatform_la-debug.lo `test -f 'debug.c' || echo '$(srcdir)/'`debug.c
+	$(am__mv) $(DEPDIR)/libglobalplatform_la-debug.Tpo $(DEPDIR)/libglobalplatform_la-debug.Plo
+#	source='debug.c' object='libglobalplatform_la-debug.lo' libtool=yes \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libglobalplatform_la-debug.lo `test -f 'debug.c' || echo '$(srcdir)/'`debug.c
 
 libglobalplatform_la-util.lo: util.c
-#	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libglobalplatform_la-util.lo -MD -MP -MF $(DEPDIR)/libglobalplatform_la-util.Tpo -c -o libglobalplatform_la-util.lo `test -f 'util.c' || echo '$(srcdir)/'`util.c
-#	$(am__mv) $(DEPDIR)/libglobalplatform_la-util.Tpo $(DEPDIR)/libglobalplatform_la-util.Plo
-#	source='util.c' object='libglobalplatform_la-util.lo' libtool=yes 
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
-	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libglobalplatform_la-util.lo `test -f 'util.c' || echo '$(srcdir)/'`util.c
+	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libglobalplatform_la-util.lo -MD -MP -MF $(DEPDIR)/libglobalplatform_la-util.Tpo -c -o libglobalplatform_la-util.lo `test -f 'util.c' || echo '$(srcdir)/'`util.c
+	$(am__mv) $(DEPDIR)/libglobalplatform_la-util.Tpo $(DEPDIR)/libglobalplatform_la-util.Plo
+#	source='util.c' object='libglobalplatform_la-util.lo' libtool=yes \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libglobalplatform_la-util.lo `test -f 'util.c' || echo '$(srcdir)/'`util.c
 
 libglobalplatform_la-loadfile.lo: loadfile.c
-#	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libglobalplatform_la-loadfile.lo -MD -MP -MF $(DEPDIR)/libglobalplatform_la-loadfile.Tpo -c -o libglobalplatform_la-loadfile.lo `test -f 'loadfile.c' || echo '$(srcdir)/'`loadfile.c
-#	$(am__mv) $(DEPDIR)/libglobalplatform_la-loadfile.Tpo $(DEPDIR)/libglobalplatform_la-loadfile.Plo
-#	source='loadfile.c' object='libglobalplatform_la-loadfile.lo' libtool=yes 
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
-	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libglobalplatform_la-loadfile.lo `test -f 'loadfile.c' || echo '$(srcdir)/'`loadfile.c
+	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libglobalplatform_la-loadfile.lo -MD -MP -MF $(DEPDIR)/libglobalplatform_la-loadfile.Tpo -c -o libglobalplatform_la-loadfile.lo `test -f 'loadfile.c' || echo '$(srcdir)/'`loadfile.c
+	$(am__mv) $(DEPDIR)/libglobalplatform_la-loadfile.Tpo $(DEPDIR)/libglobalplatform_la-loadfile.Plo
+#	source='loadfile.c' object='libglobalplatform_la-loadfile.lo' libtool=yes \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libglobalplatform_la-loadfile.lo `test -f 'loadfile.c' || echo '$(srcdir)/'`loadfile.c
 
 libglobalplatform_la-crypto.lo: crypto.c
-#	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libglobalplatform_la-crypto.lo -MD -MP -MF $(DEPDIR)/libglobalplatform_la-crypto.Tpo -c -o libglobalplatform_la-crypto.lo `test -f 'crypto.c' || echo '$(srcdir)/'`crypto.c
-#	$(am__mv) $(DEPDIR)/libglobalplatform_la-crypto.Tpo $(DEPDIR)/libglobalplatform_la-crypto.Plo
-#	source='crypto.c' object='libglobalplatform_la-crypto.lo' libtool=yes 
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
-	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libglobalplatform_la-crypto.lo `test -f 'crypto.c' || echo '$(srcdir)/'`crypto.c
+	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libglobalplatform_la-crypto.lo -MD -MP -MF $(DEPDIR)/libglobalplatform_la-crypto.Tpo -c -o libglobalplatform_la-crypto.lo `test -f 'crypto.c' || echo '$(srcdir)/'`crypto.c
+	$(am__mv) $(DEPDIR)/libglobalplatform_la-crypto.Tpo $(DEPDIR)/libglobalplatform_la-crypto.Plo
+#	source='crypto.c' object='libglobalplatform_la-crypto.lo' libtool=yes \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libglobalplatform_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libglobalplatform_la-crypto.lo `test -f 'crypto.c' || echo '$(srcdir)/'`crypto.c
 
 globalplatformTest-globalplatformTest.o: globalplatformTest.c
-#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(globalplatformTest_CFLAGS) $(CFLAGS) -MT globalplatformTest-globalplatformTest.o -MD -MP -MF $(DEPDIR)/globalplatformTest-globalplatformTest.Tpo -c -o globalplatformTest-globalplatformTest.o `test -f 'globalplatformTest.c' || echo '$(srcdir)/'`globalplatformTest.c
-#	$(am__mv) $(DEPDIR)/globalplatformTest-globalplatformTest.Tpo $(DEPDIR)/globalplatformTest-globalplatformTest.Po
-#	source='globalplatformTest.c' object='globalplatformTest-globalplatformTest.o' libtool=no 
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(globalplatformTest_CFLAGS) $(CFLAGS) -c -o globalplatformTest-globalplatformTest.o `test -f 'globalplatformTest.c' || echo '$(srcdir)/'`globalplatformTest.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(globalplatformTest_CFLAGS) $(CFLAGS) -MT globalplatformTest-globalplatformTest.o -MD -MP -MF $(DEPDIR)/globalplatformTest-globalplatformTest.Tpo -c -o globalplatformTest-globalplatformTest.o `test -f 'globalplatformTest.c' || echo '$(srcdir)/'`globalplatformTest.c
+	$(am__mv) $(DEPDIR)/globalplatformTest-globalplatformTest.Tpo $(DEPDIR)/globalplatformTest-globalplatformTest.Po
+#	source='globalplatformTest.c' object='globalplatformTest-globalplatformTest.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(globalplatformTest_CFLAGS) $(CFLAGS) -c -o globalplatformTest-globalplatformTest.o `test -f 'globalplatformTest.c' || echo '$(srcdir)/'`globalplatformTest.c
 
 globalplatformTest-globalplatformTest.obj: globalplatformTest.c
-#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(globalplatformTest_CFLAGS) $(CFLAGS) -MT globalplatformTest-globalplatformTest.obj -MD -MP -MF $(DEPDIR)/globalplatformTest-globalplatformTest.Tpo -c -o globalplatformTest-globalplatformTest.obj `if test -f 'globalplatformTest.c'; then $(CYGPATH_W) 'globalplatformTest.c'; else $(CYGPATH_W) '$(srcdir)/globalplatformTest.c'; fi`
-#	$(am__mv) $(DEPDIR)/globalplatformTest-globalplatformTest.Tpo $(DEPDIR)/globalplatformTest-globalplatformTest.Po
-#	source='globalplatformTest.c' object='globalplatformTest-globalplatformTest.obj' libtool=no 
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) 
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(globalplatformTest_CFLAGS) $(CFLAGS) -c -o globalplatformTest-globalplatformTest.obj `if test -f 'globalplatformTest.c'; then $(CYGPATH_W) 'globalplatformTest.c'; else $(CYGPATH_W) '$(srcdir)/globalplatformTest.c'; fi`
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(globalplatformTest_CFLAGS) $(CFLAGS) -MT globalplatformTest-globalplatformTest.obj -MD -MP -MF $(DEPDIR)/globalplatformTest-globalplatformTest.Tpo -c -o globalplatformTest-globalplatformTest.obj `if test -f 'globalplatformTest.c'; then $(CYGPATH_W) 'globalplatformTest.c'; else $(CYGPATH_W) '$(srcdir)/globalplatformTest.c'; fi`
+	$(am__mv) $(DEPDIR)/globalplatformTest-globalplatformTest.Tpo $(DEPDIR)/globalplatformTest-globalplatformTest.Po
+#	source='globalplatformTest.c' object='globalplatformTest-globalplatformTest.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(globalplatformTest_CFLAGS) $(CFLAGS) -c -o globalplatformTest-globalplatformTest.obj `if test -f 'globalplatformTest.c'; then $(CYGPATH_W) 'globalplatformTest.c'; else $(CYGPATH_W) '$(srcdir)/globalplatformTest.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

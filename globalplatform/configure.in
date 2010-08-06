@@ -24,6 +24,7 @@ case "$host" in
   ;;
 *-*-darwin*)
         AC_DEFINE(MACOSX)
+	LDFLAGS+="-framework PCSC "
   ;;
 *)
   ;;

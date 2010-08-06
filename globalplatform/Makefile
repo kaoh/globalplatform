@@ -109,8 +109,8 @@ AUTOHEADER = ${SHELL} /Users/svp/globalplatform/globalplatform/missing --run aut
 AUTOMAKE = ${SHELL} /Users/svp/globalplatform/globalplatform/missing --run automake-1.11
 AWK = awk
 CC = gcc
-CCDEPMODE = depmode=none
-CFLAGS = -O -g -isysroot /Developer/SDKs/MacOSX10.5.sdk
+CCDEPMODE = depmode=gcc3
+CFLAGS = -g -O2
 CPP = gcc -E
 CPPFLAGS = 
 CYGPATH_W = echo
@@ -132,7 +132,7 @@ INSTALL_PROGRAM = ${INSTALL}
 INSTALL_SCRIPT = ${INSTALL}
 INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
 LD = /usr/libexec/gcc/i686-apple-darwin9/4.0.1/ld
-LDFLAGS = -ldl
+LDFLAGS = -framework PCSC -ldl
 LIBOBJS = 
 LIBS = -lcrypto -lz 
 LIBTOOL = $(SHELL) $(top_builddir)/libtool

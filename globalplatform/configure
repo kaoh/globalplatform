@@ -4204,6 +4204,7 @@ test -z "$OBJDUMP" && OBJDUMP=objdump
 *-*-darwin*)
         $as_echo "#define MACOSX 1" >>confdefs.h
 
+	LDFLAGS+="-framework PCSC "
   ;;
 *)
   ;;
