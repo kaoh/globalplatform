@@ -26,6 +26,9 @@ case "$host" in
         AC_DEFINE(MACOSX)
 	LDFLAGS+="-framework PCSC "
   ;;
+*-*-solaris*)
+	CPPFLAGS+="-fast "
+  ;;
 *)
   ;;
 esac
