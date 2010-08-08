@@ -39,12 +39,12 @@
 	#endif
 	#define OPGP_NO_API
 #else
-	#if defined __GNUC__ && (__GNUC__ >= 4 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3))
+	#if defined __GNUC__ && (__GNUC__ >= 4)
 		#define OPGP_API __attribute__ ((visibility("default")))
 		#define OPGP_NO_API __attribute__ ((visibility("hidden")))
 	#else
 		#define OPGP_API
-		#define OPGP_NO_API static
+		#define OPGP_NO_API
 	#endif
 #endif // #if (defined(WIN32) || defined __CYGWIN__)
 

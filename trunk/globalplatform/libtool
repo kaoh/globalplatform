@@ -1,8 +1,8 @@
-#! /bin/bash
+#! /bin/sh
 
 # libtool - Provide generalized library-building support services.
 # Generated automatically by config.status (globalplatform) 6.0.0
-# Libtool was configured on host enterprise:
+# Libtool was configured on host opensolaris:
 # NOTE: Changes made to this file will be lost: look at ltmain.sh.
 #
 #   Copyright (C) 1996, 1997, 1998, 1999, 2000, 2001, 2003, 2004, 2005,
@@ -55,47 +55,47 @@ macro_revision=1.3017
 build_libtool_libs=yes
 
 # Whether or not to build static libraries.
-build_old_libs=yes
+build_old_libs=no
 
 # What type of objects to build.
 pic_mode=default
 
 # Whether or not to optimize for fast installation.
-fast_install=yes
+fast_install=needless
 
 # The host system.
 host_alias=
-host=x86_64-unknown-linux-gnu
-host_os=linux-gnu
+host=i386-pc-solaris2.11
+host_os=solaris2.11
 
 # The build system.
 build_alias=
-build=x86_64-unknown-linux-gnu
-build_os=linux-gnu
+build=i386-pc-solaris2.11
+build_os=solaris2.11
 
 # A sed program that does not truncate output.
-SED="/bin/sed"
+SED="/usr/gnu/bin/sed"
 
 # Sed that helps us avoid accidentally triggering echo(1) options like -n.
 Xsed="$SED -e 1s/^X//"
 
 # A grep program that handles long lines.
-GREP="/bin/grep"
+GREP="/usr/gnu/bin/grep"
 
 # An ERE matcher.
-EGREP="/bin/grep -E"
+EGREP="/usr/gnu/bin/grep -E"
 
 # A literal string matcher.
-FGREP="/bin/grep -F"
+FGREP="/usr/gnu/bin/grep -F"
 
 # A BSD- or MS-compatible name lister.
-NM="/usr/bin/nm -B"
+NM="/usr/gnu/bin/nm -B"
 
 # Whether we need soft or hard links.
 LN_S="ln -s"
 
 # What is the maximum length of a command?
-max_cmd_len=1572864
+max_cmd_len=786240
 
 # Object file suffix (normally "o").
 objext=o
@@ -156,10 +156,10 @@ global_symbol_to_c_name_address_lib_prefix="sed -n -e 's/^: \\([^ ]*\\) \$/  {\\
 objdir=.libs
 
 # Shell to use when invoking shell scripts.
-SHELL="/bin/bash"
+SHELL="/bin/sh"
 
 # An echo program that does not interpret backslashes.
-ECHO="echo"
+ECHO="/usr/gnu/bin/echo"
 
 # Used to examine libraries when file_magic_cmd begins with "file".
 MAGIC_CMD=file
@@ -193,7 +193,7 @@ extract_expsyms_cmds=""
 
 # Variables whose values should be saved in libtool wrapper scripts and
 # restored at link time.
-variables_saved_for_relink="PATH LD_LIBRARY_PATH LD_RUN_PATH GCC_EXEC_PREFIX COMPILER_PATH LIBRARY_PATH"
+variables_saved_for_relink="PATH LD_LIBRARY_PATH  GCC_EXEC_PREFIX COMPILER_PATH LIBRARY_PATH"
 
 # Do we need the "lib" prefix for modules?
 need_lib_prefix=no
@@ -205,13 +205,13 @@ need_version=no
 version_type=linux
 
 # Shared library runtime path variable.
-runpath_var=LD_RUN_PATH
+runpath_var=
 
 # Shared library path variable.
 shlibpath_var=LD_LIBRARY_PATH
 
 # Is shlibpath searched before the hard-coded library search path?
-shlibpath_overrides_runpath=no
+shlibpath_overrides_runpath=yes
 
 # Format of library name prefix.
 libname_spec="lib\$name"
@@ -224,13 +224,13 @@ library_names_spec="\${libname}\${release}\${shared_ext}\$versuffix \${libname}\
 soname_spec="\${libname}\${release}\${shared_ext}\$major"
 
 # Command to use after installation of a shared archive.
-postinstall_cmds=""
+postinstall_cmds="chmod +x \$lib"
 
 # Command to use after uninstallation of a shared archive.
 postuninstall_cmds=""
 
 # Commands used to finish a libtool library installation in a directory.
-finish_cmds="PATH=\\\"\\\$PATH:/sbin\\\" ldconfig -n \$libdir"
+finish_cmds=""
 
 # As "finish_cmds", except a single script fragment to be evaled but
 # not shown.
@@ -240,10 +240,10 @@ finish_eval=""
 hardcode_into_libs=yes
 
 # Compile-time system search path for libraries.
-sys_lib_search_path_spec="/usr/lib/gcc/x86_64-linux-gnu/4.4.3 /usr/lib /lib /usr/lib/x86_64-linux-gnu"
+sys_lib_search_path_spec="/usr/sfw/lib/gcc/i386-pc-solaris2.11/3.4.3 /usr/sfw/i386-pc-solaris2.11/lib /usr/sfw/lib /lib /usr/lib"
 
 # Run-time system search path for libraries.
-sys_lib_dlsearch_path_spec="/lib /usr/lib /usr/lib/nvidia-current /usr/lib32/nvidia-current /usr/lib32/alsa-lib /usr/lib/alsa-lib /usr/local/lib /lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu "
+sys_lib_dlsearch_path_spec="/lib /usr/lib"
 
 # Whether dlopen is supported.
 dlopen_support=unknown
@@ -260,7 +260,7 @@ striplib="strip --strip-unneeded"
 
 
 # The linker used to build libraries.
-LD="/usr/bin/ld -m elf_x86_64"
+LD="/usr/ccs/bin/ld"
 
 # Commands used to build an old-style archive.
 old_archive_cmds="\$AR \$AR_FLAGS \$oldlib\$oldobjs~\$RANLIB \$oldlib"
@@ -281,22 +281,22 @@ wl="-Wl,"
 pic_flag=" -fPIC -DPIC"
 
 # Compiler flag to prevent dynamic linking.
-link_static_flag="-static"
+link_static_flag=""
 
 # Does compiler simultaneously support -c and -o options?
 compiler_c_o="yes"
 
 # Whether or not to add -lc for building shared libraries.
-build_libtool_need_lc=no
+build_libtool_need_lc=yes
 
 # Whether or not to disallow shared libs when runtime libs are static.
 allow_libtool_libs_with_static_runtimes=no
 
 # Compiler flag to allow reflexive dlopens.
-export_dynamic_flag_spec="\${wl}--export-dynamic"
+export_dynamic_flag_spec=""
 
 # Compiler flag to generate shared objects directly from archives.
-whole_archive_flag_spec="\${wl}--whole-archive\$convenience \${wl}--no-whole-archive"
+whole_archive_flag_spec="\${wl}-z \${wl}allextract\$convenience \${wl}-z \${wl}defaultextract"
 
 # Whether the compiler copes with passing no objects directly.
 compiler_needs_object="no"
@@ -308,11 +308,9 @@ old_archive_from_new_cmds=""
 old_archive_from_expsyms_cmds=""
 
 # Commands used to build a shared archive.
-archive_cmds="\$CC -shared \$libobjs \$deplibs \$compiler_flags \${wl}-soname \$wl\$soname -o \$lib"
-archive_expsym_cmds="echo \\\"{ global:\\\" > \$output_objdir/\$libname.ver~
-	    cat \$export_symbols | sed -e \\\"s/\\\\(.*\\\\)/\\\\1;/\\\" >> \$output_objdir/\$libname.ver~
-	    echo \\\"local: *; };\\\" >> \$output_objdir/\$libname.ver~
-	    \$CC -shared \$libobjs \$deplibs \$compiler_flags \${wl}-soname \$wl\$soname \${wl}-version-script \${wl}\$output_objdir/\$libname.ver -o \$lib"
+archive_cmds="\$CC -shared \${wl}-z \${wl}text \${wl}-h \${wl}\$soname -o \$lib \$libobjs \$deplibs \$compiler_flags"
+archive_expsym_cmds="echo \\\"{ global:\\\" > \$lib.exp~cat \$export_symbols | \$SED -e \\\"s/\\\\(.*\\\\)/\\\\1;/\\\" >> \$lib.exp~echo \\\"local: *; };\\\" >> \$lib.exp~
+	  \$CC -shared \${wl}-z \${wl}text \${wl}-M \${wl}\$lib.exp \${wl}-h \${wl}\$soname -o \$lib \$libobjs \$deplibs \$compiler_flags~\$RM \$lib.exp"
 
 # Commands used to build a loadable module if different from building
 # a shared archive.
@@ -320,17 +318,17 @@ module_cmds=""
 module_expsym_cmds=""
 
 # Whether we are building with GNU ld or not.
-with_gnu_ld="yes"
+with_gnu_ld="no"
 
 # Flag that allows shared libraries with undefined symbols to be built.
 allow_undefined_flag=""
 
 # Flag that enforces no undefined symbols.
-no_undefined_flag=""
+no_undefined_flag=" -z defs"
 
 # Flag to hardcode $libdir into a binary during linking.
 # This must work even if $libdir does not exist
-hardcode_libdir_flag_spec="\${wl}-rpath \${wl}\$libdir"
+hardcode_libdir_flag_spec="-R\$libdir"
 
 # If ld is used when linking, flag to hardcode $libdir into a binary
 # during linking.  This must work even if $libdir does not exist.
@@ -355,7 +353,7 @@ hardcode_minus_L=no
 
 # Set to "yes" if using SHLIBPATH_VAR=DIR during linking hardcodes DIR
 # into the resulting binary.
-hardcode_shlibpath_var=unsupported
+hardcode_shlibpath_var=no
 
 # Set to "yes" if building a shared library automatically hardcodes DIR
 # into the library and all subsequent libraries and executables linked
@@ -367,7 +365,7 @@ hardcode_automatic=no
 inherit_rpath=no
 
 # Whether libtool must link a program against all its dependency libraries.
-link_all_deplibs=no
+link_all_deplibs=yes
 
 # Fix the shell variable $srcfile for the compiler.
 fix_srcfile_path=""
