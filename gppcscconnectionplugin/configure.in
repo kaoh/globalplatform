@@ -138,12 +138,8 @@ case "$host" in
 	fi
 	AC_SUBST(GLOBALPLATFORM_LIBS,"-lGlobalPlatform -L"GLOBALPLATFORM_LIB_PATH"")
   ;;
+# Solaris will fail later if not installed
 *-*-solaris*)
-	if ! test -f "$GLOBALPLATFORM_LIB_PATH"/libglobalplatform.so;
-	  then AC_MSG_ERROR([libglobalplatform.so not found, specify location of libglobalplatform.so with
-	./configure GLOBALPLATFORM_LIB_PATH=<library directory>])
-	fi
-	AC_SUBST(GLOBALPLATFORM_LIBS,"-lglobalplatform -L"GLOBALPLATFORM_LIB_PATH"")
   ;;
 *)
     PKG_CHECK_MODULES(GLOBALPLATFORM, globalplatform >= 6.0.0, [],
@@ -166,7 +162,7 @@ case "$host" in
 	AC_SUBST(GLOBALPLATFORM_CFLAGS,-I"$GLOBALPLATFORM__H_PATH")
   ;;
   *)
-    CFLAGS="$CFLAGS $GLOBALPLATFORM_CFLAGS"
+    CFLAGS="$CFLAGS $GLOBALPLATFORM_CFLAGS $PCSCLITE_CFLAGS"
     AC_CHECK_HEADER(globalplatform.h, [],
   	  [AC_MSG_ERROR([globalplatform.h not found or usable, install GlobalPlatform 6.0.0
     or later, or use ./configure GLOBALPLATFORM_CFLAGS=-I<include directory>])])
