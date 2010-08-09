@@ -11529,13 +11529,8 @@ case "$host" in
 	GLOBALPLATFORM_LIBS="-lGlobalPlatform -L"GLOBALPLATFORM_LIB_PATH""
 
   ;;
+# Solaris will fail later if not installed
 *-*-solaris*)
-	if ! test -f "$GLOBALPLATFORM_LIB_PATH"/libglobalplatform.so;
-	  then as_fn_error "libglobalplatform.so not found, specify location of libglobalplatform.so with
-	./configure GLOBALPLATFORM_LIB_PATH=<library directory>" "$LINENO" 5
-	fi
-	GLOBALPLATFORM_LIBS="-lglobalplatform -L"GLOBALPLATFORM_LIB_PATH""
-
   ;;
 *)
 
@@ -11631,7 +11626,7 @@ case "$host" in
 
   ;;
   *)
-    CFLAGS="$CFLAGS $GLOBALPLATFORM_CFLAGS"
+    CFLAGS="$CFLAGS $GLOBALPLATFORM_CFLAGS $PCSCLITE_CFLAGS"
     ac_fn_c_check_header_mongrel "$LINENO" "globalplatform.h" "ac_cv_header_globalplatform_h" "$ac_includes_default"
 if test "x$ac_cv_header_globalplatform_h" = x""yes; then :
 
