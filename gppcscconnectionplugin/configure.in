@@ -138,6 +138,13 @@ case "$host" in
 	fi
 	AC_SUBST(GLOBALPLATFORM_LIBS,"-lGlobalPlatform -L"GLOBALPLATFORM_LIB_PATH"")
   ;;
+*-*-solaris*)
+	if ! test -f "$GLOBALPLATFORM_LIB_PATH"/libglobalplatform.so;
+	  then AC_MSG_ERROR([libglobalplatform.so not found, specify location of libglobalplatform.so with
+	./configure GLOBALPLATFORM_LIB_PATH=<library directory>])
+	fi
+	AC_SUBST(GLOBALPLATFORM_LIBS,"-lglobalplatform -L"GLOBALPLATFORM_LIB_PATH"")
+  ;;
 *)
     PKG_CHECK_MODULES(GLOBALPLATFORM, globalplatform >= 6.0.0, [],
       [
