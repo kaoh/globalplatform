@@ -4854,6 +4854,9 @@ case "$host" in
 	GLOBALPLATFORM_LIBS="-lGlobalPlatform -L"GLOBALPLATFORM_LIB_PATH""
 
   ;;
+# Solaris will fail later if not installed
+*-*-solaris*)
+  ;;
 *)
 
 pkg_failed=no
@@ -4948,7 +4951,7 @@ case "$host" in
 
   ;;
   *)
-    CFLAGS="$CFLAGS $GLOBALPLATFORM_CFLAGS"
+    CFLAGS="$CFLAGS $GLOBALPLATFORM_CFLAGS $PCSCLITE_CFLAGS"
     ac_fn_c_check_header_mongrel "$LINENO" "globalplatform.h" "ac_cv_header_globalplatform_h" "$ac_includes_default"
 if test "x$ac_cv_header_globalplatform_h" = x""yes; then :
 
