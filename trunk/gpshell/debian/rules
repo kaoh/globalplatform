@@ -84,7 +84,7 @@ binary-arch: install
 	dh_testroot
 	dh_installchangelogs ChangeLog
 	dh_installdocs
-	dh_installexamples *.txt
+	dh_installexamples *.txt *.cap *.cap.transf
 	dh_install
 #	dh_installmenu
 #	dh_installdebconf
