@@ -17,7 +17,7 @@ SUBDIRS = src
 
 UBUNTU_DISTS = dapper hardy jaunty karmic lucid maverick
 
-SNAPSHOT_VERSION=0+1-SNAPSHOT-`date +%F-%0k-%0M-%0S%z`
+SNAPSHOT_VERSION=1+2-SNAPSHOT-`date +%F-%0k-%0M-%0S%z`
 RELEASE_VERSION=1
 
 deb-snapshot:

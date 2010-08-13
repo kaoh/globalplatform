@@ -10,8 +10,8 @@ doc:
 
 UBUNTU_DISTS = dapper hardy jaunty karmic lucid maverick
 
-SNAPSHOT_VERSION=2+3-SNAPSHOT-`date +%F-%0k-%0M-%0S%z`
-RELEASE_VERSION=3
+SNAPSHOT_VERSION=4+5-SNAPSHOT-`date +%F-%0k-%0M-%0S%z`
+RELEASE_VERSION=4
 
 deb-snapshot:
 	rm -rf $(PACKAGE)-$(VERSION)

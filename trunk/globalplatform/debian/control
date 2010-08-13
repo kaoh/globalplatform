@@ -19,7 +19,7 @@ Description: GlobalPlatform Smart Card Management Library Dev Files
 Package: libglobalplatform6
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Recommends: gppcscconnectionplugin
+Recommends: libgppcscconnectionplugin1
 Suggests: gpshell
 Description: GlobalPlatform Smart Card Management Library
  GlobalPlatform is a standard for the management of the contents on a smart card.
