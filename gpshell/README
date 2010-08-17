@@ -1,4 +1,3 @@
-das ist Dein gro§er?
 ******************************************************
 Title    : Global Platform Shell (gpshell)
 Authors  : snitmo@gmail.com
@@ -27,11 +26,11 @@ It can establish a secure channel with a smart card, load, instantiate, delete, 
 You need also the libraries GlobalPlatform 6.0.0, zlib 1.2.3 (zlib1.dll) and OpenSSL 0.97e (libeay32.dll and ssleay32.dll) or
 compatible and must place them in the directory where GPShell is called or better the system directory (C:\Windows\System32 or /usr/(local/)lib usually).
 
-For MacOSX you might set 
+For MacOSX you might set
 
 export DYLD_LIBRARY_PATH=/opt/local/lib
 
-so that all needed libraries are found. 
+so that all needed libraries are found.
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
