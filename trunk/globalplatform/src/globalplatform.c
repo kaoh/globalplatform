@@ -1697,7 +1697,7 @@ OPGP_ERROR_STATUS OPGP_read_executable_load_file_parameters_from_buffer(PBYTE lo
 
 /**
  * An GP211_install_for_load() must precede.
- * The Load File Data Block Signature(s) must be the same block(s) and in the same order like in calculate_load_file_data_block_hash().
+ * The Load File Data Block Signature(s) must be the same block(s) and in the same order like in GP211_calculate_load_file_data_block_hash().
  * If no Load File Data Block Signatures are necessary the loadFileDataBlockSignature must be NULL and the loadFileDataBlockSignatureLength 0.
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
@@ -2153,7 +2153,7 @@ end:
 
 /**
  * In the case of delegated management an Install Token authorizing the INSTALL [for install] must be included.
- * Otherwise installToken must be NULL. See calculate_install_token().
+ * Otherwise installToken must be NULL. See GP211_calculate_install_token().
  * volatileDataSpaceLimit and nonVolatileDataSpaceLimit can be 0, if the card does not need or support this tag.
  * For Security domains look in your manual what parameters are necessary.
  * If the tag for application install parameters is mandatory for your card, but you have no install parameters
@@ -2257,7 +2257,7 @@ end:
 
 /**
  * In the case of delegated management an Install Token authorizing the INSTALL [for install and make selectable] must be included.
- * Otherwise installToken must be NULL. See calculate_install_token().
+ * Otherwise installToken must be NULL. See GP211_calculate_install_token().
  * volatileDataSpaceLimit and nonVolatileDataSpaceLimit can be 0, if the card does not need or support this tag.
  * For Security domains look in your manual what parameters are necessary.
  * If the tag for application install parameters is mandatory for your card, but you have no install parameters
@@ -2364,7 +2364,7 @@ end:
 /**
  * In the case of delegated management an Extradition Token authorizing the
  * INSTALL [for extradition] must be included.
- * Otherwise extraditionToken must be NULL. See calculate_install_token().
+ * Otherwise extraditionToken must be NULL. See GP211_calculate_install_token().
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
  * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
@@ -3686,7 +3686,7 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 #endif
 
 
-	
+
 	if (derivationMethod == OPGP_DERIVATION_METHOD_EMV_CPS11) {
 		status = EMV_CPS11_derive_keys(cardContext, cardInfo, recvBuffer, baseKey, sEnc, sMac, dek);
 		if ( OPGP_ERROR_CHECK(status)) {
@@ -4722,7 +4722,7 @@ end:
  * need or support a Load File DAP in this situation, e.g. if you want to load a Executable Load File to the Card
  * Manager Security Domain.
  * In the case of delegated management a Load Token authorizing the INSTALL [for load] must be included.
- * Otherwise loadToken must be NULL. See calculate_load_token().
+ * Otherwise loadToken must be NULL. See OP201_calculate_load_token().
  * The term Executable Load File is equivalent to the Open Platform term Load File Data Block.
  * volatileDataSpaceLimit and nonVolatileDataSpaceLimit can be 0, if the card does not need or support this tags.
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
@@ -4756,7 +4756,7 @@ OPGP_ERROR_STATUS OP201_install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CAR
 }
 
 /**
- * In the case of delegated management an Install Token authorizing the INSTALL [for install] must be included.
+ * In the case of delegated management an Install Token authorizing the INSTALL [for install] must be included. See OP201_calculate_install_token().
  * Otherwise installToken must be NULL. See calculate_install_token().
  * volatileDataSpaceLimit and nonVolatileDataSpaceLimit can be 0, if the card does not need or support this tag.
  * For Security domains look in your manual what parameters are necessary.
@@ -4807,7 +4807,7 @@ OPGP_ERROR_STATUS OP201_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_
 }
 
 /**
- * In the case of delegated management an Install Token authorizing the INSTALL [for install and make selectable] must be included.
+ * In the case of delegated management an Install Token authorizing the INSTALL [for install and make selectable] must be included. See OP201_calculate_install_token().
  * Otherwise installToken must be NULL. See calculate_install_token().
  * volatileDataSpaceLimit and nonVolatileDataSpaceLimit can be 0, if the card does not need or support this tag.
  * For Security domains look in your manual what parameters are necessary.
@@ -4858,7 +4858,7 @@ OPGP_ERROR_STATUS OP201_install_for_install_and_make_selectable(OPGP_CARD_CONTEX
 }
 
 /**
- * In the case of delegated management an Install Token authorizing the INSTALL [for make selectable] must be included.
+ * In the case of delegated management an Install Token authorizing the INSTALL [for make selectable] must be included. See OP201_calculate_install_token().
  * Otherwise installToken must be NULL.
  * For Security domains look in your manual what parameters are necessary.
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
