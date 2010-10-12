@@ -1,7 +1,7 @@
 # Require autoconf 2.53
 AC_PREREQ(2.53)
 
-AC_INIT(gppcscconnectionplugin, 1.0.0, k_o_@users.sourceforge.net)
+AC_INIT(gppcscconnectionplugin, 1.1.0, k_o_@users.sourceforge.net)
 AC_COPYRIGHT(COPYING)
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_MACRO_DIR([m4])

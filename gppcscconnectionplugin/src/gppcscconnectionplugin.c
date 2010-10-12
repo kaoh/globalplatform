@@ -291,6 +291,7 @@ OPGP_ERROR_STATUS OPGP_PL_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 
 	PBYTE responseData = NULL;
 	DWORD responseDataLength = *rapduLength;
+	DWORD tempDataLength = 0;
 
 	OPGP_LOG_START(_T("OPGP_PL_send_APDU"));
 	CHECK_CARD_CONTEXT_INITIALIZATION(cardContext, status)
@@ -516,6 +517,11 @@ OPGP_ERROR_STATUS OPGP_PL_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 					// T=0 transmission (command w/ Le or La)
 
 					responseDataLength = *rapduLength - offset;
+
+					// copy the data to an intermediate buffer to restore it in case of a broken ISO implementation not supporting GET RESPONSE on 0x9000
+					memcpy(responseData, rapdu, offset + 2);
+					tempDataLength = offset + 2;
+
 					result = SCardTransmit(GET_PCSC_CARD_INFO_SPECIFIC(cardInfo)->cardHandle,
 							SCARD_PCI_T0,
 							capdu,
@@ -528,6 +534,12 @@ OPGP_ERROR_STATUS OPGP_PL_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 						HANDLE_STATUS(status, result);
 						goto end;
 					} // if ( SCARD_S_SUCCESS != result)
+					result = get_short(rapdu, *rapduLength-2);
+					// if the result is 0x6E00 then this should be a broken ISO implementation not supporting GET RESPONSE on 0x9000 and we return the previous response data
+					if (result == 0x6E00) {
+						memcpy(rapdu, responseData, tempDataLength);
+						responseDataLength = tempDataLength;
+					}
 					offset += responseDataLength - 2;
 
 				} // if (61 etc.)

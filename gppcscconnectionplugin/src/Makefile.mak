@@ -91,7 +91,7 @@ version.res : version.rc
 # run doxygen
 doc: do-doc
 
-VERSION=1.0.0
+VERSION=1.1.0
 PREBUILDDIR="GPPCSCConnectionPlugin-$(VERSION)"
 
 prebuild: all

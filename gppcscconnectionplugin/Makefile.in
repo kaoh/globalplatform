@@ -225,8 +225,8 @@ top_srcdir = @top_srcdir@
 EXTRA_DIST = GPPCSCConnectionPlugin.cbp Makefile.mak make.bat lib_finder.script INSTALL.w32 reconf GPPCSCConnectionPlugin.vcproj
 SUBDIRS = src
 UBUNTU_DISTS = dapper hardy jaunty karmic lucid maverick
-SNAPSHOT_VERSION = 0+1-SNAPSHOT-`date +%F-%0k-%0M-%0S%z`
-RELEASE_VERSION = 1
+SNAPSHOT_VERSION = 1+2-SNAPSHOT-`date +%F-%0k-%0M-%0S%z`
+RELEASE_VERSION = 1.1
 MAINTAINERCLEANFILES = \
 	Makefile.in \
 	configure \
