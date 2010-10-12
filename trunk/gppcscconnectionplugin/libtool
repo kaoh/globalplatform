@@ -1,7 +1,7 @@
 #! /bin/bash
 
 # libtool - Provide generalized library-building support services.
-# Generated automatically by config.status (gppcscconnectionplugin) 1.0.0
+# Generated automatically by config.status (gppcscconnectionplugin) 1.1.0
 # Libtool was configured on host enterprise:
 # NOTE: Changes made to this file will be lost: look at ltmain.sh.
 #

@@ -11,7 +11,7 @@ nobase_include_HEADERS =
 
 libgppcscconnectionplugin_la_SOURCES = gppcscconnectionplugin.h gppcscconnectionplugin.c util.h util.c
 
-libgppcscconnectionplugin_la_LDFLAGS = -version-info 1:0:0 $(PCSCLITE_LIBS) $(GLOBALPLATFORM_LIBS)
+libgppcscconnectionplugin_la_LDFLAGS = -version-info 1:1:0 $(PCSCLITE_LIBS) $(GLOBALPLATFORM_LIBS)
 libgppcscconnectionplugin_la_CPPFLAGS = $(AM_CPPFLAGS) $(PCSCLITE_CFLAGS) $(GLOBALPLATFORM_CFLAGS)
 
 TESTS = gppcscconnectionpluginTest

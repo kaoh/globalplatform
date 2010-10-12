@@ -56,3 +56,5 @@ History
                         Changed License to GPL (LGPL does not make sense)
                         Compiled against GlobalPlatform 6.0.0
                         enable_timer command added
+
+10/12/2010       2.0.0	Using new PC/SC plugin version
