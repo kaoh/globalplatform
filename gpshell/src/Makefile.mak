@@ -80,7 +80,7 @@ clean:
 	-@del version.res
 	$(_VC_MANIFEST_CLEAN)
 
-VERSION=2.0.0
+VERSION=1.4.4
 DIR=GPShell-$(VERSION)
 
 PREBUILD:	clean_package bin_package

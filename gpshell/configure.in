@@ -1,7 +1,7 @@
 # Require autoconf 2.52
 AC_PREREQ(2.52)
 
-AC_INIT(GPShell, 2.0.0, Karsten Ohme <k_o_@users.sourceforge.net> or snitmo@gmail.com)
+AC_INIT(GPShell, 1.4.4, Karsten Ohme <k_o_@users.sourceforge.net> or snitmo@gmail.com)
 AC_CONFIG_AUX_DIR(myaux)
 AC_COPYRIGHT(COPYING)
 
