@@ -226,7 +226,7 @@ EXTRA_DIST = GPPCSCConnectionPlugin.cbp Makefile.mak make.bat lib_finder.script 
 SUBDIRS = src
 UBUNTU_DISTS = dapper hardy jaunty karmic lucid maverick
 SNAPSHOT_VERSION = 1+2-SNAPSHOT-`date +%F-%0k-%0M-%0S%z`
-RELEASE_VERSION = 1.1.0
+RELEASE_VERSION = 2
 MAINTAINERCLEANFILES = \
 	Makefile.in \
 	configure \
