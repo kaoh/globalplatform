@@ -604,6 +604,8 @@ GLOBALPLATFORM_LIBS
 GLOBALPLATFORM_LIB_PATH
 PCSCLITE_H_PATH
 PCSCLITE_CFLAGS
+PKG_CONFIG_LIBDIR
+PKG_CONFIG_PATH
 PKG_CONFIG
 PCSCLITE_LIBS
 WINSCARD_LIB_PATH
@@ -713,6 +715,8 @@ CPPFLAGS
 CPP
 WINSCARD_LIB_PATH
 PKG_CONFIG
+PKG_CONFIG_PATH
+PKG_CONFIG_LIBDIR
 PCSCLITE_CFLAGS
 PCSCLITE_LIBS
 PCSCLITE_H_PATH
@@ -1355,6 +1359,10 @@ Some influential environment variables:
   WINSCARD_LIB_PATH
               Specifies the location of WinSCard.lib for Windows
   PKG_CONFIG  path to pkg-config utility
+  PKG_CONFIG_PATH
+              directories to add to pkg-config's search path
+  PKG_CONFIG_LIBDIR
+              path overriding pkg-config's built-in search path
   PCSCLITE_CFLAGS
               C compiler flags for PCSCLITE, overriding pkg-config
   PCSCLITE_LIBS
@@ -4498,70 +4506,7 @@ fi
 done
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking CFLAGS for maximum warnings" >&5
-$as_echo_n "checking CFLAGS for maximum warnings... " >&6; }
-if test "${ac_cv_cflags_warn_all+set}" = set; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_cv_cflags_warn_all="no, unknown"
-
- ac_ext=c
-ac_cpp='$CPP $CPPFLAGS'
-ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_c_compiler_gnu
-
- ac_save_CFLAGS="$CFLAGS"
-for ac_arg in "-pedantic  % -Wall"          "-xstrconst % -v"             "-std1      % -verbose -w0 -warnprotos"    "-qlanglvl=ansi % -qsrcmsg -qinfo=all:noppt:noppc:noobs:nocnd"    "-ansi -ansiE % -fullwarn"    "+ESlit     % +w1"            "-Xc        % -pvctl,fullmsg"    "-h conform % -h msglevel 2"    #
-do CFLAGS="$ac_save_CFLAGS "`echo $ac_arg | sed -e 's,%%.*,,' -e 's,%,,'`
-   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-return 0;
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ac_cv_cflags_warn_all=`echo $ac_arg | sed -e 's,.*% *,,'` ; break
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-done
- CFLAGS="$ac_save_CFLAGS"
- ac_ext=c
-ac_cpp='$CPP $CPPFLAGS'
-ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_c_compiler_gnu
-
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_cflags_warn_all" >&5
-$as_echo "$ac_cv_cflags_warn_all" >&6; }
-case ".$ac_cv_cflags_warn_all" in
-     .ok|.ok,*)  ;;
-   .|.no|.no,*)
- ;;
-   *)
-   if echo " $CFLAGS " | grep " $ac_cv_cflags_warn_all " 2>&1 >/dev/null
-   then { { $as_echo "$as_me:${as_lineno-$LINENO}: : CFLAGS does contain \$ac_cv_cflags_warn_all"; } >&5
-  (: CFLAGS does contain $ac_cv_cflags_warn_all) 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-   else { { $as_echo "$as_me:${as_lineno-$LINENO}: : CFLAGS=\"\$CFLAGS \$ac_cv_cflags_warn_all\""; } >&5
-  (: CFLAGS="$CFLAGS $ac_cv_cflags_warn_all") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-                      CFLAGS="$CFLAGS $ac_cv_cflags_warn_all"
-   fi
- ;;
-esac
-
+AX_CFLAGS_WARN_ALL
 
 #######################
 #pcsclite Configuration
@@ -4580,6 +4525,10 @@ case "$host" in
 
   ;;
 *)
+
+
+
+
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -4694,18 +4643,16 @@ $as_echo "yes" >&6; }
 $as_echo "no" >&6; }
 		PKG_CONFIG=""
 	fi
-
 fi
 
 pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for PCSCLITE" >&5
 $as_echo_n "checking for PCSCLITE... " >&6; }
 
-if test -n "$PKG_CONFIG"; then
-    if test -n "$PCSCLITE_CFLAGS"; then
-        pkg_cv_PCSCLITE_CFLAGS="$PCSCLITE_CFLAGS"
-    else
-        if test -n "$PKG_CONFIG" && \
+if test -n "$PCSCLITE_CFLAGS"; then
+    pkg_cv_PCSCLITE_CFLAGS="$PCSCLITE_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libpcsclite >= 1.2.9-beta7\""; } >&5
   ($PKG_CONFIG --exists --print-errors "libpcsclite >= 1.2.9-beta7") 2>&5
   ac_status=$?
@@ -4715,15 +4662,13 @@ if test -n "$PKG_CONFIG"; then
 else
   pkg_failed=yes
 fi
-    fi
-else
-	pkg_failed=untried
+ else
+    pkg_failed=untried
 fi
-if test -n "$PKG_CONFIG"; then
-    if test -n "$PCSCLITE_LIBS"; then
-        pkg_cv_PCSCLITE_LIBS="$PCSCLITE_LIBS"
-    else
-        if test -n "$PKG_CONFIG" && \
+if test -n "$PCSCLITE_LIBS"; then
+    pkg_cv_PCSCLITE_LIBS="$PCSCLITE_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libpcsclite >= 1.2.9-beta7\""; } >&5
   ($PKG_CONFIG --exists --print-errors "libpcsclite >= 1.2.9-beta7") 2>&5
   ac_status=$?
@@ -4733,14 +4678,15 @@ if test -n "$PKG_CONFIG"; then
 else
   pkg_failed=yes
 fi
-    fi
-else
-	pkg_failed=untried
+ else
+    pkg_failed=untried
 fi
 
 
 
 if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 
 if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
         _pkg_short_errors_supported=yes
@@ -4748,16 +4694,14 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        PCSCLITE_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "libpcsclite >= 1.2.9-beta7"`
+	        PCSCLITE_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "libpcsclite >= 1.2.9-beta7" 2>&1`
         else
-	        PCSCLITE_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "libpcsclite >= 1.2.9-beta7"`
+	        PCSCLITE_PKG_ERRORS=`$PKG_CONFIG --print-errors "libpcsclite >= 1.2.9-beta7" 2>&1`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$PCSCLITE_PKG_ERRORS" >&5
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-                 if test -f /usr/local/lib/pkgconfig/libpcsclite.pc ; then
+	 if test -f /usr/local/lib/pkgconfig/libpcsclite.pc ; then
         as_fn_error "install pkg-config or set PKG_CONFIG_PATH to pkgconfig directory" "$LINENO" 5
           else
                 { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: install pcsc-lite 1.2.9-beta7 or later" >&5
@@ -4766,6 +4710,8 @@ $as_echo "$as_me: WARNING: install pcsc-lite 1.2.9-beta7 or later" >&2;}
 
 
 elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 	 if test -f /usr/local/lib/pkgconfig/libpcsclite.pc ; then
         as_fn_error "install pkg-config or set PKG_CONFIG_PATH to pkgconfig directory" "$LINENO" 5
           else
@@ -4779,7 +4725,7 @@ else
 	PCSCLITE_LIBS=$pkg_cv_PCSCLITE_LIBS
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-	:
+
 fi
   ;;
 esac
@@ -4863,11 +4809,10 @@ pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for GLOBALPLATFORM" >&5
 $as_echo_n "checking for GLOBALPLATFORM... " >&6; }
 
-if test -n "$PKG_CONFIG"; then
-    if test -n "$GLOBALPLATFORM_CFLAGS"; then
-        pkg_cv_GLOBALPLATFORM_CFLAGS="$GLOBALPLATFORM_CFLAGS"
-    else
-        if test -n "$PKG_CONFIG" && \
+if test -n "$GLOBALPLATFORM_CFLAGS"; then
+    pkg_cv_GLOBALPLATFORM_CFLAGS="$GLOBALPLATFORM_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"globalplatform >= 6.0.0\""; } >&5
   ($PKG_CONFIG --exists --print-errors "globalplatform >= 6.0.0") 2>&5
   ac_status=$?
@@ -4877,15 +4822,13 @@ if test -n "$PKG_CONFIG"; then
 else
   pkg_failed=yes
 fi
-    fi
-else
-	pkg_failed=untried
+ else
+    pkg_failed=untried
 fi
-if test -n "$PKG_CONFIG"; then
-    if test -n "$GLOBALPLATFORM_LIBS"; then
-        pkg_cv_GLOBALPLATFORM_LIBS="$GLOBALPLATFORM_LIBS"
-    else
-        if test -n "$PKG_CONFIG" && \
+if test -n "$GLOBALPLATFORM_LIBS"; then
+    pkg_cv_GLOBALPLATFORM_LIBS="$GLOBALPLATFORM_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"globalplatform >= 6.0.0\""; } >&5
   ($PKG_CONFIG --exists --print-errors "globalplatform >= 6.0.0") 2>&5
   ac_status=$?
@@ -4895,14 +4838,15 @@ if test -n "$PKG_CONFIG"; then
 else
   pkg_failed=yes
 fi
-    fi
-else
-	pkg_failed=untried
+ else
+    pkg_failed=untried
 fi
 
 
 
 if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 
 if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
         _pkg_short_errors_supported=yes
@@ -4910,20 +4854,20 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        GLOBALPLATFORM_PKG_ERRORS=`$PKG_CONFIG --short-errors --errors-to-stdout --print-errors "globalplatform >= 6.0.0"`
+	        GLOBALPLATFORM_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "globalplatform >= 6.0.0" 2>&1`
         else
-	        GLOBALPLATFORM_PKG_ERRORS=`$PKG_CONFIG --errors-to-stdout --print-errors "globalplatform >= 6.0.0"`
+	        GLOBALPLATFORM_PKG_ERRORS=`$PKG_CONFIG --print-errors "globalplatform >= 6.0.0" 2>&1`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$GLOBALPLATFORM_PKG_ERRORS" >&5
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
 
 		as_fn_error "install GlobalPlatform 6.0.0 or later" "$LINENO" 5
 
 
 elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 
 		as_fn_error "install GlobalPlatform 6.0.0 or later" "$LINENO" 5
 
@@ -4933,7 +4877,7 @@ else
 	GLOBALPLATFORM_LIBS=$pkg_cv_GLOBALPLATFORM_LIBS
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-	:
+
 fi
   ;;
 esac
