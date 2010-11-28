@@ -1,13 +1,13 @@
 # Require autoconf 2.53
 AC_PREREQ(2.53)
 
-AC_INIT(globalplatform, 6.0.0, k_o_@users.sourceforge.net)
+AC_INIT(globalplatform, 6.1.0, k_o_@users.sourceforge.net)
 AC_COPYRIGHT(COPYING)
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_MACRO_DIR([m4])
 
 # fails on Ubuntu Dapper
-# PKG_CHECK_MODULES([CHECK], [check >= 0.9.2], [AC_MSG_WARN([Check version too low, checks may not work properly])])
+PKG_CHECK_MODULES(CHECK, check >= 0.9.2, [AC_MSG_WARN([Check version too low, checks may not work properly])])
 
 # check programs
 AC_PROG_CC
