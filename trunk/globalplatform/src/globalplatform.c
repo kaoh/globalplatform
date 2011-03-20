@@ -1836,10 +1836,12 @@ OPGP_ERROR_STATUS load_from_buffer(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 		switch(fileSizeSize) {
 			case 1: {
 				sendBuffer[5+j++] = (BYTE)loadFileBufSize;
+				break;
 					}
 			case 2: {
 				sendBuffer[5+j++] = 0x81;
 				sendBuffer[5+j++] = (BYTE)loadFileBufSize;
+				break;
 					}
 			case 3: {
 				sendBuffer[5+j++] = 0x82;
