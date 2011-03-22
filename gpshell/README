@@ -9,17 +9,6 @@ Requires : GlobalPlatform http://sourceforge.net/projects/globalplatform/
            zlib http://www.zlib.net/
 ******************************************************
 
-Version 1.1.1	9/24/2005
-Version 1.3.0	02/09/2006
-Version 1.3.1	3/24/2006
-Version 1.4.0	12/28/2006
-Version 1.4.1	08/22/2007
-Version 1.4.2	01/20/2008
-Version 1.4.3	03/22/2010
-Version 1.4.4	10/12/2010
-
-*** Summary
-
 GPShell is a script interpreter which talks to a smart card.  It is written on top of the GlobalPlatform library, which was developed by Karsten Ohme.
 It uses smart card communication protocols ISO-7816-4 and OpenPlatform 2.0.1 and GlobalPlatform 2.1.1.
 It can establish a secure channel with a smart card, load, instantiate, delete, list applets on a smart card.
@@ -33,6 +22,19 @@ export DYLD_LIBRARY_PATH=/opt/local/lib
 
 so that all needed libraries are found.
 
+------------------
+
+If you experience problems a DEBUG output is always helpful.
+Set the variable GLOBALPLATFORM_DEBUG=1 in the environment. You can set
+the logfile with GLOBALPLATFORM_LOGFILE=<file>. Under Windows by
+default C:\Temp\GlobalPlatform.log is chosen. The log file must be
+writable for the user. The default log file under Unix systems is
+/tmp/GlobalPlatform.log. But usually syslog is available and this will
+be used by default, so you may have to specify the log file manually,
+if you don't have access to the syslog or don't want to use it.
+Keep in mind that the debugging output may contain sensitive information,
+e.g. keys!
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 PLEASE OBEY THAT EVERY CARD GETS LOCKED AFTER A FEW (USUALLY 10) UNSUCCESSFUL MUTUAL AUTHENTICATIONS.
@@ -42,311 +44,13 @@ TO RESET THE RETRY COUNTER BEFORE YOU PROCEED WITH GPSHELL. CHECK THE PARAMETERS
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-*** Usage
+------------------
 
-Make sure both GPShell.exe (or gpshell on UNIX) and GlobalPlatform.dll (or globalplatform.so) are in your PATH.
+If you compile this on your own:
 
-UNIX:
-gpshell scriptfile, or
-gpshell < scriptfile
+See the files INSTALL and INSTALL.w32 for details.
 
-Win32:
-GPShell.exe scriptfile, or
-GPShell.exe < scriptfile
-
-gpshell can take a script file from standard input, as well as from a file.  This way, an application can feed commands to gpshell without creating a script file.
-
-
-*** Scriptfile Commands
-
-mode_201 // Set protocol mode to OpenPlatform 2.0.1
-
----
-
-mode_211 // Set protocol mode to GlobalPlatform 2.1.1
-
----
-
-enable_trace // Enable APDU trace
-
-You will see the sent APDUs in clear text. The last two bytes of the
-reponse are the response code. A reponse code of 9000 means success,
-otherwise the response code indicates an error. This may be OK when
-deleting a non existing applet or package.
-
----
-
-enable_timer
-
-Enables the logging of the execution time of a command.
-
----
-
-establish_context // Establish context
-
----
-
-card_connect -reader readerName // Connect to card in the reader with readerName
-card_connect -readerNumber x // Connect to card in the xth reader in the system
-
----
-
-open_sc -keyind x -keyver x -key xyz -mac_key xyz -enc_key xyz -kek_key xyz -security x -scp x -scpimpl x -keyDerivation x // Open secure channel
-
-For OpenPlatform 2.0.1' card only -keyind -keyver -mac_key and -enc_key are necessary.
-
-For GlobalPlatform 2.1.1 cards -scp and -scpimpl should be not necessary to supply. You must also specify -kek_key. If your card supports a Secure Channel Protocol
-Implementation with only one base key, specify this key with -key and omit the others.
-
-If you have a card which uses key derivation you must enable the derivation mode with the -keyDerivation option and you must specify with -key the master (mother) key.
- -kek_key, -mac_key and -enc_key are not relevant. See the section Options and Key derivation.
-
----
-
-select -AID AID // Select applet instance
-
----
-
-install -file appletFile -priv privilege -sdAID sdAID -AID AIDInPkg -pkgAID packageAID -instAID instanceAID -nvCodeLimit x -nvDataLimit x // Load and installs in one step
-
-The parameters -AID -instAID -pkgAID -nvCodeLimit can be detected automatically and the -AID and -instAID is set to the first applet in appletfile.
-For the sdAID the AID selected with the select command is chosen if not given. Otherwise the default Card Manager / Security Issuer Domain AID is chosen. So usually you do not have to pass it.
-
----
-
-install_for_load -pkgAID x -sdAID sdAID -nvCodeLimit x // Install for Load
-
-For the sdAID the AID selected with the select command is chosen if not given. Otherwise the default Card Manager / Security Issuer Domain AID is chosen. So usually you do not have to pass it.
-You may need to use this command if the combined install command does not work.
-
----
-
-load -file appletFile // Load applet
-
-You may need to use this command if the combined install command does not work.
-
----
-
-install_for_install -priv privilege -AID AIDInPkg -pkgAID packageAID -instAID instanceAID -nvDataLimit x // Instantiate applet
-
-You may need to use this command if the combined install command does not work. Or you want to install a preinstalled Security Domain.
-
----
-
-get_data -identifier identifier // A GET DATA command returning the data for the given identifier.
-
----
-
-card_disconnect // Disconnect card
-
----
-
-get_status -element e0 // List applets and packages and security domains
-get_status -element 20 // List packages
-get_status -element 40 // List applets or security domains
-get_status -element 80 // List Card Manager / Security Issuer Domain
-
----
-
-release_context // Release context
-
----
-
-put_sc_key -keyver 0 -newkeyver 2 -mac_key new_MAC_key -enc_key new_ENC_key -kek_key new_KEK_key -cur_kek current_KEK_key // Add new key set version 2
-
-put_sc_key -keyver 1 -newkeyver 1 -mac_key new_MAC_key -enc_key new_ENC_key -kek_key new_KEK_key -cur_kek current_KEK_key // Replace key set version 1
-
----
-
-put_dm_keys -keyver 0 -newkeyver 2 -file public_rsa_key_file -pass password -key new_receipt_generation_key // Put delegated management keys for GP 2.1.1 in version 2
-
-put_dm_keys -keyver 0 -newkeyver 2 -file public_rsa_key_file -pass password -key new_receipt_generation_key -cur_kek current_KEK_key // Put delegated management keys for OP 2.0.1' in version 2
-
----
-
-send_apdu -sc 0 -APDU x // Send APDU x without secure channel
-
-The APDU is given as hex without spaces and without leadings 0x.
-
----
-
-send_apdu_nostop -sc 0 -APDU x // Does not stop in case of an error
-
-The APDU is given as hex without spaces and without leadings 0x.
-
----
-
-Options:
--keyind x		Key index
--keyver	x		Key set version
--newkeyver x	New key set version
--key key		Key value in hex
--mac_key key	MAC key value in hex
--enc_key key	ENC key value in hex
--kek_key key	KEK key value in hex
--security x		0: clear, 1: MAC, 3: MAC+ENC
--reader readerName	Smart card reader name
--readerNumber x	Number of the reader in the system to connect to.
-				If -reader is given this is ignored.
--protocol x		Protocol, 0:T=0, 1:T=1
-				Should not be necessary to be stated explicitly.
--AID aid		Applet ID
--sdAID aid		Security Domain AID
--pkgAID	aid		Package AID
--instAID aid	Instance AID
--nvCodeLimit x	Non-volatile code size limit
--nvDataLimit x	Non-volatile data size limit
--vDataLimit	x	Volatile data size limit
--file file		File name
--instParam param	Installation parameter
--element x		Element type to be listed in hex
-				80 - Card Manager / Card Issuer Security Domain only.
-				40 - Applications (and Security Domains only in GP211).
-				20 - Executable Load Files only.
-				10 - Executable Load Files and their Executable Modules only (Only
-GP211)
--sc	x			Secure Channel mode (0 off, 1 on)
--APDU apdu		APDU to be sent. Must be in hex format, e.g. 80CA00CF00.
--priv x			Privilege. E.g. 0x04 Default Selected
--scp x			Secure Channel Protocol (1 SCP01, 2 SCP02, default no set).
-				Should not be necessary to be stated explicitly.
--scpimpl x		Secure Channel Implementation (default not set)
-				Should not be necessary to be stated explicitly.
--pass password	Password for key decryption
--identifier		Identifer for the tag for the get_data command. Must be in hex format, e.g. 9F7F.
--keyDerivation	Possible values are "none", "visa2" or "emvcps11"
-				Choose "visa2" if you have a card which uses the VISA key derivation scheme for the key calculation, like GemXpresso Pro or some JCOP cards you must set this.
-				Choose "emvcps11" If you have a card which uses the EMV CPS 1.1 key derivation scheme for the key calculation, like a Sm@rtCafe Expert 3.0 you must set this.
-
-
-Parameters containing spaces, e.g. file names or reader names must be quoted in "".
-
-*** Sample / Testing
-
-Tested cards:
-
-Oberthur CosmopoliC 32K (OP201)
-CosmopoliC 64K V5.2 (GP211, SCP01, Impl05)
-Axalto Cyberflex e-gate 32k
-GemXpresso R3.2 E64
-IBM JCOP v2.2 41 (GP211)
-IBM JCOP 31 (36k)
-Palmera Protect V5
-JTopV15
-Nokia 6131 NFC Phone (GP211)
-Axalto Cyberflex Access 64k
-Gemalto Generations Flexible
-Sm@rtCafe Expert 3.0
-
-We have tested this with the helloworld.cap example file. See helloInstall.txt, helloDelete.txt, and list.txt and the other script files (.txt) for samples. If a CAP file cannot be used, please see the later section (How to convert a .cap file into a .bin file).
-
-	gpshell.exe helloInstall.txt	// install helloworld.cap
-	gpshell.exe helloDelete.txt	// delete helloworld.cap
-	gpshell.exe list.txt		// list applets on a smart card
-
-Make sure the script file (helloInstall.txt, etc.) and applet file helloworld.cap are in your current directory.
-
-The sources for helloworld.cap can be obtained from the SVN from the SourceForge project page.
-
-It should work with other smart cards that support Java Card 2.x.y and OpenPlatform 2.0.1 or GlobalPlatform 2.1.1.  You need to tweak options in the script files.  Please let us know how it works with the smart cards you have.
-
-* About put_sc_key
-
-We have tested put_sc_key with Oberthur CosmopoliC 64K card and Cyberflex Access e-gate 32K.
-
-For Cyberflex example, please see:
-	replacekey-cflex.txt	// Replace the default key set (key set version 1, value 404142...4f) with a new key (505152...5f)
-	putdefault-cflex.txt	// Replace the new key (505152...5f) with the default key (404142...4f)
-
-For CosmopoliC 64K, you need to add a key set first. See
-replacekey-cosmo-gp211.txt. I have not tested this particular sample. Please use it as a sample.
-
-This would add a key set 1, and at the same time delete the initialization key set. After the initialization key set is used, you can replace and add key sets as in Cyberflex.
-
-* About install_for_load and install
-
-For CosmopoliC 64K (tested on V5.2), you need to specify the Security Domain AID. For example,
-
-  install -file helloworld.cap -sdAID A000000003000000 -nvCodeLimit 4000
-
-For GemXpresso R3.2 E64, you need to specify the Security Domain AID (Card Manager AID).  For example,
-
-  install -file helloworld.cap -sdAID A000000018434D00 -nvCodeLimit 4000
-
-* CyberFlex cards
-
-For the Cyberflex you also need the CAP transformer (I believe this is
-a kind of obfuscator) which you must apply to the CAP file. Download it
-from http://www.trusted-logic.fr/down.php and use it.
-
-*** Key Derivation
-
-For the VISA2 key derivation scheme, like used in a GemXpresso Pro or some JCOP cards, you have to enable it with the -keyDerivation set to "visa2" during open_sc.
-For the key derivation according to EMV CPS 1.1 (CDK (CPG 2.04)), like Sm@rtCafe Expert 3.0, enable it by passing "emvcps11" to -keyDerivation during open_sc.
-
-Known unsupported key derivation schemes are:
-
-CDK(CPG 2.02)
-ISK(D)
-
-*** Known bugs
-
-JCOP 10 - install_for_load fails for unknown reason, so nothing can be installed.
-
-*** Debug output
-
-In addition to the trace output if you experience problems a DEBUG output is always helpful.
-Set the variable GLOBALPLATFORM_DEBUG=1 in the environment. You can set the logfile with GLOBALPLATFORM_LOGFILE=<file>.
-Under Windows by default C:\Temp\GlobalPlatform.log is chosen. The log file must be writable for the user. The default log file under Unix systems is
-/tmp/GlobalPlatform.log. But usually syslog is available and this will be used by default, so you may have to specify the log file manually,
-if you don't have access to the syslog or don't want to use it. Keep in mind that the debugging output may contain sensitive information, e.g. keys!
-
-If you have Linux this can also help a lot to get a more complete insight into what's going on.
-You can run the PC/SC daemon in foreground debugging mode so that the whole traffic can be examined.
-You can also install a (prepackaged) virtual image of a Linux system under Windows.
-
-Stop the pcscd daemon and run pcscd -a -d -f. Now you can see the whole traffic.
-
-*** How to convert a .cap file into a .ijc (.bin) file
-
-JavaCard applets are in CAP files. For example, JavaCard Toolkit generates one. CAP files are the
-official container format for JavaCard applets and they should work with GPShell. This was tested
-successfully with all of the above cards. The actual load format which is used to bring the applet
-to the card is the IJC format. If this does not work here is an guide how to transform a CAP file
-into a IJC file. Sometimes for IJC files the extension .bin is used.
-
-Fortunately, the conversion is straightforward.
-
-Take the cap file, unjar it.  This results in many smaller cap files.  Concatenate all of them into one .bin file.  Here's an example.
-
-cp com/sun/javacard/samples/HelloWorld/javacard/helloworld.cap .
-jar xvf helloworld.cap
-extracted: com/sun/javacard/samples/HelloWorld/javacard/Header.cap
-extracted: com/sun/javacard/samples/HelloWorld/javacard/Directory.cap
-extracted: com/sun/javacard/samples/HelloWorld/javacard/Applet.cap
-extracted: com/sun/javacard/samples/HelloWorld/javacard/Import.cap
-extracted: com/sun/javacard/samples/HelloWorld/javacard/ConstantPool.cap
-extracted: com/sun/javacard/samples/HelloWorld/javacard/Class.cap
-extracted: com/sun/javacard/samples/HelloWorld/javacard/Method.cap
-extracted: com/sun/javacard/samples/HelloWorld/javacard/StaticField.cap
-extracted: com/sun/javacard/samples/HelloWorld/javacard/RefLocation.cap
-extracted: com/sun/javacard/samples/HelloWorld/javacard/Descriptor.cap
-
-cat com/sun/javacard/samples/HelloWorld/javacard/Header.cap
-com/sun/javacard/samples/HelloWorld/javacard/Directory.cap
-com/sun/javacard/samples/HelloWorld/javacard/Import.cap
-com/sun/javacard/samples/HelloWorld/javacard/Applet.cap
-com/sun/javacard/samples/HelloWorld/javacard/Class.cap
-com/sun/javacard/samples/HelloWorld/javacard/Method.cap
-com/sun/javacard/samples/HelloWorld/javacard/StaticField.cap
-com/sun/javacard/samples/HelloWorld/javacard/ConstantPool.cap
-com/sun/javacard/samples/HelloWorld/javacard/RefLocation.cap
-com/sun/javacard/samples/HelloWorld/javacard/Descriptor.cap >
-helloworld.bin
-
-I have run this in cygwin.  You can see I have opened up helloworld.cap and concatanated all the resulting .cap files into one file, HelloWorld.bin.  Try the same thing to your .cap file, and please let us know if it doesn't work.
-
-*** Contact
+------------------
 
 For more information contact the authors through the mailinglist at:
 
