@@ -8,7 +8,7 @@ SUBDIRS = src
 doc:
 	cd src && $(MAKE) $(AM_MAKEFLAGS) doc
 
-UBUNTU_DISTS = dapper hardy jaunty karmic lucid maverick
+UBUNTU_DISTS = dapper hardy jaunty karmic lucid maverick natty oneiric
 
 SNAPSHOT_VERSION=4+5-SNAPSHOT-`date +%F-%0k-%0M-%0S%z`
 RELEASE_VERSION=5
