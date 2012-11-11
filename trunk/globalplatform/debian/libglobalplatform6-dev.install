@@ -1,6 +1,0 @@
-debian/tmp/usr/include/globalplatform/* usr/include/globalplatform
-debian/tmp/usr/lib/lib*.a
-debian/tmp/usr/lib/lib*.so
-src/globalplatform.pc usr/lib/pkgconfig/
-debian/tmp/usr/lib/*.la
-
