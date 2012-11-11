@@ -1,9 +1,0 @@
-Document: globalplatform-dev
-Title: GlobalPlatform API Manual
-Author: Karsten Ohme 
-Abstract: This manual describes the GlobalPlatform API
-Section: Programming/C
-
-Format: HTML
-Index: /usr/share/doc/libglobalplatform6-dev/html/index.html
-Files: /usr/share/doc/libglobalplatform6-dev/html/*.html
