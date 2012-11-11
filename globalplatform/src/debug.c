@@ -36,7 +36,9 @@
 
 /**
 * The call is redirected to log_Log().
-* \param func The function name
+* \param func [in] The function name.
+* ‎\param file [in] The source file.
+* \param line [in] The line number in the source file.
 */
 void OPGP_log_Start(OPGP_STRING func, OPGP_STRING file, int line)
 {
@@ -73,7 +75,9 @@ void OPGP_log_Hex(OPGP_STRING msg, PBYTE buffer, DWORD bufferLength) {
 /**
 * The call is redirected to log_Log().
 * \param func [in] The function name
-* \param rv [in] The return value of the function
+* ‎\param file [in] The source file.
+* \param line [in] The line number in the source file.
+* \param status [in] The return value of the function
 */
 void OPGP_log_End(OPGP_STRING func, OPGP_STRING file, int line, OPGP_ERROR_STATUS status)
 {

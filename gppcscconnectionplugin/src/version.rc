@@ -61,8 +61,8 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,1,0,0
- PRODUCTVERSION 1,1,0,0
+ FILEVERSION 1,2,3,0
+ PRODUCTVERSION 1,2,3,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -79,13 +79,13 @@ BEGIN
         BEGIN
             VALUE "Comment", "PC/SC Plugin for the GlobalPlatform Library"
             VALUE "Description", "GlobalPlatform PC/SC Plugin for Windows"
-            VALUE "FileVersion", "1, 1, 0, 0"
+            VALUE "FileVersion", "1, 2, 3, 0"
             VALUE "Info", "k_o_@users.sourceforge.net"
             VALUE "InternalName", "GlobalPlatform PC/SC Plugin"
-            VALUE "LegalCopyright", "Copyright (C) Karsten Ohme 2010"
+            VALUE "LegalCopyright", "Copyright (C) Karsten Ohme 2011"
             VALUE "License", "LGPL"
             VALUE "OriginalFilename", "GPPCSCConnectionPlugin.dll"
-            VALUE "ProductVersion", "1, 1, 0, 0"
+            VALUE "ProductVersion", "1, 2, 3, 0"
         END
     END
     BLOCK "VarFileInfo"

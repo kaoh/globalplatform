@@ -109,9 +109,7 @@ OPGP_ERROR_STATUS DYN_GetAddress(PVOID libraryHandle, PVOID *functionHandle, LPC
 
 	OPGP_LOG_START(_T("DYN_GetAddress"));
 
-#if DEBUG
-	OPGP_log_Msg(_T("DYN_GetAddress: Getting address for function \"%s\""), functionName);
-#endif
+	OPGP_LOG_MSG(_T("DYN_GetAddress: Getting address for function \"%s\""), functionName);
 
 	// convert to ascii
 	ConvertTToC(functionAsciiName, functionName, 255);

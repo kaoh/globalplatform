@@ -20,7 +20,7 @@
             </roles>
         </developer>
     </developers>
-
+    
     <profiles>
         <profile>
             <id>default</id>
@@ -35,6 +35,7 @@
     </profiles>
 
     <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding> 
         <jc.home>${env.JC212_HOME}</jc.home>
         <javacard.package.name>net.sourceforge.globalplatform.jc.helloworld</javacard.package.name>
         <javacard.package.aid>0xD0:0xD1:0xD2:0xD3:0xD4:0xD5:0x01</javacard.package.aid>
@@ -63,7 +64,9 @@
         <sourceDirectory>${sourcedirectory}</sourceDirectory>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.3</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -114,7 +117,7 @@
                             <arg value="${jc.home}/api21_export_files/java/lang/javacard/lang.exp" />
                             <arg value="-s" />
                             <arg value="-noint" />
-                            <arg value="target/${artifactId}.cap" />
+                            <arg value="target/${project.artifactId}.cap" />
                         </java>
                     </tasks>
                 </configuration>
@@ -122,6 +125,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
                 <configuration>
                     <source>1.2</source>
                     <target>1.1</target>
@@ -130,6 +134,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-eclipse-plugin</artifactId>
+                <version>2.9</version>
                 <configuration>
 					<!--useProjectReferences>false</useProjectReferences-->
                     <buildcommands>
@@ -147,6 +152,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.7.2</version>
                 <configuration>
                     <skip>true</skip>
                     <testFailureIgnore>true</testFailureIgnore>

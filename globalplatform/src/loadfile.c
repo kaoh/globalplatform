@@ -150,9 +150,7 @@ OPGP_ERROR_STATUS extract_cap_file(OPGP_CSTRING fileName, PBYTE loadFileBuf, PDW
 
 	OPGP_LOG_START(_T("extract_cap_file"));
 	convertT_to_C(capFileName, fileName);
-#ifdef DEBUG
-	OPGP_log_Msg(_T("extract_cap_file: Try to open cap file %s"), fileName);
-#endif
+	OPGP_LOG_MSG(_T("extract_cap_file: Try to open cap file %s"), fileName);
 	szip = unzOpen((const char *)capFileName);
 	if (szip==NULL)
 	{
@@ -176,9 +174,7 @@ OPGP_ERROR_STATUS extract_cap_file(OPGP_CSTRING fileName, PBYTE loadFileBuf, PDW
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CAP_UNZIP, OPGP_stringify_error(OPGP_ERROR_CAP_UNZIP)); goto end;
 		}
 
-#ifdef DEBUG
-	OPGP_log_Msg(_T("extract_cap_file: Allocating buffer size for cap file content %s"), fn);
-#endif
+	OPGP_LOG_MSG(_T("extract_cap_file: Allocating buffer size for cap file content %s"), fn);
 		// write file
 		if (strcmp(fn + strlen(fn)-10, "Header.cap") == 0) {
 			totalSize+=unzfi.uncompressed_size;
@@ -263,9 +259,7 @@ next:
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CAP_UNZIP, OPGP_stringify_error(OPGP_ERROR_CAP_UNZIP)); goto end;
 	}
 
-#ifdef DEBUG
-	OPGP_log_Msg(_T("extract_cap_file: Successfully extracted cap file %s"), fileName);
-#endif
+	OPGP_LOG_MSG(_T("extract_cap_file: Successfully extracted cap file %s"), fileName);
 
 	if (loadFileBuf == NULL) {
 		*loadFileBufSize = totalSize;
@@ -277,9 +271,7 @@ next:
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end;
 	}
 
-#ifdef DEBUG
-	OPGP_log_Msg(_T("extract_cap_file: Copying extracted cap file contents into buffer"));
-#endif
+	OPGP_LOG_MSG(_T("extract_cap_file: Copying extracted cap file contents into buffer"));
 	totalSize = 0;
 	if (headerbuf != NULL) {
 		memcpy(loadFileBuf+totalSize, headerbuf, headerbufsz);
@@ -325,9 +317,7 @@ next:
 		memcpy(loadFileBuf+totalSize, descriptorbuf, descriptorbufsz);
 		totalSize+=descriptorbufsz;
 	}
-#ifdef DEBUG
-	OPGP_log_Msg(_T("extract_cap_file: Buffer copied."));
-#endif
+	OPGP_LOG_MSG(_T("extract_cap_file: Buffer copied."));
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
 	if (szip != NULL) {
@@ -387,20 +377,14 @@ int detect_cap_file(OPGP_CSTRING fileName) {
 		rv = 0;
 		goto end;
 	}
-#ifdef DEBUG
-	OPGP_log_Msg(_T("Magic: 0x%02x 0x%02x"), magic[0], magic[1]);
-#endif
+	OPGP_LOG_MSG(_T("Magic: 0x%02x 0x%02x"), magic[0], magic[1]);
 	// starts with PK -> is CAP file
 	if (magic[0] == 0x50 && magic[1] == 0x4B) {
-#ifdef DEBUG
-	OPGP_log_Msg(_T("File is a CAP file."));
-#endif
+	OPGP_LOG_MSG(_T("File is a CAP file."));
 		rv = 1;
 		goto end;
 	}
-#ifdef DEBUG
-	OPGP_log_Msg(_T("File is not a CAP file."));
-#endif
+	OPGP_LOG_MSG(_T("File is not a CAP file."));
 end:
 	OPGP_ERROR_CREATE_NO_ERROR(status);
 	if (loadFile != NULL) {
@@ -553,9 +537,7 @@ OPGP_ERROR_STATUS read_executable_load_file_parameters_from_buffer(PBYTE loadFil
 	}
 	packageAIDLength = loadFileBuf[offset];
 	offset++;
-#ifdef DEBUG
-	OPGP_log_Msg(_T("Package AID Length: %d"), packageAIDLength);
-#endif
+	OPGP_LOG_MSG(_T("Package AID Length: %d"), packageAIDLength);
 	if (packageAIDLength < 5 || packageAIDLength > 16) {
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_LOAD_FILE, OPGP_stringify_error(OPGP_ERROR_INVALID_LOAD_FILE));
 		goto end;
@@ -567,9 +549,7 @@ OPGP_ERROR_STATUS read_executable_load_file_parameters_from_buffer(PBYTE loadFil
 	}
 	memcpy(packageAID, loadFileBuf+offset, packageAIDLength);
 	offset+=packageAIDLength;
-#ifdef DEBUG
-	OPGP_log_Hex(_T("Package AID: "), packageAID, packageAIDLength);
-#endif
+	OPGP_LOG_HEX(_T("Package AID: "), packageAID, packageAIDLength);
 	/* directory component */
 	componentOffset+=componentSize+3;
 	offset = componentOffset;
@@ -616,9 +596,7 @@ OPGP_ERROR_STATUS read_executable_load_file_parameters_from_buffer(PBYTE loadFil
 	}
 	appletCount = loadFileBuf[offset];
 	offset++;
-#ifdef DEBUG
-	OPGP_log_Msg(_T("Applet count: %d"), appletCount);
-#endif
+	OPGP_LOG_MSG(_T("Applet count: %d"), appletCount);
 	/* applets */
 	for (i=0; i<appletCount; i++) {
 		/* AID_length */
@@ -639,9 +617,7 @@ OPGP_ERROR_STATUS read_executable_load_file_parameters_from_buffer(PBYTE loadFil
 		/* AID */
 		memcpy(appletAIDs[i].AID, loadFileBuf+offset, appletAIDs[i].AIDLength);
 		offset+=appletAIDs[i].AIDLength;
-#ifdef DEBUG
-		OPGP_log_Hex(_T("Applet AID: "), appletAIDs[i].AID, appletAIDs[i].AIDLength);
-#endif
+		OPGP_LOG_HEX(_T("Applet AID: "), appletAIDs[i].AID, appletAIDs[i].AIDLength);
 		/* install_method_offset */
 		offset+=2;
 	}
@@ -752,9 +728,7 @@ OPGP_ERROR_STATUS get_load_data(PBYTE executableLoadFileAID, DWORD executableLoa
 	}
 	memcpy(loadData, buf, i);
 	*loadDataLength = i;
-#ifdef DEBUG
-	OPGP_log_Hex(_T("get_load_data: Gathered data : "), loadData, *loadDataLength);
-#endif
+	OPGP_LOG_HEX(_T("get_load_data: Gathered data : "), loadData, *loadDataLength);
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
 	OPGP_LOG_END(_T("get_load_data"), status);
@@ -830,6 +804,7 @@ OPGP_ERROR_STATUS read_load_file_data_block_signature(PBYTE buf, PDWORD bufLengt
 	}
 	memcpy(buf+j, loadFileDataBlockSignature.signature, loadFileDataBlockSignature.signatureLength);
 	j+=loadFileDataBlockSignature.signatureLength;
+  *bufLength = j;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
 	OPGP_LOG_END(_T("read_load_file_data_block_signature"), status);

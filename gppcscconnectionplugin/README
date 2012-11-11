@@ -25,7 +25,129 @@ e.g. keys!
 
 If you compile this on your own:
 
-See the files INSTALL and INSTALL.w32 for details.
+Compilation under Unix
+----------------------
+
+You must have CMake installed. http://www.cmake.org/ 
+This can be obtained in standard Unix distributions over the integrated package system.
+
+On a command line type:
+
+cd \path\to\globalplatform
+cmake .
+make
+
+
+Compilation under Windows
+-------------------------
+
+-- Requirements --
+
+Tested with:
+
+**** SDK ****
+Microsoft Windows SDK for Windows 7 and .NET Framework 4
+http://msdn.microsoft.com/en-us/windows/bb980924
+
+**** VISUAL C++ 2010 EXPRESS ****
+To have nmake install VISUAL C++ 2010 EXPRESS
+http://www.microsoft.com/visualstudio/en-us/products/2010-editions/visual-cpp-express
+
+**** CMake ****
+http://www.cmake.org/
+--> CMake 2.8.4
+
+**** Compile ****
+
+  Launch Visual Studio Command Prompt (2010)
+  cd \path\to\globalplatform
+
+  cmake .
+  ## CMake looks for PC/SC ##
+
+  nmake
+
+Done!
+
+Source Packages
+---------------
+
+Execute:
+
+make/nmake package_sourse
+
+Binary Packages
+---------------
+
+Execute:
+
+make/nmake package 
+
+Documentation
+-------------
+
+For documentation you also must have Doxygen installed.
+
+Execute:
+
+cmake .
+make/name doc
+
+Ubuntu/Debian packages
+----------------------
+
+You must also have dput, pbuilder and debhelper installed.
+
+Execute:
+
+cmake .
+make package_ubuntu
+
+The script ubuntu-package.sh iterates over all Ubuntu series and creates dsc files for Debian package creation or Launchpad uploads.
+
+---
+
+You can also upload the automatically created sources.changes to Launchpad. You must be registered there and you must have a .dput.cf in place. Follow the instructions on https://help.launchpad.net/Packaging/PPA/Uploading
+
+Execute:
+
+make dput
+
+If you have used the ubuntu-package.sh script you must manually upload the source.changes files.
+
+Execute:
+
+dput gpsnapshots-ppa libgppcscconnectionplugin1_1.2.2+3SNAPSHOT20120524080448+0200-0ubuntu1~precise.changes
+
+---
+
+You can create a Ubuntu/Debian package from a dsc file.
+
+Execute:
+
+dpkg-source -x libgppcscconnectionplugin1_1.2.2+3SNAPSHOT20120524080448+0200-0ubuntu1~precise.dsc
+cd libgppcscconnectionplugin1-1.2.2+3
+fakeroot debian/rules binary
+
+CMake Issues
+------------ 
+
+You must rebuild the build system if your build tools have changed. Otherwise 
+CMake uses outdated values. You have to delete manually 
+the CMakeCache.txt file (and maybe also the CMakeLists directory and 
+cmake_install.cmake).
+
+If your are using Cygwin and you have installed the GNU compiler tools and the
+bin directory is on the PATH environment variable CMake will favor these tools 
+and the linking step will fail. So remove the Cygwin bin directory from the path.  
+
+------------------
+
+Testing is only supported under Linux for now. To generate the tests execute:
+
+cmake -DTESTING=ON
+make
+make tests
 
 ------------------
 

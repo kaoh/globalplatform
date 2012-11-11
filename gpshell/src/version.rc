@@ -63,8 +63,8 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,4,4,0
- PRODUCTVERSION 1,4,4,0
+ FILEVERSION 1,4,5,0
+ PRODUCTVERSION 1,4,5,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -81,14 +81,14 @@ BEGIN
         BEGIN
             VALUE "Comment", "Shell for accessing OpenPlatform 2.0.1' and GlobalPlatform 2.1.1 compliant smart cards with the GlobalPlatform library"
             VALUE "Description", "GPShell for Windows"
-            VALUE "FileVersion", "1, 4, 4, 0"
+            VALUE "FileVersion", "1, 4, 5, 0"
             VALUE "ProductName", "GPShell"
             VALUE "Info", "k_o_@users.sourceforge.net"
             VALUE "InternalName", "GPShell"
-            VALUE "LegalCopyright", "Copyright (C) 2010, Snit Mo, Karsten Ohme"
+            VALUE "LegalCopyright", "Copyright (C) 2012, Snit Mo, Karsten Ohme"
             VALUE "License", "GPL"
             VALUE "OriginalFilename", "GPShell.exe"
-            VALUE "ProductVersion", "1, 4, 4, 0"
+            VALUE "ProductVersion", "1, 4, 5, 0"
         END
     END
     BLOCK "VarFileInfo"

@@ -42,12 +42,16 @@ extern "C"
 #define OPGP_LOG_FILENAME _T("/tmp/GlobalPlatform.log")
 #endif
 
-#ifdef DEBUG
-#define OPGP_LOG_START(x)        OPGP_log_Start(x, _T(__FILE__), __LINE__)
-#define OPGP_LOG_END(x,status)       OPGP_log_End(x, _T(__FILE__), __LINE__, status)
+#ifdef OPGP_DEBUG
+#define OPGP_LOG_START(msg)        OPGP_log_Start(msg, _T(__FILE__), __LINE__)
+#define OPGP_LOG_MSG(...)	OPGP_log_Msg(__VA_ARGS__)
+#define OPGP_LOG_END(msg, status)       OPGP_log_End(msg, _T(__FILE__), __LINE__, status)
+#define OPGP_LOG_HEX(msg, buffer, bufferLength) OPGP_log_Hex(msg, buffer, bufferLength)
 #else
-#define OPGP_LOG_START(x)
-#define OPGP_LOG_END(x,rv)
+#define OPGP_LOG_START(msg)
+#define OPGP_LOG_END(msg,rv)
+#define OPGP_LOG_HEX(msg, buffer, bufferLength)
+#define OPGP_LOG_MSG(...)
 #endif
 
 //! \brief Logs something to a file or the syslog.
