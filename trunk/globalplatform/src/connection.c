@@ -210,9 +210,7 @@ OPGP_ERROR_STATUS OPGP_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO c
 	OPGP_LOG_START(_T("OPGP_send_APDU"));
 	plugin_sendAPDUFunction = (OPGP_ERROR_STATUS(*)(OPGP_CARD_CONTEXT, OPGP_CARD_INFO, PBYTE, DWORD, PBYTE, PDWORD)) cardContext.connectionFunctions.sendAPDU;
 
-#ifdef DEBUG
-	OPGP_log_Hex(_T("OPGP_send_APDU: Command --> "), capdu, capduLength);
-#endif
+	OPGP_LOG_HEX(_T("OPGP_send_APDU: Command --> "), capdu, capduLength);
 
 	if (traceEnable) {
 		_ftprintf(traceFile, _T("Command --> "));
@@ -243,9 +241,7 @@ OPGP_ERROR_STATUS OPGP_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO c
 		goto end;
 	}
 
-#ifdef DEBUG
-	OPGP_log_Hex(_T("OPGP_send_APDU: Response <-- "), rapdu, *rapduLength);
-#endif
+	OPGP_LOG_HEX(_T("OPGP_send_APDU: Response <-- "), rapdu, *rapduLength);
 
 	securityStatus = GP211_check_R_MAC(capdu, capduLength, rapdu, *rapduLength, secInfo);
 	if (OPGP_ERROR_CHECK(securityStatus)) {

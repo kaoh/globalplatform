@@ -1,0 +1,4 @@
+GlobalPlatform is a standard for the management of the contents on a smart card.
+Mainly this comprises the installation and the removal of applications.
+The project offers a C library and a command shell.
+

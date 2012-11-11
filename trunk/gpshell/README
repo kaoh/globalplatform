@@ -1,5 +1,5 @@
 ******************************************************
-Title    : Global Platform Shell (gpshell)
+Title    : Global Platform Shell (GPShell)
 Authors  : snitmo@gmail.com
            Karsten Ohme <k_o_@users.sourceforge.net>
 License  : See file COPYING
@@ -13,7 +13,7 @@ GPShell is a script interpreter which talks to a smart card.  It is written on t
 It uses smart card communication protocols ISO-7816-4 and OpenPlatform 2.0.1 and GlobalPlatform 2.1.1.
 It can establish a secure channel with a smart card, load, instantiate, delete, list applets on a smart card.
 
-You need also the libraries GlobalPlatform 6.0.0, zlib 1.2.3 (zlib1.dll) and OpenSSL 0.97e (libeay32.dll and ssleay32.dll) or
+You need also the libraries GlobalPlatform 6.0.0, zlib 1.2.3 (zlib1.dll) and OpenSSL >= 0.9.8e (libeay32.dll and ssleay32.dll) or
 compatible and must place them in the directory where GPShell is called or better the system directory (C:\Windows\System32 or /usr/(local/)lib usually).
 
 For MacOSX you might set
@@ -48,11 +48,138 @@ TO RESET THE RETRY COUNTER BEFORE YOU PROCEED WITH GPSHELL. CHECK THE PARAMETERS
 
 If you compile this on your own:
 
-See the files INSTALL and INSTALL.w32 for details.
+Compilation under Unix
+----------------------
+
+You must have CMake installed. http://www.cmake.org/ 
+This can be obtained in standard Unix distributions over the integrated package system.
+
+On a command line type:
+
+cd \path\to\globalplatform
+cmake .
+make
+
+
+Compilation under Windows
+-------------------------
+
+-- Requirements --
+
+Tested with:
+
+**** SDK ****
+Microsoft Windows SDK for Windows 7 and .NET Framework 4
+http://msdn.microsoft.com/en-us/windows/bb980924
+
+**** VISUAL C++ 2010 EXPRESS ****
+To have nmake install VISUAL C++ 2010 EXPRESS
+http://www.microsoft.com/visualstudio/en-us/products/2010-editions/visual-cpp-express
+
+**** OpenSSL ****
+http://www.slproweb.com/products/Win32OpenSSL.html
+--> Win32 OpenSSL v1.0.0d
+--> Visual C++ 2008 Redistributables
+
+**** zlib ****
+http://www.zlib.net/
+--> zlib compiled DLL, version 1.2.5
+
+  * Copy the zlib1.dll to C:\Windows\System32
+  * Copy the files from the include directory to
+    C:\Program Files\Microsoft SDKs\Windows\v7.1\Include
+  * Copy the file "zdll.lib" from the lib directory to
+    C:\Program Files\Microsoft SDKs\Windows\v7.1\Lib
+
+**** CMake ****
+http://www.cmake.org/
+--> CMake 2.8.4
+
+**** Compile ****
+
+  Launch Visual Studio Command Prompt (2010)
+  cd \path\to\globalplatform
+
+  cmake .
+  ## CMake looks for PC/SC, OpenSSL and zlib ##
+
+  nmake
+
+Done!
+
+Source Packages
+---------------
+
+Execute:
+
+make/nmake package_sourse
+
+Binary Packages
+---------------
+
+Execute:
+
+make/nmake package 
+
+Documentation
+-------------
+
+Execute:
+
+cmake .
+make/name doc
+
+Ubuntu/Debian packages
+----------------------
+
+You must also have dput, pbuilder and debhelper installed.
+
+Execute:
+
+cmake .
+make package_ubuntu
+
+The script ubuntu-package.sh iterates over all Ubuntu series and creates dsc files for Debian package creation or Launchpad uploads.
+
+---
+
+You can also upload the automatically created sources.changes to Launchpad. You must be registered there and you must have a .dput.cf in place. Follow the instructions on https://help.launchpad.net/Packaging/PPA/Uploading
+
+Execute:
+
+make dput
+
+If you have used the ubuntu-package.sh script you must manually upload the source.changes files.
+
+Execute:
+
+dput gpsnapshots-ppa gpshell_1.4.4+5SNAPSHOT20120524080448+0200-0ubuntu1~precise.changes
+
+---
+
+You can create a Ubuntu/Debian package from a dsc file.
+
+Execute:
+
+dpkg-source -x gpshell_1.4.4+5SNAPSHOT20120524080448+0200-0ubuntu1~precise.dsc
+cd gpshell-1.4.4+5
+fakeroot debian/rules binary
+
+CMake Issues
+------------ 
+
+You must rebuild the build system if your build tools have changed. Otherwise 
+CMake uses outdated values. You have to delete manually 
+the CMakeCache.txt file (and maybe also the CMakeLists directory and 
+cmake_install.cmake).
+
+If your are using Cygwin and you have installed the GNU compiler tools and the
+bin directory is on the PATH environment variable CMake will favor these tools 
+and the linking step will fail. So remove the Cygwin bin directory from the path.  
+
 
 ------------------
 
-For more information contact the authors through the mailinglist at:
+For more information contact the author through the mailing list at:
 
 http://sourceforge.net/projects/globalplatform/
-

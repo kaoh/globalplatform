@@ -49,7 +49,7 @@
 #define AIDLEN 16
 #define APDULEN 261
 #define INSTPARAMLEN 32
-#define DELIMITER _T(" \t\n,")
+#define DELIMITER _T(" \t\r\n,")
 #define DDES_KEY_LEN 16
 #define PLATFORM_MODE_OP_201 OP_201
 #define PLATFORM_MODE_GP_211 GP_211

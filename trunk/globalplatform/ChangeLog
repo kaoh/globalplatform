@@ -1,8 +1,10 @@
 History
 =======
 
-6.1.0 - Sun, Nov 29, 2010, Karsten Ohme, François Kooman
-    CMake Build System
+6.1.0 - Mon, May 28, 2012, Karsten Ohme, François Kooman
+	CMake Build System
+	Changed DEBUG definition to OPGP_DEBUG to prevent name collisions
+	Added LGPL OpenSSL Exception
 
 6.0.0 - Sun, Jan 31, 2010, Karsten Ohme
 	Connection plugin architecture, support for other transport protocols than PC/SC
@@ -52,6 +54,6 @@ History
 	Bug in determining filesize with fseek() for Unix fixed
 
 1.0.0 - Fri Aug 26 2005, Karsten Ohme
-	- first revision
+	first revision
 
 

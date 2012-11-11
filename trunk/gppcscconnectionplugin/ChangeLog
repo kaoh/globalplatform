@@ -1,10 +1,13 @@
 History
 =======
 
-1.0.0 - Tue Feb 09 2010, Karsten Ohme
-	- first revision
-
+1.2.3 - Mon, May 28, 2012, Karsten Ohme
+  CMake Build System
+  
 1.1.0 - Tue Oct 12 2010, Karsten Ohme
-	- Support of non ISO compliant smart cards not supporting a GET RESPONSE after 0x9000 for Case 4 commands
+  Support of non ISO compliant smart cards not supporting a GET RESPONSE after 0x9000 for Case 4 commands
+
+1.0.0 - Tue Feb 09 2010, Karsten Ohme
+  first revision
 
 
