@@ -189,11 +189,20 @@ OPGP_ERROR_STATUS load_from_buffer(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 				 GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable, OPGP_PROGRESS_CALLBACK *callback);
 
 OPGP_NO_API
-OPGP_ERROR_STATUS VISA2_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE baseKeyDiversificationData[10], BYTE masterKey[16],
+OPGP_ERROR_STATUS VISA2_derive_keys(BYTE baseKeyDiversificationData[10], BYTE masterKey[16],
 							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
 
 OPGP_NO_API
-OPGP_ERROR_STATUS EMV_CPS11_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE baseKeyDiversificationData[10], BYTE masterKey[16],
+OPGP_ERROR_STATUS VISA2_derive_keys_get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBYTE AID, DWORD AIDLength, BYTE masterKey[16],
+							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
+
+
+OPGP_NO_API
+OPGP_ERROR_STATUS EMV_CPS11_derive_keys_get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE masterKey[16],
+							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
+
+OPGP_NO_API
+OPGP_ERROR_STATUS EMV_CPS11_derive_keys(BYTE baseKeyDiversificationData[10], BYTE masterKey[16],
 							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
 
 /**
@@ -734,28 +743,31 @@ end:
  * Any other value between 0x01 and 0x7f must match an existing key set version.
  * The new key set version defines the key set version the new secure channel keys belongs to.
  * This can be the same key version or a new not existing key set version.
- * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * It depends on the supported protocol implementation by the card what keys must be passed as parameters.
  * baseKey must be NULL if the protocol uses 3 Secure Channel Keys
  * (Secure Channel Encryption Key, Secure Channel Message Authentication Code Key and
  * Data Encryption Key) and vice versa.
  * Details about the supported Secure Channel Protocol and its implementation can be
- * obtained by a call to the function get_secure_channel_protocol_details().
+ * obtained by a call to the function GP211_get_secure_channel_protocol_details().
+ * Sometimes a key derivation of the put keys might be necessary so it is necessary to call 
+ * GP211_EMV_CPS11_derive_keys() or any other derivation function. If this is the newBaseKey 
+ * must be NULL and the derived keys are passed as the 3 Secure Channel Keys.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * \param keySetVersion [in] An existing key set version.
  * \param newKeySetVersion [in] The new key set version.
  * \param newBaseKey [in] The new Secure Channel base key.
  * \param newS_ENC [in] The new S-ENC key.
  * \param newS_MAC [in] The new S-MAC key.
  * \param newDEK [in] The new DEK.
- * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 							 BYTE keySetVersion,
 							 BYTE newKeySetVersion, BYTE newBaseKey[16],
 							 BYTE newS_ENC[16],
-							 BYTE newS_MAC[16], BYTE newDEK[16]) {
+							 BYTE newS_MAC[16], BYTE newDEK[16]) { 
 	return put_secure_channel_keys(cardContext, cardInfo, secInfo,
 							 keySetVersion,
 							 newKeySetVersion, newBaseKey, newS_ENC,
@@ -800,19 +812,19 @@ OPGP_ERROR_STATUS put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CA
 		keyType = GP211_KEY_TYPE_DES;
 	}
 	/* only Secure Channel base key */
-	if (secInfo->secureChannelProtocol == GP211_SCP02 &&
+	if (newBaseKey != NULL && secInfo->secureChannelProtocol == GP211_SCP02 &&
 		(secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i04
 			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i14
 			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i0A
 			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i1A
 			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i54
-			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i44)) {
-		status = get_key_data_field(secInfo, newBaseKey, 16, keyType, 1, keyDataField, &keyDataFieldLength, keyCheckValue1);
-		if ( OPGP_ERROR_CHECK(status) ) {
-			goto end;
-		}
-		memcpy(sendBuffer+i, keyDataField, keyDataFieldLength); // key
-		i+=keyDataFieldLength;
+			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i44)) {            
+            status = get_key_data_field(secInfo, newBaseKey, 16, keyType, 1, keyDataField, &keyDataFieldLength, keyCheckValue1);
+            if ( OPGP_ERROR_CHECK(status) ) {
+                    goto end;
+            }
+            memcpy(sendBuffer+i, keyDataField, keyDataFieldLength); // key
+            i+=keyDataFieldLength;
 	}
 	else {
 		// S-ENC key
@@ -3191,6 +3203,7 @@ end:
   * E.g. GemXpresso cards, JCOP-10 cards or Palmera Protect V5 cards use this scheme.
   * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
   * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
+  * \param *secInfo [in, out] The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
   * \param AID [in] The AID of the Card Manager.
   * \param AIDLength [in] The length of the Card Manager AID / Issuer Security Domain AID.
   * \param masterKey [in] The master key.
@@ -3199,7 +3212,41 @@ end:
   * \param DEK [out] The static Key Encryption Key.
   * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
   */
-OPGP_ERROR_STATUS OPGP_VISA2_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, PBYTE AID, DWORD AIDLength, BYTE masterKey[16],
+OPGP_ERROR_STATUS OP201_VISA2_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, PBYTE AID, DWORD AIDLength, BYTE masterKey[16],
+							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]) {
+    OPGP_ERROR_STATUS status;
+
+    if (secInfo == NULL) {
+        status = VISA2_derive_keys_get_data(cardContext, cardInfo, NULL, AID, AIDLength, masterKey, S_ENC, S_MAC, DEK);
+    } else {
+        GP211_SECURITY_INFO gp211secInfo;
+        mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
+        status = VISA2_derive_keys_get_data(cardContext, cardInfo, &gp211secInfo, AID, AIDLength, masterKey, S_ENC, S_MAC, DEK);
+        mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
+    }
+
+    return status;
+}
+
+/**
+  * E.g. GemXpresso cards, JCOP-10 cards or Palmera Protect V5 cards use this scheme.
+  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+  * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
+  * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+  * \param AID [in] The AID of the Card Manager.
+  * \param AIDLength [in] The length of the Card Manager AID / Issuer Security Domain AID.
+  * \param masterKey [in] The master key.
+  * \param S_ENC [out] The static Encryption key.
+  * \param S_MAC [out] The static Message Authentication Code key.
+  * \param DEK [out] The static Key Encryption Key.
+  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
+  */
+OPGP_ERROR_STATUS GP211_VISA2_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBYTE AID, DWORD AIDLength, BYTE masterKey[16],
+							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]) {
+    return VISA2_derive_keys_get_data(cardContext, cardInfo, secInfo, AID, AIDLength, masterKey, S_ENC, S_MAC, DEK);
+}
+
+OPGP_ERROR_STATUS VISA2_derive_keys_get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBYTE AID, DWORD AIDLength, BYTE masterKey[16],
 							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]) {
 	OPGP_ERROR_STATUS status;
 	BYTE cardCPLCData[50];
@@ -3212,13 +3259,13 @@ OPGP_ERROR_STATUS OPGP_VISA2_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CAR
 
 	OPGP_LOG_HEX(_T("OPGP_VISA2_derive_keys: Card Manager AID: "), AID, AIDLength);
 
-	status = OP201_get_data(cardContext, cardInfo, NULL, (PBYTE)OP201_GET_DATA_CPLC_WHOLE_CPLC,
+	status = GP211_get_data(cardContext, cardInfo, secInfo, (PBYTE)OP201_GET_DATA_CPLC_WHOLE_CPLC,
 		cardCPLCData, &cplcDataLen);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
 
-	// card manager first 2 AID bytes
+	// card manager first 2 AID bytes, so we have to take this as parameter
 	// does not work on GemXpresso cards
 	//status = OP201_get_data(cardContext, cardInfo, NULL, (PBYTE)OP201_GET_DATA_CARD_MANAGER_AID,
 	//	cardmanagerAID, &cardmanagerAIDLength);
@@ -3233,7 +3280,7 @@ OPGP_ERROR_STATUS OPGP_VISA2_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CAR
 	// we are using 13 here because VISA2_Dertive_keys skips the first 2 bytes after the card manager AID
  	memcpy(keyDiversificationData+2, cardCPLCData+13, 8);
 
-	status = VISA2_derive_keys(cardContext, cardInfo, keyDiversificationData, masterKey, S_ENC, S_MAC, DEK);
+	status = VISA2_derive_keys(keyDiversificationData, masterKey, S_ENC, S_MAC, DEK);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -3246,15 +3293,13 @@ end:
 
 /**
   * E.g. GemXpresso cards, JCOP-10 cards or Palmera Protect V5 cards use this scheme.
-  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
-  * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
   * \param baseKeyDiversificationData [in] The key diversification data. This is returned by INITIALIZE UPDATE or can be constructed.
   * \param S_ENC [out] The static Encryption key.
   * \param S_MAC [out] The static Message Authentication Code key.
   * \param DEK [out] The static Key Encryption Key.
   * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
   */
-OPGP_ERROR_STATUS VISA2_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE baseKeyDiversificationData[10], BYTE masterKey[16],
+OPGP_ERROR_STATUS VISA2_derive_keys(BYTE baseKeyDiversificationData[10], BYTE masterKey[16],
 							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]) {
 	OPGP_ERROR_STATUS status;
 	int outl;
@@ -3331,54 +3376,75 @@ end:
 	return status;
 }
 
-
 /**
-  * E.g. Sm@rtCafe Expert 3.0 cards use this scheme.
+  * E.g. Sm@rtCafe Expert 3.0 and later cards use this scheme.
   * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
   * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
+  * \param *secInfo [in, out] The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
   * \param masterKey [in] The master key.
   * \param S_ENC [out] The static Encryption key.
   * \param S_MAC [out] The static Message Authentication Code key.
   * \param DEK [out] The static Key Encryption Key.
   * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
   */
-OPGP_ERROR_STATUS OPGP_EMV_CPS11_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE masterKey[16],
+OPGP_ERROR_STATUS OP201_EMV_CPS11_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, BYTE masterKey[16],
 							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]) {
-	OPGP_ERROR_STATUS status;
-	BYTE diversificationData[50];
-	DWORD diversificationDataLen = 50;
+    OPGP_ERROR_STATUS status;
 
-	OPGP_LOG_START(_T("OPGP_EMV_CPS11_derive_keys"));
+    if (secInfo == NULL) {
+        status = EMV_CPS11_derive_keys_get_data(cardContext, cardInfo, NULL, masterKey, S_ENC, S_MAC, DEK);
+    } else {
+        GP211_SECURITY_INFO gp211secInfo;
+        mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
+        status = EMV_CPS11_derive_keys_get_data(cardContext, cardInfo, &gp211secInfo, masterKey, S_ENC, S_MAC, DEK);
+        mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
+    }
 
-	status = OP201_get_data(cardContext, cardInfo, NULL, (PBYTE)OP201_GET_DATA_DIVERSIFICATION_DATA,
-		diversificationData, &diversificationDataLen);
-	if (OPGP_ERROR_CHECK(status)) {
-		goto end;
-	}
-
-	status = EMV_CPS11_derive_keys(cardContext, cardInfo, diversificationData + 2, masterKey, S_ENC, S_MAC, DEK);
-	if (OPGP_ERROR_CHECK(status)) {
-		goto end;
-	}
-
-	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
-end:
-	OPGP_LOG_END(_T("OPGP_EMV_CPS11_derive_keys"), status);
-	return status;
+    return status;
 }
 
 /**
   * E.g. Sm@rtCafe Expert 3.0 cards use this scheme.
   * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
   * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
-  * \param baseKeyDiversificationData [in] The key diversification data. This is returned by INITIALIZE UPDATE or can be constructed.
+  * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
   * \param masterKey [in] The master key.
   * \param S_ENC [out] The static Encryption key.
   * \param S_MAC [out] The static Message Authentication Code key.
   * \param DEK [out] The static Key Encryption Key.
   * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
   */
-OPGP_ERROR_STATUS EMV_CPS11_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE baseKeyDiversificationData[10], BYTE masterKey[16],
+OPGP_ERROR_STATUS GP211_EMV_CPS11_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE masterKey[16],
+							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]) {
+    return EMV_CPS11_derive_keys_get_data(cardContext, cardInfo, secInfo, masterKey, S_ENC, S_MAC, DEK);
+}
+
+OPGP_ERROR_STATUS EMV_CPS11_derive_keys_get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE masterKey[16],
+							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]) {
+	OPGP_ERROR_STATUS status;
+	BYTE diversificationData[50];
+	DWORD diversificationDataLen = 50;
+
+	OPGP_LOG_START(_T("EMV_CPS11_derive_keys_get_data"));
+
+	status = GP211_get_data(cardContext, cardInfo, secInfo, (PBYTE)GP211_GET_DATA_DIVERSIFICATION_DATA,
+		diversificationData, &diversificationDataLen);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+
+	status = EMV_CPS11_derive_keys(diversificationData + 2, masterKey, S_ENC, S_MAC, DEK);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	OPGP_LOG_END(_T("EMV_CPS11_derive_keys_get_data"), status);
+	return status;
+}
+
+OPGP_ERROR_STATUS EMV_CPS11_derive_keys(BYTE baseKeyDiversificationData[10], BYTE masterKey[16],
 							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]) {
 	OPGP_ERROR_STATUS status;
 	int outl;
@@ -3653,7 +3719,7 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 
 
 	if (derivationMethod == OPGP_DERIVATION_METHOD_EMV_CPS11) {
-		status = EMV_CPS11_derive_keys(cardContext, cardInfo, recvBuffer, baseKey, sEnc, sMac, dek);
+		status = EMV_CPS11_derive_keys(recvBuffer, baseKey, sEnc, sMac, dek);
 		if ( OPGP_ERROR_CHECK(status)) {
 			goto end;
 		}
@@ -3661,7 +3727,7 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 
 	if (derivationMethod == OPGP_DERIVATION_METHOD_VISA2) {
 		// first 10 bytes are the key diversification data
-		status = VISA2_derive_keys(cardContext, cardInfo, recvBuffer, baseKey, sEnc, sMac, dek);
+		status = VISA2_derive_keys(recvBuffer, baseKey, sEnc, sMac, dek);
 		if ( OPGP_ERROR_CHECK(status)) {
 			goto end;
 		}
@@ -4288,6 +4354,8 @@ OPGP_ERROR_STATUS OP201_put_3desKey(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
  * Any other value between 0x01 and 0x7f must match an existing key set version.
  * The new key set version defines the key set version the new secure channel keys belongs to.
  * This can be the same key version or a new not existing key set version.
+ * Sometimes a key derivation of the put keys might be necessary so it is necessary to call 
+ * OP201_EMV_CPS11_derive_keys() or any other derivation function.
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
  * \param *secInfo [in, out] The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
@@ -4299,7 +4367,8 @@ OPGP_ERROR_STATUS OP201_put_3desKey(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
  * \param KEK [in] The key encryption key (KEK).
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
-OPGP_ERROR_STATUS OP201_put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, BYTE keySetVersion, BYTE newKeySetVersion, BYTE new_encKey[16], BYTE new_macKey[16], BYTE new_KEK[16], BYTE KEK[16]) {
+OPGP_ERROR_STATUS OP201_put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, 
+        BYTE keySetVersion, BYTE newKeySetVersion, BYTE new_encKey[16], BYTE new_macKey[16], BYTE new_KEK[16], BYTE KEK[16]) {
 	OPGP_ERROR_STATUS status;
 	GP211_SECURITY_INFO gp211secInfo;
 	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);

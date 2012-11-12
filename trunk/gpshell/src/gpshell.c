@@ -725,7 +725,7 @@ static int handleCommands(FILE *fd)
 {
     TCHAR buf[BUFLEN + 1], commandLine[BUFLEN + 1];
     int rv = EXIT_SUCCESS, i;
-	unsigned int it=0, ft=0;
+    unsigned int it=0, ft=0;
     OPGP_ERROR_STATUS status;
     TCHAR *token;
     OptionStr optionStr;
@@ -866,20 +866,20 @@ static int handleCommands(FILE *fd)
                 {
                     goto end;
                 }
-				if (gemXpressoPro) {
-					optionStr.keyDerivation = OPGP_DERIVATION_METHOD_VISA2;
-				}
+                if (gemXpressoPro) {
+                        optionStr.keyDerivation = OPGP_DERIVATION_METHOD_VISA2;
+                }
                 if (platform_mode == PLATFORM_MODE_OP_201)
                 {
                     status = OP201_mutual_authentication(cardContext, cardInfo,
-													 optionStr.key,
+                                                     optionStr.key,
                                                      optionStr.enc_key,
                                                      optionStr.mac_key,
                                                      optionStr.kek_key,
                                                      optionStr.keySetVersion,
                                                      optionStr.keyIndex,
                                                      optionStr.securityLevel,
-													 optionStr.keyDerivation,
+                                                     optionStr.keyDerivation,
                                                      &securityInfo201);
                 }
                 else if (platform_mode == PLATFORM_MODE_GP_211)
@@ -1394,6 +1394,36 @@ static int handleCommands(FILE *fd)
                 }
                 if (platform_mode == PLATFORM_MODE_OP_201)
                 {
+                        if (optionStr.keyDerivation == OPGP_DERIVATION_METHOD_EMV_CPS11) {
+                            status = OP201_EMV_CPS11_derive_keys(cardContext, cardInfo, &securityInfo211, optionStr.key, optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
+                            if (OPGP_ERROR_CHECK(status))
+                            {
+                                _tprintf (_T("EMV_CPS11_derive_keys() returns 0x%08lX (%s)\n"),
+                                          status.errorCode, status.errorMessage);
+                                rv = EXIT_FAILURE;
+                                goto end;
+                            }
+                        }
+                        else if (optionStr.keyDerivation == OPGP_DERIVATION_METHOD_VISA2) {
+                        optionStr.APDULen = APDULEN;
+                        OP201_get_data(cardContext, cardInfo, &securityInfo201, OP201_GET_DATA_CARD_MANAGER_AID optionStr.APDU, &(optionStr.APDULen));
+                        if (OPGP_ERROR_CHECK(status))
+                        {
+                            _tprintf (_T("VISA2_derive_keys() returns 0x%08lX (%s)\n"),
+                                      status.errorCode, status.errorMessage);
+                            rv = EXIT_FAILURE;
+                            goto end;
+                        }
+                        // offset should be 3 where the Card Manager AID starts
+                        status = OP201_VISA2_derive_keys(cardContext, cardInfo, &securityInfo211, optionStr.APDU+3, optionStr.APDULen-3, optionStr.key, optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
+                        if (OPGP_ERROR_CHECK(status))
+                        {
+                            _tprintf (_T("VISA2_derive_keys() returns 0x%08lX (%s)\n"),
+                                      status.errorCode, status.errorMessage);
+                            rv = EXIT_FAILURE;
+                            goto end;
+                    }
+                    }
                     status = OP201_put_secure_channel_keys(cardContext, cardInfo, &securityInfo201,
                                                        optionStr.keySetVersion,
                                                        optionStr.newKeySetVersion,
@@ -1404,6 +1434,36 @@ static int handleCommands(FILE *fd)
                 }
                 else if (platform_mode == PLATFORM_MODE_GP_211)
                 {
+                    if (optionStr.keyDerivation == OPGP_DERIVATION_METHOD_EMV_CPS11) {
+                        status = GP211_EMV_CPS11_derive_keys(cardContext, cardInfo, &securityInfo211, optionStr.key, optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
+                        if (OPGP_ERROR_CHECK(status))
+                        {
+                            _tprintf (_T("EMV_CPS11_derive_keys() returns 0x%08lX (%s)\n"),
+                                      status.errorCode, status.errorMessage);
+                            rv = EXIT_FAILURE;
+                            goto end;
+                        }
+                    }
+                    else if (optionStr.keyDerivation == OPGP_DERIVATION_METHOD_VISA2) {
+                        optionStr.APDULen = APDULEN;
+                        GP211_get_data(cardContext, cardInfo, &securityInfo211, GP211_GET_DATA_ISSUER_SECURITY_DOMAIN_AID, optionStr.APDU, &(optionStr.APDULen));
+                        if (OPGP_ERROR_CHECK(status))
+                        {
+                            _tprintf (_T("VISA2_derive_keys() returns 0x%08lX (%s)\n"),
+                                      status.errorCode, status.errorMessage);
+                            rv = EXIT_FAILURE;
+                            goto end;
+                        }
+                        // offset should be 3 where the Card Manager AID starts
+                        status = GP211_VISA2_derive_keys(cardContext, cardInfo, &securityInfo211, optionStr.APDU+3, optionStr.APDULen-3, optionStr.key, optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
+                        if (OPGP_ERROR_CHECK(status))
+                        {
+                            _tprintf (_T("VISA2_derive_keys() returns 0x%08lX (%s)\n"),
+                                      status.errorCode, status.errorMessage);
+                            rv = EXIT_FAILURE;
+                            goto end;
+                        }
+                    }
                     status = GP211_put_secure_channel_keys(cardContext, cardInfo,
                                                        &securityInfo211,
                                                        optionStr.keySetVersion,

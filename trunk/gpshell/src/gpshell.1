@@ -105,6 +105,9 @@ Add new key set version 2
 .IP put_sc_key
 .I "-keyver 1 -newkeyver 1 -mac_key new_MAC_key -enc_key new_ENC_key -kek_key new_KEK_key -cur_kek current_KEK_key"
 Replace key set version 1
+.IP put_sc_key
+.I "-keyver 1 -newkeyver 1 -mac_key new_MAC_key -enc_key new_ENC_key -kek_key new_KEK_key -cur_kek current_KEK_key -key xyz -keyDerivation x"
+Replace key set version 1 using key derivation x using the master (mother) key xyz
 .IP put_dm_keys
 .I "-keyver 0 -newkeyver 2 -file public_rsa_key_file -pass password -key new_receipt_generation_key"
 Put delegated management keys for GP 2.1.1 in version 2
@@ -229,7 +232,8 @@ Identifer for the tag for the get_data command. Must be in hex format, e.g. 9F7F
 .I "derivation method"
 Possible values are "none", "visa2" or "emvcps11"
 Choose "visa2" if you have a card which uses the VISA key derivation scheme for the key calculation, like GemXpresso Pro or some JCOP cards you must set this.
-Choose "emvcps11" If you have a card which uses the EMV CPS 1.1 key derivation scheme for the key calculation, like a Sm@rtCafe Expert 3.0 you must set this.
+Choose "emvcps11" If you have a card which uses the EMV CPS 1.1 key derivation scheme for the key calculation, like a Sm@rtCafe Expert 3.0 and later you must set this.
+Also for put_sc_key this is necessary for Sm@rtcafe 5.0 (and earlier(?)) cards
 
 .SH ENVIRONMENT
 .IP GLOBALPLATFORM_DEBUG
@@ -240,7 +244,7 @@ Sets the log file name for the debugging output.
 .IP VISA2
 For the VISA2 key derivation scheme, like used in a GemXpresso Pro or some JCOP cards, you have to enable it with the -keyDerivation set to "visa2" during open_sc.
 .IP "EMV CPS 1.1 / CDK (CPG 2.04)"
-For the key derivation according to EMV CPS 1.1 (CDK (CPG 2.04)), like Sm@rtCafe Expert 3.0, enable it by passing "emvcps11" to -keyDerivation during open_sc.
+For the key derivation according to EMV CPS 1.1 (CDK (CPG 2.04)), like Sm@rtCafe Expert 3.0 and later, enable it by passing "emvcps11" to -keyDerivation during open_sc.
 
 Known unsupported key derivation schemes are:
 .IP "CDK (CPG 2.02)"
