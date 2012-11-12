@@ -105,8 +105,8 @@ static const BYTE GP211_GET_DATA_APPLICATION_PROVIDER_IDENTIFICATION_NUMBER[2] =
 static const BYTE GP211_GET_DATA_CARD_IMAGE_NUMBER[2] = {0x00, 0x45}; //!< Card Image Number, if Card Manager selected.
 static const BYTE GP211_GET_DATA_SECURITY_DOMAIN_IMAGE_NUMBER[2] = {0x00, 0x45}; //!< Security Domain Image Number, if Security Domain selected.
 
-static const BYTE GP211_GET_DATA_ISSUER_SECURITY_DOMAIN_AID[2] = {0x00, 0x4F}; //!< Change Issuer Security Domain AID, if Issuer Security Domain selected.
-static const BYTE GP211_GET_DATA_SECURITY_DOMAIN_AID[2] = {0x00, 0x4F}; //!< Change Security Domain AID, if Security Domain selected.
+static const BYTE GP211_GET_DATA_ISSUER_SECURITY_DOMAIN_AID[2] = {0x00, 0x4F}; //!< Issuer Security Domain AID, if Issuer Security Domain selected.
+static const BYTE GP211_GET_DATA_SECURITY_DOMAIN_AID[2] = {0x00, 0x4F}; //!< Security Domain AID, if Security Domain selected.
 
 static const BYTE GP211_GET_DATA_CARD_DATA[2] = {0x00, 0x66}; //!< Card Data.
 static const BYTE GP211_GET_DATA_SEQUENCE_COUNTER_DEFAULT_KEY_VERSION[2] = {0x00, 0xC1}; //!< Sequence Counter of the default Key Version Number.
@@ -809,11 +809,6 @@ OPGP_ERROR_STATUS GP211_end_R_MAC(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO 
 OPGP_API
 OPGP_ERROR_STATUS OPGP_read_executable_load_file_parameters(OPGP_STRING loadFileName, OPGP_LOAD_FILE_PARAMETERS *loadFileParams);
 
-//! \brief Derives the static keys from a master key according the VISA 2 key derivation scheme.
-OPGP_API
-OPGP_ERROR_STATUS OPGP_VISA2_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, PBYTE AID, DWORD AIDLength, BYTE masterKey[16],
-								 BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
-
 //! \brief Converts a CAP file to an IJC file (Executable Load File).
 OPGP_API
 OPGP_ERROR_STATUS OPGP_cap_to_ijc(OPGP_CSTRING capFileName, OPGP_STRING ijcFileName);
@@ -828,8 +823,24 @@ OPGP_ERROR_STATUS OPGP_read_executable_load_file_parameters_from_buffer(PBYTE lo
 
 //! \brief Derives the static keys from a master key according the EMV CPS 1.1 key derivation scheme.
 OPGP_API
-OPGP_ERROR_STATUS OPGP_EMV_CPS11_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE masterKey[16],
+OPGP_ERROR_STATUS GP211_EMV_CPS11_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE masterKey[16],
 							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
+
+//! \brief Derives the static keys from a master key according the VISA 2 key derivation scheme.
+OPGP_API
+OPGP_ERROR_STATUS GP211_VISA2_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBYTE AID, DWORD AIDLength, BYTE masterKey[16],
+								 BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
+
+//! \brief Derives the static keys from a master key according the EMV CPS 1.1 key derivation scheme.
+OPGP_API
+OPGP_ERROR_STATUS OP201_EMV_CPS11_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, BYTE masterKey[16],
+							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
+
+//! \brief Derives the static keys from a master key according the VISA 2 key derivation scheme.
+OPGP_API
+OPGP_ERROR_STATUS OP201_VISA2_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, PBYTE AID, DWORD AIDLength, BYTE masterKey[16],
+								 BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
+
 
 #ifdef __cplusplus
 }

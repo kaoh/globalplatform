@@ -1,7 +1,7 @@
 History
 =======
 
-6.1.0 - Mon, May 28, 2012, Karsten Ohme, François Kooman
+7.0.0 - Mon, Nov 12, 2012, Karsten Ohme, François Kooman, Jacek Trzcinski 
 	CMake Build System
 	Changed DEBUG definition to OPGP_DEBUG to prevent name collisions
 	Added LGPL OpenSSL Exception

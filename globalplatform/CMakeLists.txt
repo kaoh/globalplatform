@@ -4,9 +4,9 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 # set this to snapshot so that snapshot specific version number can be set
 set(CPACK_DEBIAN_PACKAGE_TYPE	"snapshot")
 
-SET( ${PROJECT_NAME}_CURRENT 6 )
-SET( ${PROJECT_NAME}_REVISION 1 )
-SET( ${PROJECT_NAME}_AGE 0+1 )
+SET( ${PROJECT_NAME}_CURRENT 6+7 )
+SET( ${PROJECT_NAME}_REVISION 0 )
+SET( ${PROJECT_NAME}_AGE 0 )
 SET(VERSION "${${CMAKE_PROJECT_NAME}_CURRENT}.${${CMAKE_PROJECT_NAME}_REVISION}.${${CMAKE_PROJECT_NAME}_AGE}")
 
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules/)
@@ -71,7 +71,7 @@ set(CPACK_SOURCE_IGNORE_FILES "doc;.*~;Debian;debian;\\\\.svn;\\\\globalplatform
 include(CPack)
 
 # build a Debian package for Launchpad
-set(CPACK_DEBIAN_PACKAGE_NAME "libglobalplatform6")
+set(CPACK_DEBIAN_PACKAGE_NAME "libglobalplatform7")
 set(CPACK_DEBIAN_PACKAGE_PRIORITY "extra")
 set(CPACK_DEBIAN_PACKAGE_SECTION "libs")
 set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "http://globalplatform.sourceforge.net/")
