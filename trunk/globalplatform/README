@@ -56,45 +56,65 @@ http://msdn.microsoft.com/en-us/windows/bb980924
 
 **** VISUAL C++ 2010 EXPRESS ****
 To have nmake install VISUAL C++ 2010 EXPRESS
-http://www.microsoft.com/visualstudio/en-us/products/2010-editions/visual-cpp-express
+http://www.microsoft.com/visualstudio/eng/downloads#d-2010-express
+
+**** Windows Driver Kit (WDK) ****
+The WDK is needed to build a Windows platform independent version without getting into conflict with different
+Windows msvcrt DLL versions.
+http://www.microsoft.com/downloads/details.aspx?displaylang=en&FamilyID=36a2630f-5d56-43b5-b996-7633f2ec14ff
+
+See http://kobyk.wordpress.com/2007/07/20/dynamically-linking-with-msvcrtdll-using-visual-c-2005/
 
 **** OpenSSL ****
 http://www.slproweb.com/products/Win32OpenSSL.html
---> Win32 OpenSSL v1.0.0d
---> Visual C++ 2008 Redistributables
+--> Win32 OpenSSL v1.0.1c or higher
+--> Visual C++ 2008 Redistributables might be necessary
+  * Let it install the DLLs to the Windows system directory
 
 **** zlib ****
-http://www.zlib.net/
---> zlib compiled DLL, version 1.2.5
+http://www.winimage.com/zLibDll/index.html
+--> zlib pre-built DLL and sources, version 1.2.5
 
-  * Copy the zlib1.dll to C:\Windows\System32
-  * Copy the files from the include directory to
-    C:\Program Files\Microsoft SDKs\Windows\v7.1\Include
-  * Copy the file "zdll.lib" from the lib directory to
-    C:\Program Files\Microsoft SDKs\Windows\v7.1\Lib
+  * Copy the zlibwapi.dll to C:\Windows\System32
+  * Copy zlib.h and zconf.h from the sources to
+    C:\Program Files\Microsoft SDKs\Windows\v7.0A\Include
+  * Copy the file "zlibwapi.lib" from the lib directory to
+    C:\Program Files\Microsoft SDKs\Windows\v7.0A\Lib
 
+**** Doxygen ****
+You need Doxygen for generating the documentation.
+www.doxygen.org/ 
+    
 **** CMake ****
 http://www.cmake.org/
---> CMake 2.8.4
+--> CMake 2.8.10.2 or higher
 
 **** Compile ****
 
-  Launch Visual Studio Command Prompt (2010)
-  cd \path\to\globalplatform
+  * Launch Visual Studio Command Prompt (2010)
+  * cd \path\to\globalplatform
 
-  cmake .
-  ## CMake looks for PC/SC, OpenSSL and zlib ##
+  * cmake -G NMake Makefiles for a debug version
+  * cmake -G NMake Makefiles -DCMAKE_BUILD_TYPE=Release for a release version  
+  * ## CMake looks for PC/SC, OpenSSL and zlib ##
 
-  nmake
+  * nmake  
+   
+  * To build it downwards compatible you have to use a different set of common 
+    runtime libraries contained in the Windows Driver Development Kit. You have
+    to specifx with -DWINDDK_DIR the path to the DDK.  
+  * Complete example:
+    cmake -G "NMake Makefiles" -DWINDDK_DIR=C:\WinDDK\7600.16385.1 -DCMAKE_BUILD_TYPE=Release
+    nmake     
 
-Done!
+  * Done! 
 
 Source Packages
 ---------------
 
 Execute:
 
-make/nmake package_sourse
+make/nmake package_source
 
 Binary Packages
 ---------------
@@ -111,7 +131,7 @@ For documentation you also must have Doxygen installed.
 Execute:
 
 cmake .
-make/name doc
+make/nmake doc
 
 Ubuntu/Debian packages
 ----------------------
