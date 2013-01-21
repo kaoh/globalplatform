@@ -19,6 +19,10 @@ INCLUDE_DIRECTORIES(${PCSC_INCLUDE_DIRS} "${CMAKE_HOME_DIRECTORY}/../globalplatf
 ADD_LIBRARY(gppcscconnectionplugin SHARED ${SOURCES})
 TARGET_LINK_LIBRARIES(gppcscconnectionplugin ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES})
 
+IF(WINDDK_DIR)
+  TARGET_LINK_LIBRARIES(gppcscconnectionplugin optimized ${WINDDK_DIR}/lib/win7/i386/msvcrt_win2000.obj optimized ${WINDDK_DIR}/lib/Crt/i386/msvcrt.lib)
+ENDIF(WINDDK_DIR)
+
 IF(UNIX)
   SET_TARGET_PROPERTIES(gppcscconnectionplugin PROPERTIES SOVERSION ${VERSION})
 ENDIF(UNIX)

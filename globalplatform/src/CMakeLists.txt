@@ -50,9 +50,10 @@ TARGET_LINK_LIBRARIES(globalplatform globalplatformStatic ${PCSC_LIBRARIES} ${OP
 IF(USE_SYSTEM_MINIZIP)
   TARGET_LINK_LIBRARIES(globalplatform globalplatformStatic ${MINIZIP_LIBRARIES})
 ENDIF(USE_SYSTEM_MINIZIP)
-IF(WIN32)
+
+IF(WINDDK_DIR)
   TARGET_LINK_LIBRARIES(globalplatform globalplatformStatic optimized ${WINDDK_DIR}/lib/win7/i386/msvcrt_win2000.obj optimized ${WINDDK_DIR}/lib/Crt/i386/msvcrt.lib)
-ENDIF(WIN32)
+ENDIF(WINDDK_DIR)
 
 IF(UNIX)
   SET_TARGET_PROPERTIES(globalplatform PROPERTIES SOVERSION ${VERSION})
