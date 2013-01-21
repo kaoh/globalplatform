@@ -15,12 +15,20 @@ IF(UNIX)
   set(DOCUMENTATION_DIRECTORY "share/doc/${PROJECT_NAME}")
 ELSE(UNIX)
   set(DOCUMENTATION_DIRECTORY "doc")
-ENDIf(UNIX)
+ENDIF(UNIX)
 
 INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/AUTHORS ${CMAKE_CURRENT_SOURCE_DIR}/ChangeLog 
               ${CMAKE_CURRENT_SOURCE_DIR}/COPYING
+              ${CMAKE_CURRENT_SOURCE_DIR}/README
               ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.OpenSSL
-              ${CMAKE_CURRENT_SOURCE_DIR}/NEWS ${CMAKE_CURRENT_SOURCE_DIR}/README ${CMAKE_CURRENT_SOURCE_DIR}/src/gpshell.1 DESTINATION ${DOCUMENTATION_DIRECTORY})
+              ${CMAKE_CURRENT_SOURCE_DIR}/NEWS DESTINATION ${DOCUMENTATION_DIRECTORY})
+
+FILE(GLOB samples "${CMAKE_CURRENT_SOURCE_DIR}/*.txt")
+INSTALL(FILES ${samples} DESTINATION ${DOCUMENTATION_DIRECTORY})
+
+IF(UNIX)
+  INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/gpshell.1 DESTINATION ${DOCUMENTATION_DIRECTORY})
+ENDIF(UNIX)
 
 # build a CPack driven installer package
 
@@ -55,6 +63,7 @@ set(CPACK_SOURCE_IGNORE_FILES "doc;.*~;Debian;debian;\\\\.svn;\\\\CMakeFiles;/${
 
 include(CPack)
 
+IF(UNIX)
 # build a Debian package for Launchpad
 set(CPACK_DEBIAN_PACKAGE_NAME "gpshell")
 set(CPACK_DEBIAN_PACKAGE_PRIORITY "extra")
@@ -71,11 +80,12 @@ set(CPACK_DEBIAN_PACKAGE_SNAPSHOT_HOMEPAGE "https://launchpad.net/~k-o-/+archive
 set(DPUT_HOST "gp-ppa")
 set(CPACK_DEBIAN_PACKAGE_MANPAGES "/usr/share/doc/${CPACK_DEBIAN_PACKAGE_NAME}/gpshell.1")
 set(DPUT_SNAPSHOT_HOST "gpsnapshots-ppa")
-set(CPACK_DEBIAN_BUILD_DEPENDS "debhelper (>=5), libc6 (>= 2.7), libglobalplatform6-dev, libpcsclite-dev (>= 1.5.3), pkg-config (>=0.20-1~)")
+set(CPACK_DEBIAN_BUILD_DEPENDS "debhelper (>=5), libc6 (>= 2.7), libglobalplatform7-dev, libpcsclite-dev (>= 1.5.3), pkg-config (>=0.20-1~)")
 set(CPACK_DEBIAN_PACKAGE_INSTALL "/usr/bin/gpshell")
 set(CPACK_DEBIAN_PACKAGE_DOCS "/usr/share/doc/${CPACK_DEBIAN_PACKAGE_NAME}/*")
 
 include(UploadPPA)
+ENDIF(UNIX)
 
 # Enable usual make dist behavior
 add_custom_target(dist COMMAND ${CMAKE_MAKE_PROGRAM} package_source)

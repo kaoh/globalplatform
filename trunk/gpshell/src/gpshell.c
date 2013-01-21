@@ -1395,7 +1395,7 @@ static int handleCommands(FILE *fd)
                 if (platform_mode == PLATFORM_MODE_OP_201)
                 {
                         if (optionStr.keyDerivation == OPGP_DERIVATION_METHOD_EMV_CPS11) {
-                            status = OP201_EMV_CPS11_derive_keys(cardContext, cardInfo, &securityInfo211, optionStr.key, optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
+                            status = OP201_EMV_CPS11_derive_keys(cardContext, cardInfo, &securityInfo201, optionStr.key, optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
                             if (OPGP_ERROR_CHECK(status))
                             {
                                 _tprintf (_T("EMV_CPS11_derive_keys() returns 0x%08lX (%s)\n"),
@@ -1406,7 +1406,7 @@ static int handleCommands(FILE *fd)
                         }
                         else if (optionStr.keyDerivation == OPGP_DERIVATION_METHOD_VISA2) {
                         optionStr.APDULen = APDULEN;
-                        OP201_get_data(cardContext, cardInfo, &securityInfo201, OP201_GET_DATA_CARD_MANAGER_AID optionStr.APDU, &(optionStr.APDULen));
+                        OP201_get_data(cardContext, cardInfo, &securityInfo201, OP201_GET_DATA_CARD_MANAGER_AID, optionStr.APDU, &(optionStr.APDULen));
                         if (OPGP_ERROR_CHECK(status))
                         {
                             _tprintf (_T("VISA2_derive_keys() returns 0x%08lX (%s)\n"),
@@ -1415,7 +1415,7 @@ static int handleCommands(FILE *fd)
                             goto end;
                         }
                         // offset should be 3 where the Card Manager AID starts
-                        status = OP201_VISA2_derive_keys(cardContext, cardInfo, &securityInfo211, optionStr.APDU+3, optionStr.APDULen-3, optionStr.key, optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
+                        status = OP201_VISA2_derive_keys(cardContext, cardInfo, &securityInfo201, optionStr.APDU+3, optionStr.APDULen-3, optionStr.key, optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
                         if (OPGP_ERROR_CHECK(status))
                         {
                             _tprintf (_T("VISA2_derive_keys() returns 0x%08lX (%s)\n"),

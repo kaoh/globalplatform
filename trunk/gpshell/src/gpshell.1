@@ -106,7 +106,7 @@ Add new key set version 2
 .I "-keyver 1 -newkeyver 1 -mac_key new_MAC_key -enc_key new_ENC_key -kek_key new_KEK_key -cur_kek current_KEK_key"
 Replace key set version 1
 .IP put_sc_key
-.I "-keyver 1 -newkeyver 1 -mac_key new_MAC_key -enc_key new_ENC_key -kek_key new_KEK_key -cur_kek current_KEK_key -key xyz -keyDerivation x"
+.I "-keyver 1 -newkeyver 1 -key xyz -keyDerivation x"
 Replace key set version 1 using key derivation x using the master (mother) key xyz
 .IP put_dm_keys
 .I "-keyver 0 -newkeyver 2 -file public_rsa_key_file -pass password -key new_receipt_generation_key"
