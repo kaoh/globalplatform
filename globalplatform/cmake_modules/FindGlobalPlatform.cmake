@@ -6,7 +6,7 @@
 #  GLOBALPLATFORM_LIBRARIES - The libraries needed to use GlobalPlatform
 #
 # Author: Karsten Ohme <k_o_@users.sourceforge.net>
-# Version: 20110329
+# Version: 20130121
 #
 
 FIND_PACKAGE (PkgConfig)
@@ -18,9 +18,9 @@ ENDIF(PKG_CONFIG_FOUND)
 
 IF(NOT GLOBALPLATFORM_FOUND)
    # Will find GlobalPlatform headers both on Mac and Windows
-   FIND_PATH(GLOBALPLATFORM_INCLUDE_DIRS NAMES globalplatform/globalplatform.h)
+   FIND_PATH(GLOBALPLATFORM_INCLUDE_DIRS NAMES globalplatform/globalplatform.h PATHS ../../globalplatform/src)
    # GlobalPlatform library naming
-   FIND_LIBRARY(GLOBALPLATFORM_LIBRARIES NAMES globalplatform GlobalPlatform)
+   FIND_LIBRARY(GLOBALPLATFORM_LIBRARIES NAMES globalplatform GlobalPlatform PATHS ../../globalplatform/src)
 ENDIF(NOT GLOBALPLATFORM_FOUND)
 
 INCLUDE(FindPackageHandleStandardArgs)
