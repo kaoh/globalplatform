@@ -81,7 +81,8 @@ typedef struct {
 	status.errorCode = code; \
 	_tcsncpy(status.errorMessage, message, ERROR_MESSAGE_LENGTH); status.errorMessage[ERROR_MESSAGE_LENGTH] = _T('\0')
 
-#endif
 #ifdef __cplusplus
 }
 #endif
+#endif
+
