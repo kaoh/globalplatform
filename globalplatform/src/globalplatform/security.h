@@ -36,6 +36,7 @@ extern "C"
 
 #define GP211_SCP01 0x01 //!< Secure Channel Protocol '01'
 #define GP211_SCP02 0x02 //!< Secure Channel Protocol '02'
+#define GP211_SCP03 0x03 //!< Secure Channel Protocol '03'
 
 /** Secure Channel Protocol '01': "i" '05': Initiation mode explicit, C-MAC on modified APDU,
   * ICV set to zero, no ICV encryption, 3 Secure Channel Keys
@@ -102,6 +103,9 @@ extern "C"
   */
 #define GP211_SCP02_IMPL_i1B 0x1B
 
+/** Secure Channel Protocol '03': "i" '00': Initiation mode explicit, No R-MAC, No Psuedo-random cryptogram
+  */
+#define GP211_SCP03_IMPL_00 0x00
 
 #define GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC 0x03 //!< Secure Channel Protocol '01': C-DECRYPTION and C-MAC
 #define GP211_SCP01_SECURITY_LEVEL_C_MAC 0x01 //!< Secure Channel Protocol '01': C-MAC

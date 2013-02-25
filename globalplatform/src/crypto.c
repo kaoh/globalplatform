@@ -42,6 +42,8 @@
 #include <openssl/evp.h>
 #include <openssl/pem.h>
 
+static BYTE CardCryptogram_DerivationConstant_SCP03 = 0x00; //!< Constant to derive the card cryptogram.
+static BYTE HostCryptogram_DerivationConstant_SCP03 = 0x01; //!< Constant to derive the host cryptogram.
 
 /**
  * Calculates the encryption of a message in CBC mode for SCP02.
@@ -164,6 +166,51 @@ end:
 }
 
 /**
+ * Calculates the card cryptogram for SCP03.
+ * \param S_MACSessionKey [in] The S-MAC Session Key for calculating the card cryptogram.
+ * \param cardChallenge [in] The card challenge.
+ * \param hostChallenge [in] The host challenge.
+ * \param hostCryptogram [out] The calculated host cryptogram.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS calculate_card_cryptogram_SCP03(BYTE S_MACSessionKey[16],
+											BYTE cardChallenge[8],
+											BYTE hostChallenge[8],
+											BYTE cardCryptogram[8])
+{
+	OPGP_ERROR_STATUS status;
+	BYTE icv[16];
+	BYTE derivation_data[32];
+	BYTE mac[16];
+
+	OPGP_LOG_START(_T("calculate_card_cryptogram_SCP03"));
+	memset(derivation_data, 0, 11); //<! "label" 
+	derivation_data[11] = CardCryptogram_DerivationConstant_SCP03; //<! "derivation constant" part of label
+	derivation_data[12] = 0x00;     // <! "separation indicator"
+	derivation_data[13] = 0x00;     // <! First byte of output length 
+	derivation_data[14] = 0x40;     // <! Second byte of output length
+	derivation_data[15] = 0x01;     // <! byte counter "i"
+
+	memcpy(derivation_data+16, hostChallenge, 8);
+	memcpy(derivation_data+24, cardChallenge, 8);
+
+	// ICV = all zeroes
+	memset(icv, 0, 16);
+
+	status = calculate_MAC_aes_128_cbc_no_padding(S_MACSessionKey, derivation_data, 32, icv, mac);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	memcpy(cardCryptogram, mac, 8);
+
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+
+	OPGP_LOG_END(_T("calculate_card_cryptogram_SCP03"), status);
+	return status;
+}
+
+/**
  * Calculates the host cryptogram for SCP01.
  * \param S_ENCSessionKey [in] The S-ENC Session Key for calculating the card cryptogram.
  * \param cardChallenge [in] The card challenge.
@@ -219,6 +266,51 @@ OPGP_ERROR_STATUS calculate_host_cryptogram_SCP02(BYTE S_ENCSessionKey[16],
 end:
 
 	OPGP_LOG_END(_T("calculate_host_cryptogram_SCP02"), status);
+	return status;
+}
+
+/**
+ * Calculates the host cryptogram for SCP03.
+ * \param S_MACSessionKey [in] The S-MAC Session Key for calculating the card cryptogram.
+ * \param cardChallenge [in] The card challenge.
+ * \param hostChallenge [in] The host challenge.
+ * \param hostCryptogram [out] The calculated host cryptogram.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS calculate_host_cryptogram_SCP03(BYTE S_MACSessionKey[16],
+											BYTE cardChallenge[8],
+											BYTE hostChallenge[8],
+											BYTE hostCryptogram[8])
+{
+	OPGP_ERROR_STATUS status;
+	BYTE icv[16];
+	BYTE derivation_data[32];
+	BYTE mac[16];
+
+	OPGP_LOG_START(_T("calculate_host_cryptogram_SCP03"));
+	memset(derivation_data, 0, 11); //<! "label" 
+	derivation_data[11] = HostCryptogram_DerivationConstant_SCP03; //<! "derivation constant" part of label
+	derivation_data[12] = 0x00;     // <! "separation indicator"
+	derivation_data[13] = 0x00;     // <! First byte of output length 
+	derivation_data[14] = 0x40;     // <! Second byte of output length
+	derivation_data[15] = 0x01;     // <! byte counter "i"
+
+	memcpy(derivation_data+16, hostChallenge, 8);
+	memcpy(derivation_data+24, cardChallenge, 8);
+
+	// ICV = all zeroes
+	memset(icv, 0, 16);
+
+	status = calculate_MAC_aes_128_cbc_no_padding(S_MACSessionKey, derivation_data, 32, icv, mac);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	memcpy(hostCryptogram, mac, 8);
+
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+
+	OPGP_LOG_END(_T("calculate_host_cryptogram_SCP03"), status);
 	return status;
 }
 
@@ -285,6 +377,47 @@ OPGP_ERROR_STATUS create_session_key_SCP02(BYTE key[16], BYTE constant[2],
 end:
 
 	OPGP_LOG_END(_T("create_session_key_SCP02"), status);
+	return status;
+}
+
+/**
+ * Creates an AES-128 session key for SCP03.
+ * \param key [in] The Secure Channel Encryption Key or Secure Channel Message
+ * Authentication Code Key for calculating the corresponding session key.
+ * \param derivationConstant [in] The derivation constant, as defined in "Table 4-1: Data derivation constants" of SCP03.
+ * \param cardChallenge [in] The card challenge.
+ * \param hostChallenge [in] The host challenge.
+ * \param sessionKey [out] The calculated 3DES session key.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS create_session_key_SCP03(BYTE key[16], BYTE derivationConstant, BYTE cardChallenge[8],
+							   BYTE hostChallenge[8], BYTE sessionKey[16]) {
+	OPGP_ERROR_STATUS status;
+	BYTE icv[16];
+	BYTE derivation_data[32];
+
+	OPGP_LOG_START(_T("create_session_key_SCP03"));
+	memset(derivation_data, 0, 11); //<! "label" 
+	derivation_data[11] = derivationConstant; //<! "derivation constant" part of label
+	derivation_data[12] = 0x00;     // <! "separation indicator"
+	derivation_data[13] = 0x00;     // <! First byte of key length 
+	derivation_data[14] = 0x80;     // <! Second byte of key length - only 128 bit keys supported
+	derivation_data[15] = 0x01;     // <! byte counter "i" - only 128 bit keys supported
+
+	memcpy(derivation_data+16, hostChallenge, 8);
+	memcpy(derivation_data+24, cardChallenge, 8);
+
+	// ICV = all zeroes
+	memset(icv, 0, 16);
+
+	status = calculate_MAC_aes_128_cbc_no_padding(key, derivation_data, 32, NULL, sessionKey);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+
+	OPGP_LOG_END(_T("create_session_key_SCP03"), status);
 	return status;
 }
 
@@ -471,6 +604,63 @@ end:
 	}
 
 	OPGP_LOG_END(_T("calculate_MAC"), status);
+	return status;
+}
+
+/**
+ * Calculates a message authentication code, using AES-128 in CBC mode with no padding.
+ * \param key [in] The AES-128 key to use.
+ * \param *message [in] The message to calculate the MAC for.
+ * \param messageLength [in] The message length.
+ * \param icv [in] The initial chaining vector.
+ * \param mac [out] The calculated MAC.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS calculate_MAC_aes_128_cbc_no_padding(BYTE key[16], BYTE *message, int messageLength,
+							  BYTE icv[16], BYTE mac[16]) {
+	LONG result;
+	OPGP_ERROR_STATUS status;
+	int i,outl;
+	EVP_CIPHER_CTX ctx;
+	OPGP_LOG_START(_T("calculate_MAC_aes_128_cbc_no_padding"));
+	EVP_CIPHER_CTX_init(&ctx);
+
+	// The message must be a multiple of the key length since we're not padding.
+	if (messageLength % 16 != 0) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); 
+		goto end;
+	}
+
+	// no padding
+	EVP_CIPHER_CTX_set_padding(&ctx, 0); 
+
+	result = EVP_EncryptInit_ex(&ctx, EVP_aes_128_cbc(), NULL, key, icv);
+	if (result != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+
+	// Encrypt the message one block at a time.
+	for (i=0; i<messageLength/16; i++) {
+		result = EVP_EncryptUpdate(&ctx, mac,
+			&outl, message+i*16, 16);
+		if (result != 1) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+	}
+
+	// Write the final block to the mac
+	result = EVP_EncryptFinal_ex(&ctx, mac,
+		&outl);
+	if (result != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	if (EVP_CIPHER_CTX_cleanup(&ctx) != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); }
+	}
+
+	OPGP_LOG_END(_T("calculate_MAC_aes_128_cbc_no_padding"), status);
 	return status;
 }
 
