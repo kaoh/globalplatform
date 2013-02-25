@@ -3752,13 +3752,13 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 			}
 
 			// calculation of R-MAC session key
-			status = create_session_key_SCP02(baseKey, R_MACDerivationConstant, sequenceCounter, secInfo->C_MACSessionKey);
+			status = create_session_key_SCP02(baseKey, R_MACDerivationConstant, sequenceCounter, secInfo->R_MACSessionKey);
 			if (OPGP_ERROR_CHECK(status)) {
 				goto end;
 			}
 
 			// calculation of data encryption session key
-			status = create_session_key_SCP02(baseKey, DEKDerivationConstant, sequenceCounter, secInfo->C_MACSessionKey);
+			status = create_session_key_SCP02(baseKey, DEKDerivationConstant, sequenceCounter, secInfo->dataEncryptionSessionKey);
 			if (OPGP_ERROR_CHECK(status)) {
 				goto end;
 			}
