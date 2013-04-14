@@ -1,4 +1,4 @@
-/*  Copyright (c) 2009, Karsten Ohme
+﻿/*  Copyright (c) 2013, Karsten Ohme
  *  This file is part of GlobalPlatform.
  *
  *  GlobalPlatform is free software: you can redistribute it and/or modify
@@ -126,7 +126,31 @@ static const BYTE GP211_GET_DATA_CPLC_PRE_PERSONALIZATION_DATE[2] = {0x9F, 0x67}
 static const BYTE GP211_GET_DATA_CPLC_ICC_MANUFACTURER_EMBEDDING_DATE[2] = {0x9F, 0x68}; //!< CPLC ICC manufacturer, embedding date.
 static const BYTE GP211_GET_DATA_CPLC_MODULE_FABRICATOR_PACKAGING_DATE[2] = {0x9F, 0x69}; //!< CPLC module fabricator, module packaging date.
 static const BYTE GP211_GET_DATA_CPLC_FABRICATION_DATE_SERIAL_NUMBER_BATCH_IDENTIFIER[2] = {0x9F, 0x6A}; //!< CPLC fabrication date, serial number, batch identifier.
-static const BYTE GP211_GET_DATA_CPLC_WHOLE_CPLC[2] = {0x9F, 0x7F}; //!< Whole CPLC data from ROM and EEPROM.
+/**
+ * Whole CPLC data from ROM and EEPROM.
+ * 9F7F // TAG
+ * 2A // Length of data
+ * ////////////////Data /////////////
+ * 4250 // ic fabricator
+ * 3272 // ic type
+ * 1291 // os id
+ * 6181 // os date
+ * 0700 // os level
+ * 8039 // fabrication date
+ * 0106D0BB // ic serial
+ * 1D3C // ic batch
+ * 0000 // module fabricator
+ * 8148 // packing date
+ * 0000// icc manufacturer
+ * 8148 // ic embedding date
+ * 0000 // pre - personalizer
+ * 0000 // IC PrePersonalization Date
+ * 00000000 //IC PrePersonalization Equipment Identifier
+ * 0000// IC Personalizer
+ * 0000 // IC Personalization Date
+ * 00000000 // IC Personalization Equipment Identifier
+ */
+static const BYTE GP211_GET_DATA_CPLC_WHOLE_CPLC[2] = {0x9F, 0x7F};
 
 static const BYTE GP211_GET_DATA_FCI_DATA[2] = {0xBF, 0x0C}; //!< File Control Information (FCI) discretionary data.
 
@@ -233,6 +257,7 @@ static const BYTE OP201_GET_DATA_WHOLE_EF_PROD[2] = {0xDF, 0x7F}; //!< Whole EF<
 static const BYTE OPGP_DERIVATION_METHOD_NONE = 0; //!< No key derivation is used during mutual authentication.
 static const BYTE OPGP_DERIVATION_METHOD_VISA2 = 1; //!< The VISA2 key derivation is used during mutual authentication.
 static const BYTE OPGP_DERIVATION_METHOD_EMV_CPS11 = 2; //!< The EMV CPS 11 derivation is used during mutual authentication.
+static const BYTE OPGP_DERIVATION_METHOD_VISA1 = 3; //!< The VISA1 key derivation is used during mutual authentication.
 
 #define OPGP_WORK_UNKNOWN -1 //!< The amount of work is not known.
 #define OPGP_TASK_FINISHED 1 //!< The task is finished.
@@ -831,6 +856,11 @@ OPGP_API
 OPGP_ERROR_STATUS GP211_VISA2_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBYTE AID, DWORD AIDLength, BYTE masterKey[16],
 								 BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
 
+//! \brief Derives the static keys from a master key according the VISA 1 key derivation scheme.
+OPGP_API
+OPGP_ERROR_STATUS GP211_VISA1_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE masterKey[16],
+								 BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
+
 //! \brief Derives the static keys from a master key according the EMV CPS 1.1 key derivation scheme.
 OPGP_API
 OPGP_ERROR_STATUS OP201_EMV_CPS11_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, BYTE masterKey[16],
@@ -841,6 +871,10 @@ OPGP_API
 OPGP_ERROR_STATUS OP201_VISA2_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, PBYTE AID, DWORD AIDLength, BYTE masterKey[16],
 								 BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
 
+//! \brief Derives the static keys from a master key according the VISA 1 key derivation scheme.
+OPGP_API
+OPGP_ERROR_STATUS OP201_VISA1_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, BYTE masterKey[16],
+								 BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
 
 #ifdef __cplusplus
 }

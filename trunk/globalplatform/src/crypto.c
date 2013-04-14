@@ -1,4 +1,4 @@
-/*  Copyright (c) 2009, Karsten Ohme
+/*  Copyright (c) 2013, Karsten Ohme
  *  This file is part of GlobalPlatform.
  *
  *  GlobalPlatform is free software: you can redistribute it and/or modify
