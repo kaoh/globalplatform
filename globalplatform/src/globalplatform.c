@@ -1,4 +1,4 @@
-/*  Copyright (c) 2009, Karsten Ohme
+/*  Copyright (c) 2013, Karsten Ohme
  *  This file is part of GlobalPlatform.
  *
  *  GlobalPlatform is free software: you can redistribute it and/or modify
@@ -196,6 +196,13 @@ OPGP_NO_API
 OPGP_ERROR_STATUS VISA2_derive_keys_get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBYTE AID, DWORD AIDLength, BYTE masterKey[16],
 							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
 
+OPGP_NO_API
+OPGP_ERROR_STATUS VISA1_derive_keys_get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE masterKey[16],
+							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
+
+OPGP_NO_API
+OPGP_ERROR_STATUS VISA1_derive_keys(BYTE cardSerialNumber[8], BYTE masterKey[16],
+							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS EMV_CPS11_derive_keys_get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE masterKey[16],
@@ -1116,7 +1123,7 @@ end:
  * \param identifier [in] Two byte buffer with high and low order tag value for identifying card data object.
  * \param recvBuffer [out] The buffer for the card data object.
  * \param recvBufferLength [in, out] The length of the received card data object.
- * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 			  BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength) {
@@ -3007,7 +3014,7 @@ OPGP_ERROR_STATUS GP211_calculate_3des_DAP(BYTE loadFileDataBlockHash[20], PBYTE
 						BYTE DAPCalculationKey[16], GP211_DAP_BLOCK *loadFileDataBlockSignature)
 {
 	OPGP_ERROR_STATUS status;
-
+	OPGP_LOG_START(_T("GP211_calculate_3des_DAP"));
 	calculate_MAC_des_3des(DAPCalculationKey, loadFileDataBlockHash, 20, NULL,
 		loadFileDataBlockSignature->signature);
 
@@ -3017,7 +3024,7 @@ OPGP_ERROR_STATUS GP211_calculate_3des_DAP(BYTE loadFileDataBlockHash[20], PBYTE
 
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
-	OPGP_LOG_END(_T("calculate_3des_DAP"), status);
+	OPGP_LOG_END(_T("GP211_calculate_3des_DAP"), status);
 	return status;
 
 }
@@ -3039,7 +3046,7 @@ OPGP_ERROR_STATUS GP211_calculate_rsa_DAP(BYTE loadFileDataBlockHash[20], PBYTE 
 					   GP211_DAP_BLOCK *loadFileDataBlockSignature)
 {
 	OPGP_ERROR_STATUS status;
-	OPGP_LOG_START(_T("calculate_rsa_DAP"));
+	OPGP_LOG_START(_T("GP211_calculate_rsa_DAP"));
 
 	calculate_rsa_signature(loadFileDataBlockHash, 20, PEMKeyFileName, passPhrase,
 		loadFileDataBlockSignature->signature);
@@ -3049,7 +3056,7 @@ OPGP_ERROR_STATUS GP211_calculate_rsa_DAP(BYTE loadFileDataBlockHash[20], PBYTE 
 
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
-	OPGP_LOG_END(_T("calculate_rsa_DAP"), status);
+	OPGP_LOG_END(_T("GP211_calculate_rsa_DAP"), status);
 	return status;
 }
 
@@ -3162,7 +3169,7 @@ OPGP_ERROR_STATUS GP211_validate_extradition_receipt(DWORD confirmationCounter, 
 	DWORD i=0;
 	PBYTE validationData;
 	DWORD validationDataLength;
-	OPGP_LOG_START(_T("validate_install_receipt"));
+	OPGP_LOG_START(_T("GP211_validate_install_receipt"));
 	validationDataLength = 1 + 2 + 1 + cardUniqueDataLength + 1
 		+ oldSecurityDomainAIDLength + 1 + applicationOrExecutableLoadFileAIDLength +
 		1 + newSecurityDomainAIDLength;
@@ -3195,7 +3202,7 @@ OPGP_ERROR_STATUS GP211_validate_extradition_receipt(DWORD confirmationCounter, 
 end:
 	if (validationData)
 		free(validationData);
-	OPGP_LOG_END(_T("validate_install_receipt"), status);
+	OPGP_LOG_END(_T("GP211_validate_install_receipt"), status);
 	return status;
 }
 
@@ -3255,9 +3262,9 @@ OPGP_ERROR_STATUS VISA2_derive_keys_get_data(OPGP_CARD_CONTEXT cardContext, OPGP
 	BYTE cardmanagerAID[16];
 	DWORD cardmanagerAIDLength = 16;
 
-	OPGP_LOG_START(_T("OPGP_VISA2_derive_keys"));
+	OPGP_LOG_START(_T("VISA2_derive_keys_get_data"));
 
-	OPGP_LOG_HEX(_T("OPGP_VISA2_derive_keys: Card Manager AID: "), AID, AIDLength);
+	OPGP_LOG_HEX(_T("OVISA2_derive_keys_get_data: Card Manager AID: "), AID, AIDLength);
 
 	status = GP211_get_data(cardContext, cardInfo, secInfo, (PBYTE)OP201_GET_DATA_CPLC_WHOLE_CPLC,
 		cardCPLCData, &cplcDataLen);
@@ -3265,19 +3272,12 @@ OPGP_ERROR_STATUS VISA2_derive_keys_get_data(OPGP_CARD_CONTEXT cardContext, OPGP
 		goto end;
 	}
 
-	// card manager first 2 AID bytes, so we have to take this as parameter
-	// does not work on GemXpresso cards
-	//status = OP201_get_data(cardContext, cardInfo, NULL, (PBYTE)OP201_GET_DATA_CARD_MANAGER_AID,
-	//	cardmanagerAID, &cardmanagerAIDLength);
-	//if (OPGP_ERROR_CHECK(status)) {
-	//	goto end;
-	//}
 	memcpy(cardmanagerAID, AID, AIDLength);
 	cardmanagerAIDLength = AIDLength;
 
 	keyDiversificationData[0] = cardmanagerAID[cardmanagerAIDLength-2];
 	keyDiversificationData[1] = cardmanagerAID[cardmanagerAIDLength-1];
-	// we are using 13 here because VISA2_Dertive_keys skips the first 2 bytes after the card manager AID
+	// we are using 13 here because VISA2_derive_keys skips the first 2 bytes after the card manager AID, ic serial starts at offset 15
  	memcpy(keyDiversificationData+2, cardCPLCData+13, 8);
 
 	status = VISA2_derive_keys(keyDiversificationData, masterKey, S_ENC, S_MAC, DEK);
@@ -3287,12 +3287,13 @@ OPGP_ERROR_STATUS VISA2_derive_keys_get_data(OPGP_CARD_CONTEXT cardContext, OPGP
 
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
-	OPGP_LOG_END(_T("OPGP_VISA2_derive_keys"), status);
+	OPGP_LOG_END(_T("VISA2_derive_keys_get_data"), status);
 	return status;
 }
 
 /**
   * E.g. GemXpresso cards, JCOP-10 cards or Palmera Protect V5 cards use this scheme.
+  * The baseKeyDiversificationData must contain the rightmost two bytes of the Card Manager AID as first 2 bytes and starting at position 4 the 4 bytes of the IC serial number.
   * \param baseKeyDiversificationData [in] The key diversification data. This is returned by INITIALIZE UPDATE or can be constructed.
   * \param S_ENC [out] The static Encryption key.
   * \param S_MAC [out] The static Message Authentication Code key.
@@ -3309,14 +3310,13 @@ OPGP_ERROR_STATUS VISA2_derive_keys(BYTE baseKeyDiversificationData[10], BYTE ma
 
 	OPGP_LOG_HEX(_T("VISA2_derive_keys: Base Key Diversification Data: "), baseKeyDiversificationData, 10);
 
-	/* Key Diversification data
+	/* Key Diversification data VISA 2
 	KDCAUTH/ENC xxh xxh || IC serial number || F0h 01h ||xxh xxh || IC serial number
 	||0Fh 01h
 	KDCMAC xxh xxh || IC serial number || F0h 02h ||xxh xxh || IC serial number
 	|| 0Fh 02h
 	KDCKEK xxh xxh || IC serial number || F0h 03h || xxh xxh || IC serial number
 	|| 0Fh 03h
-
 
 	xxh xxh is the last (rightmost) two bytes of the Card Manager AID.
 	IC Serial Number is taken from the CPLC data.
@@ -3333,7 +3333,7 @@ OPGP_ERROR_STATUS VISA2_derive_keys(BYTE baseKeyDiversificationData[10], BYTE ma
  	keyDiversificationData[14] = 0x0F;
  	keyDiversificationData[15] = 0x01;
 
-	OPGP_LOG_HEX(_T("VISA2_derive_keys: Key Diversification Data: "), keyDiversificationData, 16);
+	OPGP_LOG_HEX(_T("VISA2_derive_keys: Key Diversification Data for ENC: "), keyDiversificationData, 16);
 
 	status = calculate_enc_ecb_two_key_triple_des(masterKey, keyDiversificationData, 16, S_ENC, &outl);
 	if (OPGP_ERROR_CHECK(status)) {
@@ -3347,7 +3347,7 @@ OPGP_ERROR_STATUS VISA2_derive_keys(BYTE baseKeyDiversificationData[10], BYTE ma
 	keyDiversificationData[14] = 0x0F;
 	keyDiversificationData[15] = 0x02;
 
-	OPGP_LOG_HEX(_T("VISA2_derive_keys: Key Diversification Data: "), keyDiversificationData, 16);
+	OPGP_LOG_HEX(_T("VISA2_derive_keys: Key Diversification Data: for MAC "), keyDiversificationData, 16);
 
 	status = calculate_enc_ecb_two_key_triple_des(masterKey, keyDiversificationData, 16, S_MAC, &outl);
 	if (OPGP_ERROR_CHECK(status)) {
@@ -3363,7 +3363,7 @@ OPGP_ERROR_STATUS VISA2_derive_keys(BYTE baseKeyDiversificationData[10], BYTE ma
 	keyDiversificationData[14] = 0x0F;
 	keyDiversificationData[15] = 0x03;
 
-	OPGP_LOG_HEX(_T("VISA2_derive_keys: Key Diversification Data: "), keyDiversificationData, 16);
+	OPGP_LOG_HEX(_T("VISA2_derive_keys: Key Diversification Data for DEK: "), keyDiversificationData, 16);
 
 	status = calculate_enc_ecb_two_key_triple_des(masterKey, keyDiversificationData, 16, DEK, &outl);
 	if (OPGP_ERROR_CHECK(status)) {
@@ -3373,6 +3373,147 @@ OPGP_ERROR_STATUS VISA2_derive_keys(BYTE baseKeyDiversificationData[10], BYTE ma
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
 	OPGP_LOG_END(_T("VISA2_derive_keys"), status);
+	return status;
+}
+
+/**
+  * E.g. GemXpresso cards use this scheme.
+  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+  * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
+  * \param *secInfo [in, out] The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
+  * \param masterKey [in] The master key.
+  * \param S_ENC [out] The static Encryption key.
+  * \param S_MAC [out] The static Message Authentication Code key.
+  * \param DEK [out] The static Key Encryption Key.
+  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
+  */
+OPGP_ERROR_STATUS OP201_VISA1_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, BYTE masterKey[16],
+							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]) {
+    OPGP_ERROR_STATUS status;
+
+    if (secInfo == NULL) {
+        status = VISA1_derive_keys_get_data(cardContext, cardInfo, NULL, masterKey, S_ENC, S_MAC, DEK);
+    } else {
+        GP211_SECURITY_INFO gp211secInfo;
+        mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
+        status = VISA1_derive_keys_get_data(cardContext, cardInfo, &gp211secInfo, masterKey, S_ENC, S_MAC, DEK);
+        mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
+    }
+
+    return status;
+}
+
+/**
+  * E.g. GemXpresso cards use this scheme.
+  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+  * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
+  * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+  * \param masterKey [in] The master key.
+  * \param S_ENC [out] The static Encryption key.
+  * \param S_MAC [out] The static Message Authentication Code key.
+  * \param DEK [out] The static Key Encryption Key.
+  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
+  */
+OPGP_ERROR_STATUS GP211_VISA1_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE masterKey[16],
+							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]) {
+    return VISA1_derive_keys_get_data(cardContext, cardInfo, secInfo, masterKey, S_ENC, S_MAC, DEK);
+}
+
+OPGP_ERROR_STATUS VISA1_derive_keys_get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE masterKey[16],
+							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]) {
+	OPGP_ERROR_STATUS status;
+	BYTE cardCPLCData[50];
+	DWORD cplcDataLen = 50;
+	BYTE keyDiversificationData[16];
+
+	OPGP_LOG_START(_T("VISA1_derive_keys_get_data"));
+
+	status = GP211_get_data(cardContext, cardInfo, secInfo, (PBYTE)OP201_GET_DATA_CPLC_WHOLE_CPLC,
+		cardCPLCData, &cplcDataLen);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+
+	// ic serial starts at offset 15
+ 	memcpy(keyDiversificationData, cardCPLCData+15, 8);
+
+	status = VISA1_derive_keys(keyDiversificationData, masterKey, S_ENC, S_MAC, DEK);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	OPGP_LOG_END(_T("VISA1_derive_keys_get_data"), status);
+	return status;
+}
+
+/**
+  * E.g. GemXpresso cards use this scheme.
+  * \param cardSerialNumber [in] The card serial number.
+  * \param S_ENC [out] The static Encryption key.
+  * \param S_MAC [out] The static Message Authentication Code key.
+  * \param DEK [out] The static Key Encryption Key.
+  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
+  */
+OPGP_ERROR_STATUS VISA1_derive_keys(BYTE cardSerialNumber[8], BYTE masterKey[16],
+							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]) {
+	OPGP_ERROR_STATUS status;
+	int outl;
+	BYTE keyDiversificationData[16];
+
+	OPGP_LOG_START(_T("VISA1_derive_keys"));
+
+	OPGP_LOG_HEX(_T("VISA1_derive_keys: Base Key Diversification Data: "), cardSerialNumber, 10);
+
+	/*
+	Key Diversification data VISA 1
+	KDCAUTH/ENC FFh FFh || card serial number || 01h 00h 00h 00h 00h 00h
+	KDCMAC 00h 00h || card serial number || 02h 00h 00h 00h 00h 00h
+	KDCKEK F0h F0h || card serial number || 03h 00h 00h 00h 00h 00h
+	*/
+
+	// ENC
+	keyDiversificationData[0] = 0xFF;
+	keyDiversificationData[1] = 0xFF;
+ 	memcpy(keyDiversificationData, cardSerialNumber, 8);
+ 	keyDiversificationData[10] = 0x01;
+	memset(keyDiversificationData+11, 0x00, 5);
+
+	OPGP_LOG_HEX(_T("VISA1_derive_keys: Key Diversification Data for ENC: "), keyDiversificationData, 16);
+
+	status = calculate_enc_ecb_two_key_triple_des(masterKey, keyDiversificationData, 16, S_ENC, &outl);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+
+	// MAC
+	keyDiversificationData[0] = 0x00;
+	keyDiversificationData[1] = 0x00;
+ 	keyDiversificationData[10] = 0x02;
+
+	OPGP_LOG_HEX(_T("VISA1_derive_keys: Key Diversification Data: for MAC "), keyDiversificationData, 16);
+
+	status = calculate_enc_ecb_two_key_triple_des(masterKey, keyDiversificationData, 16, S_MAC, &outl);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+
+	// DEK
+	keyDiversificationData[0] = 0xF0;
+	keyDiversificationData[1] = 0xF0;
+ 	keyDiversificationData[10] = 0x03;
+
+	OPGP_LOG_HEX(_T("VISA1_derive_keys: Key Diversification Data for DEK: "), keyDiversificationData, 16);
+
+	status = calculate_enc_ecb_two_key_triple_des(masterKey, keyDiversificationData, 16, DEK, &outl);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	OPGP_LOG_END(_T("VISA1_derive_keys"), status);
 	return status;
 }
 
