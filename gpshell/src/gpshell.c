@@ -1406,7 +1406,7 @@ static int handleCommands(FILE *fd)
                         }
                         else if (optionStr.keyDerivation == OPGP_DERIVATION_METHOD_VISA2) {
                         optionStr.APDULen = APDULEN;
-                        OP201_get_data(cardContext, cardInfo, &securityInfo201, OP201_GET_DATA_CARD_MANAGER_AID, optionStr.APDU, &(optionStr.APDULen));
+                        OP201_get_data(cardContext, cardInfo, &securityInfo201, (PBYTE)OP201_GET_DATA_CARD_MANAGER_AID, optionStr.APDU, &(optionStr.APDULen));
                         if (OPGP_ERROR_CHECK(status))
                         {
                             _tprintf (_T("VISA2_derive_keys() returns 0x%08lX (%s)\n"),
@@ -1446,7 +1446,7 @@ static int handleCommands(FILE *fd)
                     }
                     else if (optionStr.keyDerivation == OPGP_DERIVATION_METHOD_VISA2) {
                         optionStr.APDULen = APDULEN;
-                        GP211_get_data(cardContext, cardInfo, &securityInfo211, GP211_GET_DATA_ISSUER_SECURITY_DOMAIN_AID, optionStr.APDU, &(optionStr.APDULen));
+                        GP211_get_data(cardContext, cardInfo, &securityInfo211, (PBYTE)GP211_GET_DATA_ISSUER_SECURITY_DOMAIN_AID, optionStr.APDU, &(optionStr.APDULen));
                         if (OPGP_ERROR_CHECK(status))
                         {
                             _tprintf (_T("VISA2_derive_keys() returns 0x%08lX (%s)\n"),
