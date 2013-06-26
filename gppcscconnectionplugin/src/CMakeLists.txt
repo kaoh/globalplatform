@@ -2,7 +2,11 @@ INCLUDE(FindPCSC)
 INCLUDE(FindGlobalPlatform)
 SET(SOURCES gppcscconnectionplugin.c util.c)
 
-SET(CMAKE_BUILD_TYPE "Release")
+IF(DEBUG)
+  SET(CMAKE_BUILD_TYPE "Debug")
+ELSE(DEBUG)
+  SET(CMAKE_BUILD_TYPE "Release")
+ENDIF(DEBUG)
 
 # Enable debugging output
 ADD_DEFINITIONS(-DOPGP_DEBUG)

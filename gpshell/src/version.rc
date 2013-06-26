@@ -7,7 +7,7 @@
 // Generated from the TEXTINCLUDE 2 resource.
 //
 #include "resource.h"
-#include "afxres.h"
+#include "winresrc.h"
 
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
@@ -32,7 +32,7 @@ LANGUAGE LANG_GERMAN, SUBLANG_GERMAN
 1 TEXTINCLUDE
 BEGIN
     "#include ""resource.h""\r\n"
-    "#include ""afxres.h""\r\n"
+    "#include ""winresrc.h""\r\n"
     "\0"
 END
 

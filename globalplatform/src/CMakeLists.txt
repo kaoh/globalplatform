@@ -5,7 +5,11 @@ INCLUDE(FindZLIB)
 SET(SOURCES connection.c stringify.c crypto.c loadfile.c util.c debug.c globalplatform.c)
 
 # TODO: if "Release" is set, package_ubuntu does only honors INSTALL(TARGETS globalplatform LIBRARY DESTINATION lib${LIB_SUFFIX})
-#SET(CMAKE_BUILD_TYPE "Release")
+IF(DEBUG)
+  SET(CMAKE_BUILD_TYPE "Debug")
+ELSE(DEBUG)
+  SET(CMAKE_BUILD_TYPE "Release")
+ENDIF(DEBUG)
 
 # Enable debugging output
 ADD_DEFINITIONS(-DOPGP_DEBUG)
@@ -58,10 +62,6 @@ ENDIF(WINDDK_DIR)
 IF(UNIX)
   SET_TARGET_PROPERTIES(globalplatform PROPERTIES SOVERSION ${VERSION})
 ENDIF(UNIX)
-
-IF(WIN32)
-  SET_TARGET_PROPERTIES(globalplatform PROPERTIES LINK_FLAGS_RELEASE /NODEFAULTLIB:msvcrt)
-ENDIF(WIN32)
 
 # Install
 IF(WIN32)
