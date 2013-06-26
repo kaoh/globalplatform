@@ -46,6 +46,8 @@ make
 Compilation under Windows
 -------------------------
 
+After changing CMake parameters you must rebuild the files and delete the CMakeCache.txt file.
+
 -- Requirements --
 
 Tested with:

@@ -41,6 +41,8 @@ make
 Compilation under Windows
 -------------------------
 
+After changing CMake parameters you must rebuild the files and delete the CMakeCache.txt file.
+
 -- Requirements --
 
 Tested with:
@@ -62,12 +64,20 @@ http://www.cmake.org/
   Launch Visual Studio Command Prompt (2010)
   cd \path\to\globalplatform
 
-  cmake .
+  * cmake -G "NMake Makefiles" for a release version
+  * cmake -G "NMake Makefiles" -DDEBUG=1 for a debug version  
   ## CMake looks for PC/SC ##
 
-  nmake
+  * nmake
 
-Done!
+  * To build it downwards compatible you have to use a different set of common 
+    runtime libraries contained in the Windows Driver Development Kit. You have
+    to specifx with -DWINDDK_DIR the path to the DDK.  
+  * Complete example:
+    cmake -G "NMake Makefiles" -DWINDDK_DIR=C:\WinDDK\7600.16385.1
+    nmake     
+
+  * Done! 
 
 Source Packages
 ---------------

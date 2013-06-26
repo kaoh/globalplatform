@@ -1,5 +1,5 @@
 /**
- *  Copyright (c) 2007, Snit Mo, Karsten Ohme
+ *  Copyright (c) 2013, Snit Mo, Karsten Ohme
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -697,6 +697,9 @@ static int handleOptions(OptionStr *pOptionStr)
             else if (_tcscmp(token, _T("visa2")) == 0) {
             	pOptionStr->keyDerivation = OPGP_DERIVATION_METHOD_VISA2;
             }
+			else if (_tcscmp(token, _T("visa1")) == 0) {
+            	pOptionStr->keyDerivation = OPGP_DERIVATION_METHOD_VISA1;
+            }
             else if (_tcscmp(token, _T("emvcps11")) == 0) {
             	pOptionStr->keyDerivation = OPGP_DERIVATION_METHOD_EMV_CPS11;
             }
@@ -782,7 +785,6 @@ static int handleCommands(FILE *fd)
             }
             else if (_tcscmp(token, _T("card_connect")) == 0)
             {
-                TCHAR buf[BUFLEN + 1];
                 DWORD readerStrLen = BUFLEN;
                 int readerFound = 0;
                 // open reader
@@ -1394,35 +1396,45 @@ static int handleCommands(FILE *fd)
                 }
                 if (platform_mode == PLATFORM_MODE_OP_201)
                 {
-                        if (optionStr.keyDerivation == OPGP_DERIVATION_METHOD_EMV_CPS11) {
-                            status = OP201_EMV_CPS11_derive_keys(cardContext, cardInfo, &securityInfo201, optionStr.key, optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
-                            if (OPGP_ERROR_CHECK(status))
-                            {
-                                _tprintf (_T("EMV_CPS11_derive_keys() returns 0x%08lX (%s)\n"),
-                                          status.errorCode, status.errorMessage);
-                                rv = EXIT_FAILURE;
-                                goto end;
-                            }
-                        }
-                        else if (optionStr.keyDerivation == OPGP_DERIVATION_METHOD_VISA2) {
-                        optionStr.APDULen = APDULEN;
-                        OP201_get_data(cardContext, cardInfo, &securityInfo201, (PBYTE)OP201_GET_DATA_CARD_MANAGER_AID, optionStr.APDU, &(optionStr.APDULen));
+                    if (optionStr.keyDerivation == OPGP_DERIVATION_METHOD_EMV_CPS11) {
+                        status = OP201_EMV_CPS11_derive_keys(cardContext, cardInfo, &securityInfo201, optionStr.key, optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
                         if (OPGP_ERROR_CHECK(status))
                         {
-                            _tprintf (_T("VISA2_derive_keys() returns 0x%08lX (%s)\n"),
-                                      status.errorCode, status.errorMessage);
+                            _tprintf (_T("EMV_CPS11_derive_keys() returns 0x%08lX (%s)\n"),
+                                        status.errorCode, status.errorMessage);
                             rv = EXIT_FAILURE;
                             goto end;
                         }
-                        // offset should be 3 where the Card Manager AID starts
-                        status = OP201_VISA2_derive_keys(cardContext, cardInfo, &securityInfo201, optionStr.APDU+3, optionStr.APDULen-3, optionStr.key, optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
-                        if (OPGP_ERROR_CHECK(status))
-                        {
-                            _tprintf (_T("VISA2_derive_keys() returns 0x%08lX (%s)\n"),
-                                      status.errorCode, status.errorMessage);
-                            rv = EXIT_FAILURE;
-                            goto end;
                     }
+                    else if (optionStr.keyDerivation == OPGP_DERIVATION_METHOD_VISA2) {
+						optionStr.APDULen = APDULEN;
+						OP201_get_data(cardContext, cardInfo, &securityInfo201, (PBYTE)OP201_GET_DATA_CARD_MANAGER_AID, optionStr.APDU, &(optionStr.APDULen));
+						if (OPGP_ERROR_CHECK(status))
+						{
+							_tprintf (_T("VISA2_derive_keys() returns 0x%08lX (%s)\n"),
+										status.errorCode, status.errorMessage);
+							rv = EXIT_FAILURE;
+							goto end;
+						}
+						// offset should be 3 where the Card Manager AID starts
+						status = OP201_VISA2_derive_keys(cardContext, cardInfo, &securityInfo201, optionStr.APDU+3, optionStr.APDULen-3, optionStr.key, optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
+						if (OPGP_ERROR_CHECK(status))
+						{
+							_tprintf (_T("VISA2_derive_keys() returns 0x%08lX (%s)\n"),
+										status.errorCode, status.errorMessage);
+							rv = EXIT_FAILURE;
+							goto end;
+						}
+                    }
+					else if (optionStr.keyDerivation == OPGP_DERIVATION_METHOD_VISA1) {
+						status = OP201_VISA1_derive_keys(cardContext, cardInfo, &securityInfo201, optionStr.key, optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
+						if (OPGP_ERROR_CHECK(status))
+						{
+							_tprintf (_T("VISA1_derive_keys() returns 0x%08lX (%s)\n"),
+										status.errorCode, status.errorMessage);
+							rv = EXIT_FAILURE;
+							goto end;
+						}
                     }
                     status = OP201_put_secure_channel_keys(cardContext, cardInfo, &securityInfo201,
                                                        optionStr.keySetVersion,
@@ -1459,6 +1471,16 @@ static int handleCommands(FILE *fd)
                         if (OPGP_ERROR_CHECK(status))
                         {
                             _tprintf (_T("VISA2_derive_keys() returns 0x%08lX (%s)\n"),
+                                      status.errorCode, status.errorMessage);
+                            rv = EXIT_FAILURE;
+                            goto end;
+                        }
+                    }
+					else if (optionStr.keyDerivation == OPGP_DERIVATION_METHOD_VISA1) {
+                        status = GP211_VISA1_derive_keys(cardContext, cardInfo, &securityInfo211, optionStr.key, optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
+                        if (OPGP_ERROR_CHECK(status))
+                        {
+                            _tprintf (_T("VISA1_derive_keys() returns 0x%08lX (%s)\n"),
                                       status.errorCode, status.errorMessage);
                             rv = EXIT_FAILURE;
                             goto end;
@@ -1688,11 +1710,42 @@ static int handleCommands(FILE *fd)
                 timer = 1;
                 break;
             }
+			else if (_tcscmp(token, _T("exit")) == 0)
+            {
+                rv = EXIT_SUCCESS;
+                goto end;
+            }
+			else if (_tcscmp(token, _T("list_readers")) == 0)
+            {
+                DWORD readerStrLen = BUFLEN;
+                int j=0;
+                int k=0;
+
+                // get all readers
+                status = OPGP_list_readers (cardContext, buf, &readerStrLen);
+                if (OPGP_ERROR_CHECK(status))
+                {
+                    _tprintf(_T("list_readers failed with error 0x%08lX (%s)\n"), status.errorCode, status.errorMessage);
+                    rv = EXIT_FAILURE;
+                    goto end;
+                }
+
+                for (j=0; j<(int)readerStrLen;)
+                {
+                    // Check for end of readers
+                    if (buf[j] == _T('\0'))
+                        break;
+                    _tcsncpy(optionStr.reader, buf+j, READERNAMELEN+1);
+					_tprintf ( _T("* reader name %s\n"), optionStr.reader);
+                    k++;
+                    j+=(int)_tcslen(buf+j)+1;
+                }
+                break;
+            }
             else
             {
                 _tprintf(_T("Unknown command %s\n"), token);
-                rv = EXIT_FAILURE;
-                goto end;
+                break;
             }
 timer:
 			// get the final time and calculate the total time of the command
