@@ -114,6 +114,25 @@ OPGP_ERROR_STATUS calculate_enc_ecb_single_des(BYTE key[8], BYTE *message, int m
 							  BYTE *encryption, int *encryptionLength);
 
 OPGP_NO_API
+OPGP_ERROR_STATUS calculate_CMAC_aes(BYTE key[16], BYTE *message, int messageLength, BYTE mac[16]);
+
+OPGP_NO_API
+OPGP_ERROR_STATUS create_session_key_SCP03(BYTE key[16], BYTE derivationConstant, BYTE cardChallenge[8],
+							   BYTE hostChallenge[8], BYTE sessionKey[16]);
+
+OPGP_NO_API
+OPGP_ERROR_STATUS calculate_card_cryptogram_SCP03(BYTE S_MACSessionKey[16],
+											BYTE cardChallenge[8],
+											BYTE hostChallenge[8],
+											BYTE cardCryptogram[8]);
+
+OPGP_NO_API
+OPGP_ERROR_STATUS calculate_host_cryptogram_SCP03(BYTE S_MACSessionKey[16],
+											BYTE cardChallenge[8],
+											BYTE hostChallenge[8],
+											BYTE hostCryptogram[8]);
+
+OPGP_NO_API
 OPGP_ERROR_STATUS validate_receipt(PBYTE validationData, DWORD validationDataLength,
 							 BYTE receipt[16], BYTE receiptKey[16]);
 
