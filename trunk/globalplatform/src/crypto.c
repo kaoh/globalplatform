@@ -41,7 +41,8 @@
 #include <openssl/rand.h>
 #include <openssl/evp.h>
 #include <openssl/pem.h>
-
+#include <openssl/aes.h>
+#include <openssl/cmac.h>
 
 /**
  * Calculates the encryption of a message in CBC mode for SCP02.
@@ -164,6 +165,47 @@ end:
 }
 
 /**
+ * Calculates the card cryptogram for SCP03.
+ * \param S_MACSessionKey [in] The S-MAC Session Key for calculating the card cryptogram.
+ * \param cardChallenge [in] The card challenge.
+ * \param hostChallenge [in] The host challenge.
+ * \param cardCryptogram [out] The calculated host cryptogram.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS calculate_card_cryptogram_SCP03(BYTE S_MACSessionKey[16],
+											BYTE cardChallenge[8],
+											BYTE hostChallenge[8],
+											BYTE cardCryptogram[8])
+{
+	OPGP_ERROR_STATUS status;
+	BYTE derivation_data[32];
+	BYTE mac[16];
+
+	OPGP_LOG_START(_T("calculate_card_cryptogram_SCP03"));
+	memset(derivation_data, 0, 11); //<! "label" 
+	derivation_data[11] = 0x00; //<! "derivation constant" part of label
+	derivation_data[12] = 0x00;     // <! "separation indicator"
+	derivation_data[13] = 0x00;     // <! First byte of output length 
+	derivation_data[14] = 0x40;     // <! Second byte of output length
+	derivation_data[15] = 0x01;     // <! byte counter "i"
+
+	memcpy(derivation_data+16, hostChallenge, 8);
+	memcpy(derivation_data+24, cardChallenge, 8);
+
+	status = calculate_CMAC_aes(S_MACSessionKey, derivation_data, 32, mac);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	memcpy(cardCryptogram, mac, 8);
+
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+
+	OPGP_LOG_END(_T("calculate_card_cryptogram_SCP03"), status);
+	return status;
+}
+
+/**
  * Calculates the host cryptogram for SCP01.
  * \param S_ENCSessionKey [in] The S-ENC Session Key for calculating the card cryptogram.
  * \param cardChallenge [in] The card challenge.
@@ -219,6 +261,47 @@ OPGP_ERROR_STATUS calculate_host_cryptogram_SCP02(BYTE S_ENCSessionKey[16],
 end:
 
 	OPGP_LOG_END(_T("calculate_host_cryptogram_SCP02"), status);
+	return status;
+}
+
+/**
+ * Calculates the host cryptogram for SCP03.
+ * \param S_MACSessionKey [in] The S-MAC Session Key for calculating the card cryptogram.
+ * \param cardChallenge [in] The card challenge.
+ * \param hostChallenge [in] The host challenge.
+ * \param hostCryptogram [out] The calculated host cryptogram.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS calculate_host_cryptogram_SCP03(BYTE S_MACSessionKey[16],
+											BYTE cardChallenge[8],
+											BYTE hostChallenge[8],
+											BYTE hostCryptogram[8])
+{
+	OPGP_ERROR_STATUS status;
+	BYTE derivation_data[32];
+	BYTE mac[16];
+
+	OPGP_LOG_START(_T("calculate_host_cryptogram_SCP03"));
+	memset(derivation_data, 0, 11); //<! "label" 
+	derivation_data[11] = 0x01; //<! "derivation constant" part of label
+	derivation_data[12] = 0x00;     // <! "separation indicator"
+	derivation_data[13] = 0x00;     // <! First byte of output length 
+	derivation_data[14] = 0x40;     // <! Second byte of output length
+	derivation_data[15] = 0x01;     // <! byte counter "i"
+
+	memcpy(derivation_data+16, hostChallenge, 8);
+	memcpy(derivation_data+24, cardChallenge, 8);
+
+	status = calculate_CMAC_aes(S_MACSessionKey, derivation_data, 32, mac);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	memcpy(hostCryptogram, mac, 8);
+
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+
+	OPGP_LOG_END(_T("calculate_host_cryptogram_SCP03"), status);
 	return status;
 }
 
@@ -285,6 +368,43 @@ OPGP_ERROR_STATUS create_session_key_SCP02(BYTE key[16], BYTE constant[2],
 end:
 
 	OPGP_LOG_END(_T("create_session_key_SCP02"), status);
+	return status;
+}
+
+/**
+ * Creates an AES-128 session key for SCP03.
+ * \param key [in] The Secure Channel Encryption Key or Secure Channel Message
+ * Authentication Code Key for calculating the corresponding session key.
+ * \param derivationConstant [in] The derivation constant, as defined in "Table 4-1: Data derivation constants" of SCP03.
+ * \param cardChallenge [in] The card challenge.
+ * \param hostChallenge [in] The host challenge.
+ * \param sessionKey [out] The calculated 3DES session key.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS create_session_key_SCP03(BYTE key[16], BYTE derivationConstant, BYTE cardChallenge[8],
+							   BYTE hostChallenge[8], BYTE sessionKey[16]) {
+	OPGP_ERROR_STATUS status;
+	BYTE derivation_data[32];
+
+	OPGP_LOG_START(_T("create_session_key_SCP03"));
+	memset(derivation_data, 0, 11); //<! "label" 
+	derivation_data[11] = derivationConstant; //<! "derivation constant" part of label
+	derivation_data[12] = 0x00;     // <! "separation indicator"
+	derivation_data[13] = 0x00;     // <! First byte of key length 
+	derivation_data[14] = 0x80;     // <! Second byte of key length - only 128 bit keys supported
+	derivation_data[15] = 0x01;     // <! byte counter "i" - only 128 bit keys supported
+
+	memcpy(derivation_data+16, hostChallenge, 8);
+	memcpy(derivation_data+24, cardChallenge, 8);
+
+	status = calculate_CMAC_aes(key, derivation_data, 32, sessionKey);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+
+	OPGP_LOG_END(_T("create_session_key_SCP03"), status);
 	return status;
 }
 
@@ -471,6 +591,43 @@ end:
 	}
 
 	OPGP_LOG_END(_T("calculate_MAC"), status);
+	return status;
+}
+
+/**
+ * Calculates a message authentication code, using AES-128 in CBC mode. This is the algorithm specified in NIST 800-38B.
+ * \param key [in] The AES-128 key to use.
+ * \param *message [in] The message to calculate the MAC for.
+ * \param messageLength [in] The message length.
+ * \param mac [out] The calculated MAC.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS calculate_CMAC_aes(BYTE key[16], BYTE *message, int messageLength, BYTE mac[16]) {
+	LONG result;
+	OPGP_ERROR_STATUS status;
+	int outl;
+	CMAC_CTX *ctx = CMAC_CTX_new();
+	OPGP_LOG_START(_T("calculate_CMAC_aes"));
+
+	result = CMAC_Init(ctx, key, 16, EVP_aes_128_cbc(), NULL);
+	if (result != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	result = CMAC_Update(ctx, message, messageLength);
+	if (result != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+
+	// Write the final block to the mac
+	result = CMAC_Final(ctx, mac, &outl);
+	if (result != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	CMAC_CTX_free(ctx);
+
+	OPGP_LOG_END(_T("calculate_CMAC_aes"), status);
 	return status;
 }
 

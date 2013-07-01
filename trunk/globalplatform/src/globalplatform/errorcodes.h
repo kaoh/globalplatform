@@ -43,6 +43,7 @@
 #define OPGP_ERROR_CAP_UNZIP ((DWORD)0x8030F009L) //!< The CAP file cannot be unzipped.
 #define OPGP_ERROR_INVALID_RESPONSE_DATA ((DWORD)0x8030F00BL) //!< The response of the command was invalid.
 #define OPGP_ERROR_CRYPT ((DWORD)0x8030F00CL) //!< An encryption or decryption error occurred.
+#define OPGP_ERROR_PSEUDO_RANDOM_SCP03_NOT_SUPPORTED ((DWORD)0x8030F00DL) //!< SCP03 with Pseudo-random challenge generation is not supported
 
 /* Open Platform 2.0.1' specific errors */
 
