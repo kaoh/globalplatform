@@ -665,7 +665,7 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-                pOptionStr->scp = _tstoi(token);
+                pOptionStr->scp = (int)_tcstol(token, NULL, 0);
             }
         }
         else if (_tcscmp(token, _T("-scpimpl")) == 0)
