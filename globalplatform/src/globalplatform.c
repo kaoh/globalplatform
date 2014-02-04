@@ -3858,6 +3858,9 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 		memcpy(cardCryptogram, recvBuffer+20, 8);
 	}
 	else {
+        // BUGFIX: Need to set length value so OPGP_LOG_HEX doesn't access-violate.
+        keyInformationDataLength = 2;
+
 		cardChallengeLength = 8;
 		memcpy(cardChallenge, recvBuffer+12, 8);
 		memcpy(cardCryptogram, recvBuffer+20, 8);
