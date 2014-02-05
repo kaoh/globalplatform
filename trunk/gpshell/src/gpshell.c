@@ -169,7 +169,9 @@ static TCHAR *strtokCheckComment(TCHAR *buf)
         {
             _sntprintf(dummy+read, avail, _T(" %s"), token);
         }
-        dummy[sizeof(dummy)-1] = _T('\0');
+        /* BUGFIX: sizeof returns size in bytes not number of elements; use BUFLEN instead */
+        /*dummy[sizeof(dummy)-1] = _T('\0');*/
+        dummy[BUFLEN-1] = _T('\0');
 
         /* Skip next delimiter */
         token = _tcstok(buf, DELIMITER);
