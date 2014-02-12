@@ -1618,32 +1618,78 @@ OPGP_ERROR_STATUS GP211_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 			if (cardElement == GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES) {
 				/* Length of Executable Load File AID */
 				executableData[i].AIDLength = recvBuffer[j++];
+
+                /* BUGFIX: Don't read beyond recvBuffer array bounds or into 0x9000 */
+                if (executableData[i].AIDLength > recvBufferLength - j - 2){
+                    executableData[i].AIDLength = (BYTE)(recvBufferLength - j - 2);
+                }
+
 				/* Executable Load File AID */
-				memcpy(executableData[i].AID, recvBuffer+j, executableData[i].AIDLength);
+                /* BUGFIX: Don't write beyond AID array bounds */
+                memcpy(executableData[i].AID, recvBuffer+j, (executableData[i].AIDLength > 16) ? 16 : executableData[i].AIDLength);
 				j+=executableData[i].AIDLength;
-				/* Executable Load File Life Cycle State */
-				executableData[i].lifeCycleState = recvBuffer[j++];
+
+                /* Executable Load File Life Cycle State */
+                /* BUGFIX: Don't read beyond recvBuffer array bounds or into 0x9000 */
+                if (j >= recvBufferLength - 2){
+                    executableData[i].lifeCycleState = 0xFF;
+                }else{
+                    executableData[i].lifeCycleState = recvBuffer[j++];
+                }
+
 				/* Ignore Application Privileges */
 				j++;
+
 				/* Number of associated Executable Modules */
-				numExecutableModules = recvBuffer[j++];
+                /* BUGFIX: Don't read beyond recvBuffer array bounds or into 0x9000 */
+                if (j >= recvBufferLength - 2){
+                    numExecutableModules = 0;
+                }else{
+                    numExecutableModules = recvBuffer[j++];
+                }
+
 				for (k=0; k<numExecutableModules && (j<recvBufferLength-2); k++) {
 					/* Length of Executable Module AID */
 					executableData[i].executableModules[k].AIDLength = recvBuffer[j++];
+
+                    /* BUGFIX: Don't read beyond recvBuffer array bounds or into 0x9000 */
+                    if (executableData[i].executableModules[k].AIDLength > recvBufferLength - j - 2){
+                        executableData[i].executableModules[k].AIDLength = (BYTE)(recvBufferLength - j - 2);
+                    }
+
 					/* Executable Module AID */
-					memcpy(executableData[i].executableModules[k].AID,
-						recvBuffer+j, executableData[i].executableModules[k].AIDLength);
+                    /* BUGFIX: Don't write beyond AID array bounds */
+                    memcpy(executableData[i].executableModules[k].AID, recvBuffer+j, (executableData[i].executableModules[k].AIDLength > 16) ? 16 : executableData[i].executableModules[k].AIDLength);
 					j+=executableData[i].executableModules[k].AIDLength;
 				}
 				executableData[i].numExecutableModules = numExecutableModules;
 			}
 			else {
 				applData[i].AIDLength = recvBuffer[j++];
-				memcpy(applData[i].AID, recvBuffer+j, applData[i].AIDLength);
+
+                /* BUGFIX: Don't read beyond recvBuffer array bounds or into 0x9000 */
+                if (applData[i].AIDLength > recvBufferLength - j - 2){
+                    applData[i].AIDLength = (BYTE)(recvBufferLength - j - 2);
+                }
+
+                /* BUGFIX: Don't write beyond AID array bounds */
+                memcpy(applData[i].AID, recvBuffer+j, (applData[i].AIDLength > 16) ? 16 : applData[i].AIDLength);
 				j+=applData[i].AIDLength;
-				applData[i].lifeCycleState = recvBuffer[j++];
+
+                /* BUGFIX: Don't read beyond recvBuffer array bounds or into 0x9000 */
+                if (j >= recvBufferLength - 2){
+                    applData[i].lifeCycleState = 0xFF;
+                }else{
+                    applData[i].lifeCycleState = recvBuffer[j++];
+                }
+
 				if (cardElement != GP211_STATUS_LOAD_FILES) {
-					applData[i].privileges = recvBuffer[j++];
+                    /* BUGFIX: Don't read beyond recvBuffer array bounds or into 0x9000 */
+                    if (j >= recvBufferLength - 2){
+                        applData[i].privileges = 0xFF;
+                    }else{
+                        applData[i].privileges = recvBuffer[j++];
+                    }
 				}
 				else {
 					applData[i].privileges = 0x00;
@@ -4825,10 +4871,28 @@ OPGP_ERROR_STATUS OP201_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 				{ OPGP_ERROR_CREATE_ERROR(status, OP201_ERROR_MORE_APPLICATION_DATA, OPGP_stringify_error(OP201_ERROR_MORE_APPLICATION_DATA)); goto end; }
 			}
 			applData[i].AIDLength = recvBuffer[j++];
-			memcpy(applData[i].AID, recvBuffer+j, applData[i].AIDLength);
+            
+            /* BUGFIX: Don't read beyond recvBuffer array bounds or into 0x9000 */
+            if (applData[i].AIDLength > recvBufferLength - j - 2){
+                applData[i].AIDLength = (BYTE)(recvBufferLength - j - 2);
+            }
+            
+            /* BUGFIX: Don't write beyond AID array bounds */
+            memcpy(applData[i].AID, recvBuffer+j, (applData[i].AIDLength > 16) ? 16 : applData[i].AIDLength);
 			j+=applData[i].AIDLength;
-			applData[i].lifeCycleState = recvBuffer[j++];
-			applData[i].privileges = recvBuffer[j++];
+
+            /* BUGFIX: Don't read beyond recvBuffer array bounds or into 0x9000 */
+            if (j >= recvBufferLength - 2){
+                applData[i].lifeCycleState = 0xFF;
+            }else{
+                applData[i].lifeCycleState = recvBuffer[j++];
+            }
+            /* BUGFIX: Don't read beyond recvBuffer array bounds or into 0x9000 */
+            if (j >= recvBufferLength - 2){
+                applData[i].privileges = 0xFF;
+            }else{
+                applData[i].privileges = recvBuffer[j++];
+            }
 			i++;
 		}
 		sendBuffer[3]=0x01;
