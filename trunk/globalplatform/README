@@ -1,7 +1,7 @@
 ******************************************************
 Title    : GlobalPlatform
 Authors  : Karsten Ohme <k_o_@users.sourceforge.net>
-License  : See file COPYING
+License  : See file COPYING.LESSER
 Requires : PC/SC Lite http://www.musclecard.com/ (for UNIXes)
            OpenSSL http://www.openssl.org/
            zlib http://www.zlib.net/
@@ -45,8 +45,6 @@ make
 
 Compilation under Windows
 -------------------------
-
-After changing CMake parameters you must rebuild the files and delete the CMakeCache.txt file.
 
 -- Requirements --
 
