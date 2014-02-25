@@ -206,6 +206,52 @@ end:
 }
 
 /**
+ * Calculates the card challenge when using pseudo-random challenge generation for SCP03.
+ * \param S_ENC[in] The static S-MENC Key.
+ * \param sequenceCounter[in] The sequence counter.
+ * \param invokingAID The invoking AID byte buffer.
+ * \param invokingAIDLength The length of the invoking AID byte buffer.
+ * \param cardChallenge[out] The calculated challenge.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS calculate_card_challenge_SCP03(BYTE S_ENC[16],
+											BYTE sequenceCounter[3],
+											PBYTE invokingAID,
+											DWORD invokingAIDLength,
+											BYTE cardChallenge[8])
+{
+	OPGP_ERROR_STATUS status;
+	// maximum size when AID is 16 bytes
+	BYTE derivation_data[35];
+	DWORD derivation_data_length;
+	BYTE mac[16];
+
+	OPGP_LOG_START(_T("calculate_card_challenge_SCP03"));
+	memset(derivation_data, 0, 11); //<! "label" 
+	derivation_data[11] = 0x02; //<! "derivation constant" part of label
+	derivation_data[12] = 0x00;     // <! "separation indicator"
+	derivation_data[13] = 0x00;     // <! First byte of output length 
+	derivation_data[14] = 0x40;     // <! Second byte of output length
+	derivation_data[15] = 0x01;     // <! byte counter "i"
+
+	memcpy(derivation_data+16, sequenceCounter, 3);
+	memcpy(derivation_data+19, invokingAID, invokingAIDLength);
+	derivation_data_length = 19+invokingAIDLength;
+
+	status = calculate_CMAC_aes(S_ENC, derivation_data, derivation_data_length, mac);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	memcpy(cardChallenge, mac, 8);
+
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+
+	OPGP_LOG_END(_T("calculate_card_challenge_SCP03"), status);
+	return status;
+}
+
+/**
  * Calculates the host cryptogram for SCP01.
  * \param S_ENCSessionKey [in] The S-ENC Session Key for calculating the card cryptogram.
  * \param cardChallenge [in] The card challenge.

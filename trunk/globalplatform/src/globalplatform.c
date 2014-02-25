@@ -192,10 +192,6 @@ OPGP_ERROR_STATUS load_from_buffer(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 				 GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable, OPGP_PROGRESS_CALLBACK *callback);
 
 OPGP_NO_API
-OPGP_ERROR_STATUS VISA2_derive_keys(BYTE baseKeyDiversificationData[10], BYTE masterKey[16],
-							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
-
-OPGP_NO_API
 OPGP_ERROR_STATUS VISA2_derive_keys_get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBYTE AID, DWORD AIDLength, BYTE masterKey[16],
 							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
 
@@ -204,16 +200,9 @@ OPGP_ERROR_STATUS VISA1_derive_keys_get_data(OPGP_CARD_CONTEXT cardContext, OPGP
 							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
 
 OPGP_NO_API
-OPGP_ERROR_STATUS VISA1_derive_keys(BYTE cardSerialNumber[8], BYTE masterKey[16],
-							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
-
-OPGP_NO_API
 OPGP_ERROR_STATUS EMV_CPS11_derive_keys_get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE masterKey[16],
 							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
 
-OPGP_NO_API
-OPGP_ERROR_STATUS EMV_CPS11_derive_keys(BYTE baseKeyDiversificationData[10], BYTE masterKey[16],
-							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
 
 /**
  * Macro to check for the status word 9000, otherwise the status is set to the error and a jump to the end mark takes place.
@@ -3852,6 +3841,7 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	}
 	CHECK_SW_9000(recvBuffer, recvBufferLength, status);
 
+	goto end;
 	// check receive buffer length, including SW it must be 30 bytes
 	// - SCP01/SCP02 = 30 bytes, SCP03 31 or 34 bytes
 	if (recvBufferLength != 30 && recvBufferLength != 31 && recvBufferLength != 34) {
