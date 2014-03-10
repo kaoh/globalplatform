@@ -3841,7 +3841,6 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	}
 	CHECK_SW_9000(recvBuffer, recvBufferLength, status);
 
-	goto end;
 	// check receive buffer length, including SW it must be 30 bytes
 	// - SCP01/SCP02 = 30 bytes, SCP03 31 or 34 bytes
 	if (recvBufferLength != 30 && recvBufferLength != 31 && recvBufferLength != 34) {
