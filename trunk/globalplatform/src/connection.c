@@ -236,10 +236,16 @@ OPGP_ERROR_STATUS OPGP_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO c
 		_ftprintf(traceFile, _T("\n"));
 	}
 
-	errorStatus = (*plugin_sendAPDUFunction) (cardContext, cardInfo, apduCommand, apduCommandLength, rapdu, rapduLength);
-	if (OPGP_ERROR_CHECK(errorStatus)) {
-		goto end;
-	}
+    /* AC Bugfix: Don't attempt to call function if fpointer is null */
+    if (plugin_sendAPDUFunction == NULL){
+        OPGP_ERROR_CREATE_ERROR(errorStatus, 0, _T("NULL sendAPDUFunction."));
+        goto end;
+    }else{
+        errorStatus = (*plugin_sendAPDUFunction) (cardContext, cardInfo, apduCommand, apduCommandLength, rapdu, rapduLength);
+        if (OPGP_ERROR_CHECK(errorStatus)) {
+            goto end;
+        }
+    }
 
 	OPGP_LOG_HEX(_T("OPGP_send_APDU: Response <-- "), rapdu, *rapduLength);
 
