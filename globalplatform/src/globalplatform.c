@@ -3462,7 +3462,7 @@ OPGP_ERROR_STATUS VISA1_derive_keys_get_data(OPGP_CARD_CONTEXT cardContext, OPGP
 	OPGP_ERROR_STATUS status;
 	BYTE cardCPLCData[50];
 	DWORD cplcDataLen = 50;
-	BYTE keyDiversificationData[16];
+	BYTE serialNumber[8];
 
 	OPGP_LOG_START(_T("VISA1_derive_keys_get_data"));
 
@@ -3473,9 +3473,9 @@ OPGP_ERROR_STATUS VISA1_derive_keys_get_data(OPGP_CARD_CONTEXT cardContext, OPGP
 	}
 
 	// ic serial starts at offset 15
- 	memcpy(keyDiversificationData, cardCPLCData+15, 8);
+ 	memcpy(serialNumber, cardCPLCData+15, 8);
 
-	status = VISA1_derive_keys(keyDiversificationData, masterKey, S_ENC, S_MAC, DEK);
+	status = VISA1_derive_keys(serialNumber, masterKey, S_ENC, S_MAC, DEK);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}

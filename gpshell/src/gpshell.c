@@ -939,8 +939,14 @@ static int handleCommands(FILE *fd)
                 {
                     _tprintf (_T("select_application() returns 0x%08lX (%s)\n"),
                               status.errorCode, status.errorMessage);
-                    rv = EXIT_FAILURE;
-                    goto end;
+                    /* 6283 is warning  we want to continue  and unlock */
+                    if (status.errorCode != OPGP_ISO7816_WARNING_CM_LOCKED)
+                    {
+                        rv = EXIT_FAILURE;
+                        goto end;
+                    }
+                    status.errorStatus =  OPGP_ERROR_STATUS_SUCCESS;
+
                 }
                 memcpy(selectedAID, optionStr.AID, optionStr.AIDLen);
                 selectedAIDLength = optionStr.AIDLen;
