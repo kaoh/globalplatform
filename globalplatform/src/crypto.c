@@ -651,7 +651,7 @@ end:
 OPGP_ERROR_STATUS calculate_CMAC_aes(BYTE key[16], BYTE *message, int messageLength, BYTE mac[16]) {
 	LONG result;
 	OPGP_ERROR_STATUS status;
-	int outl;
+	size_t outl;
 	CMAC_CTX *ctx = CMAC_CTX_new();
 	OPGP_LOG_START(_T("calculate_CMAC_aes"));
 

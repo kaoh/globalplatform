@@ -1,10 +1,12 @@
 History
 =======
 
-7.0.0 - Mon, Nov 12, 2012, Karsten Ohme, François Kooman, Jacek Trzcinski 
+7.0.0 - Mon, Nov 12, 2012, Karsten Ohme, François Kooman, Jacek Trzcinski, Chen Gang,  
 	CMake Build System
 	Changed DEBUG definition to OPGP_DEBUG to prevent name collisions
 	Added LGPL OpenSSL Exception
+  compilation fixes for arm64
+  SCP03 support
 
 6.0.0 - Sun, Jan 31, 2010, Karsten Ohme
 	Connection plugin architecture, support for other transport protocols than PC/SC

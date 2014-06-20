@@ -74,12 +74,15 @@ http://www.slproweb.com/products/Win32OpenSSL.html
 **** zlib ****
 http://www.winimage.com/zLibDll/index.html
 --> zlib pre-built DLL and sources, version 1.2.5
+http://www.zlib.net/
+--> to get current sources of zlib, version 1.2.8, the sources from the pre-built DLL and source will not work
 
-  * Copy the zlibwapi.dll to C:\Windows\System32
-  * Copy zlib.h and zconf.h from the sources to
+  * Copy the zlibwapi.dll to C:\Windows\System32  
+  * Copy zlib.h and zconf.h from the sources of zlib to
     C:\Program Files\Microsoft SDKs\Windows\v7.0A\Include
   * Copy the file "zlibwapi.lib" from the lib directory to
     C:\Program Files\Microsoft SDKs\Windows\v7.0A\Lib
+    
 
 **** Doxygen ****
 You need Doxygen for generating the documentation.
