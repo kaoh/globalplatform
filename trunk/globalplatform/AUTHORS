@@ -5,4 +5,6 @@ Roger C. Pao <rpao@users.sourceforge.net> bug fixes for GP211_CARD_MANAGER_AID, 
 João Victor dos Anjos Barbara for segmentation fault fix in OPGP_card_disconnect
 François Kooman <fkooman@tuxed.net> for the Fedora package, compiler warning fixes and compliance issues and CMake support
 Jacek Trzcinski <jackaleph3@gmail.com> for EMV CPS 1.1 key derivation support, pin_change fix for OP201, Security Domain Installation fixes
+Chen Gang <gang.chen.5i5j@gmail.com> for compilation fixes for arm64
+
 

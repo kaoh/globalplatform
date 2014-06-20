@@ -7,4 +7,5 @@ Kjell M. Myksvoll <kmyksvo@online.no> for 64 Bit fix
 Sergio Campos <sergio.campos@grupoquali.com.br> for auto-detection of card
 François Kooman <fkooman@tuxed.net> for the Fedora package, compiler warning fixes and compliance issues
 Jacek Trzcinski <jackaleph3@gmail.com> for EMV CPS 1.1 key derivation support, AUTOREADER fix command parsing fix for Windows
+Greg Troxel <gdt@ir.bbn.com>/Douglas Engert for bugfix for not exiting with an error if the card is locked
 
