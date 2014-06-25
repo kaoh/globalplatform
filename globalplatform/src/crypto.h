@@ -37,8 +37,21 @@ extern "C"
 #include "globalplatform/error.h"
 #include "globalplatform/security.h"
 
-static const BYTE padding[8] = {(char)0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; //!< Applied padding pattern.
-static const BYTE icv[8] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00}; //!< First initial chaining vector.
+static const BYTE padding[8] = {(char) 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; //!< Applied padding pattern.
+static const BYTE icv[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; //!< Initial chaining vector.
+
+/* 
+ * Philip Wendland: CMAC_aes used for SCP03 has 16 Byte output length and uses 16 Bytes as chaining vector. 
+ * TODO SCP03_padding unused at the moment: Use for SCP03 encryption / security level 3.
+ */
+static const BYTE SCP03_padding[16] = {(char)0x80,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00}; //!< Padding pattern applied for SCP03.
+static const BYTE SCP03_icv[16] = {0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00}; //!< Initial chaining vector for SCP03.
+
+/* Philip Wendland: added new function calculate_CMAC_aes. */
+OPGP_NO_API
+OPGP_ERROR_STATUS calculate_CMAC_aes(BYTE sMacKey[16], BYTE *message, 
+								int messageLength, BYTE chainingValue[16], 
+								BYTE mac[16]);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS get_key_data_field(GP211_SECURITY_INFO *secInfo,
@@ -114,7 +127,7 @@ OPGP_ERROR_STATUS calculate_enc_ecb_single_des(BYTE key[8], BYTE *message, int m
 							  BYTE *encryption, int *encryptionLength);
 
 OPGP_NO_API
-OPGP_ERROR_STATUS calculate_CMAC_aes(BYTE key[16], BYTE *message, int messageLength, BYTE mac[16]);
+OPGP_ERROR_STATUS calculate_MAC_aes(BYTE key[16], BYTE *message, int messageLength, BYTE mac[16]);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS create_session_key_SCP03(BYTE key[16], BYTE derivationConstant, BYTE cardChallenge[8],

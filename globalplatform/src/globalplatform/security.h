@@ -103,9 +103,9 @@ extern "C"
   */
 #define GP211_SCP02_IMPL_i1B 0x1B
 
-/** Secure Channel Protocol '03': "i" '00': Initiation mode explicit, No R-MAC, No Psuedo-random cryptogram
+/** Secure Channel Protocol '03': "i" '00': No R-MAC, no R-ENCRYPTION, no Pseudo-random cryptogram
   */
-#define GP211_SCP03_IMPL_00 0x00
+#define GP211_SCP03_IMPL_i00 0x00
 
 #define GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC 0x03 //!< Secure Channel Protocol '01': C-DECRYPTION and C-MAC
 #define GP211_SCP01_SECURITY_LEVEL_C_MAC 0x01 //!< Secure Channel Protocol '01': C-MAC
@@ -117,6 +117,11 @@ extern "C"
 #define GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC 0x03 //!< Secure Channel Protocol '02': C-DECRYPTION and C-MAC
 #define GP211_SCP02_SECURITY_LEVEL_C_MAC 0x01 //!< Secure Channel Protocol '02': C-MAC
 #define GP211_SCP02_SECURITY_LEVEL_NO_SECURE_MESSAGING 0x00 //!< Secure Channel Protocol '02': No secure messaging expected.
+
+// Philip Wendland: added SCP03 security level identifiers
+#define GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC 0x03 //!< Secure Channel Protocol '03': C-Decryption and C-MAC
+#define GP211_SCP03_SECURITY_LEVEL_C_MAC 0x01 //!< Secure Channel Protocol '03': C-MAC
+#define GP211_SCP03_SECURITY_LEVEL_NO_SECURE_MESSAGING 0x00 //!< Secure Channel Protocol '03': No secure messaging expected.
 
 #define GP211_KEY_TYPE_RSA_PUB_N 0xA1 //!< 'A1' RSA Public Key - modulus N component (clear text).
 #define GP211_KEY_TYPE_RSA_PUB_E 0xA0 //!< 'A0' RSA Public Key - public exponent e component (clear text)
@@ -171,7 +176,12 @@ typedef struct {
 	BYTE R_MACSessionKey[16]; //!< The Secure Channel R-MAC session key.
 	BYTE encryptionSessionKey[16]; //!< The Secure Channel encryption session key.
 	BYTE dataEncryptionSessionKey[16]; //!< Secure Channel data encryption key.
-	BYTE lastC_MAC[8]; //!< The last computed C-MAC.
+    /* 
+     * Philip Wendland: lastC_MAC must be 16 Bytes for SCP03 because the MAC chaining value 
+     * for MAC code generation is 16 Bytes (according to GP 2.2 Amendment D), not 8.
+     * TODO This probably affects R_MAC too.
+     */ 
+    BYTE lastC_MAC[16]; //!< The last computed C-MAC. Only 8 byte used for SCP01 and SCP02.
 	BYTE lastR_MAC[8]; //!< The last computed R-MAC.
 	/* Augusto: added two more attributes for key information */
 	BYTE keySetVersion; //!< The keyset version used in secure channel
