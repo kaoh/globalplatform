@@ -131,6 +131,10 @@ OPGP_STRING OPGP_stringify_error(DWORD errorCode) {
 		return _T("A password is invalid.");
 	if (errorCode == OPGP_ERROR_WRONG_EXPONENT)
 		return _T("The exponent must be 3 or 65537.");
+	if (errorCode == OPGP_ERROR_SCP03_SECURITY_LEVEL_3_NOT_SUPPORTED)
+		return _T("SCP03 with security level 3 is not supported.");
+	if (errorCode == OPGP_ERROR_SCP03_SECURITY_LEVEL_3_NOT_SUPPORTED)
+		return _T("SCP03 with security level 3 is not supported.");
 	if ((errorCode & ((DWORD)0xFFFFFF00L)) == OPGP_ISO7816_ERROR_CORRECT_LENGTH) {
         _sntprintf(strError, strErrorSize, _T("Wrong length Le: Exact length: 0x%02lX"),
 					errorCode&0x000000ff);

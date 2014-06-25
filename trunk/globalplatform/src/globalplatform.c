@@ -3783,7 +3783,10 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 
 	BYTE cardCryptogramVer[8];
 	BYTE hostCryptogram[8];
-	BYTE mac[8];
+    /* Philip Wendland: SCP03 appends the first 8 Bytes of 16 Byte CMAC output to the message, 
+	 * but the chaining value is the full 16 byte output. So 16 Bytes are needed.
+	 */
+    BYTE mac[16]; // Philip Wendland: Only the fist 8 byte used by SCP01/02
 
 	BYTE sMac[16];
 	BYTE sEnc[16];
@@ -3919,8 +3922,6 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 
 #endif
 
-
-
 	if (derivationMethod == OPGP_DERIVATION_METHOD_EMV_CPS11) {
 		status = EMV_CPS11_derive_keys(keyDiversificationData, baseKey, sEnc, sMac, dek);
 		if ( OPGP_ERROR_CHECK(status)) {
@@ -3937,7 +3938,7 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 
 	if (secInfo->secureChannelProtocol == GP211_SCP03) {
 		// TODO: add other parameters of table 5-1 for "i"
-		if (secInfo->secureChannelProtocolImpl == GP211_SCP03_IMPL_00) {
+		if (secInfo->secureChannelProtocolImpl == GP211_SCP03_IMPL_i00) {
 			status = create_session_key_SCP03(sEnc, S_ENC_DerivationConstant_SCP03, cardChallenge, hostChallenge, secInfo->encryptionSessionKey);
 			if (OPGP_ERROR_CHECK(status)) {
 				goto end;
@@ -4093,8 +4094,11 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	// EXTERNAL AUTHENTICATE
 	secInfo->securityLevel = securityLevel;
 	if (secInfo->secureChannelProtocol == GP211_SCP03) {
-		calculate_host_cryptogram_SCP03(secInfo->encryptionSessionKey, cardChallenge, hostChallenge, 
-			hostCryptogram);
+		/*
+		 * Philip Wendland: SCP03 uses the S-MAC session key, not the S-ENC key for host cryptogram generation.
+		 */
+		calculate_host_cryptogram_SCP03(secInfo->C_MACSessionKey, cardChallenge, hostChallenge, 
+			hostCryptogram);	
 	}
 	else if (secInfo->secureChannelProtocol == GP211_SCP02) {
 		calculate_host_cryptogram_SCP02(secInfo->encryptionSessionKey, sequenceCounter,
@@ -4114,28 +4118,32 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	sendBuffer[i++] = 0x10;
 	memcpy(sendBuffer+i, hostCryptogram, 8);
 	i+=8;
-
-	// TODO: Check SCP03 MC calculation... 
-	//if (secInfo->secureChannelProtocol == GP211_SCP03) {
-	//    status = calculate_CMAC_aes(secInfo->C_MACSessionKey, sendBuffer, sendBufferLength-8, (PBYTE)icv, mac);
-	//    if (OPGP_ERROR_CHECK(status)) {
-	//        goto end;
-	//    }
-	//}
-	//else 
-		if (secInfo->secureChannelProtocol == GP211_SCP02) {
-		status = calculate_MAC_des_3des(secInfo->C_MACSessionKey, sendBuffer, sendBufferLength-8, (PBYTE)icv, mac);
-		if (OPGP_ERROR_CHECK(status)) {
-			goto end;
-		}
-	}
+ 
+	if (secInfo->secureChannelProtocol == GP211_SCP03) {
+        // Philip Wendland: the MAC chaning value of EXTERNAL AUTHENTICATE is the initial chaining vector (16 Bytes '00')
+	    status = calculate_CMAC_aes(secInfo->C_MACSessionKey, sendBuffer, sendBufferLength-8, (PBYTE)SCP03_icv, mac);
+	    if (OPGP_ERROR_CHECK(status)) {
+	        goto end;
+	    }
+        memcpy(secInfo->lastC_MAC, mac, 16);
+    }
 	else {
-		calculate_MAC(secInfo->C_MACSessionKey, sendBuffer, sendBufferLength-8, (PBYTE)icv, mac);
-		if (OPGP_ERROR_CHECK(status)) {
-			goto end;
+	// not GP211_SCP03: Calculated MAC is 8 byte.
+    	if (secInfo->secureChannelProtocol == GP211_SCP02) {
+			status = calculate_MAC_des_3des(secInfo->C_MACSessionKey, sendBuffer, sendBufferLength-8, (PBYTE)icv, mac);
+			if (OPGP_ERROR_CHECK(status)) {
+				goto end;
+			}
 		}
-	}
-	memcpy(secInfo->lastC_MAC, mac, 8);
+		else {
+			calculate_MAC(secInfo->C_MACSessionKey, sendBuffer, sendBufferLength-8, (PBYTE)icv, mac);
+			if (OPGP_ERROR_CHECK(status)) {
+				goto end;
+			}
+        }
+       	memcpy(secInfo->lastC_MAC, mac, 8);
+    }
+    // Philip Wendland: Moved secInfo update to if clause above as other lengths are used for SCP03.
 	memcpy(sendBuffer+i, mac, 8);
 	i+=8;
 
