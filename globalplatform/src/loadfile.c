@@ -44,6 +44,10 @@ OPGP_ERROR_STATUS handle_load_file(OPGP_CSTRING fileName, PBYTE loadFileBuf, PDW
 	int rv;
 	OPGP_ERROR_STATUS status;
 	FILE *file = NULL;
+    
+    // AC: Bugfix:  Need to always initialize status variable.  In else block below, the if (loadFileBuf == NULL) check can exit without setting status.
+    OPGP_ERROR_CREATE_NO_ERROR(status);
+
 	OPGP_LOG_START(_T("handle_load_file"));
 	if (detect_cap_file(fileName)) {
 		status = extract_cap_file(fileName, loadFileBuf, loadFileBufSize);
@@ -82,7 +86,6 @@ OPGP_ERROR_STATUS handle_load_file(OPGP_CSTRING fileName, PBYTE loadFileBuf, PDW
 		}
 		*loadFileBufSize = (DWORD)fileSize;
 	}
-	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
 	if (file != NULL) {
 		fclose(file);
