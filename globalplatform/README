@@ -50,13 +50,16 @@ Compilation under Windows
 
 Tested with:
 
+**** VISUAL C++ 2010 EXPRESS ****
+To have nmake install VISUAL C++ 2010 EXPRESS
+http://www.microsoft.com/visualstudio/eng/downloads#d-2010-express
+
 **** SDK ****
 Microsoft Windows SDK for Windows 7 and .NET Framework 4
 http://msdn.microsoft.com/en-us/windows/bb980924
 
-**** VISUAL C++ 2010 EXPRESS ****
-To have nmake install VISUAL C++ 2010 EXPRESS
-http://www.microsoft.com/visualstudio/eng/downloads#d-2010-express
+If the setup fails look at http://blogs.msdn.com/b/windowssdk/archive/2009/09/16/windows-7-sdk-setup-common-installation-issues-and-fixes.aspx 
+and http://ctrlf5.net/?p=184. You have to install VC 2010 first to have the document explorer.
 
 **** Windows Driver Kit (WDK) ****
 The WDK is needed to build a Windows platform independent version without getting into conflict with different
