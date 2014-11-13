@@ -67,9 +67,10 @@ static BYTE ENCDerivationConstant[2] = {0x01, 0x82};//!< Constant for encryption
 static BYTE DEKDerivationConstant[2] = {0x01, 0x81};//!< Constant for data encryption session key calculation.
 static BYTE R_MACDerivationConstant[2] = {0x01, 0x02};//!< Constant for R-MAC session key calculation.
 
-static BYTE S_ENC_DerivationConstant_SCP03  = 0x04; //!< Constant to derive S-ENC session key.
-static BYTE S_MAC_DerivationConstant_SCP03  = 0x06; //!< Constant to derive S-MAC session key.
-static BYTE S_RMAC_DerivationConstant_SCP03 = 0x07; //!< Constant to derive S-RMAC session key.
+static BYTE S_ENC_DerivationConstant_SCP03  = 0x04; //!< Constant to derive S-ENC session key for SCP03.
+static BYTE S_MAC_DerivationConstant_SCP03  = 0x06; //!< Constant to derive S-MAC session key for SCP03.
+static BYTE S_RMAC_DerivationConstant_SCP03 = 0x07; //!< Constant to derive S-RMAC session key for SCP03.
+
 OPGP_NO_API
 OPGP_ERROR_STATUS calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 							 PBYTE executableModuleAID,
@@ -4120,8 +4121,8 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	i+=8;
  
 	if (secInfo->secureChannelProtocol == GP211_SCP03) {
-        // Philip Wendland: the MAC chaning value of EXTERNAL AUTHENTICATE is the initial chaining vector (16 Bytes '00')
-	    status = calculate_CMAC_aes(secInfo->C_MACSessionKey, sendBuffer, sendBufferLength-8, (PBYTE)SCP03_icv, mac);
+        // Philip Wendland: the MAC chaining value of EXTERNAL AUTHENTICATE is the initial chaining vector (16 Bytes '00')
+	    status = calculate_CMAC_aes(secInfo->C_MACSessionKey, sendBuffer, sendBufferLength-8, (PBYTE)SCP03_ICV, mac);
 	    if (OPGP_ERROR_CHECK(status)) {
 	        goto end;
 	    }
@@ -4130,13 +4131,13 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	else {
 	// not GP211_SCP03: Calculated MAC is 8 byte.
     	if (secInfo->secureChannelProtocol == GP211_SCP02) {
-			status = calculate_MAC_des_3des(secInfo->C_MACSessionKey, sendBuffer, sendBufferLength-8, (PBYTE)icv, mac);
+			status = calculate_MAC_des_3des(secInfo->C_MACSessionKey, sendBuffer, sendBufferLength-8, (PBYTE)ICV, mac);
 			if (OPGP_ERROR_CHECK(status)) {
 				goto end;
 			}
 		}
 		else {
-			calculate_MAC(secInfo->C_MACSessionKey, sendBuffer, sendBufferLength-8, (PBYTE)icv, mac);
+			calculate_MAC(secInfo->C_MACSessionKey, sendBuffer, sendBufferLength-8, (PBYTE)ICV, mac);
 			if (OPGP_ERROR_CHECK(status)) {
 				goto end;
 			}
@@ -4255,7 +4256,7 @@ OPGP_ERROR_STATUS GP211_init_implicit_secure_channel(PBYTE AID, DWORD AIDLength,
 		goto end;
 	}
 
-	status = calculate_MAC_des_3des(secInfo->C_MACSessionKey, AID, AIDLength, (PBYTE)icv, secInfo->lastC_MAC);
+	status = calculate_MAC_des_3des(secInfo->C_MACSessionKey, AID, AIDLength, (PBYTE)ICV, secInfo->lastC_MAC);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}

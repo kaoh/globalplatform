@@ -44,6 +44,87 @@
 #include <openssl/aes.h>
 #include <openssl/cmac.h>
 
+static const BYTE PADDING[8] = {(char) 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; //!< Applied padding pattern for SCP03.
+static const BYTE SCP03_PADDING[16] = {(char)0x80,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00}; //!< Padding pattern applied for SCP03.
+
+OPGP_NO_API
+OPGP_ERROR_STATUS calculate_enc_cbc_SCP02(BYTE key[16], BYTE *message, int messageLength,
+							  BYTE *encryption, int *encryptionLength);
+
+OPGP_NO_API
+OPGP_ERROR_STATUS calculate_enc_cbc(BYTE key[16], BYTE *message, int messageLength,
+							  BYTE *encryption, int *encryptionLength);
+OPGP_NO_API
+OPGP_ERROR_STATUS calculate_MAC_aes(BYTE key[16], BYTE *message, int messageLength, BYTE mac[16]);
+
+OPGP_NO_API
+OPGP_ERROR_STATUS calculate_enc_ecb_single_des(BYTE key[8], BYTE *message, int messageLength,
+							  BYTE *encryption, int *encryptionLength);
+
+OPGP_NO_API
+OPGP_ERROR_STATUS calculate_cryptogram_SCP03(BYTE key[16], const BYTE derivationConstant, PBYTE context1, DWORD context1Length, 
+	PBYTE context2, DWORD context2Length, PBYTE cryptogram, DWORD cryptogramSize);
+
+//! \brief Calculates a R-MAC.
+OPGP_NO_API
+OPGP_ERROR_STATUS GP211_calculate_R_MAC(BYTE commandHeader[4],
+						   PBYTE commandData,
+						   DWORD commandDataLength,
+						   PBYTE responseData,
+						   DWORD responseDataLength,
+						   BYTE statusWord[2],
+						   GP211_SECURITY_INFO *secInfo,
+						   BYTE mac[8]);
+
+/**
+    * Calculates the a cryptogram for multiple SCP03 operation like host cryptogram, card cryptogram and card challenge calculation.
+    *
+    * \param key The AES key to use for the calculation.
+    * \param derivationConstant The derivation constant for the key derivation function.
+    * \param context1 The context1 for the internal key derivation.
+	* \param context1length The length of the context1 buffer.
+    * \param context2 The context2 for the internal key derivation.
+	* \param context3length The length of the context3 buffer.
+	* \param cryptogram [out] The calculated cryptogram. Must be large enough to hold the result. For session keys this is 128 bits, 64 bits otherwise.
+    * \param cryptogramSize [in] The result size in bits of the cryptogram. Must be a multiple of 8.
+    * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
+    */
+OPGP_ERROR_STATUS calculate_cryptogram_SCP03(BYTE key[16], const BYTE derivationConstant, PBYTE context1, DWORD context1Length, 
+	PBYTE context2, DWORD context2Length, PBYTE cryptogram, DWORD cryptogramSize) {
+		OPGP_ERROR_STATUS status;
+		BYTE derivationData[48];
+		BYTE mac[16];
+		DWORD derivationDatLength = 16 + context1Length + context2Length;
+		OPGP_LOG_START(_T("calculate_cryptogram_SCP03"));
+
+		memset(derivationData, 0, 48);
+		
+		// sanity check, this should never be more than 48 bytes
+		if (derivationDatLength > 48) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
+		derivationData[11] = derivationConstant; //<! "derivation constant" part of label
+		derivationData[12] = 0x00; // <! "separation indicator"
+		derivationData[13] = 0x00; // <! First byte of output length
+		derivationData[14] = (BYTE) cryptogramSize; // <! Second byte of output length
+		derivationData[15] = 0x01; // <! byte counter "i"
+
+		memcpy(derivationData + 16, context1, context1Length);
+		memcpy(derivationData + 16 + context1Length, context2, context2Length);
+
+		status = calculate_MAC_aes(key, derivationData, derivationDatLength, mac);
+		if (OPGP_ERROR_CHECK(status)) {
+			goto end;
+		}
+		memcpy(cryptogram, mac, cryptogramSize/8);
+
+		{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+
+		OPGP_LOG_END(_T("calculate_cryptogram_SCP03"), status);
+		return status;
+}
+
 /** 
  * \brief Creates a MAC for commands (APDUs) using CMAC AES. 
  * This is used by SCP03.
@@ -119,7 +200,7 @@ OPGP_ERROR_STATUS calculate_enc_cbc_SCP02(BYTE key[16], BYTE *message, int messa
 	EVP_CIPHER_CTX_init(&ctx);
 	*encryptionLength = 0;
 
-	result = EVP_EncryptInit_ex(&ctx, EVP_des_ede_cbc(), NULL, key, icv);
+	result = EVP_EncryptInit_ex(&ctx, EVP_des_ede_cbc(), NULL, key, ICV);
 	if (result != 1) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 	}
@@ -141,7 +222,7 @@ OPGP_ERROR_STATUS calculate_enc_cbc_SCP02(BYTE key[16], BYTE *message, int messa
 		*encryptionLength+=outl;
 	}
 	result = EVP_EncryptUpdate(&ctx, encryption+*encryptionLength,
-		&outl, padding, 8 - (messageLength%8));
+		&outl, PADDING, 8 - (messageLength%8));
 	if (result != 1) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 	}
@@ -177,7 +258,7 @@ OPGP_ERROR_STATUS calculate_card_cryptogram_SCP01(BYTE S_ENCSessionKey[16], BYTE
 	OPGP_LOG_START(_T("calculate_card_cryptogram_SCP01"));
 	memcpy(message, hostChallenge, 8);
 	memcpy(message+8, cardChallenge, 8);
-	status = calculate_MAC(S_ENCSessionKey, message, 16, (PBYTE)icv, cardCryptogram);
+	status = calculate_MAC(S_ENCSessionKey, message, 16, (PBYTE)ICV, cardCryptogram);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -208,7 +289,7 @@ OPGP_ERROR_STATUS calculate_card_cryptogram_SCP02(BYTE S_ENCSessionKey[16],
 	memcpy(message, hostChallenge, 8);
 	memcpy(message+8, sequenceCounter, 2);
 	memcpy(message+10, cardChallenge, 6);
-	status = calculate_MAC(S_ENCSessionKey, message, 16, (PBYTE)icv, cardCryptogram);
+	status = calculate_MAC(S_ENCSessionKey, message, 16, (PBYTE)ICV, cardCryptogram);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -233,25 +314,11 @@ OPGP_ERROR_STATUS calculate_card_cryptogram_SCP03(BYTE S_MACSessionKey[16],
 											BYTE cardCryptogram[8])
 {
 	OPGP_ERROR_STATUS status;
-	BYTE derivation_data[32];
-	BYTE mac[16];
-
 	OPGP_LOG_START(_T("calculate_card_cryptogram_SCP03"));
-	memset(derivation_data, 0, 11); //<! "label" 
-	derivation_data[11] = 0x00; //<! "derivation constant" part of label
-	derivation_data[12] = 0x00;     // <! "separation indicator"
-	derivation_data[13] = 0x00;     // <! First byte of output length 
-	derivation_data[14] = 0x40;     // <! Second byte of output length
-	derivation_data[15] = 0x01;     // <! byte counter "i"
-
-	memcpy(derivation_data+16, hostChallenge, 8);
-	memcpy(derivation_data+24, cardChallenge, 8);
-
-	status = calculate_MAC_aes(S_MACSessionKey, derivation_data, 32, mac);
+	status = calculate_cryptogram_SCP03(S_MACSessionKey, 0x00, hostChallenge, 8, cardChallenge, 8, cardCryptogram, 64);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	memcpy(cardCryptogram, mac, 8);
 
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
@@ -262,7 +329,7 @@ end:
 
 /**
  * Calculates the card challenge when using pseudo-random challenge generation for SCP03.
- * \param S_ENC[in] The static S-MENC Key.
+ * \param S_ENC[in] The static S-ENC Key.
  * \param sequenceCounter[in] The sequence counter.
  * \param invokingAID The invoking AID byte buffer.
  * \param invokingAIDLength The length of the invoking AID byte buffer.
@@ -276,28 +343,11 @@ OPGP_ERROR_STATUS calculate_card_challenge_SCP03(BYTE S_ENC[16],
 											BYTE cardChallenge[8])
 {
 	OPGP_ERROR_STATUS status;
-	// maximum size when AID is 16 bytes
-	BYTE derivation_data[35];
-	DWORD derivation_data_length;
-	BYTE mac[16];
-
 	OPGP_LOG_START(_T("calculate_card_challenge_SCP03"));
-	memset(derivation_data, 0, 11); //<! "label" 
-	derivation_data[11] = 0x02; //<! "derivation constant" part of label
-	derivation_data[12] = 0x00;     // <! "separation indicator"
-	derivation_data[13] = 0x00;     // <! First byte of output length 
-	derivation_data[14] = 0x40;     // <! Second byte of output length
-	derivation_data[15] = 0x01;     // <! byte counter "i"
-
-	memcpy(derivation_data+16, sequenceCounter, 3);
-	memcpy(derivation_data+19, invokingAID, invokingAIDLength);
-	derivation_data_length = 19+invokingAIDLength;
-
-	status = calculate_MAC_aes(S_ENC, derivation_data, derivation_data_length, mac);
+	status = calculate_cryptogram_SCP03(S_ENC, 0x02, sequenceCounter, 3, invokingAID, invokingAIDLength, cardChallenge, 64);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	memcpy(cardChallenge, mac, 8);
 
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
@@ -323,7 +373,7 @@ OPGP_ERROR_STATUS calculate_host_cryptogram_SCP01(BYTE S_ENCSessionKey[16],
 	OPGP_LOG_START(_T("calculate_host_cryptogram_SCP01"));
 	memcpy(message, cardChallenge, 8);
 	memcpy(message+8, hostChallenge, 8);
-	status = calculate_MAC(S_ENCSessionKey, message, 16, (PBYTE)icv, hostCryptogram);
+	status = calculate_MAC(S_ENCSessionKey, message, 16, (PBYTE)ICV, hostCryptogram);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -354,7 +404,7 @@ OPGP_ERROR_STATUS calculate_host_cryptogram_SCP02(BYTE S_ENCSessionKey[16],
 	memcpy(message, sequenceCounter, 2);
 	memcpy(message+2, cardChallenge, 6);
 	memcpy(message+8, hostChallenge, 8);
-	status = calculate_MAC(S_ENCSessionKey, message, 16, (PBYTE)icv, hostCryptogram);
+	status = calculate_MAC(S_ENCSessionKey, message, 16, (PBYTE)ICV, hostCryptogram);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -379,25 +429,11 @@ OPGP_ERROR_STATUS calculate_host_cryptogram_SCP03(BYTE S_MACSessionKey[16],
 											BYTE hostCryptogram[8])
 {
 	OPGP_ERROR_STATUS status;
-	BYTE derivation_data[32];
-	BYTE mac[16];
-
 	OPGP_LOG_START(_T("calculate_host_cryptogram_SCP03"));
-	memset(derivation_data, 0, 11); //<! "label" 
-	derivation_data[11] = 0x01; //<! "derivation constant" part of label
-	derivation_data[12] = 0x00;     // <! "separation indicator"
-	derivation_data[13] = 0x00;     // <! First byte of output length 
-	derivation_data[14] = 0x40;     // <! Second byte of output length
-	derivation_data[15] = 0x01;     // <! byte counter "i"
-
-	memcpy(derivation_data+16, hostChallenge, 8);
-	memcpy(derivation_data+24, cardChallenge, 8);
-
-	status = calculate_MAC_aes(S_MACSessionKey, derivation_data, 32, mac);
+	status = calculate_cryptogram_SCP03(S_MACSessionKey, 0x01, hostChallenge, 8, cardChallenge, 8, hostCryptogram, 64);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	memcpy(hostCryptogram, mac, 8);
 
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
@@ -485,20 +521,8 @@ end:
 OPGP_ERROR_STATUS create_session_key_SCP03(BYTE key[16], BYTE derivationConstant, BYTE cardChallenge[8],
 							   BYTE hostChallenge[8], BYTE sessionKey[16]) {
 	OPGP_ERROR_STATUS status;
-	BYTE derivation_data[32];
-
 	OPGP_LOG_START(_T("create_session_key_SCP03"));
-	memset(derivation_data, 0, 11); //<! "label" 
-	derivation_data[11] = derivationConstant; //<! "derivation constant" part of label
-	derivation_data[12] = 0x00;     // <! "separation indicator"
-	derivation_data[13] = 0x00;     // <! First byte of key length 
-	derivation_data[14] = 0x80;     // <! Second byte of key length - only 128 bit keys supported
-	derivation_data[15] = 0x01;     // <! byte counter "i" - only 128 bit keys supported
-
-	memcpy(derivation_data+16, hostChallenge, 8);
-	memcpy(derivation_data+24, cardChallenge, 8);
-
-	status = calculate_MAC_aes(key, derivation_data, 32, sessionKey);
+	status = calculate_cryptogram_SCP03(key, derivationConstant, hostChallenge, 8, cardChallenge, 8, sessionKey, 128);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -529,7 +553,7 @@ OPGP_ERROR_STATUS calculate_enc_ecb_two_key_triple_des(BYTE key[16], BYTE *messa
 	EVP_CIPHER_CTX_init(&ctx);
 	*encryptionLength = 0;
 
-	result = EVP_EncryptInit_ex(&ctx, EVP_des_ede(), NULL, key, icv);
+	result = EVP_EncryptInit_ex(&ctx, EVP_des_ede(), NULL, key, ICV);
 	if (result != 1) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 	}
@@ -551,7 +575,7 @@ OPGP_ERROR_STATUS calculate_enc_ecb_two_key_triple_des(BYTE key[16], BYTE *messa
 		*encryptionLength+=outl;
 
 		result = EVP_EncryptUpdate(&ctx, encryption+*encryptionLength,
-			&outl, padding, 8 - (messageLength%8));
+			&outl, PADDING, 8 - (messageLength%8));
 		if (result != 1) {
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 		}
@@ -615,7 +639,7 @@ OPGP_ERROR_STATUS calculate_enc_ecb_single_des(BYTE key[8], BYTE *message, int m
 		*encryptionLength+=outl;
 
 		result = EVP_EncryptUpdate(&ctx, encryption+*encryptionLength,
-			&outl, padding, 8 - (messageLength%8));
+			&outl, PADDING, 8 - (messageLength%8));
 		if (result != 1) {
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 		}
@@ -676,7 +700,7 @@ OPGP_ERROR_STATUS calculate_MAC(BYTE sessionKey[16], BYTE *message, int messageL
 		}
 	}
 	result = EVP_EncryptUpdate(&ctx, mac,
-		&outl, padding, 8 - (messageLength%8));
+		&outl, PADDING, 8 - (messageLength%8));
 	if (result != 1) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 	}
@@ -732,6 +756,157 @@ end:
 	return status;
 }
 
+   //private byte[] calculateCEncryption(CommandAPDU command) {
+   //     // if no data, no encryption is done
+   //     if (command.getData().length == 0) {
+   //         return command.getBytes();
+   //     }
+   //     byte[] input = command.getData();
+   //     byte[] icv = createEncryptionICV(false);
+   //     try {
+   //         cipherInstanceWithPadding.init(Cipher.ENCRYPT_MODE, encSessionKey, new IvParameterSpec(icv));
+   //         return cipherInstanceWithPadding.doFinal(input);
+   //     } catch (Exception e) {
+   //         throw new RuntimeException("Could not encrypt command APDU.", e);
+   //     }
+   // }
+
+   // private byte[] calculateRDecryption(ResponseAPDU response) {
+   //     byte[] icv = createEncryptionICV(true);
+   //     try {
+   //         cipherInstanceWithPadding.init(Cipher.DECRYPT_MODE, sENCKey, new IvParameterSpec(icv));
+   //         return cipherInstanceWithPadding.doFinal(response.getData());
+   //     } catch (Exception e) {
+   //         throw new RuntimeException("Could not decrypt response APDU.", e);
+   //     }
+   // }
+
+   // private byte[] createEncryptionICV(boolean rDecryption) {
+   //     byte[] counter = BigInteger.valueOf(sessionCounter).toByteArray();
+   //     // create 128 bit ICV
+   //     byte[] icv = new byte[16];
+   //     if (rDecryption) {
+   //         // set first byte 0x80 if for response
+   //         icv[0] = (byte) 0x80;
+   //     }
+   //     System.arraycopy(counter, 0, icv, icv.length - counter.length, counter.length);
+   //     try {
+   //         icvCipherInstance.init(Cipher.ENCRYPT_MODE, sENCKey, new IvParameterSpec(ICV));
+   //         return icvCipherInstance.doFinal(icv);
+   //     } catch (Exception e) {
+   //         throw new RuntimeException("Could not encrypt ICV.", e);
+   //     }
+   // }
+
+   // /**
+   //  * Creates an AES-128 encryption session key for SCP03.
+   //  *
+   //  * @param cardChallenge The card challenge.
+   //  * @param hostChallenge The host challenge.
+   //  */
+   // private void createEncSessionKey(byte[] cardChallenge, byte[] hostChallenge) {
+   //     byte[] raw = calculateCryptogram(sENCKey, DERIVATION_CONSTANT_S_ENC, hostChallenge, cardChallenge, 128);
+   //     encSessionKey = new SecretKeySpec(raw, "AES");
+   // }
+
+   // /**
+   //  * Creates an AES-128 encryption session key for SCP03.
+   //  *
+   //  * @param cardChallenge The card challenge.
+   //  * @param hostChallenge The host challenge.
+   //  */
+   // private void createMacSessionKey(byte[] cardChallenge, byte[] hostChallenge) {
+   //     byte[] raw = calculateCryptogram(sMACKey, DERIVATION_CONSTANT_S_MAC, hostChallenge, cardChallenge, 128);
+   //     cmacSessionKey = new SecretKeySpec(raw, "AES");
+   // }
+
+   // /**
+   //  * Creates an AES-128 encryption session key for SCP03.
+   //  *
+   //  * @param cardChallenge The card challenge.
+   //  * @param hostChallenge The host challenge.
+   //  */
+   // private void createRMacSessionKey(byte[] cardChallenge, byte[] hostChallenge) {
+   //     byte[] raw = calculateCryptogram(sMACKey, DERIVATION_CONSTANT_S_RMAC, hostChallenge, cardChallenge, 128);
+   //     rmacSessionKey = new SecretKeySpec(raw, "AES");
+   // }
+
+	  // public void deriveKeysEmvCps11(byte[] keyDiversificationData, SecretKey secretKey) {
+   //     /*
+   //   The 6 byte KMCID (e.g. IIN right justified and left padded with 1111b per quartet)
+   //   concatenated with the 4 byte CSN (least significant bytes) form the key
+   //   diversification data that must be placed in tag ‘CF’. This same data must be used to
+   //   form the response to the INITIALIZE UPDATE command.
+   //   */
+
+   //     /* KEYDATA Key derivation data:
+   //         - KMCID (6 bytes)
+   //         - CSN (4 bytes)
+
+   //         If the CSN does not ensure the uniqueness of KEYDATA across different batches of cards other unique data (e.g. 2
+   //         right most bytes of IC serial number and 2 bytes of IC batch identifier) should be used instead.
+   //     */
+
+   //     /* KENC := DES3(KMC)[Six least
+   //   significant bytes of the KEYDATA || ’F0’ || ‘01’ ]|| DES3(KMC)[ Six least
+   //   significant bytes of the KEYDATA || ‘0F’ || ‘01’].
+   //   */
+
+
+   //     /* KMAC := DES3(KMC)[ Six
+   //   least significant bytes of the KEYDATA || ’F0’ || ‘02’ ]|| DES3(KMC)[ Six
+   //   least significant bytes of the KEYDATA || ‘0F’ || ‘02’].
+   //   */
+
+   //     /* KDEK := DES3(KMC)[ Six
+   //   least significant bytes of the KEYDATA || ’F0’ || ‘03’ ]|| DES3(KMC)[ Six
+   //   least significant bytes of the KEYDATA || ‘0F’ || ‘03’].
+   //   */
+
+   //     // left
+   //     byte[] _keyDiversificationData = new byte[16];
+   //     System.arraycopy(keyDiversificationData, 4, _keyDiversificationData, 0, 6);
+
+   //     _keyDiversificationData[6] = (byte) 0xF0;
+   //     _keyDiversificationData[7] = 0x01;
+   //     // right
+   //     System.arraycopy(keyDiversificationData, 4, _keyDiversificationData, 8, 6);
+   //     _keyDiversificationData[14] = 0x0F;
+   //     _keyDiversificationData[15] = 0x01;
+
+   //     try {
+   //         ecbCipherInstance.init(Cipher.ENCRYPT_MODE, secretKey);
+   //         byte[] rawKey = ecbCipherInstance.doFinal(_keyDiversificationData);
+   //         sENCKey = new SecretKeySpec(rawKey, "AES");
+
+   //         // left for MAC
+   //         _keyDiversificationData[6] = (byte) 0xF0;
+   //         _keyDiversificationData[7] = 0x02;
+   //         // right for MAC
+   //         _keyDiversificationData[14] = 0x0F;
+   //         _keyDiversificationData[15] = 0x02;
+
+   //         ecbCipherInstance.init(Cipher.ENCRYPT_MODE, secretKey);
+   //         rawKey = ecbCipherInstance.doFinal(_keyDiversificationData);
+   //         sMACKey = new SecretKeySpec(rawKey, "AES");
+
+   //         // DEK
+
+   //         // left for DEK
+   //         _keyDiversificationData[6] = (byte) 0xF0;
+   //         _keyDiversificationData[7] = 0x03;
+   //         // right for DEK
+   //         _keyDiversificationData[14] = 0x0F;
+   //         _keyDiversificationData[15] = 0x03;
+
+   //         ecbCipherInstance.init(Cipher.ENCRYPT_MODE, secretKey);
+   //         rawKey = ecbCipherInstance.doFinal(_keyDiversificationData);
+   //         dekKey = new SecretKeySpec(rawKey, "AES");
+   //     } catch (Exception e) {
+   //         throw new RuntimeException("Could not derive static keys.", e);
+   //     }
+   // }
+
 /**
  * Calculates the encryption of a message in CBC mode.
  * Pads the message with 0x80 and additional 0x00 if message length is not a multiple of 8.
@@ -752,7 +927,7 @@ OPGP_ERROR_STATUS calculate_enc_cbc(BYTE key[16], BYTE *message, int messageLeng
 	EVP_CIPHER_CTX_init(&ctx);
 	*encryptionLength = 0;
 
-	result = EVP_EncryptInit_ex(&ctx, EVP_des_ede_cbc(), NULL, key, icv);
+	result = EVP_EncryptInit_ex(&ctx, EVP_des_ede_cbc(), NULL, key, ICV);
 	if (result != 1) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 	}
@@ -774,7 +949,7 @@ OPGP_ERROR_STATUS calculate_enc_cbc(BYTE key[16], BYTE *message, int messageLeng
 		*encryptionLength+=outl;
 
 		result = EVP_EncryptUpdate(&ctx, encryption+*encryptionLength,
-			&outl, padding, 8 - (messageLength%8));
+			&outl, PADDING, 8 - (messageLength%8));
 		if (result != 1) {
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 		}
@@ -881,7 +1056,7 @@ OPGP_ERROR_STATUS calculate_MAC_des_3des(BYTE _3des_key[16], BYTE *message, int 
 	OPGP_LOG_START(_T("calculate_MAC_des_3des"));
 	EVP_CIPHER_CTX_init(&ctx);
 	if (initialICV == NULL) {
-		memcpy(_icv, icv, 8);
+		memcpy(_icv, ICV, 8);
 	}
 	else {
 		memcpy(_icv, initialICV, 8);
@@ -926,7 +1101,7 @@ OPGP_ERROR_STATUS calculate_MAC_des_3des(BYTE _3des_key[16], BYTE *message, int 
 		}
 	}
 	result = EVP_EncryptUpdate(&ctx, mac,
-		&outl, padding, 8 - (messageLength%8));
+		&outl, PADDING, 8 - (messageLength%8));
 	if (result != 1) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 	}
@@ -961,7 +1136,7 @@ OPGP_ERROR_STATUS validate_receipt(PBYTE validationData, DWORD validationDataLen
 	OPGP_ERROR_STATUS status;
 	BYTE mac[8];
 	OPGP_LOG_START(_T("validate_receipt"));
-	status = calculate_MAC_des_3des(receiptKey, validationData, validationDataLength, (PBYTE)icv, mac);
+	status = calculate_MAC_des_3des(receiptKey, validationData, validationDataLength, (PBYTE)ICV, mac);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -1742,7 +1917,7 @@ OPGP_ERROR_STATUS calculate_MAC_right_des_3des(BYTE key[16], BYTE *message, int 
 	EVP_CIPHER_CTX_init(&ctx);
 // DES CBC mode
 	memcpy(des_key, key+8, 8);
-	result = EVP_EncryptInit_ex(&ctx, EVP_des_cbc(), NULL, des_key, icv);
+	result = EVP_EncryptInit_ex(&ctx, EVP_des_cbc(), NULL, des_key, ICV);
 	if (result != 1) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 	}
@@ -1770,7 +1945,7 @@ OPGP_ERROR_STATUS calculate_MAC_right_des_3des(BYTE key[16], BYTE *message, int 
 	EVP_CIPHER_CTX_init(&ctx);
 
 	// 3DES CBC mode
-	result = EVP_EncryptInit_ex(&ctx, EVP_des_ede_cbc(), NULL, key, icv);
+	result = EVP_EncryptInit_ex(&ctx, EVP_des_ede_cbc(), NULL, key, ICV);
 	if (result != 1) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 	}
@@ -1783,7 +1958,7 @@ OPGP_ERROR_STATUS calculate_MAC_right_des_3des(BYTE key[16], BYTE *message, int 
 		}
 	}
 	result = EVP_EncryptUpdate(&ctx, mac,
-		&outl, padding, 8 - (messageLength%8));
+		&outl, PADDING, 8 - (messageLength%8));
 	if (result != 1) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 	}
