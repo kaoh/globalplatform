@@ -37,17 +37,9 @@ extern "C"
 #include "globalplatform/error.h"
 #include "globalplatform/security.h"
 
-static const BYTE padding[8] = {(char) 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; //!< Applied padding pattern.
-static const BYTE icv[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; //!< Initial chaining vector.
+static const BYTE ICV[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; //!< Initial chaining vector.
+static const BYTE SCP03_ICV[16] = {0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00}; //!< Initial chaining vector for SCP03.
 
-/* 
- * Philip Wendland: CMAC_aes used for SCP03 has 16 Byte output length and uses 16 Bytes as chaining vector. 
- * TODO SCP03_padding unused at the moment: Use for SCP03 encryption / security level 3.
- */
-static const BYTE SCP03_padding[16] = {(char)0x80,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00}; //!< Padding pattern applied for SCP03.
-static const BYTE SCP03_icv[16] = {0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00}; //!< Initial chaining vector for SCP03.
-
-/* Philip Wendland: added new function calculate_CMAC_aes. */
 OPGP_NO_API
 OPGP_ERROR_STATUS calculate_CMAC_aes(BYTE sMacKey[16], BYTE *message, 
 								int messageLength, BYTE chainingValue[16], 
@@ -106,30 +98,6 @@ OPGP_ERROR_STATUS calculate_host_cryptogram_SCP02(BYTE S_ENCSessionKey[16],
 											BYTE hostCryptogram[8]);
 
 OPGP_NO_API
-OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrappedApduCommand,
-						 PDWORD wrappedApduCommandLength, GP211_SECURITY_INFO *secInfo);
-
-OPGP_NO_API
-OPGP_ERROR_STATUS calculate_enc_cbc_SCP02(BYTE key[16], BYTE *message, int messageLength,
-							  BYTE *encryption, int *encryptionLength);
-
-OPGP_NO_API
-OPGP_ERROR_STATUS calculate_enc_cbc(BYTE key[16], BYTE *message, int messageLength,
-							  BYTE *encryption, int *encryptionLength);
-
-OPGP_NO_API
-OPGP_ERROR_STATUS calculate_enc_ecb_two_key_triple_des(BYTE key[16], BYTE *message,
-												 int messageLength, BYTE *encryption,
-												 int *encryptionLength);
-
-OPGP_NO_API
-OPGP_ERROR_STATUS calculate_enc_ecb_single_des(BYTE key[8], BYTE *message, int messageLength,
-							  BYTE *encryption, int *encryptionLength);
-
-OPGP_NO_API
-OPGP_ERROR_STATUS calculate_MAC_aes(BYTE key[16], BYTE *message, int messageLength, BYTE mac[16]);
-
-OPGP_NO_API
 OPGP_ERROR_STATUS create_session_key_SCP03(BYTE key[16], BYTE derivationConstant, BYTE cardChallenge[8],
 							   BYTE hostChallenge[8], BYTE sessionKey[16]);
 
@@ -151,6 +119,21 @@ OPGP_ERROR_STATUS calculate_host_cryptogram_SCP03(BYTE S_MACSessionKey[16],
 											BYTE cardChallenge[8],
 											BYTE hostChallenge[8],
 											BYTE hostCryptogram[8]);
+
+OPGP_NO_API
+OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrappedApduCommand,
+						 PDWORD wrappedApduCommandLength, GP211_SECURITY_INFO *secInfo);
+
+// TODO: rename to unwrap and make more generic and include response decryption
+//! \brief Checks the R-MAC of an APDU with the necessary security information according to secInfo.
+OPGP_NO_API
+OPGP_ERROR_STATUS GP211_check_R_MAC(PBYTE apduCommand, DWORD apduCommandLength, PBYTE responseData,
+				 DWORD responseDataLength, GP211_SECURITY_INFO *secInfo);
+
+OPGP_NO_API
+OPGP_ERROR_STATUS calculate_enc_ecb_two_key_triple_des(BYTE key[16], BYTE *message,
+												 int messageLength, BYTE *encryption,
+												 int *encryptionLength);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS validate_receipt(PBYTE validationData, DWORD validationDataLength,
@@ -179,23 +162,6 @@ OPGP_ERROR_STATUS validate_load_receipt(DWORD confirmationCounter, PBYTE cardUni
 						   BYTE receiptKey[16], GP211_RECEIPT_DATA receiptData,
 						   PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 						   PBYTE securityDomainAID, DWORD securityDomainAIDLength);
-
-//! \brief Checks the R-MAC of an APDU with the necessary security information according to secInfo.
-OPGP_NO_API
-OPGP_ERROR_STATUS GP211_check_R_MAC(PBYTE apduCommand, DWORD apduCommandLength, PBYTE responseData,
-				 DWORD responseDataLength, GP211_SECURITY_INFO *secInfo);
-
-
-//! \brief Calculates a R-MAC.
-OPGP_NO_API
-OPGP_ERROR_STATUS GP211_calculate_R_MAC(BYTE commandHeader[4],
-						   PBYTE commandData,
-						   DWORD commandDataLength,
-						   PBYTE responseData,
-						   DWORD responseDataLength,
-						   BYTE statusWord[2],
-						   GP211_SECURITY_INFO *secInfo,
-						   BYTE mac[8]);
 
 //! \brief Reads a public RSA key from a file
 OPGP_NO_API
