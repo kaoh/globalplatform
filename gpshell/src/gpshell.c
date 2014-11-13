@@ -359,7 +359,7 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-                _tcsncpy(pOptionStr->reader, token, READERNAMELEN+1);
+                _tcsncpy(pOptionStr->reader, token, READERNAMELEN);
 #ifdef DEBUG
                 _tprintf ( _T("reader name %s\n"), pOptionStr->reader);
 #endif
@@ -376,7 +376,7 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-                _tcsncpy(pOptionStr->file, token, FILENAMELEN+1);
+                _tcsncpy(pOptionStr->file, token, FILENAMELEN);
 #ifdef DEBUG
                 _tprintf ( _T("file name %s\n"), pOptionStr->file);
 #endif
@@ -736,6 +736,7 @@ static int handleCommands(FILE *fd)
     OptionStr optionStr;
     OPGP_ERROR_CREATE_NO_ERROR(status);
 
+	memset(&optionStr, 0, sizeof(optionStr));
     while (_fgetts (buf, BUFLEN, fd) != NULL)
     {
 
@@ -814,7 +815,7 @@ static int handleCommands(FILE *fd)
                         // Check for end of readers
                         if (buf[j] == _T('\0'))
                             break;
-                        _tcsncpy(optionStr.reader, buf+j, READERNAMELEN+1);
+                        _tcsncpy(optionStr.reader, buf+j, READERNAMELEN);
 
 #ifdef DEBUG
 						_tprintf ( _T("* reader name %s\n"), optionStr.reader);
@@ -840,7 +841,6 @@ static int handleCommands(FILE *fd)
                         k++;
                         j+=(int)_tcslen(buf+j)+1;
                     }
-                    optionStr.reader[READERNAMELEN] = _T('\0');
                     if (!readerFound) {
                     	_tprintf (_T("Could not connect to reader number %d\n"), (int)(optionStr.readerNumber+1));
 						rv = EXIT_FAILURE;
@@ -1124,16 +1124,6 @@ static int handleCommands(FILE *fd)
                     optionStr.pkgAIDLen = loadFileParams.loadFileAID.AIDLength;
                     memcpy(optionStr.pkgAID, loadFileParams.loadFileAID.AID, optionStr.pkgAIDLen);
                 }
-                if (optionStr.AIDLen == 0)
-                {
-                    optionStr.AIDLen = loadFileParams.appletAIDs[0].AIDLength;
-                    memcpy(optionStr.AID, loadFileParams.appletAIDs[0].AID, optionStr.AIDLen);
-                }
-                if (optionStr.instAIDLen == 0)
-                {
-                    optionStr.instAIDLen = loadFileParams.appletAIDs[0].AIDLength;
-                    memcpy(optionStr.instAID, loadFileParams.appletAIDs[0].AID, optionStr.instAIDLen);
-                }
                 if (optionStr.nvCodeLimit == 0)
                 {
                     optionStr.nvCodeLimit = loadFileParams.loadFileSize;
@@ -1217,38 +1207,109 @@ static int handleCommands(FILE *fd)
 
                 if (platform_mode == PLATFORM_MODE_OP_201)
                 {
+					int i;
                     OP201_RECEIPT_DATA receipt;
-                    status = OP201_install_for_install_and_make_selectable(
-                             cardContext, cardInfo, &securityInfo201,
-                             (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
-                             (PBYTE)optionStr.AID, optionStr.AIDLen,
-                             (PBYTE)optionStr.instAID, optionStr.instAIDLen,
-                             optionStr.privilege,
-                             optionStr.vDataLimit,
-                             optionStr.nvDataLimit,
-                             (PBYTE)optionStr.instParam,
-                             optionStr.instParamLen,
-                             NULL, // No install token
-                             &receipt,
-                             &receiptDataAvailable);
+
+					if (optionStr.AIDLen || optionStr.instAIDLen)
+					{
+						if (optionStr.AIDLen == 0)
+						{
+							optionStr.AIDLen = loadFileParams.appletAIDs[0].AIDLength;
+							memcpy(optionStr.AID, loadFileParams.appletAIDs[0].AID, optionStr.AIDLen);
+						}
+						if (optionStr.instAIDLen == 0)
+						{
+							optionStr.instAIDLen = optionStr.AIDLen;
+							memcpy(optionStr.instAID, optionStr.AID, optionStr.instAIDLen);
+						}
+						status = OP201_install_for_install_and_make_selectable(
+							cardContext, cardInfo, &securityInfo201,
+							(PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
+							(PBYTE)optionStr.AID, optionStr.AIDLen,
+							(PBYTE)optionStr.instAID, optionStr.instAIDLen,
+							optionStr.privilege,
+							optionStr.vDataLimit,
+							optionStr.nvDataLimit,
+							(PBYTE)optionStr.instParam,
+							optionStr.instParamLen,
+							NULL, // No install token
+							&receipt,
+							&receiptDataAvailable);
+					}
+					else
+					{
+						for (i = 0; loadFileParams.appletAIDs[i].AIDLength; i++)
+						{
+							status = OP201_install_for_install_and_make_selectable(
+								cardContext, cardInfo, &securityInfo201,
+								(PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
+								(PBYTE)loadFileParams.appletAIDs[i].AID,
+								loadFileParams.appletAIDs[i].AIDLength,
+								(PBYTE)loadFileParams.appletAIDs[i].AID,
+								loadFileParams.appletAIDs[i].AIDLength,
+								optionStr.privilege,
+								optionStr.vDataLimit,
+								optionStr.nvDataLimit,
+								(PBYTE)optionStr.instParam,
+								optionStr.instParamLen,
+								NULL, // No install token
+								&receipt,
+								&receiptDataAvailable);
+						}
+					}
                 }
                 else if (platform_mode == PLATFORM_MODE_GP_211)
                 {
+					int i;
                     GP211_RECEIPT_DATA receipt;
 
-                    status = GP211_install_for_install_and_make_selectable(
-                             cardContext, cardInfo, &securityInfo211,
-                             (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
-                             (PBYTE)optionStr.AID, optionStr.AIDLen,
-                             (PBYTE)optionStr.instAID, optionStr.instAIDLen,
-                             optionStr.privilege,
-                             optionStr.vDataLimit,
-                             optionStr.nvDataLimit,
-                             (PBYTE)optionStr.instParam,
-                             optionStr.instParamLen,
-                             NULL, // No install token
-                             &receipt,
-                             &receiptDataAvailable);
+					if (optionStr.AIDLen || optionStr.instAIDLen)
+					{
+						if (optionStr.AIDLen == 0)
+						{
+							optionStr.AIDLen = loadFileParams.appletAIDs[0].AIDLength;
+							memcpy(optionStr.AID, loadFileParams.appletAIDs[0].AID, optionStr.AIDLen);
+						}
+						if (optionStr.instAIDLen == 0)
+						{
+							optionStr.instAIDLen = optionStr.AIDLen;
+							memcpy(optionStr.instAID, optionStr.AID, optionStr.instAIDLen);
+						}
+						status = GP211_install_for_install_and_make_selectable(
+							cardContext, cardInfo, &securityInfo211,
+							(PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
+							(PBYTE)optionStr.AID, optionStr.AIDLen,
+							(PBYTE)optionStr.instAID, optionStr.instAIDLen,
+							optionStr.privilege,
+							optionStr.vDataLimit,
+							optionStr.nvDataLimit,
+							(PBYTE)optionStr.instParam,
+							optionStr.instParamLen,
+							NULL, // No install token
+							&receipt,
+							&receiptDataAvailable);
+					}
+					else
+					{
+						for (i = 0; loadFileParams.appletAIDs[i].AIDLength; i++)
+						{
+							status = GP211_install_for_install_and_make_selectable(
+								cardContext, cardInfo, &securityInfo211,
+								(PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
+								(PBYTE)loadFileParams.appletAIDs[i].AID,
+								loadFileParams.appletAIDs[i].AIDLength,
+								(PBYTE)loadFileParams.appletAIDs[i].AID,
+								loadFileParams.appletAIDs[i].AIDLength,
+								optionStr.privilege,
+								optionStr.vDataLimit,
+								optionStr.nvDataLimit,
+								(PBYTE)optionStr.instParam,
+								optionStr.instParamLen,
+								NULL, // No install token
+								&receipt,
+								&receiptDataAvailable);
+						}
+					}
                 }
 
                 if (OPGP_ERROR_CHECK(status))
@@ -1743,7 +1804,7 @@ static int handleCommands(FILE *fd)
                     // Check for end of readers
                     if (buf[j] == _T('\0'))
                         break;
-                    _tcsncpy(optionStr.reader, buf+j, READERNAMELEN+1);
+                    _tcsncpy(optionStr.reader, buf+j, READERNAMELEN);
 					_tprintf ( _T("* reader name %s\n"), optionStr.reader);
                     k++;
                     j+=(int)_tcslen(buf+j)+1;
