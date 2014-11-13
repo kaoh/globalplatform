@@ -59,7 +59,9 @@ Microsoft Windows SDK for Windows 7 and .NET Framework 4
 http://msdn.microsoft.com/en-us/windows/bb980924
 
 If the setup fails look at http://blogs.msdn.com/b/windowssdk/archive/2009/09/16/windows-7-sdk-setup-common-installation-issues-and-fixes.aspx 
-and http://ctrlf5.net/?p=184. You have to install VC 2010 first to have the document explorer.
+and http://support.microsoft.com/kb/2717426. You have to install VC 2010 first to have the document explorer. 
+It might be necessary to remove the newer Microsoft Visual C++ 2010 x86 Redistributable and Microsoft Visual C++ 2010 x64 Redistributable 
+of VC 2010 because they are conflict with the SDK.
 
 **** Windows Driver Kit (WDK) ****
 The WDK is needed to build a Windows platform independent version without getting into conflict with different
@@ -70,7 +72,7 @@ See http://kobyk.wordpress.com/2007/07/20/dynamically-linking-with-msvcrtdll-usi
 
 **** OpenSSL ****
 http://www.slproweb.com/products/Win32OpenSSL.html
---> Win32 OpenSSL v1.0.1c or higher
+--> Win32 OpenSSL v1.0.1c or higher , not a "light" version
 --> Visual C++ 2008 Redistributables might be necessary
   * Let it install the DLLs to the Windows system directory
 
@@ -78,13 +80,14 @@ http://www.slproweb.com/products/Win32OpenSSL.html
 http://www.winimage.com/zLibDll/index.html
 --> zlib pre-built DLL and sources, version 1.2.5
 http://www.zlib.net/
---> to get current sources of zlib, version 1.2.8, the sources from the pre-built DLL and source will not work
+--> to get current sources of zlib, version 1.2.8, the sources from the pre-built 
+DLL and source (v 1.2.5) will not work, don't take the DLL from here
 
-  * Copy the zlibwapi.dll to C:\Windows\System32  
+  * Copy the zlibwapi.dll to C:\Windows\System32 (dll32 version)
   * Copy zlib.h and zconf.h from the sources of zlib to
-    C:\Program Files\Microsoft SDKs\Windows\v7.0A\Include
+    C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Include
   * Copy the file "zlibwapi.lib" from the lib directory to
-    C:\Program Files\Microsoft SDKs\Windows\v7.0A\Lib
+    C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Lib
     
 
 **** Doxygen ****
@@ -100,9 +103,13 @@ http://www.cmake.org/
   * Launch Visual Studio Command Prompt (2010)
   * cd \path\to\globalplatform
 
-  * cmake -G NMake Makefiles for a debug version
-  * cmake -G NMake Makefiles -DCMAKE_BUILD_TYPE=Release for a release version  
+  * cmake -G "NMake Makefiles" for a debug version
+  * cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release for a release version  
   * ## CMake looks for PC/SC, OpenSSL and zlib ##
+  
+  If you get and error "Error 'LINK : fatal error LNK1123: failure during conversion to COFF" 
+  copy C:\Windows\Microsoft.NET\Framework\v4.0.30319\cvtres.exe to C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\BIN\cvtres.exe
+  See http://stackoverflow.com/questions/10888391/error-link-fatal-error-lnk1123-failure-during-conversion-to-coff-file-inval    
 
   * nmake  
    
@@ -114,6 +121,10 @@ http://www.cmake.org/
     nmake     
 
   * Done! 
+  
+  * If you want to have Visual Studio project files run
+    cmake -G "Visual Studio 10"
+    You ight have to remove the CMakeCache.txt before.    
 
 Source Packages
 ---------------
