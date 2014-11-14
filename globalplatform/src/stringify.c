@@ -77,6 +77,8 @@ OPGP_STRING OPGP_stringify_error(DWORD errorCode) {
 	}
 	if (errorCode == OPGP_ERROR_INVALID_RESPONSE_DATA)
 		return _T("The response of the command was invalid.");
+	if (errorCode == GP211_ERROR_INCORRECT_CARD_CHALLENGE)
+		return _T("The calculated pseudo random card challenge from the card does not match.");
 	if (errorCode == GP211_ERROR_INCONSISTENT_SCP)
 		return _T("The Secure Channel Protocol passed and reported do not match.");
 	if (errorCode == OPGP_ERROR_CAP_UNZIP)

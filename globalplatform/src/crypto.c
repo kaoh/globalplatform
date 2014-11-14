@@ -798,38 +798,6 @@ end:
    //     }
    // }
 
-   // /**
-   //  * Creates an AES-128 encryption session key for SCP03.
-   //  *
-   //  * @param cardChallenge The card challenge.
-   //  * @param hostChallenge The host challenge.
-   //  */
-   // private void createEncSessionKey(byte[] cardChallenge, byte[] hostChallenge) {
-   //     byte[] raw = calculateCryptogram(sENCKey, DERIVATION_CONSTANT_S_ENC, hostChallenge, cardChallenge, 128);
-   //     encSessionKey = new SecretKeySpec(raw, "AES");
-   // }
-
-   // /**
-   //  * Creates an AES-128 encryption session key for SCP03.
-   //  *
-   //  * @param cardChallenge The card challenge.
-   //  * @param hostChallenge The host challenge.
-   //  */
-   // private void createMacSessionKey(byte[] cardChallenge, byte[] hostChallenge) {
-   //     byte[] raw = calculateCryptogram(sMACKey, DERIVATION_CONSTANT_S_MAC, hostChallenge, cardChallenge, 128);
-   //     cmacSessionKey = new SecretKeySpec(raw, "AES");
-   // }
-
-   // /**
-   //  * Creates an AES-128 encryption session key for SCP03.
-   //  *
-   //  * @param cardChallenge The card challenge.
-   //  * @param hostChallenge The host challenge.
-   //  */
-   // private void createRMacSessionKey(byte[] cardChallenge, byte[] hostChallenge) {
-   //     byte[] raw = calculateCryptogram(sMACKey, DERIVATION_CONSTANT_S_RMAC, hostChallenge, cardChallenge, 128);
-   //     rmacSessionKey = new SecretKeySpec(raw, "AES");
-   // }
 
 	  // public void deriveKeysEmvCps11(byte[] keyDiversificationData, SecretKey secretKey) {
    //     /*
@@ -970,8 +938,6 @@ end:
 	OPGP_LOG_END(_T("calculate_enc_cbc"), status);
 	return status;
 }
-
-
 
 /**
  * Calculates a RSA signature using SHA-1 and PKCS#1.
