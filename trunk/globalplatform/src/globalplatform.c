@@ -3778,6 +3778,7 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	BYTE keyInformationData[3]; 
 	int keyInformationDataLength;
 	BYTE sequenceCounter[3];
+	BYTE calculatedCardChallenge[8]; // used for the comparison of SCP03 pseudo card challenge
 	BYTE cardChallenge[8]; // only the first 6 used by SCP02
 	int cardChallengeLength;
 	BYTE cardCryptogram[8];
@@ -3849,11 +3850,6 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	// - SCP01/SCP02 = 30 bytes, SCP03 31 or 34 bytes
 	if (recvBufferLength != 30 && recvBufferLength != 31 && recvBufferLength != 34) {
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-		goto end;
-	}
-	// TODO: Add support for psuedo-random cryptograms
-	if (recvBufferLength == 34) {
-		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_PSEUDO_RANDOM_SCP03_NOT_SUPPORTED, OPGP_stringify_error(OPGP_ERROR_PSEUDO_RANDOM_SCP03_NOT_SUPPORTED));
 		goto end;
 	}
 
@@ -3948,6 +3944,25 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 			if (OPGP_ERROR_CHECK(status)) {
 				goto end;
 			}
+			status = create_session_key_SCP03(sMac, S_RMAC_DerivationConstant_SCP03, cardChallenge, hostChallenge, secInfo->R_MACSessionKey);
+			if (OPGP_ERROR_CHECK(status)) {
+				goto end;
+			}
+			// compare card challenge value when calculated form pseudo random value
+			if (secInfo->secureChannelProtocolImpl == GP211_SCP03_IMPL_i10 || 
+				secInfo->secureChannelProtocolImpl == GP211_SCP03_IMPL_i30 || 
+				secInfo->secureChannelProtocolImpl == GP211_SCP03_IMPL_i70) {		
+					status = calculate_card_challenge_SCP03(sEnc, sequenceCounter, secInfo->invokingAid, secInfo->invokingAidLength, calculatedCardChallenge);
+					if (OPGP_ERROR_CHECK(status)) {
+						goto end;
+					}
+					OPGP_LOG_HEX(_T("mutual_authentication: Calculated Pseudo Card Challenge: "), calculatedCardChallenge, 8);
+					if (memcmp(cardChallenge, calculatedCardChallenge, 8)) {
+						OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_INCORRECT_CARD_CHALLENGE, OPGP_stringify_error(GP211_ERROR_INCORRECT_CARD_CHALLENGE));
+						goto end;
+					}
+			}
+			// in SCP03 there is no data encryption session key
 			memcpy(secInfo->dataEncryptionSessionKey, sEnc, 16);
 		}
 		else {

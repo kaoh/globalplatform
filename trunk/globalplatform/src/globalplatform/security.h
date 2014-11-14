@@ -106,6 +106,30 @@ extern "C"
 /** Secure Channel Protocol '03': "i" '00': No R-MAC, no R-ENCRYPTION, no Pseudo-random cryptogram
   */
 #define GP211_SCP03_IMPL_i00 0x00
+	/**
+	* Secure Channel Protocol '03': "i" '10': Pseudo-random card challenge, no R-MAC support, no R-ENCRYPTION support.
+	*/
+#define GP211_SCP03_IMPL_i10 0x10
+
+	/**
+	* Secure Channel Protocol '03': "i" '30': Pseudo-random card challenge, R-MAC support, no R-ENCRYPTION support.
+	*/
+#define GP211_SCP03_IMPL_i30 0x30
+
+	/**
+	* Secure Channel Protocol '03': "i" '20': Random card challenge, R-MAC support, no R-ENCRYPTION support.
+	*/
+#define GP211_SCP03_IMPL_i20 0x20
+
+	/**
+	* Secure Channel Protocol '03': "i" '60': Random card challenge, R-MAC support, R-ENCRYPTION support.
+	*/
+#define GP211_SCP03_IMPL_i60 0x60
+
+	/**
+	* Secure Channel Protocol '03': "i" '70': Pseudo-random card challenge, R_MAC, support, R-ENCRYPTION support.
+	*/
+#define GP211_SCP03_IMPL_i70 0x70
 
 #define GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC 0x03 //!< Secure Channel Protocol '01': C-DECRYPTION and C-MAC
 #define GP211_SCP01_SECURITY_LEVEL_C_MAC 0x01 //!< Secure Channel Protocol '01': C-MAC
@@ -122,6 +146,9 @@ extern "C"
 #define GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC 0x03 //!< Secure Channel Protocol '03': C-Decryption and C-MAC
 #define GP211_SCP03_SECURITY_LEVEL_C_MAC 0x01 //!< Secure Channel Protocol '03': C-MAC
 #define GP211_SCP03_SECURITY_LEVEL_NO_SECURE_MESSAGING 0x00 //!< Secure Channel Protocol '03': No secure messaging expected.
+#define GP211_SCP03_SECURITY_LEVEL_C_DEC_R_ENC_C_MAC_R_MAC 0x33 //!< Secure Channel Protocol '03': C-Decryption, C-MAC, R-Mac and R-Encryption
+#define GP211_SCP03_SECURITY_LEVEL_C_DECRYPTION_C_MAC_R_MAC 0x13 //!< Secure Channel Protocol '03': C-Decryption, C-MAC and R-Mac
+#define GP211_SCP03_SECURITY_LEVEL_C_MAC_R_MAC 0x11 //!< Secure Channel Protocol '03': C-MAC and R-Mac
 
 #define GP211_KEY_TYPE_RSA_PUB_N 0xA1 //!< 'A1' RSA Public Key - modulus N component (clear text).
 #define GP211_KEY_TYPE_RSA_PUB_E 0xA0 //!< 'A0' RSA Public Key - public exponent e component (clear text)
@@ -186,7 +213,8 @@ typedef struct {
 	/* Augusto: added two more attributes for key information */
 	BYTE keySetVersion; //!< The keyset version used in secure channel
 	BYTE keyIndex; //!< The key index used in secured channel
-	/* end */
+	BYTE invokingAid[16]; //!< The invoking AID used for the mutual authentication.
+	DWORD invokingAidLength; //!< The length of the invoking AID buffer.
 } GP211_SECURITY_INFO;
 
 /**
