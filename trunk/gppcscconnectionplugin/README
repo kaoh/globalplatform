@@ -36,7 +36,14 @@ On a command line type:
 cd \path\to\globalplatform
 cmake .
 make
+make install
 
+FreeBSD
+-------
+
+Under FreeBSD the pcsc-lite libraries are not detected automatically. So you have to specify the locations:
+
+cmake -DPCSC_INCLUDE_DIRS=/usr/local/include -DPCSC_LIBRARIES=/usr/local/lib/libpcsclite.so
 
 Compilation under Windows
 -------------------------
