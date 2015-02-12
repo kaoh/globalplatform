@@ -477,6 +477,7 @@ OPGP_ERROR_STATUS cap_to_ijc(OPGP_CSTRING capFileName, OPGP_STRING ijcFileName) 
 		goto end;
 	}
 	fclose(ijcFile);
+	ijcFile = NULL; /* AC BUGFIX: Need to set file handle to NULL after closing to prevent double closure. */
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
 	if (loadFileBuf != NULL) {
