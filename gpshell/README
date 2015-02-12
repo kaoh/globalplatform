@@ -15,6 +15,7 @@ It can establish a secure channel with a smart card, load, instantiate, delete, 
 
 You need also the libraries GlobalPlatform 6.0.0, zlib 1.2.3 (zlib1.dll) and OpenSSL >= 0.9.8e (libeay32.dll and ssleay32.dll) or
 compatible and must place them in the directory where GPShell is called or better the system directory (C:\Windows\System32 or /usr/(local/)lib usually).
+You also need at least one connection plugin, e.g. the shipped "gppcscconnectionplugin" to use PC/SC.
 
 For MacOSX you might set
 
@@ -59,7 +60,14 @@ On a command line type:
 cd \path\to\globalplatform
 cmake .
 make
+make install
 
+FreeBSD
+-------
+
+Under FreeBSD the pcsc-lite libraries are not detected automatically. So you have to specify the locations:
+
+cmake -DPCSC_INCLUDE_DIRS=/usr/local/include -DPCSC_LIBRARIES=/usr/local/lib/libpcsclite.so
 
 Compilation under Windows
 -------------------------
