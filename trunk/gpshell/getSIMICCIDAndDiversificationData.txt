@@ -1,0 +1,16 @@
+establish_context
+enable_trace
+enable_timer
+card_connect
+# Select MF
+send_apdu -sc 0 -APDU A0A40000023F00 
+# Select MF.EF_iccid
+send_apdu -sc 0 -APDU A0A40000022FE2
+# READ BINARY ICCID :
+send_apdu -sc 0 -APDU A0B000000A
+# Select service manager
+select -AID A00000003052010000000001
+# get diversification data from INITIALIZE UPDATE
+send_apdu -sc 0 -APDU 8050200008010203040506070800 
+card_disconnect
+release_context
