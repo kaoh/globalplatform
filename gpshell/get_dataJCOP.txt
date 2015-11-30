@@ -1,0 +1,21 @@
+establish_context
+enable_trace
+enable_timer
+card_connect -readerNumber 3
+select -AID A0000001510000
+# Whole CPLC data from ROM and EEPROM
+get_data -identifier 9F7F
+# Card Data
+get_data -identifier 66
+# Diversification data
+get_data -identifier CF
+# Confirmation Counter
+get_data -identifier C2
+# ATR historical bytes
+get_data -identifier DF71
+# Whole EF<sub>prod</sub> data block (39 Byte)
+get_data -identifier DF7F
+# File Control Information (FCI) discretionary data
+get_data -identifier BF0C
+card_disconnect
+release_context
