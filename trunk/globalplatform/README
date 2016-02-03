@@ -61,12 +61,18 @@ Compilation under Windows
 
 Tested with:
 
+* Visual Studio 2013 Community Edition
+* VISUAL C++ 2010 EXPRESS
+
 **** VISUAL C++ 2010 EXPRESS ****
 To have nmake install VISUAL C++ 2010 EXPRESS
 http://www.microsoft.com/visualstudio/eng/downloads#d-2010-express
 
+**** Visual Studio 2013 Community Edition ****
+https://www.visualstudio.com/downloads/download-visual-studio-vs
+
 **** SDK ****
-Microsoft Windows SDK for Windows 7 and .NET Framework 4
+Microsoft Windows SDK for Windows 7 and .NET Framework 4 
 http://msdn.microsoft.com/en-us/windows/bb980924
 
 If the setup fails look at http://blogs.msdn.com/b/windowssdk/archive/2009/09/16/windows-7-sdk-setup-common-installation-issues-and-fixes.aspx 
@@ -74,7 +80,10 @@ and http://support.microsoft.com/kb/2717426. You have to install VC 2010 first t
 It might be necessary to remove the newer Microsoft Visual C++ 2010 x86 Redistributable and Microsoft Visual C++ 2010 x64 Redistributable 
 of VC 2010 because they are conflict with the SDK.
 
-**** Windows Driver Kit (WDK) ****
+Note: You might a newer version depending on your Windows version, e.g. for Windows 10:
+https://dev.windows.com/en-us/downloads/windows-10-sdk
+
+**** Windows Driver Kit (WDK) - Only needed for platform independend builts ****
 The WDK is needed to build a Windows platform independent version without getting into conflict with different
 Windows msvcrt DLL versions.
 http://www.microsoft.com/downloads/details.aspx?displaylang=en&FamilyID=36a2630f-5d56-43b5-b996-7633f2ec14ff
@@ -95,11 +104,24 @@ http://www.zlib.net/
 DLL and source (v 1.2.5) will not work, don't take the DLL from here
 
   * Copy the zlibwapi.dll to C:\Windows\System32 (dll32 version)
+  
+**** VISUAL C++ 2010 EXPRESS ****
   * Copy zlib.h and zconf.h from the sources of zlib to
     C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Include
   * Copy the file "zlibwapi.lib" from the lib directory to
     C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Lib
-    
+
+	**** Visual Studio 2013 Community Edition ****
+	
+  * Copy zlib.h and zconf.h from the sources of zlib to
+	C:\Program Files (x86)\Windows Kits\8.1\Include\um
+  * Copy the file "zlibwapi.lib" from the lib directory to
+    C:\Program Files (x86)\Windows Kits\8.1\Lib\winv6.3\um\x86
+	
+Note: The paths given here are workign only with VC 2010 or VC 2013 respectively. 
+This path must be adjusted. When the command prompt of visual studio is open execute "set" and look for an 
+environment variable "WindowsSdkDir". This value should be taken instead as serach path for the right 
+sub directories.
 
 **** Doxygen ****
 You need Doxygen for generating the documentation.
@@ -111,7 +133,7 @@ http://www.cmake.org/
 
 **** Compile ****
 
-  * Launch Visual Studio Command Prompt (2010)
+  * Launch Visual Studio Command Prompt (VS 2010) or Developer Command Prompt for VS2013 (VS 2013)
   * cd \path\to\globalplatform
 
   * cmake -G "NMake Makefiles" for a debug version
@@ -136,6 +158,32 @@ http://www.cmake.org/
   * If you want to have Visual Studio project files run
     cmake -G "Visual Studio 10"
     You ight have to remove the CMakeCache.txt before.    
+	
+***** Troubleshooting
+
+Problem:
+
+CMake Error: Error: generator : NMake Makefiles
+Does not match the generator used previously: Visual Studio 10 2010
+Either remove the CMakeCache.txt file and CMakeFiles directory or choose a diffe
+rent binary directory.
+
+Solution:
+
+Delete liek mentioned CMakeCache.txt
+
+
+Problem:
+
+NMAKE : fatal error U1077: return code '0xc0000135'
+
+Solution:
+
+If you are updating from a previous Visual Studio Version the old compilation settings and 
+paths might be still stored in old files. Remove the CMakeFiles directory and all *.cmake files, 
+the Makefile and CMakeCache.txt.
+
+
 
 Source Packages
 ---------------

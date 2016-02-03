@@ -70,6 +70,9 @@ void OPGP_log_Hex(OPGP_STRING msg, PBYTE buffer, DWORD bufferLength) {
 	else {
 		OPGP_log_Msg(_T("%s%s"), msg, bufferMsg);
 	}
+  if (bufferMsg) {
+		free(bufferMsg);
+	}
 }
 
 /**
