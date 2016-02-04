@@ -148,7 +148,7 @@ http://www.cmake.org/
    
   * To build it downwards compatible you have to use a different set of common 
     runtime libraries contained in the Windows Driver Development Kit. You have
-    to specifx with -DWINDDK_DIR the path to the DDK.  
+    to specify with -DWINDDK_DIR the path to the DDK.  
   * Complete example:
     cmake -G "NMake Makefiles" -DWINDDK_DIR=C:\WinDDK\7600.16385.1 -DCMAKE_BUILD_TYPE=Release
     nmake     
@@ -161,6 +161,23 @@ http://www.cmake.org/
 	
 ***** Troubleshooting
 
+Problem:
+
+unzip.c.obj : error LNK2019: unresolved symbol "_inflate@8" in function "_unzReadCurrentFile@12".
+
+Solution:
+
+If the zlib library is not in place or the zlib library was added only after executing 
+cmake -G "NMake Makefiles" the make file does not contain the correct path.
+
+Problem:
+
+No verbose output for error detection is shown.
+
+Solution:
+
+    nmake VERBOSE=1
+	
 Problem:
 
 CMake Error: Error: generator : NMake Makefiles
