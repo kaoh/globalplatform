@@ -534,14 +534,15 @@ OPGP_ERROR_STATUS OPGP_PL_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 						HANDLE_STATUS(status, result);
 						goto end;
 					} // if ( SCARD_S_SUCCESS != result)
-					result = get_short(responseData, responseDataLength-2);
+					result = get_short(responseData+offset, responseDataLength-2);
 					// if the result is 0x6E00 then this should be a broken ISO implementation not supporting GET RESPONSE on 0x9000 and we return the previous response data
-					if (result == 0x6E00) {
+					if (result == 0x6E00 || result == 0x6D00) {
 						memcpy(responseData, rapdu, tempDataLength);
 						responseDataLength = tempDataLength;
 					}
-					offset += responseDataLength - 2;
-
+					else {
+						offset += responseDataLength - 2;
+				    }
 			} // if (61 etc.)
 
 			while ((responseData[offset] == 0x61)

@@ -54,13 +54,19 @@ After changing CMake parameters you must rebuild the files and delete the CMakeC
 
 Tested with:
 
-**** SDK ****
-Microsoft Windows SDK for Windows 7 and .NET Framework 4
-http://msdn.microsoft.com/en-us/windows/bb980924
+* Visual Studio 2013 Community Edition
+* VISUAL C++ 2010 EXPRESS
 
 **** VISUAL C++ 2010 EXPRESS ****
 To have nmake install VISUAL C++ 2010 EXPRESS
-http://www.microsoft.com/visualstudio/en-us/products/2010-editions/visual-cpp-express
+http://www.microsoft.com/visualstudio/eng/downloads#d-2010-express
+
+**** Visual Studio 2013 Community Edition ****
+https://www.visualstudio.com/downloads/download-visual-studio-vs
+
+**** SDK ****
+Microsoft Windows SDK for Windows 7 and .NET Framework 4
+http://msdn.microsoft.com/en-us/windows/bb980924
 
 **** CMake ****
 http://www.cmake.org/
@@ -68,7 +74,7 @@ http://www.cmake.org/
 
 **** Compile ****
 
-  Launch Visual Studio Command Prompt (2010)
+  Launch Visual Studio Command Prompt (VS 2010) or Developer Command Prompt for VS2013 (VS 2013)
   cd \path\to\globalplatform
 
   * cmake -G "NMake Makefiles" for a release version
@@ -172,3 +178,6 @@ For more information contact the author through the mailing list at:
 
 http://sourceforge.net/projects/globalplatform/
 
+***** Troubleshooting
+
+See README in globalplatform module.

@@ -111,14 +111,14 @@ DLL and source (v 1.2.5) will not work, don't take the DLL from here
   * Copy the file "zlibwapi.lib" from the lib directory to
     C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Lib
 
-	**** Visual Studio 2013 Community Edition ****
+**** Visual Studio 2013 Community Edition ****
 	
   * Copy zlib.h and zconf.h from the sources of zlib to
 	C:\Program Files (x86)\Windows Kits\8.1\Include\um
   * Copy the file "zlibwapi.lib" from the lib directory to
     C:\Program Files (x86)\Windows Kits\8.1\Lib\winv6.3\um\x86
 	
-Note: The paths given here are workign only with VC 2010 or VC 2013 respectively. 
+Note: The paths given here are working only with VC 2010 or VC 2013 respectively. 
 This path must be adjusted. When the command prompt of visual studio is open execute "set" and look for an 
 environment variable "WindowsSdkDir". This value should be taken instead as serach path for the right 
 sub directories.
@@ -187,7 +187,7 @@ rent binary directory.
 
 Solution:
 
-Delete liek mentioned CMakeCache.txt
+Delete like mentioned CMakeCache.txt
 
 
 Problem:
