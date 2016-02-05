@@ -78,15 +78,21 @@ After changing CMake parameters you must rebuild the files and delete the CMakeC
 
 Tested with:
 
-**** SDK ****
-Microsoft Windows SDK for Windows 7 and .NET Framework 4
-http://msdn.microsoft.com/en-us/windows/bb980924
+* Visual Studio 2013 Community Edition
+* VISUAL C++ 2010 EXPRESS
 
 **** VISUAL C++ 2010 EXPRESS ****
 To have nmake install VISUAL C++ 2010 EXPRESS
 http://www.microsoft.com/visualstudio/eng/downloads#d-2010-express
 
-**** Windows Driver Kit (WDK) ****
+**** Visual Studio 2013 Community Edition ****
+https://www.visualstudio.com/downloads/download-visual-studio-vs
+
+**** SDK ****
+Microsoft Windows SDK for Windows 7 and .NET Framework 4
+http://msdn.microsoft.com/en-us/windows/bb980924
+
+**** Windows Driver Kit (WDK) - Only needed for platform independend builts ****
 The WDK is needed to build a Windows platform independent version without getting into conflict with different
 Windows msvcrt DLL versions.
 http://www.microsoft.com/downloads/details.aspx?displaylang=en&FamilyID=36a2630f-5d56-43b5-b996-7633f2ec14ff
@@ -104,10 +110,24 @@ http://www.winimage.com/zLibDll/index.html
 --> zlib pre-built DLL and sources, version 1.2.5
 
   * Copy the zlibwapi.dll to C:\Windows\System32
-  * Copy zlib.h and zconf.h from the sources to
-    C:\Program Files\Microsoft SDKs\Windows\v7.0A\Include
+  
+**** VISUAL C++ 2010 EXPRESS ****
+  * Copy zlib.h and zconf.h from the sources of zlib to
+    C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Include
   * Copy the file "zlibwapi.lib" from the lib directory to
-    C:\Program Files\Microsoft SDKs\Windows\v7.0A\Lib
+    C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Lib
+
+**** Visual Studio 2013 Community Edition ****
+	
+  * Copy zlib.h and zconf.h from the sources of zlib to
+	C:\Program Files (x86)\Windows Kits\8.1\Include\um
+  * Copy the file "zlibwapi.lib" from the lib directory to
+    C:\Program Files (x86)\Windows Kits\8.1\Lib\winv6.3\um\x86
+	
+Note: The paths given here are working only with VC 2010 or VC 2013 respectively. 
+This path must be adjusted. When the command prompt of visual studio is open execute "set" and look for an 
+environment variable "WindowsSdkDir". This value should be taken instead as serach path for the right 
+sub directories.
     
 **** CMake ****
 http://www.cmake.org/
@@ -115,7 +135,7 @@ http://www.cmake.org/
 
 **** Compile ****
 
-  * Launch Visual Studio Command Prompt (2010)
+  * Launch Visual Studio Command Prompt (VS 2010) or Developer Command Prompt for VS2013 (VS 2013)
   * cd \path\to\gpshell
 
   * cmake -G "NMake Makefiles" for a release version
@@ -210,3 +230,7 @@ and the linking step will fail. So remove the Cygwin bin directory from the path
 For more information contact the author through the mailing list at:
 
 http://sourceforge.net/projects/globalplatform/
+
+***** Troubleshooting
+
+See README in globalplatform module.
