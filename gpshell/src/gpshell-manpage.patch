@@ -1,0 +1,153 @@
+--- gpshell.c	2014-10-16 18:12:41.000000000 +0800
++++ /tmp/gpshell.c	2014-10-16 19:07:40.000000000 +0800
+@@ -1124,16 +1124,6 @@
+                     optionStr.pkgAIDLen = loadFileParams.loadFileAID.AIDLength;
+                     memcpy(optionStr.pkgAID, loadFileParams.loadFileAID.AID, optionStr.pkgAIDLen);
+                 }
+-                if (optionStr.AIDLen == 0)
+-                {
+-                    optionStr.AIDLen = loadFileParams.appletAIDs[0].AIDLength;
+-                    memcpy(optionStr.AID, loadFileParams.appletAIDs[0].AID, optionStr.AIDLen);
+-                }
+-                if (optionStr.instAIDLen == 0)
+-                {
+-                    optionStr.instAIDLen = loadFileParams.appletAIDs[0].AIDLength;
+-                    memcpy(optionStr.instAID, loadFileParams.appletAIDs[0].AID, optionStr.instAIDLen);
+-                }
+                 if (optionStr.nvCodeLimit == 0)
+                 {
+                     optionStr.nvCodeLimit = loadFileParams.loadFileSize;
+@@ -1217,38 +1207,109 @@
+                 if (platform_mode == PLATFORM_MODE_OP_201)
+                 {
++                    int i;
+                     OP201_RECEIPT_DATA receipt;
+-                    status = OP201_install_for_install_and_make_selectable(
+-                             cardContext, cardInfo, &securityInfo201,
+-                             (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
+-                             (PBYTE)optionStr.AID, optionStr.AIDLen,
+-                             (PBYTE)optionStr.instAID, optionStr.instAIDLen,
+-                             optionStr.privilege,
+-                             optionStr.vDataLimit,
+-                             optionStr.nvDataLimit,
+-                             (PBYTE)optionStr.instParam,
+-                             optionStr.instParamLen,
+-                             NULL, // No install token
+-                             &receipt,
+-                             &receiptDataAvailable);
++
++                    if (optionStr.AIDLen || optionStr.instAIDLen)
++                    {
++                        if (optionStr.AIDLen == 0)
++                        {
++                            optionStr.AIDLen = loadFileParams.appletAIDs[0].AIDLength;
++                            memcpy(optionStr.AID, loadFileParams.appletAIDs[0].AID, optionStr.AIDLen);
++                        }
++                        if (optionStr.instAIDLen == 0)
++                        {
++                            optionStr.instAIDLen = optionStr.AIDLen;
++                            memcpy(optionStr.instAID, optionStr.AID, optionStr.instAIDLen);
++                        }
++                        status = OP201_install_for_install_and_make_selectable(
++                                 cardContext, cardInfo, &securityInfo201,
++                                 (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
++                                 (PBYTE)optionStr.AID, optionStr.AIDLen,
++                                 (PBYTE)optionStr.instAID, optionStr.instAIDLen,
++                                 optionStr.privilege,
++                                 optionStr.vDataLimit,
++                                 optionStr.nvDataLimit,
++                                 (PBYTE)optionStr.instParam,
++                                 optionStr.instParamLen,
++                                 NULL, // No install token
++                                 &receipt,
++                                 &receiptDataAvailable);
++                    }
++		    else
++		    {
++                        for (i = 0; loadFileParams.appletAIDs[i].AIDLength; i++)
++		        {
++                            status = OP201_install_for_install_and_make_selectable(
++                                     cardContext, cardInfo, &securityInfo201,
++                                     (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
++                                     (PBYTE)loadFileParams.appletAIDs[i].AID,
++                                     loadFileParams.appletAIDs[i].AIDLength,
++                                     (PBYTE)loadFileParams.appletAIDs[i].AID,
++                                     loadFileParams.appletAIDs[i].AIDLength,
++                                     optionStr.privilege,
++                                     optionStr.vDataLimit,
++                                     optionStr.nvDataLimit,
++                                     (PBYTE)optionStr.instParam,
++                                     optionStr.instParamLen,
++                                     NULL, // No install token
++                                     &receipt,
++                                     &receiptDataAvailable);
++		        }
++		    }
+                 }
+                 else if (platform_mode == PLATFORM_MODE_GP_211)
+                 {
++                    int i;
+                     GP211_RECEIPT_DATA receipt;
+                                           
+-                    status = GP211_install_for_install_and_make_selectable(
+-                             cardContext, cardInfo, &securityInfo211,
+-                             (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
+-                             (PBYTE)optionStr.AID, optionStr.AIDLen,
+-                             (PBYTE)optionStr.instAID, optionStr.instAIDLen,
+-                             optionStr.privilege,
+-                             optionStr.vDataLimit,
+-                             optionStr.nvDataLimit,
+-                             (PBYTE)optionStr.instParam,
+-                             optionStr.instParamLen,
+-                             NULL, // No install token
+-                             &receipt,
+-                             &receiptDataAvailable);
++                    if (optionStr.AIDLen || optionStr.instAIDLen)
++                    {
++                        if (optionStr.AIDLen == 0)
++                        {
++                            optionStr.AIDLen = loadFileParams.appletAIDs[0].AIDLength;
++                            memcpy(optionStr.AID, loadFileParams.appletAIDs[0].AID, optionStr.AIDLen);
++                        }
++                        if (optionStr.instAIDLen == 0)
++                        {
++                            optionStr.instAIDLen = optionStr.AIDLen;
++                            memcpy(optionStr.instAID, optionStr.AID, optionStr.instAIDLen);
++                        }
++                        status = GP211_install_for_install_and_make_selectable(
++                                 cardContext, cardInfo, &securityInfo211,
++                                 (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
++                                 (PBYTE)optionStr.AID, optionStr.AIDLen,
++                                 (PBYTE)optionStr.instAID, optionStr.instAIDLen,
++                                 optionStr.privilege,
++                                 optionStr.vDataLimit,
++                                 optionStr.nvDataLimit,
++                                 (PBYTE)optionStr.instParam,
++                                 optionStr.instParamLen,
++                                 NULL, // No install token
++                                 &receipt,
++                                 &receiptDataAvailable);
++                    }
++                    else
++                    {
++                        for (i = 0; loadFileParams.appletAIDs[i].AIDLength; i++)
++                        {
++                            status = GP211_install_for_install_and_make_selectable(
++                                     cardContext, cardInfo, &securityInfo211,
++                                     (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
++                                     (PBYTE)loadFileParams.appletAIDs[i].AID,
++                                     loadFileParams.appletAIDs[i].AIDLength,
++                                     (PBYTE)loadFileParams.appletAIDs[i].AID,
++                                     loadFileParams.appletAIDs[i].AIDLength,
++                                     optionStr.privilege,
++                                     optionStr.vDataLimit,
++                                     optionStr.nvDataLimit,
++                                     (PBYTE)optionStr.instParam,
++                                     optionStr.instParamLen,
++                                     NULL, // No install token
++                                     &receipt,
++                                     &receiptDataAvailable);
++                        }
++                    }
+                 }
+                 

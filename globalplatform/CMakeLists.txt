@@ -1,5 +1,7 @@
 PROJECT(globalplatform C)
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.5)
+
+cmake_policy(SET CMP0045 OLD)
 
 # set this to snapshot so that snapshot specific version number can be set
 set(CPACK_DEBIAN_PACKAGE_TYPE	"snapshot")

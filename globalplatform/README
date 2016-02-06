@@ -96,12 +96,16 @@ http://www.slproweb.com/products/Win32OpenSSL.html
 --> Visual C++ 2008 Redistributables might be necessary
   * Let it install the DLLs to the Windows system directory
 
-**** zlib ****
-http://www.winimage.com/zLibDll/index.html
---> zlib pre-built DLL and sources, version 1.2.5
-http://www.zlib.net/
---> to get current sources of zlib, version 1.2.8, the sources from the pre-built 
-DLL and source (v 1.2.5) will not work, don't take the DLL from here
+**** zLib ****
+
+The standard zL ib from http://www.zlib.net/ is using the CDECL calling convention, but STDCALL is 
+needed for the compilation under Windows. So it does not work. See for details http://www.tannerhelland.com/5076/compile-zlib-winapi-wapi-stdcall/
+This project contains a bundled prebuild version of zLib 1.2.8 in the module zlib-1.2.8/zlib-1.2.8.zip
+
+If not using this version you will get errors like:
+
+    unzip.c.obj : error LNK2019: unresolved externas symbol "_inf
+    late@8" in Funktion "_unzReadCurrentFile@12".
 
   * Copy the zlibwapi.dll to C:\Windows\System32 (dll32 version)
   
@@ -129,7 +133,7 @@ www.doxygen.org/
     
 **** CMake ****
 http://www.cmake.org/
---> CMake 2.8.10.2 or higher
+--> CMake 3.5.0 or higher
 
 **** Compile ****
 
@@ -200,8 +204,6 @@ If you are updating from a previous Visual Studio Version the old compilation se
 paths might be still stored in old files. Remove the CMakeFiles directory and all *.cmake files, 
 the Makefile and CMakeCache.txt.
 
-
-
 Source Packages
 ---------------
 
@@ -268,7 +270,7 @@ CMake Issues
 You must rebuild the build system if your build tools have changed. Otherwise 
 CMake uses outdated values. You have to delete manually 
 the CMakeCache.txt file (and maybe also the CMakeLists directory and 
-cmake_install.cmake).
+cmake_install.cmake and the *.dir directories).
 
 If your are using Cygwin and you have installed the GNU compiler tools and the
 bin directory is on the PATH environment variable CMake will favor these tools 
