@@ -62,6 +62,12 @@ cmake .
 make
 make install
 
+NOTE: Before gpshell can be executed and globalplatform was compiled in the same session it might be necessary to call:
+
+sudo ldconfig
+
+Otherwise it will complain that the libglobalplatform library is not found.
+
 FreeBSD
 -------
 
