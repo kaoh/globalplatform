@@ -1,5 +1,7 @@
 PROJECT(gppcscconnectionplugin C)
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+
+cmake_policy(VERSION 2.8)
 
 # set this to snapshot so that snapshot specific version number can be set
 set(CPACK_DEBIAN_PACKAGE_TYPE	"snapshot")
