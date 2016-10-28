@@ -202,10 +202,10 @@ OPGP_ERROR_STATUS OPGP_PL_card_connect(OPGP_CARD_CONTEXT cardContext, OPGP_CSTRI
 		OPGP_LOG_START(_T("OPGP_PL_card_connect"));
 		CHECK_CARD_CONTEXT_INITIALIZATION(cardContext, status)
 
-			cardInfo->librarySpecific = malloc(sizeof(PCSC_CARD_INFO_SPECIFIC));
+		cardInfo->librarySpecific = malloc(sizeof(PCSC_CARD_INFO_SPECIFIC));
 		if (cardInfo->librarySpecific == NULL) {
 			OPGP_ERROR_CREATE_ERROR(status, ENOMEM, OPGP_stringify_error(ENOMEM));
-			goto end;
+			goto error;
 		}
 
 		pcscCardInfo = GET_PCSC_CARD_INFO_SPECIFIC_P(cardInfo);
@@ -217,12 +217,12 @@ OPGP_ERROR_STATUS OPGP_PL_card_connect(OPGP_CARD_CONTEXT cardContext, OPGP_CSTRI
 			&(pcscCardInfo->cardHandle),
 			&activeProtocol );
 		if ( SCARD_S_SUCCESS != result ) {
-			goto end;
+			goto error;
 		}
 
 		result = SCardStatus(pcscCardInfo->cardHandle, readerNameTemp, &readerNameTempLength, &state, &dummy, ATR, &ATRLength);
 		if ( SCARD_S_SUCCESS != result ) {
-			goto end;
+			goto error;
 		}
 		memcpy(cardInfo->ATR, ATR, MAX_ATR_SIZE);
 		cardInfo->ATRLength = ATRLength;
@@ -236,7 +236,12 @@ OPGP_ERROR_STATUS OPGP_PL_card_connect(OPGP_CARD_CONTEXT cardContext, OPGP_CSTRI
 #endif
 
 		cardInfo->logicalChannel = 0;
-
+		goto end;
+error:
+		if (cardInfo->librarySpecific != NULL) {
+			free(cardInfo->librarySpecific);
+			cardInfo->librarySpecific = NULL;
+		}
 end:
 		HANDLE_STATUS(status, result);
 		OPGP_LOG_END(_T("OPGP_PL_card_connect"), status);

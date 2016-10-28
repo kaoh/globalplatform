@@ -91,6 +91,10 @@ http://www.cmake.org/
     nmake     
 
   * Done! 
+  
+The gernate Visual Studio files execute e.g.:
+
+cmake -G "Visual Studio 12 2013"
 
 Source Packages
 ---------------
