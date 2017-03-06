@@ -43,6 +43,10 @@ cmake .
 make
 make install
 
+It migth be necessary to create a symlink to the correct library search directory, e.g. under Ubuntu 16.04 execute:
+
+sudo ln -s /usr/local/lib/libglobalplatform.so.6 /usr/lib/i386-linux-gnu/libglobalplatform.so.6
+
 FreeBSD
 -------
 
