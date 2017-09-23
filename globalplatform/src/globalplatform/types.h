@@ -24,6 +24,8 @@
 
 #ifndef _WIN32
 #include <PCSC/wintypes.h>
+#else
+#include <windows.h>
 #endif
 
 typedef void *PVOID; //!< Pointer definition.
