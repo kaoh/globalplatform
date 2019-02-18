@@ -3334,6 +3334,7 @@ end:
   * E.g. GemXpresso cards, JCOP-10 cards or Palmera Protect V5 cards use this scheme.
   * The baseKeyDiversificationData must contain the rightmost two bytes of the Card Manager AID as first 2 bytes and starting at position 4 the 4 bytes of the IC serial number.
   * \param baseKeyDiversificationData [in] The key diversification data. This is returned by INITIALIZE UPDATE or can be constructed.
+  * \param masterKey [in] The master key.
   * \param S_ENC [out] The static Encryption key.
   * \param S_MAC [out] The static Message Authentication Code key.
   * \param DEK [out] The static Key Encryption Key.

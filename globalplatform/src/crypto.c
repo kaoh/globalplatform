@@ -49,14 +49,12 @@
 #include <openssl/bn.h>
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
-inline EVP_CIPHER_CTX* EVP_CIPHER_CTX_create() {
-    OPENSSL_API_COMPAT blubs
-    EVP_CIPHER_CTX _ctx;
-    return &_ctx;
-}
+#define EVP_CIPHER_CTX_define EVP_CIPHER_CTX *ctx;  EVP_CIPHER_CTX _ctx
+#define EVP_CIPHER_CTX_create &_ctx
 #else
-#define EVP_CIPHER_CTX_create EVP_CIPHER_CTX_new
-#endif // OPENSSL_API_COMPAT
+EVP_CIPHER_CTX_define EVP_CIPHER_CTX *ctx
+#define EVP_CIPHER_CTX_create EVP_CIPHER_CTX_new()
+#endif
 
 static const BYTE PADDING[8] = {(char) 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; //!< Applied padding pattern for SCP03.
 static const BYTE SCP03_PADDING[16] = {(char)0x80,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00}; //!< Padding pattern applied for SCP03.
@@ -209,9 +207,9 @@ OPGP_ERROR_STATUS calculate_enc_cbc_SCP02(BYTE key[16], BYTE *message, int messa
 	OPGP_ERROR_STATUS status;
 	int result;
 	int i,outl;
-	EVP_CIPHER_CTX *ctx;
+	EVP_CIPHER_CTX_define;
 	OPGP_LOG_START(_T("calculate_enc_cbc_SCP02"));
-	ctx = EVP_CIPHER_CTX_new();
+	ctx = EVP_CIPHER_CTX_create;
 	EVP_CIPHER_CTX_init(ctx);
 	*encryptionLength = 0;
 
@@ -344,11 +342,11 @@ end:
 
 /**
  * Calculates the card challenge when using pseudo-random challenge generation for SCP03.
- * \param S_ENC[in] The static S-ENC Key.
- * \param sequenceCounter[in] The sequence counter.
+ * \param S_EN C[in] The static S-ENC Key.
+ * \param sequenceCounter [in] The sequence counter.
  * \param invokingAID The invoking AID byte buffer.
  * \param invokingAIDLength The length of the invoking AID byte buffer.
- * \param cardChallenge[out] The calculated challenge.
+ * \param cardChallenge [out] The calculated challenge.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS calculate_card_challenge_SCP03(BYTE S_ENC[16],
@@ -563,9 +561,9 @@ OPGP_ERROR_STATUS calculate_enc_ecb_two_key_triple_des(BYTE key[16], BYTE *messa
 	int result;
 	OPGP_ERROR_STATUS status;
 	int i,outl;
-	EVP_CIPHER_CTX *ctx;
+	EVP_CIPHER_CTX_define;
 	OPGP_LOG_START(_T("calculate_enc_ecb_two_key_triple_des"));
-	ctx = EVP_CIPHER_CTX_create();
+	ctx = EVP_CIPHER_CTX_create;
 	EVP_CIPHER_CTX_init(ctx);
 	*encryptionLength = 0;
 
@@ -628,9 +626,9 @@ OPGP_ERROR_STATUS calculate_enc_ecb_single_des(BYTE key[8], BYTE *message, int m
 	int result;
 	OPGP_ERROR_STATUS status;
 	int i,outl;
-	EVP_CIPHER_CTX *ctx;
+	EVP_CIPHER_CTX_define;
 	OPGP_LOG_START(_T("calculate_enc_ecb_single_des"));
-	ctx = EVP_CIPHER_CTX_create();
+	ctx = EVP_CIPHER_CTX_create;
 	EVP_CIPHER_CTX_init(ctx);
 	*encryptionLength = 0;
 
@@ -693,9 +691,9 @@ OPGP_ERROR_STATUS calculate_MAC(BYTE sessionKey[16], BYTE *message, int messageL
 	LONG result;
 	OPGP_ERROR_STATUS status;
 	int i,outl;
-	EVP_CIPHER_CTX *ctx;
+	EVP_CIPHER_CTX_define;
 	OPGP_LOG_START(_T("calculate_MAC"));
-	ctx = EVP_CIPHER_CTX_create();
+	ctx = EVP_CIPHER_CTX_create;
 	EVP_CIPHER_CTX_init(ctx);
 
 	result = EVP_EncryptInit_ex(ctx, EVP_des_ede_cbc(), NULL, sessionKey, icv);
@@ -908,9 +906,9 @@ OPGP_ERROR_STATUS calculate_enc_cbc(BYTE key[16], BYTE *message, int messageLeng
 	LONG result;
 	OPGP_ERROR_STATUS status;
 	int i,outl;
-	EVP_CIPHER_CTX *ctx;
+	EVP_CIPHER_CTX_define;
 	OPGP_LOG_START(_T("calculate_enc_cbc"));
-	ctx = EVP_CIPHER_CTX_create();
+	ctx = EVP_CIPHER_CTX_create;
 	EVP_CIPHER_CTX_init(ctx);
 	*encryptionLength = 0;
 
@@ -1034,11 +1032,11 @@ OPGP_ERROR_STATUS calculate_MAC_des_3des(BYTE _3des_key[16], BYTE *message, int 
 	LONG result;
 	OPGP_ERROR_STATUS status;
 	int i,outl;
-	EVP_CIPHER_CTX *ctx;
+	EVP_CIPHER_CTX_define;
 	BYTE des_key[8];
 	BYTE _icv[8];
 	OPGP_LOG_START(_T("calculate_MAC_des_3des"));
-	ctx = EVP_CIPHER_CTX_create();
+	ctx = EVP_CIPHER_CTX_create;
 	EVP_CIPHER_CTX_init(ctx);
 	if (initialICV == NULL) {
 		memcpy(_icv, ICV, 8);
@@ -1919,8 +1917,9 @@ OPGP_ERROR_STATUS calculate_MAC_right_des_3des(BYTE key[16], BYTE *message, int 
 	int i;
 	int outl;
 	BYTE des_key[8];
-	EVP_CIPHER_CTX *ctx;
+	EVP_CIPHER_CTX_define;
 	OPGP_LOG_START(_T("calculate_MAC_des_final_3des"));
+	ctx = EVP_CIPHER_CTX_create;
 	EVP_CIPHER_CTX_init(ctx);
 // DES CBC mode
 	memcpy(des_key, key+8, 8);
