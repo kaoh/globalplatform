@@ -264,7 +264,7 @@ START_TEST (test_list_readers)
 /**
  * Tests the key derivation according to gemXpresso scheme.
  */
-START_TEST (test_OPGP_VISA2_derive_keys)
+START_TEST (test_GP211_VISA2_derive_keys)
 	{
 		OPGP_ERROR_STATUS status;
 		status = internal_connect();
@@ -275,7 +275,7 @@ START_TEST (test_OPGP_VISA2_derive_keys)
 				0x05, 0xC7, 0x7C, 0x37, 0x3B, 0x58, 0x2A, 0x1F };
 		BYTE S_ENC[16], S_MAC[16], DEK[16];
 		int i;
-		status = OPGP_VISA2_derive_keys(cardContext, cardInfo,
+		status = GP211_VISA2_derive_keys(cardContext, cardInfo, &securityInfo211,
 				(PBYTE) GP211_CARD_MANAGER_AID_ALT1,
 				sizeof(GP211_CARD_MANAGER_AID_ALT1), motherKey, S_ENC, S_MAC,
 				DEK);
@@ -590,7 +590,7 @@ Suite * GlobalPlatform_suite(void) {
     tcase_set_timeout(tc_core, 0);
 	tcase_add_test (tc_core, test_list_readers);
 	tcase_add_test (tc_core, test_connect_card);
-	tcase_add_test (tc_core, test_OPGP_VISA2_derive_keys);
+	tcase_add_test (tc_core, test_GP211_VISA2_derive_keys);
 	tcase_add_test (tc_core, test_mutual_authentication);
 	tcase_add_test (tc_core, test_install);
     tcase_add_test (tc_core, test_delete);

@@ -52,7 +52,7 @@
 #define EVP_CIPHER_CTX_define EVP_CIPHER_CTX *ctx;  EVP_CIPHER_CTX _ctx
 #define EVP_CIPHER_CTX_create &_ctx
 #else
-EVP_CIPHER_CTX_define EVP_CIPHER_CTX *ctx
+#define EVP_CIPHER_CTX_define EVP_CIPHER_CTX *ctx
 #define EVP_CIPHER_CTX_create EVP_CIPHER_CTX_new()
 #endif
 
