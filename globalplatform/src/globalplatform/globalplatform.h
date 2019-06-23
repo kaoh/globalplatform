@@ -55,6 +55,9 @@ static const BYTE OPGP_GEMXPRESSO_DEFAULT_KEY[16] = {0x47, 0x45, 0x4d, 0x58, 0x5
 
 static const BYTE GP211_CARD_MANAGER_AID[7] = {0xA0, 0x00, 0x00, 0x01, 0x51, 0x00, 0x00}; //!< The AID of the Issuer Security Domain defined by GlobalPlatform 2.1.1 specification.
 
+/** The AID of the Issuer Security Domain defined by GlobalPlatform 2.3.1 specification. */
+static const BYTE GP231_ISD_AID[8] = {0xA0, 0x00, 0x00, 0x01, 0x51, 0x00, 0x00, 0x00};
+
 static const BYTE GP211_CARD_MANAGER_AID_ALT1[8] = {0xA0, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00}; //!< This AID is also used for the Issuer Security Domain, e.g. by JCOP 41 cards.
 
 static const BYTE GP211_LIFE_CYCLE_LOAD_FILE_LOADED = 0x01; //!< Executable Load File is loaded.
