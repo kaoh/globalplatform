@@ -81,6 +81,8 @@ OPGP_STRING OPGP_stringify_error(DWORD errorCode) {
 		return _T("The calculated pseudo random card challenge from the card does not match.");
 	if (errorCode == GP211_ERROR_INCONSISTENT_SCP)
 		return _T("The Secure Channel Protocol passed and reported do not match.");
+	if (errorCode == GP211_ERROR_INCONSISTENT_SCP_IMPL)
+	    return _T("The Secure Channel Protocol Implementation passed and the one reported by the card do not match.");
 	if (errorCode == OPGP_ERROR_CAP_UNZIP)
 		return _T("The CAP file cannot be unzipped.");
 	if (errorCode == OPGP_ERROR_INVALID_LOAD_FILE)
@@ -133,10 +135,8 @@ OPGP_STRING OPGP_stringify_error(DWORD errorCode) {
 		return _T("A password is invalid.");
 	if (errorCode == OPGP_ERROR_WRONG_EXPONENT)
 		return _T("The exponent must be 3 or 65537.");
-	if (errorCode == OPGP_ERROR_SCP03_SECURITY_LEVEL_3_NOT_SUPPORTED)
-		return _T("SCP03 with security level 3 is not supported.");
-	if (errorCode == OPGP_ERROR_SCP03_SECURITY_LEVEL_3_NOT_SUPPORTED)
-		return _T("SCP03 with security level 3 is not supported.");
+	if (errorCode == OPGP_ERROR_SCP03_SECURITY_R_ENCRYPTION_R_MAC_NOT_SUPPORTED)
+		return _T("SCP03 with R-Encryption and R-MAC is not supported.");
 	if ((errorCode & ((DWORD)0xFFFFFF00L)) == OPGP_ISO7816_ERROR_CORRECT_LENGTH) {
         _sntprintf(strError, strErrorSize, _T("Wrong length Le: Exact length: 0x%02lX"),
 					errorCode&0x000000ff);

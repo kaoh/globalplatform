@@ -749,8 +749,8 @@ end:
  * Data Encryption Key) and vice versa.
  * Details about the supported Secure Channel Protocol and its implementation can be
  * obtained by a call to the function GP211_get_secure_channel_protocol_details().
- * Sometimes a key derivation of the put keys might be necessary so it is necessary to call 
- * GP211_EMV_CPS11_derive_keys() or any other derivation function. If this is the newBaseKey 
+ * Sometimes a key derivation of the put keys might be necessary so it is necessary to call
+ * GP211_EMV_CPS11_derive_keys() or any other derivation function. If this is the newBaseKey
  * must be NULL and the derived keys are passed as the 3 Secure Channel Keys.
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
@@ -767,7 +767,7 @@ OPGP_ERROR_STATUS GP211_put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, O
 							 BYTE keySetVersion,
 							 BYTE newKeySetVersion, BYTE newBaseKey[16],
 							 BYTE newS_ENC[16],
-							 BYTE newS_MAC[16], BYTE newDEK[16]) { 
+							 BYTE newS_MAC[16], BYTE newDEK[16]) {
 	return put_secure_channel_keys(cardContext, cardInfo, secInfo,
 							 keySetVersion,
 							 newKeySetVersion, newBaseKey, newS_ENC,
@@ -811,6 +811,9 @@ OPGP_ERROR_STATUS put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CA
 	else {
 		keyType = GP211_KEY_TYPE_DES;
 	}
+	if (secInfo->secureChannelProtocol == GP211_SCP03) {
+		keyType = GP211_KEY_TYPE_AES;
+	}
 	/* only Secure Channel base key */
 	if (newBaseKey != NULL && secInfo->secureChannelProtocol == GP211_SCP02 &&
 		(secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i04
@@ -818,7 +821,7 @@ OPGP_ERROR_STATUS put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CA
 			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i0A
 			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i1A
 			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i54
-			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i44)) {            
+			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i44)) {
             status = get_key_data_field(secInfo, newBaseKey, 16, keyType, 1, keyDataField, &keyDataFieldLength, keyCheckValue1);
             if ( OPGP_ERROR_CHECK(status) ) {
                     goto end;
@@ -1146,6 +1149,9 @@ OPGP_ERROR_STATUS GP211_begin_R_MAC(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 	DWORD recvBufferLength=2;
 	BYTE recvBuffer[2];
 	OPGP_LOG_START(_T("GP211_begin_R_MAC"));
+	if (secInfo->secureChannelProtocol == GP211_SCP03){
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_SCP03_SECURITY_R_ENCRYPTION_R_MAC_NOT_SUPPORTED, OPGP_stringify_error(OPGP_ERROR_SCP03_SECURITY_R_ENCRYPTION_R_MAC_NOT_SUPPORTED));	goto end; }
+	}
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0x7A;
 	sendBuffer[i++] = securityLevel;
@@ -3776,7 +3782,7 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	BYTE hostChallenge[8];
 
 	BYTE keyDiversificationData[10];
-	BYTE keyInformationData[3]; 
+	BYTE keyInformationData[3];
 	int keyInformationDataLength;
 	BYTE sequenceCounter[3];
 	BYTE calculatedCardChallenge[8]; // used for the comparison of SCP03 pseudo card challenge
@@ -3786,7 +3792,7 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 
 	BYTE cardCryptogramVer[8];
 	BYTE hostCryptogram[8];
-    /* Philip Wendland: SCP03 appends the first 8 Bytes of 16 Byte CMAC output to the message, 
+    /* Philip Wendland: SCP03 appends the first 8 Bytes of 16 Byte CMAC output to the message,
 	 * but the chaining value is the full 16 byte output. So 16 Bytes are needed.
 	 */
     BYTE mac[16]; // Philip Wendland: Only the fist 8 byte used by SCP01/02
@@ -3815,11 +3821,9 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	}
 
 	secInfo->secureChannelProtocol = secureChannelProtocol;
-	secInfo->secureChannelProtocolImpl = secureChannelProtocolImpl;
 
 #ifdef OPGP_DEBUG
 	OPGP_log_Msg(_T("mutual_authentication: Secure Channel Protocol: 0x%02X"), secureChannelProtocol);
-	OPGP_log_Msg(_T("mutual_authentication: Secure Channel Protocol Implementation: 0x%02X"), secureChannelProtocolImpl);
 #endif
 
 	status = get_random(hostChallenge, 8);
@@ -3865,7 +3869,7 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 			goto end;
 		}
 	}
-	
+
 	secInfo->keySetVersion = keyInformationData[0];
 	// the key index is only reported in OP201
 	if (cardInfo.specVersion == OP_201) {
@@ -3878,6 +3882,16 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	/* end */
 
 	if (secInfo->secureChannelProtocol == GP211_SCP03) {
+		if (secureChannelProtocolImpl != keyInformationData[2]) {
+					OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_INCONSISTENT_SCP_IMPL, OPGP_stringify_error(GP211_ERROR_INCONSISTENT_SCP_IMPL));
+					goto end;
+				}
+		if (secInfo->securityLevel == GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC ||
+				secInfo->securityLevel == GP211_SCP03_SECURITY_LEVEL_C_DEC_R_ENC_C_MAC_R_MAC ||
+				secInfo->securityLevel == GP211_SCP03_SECURITY_LEVEL_C_MAC_R_MAC){
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_SCP03_SECURITY_R_ENCRYPTION_R_MAC_NOT_SUPPORTED, OPGP_stringify_error(OPGP_ERROR_SCP03_SECURITY_R_ENCRYPTION_R_MAC_NOT_SUPPORTED));	goto end; }
+		}
+
 		keyInformationDataLength = 3;
 		cardChallengeLength = 8;
 		memcpy(cardChallenge, recvBuffer+13, 8);
@@ -3901,6 +3915,10 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 		memcpy(cardChallenge, recvBuffer+12, 8);
 		memcpy(cardCryptogram, recvBuffer+20, 8);
 	}
+	secInfo->secureChannelProtocolImpl = secureChannelProtocolImpl;
+#ifdef OPGP_DEBUG
+	OPGP_log_Msg(_T("mutual_authentication: Secure Channel Protocol Implementation: 0x%02X"), secureChannelProtocolImpl);
+#endif
 
 #ifdef OPGP_DEBUG
 	OPGP_LOG_HEX(_T("mutual_authentication: Key Diversification Data: "), keyDiversificationData, 10);
@@ -3935,41 +3953,34 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	}
 
 	if (secInfo->secureChannelProtocol == GP211_SCP03) {
-		// TODO: add other parameters of table 5-1 for "i"
-		if (secInfo->secureChannelProtocolImpl == GP211_SCP03_IMPL_i00) {
-			status = create_session_key_SCP03(sEnc, S_ENC_DerivationConstant_SCP03, cardChallenge, hostChallenge, secInfo->encryptionSessionKey);
-			if (OPGP_ERROR_CHECK(status)) {
-				goto end;
-			}
-			status = create_session_key_SCP03(sMac, S_MAC_DerivationConstant_SCP03, cardChallenge, hostChallenge, secInfo->C_MACSessionKey);
-			if (OPGP_ERROR_CHECK(status)) {
-				goto end;
-			}
-			status = create_session_key_SCP03(sMac, S_RMAC_DerivationConstant_SCP03, cardChallenge, hostChallenge, secInfo->R_MACSessionKey);
-			if (OPGP_ERROR_CHECK(status)) {
-				goto end;
-			}
-			// compare card challenge value when calculated form pseudo random value
-			if (secInfo->secureChannelProtocolImpl == GP211_SCP03_IMPL_i10 || 
-				secInfo->secureChannelProtocolImpl == GP211_SCP03_IMPL_i30 || 
-				secInfo->secureChannelProtocolImpl == GP211_SCP03_IMPL_i70) {		
-					status = calculate_card_challenge_SCP03(sEnc, sequenceCounter, secInfo->invokingAid, secInfo->invokingAidLength, calculatedCardChallenge);
-					if (OPGP_ERROR_CHECK(status)) {
-						goto end;
-					}
-					OPGP_LOG_HEX(_T("mutual_authentication: Calculated Pseudo Card Challenge: "), calculatedCardChallenge, 8);
-					if (memcmp(cardChallenge, calculatedCardChallenge, 8)) {
-						OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_INCORRECT_CARD_CHALLENGE, OPGP_stringify_error(GP211_ERROR_INCORRECT_CARD_CHALLENGE));
-						goto end;
-					}
-			}
-			// in SCP03 there is no data encryption session key
-			memcpy(secInfo->dataEncryptionSessionKey, sEnc, 16);
-		}
-		else {
-			OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_INVALID_SCP_IMPL, OPGP_stringify_error(GP211_ERROR_INVALID_SCP_IMPL));
-			goto end;
-		}
+        // compare card challenge value when calculated from pseudo random value
+        if (secInfo->secureChannelProtocolImpl == GP211_SCP03_IMPL_i10 ||
+            secInfo->secureChannelProtocolImpl == GP211_SCP03_IMPL_i30 ||
+            secInfo->secureChannelProtocolImpl == GP211_SCP03_IMPL_i70) {
+                status = calculate_card_challenge_SCP03(sEnc, sequenceCounter, secInfo->invokingAid, secInfo->invokingAidLength, calculatedCardChallenge);
+                if (OPGP_ERROR_CHECK(status)) {
+                    goto end;
+                }
+                OPGP_LOG_HEX(_T("mutual_authentication: Calculated Pseudo Card Challenge: "), calculatedCardChallenge, 8);
+                if (memcmp(cardChallenge, calculatedCardChallenge, 8)) {
+                    OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_INCORRECT_CARD_CHALLENGE, OPGP_stringify_error(GP211_ERROR_INCORRECT_CARD_CHALLENGE));
+                    goto end;
+                }
+        }
+        status = create_session_key_SCP03(sEnc, S_ENC_DerivationConstant_SCP03, cardChallenge, hostChallenge, secInfo->encryptionSessionKey);
+        if (OPGP_ERROR_CHECK(status)) {
+            goto end;
+        }
+        status = create_session_key_SCP03(sMac, S_MAC_DerivationConstant_SCP03, cardChallenge, hostChallenge, secInfo->C_MACSessionKey);
+        if (OPGP_ERROR_CHECK(status)) {
+            goto end;
+        }
+        status = create_session_key_SCP03(sMac, S_RMAC_DerivationConstant_SCP03, cardChallenge, hostChallenge, secInfo->R_MACSessionKey);
+        if (OPGP_ERROR_CHECK(status)) {
+            goto end;
+        }
+        // in SCP03 there is no data encryption session key
+        memcpy(secInfo->dataEncryptionSessionKey, dek, 16);
 	}
 	else if (secInfo->secureChannelProtocol == GP211_SCP02) {
 		/* Secure Channel base key */
@@ -4071,7 +4082,8 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	if (secInfo->secureChannelProtocol == GP211_SCP01) {
 		OPGP_LOG_HEX(_T("mutual_authentication: Data Encryption Key: "), secInfo->dataEncryptionSessionKey, 16);
 	}
-	if (secInfo->secureChannelProtocol == GP211_SCP02) {
+	if (secInfo->secureChannelProtocol == GP211_SCP02 ||
+			secInfo->secureChannelProtocol == GP211_SCP03) {
 		OPGP_LOG_HEX(_T("mutual_authentication: R-MAC Session Key: "), secInfo->R_MACSessionKey, 16);
 	}
 	if (secInfo->secureChannelProtocol == GP211_SCP02) {
@@ -4114,8 +4126,8 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 		/*
 		 * Philip Wendland: SCP03 uses the S-MAC session key, not the S-ENC key for host cryptogram generation.
 		 */
-		calculate_host_cryptogram_SCP03(secInfo->C_MACSessionKey, cardChallenge, hostChallenge, 
-			hostCryptogram);	
+		calculate_host_cryptogram_SCP03(secInfo->C_MACSessionKey, cardChallenge, hostChallenge,
+			hostCryptogram);
 	}
 	else if (secInfo->secureChannelProtocol == GP211_SCP02) {
 		calculate_host_cryptogram_SCP02(secInfo->encryptionSessionKey, sequenceCounter,
@@ -4135,7 +4147,7 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	sendBuffer[i++] = 0x10;
 	memcpy(sendBuffer+i, hostCryptogram, 8);
 	i+=8;
- 
+
 	if (secInfo->secureChannelProtocol == GP211_SCP03) {
         // Philip Wendland: the MAC chaining value of EXTERNAL AUTHENTICATE is the initial chaining vector (16 Bytes '00')
 	    status = calculate_CMAC_aes(secInfo->C_MACSessionKey, sendBuffer, sendBufferLength-8, (PBYTE)SCP03_ICV, mac);
@@ -4174,6 +4186,10 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	}
 	CHECK_SW_9000(recvBuffer, recvBufferLength, status);
 
+	// init SCP03 session counter
+	if (secInfo->secureChannelProtocol == GP211_SCP03) {
+		secInfo->sessionEncryptionCounter = 1;
+	}
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
 	OPGP_LOG_END(_T("mutual_authentication"), status);
@@ -4611,7 +4627,7 @@ OPGP_ERROR_STATUS OP201_put_3desKey(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
  * Any other value between 0x01 and 0x7f must match an existing key set version.
  * The new key set version defines the key set version the new secure channel keys belongs to.
  * This can be the same key version or a new not existing key set version.
- * Sometimes a key derivation of the put keys might be necessary so it is necessary to call 
+ * Sometimes a key derivation of the put keys might be necessary so it is necessary to call
  * OP201_EMV_CPS11_derive_keys() or any other derivation function.
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
@@ -4624,7 +4640,7 @@ OPGP_ERROR_STATUS OP201_put_3desKey(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
  * \param KEK [in] The key encryption key (KEK).
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
-OPGP_ERROR_STATUS OP201_put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, 
+OPGP_ERROR_STATUS OP201_put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
         BYTE keySetVersion, BYTE newKeySetVersion, BYTE new_encKey[16], BYTE new_macKey[16], BYTE new_KEK[16], BYTE KEK[16]) {
 	OPGP_ERROR_STATUS status;
 	GP211_SECURITY_INFO gp211secInfo;
@@ -4885,12 +4901,12 @@ OPGP_ERROR_STATUS OP201_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 				{ OPGP_ERROR_CREATE_ERROR(status, OP201_ERROR_MORE_APPLICATION_DATA, OPGP_stringify_error(OP201_ERROR_MORE_APPLICATION_DATA)); goto end; }
 			}
 			applData[i].AIDLength = recvBuffer[j++];
-            
+
             /* BUGFIX: Don't read beyond recvBuffer array bounds or into 0x9000 */
             if (applData[i].AIDLength > recvBufferLength - j - 2){
                 applData[i].AIDLength = (BYTE)(recvBufferLength - j - 2);
             }
-            
+
             /* BUGFIX: Don't write beyond AID array bounds */
             memcpy(applData[i].AID, recvBuffer+j, (applData[i].AIDLength > 16) ? 16 : applData[i].AIDLength);
 			j+=applData[i].AIDLength;

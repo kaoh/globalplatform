@@ -103,7 +103,7 @@ extern "C"
   */
 #define GP211_SCP02_IMPL_i1B 0x1B
 
-/** Secure Channel Protocol '03': "i" '00': No R-MAC, no R-ENCRYPTION, no Pseudo-random cryptogram
+/** Secure Channel Protocol '03': "i" '00': Random card challenge, No R-MAC, no R-ENCRYPTION.
   */
 #define GP211_SCP03_IMPL_i00 0x00
 	/**
@@ -147,7 +147,7 @@ extern "C"
 #define GP211_SCP03_SECURITY_LEVEL_C_MAC 0x01 //!< Secure Channel Protocol '03': C-MAC
 #define GP211_SCP03_SECURITY_LEVEL_NO_SECURE_MESSAGING 0x00 //!< Secure Channel Protocol '03': No secure messaging expected.
 #define GP211_SCP03_SECURITY_LEVEL_C_DEC_R_ENC_C_MAC_R_MAC 0x33 //!< Secure Channel Protocol '03': C-Decryption, C-MAC, R-Mac and R-Encryption
-#define GP211_SCP03_SECURITY_LEVEL_C_DECRYPTION_C_MAC_R_MAC 0x13 //!< Secure Channel Protocol '03': C-Decryption, C-MAC and R-Mac
+#define GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC 0x13 //!< Secure Channel Protocol '03': C-Decryption, C-MAC and R-Mac
 #define GP211_SCP03_SECURITY_LEVEL_C_MAC_R_MAC 0x11 //!< Secure Channel Protocol '03': C-MAC and R-Mac
 
 #define GP211_KEY_TYPE_RSA_PUB_N 0xA1 //!< 'A1' RSA Public Key - modulus N component (clear text).
@@ -166,10 +166,12 @@ extern "C"
 #define GP211_KEY_TYPE_3DES_CBC 0x82 //!<'82' Triple DES in CBC mode.
 #define GP211_KEY_TYPE_DES_ECB 0x83 //!<'83' DES in ECB mode.
 #define GP211_KEY_TYPE_DES_CBC 0x84 //!<'84' DES in CBC mode.
+#define GP211_KEY_TYPE_PSK_TLS 0x85 //!<'85' Pre-Shared Key for Transport Layer Security
+#define GP211_KEY_TYPE_AES 0x88 //!<'88' AES (16, 24, or 32 long keys)
 
 #define OP201_SECURITY_LEVEL_ENC_MAC 0x03 //!< Command messages are signed and encrypted.
 #define OP201_SECURITY_LEVEL_MAC 0x01 //!< Command messages are signed.
-#define OP201_SECURITY_LEVEL_PLAIN 0x00 //!< Command messages are plaintext.
+#define OP201_SECURITY_LEVEL_PLAIN 0x00 //!< Command messages are plain text.
 
 #define OP201_KEY_TYPE_RSA_PUP_N 0xA1 //!< 'A1' RSA Public Key - modulus N component (clear text).
 #define OP201_KEY_TYPE_RSA_PUP_E 0xA0 //!< 'A0' RSA Public Key - public exponent e component (clear text)
@@ -203,11 +205,11 @@ typedef struct {
 	BYTE R_MACSessionKey[16]; //!< The Secure Channel R-MAC session key.
 	BYTE encryptionSessionKey[16]; //!< The Secure Channel encryption session key.
 	BYTE dataEncryptionSessionKey[16]; //!< Secure Channel data encryption key.
-    /* 
-     * Philip Wendland: lastC_MAC must be 16 Bytes for SCP03 because the MAC chaining value 
+    /*
+     * Philip Wendland: lastC_MAC must be 16 Bytes for SCP03 because the MAC chaining value
      * for MAC code generation is 16 Bytes (according to GP 2.2 Amendment D), not 8.
      * TODO This probably affects R_MAC too.
-     */ 
+     */
     BYTE lastC_MAC[16]; //!< The last computed C-MAC. Only 8 byte used for SCP01 and SCP02.
 	BYTE lastR_MAC[8]; //!< The last computed R-MAC.
 	/* Augusto: added two more attributes for key information */
@@ -215,6 +217,7 @@ typedef struct {
 	BYTE keyIndex; //!< The key index used in secured channel
 	BYTE invokingAid[16]; //!< The invoking AID used for the mutual authentication.
 	DWORD invokingAidLength; //!< The length of the invoking AID buffer.
+	LONG sessionEncryptionCounter; //!< Session counter for SCP03 ICV encryption.
 } GP211_SECURITY_INFO;
 
 /**
