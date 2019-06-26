@@ -33,8 +33,11 @@ IF(UNIX)
   ADD_DEFINITIONS(-DHAVE_DLFCN_H)
   
   # enable syslog
-  include (CheckIncludeFile)
-  check_include_file (syslog.h HAVE_SYSLOG_H)
+  include (CheckSymbolExists)
+  CHECK_SYMBOL_EXISTS (vsyslog syslog.h HAVE_VSYSLOG)
+    ADD_DEFINITIONS(-DHAVE_VSYSLOG)
+  IF(HAVE_VSYSLOG)
+  ENDIF(HAVE_VSYSLOG)
 ENDIF(UNIX)
 
 # Handle Windows build
