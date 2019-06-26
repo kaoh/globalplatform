@@ -303,7 +303,7 @@ Testing is only supported under Linux for now.
 To generate the tests execute:
 
 ```
-cmake -DTESTING=ON
+cmake -DTESTING=ON -DDEBUG=ON
 make
 cd src
 GLOBALPLATFORM_DEBUG=1

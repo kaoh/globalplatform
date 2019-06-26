@@ -55,14 +55,19 @@ ENDIF(USE_SYSTEM_MINIZIP)
 ADD_LIBRARY(globalplatformStatic STATIC ${SOURCES})
 ADD_LIBRARY(globalplatform SHARED ${SOURCES})
 
+
+SET(LIBRARIES ${PCSC_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES})
+
 # Under Unix shared and static libraries can have the same name
 IF(UNIX)
-SET_TARGET_PROPERTIES(globalplatformStatic PROPERTIES OUTPUT_NAME globalplatform)
+  SET_TARGET_PROPERTIES(globalplatformStatic PROPERTIES OUTPUT_NAME globalplatform)
+  SET(LIBRARIES ${LIBRARIES} dl)
 ENDIF(UNIX)
-TARGET_LINK_LIBRARIES(globalplatform globalplatformStatic ${PCSC_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES})
 IF(USE_SYSTEM_MINIZIP)
-  TARGET_LINK_LIBRARIES(globalplatform globalplatformStatic ${MINIZIP_LIBRARIES})
+  SET(LIBRARIES ${LIBRARIES} ${MINIZIP_LIBRARIES})
 ENDIF(USE_SYSTEM_MINIZIP)
+
+TARGET_LINK_LIBRARIES(globalplatform globalplatformStatic ${LIBRARIES})
 
 IF(WINDDK_DIR)
   TARGET_LINK_LIBRARIES(globalplatform globalplatformStatic optimized ${WINDDK_DIR}/lib/win7/i386/msvcrt_win2000.obj optimized ${WINDDK_DIR}/lib/Crt/i386/msvcrt.lib)
@@ -102,14 +107,10 @@ IF(TESTING)
     #SET_TESTS_PROPERTIES(globalplatformTest PROPERTIES PASS_REGULAR_EXPRESSION "Failures: 0")
     
     add_mocked_test(scp03Test 
-      SOURCES scp03Test.c 
-      MOCKS RAND_bytes OPGP_send_APDU 
-      LINK_LIBRARIES globalplatform)
+      SOURCES scp03Test.c ${SOURCES}
+      MOCKS RAND_bytes 
+      LINK_LIBRARIES ${LIBRARIES})
     
-    #INCLUDE_DIRECTORIES(${CMOCKA_INCLUDE_DIR})
-    #ADD_EXECUTABLE(scp03Test scp03Test.c)
-    #TARGET_LINK_LIBRARIES(scp03Test globalplatform ${CMOCKA_LIBRARIES})
-    #ADD_TEST(scp03Test ${EXECUTABLE_OUTPUT_PATH}/scp03Test)
     SET_TESTS_PROPERTIES(scp03Test PROPERTIES PASS_REGULAR_EXPRESSION "0 FAILED TEST")
     
   ENDIF(CMOCKA_FOUND AND NOT WIN32)

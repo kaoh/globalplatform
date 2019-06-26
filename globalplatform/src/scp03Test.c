@@ -38,17 +38,18 @@ static GP211_SECURITY_INFO securityInfo211;
 
 int __wrap_RAND_bytes(unsigned char *buf, int num) {
 	BYTE *__random = (BYTE *) mock();
-	int __randomLength = (int) mock();
+	check_expected(num);
 	memcpy(buf, __random,  num);
-	return 0;
+	return 1;
 }
 
-OPGP_ERROR_STATUS __wrap_OPGP_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBYTE capdu, DWORD capduLength, PBYTE rapdu, PDWORD rapduLength) {
+OPGP_ERROR_STATUS send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, PBYTE capdu, DWORD capduLength, PBYTE rapdu, PDWORD rapduLength) {
 	OPGP_ERROR_STATUS status;
 	PBYTE __rapdu = (PBYTE) mock();
 	PDWORD __rapduLength = (PDWORD) mock();
 	check_expected(capdu);
-	memcpy(__rapdu, rapdu, *rapduLength);
+	memcpy(rapdu, __rapdu, *__rapduLength);
+	*rapduLength = *__rapduLength;
 	OPGP_ERROR_CREATE_NO_ERROR(status);
 	return status;
 }
@@ -80,21 +81,21 @@ static void cencrypt_cmac(void **state) {
 	BYTE sequenceCounter[] = {0x00, 0x00, 0x15};
 
 	will_return(__wrap_RAND_bytes, hostChallenge);
-	will_return(__wrap_RAND_bytes, 8);
+	expect_value(__wrap_RAND_bytes, num, 8);
 
-	expect_string(__wrap_OPGP_send_APDU, capdu, initializeUpdateRequest);
-	will_return(__wrap_OPGP_send_APDU, initializeUpdateResponse);
-	will_return(__wrap_OPGP_send_APDU, &initializeUpdateResponseLength);
+	expect_memory(send_APDU, capdu, initializeUpdateRequest, sizeof(initializeUpdateRequest));
+	will_return(send_APDU, initializeUpdateResponse);
+	will_return(send_APDU, &initializeUpdateResponseLength);
 
+	expect_memory(send_APDU, capdu, extAuthRequest, sizeof(extAuthRequest));
+	will_return(send_APDU, extAuthResponse);
+	will_return(send_APDU, &extAuthResponseLength);
 
-	expect_string(__wrap_OPGP_send_APDU, capdu, extAuthRequest);
-	will_return(__wrap_OPGP_send_APDU, extAuthResponse);
-	will_return(__wrap_OPGP_send_APDU, &extAuthResponseLength);
-
-	memcpy((void *)GP231_ISD_AID, securityInfo211.invokingAid, sizeof(GP231_ISD_AID));
+	memcpy(securityInfo211.invokingAid, (void *)GP231_ISD_AID, sizeof(GP231_ISD_AID));
 	securityInfo211.invokingAidLength = sizeof(GP231_ISD_AID);
 
-	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, sEnc, sMac, dek, 0x30, 0, GP211_SCP03, GP211_SCP03_IMPL_i70, GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC, 0, &securityInfo211);
+	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, sEnc, sMac, dek, 0, 0,
+			GP211_SCP03, GP211_SCP03_IMPL_i70, GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC, 0, &securityInfo211);
 	assert_int_equal(status.errorCode, OPGP_ERROR_STATUS_SUCCESS);
 	assert_memory_equal(securityInfo211.encryptionSessionKey, sessionEnc, 16);
 	assert_memory_equal(securityInfo211.C_MACSessionKey, sessionCMac, 16);
@@ -107,9 +108,15 @@ static void cencrypt_cmac(void **state) {
 
 }
 
+
+static int setup(void **state) {
+	cardContext.connectionFunctions.sendAPDU = &send_APDU;
+	return 0;
+}
+
 int main(void) {
 	const struct CMUnitTest tests[] = {
 			cmocka_unit_test(cencrypt_cmac),
 	};
-	return cmocka_run_group_tests(tests, NULL, NULL);
+	return cmocka_run_group_tests_name("SCP03", tests, setup, NULL);
 }

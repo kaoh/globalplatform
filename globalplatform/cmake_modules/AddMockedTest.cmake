@@ -21,9 +21,9 @@
 # SOFTWARE.
 
 ## Add unit test with mocking support
-#  \param name unit test name (excluding extension and 'test_' prefix)
+#  \param name unit test name (excluding extension)
 #  \param SOURCES optional list of source files to include in test executable
-#  (beside test_${name}.c)
+#  (beside ${name}.c)
 #  \param MOCKS optional list of functions to be mocked in executable
 #  \param COMPILE_OPTIONS optional list of options for the compiler
 #  \param LINK_LIBRARIES optional list of libraries to link (used as
