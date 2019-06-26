@@ -31,6 +31,10 @@ IF(UNIX)
 
   # Enable plugin loader
   ADD_DEFINITIONS(-DHAVE_DLFCN_H)
+  
+  # enable syslog
+  include (CheckIncludeFile)
+  check_include_file (syslog.h HAVE_SYSLOG_H)
 ENDIF(UNIX)
 
 # Handle Windows build
@@ -79,25 +83,33 @@ ENDIF(WIN32)
 
 # Testing
 IF(TESTING)
-  PKG_CHECK_MODULES(CHECK check>=0.9.2)
-  FIND_PACKAGE(CMOCKA 1.1 REQUIRED)
+#  PKG_CHECK_MODULES(CHECK check>=0.9.2)
+  PKG_CHECK_MODULES(CMOCKA cmocka>=1.1)
 
-  IF(CHECK_FOUND AND CMOCKA_FOUND)
-    enable_testing()
-    
+# Mocking is not supported on Windows
+  IF(CMOCKA_FOUND AND NOT WIN32)
+        
+    INCLUDE(AddCMockaTest)
+    include(AddMockedTest)
+        
     #INCLUDE_DIRECTORIES(${CHECK_INCLUDE_DIRS})
     #ADD_EXECUTABLE(globalplatformTest globalplatformTest.c)
     #TARGET_LINK_LIBRARIES(globalplatformTest globalplatform ${CHECK_LIBRARIES})
     #ADD_TEST(globalplatformTest ${EXECUTABLE_OUTPUT_PATH}/globalplatformTest)
     #SET_TESTS_PROPERTIES(globalplatformTest PROPERTIES PASS_REGULAR_EXPRESSION "Failures: 0")
     
-    INCLUDE_DIRECTORIES(${CMOCKA_INCLUDE_DIR})
-    ADD_EXECUTABLE(scp03Test scp03Test.c)
-    TARGET_LINK_LIBRARIES(scp03Test globalplatform ${CMOCKA_LIBRARIES})
-    ADD_TEST(scp03Test ${EXECUTABLE_OUTPUT_PATH}/scp03Test)
-    SET_TESTS_PROPERTIES(scp03Test PROPERTIES PASS_REGULAR_EXPRESSION "Failures: 0")
+    add_mocked_test(scp03Test 
+      SOURCES scp03Test.c 
+      MOCKS RAND_bytes OPGP_send_APDU 
+      LINK_LIBRARIES globalplatform)
     
-  ENDIF(CHECK_FOUND AND CMOCKA_FOUND)
+    #INCLUDE_DIRECTORIES(${CMOCKA_INCLUDE_DIR})
+    #ADD_EXECUTABLE(scp03Test scp03Test.c)
+    #TARGET_LINK_LIBRARIES(scp03Test globalplatform ${CMOCKA_LIBRARIES})
+    #ADD_TEST(scp03Test ${EXECUTABLE_OUTPUT_PATH}/scp03Test)
+    SET_TESTS_PROPERTIES(scp03Test PROPERTIES PASS_REGULAR_EXPRESSION "0 FAILED TEST")
+    
+  ENDIF(CMOCKA_FOUND AND NOT WIN32)
 ENDIF(TESTING)
 
 
