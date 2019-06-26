@@ -24,10 +24,12 @@ If you experience problems a DEBUG output is always helpful.
 Set the variable GLOBALPLATFORM_DEBUG=1 in the environment. You can set
 the logfile with GLOBALPLATFORM_LOGFILE=<file>. Under Windows by
 default `C:\Temp\GlobalPlatform.log` is chosen. The log file must be
-writable for the user. The default log file under Unix systems is
-`/tmp/GlobalPlatform.log`. But usually syslog is available and this will
-be used by default, so you may have to specify the log file manually,
-if you don't have access to the syslog or don't want to use it.
+writable for the user.
+Under Unix systems if syslog is available it will be used by default.
+ The default log file under Unix systems is
+`/tmp/GlobalPlatform.log` if syslog is not available or cannot be written by the user. 
+If you don't have access to the syslog or don't want to use it you can still set the 
+`GLOBALPLATFORM_LOGFILE` manually.
 Keep in mind that the debugging output may contain sensitive information,
 e.g. keys!
 
@@ -286,12 +288,26 @@ fakeroot debian/rules binary
 
 ## Testing
 
-Testing is only supported under Linux for now. To generate the tests execute:
+Testing is only supported under Linux for now. 
+
+2 dependencies are required:
+
+ * [cmocka](https://cmocka.org/)
+ * [check](https://libcheck.github.io/check/)
+ 
+ Under Ubuntu this can be installed with:
+ 
+    sudo apt-get install libcmocka-dev
+    sudo apt-get install check
+
+To generate the tests execute:
 
 ```
 cmake -DTESTING=ON
 make
-make tests
+cd src
+GLOBALPLATFORM_DEBUG=1
+ctest -V
 ```
 
 For the unit tests a JCOP v2.2 41 card is used.

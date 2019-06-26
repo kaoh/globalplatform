@@ -51,6 +51,8 @@
 #  For details see the accompanying COPYING-CMAKE-SCRIPTS file.
 #
 
+cmake_policy(SET CMP0045 OLD)
+
 macro(usedoxygen_set_default name value type docstring)
 	if(NOT DEFINED "${name}")
 		set("${name}" "${value}" CACHE "${type}" "${docstring}")

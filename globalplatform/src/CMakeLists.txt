@@ -1,3 +1,5 @@
+cmake_policy(SET CMP0045 NEW)
+
 INCLUDE(FindPCSC)
 INCLUDE(FindOpenSSL)
 INCLUDE(FindZLIB)
@@ -78,14 +80,24 @@ ENDIF(WIN32)
 # Testing
 IF(TESTING)
   PKG_CHECK_MODULES(CHECK check>=0.9.2)
-  IF(CHECK_FOUND)
-    ENABLE_TESTING()
-    INCLUDE_DIRECTORIES(${CHECK_INCLUDE_DIRS})
-    ADD_EXECUTABLE(globalplatformTest globalplatformTest.c)
-    TARGET_LINK_LIBRARIES(globalplatformTest globalplatform ${CHECK_LIBRARIES})
-    ADD_TEST(globalplatformTest ${EXECUTABLE_OUTPUT_PATH}/globalplatformTest)
-    SET_TESTS_PROPERTIES(globalplatformTest PROPERTIES PASS_REGULAR_EXPRESSION "Failures: 0")
-  ENDIF(CHECK_FOUND)
+  FIND_PACKAGE(CMOCKA 1.1 REQUIRED)
+
+  IF(CHECK_FOUND AND CMOCKA_FOUND)
+    enable_testing()
+    
+    #INCLUDE_DIRECTORIES(${CHECK_INCLUDE_DIRS})
+    #ADD_EXECUTABLE(globalplatformTest globalplatformTest.c)
+    #TARGET_LINK_LIBRARIES(globalplatformTest globalplatform ${CHECK_LIBRARIES})
+    #ADD_TEST(globalplatformTest ${EXECUTABLE_OUTPUT_PATH}/globalplatformTest)
+    #SET_TESTS_PROPERTIES(globalplatformTest PROPERTIES PASS_REGULAR_EXPRESSION "Failures: 0")
+    
+    INCLUDE_DIRECTORIES(${CMOCKA_INCLUDE_DIR})
+    ADD_EXECUTABLE(scp03Test scp03Test.c)
+    TARGET_LINK_LIBRARIES(scp03Test globalplatform ${CMOCKA_LIBRARIES})
+    ADD_TEST(scp03Test ${EXECUTABLE_OUTPUT_PATH}/scp03Test)
+    SET_TESTS_PROPERTIES(scp03Test PROPERTIES PASS_REGULAR_EXPRESSION "Failures: 0")
+    
+  ENDIF(CHECK_FOUND AND CMOCKA_FOUND)
 ENDIF(TESTING)
 
 
