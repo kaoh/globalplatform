@@ -7,5 +7,5 @@ François Kooman <fkooman@tuxed.net> for the Fedora package, compiler warning fi
 Jacek Trzcinski <jackaleph3@gmail.com> for EMV CPS 1.1 key derivation support, pin_change fix for OP201, Security Domain Installation fixes
 Chen Gang <gang.chen@sunrus.com.cn> for compilation fixes for arm64
 Philip Wendland <philip.wendland@tu-ilmenau.de> For SCP03 mutual authentication and CMAC support
-
+Klas Lindfors <klas@yubico.com> SCP03 CMAC and encryption fixes
 

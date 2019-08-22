@@ -160,6 +160,8 @@ OPGP_ERROR_STATUS calculate_CMAC_aes(BYTE sMacKey[16], BYTE *message, int messag
 	size_t outl;
 	CMAC_CTX *ctx = CMAC_CTX_new();
 	OPGP_LOG_START(_T("calculate_CMAC_aes"));
+	BYTE cla = message[0];
+	message[0] = 0x84;
 
 	result = CMAC_Init(ctx, sMacKey, 16, EVP_aes_128_cbc(), NULL);
 	if (result != 1) {
@@ -186,6 +188,8 @@ OPGP_ERROR_STATUS calculate_CMAC_aes(BYTE sMacKey[16], BYTE *message, int messag
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
 	CMAC_CTX_free(ctx);
+
+	message[0] = cla;
 
 	OPGP_LOG_END(_T("calculate_CMAC_aes"), status);
 	return status;
@@ -220,28 +224,16 @@ OPGP_ERROR_STATUS calculate_enc_cbc_SCP03(BYTE key[16], BYTE *message, int messa
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 	}
 	EVP_CIPHER_CTX_set_padding(ctx, 0);
-	for (i=0; i<messageLength/8; i++) {
-		result = EVP_EncryptUpdate(ctx, encryption+*encryptionLength,
-			&outl, message+i*8, 8);
-		if (result != 1) {
-			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
-		}
-		*encryptionLength+=outl;
-	}
-	if (messageLength%8 != 0) {
-		result = EVP_EncryptUpdate(ctx, encryption+*encryptionLength,
-			&outl, message+i*8, messageLength%8);
-		if (result != 1) {
-			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
-		}
-		*encryptionLength+=outl;
-	}
-	result = EVP_EncryptUpdate(ctx, encryption+*encryptionLength,
-		&outl, AES_PADDING, 8 - (messageLength%8));
+	result = EVP_EncryptUpdate(ctx, encryption, &outl, message, messageLength);
 	if (result != 1) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 	}
-	*encryptionLength+=outl;
+	*encryptionLength += outl;
+	result = EVP_EncryptUpdate(ctx, encryption + *encryptionLength, &outl, AES_PADDING, (16 - messageLength % 16));
+	if (result != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	*encryptionLength += outl;
 	result = EVP_EncryptFinal_ex(ctx, encryption+*encryptionLength,
 		&outl);
 	if (result != 1) {
@@ -1592,20 +1584,30 @@ OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE
 					|| secInfo->securityLevel == GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC
 					|| secInfo->securityLevel == GP211_SCP03_SECURITY_LEVEL_C_DEC_R_ENC_C_MAC_R_MAC) {
 				if (caseAPDU != 1 && caseAPDU != 2) {
-					calculate_enc_icv_SCP03(secInfo->encryptionSessionKey,
+					status = calculate_enc_icv_SCP03(secInfo->encryptionSessionKey,
 							secInfo->sessionEncryptionCounter, ENC_ICV);
-					calculate_enc_cbc_SCP03(secInfo->encryptionSessionKey,
-							wrappedApduCommand+4, wrappedLength-4-8, ENC_ICV, encryption, &encryptionLength);
-					padding = encryptionLength-wrappedApduCommand[4];
-					wrappedLength += padding;
-					wrappedApduCommand[4] += padding;
+					if (OPGP_ERROR_CHECK(status)) {
+						goto end;
+					}
+					status = calculate_enc_cbc_SCP03(secInfo->encryptionSessionKey,
+							wrappedApduCommand+5, wrappedLength-5-8, ENC_ICV, encryption, &encryptionLength);
+					if (OPGP_ERROR_CHECK(status)) {
+						goto end;
+					}
+
+					memcpy(wrappedApduCommand+5, encryption, encryptionLength);
+					wrappedApduCommand[4] = encryptionLength + 8;
+					wrappedLength = encryptionLength + 8 + 5;
 				}
 				secInfo->sessionEncryptionCounter++;
 			}
 			if (secInfo->securityLevel != GP211_SCP03_SECURITY_LEVEL_NO_SECURE_MESSAGING) {
 				// wrappedLength-8: We don't want to CMAC the MAC
-				calculate_CMAC_aes(secInfo->C_MACSessionKey, wrappedApduCommand,
+				status = calculate_CMAC_aes(secInfo->C_MACSessionKey, wrappedApduCommand,
 									wrappedLength-8, secInfo->lastC_MAC, mac);
+				if (OPGP_ERROR_CHECK(status)) {
+					goto end;
+				}
 			}
 		}
 		if(secInfo->secureChannelProtocol != GP211_SCP03){
