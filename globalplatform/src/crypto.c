@@ -196,6 +196,44 @@ end:
 
 }
 
+OPGP_ERROR_STATUS calculate_enc_ecb_SCP03(BYTE key[16], BYTE *message, int messageLength,
+		BYTE *encryption, int *encryptionLength) {
+	OPGP_ERROR_STATUS status;
+	int result;
+	int outl;
+	EVP_CIPHER_CTX_define;
+	OPGP_LOG_START(_T("calculate_enc_ecb_SCP03"));
+	ctx = EVP_CIPHER_CTX_create;
+	EVP_CIPHER_CTX_init(ctx);
+	*encryptionLength = 0;
+
+	result = EVP_EncryptInit_ex(ctx, EVP_aes_128_ecb(), NULL, key, NULL);
+	if (result != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	EVP_CIPHER_CTX_set_padding(ctx, 0);
+	result = EVP_EncryptUpdate(ctx, encryption, &outl, message, messageLength);
+	if (result != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	*encryptionLength += outl;
+	result = EVP_EncryptFinal_ex(ctx, encryption+*encryptionLength,
+		&outl);
+	if (result != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	*encryptionLength+=outl;
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	if (EVP_CIPHER_CTX_cleanup(ctx) != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); }
+	}
+
+	OPGP_LOG_END(_T("calculate_enc_ecb_SCP03"), status);
+	return status;
+
+}
+
 /**
  * Calculates the encryption of a message in CBC mode for SCP03 using AES.
  * Pads the message with 0x80 and additional 0x00 until message length is a multiple of 16.
@@ -1292,7 +1330,7 @@ OPGP_ERROR_STATUS get_key_data_field(GP211_SECURITY_INFO *secInfo,
 	int encrypted_key_length;
 	BYTE dummy[16];
 	int dummyLength;
-	BYTE keyCheckTest[8] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
+	BYTE keyCheckTest[16] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
 	OPGP_LOG_START(_T("get_key_data_field"));
 	// key type + length + key data + length + key check value
 	sizeNeeded = 1 + 1 + keyDataLength + 1;
@@ -1316,6 +1354,9 @@ OPGP_ERROR_STATUS get_key_data_field(GP211_SECURITY_INFO *secInfo,
 			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i0A) {
 				status = calculate_enc_cbc_SCP02(secInfo->dataEncryptionSessionKey, keyData, keyDataLength, encrypted_key, &encrypted_key_length);
 		}
+		else if (secInfo->secureChannelProtocol == GP211_SCP03) {
+			status = calculate_enc_ecb_SCP03(secInfo->dataEncryptionSessionKey, keyData, keyDataLength, encrypted_key, &encrypted_key_length);
+		}
 		else {
 			status = calculate_enc_ecb_two_key_triple_des(secInfo->dataEncryptionSessionKey, keyData, keyDataLength, encrypted_key, &encrypted_key_length);
 		}
@@ -1334,7 +1375,13 @@ OPGP_ERROR_STATUS get_key_data_field(GP211_SECURITY_INFO *secInfo,
 	}
 	// we always use key check values
 	keyDataField[i++] = 0x03; // length of key check value
-	status = calculate_enc_ecb_two_key_triple_des(keyData, keyCheckTest, 8, dummy, &dummyLength);
+	if (secInfo->secureChannelProtocol == GP211_SCP03) {
+		memset(keyCheckTest, 0x01, sizeof(keyCheckTest));
+		status = calculate_enc_ecb_SCP03(keyData, keyCheckTest, 16, dummy, &dummyLength);
+	}
+	else {
+		status = calculate_enc_ecb_two_key_triple_des(keyData, keyCheckTest, 8, dummy, &dummyLength);
+	}
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
