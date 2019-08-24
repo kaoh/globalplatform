@@ -1373,7 +1373,7 @@ OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE
 	DWORD caseAPDU;
 	BYTE C_MAC_ICV[8];
 	int C_MAC_ICVLength = 8;
-	BYTE ENC_ICV[16];
+	BYTE ENC_ICV[16] = {0};
 	int ENC_ICVLength = 16;
 	BYTE padding;
 	OPGP_LOG_START(_T("wrap_command"));
