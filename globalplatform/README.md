@@ -160,8 +160,8 @@ http://www.cmake.org/
 
 ```
 cd \path\to\globalplatform
-cmake -G "NMake Makefiles" - for a debug version
-cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release - for a release version  
+cmake -G "NMake Makefiles" -DDEBUG=1 - for a debug version
+cmake -G "NMake Makefiles" - for a release version  
 ```
 
 * CMake will look for PC/SC, OpenSSL and zlib  

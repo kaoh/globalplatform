@@ -4,6 +4,7 @@ rm -rf $dirName
 unzip ../globalplatform/globalplatform-binary*.zip -d $dirName
 unzip ../gppcscconnectionplugin/gppcscconnectionplugin-binary*.zip -d $dirName
 unzip gpshell-binary*.zip -d $dirName
+unzip ../zlib-1.2.8/zlib-1.2.8.zip -d $dirName
 
 # get gpshell directory 
 dirNamegpshell=""
@@ -21,6 +22,6 @@ for gppcscconnectionplugin in $dirName/gppcscconnectionplugin-binary*
 do
   cp $gppcscconnectionplugin/lib/gppcscconnectionplugin.dll $dirNamegpshell/bin;
 done
-cp C:/Windows/System32/libeay32.dll $dirNamegpshell/bin
-cp C:/Windows/System32/libssl32.dll $dirNamegpshell/bin
-cp C:/Windows/System32/zlibwapi.dll $dirNamegpshell/bin
+cp "C:/Program Files (x86)/OpenSSL-Win32/libeay32.dll" $dirNamegpshell/bin
+cp "C:/Program Files (x86)/OpenSSL-Win32/libssl32.dll" $dirNamegpshell/bin
+cp $dirName/zlib-1.2.8/zlibwapi.dll $dirNamegpshell/bin

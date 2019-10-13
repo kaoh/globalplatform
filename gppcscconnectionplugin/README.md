@@ -81,7 +81,7 @@ http://www.cmake.org/
 * Launch Visual Studio Command Prompt / Developer Command Prompt
 
 ```
-cd \path\to\globalplatform
+cd \path\to\gppcscconnectionplugin
 cmake -G "NMake Makefiles" - for a release version
 cmake -G "NMake Makefiles" -DDEBUG=1 - for a debug version  
 ```
