@@ -160,8 +160,6 @@ OPGP_ERROR_STATUS calculate_CMAC_aes(BYTE sMacKey[16], BYTE *message, int messag
 	size_t outl;
 	CMAC_CTX *ctx = CMAC_CTX_new();
 	OPGP_LOG_START(_T("calculate_CMAC_aes"));
-	BYTE cla = message[0];
-	message[0] = 0x84;
 
 	result = CMAC_Init(ctx, sMacKey, 16, EVP_aes_128_cbc(), NULL);
 	if (result != 1) {
@@ -188,8 +186,6 @@ OPGP_ERROR_STATUS calculate_CMAC_aes(BYTE sMacKey[16], BYTE *message, int messag
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
 	CMAC_CTX_free(ctx);
-
-	message[0] = cla;
 
 	OPGP_LOG_END(_T("calculate_CMAC_aes"), status);
 	return status;
