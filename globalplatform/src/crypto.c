@@ -911,125 +911,6 @@ end:
 	return status;
 }
 
-   //private byte[] calculateCEncryption(CommandAPDU command) {
-   //     // if no data, no encryption is done
-   //     if (command.getData().length == 0) {
-   //         return command.getBytes();
-   //     }
-   //     byte[] input = command.getData();
-   //     byte[] icv = createEncryptionICV(false);
-   //     try {
-   //         cipherInstanceWithPadding.init(Cipher.ENCRYPT_MODE, encSessionKey, new IvParameterSpec(icv));
-   //         return cipherInstanceWithPadding.doFinal(input);
-   //     } catch (Exception e) {
-   //         throw new RuntimeException("Could not encrypt command APDU.", e);
-   //     }
-   // }
-
-   // private byte[] calculateRDecryption(ResponseAPDU response) {
-   //     byte[] icv = createEncryptionICV(true);
-   //     try {
-   //         cipherInstanceWithPadding.init(Cipher.DECRYPT_MODE, sENCKey, new IvParameterSpec(icv));
-   //         return cipherInstanceWithPadding.doFinal(response.getData());
-   //     } catch (Exception e) {
-   //         throw new RuntimeException("Could not decrypt response APDU.", e);
-   //     }
-   // }
-
-   // private byte[] createEncryptionICV(boolean rDecryption) {
-   //     byte[] counter = BigInteger.valueOf(sessionCounter).toByteArray();
-   //     // create 128 bit ICV
-   //     byte[] icv = new byte[16];
-   //     if (rDecryption) {
-   //         // set first byte 0x80 if for response
-   //         icv[0] = (byte) 0x80;
-   //     }
-   //     System.arraycopy(counter, 0, icv, icv.length - counter.length, counter.length);
-   //     try {
-   //         icvCipherInstance.init(Cipher.ENCRYPT_MODE, sENCKey, new IvParameterSpec(ICV));
-   //         return icvCipherInstance.doFinal(icv);
-   //     } catch (Exception e) {
-   //         throw new RuntimeException("Could not encrypt ICV.", e);
-   //     }
-   // }
-
-
-	  // public void deriveKeysEmvCps11(byte[] keyDiversificationData, SecretKey secretKey) {
-   //     /*
-   //   The 6 byte KMCID (e.g. IIN right justified and left padded with 1111b per quartet)
-   //   concatenated with the 4 byte CSN (least significant bytes) form the key
-   //   diversification data that must be placed in tag �CF�. This same data must be used to
-   //   form the response to the INITIALIZE UPDATE command.
-   //   */
-
-   //     /* KEYDATA Key derivation data:
-   //         - KMCID (6 bytes)
-   //         - CSN (4 bytes)
-
-   //         If the CSN does not ensure the uniqueness of KEYDATA across different batches of cards other unique data (e.g. 2
-   //         right most bytes of IC serial number and 2 bytes of IC batch identifier) should be used instead.
-   //     */
-
-   //     /* KENC := DES3(KMC)[Six least
-   //   significant bytes of the KEYDATA || �F0� || �01� ]|| DES3(KMC)[ Six least
-   //   significant bytes of the KEYDATA || �0F� || �01�].
-   //   */
-
-
-   //     /* KMAC := DES3(KMC)[ Six
-   //   least significant bytes of the KEYDATA || �F0� || �02� ]|| DES3(KMC)[ Six
-   //   least significant bytes of the KEYDATA || �0F� || �02�].
-   //   */
-
-   //     /* KDEK := DES3(KMC)[ Six
-   //   least significant bytes of the KEYDATA || �F0� || �03� ]|| DES3(KMC)[ Six
-   //   least significant bytes of the KEYDATA || �0F� || �03�].
-   //   */
-
-   //     // left
-   //     byte[] _keyDiversificationData = new byte[16];
-   //     System.arraycopy(keyDiversificationData, 4, _keyDiversificationData, 0, 6);
-
-   //     _keyDiversificationData[6] = (byte) 0xF0;
-   //     _keyDiversificationData[7] = 0x01;
-   //     // right
-   //     System.arraycopy(keyDiversificationData, 4, _keyDiversificationData, 8, 6);
-   //     _keyDiversificationData[14] = 0x0F;
-   //     _keyDiversificationData[15] = 0x01;
-
-   //     try {
-   //         ecbCipherInstance.init(Cipher.ENCRYPT_MODE, secretKey);
-   //         byte[] rawKey = ecbCipherInstance.doFinal(_keyDiversificationData);
-   //         sENCKey = new SecretKeySpec(rawKey, "AES");
-
-   //         // left for MAC
-   //         _keyDiversificationData[6] = (byte) 0xF0;
-   //         _keyDiversificationData[7] = 0x02;
-   //         // right for MAC
-   //         _keyDiversificationData[14] = 0x0F;
-   //         _keyDiversificationData[15] = 0x02;
-
-   //         ecbCipherInstance.init(Cipher.ENCRYPT_MODE, secretKey);
-   //         rawKey = ecbCipherInstance.doFinal(_keyDiversificationData);
-   //         sMACKey = new SecretKeySpec(rawKey, "AES");
-
-   //         // DEK
-
-   //         // left for DEK
-   //         _keyDiversificationData[6] = (byte) 0xF0;
-   //         _keyDiversificationData[7] = 0x03;
-   //         // right for DEK
-   //         _keyDiversificationData[14] = 0x0F;
-   //         _keyDiversificationData[15] = 0x03;
-
-   //         ecbCipherInstance.init(Cipher.ENCRYPT_MODE, secretKey);
-   //         rawKey = ecbCipherInstance.doFinal(_keyDiversificationData);
-   //         dekKey = new SecretKeySpec(rawKey, "AES");
-   //     } catch (Exception e) {
-   //         throw new RuntimeException("Could not derive static keys.", e);
-   //     }
-   // }
-
 /**
  * Calculates the encryption of a message in CBC mode.
  * Pads the message with 0x80 and additional 0x00 if message length is not a multiple of 8.
@@ -1703,6 +1584,7 @@ OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE
 		}
 
 		// Philip Wendland: if we have to encrypt:
+		// this should not touch SCP03 anymore
 		if (secInfo->securityLevel == GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC
 			|| secInfo->securityLevel == GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC
 			|| secInfo->securityLevel == GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC) {
