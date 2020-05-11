@@ -117,9 +117,19 @@ OPGP_ERROR_STATUS calculate_cryptogram_SCP03(BYTE key[16], const BYTE derivation
 		}
 		derivationData[11] = derivationConstant; //<! "derivation constant" part of label
 		derivationData[12] = 0x00; // <! "separation indicator"
-		derivationData[13] = 0x00; // <! First byte of output length
-		derivationData[14] = (BYTE) cryptogramSize; // <! Second byte of output length
-		derivationData[15] = 0x01; // <! byte counter "i"
+		if (cryptogramSize > 255) {
+			derivationData[13] = 0x01; // <! First byte of output length
+		}
+		else {
+			derivationData[13] = 0x00; // <! First byte of output length
+		}
+		derivationData[14] = (BYTE) (cryptogramSize & 0x00FF); // <! Second byte of output length
+		if (cryptogramSize >= 0xC0) {
+			derivationData[15] = 0x02; // <! byte counter "i"
+		}
+		else {
+			derivationData[15] = 0x01; // <! byte counter "i"
+		}
 
 		memcpy(derivationData + 16, context1, context1Length);
 		memcpy(derivationData + 16 + context1Length, context2, context2Length);

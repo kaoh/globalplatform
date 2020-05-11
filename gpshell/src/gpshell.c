@@ -901,7 +901,10 @@ static int handleCommands(FILE *fd)
                             goto end;
                         }
                     }
-
+                    if (selectedAIDLength > 0) {
+                    	memcpy(securityInfo211.invokingAid, selectedAID, selectedAIDLength);
+                    	securityInfo211.invokingAidLength = selectedAIDLength;
+                    }
                     status = GP211_mutual_authentication(cardContext, cardInfo,
                                                      optionStr.key,
                                                      optionStr.enc_key,

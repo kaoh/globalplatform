@@ -167,6 +167,15 @@ cd libgppcscconnectionplugin1-1.2.2+3
 fakeroot debian/rules binary
 ```
 
+## Debug Builds
+
+To be able to debug the library enable the debug symbols:
+
+```
+cmake -DDEBUG=ON
+
+```
+
 ## Testing
 
 Testing is only supported under Linux for now. To generate the tests execute:
@@ -180,13 +189,13 @@ make tests
 ## CMake Issues
 
 You must rebuild the build system if your build tools have changed. Otherwise
-CMake uses outdated values. You have to delete manually
-the `CMakeCache.txt` file (and maybe also the CMake specific directories and
-`cmake_install.cmake`).
+CMake uses out dated values and compilation might fail. You have to delete manually
+the `CMakeCache.txt` file and also the CMake specific directories like `CMakeFiles` and
+`cmake_install.cmake` in the top folder and the `src` directory.
 
 If your are using Cygwin and you have installed the GNU compiler tools and the
 bin directory is on the PATH environment variable CMake will favor these tools
-and the linking step will fail. So remove the Cygwin bin directory from the path.  
+and the linking step will fail. Remove the Cygwin bin directory from the path.  
 
 ## Troubleshooting
 

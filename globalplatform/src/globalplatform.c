@@ -1421,7 +1421,8 @@ OPGP_ERROR_STATUS GP211_get_secure_channel_protocol_details(OPGP_CARD_CONTEXT ca
 			OIDSecureChannelProtocolLength = tlv2.length;
 			OPGP_LOG_HEX(_T("GP211_get_secure_channel_protocol_details: OIDSecureChannelProtocol: "), OIDSecureChannelProtocol, OIDSecureChannelProtocolLength);
 			// only supporting SCP01 - SCP03
-			if (OIDSecureChannelProtocol[OIDSecureChannelProtocolLength-2] >= 1 && OIDSecureChannelProtocol[OIDSecureChannelProtocolLength-2] <=3) {
+			if (OIDSecureChannelProtocol[OIDSecureChannelProtocolLength-2] == GP211_SCP01 || OIDSecureChannelProtocol[OIDSecureChannelProtocolLength-2] == GP211_SCP02
+					|| OIDSecureChannelProtocol[OIDSecureChannelProtocolLength-2] == GP211_SCP03) {
 				*secureChannelProtocol = OIDSecureChannelProtocol[OIDSecureChannelProtocolLength-2];
 				*secureChannelProtocolImpl = OIDSecureChannelProtocol[OIDSecureChannelProtocolLength-1];
 				OPGP_log_Msg(_T("Using Secure Channel Protocol 0x%02x with Secure Channel Protocol Impl: 0x%02x\n"), *secureChannelProtocol, *secureChannelProtocolImpl);
@@ -3972,6 +3973,10 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
         if (secInfo->secureChannelProtocolImpl == GP211_SCP03_IMPL_i10 ||
             secInfo->secureChannelProtocolImpl == GP211_SCP03_IMPL_i30 ||
             secInfo->secureChannelProtocolImpl == GP211_SCP03_IMPL_i70) {
+        		if (secInfo->invokingAidLength == 0) {
+        			memcpy(secInfo->invokingAid, GP231_ISD_AID, sizeof(GP231_ISD_AID));
+        			secInfo->invokingAidLength = sizeof(GP231_ISD_AID);
+        		}
                 status = calculate_card_challenge_SCP03(sEnc, sequenceCounter, secInfo->invokingAid, secInfo->invokingAidLength, calculatedCardChallenge);
                 if (OPGP_ERROR_CHECK(status)) {
                     goto end;

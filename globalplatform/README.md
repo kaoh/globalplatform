@@ -51,9 +51,11 @@ make
 make install
 ```
 
-It might be necessary to create a symlink to the correct library search directory, e.g. under Ubuntu 16.04 execute:
+It might be necessary to create a symlink to the correct library search directory, e.g. under Ubuntu 18.04 execute:
 
-    sudo ln -s /usr/local/lib/libglobalplatform.so.6 /usr/lib/i386-linux-gnu/libglobalplatform.so.6
+    sudo ln -s /usr/local/lib/libglobalplatform.so.6 /usr/lib/x86_64-linux-gnu/libglobalplatform.so.6
+    
+Or include the `/usr/local/lib ` under `/etc/ld.so.conf.d/` and run `sudo ldconfig`
 
 ## FreeBSD
 
@@ -218,7 +220,7 @@ rent binary directory.
 ```
 
 * Solution:
-  Delete like mentioned `CMakeCache.txt`
+  Delete like mentioned `CMakeCache.txt` and the `CMakeFiles` directory in the top and `src`folder.
 
 * Problem:
 ```
@@ -286,6 +288,15 @@ cd libglobalplatform6-6.1.0
 fakeroot debian/rules binary
 ```
 
+## Debug Builds
+
+To be able to debug the library enable the debug symbols:
+
+```
+cmake -DDEBUG=ON
+
+```
+
 ## Testing
 
 Testing is only supported under Linux for now. 
@@ -315,10 +326,10 @@ For the unit tests a JCOP v2.2 41 card is used.
 ## CMake Issues
 
 You must rebuild the build system if your build tools have changed. Otherwise
-CMake uses outdated values. You have to delete manually
-the `CMakeCache.txt` file (and maybe also the CMake specific directories and
-`cmake_install.cmake`).
+CMake uses out dated values and compilation might fail. You have to delete manually
+the `CMakeCache.txt` file and also the CMake specific directories like `CMakeFiles` and
+`cmake_install.cmake` in the top folder and the `src` directory.
 
 If your are using Cygwin and you have installed the GNU compiler tools and the
 bin directory is on the PATH environment variable CMake will favor these tools
-and the linking step will fail. So remove the Cygwin bin directory from the path.  
+and the linking step will fail. Remove the Cygwin bin directory from the path.  

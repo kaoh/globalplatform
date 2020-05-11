@@ -17,3 +17,15 @@ Doxyfile
 *.layout
 Testing
 .svn
+_CPack_Packages
+*.exe
+*.dll
+CMakeDoxyfile.in
+*.exp
+*.ilk
+*.lib
+*.pdb
+globalplatform.pc
+scp03Test
+*.zip
+*-bundle
