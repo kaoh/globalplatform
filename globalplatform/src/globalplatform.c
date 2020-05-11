@@ -71,6 +71,9 @@ static BYTE S_ENC_DerivationConstant_SCP03  = 0x04; //!< Constant to derive S-EN
 static BYTE S_MAC_DerivationConstant_SCP03  = 0x06; //!< Constant to derive S-MAC session key for SCP03.
 static BYTE S_RMAC_DerivationConstant_SCP03 = 0x07; //!< Constant to derive S-RMAC session key for SCP03.
 
+#define CARD_DATA_APPLICATION_TAG_4 0x64
+#define OID_TAG 0x06
+
 OPGP_NO_API
 OPGP_ERROR_STATUS calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 							 PBYTE executableModuleAID,
@@ -1306,7 +1309,7 @@ OPGP_ERROR_STATUS GP211_get_secure_channel_protocol_details(OPGP_CARD_CONTEXT ca
 	LONG result;
 	BYTE recvBuffer[256];
 	DWORD recvBufferLength = sizeof(recvBuffer);
-	DWORD offset = 0;
+	DWORD offset = 0, nestedOffset = 0;
 	BYTE OIDCardRecognitionData[256];
 	DWORD OIDCardRecognitionDataLength;
 	BYTE OIDCardManagementTypeAndVersion[256];
@@ -1393,28 +1396,40 @@ OPGP_ERROR_STATUS GP211_get_secure_channel_protocol_details(OPGP_CARD_CONTEXT ca
 	OIDCardIdentificationSchemeLength = tlv2.length;
 	OPGP_LOG_HEX(_T("GP211_get_secure_channel_protocol_details: OIDCardIdentificationScheme: "), OIDCardIdentificationScheme, OIDCardIdentificationSchemeLength);
 
-	/* Application tag 4 and length */
-	result = read_TLV(_73tlv.value+offset, _73tlv.length-offset, &tlv1);
-	if (result == -1) {
-		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-		goto end;
+	/* Application tag 4 (=0x64) and length */
+	// this can be multiple SCP information in Application tag 4 or a sequence of OIDs in 0x06
+	do {
+		result = read_TLV(_73tlv.value+offset, _73tlv.length-offset, &tlv1);
+		if (result == -1) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+		offset += result;
+		nestedOffset = 0;
+		do {
+			/* inner tag: 0x06 Universal tag for �Object Identifier� (OID) and Length */
+			result = read_TLV(tlv1.value+nestedOffset, tlv1.length, &tlv2);
+			if (result == -1) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+				goto end;
+			}
+			nestedOffset += result;
+			/* {globalPlatform 4 scp i} OID for Secure Channel Protocol of
+			* the Issuer Security Domain and its implementation options
+			*/
+			memcpy(OIDSecureChannelProtocol, tlv2.value, tlv2.length);
+			OIDSecureChannelProtocolLength = tlv2.length;
+			OPGP_LOG_HEX(_T("GP211_get_secure_channel_protocol_details: OIDSecureChannelProtocol: "), OIDSecureChannelProtocol, OIDSecureChannelProtocolLength);
+			// only supporting SCP01 - SCP03
+			if (OIDSecureChannelProtocol[OIDSecureChannelProtocolLength-2] >= 1 && OIDSecureChannelProtocol[OIDSecureChannelProtocolLength-2] <=3) {
+				*secureChannelProtocol = OIDSecureChannelProtocol[OIDSecureChannelProtocolLength-2];
+				*secureChannelProtocolImpl = OIDSecureChannelProtocol[OIDSecureChannelProtocolLength-1];
+				OPGP_log_Msg(_T("Using Secure Channel Protocol 0x%02x with Secure Channel Protocol Impl: 0x%02x\n"), *secureChannelProtocol, *secureChannelProtocolImpl);
+			}
+		}
+		while (tlv1.length > nestedOffset && tlv1.value[nestedOffset] == OID_TAG);
 	}
-	offset += result;
-	/* inner tag: 0x06 Universal tag for �Object Identifier� (OID) and Length */
-	result = read_TLV(tlv1.value, tlv1.length, &tlv2);
-	if (result == -1) {
-		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-		goto end;
-	}
-	/* {globalPlatform 4 scp i} OID for Secure Channel Protocol of
-	* the Issuer Security Domain and its implementation options
-	*/
-	memcpy(OIDSecureChannelProtocol, tlv2.value, tlv2.length);
-	OIDSecureChannelProtocolLength = tlv2.length;
-	OPGP_LOG_HEX(_T("GP211_get_secure_channel_protocol_details: OIDSecureChannelProtocol: "), OIDSecureChannelProtocol, OIDSecureChannelProtocolLength);
-	*secureChannelProtocol = OIDSecureChannelProtocol[OIDSecureChannelProtocolLength-2];
-	*secureChannelProtocolImpl = OIDSecureChannelProtocol[OIDSecureChannelProtocolLength-1];
-
+	while (_73tlv.length > offset && _73tlv.value[offset] == CARD_DATA_APPLICATION_TAG_4);
 	/* optional part */
 
 	if (_73tlv.length > offset) {
