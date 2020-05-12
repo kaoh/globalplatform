@@ -47,7 +47,6 @@
 #define FILENAMELEN 256
 #define READERNAMELEN 256
 #define AIDLEN 16
-#define APDULEN 261
 #define INSTPARAMLEN 32
 #define DELIMITER _T(" \t\r\n,")
 #define DDES_KEY_LEN 16
@@ -76,7 +75,7 @@ typedef struct _OptionStr
     DWORD pkgAIDLen;
     BYTE instAID[AIDLEN+1];
     DWORD instAIDLen;
-    BYTE APDU[APDULEN+1];
+    BYTE APDU[APDU_COMMAND_LEN+1];
     DWORD APDULen;
     BYTE secureChannel;
     TCHAR reader[READERNAMELEN+1];
@@ -538,7 +537,7 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-                pOptionStr->APDULen = ConvertStringToByteArray(token, APDULEN, pOptionStr->APDU);
+                pOptionStr->APDULen = ConvertStringToByteArray(token, APDU_COMMAND_LEN, pOptionStr->APDU);
             }
         }
         else if (_tcscmp(token, _T("-protocol")) == 0)
@@ -644,6 +643,26 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             pOptionStr->element = temp;
         }
+        else if (_tcscmp(token, _T("-format")) == 0)
+		{
+			int temp;
+			token = strtokCheckComment(NULL);
+			if (token == NULL)
+			{
+				_tprintf(_T("Error: option -format not followed by data\n"));
+				rv = EXIT_FAILURE;
+				goto end;
+			}
+
+			if (_stscanf (token, _T("%02x"), &temp) <= 0)
+			{
+				_tprintf(_T("Error: option -format followed by an illegal string %s\n"),
+						token);
+				rv = EXIT_FAILURE;
+				goto end;
+			}
+			pOptionStr->format = temp;
+		}
         else if (_tcscmp(token, _T("-priv")) == 0)
         {
             token = strtokCheckComment(NULL);
@@ -1481,7 +1500,7 @@ static int handleCommands(FILE *fd)
                         }
                     }
                     else if (optionStr.keyDerivation == OPGP_DERIVATION_METHOD_VISA2) {
-						optionStr.APDULen = APDULEN;
+						optionStr.APDULen = APDU_COMMAND_LEN;
 						OP201_get_data(cardContext, cardInfo, &securityInfo201, (PBYTE)OP201_GET_DATA_CARD_MANAGER_AID, optionStr.APDU, &(optionStr.APDULen));
 						if (OPGP_ERROR_CHECK(status))
 						{
@@ -1531,7 +1550,7 @@ static int handleCommands(FILE *fd)
                         }
                     }
                     else if (optionStr.keyDerivation == OPGP_DERIVATION_METHOD_VISA2) {
-                        optionStr.APDULen = APDULEN;
+                        optionStr.APDULen = APDU_COMMAND_LEN;
                         GP211_get_data(cardContext, cardInfo, &securityInfo211, (PBYTE)GP211_GET_DATA_ISSUER_SECURITY_DOMAIN_AID, optionStr.APDU, &(optionStr.APDULen));
                         if (OPGP_ERROR_CHECK(status))
                         {

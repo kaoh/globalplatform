@@ -46,6 +46,8 @@ extern "C"
 #include "security.h"
 #include "stringify.h"
 
+#define APDU_COMMAND_LEN 261 //!< The APDU command length: 5 bytes header + 255 body + Le
+#define APDU_RESPONSE_LEN 258 //!< The APDU response length: 256 data + 2 bytes SW
 
 /** The default key value for new cards defined in a VISA specification. */
 static const BYTE OPGP_VISA_DEFAULT_KEY[16] = {0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};

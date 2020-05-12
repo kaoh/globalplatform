@@ -111,9 +111,12 @@ IF(TESTING)
       SOURCES scp03Test.c ${SOURCES}
       MOCKS RAND_bytes 
       LINK_LIBRARIES ${LIBRARIES})
-    
-    SET_TESTS_PROPERTIES(scp03Test PROPERTIES PASS_REGULAR_EXPRESSION "0 FAILED TEST")
-    
+
+    add_mocked_test(scp02Test 
+      SOURCES scp02Test.c testUtil.c ${SOURCES}
+      MOCKS RAND_bytes 
+      LINK_LIBRARIES ${LIBRARIES})
+              
   ENDIF(CMOCKA_FOUND AND NOT WIN32)
 ENDIF(TESTING)
 

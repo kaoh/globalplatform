@@ -93,7 +93,6 @@ static void delete_application(void **state) {
 	GP211_RECEIPT_DATA receiptData;
 	DWORD receiptDataLength;
 
-
 	will_return(__wrap_RAND_bytes, hostChallenge);
 	expect_value(__wrap_RAND_bytes, num, 8);
 

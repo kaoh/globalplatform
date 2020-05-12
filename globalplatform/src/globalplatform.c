@@ -452,7 +452,7 @@ OPGP_ERROR_STATUS parse_application_data(PBYTE data, DWORD dataLength,
 		// tag + length + 1 byte
 		offset += 3 + tlv2.length;
 		// undocumented tags seen on ST eUICC
-		do {
+		while (offset < dataLength && offset < tlv1.length) {
 			result = read_TLV(tlv1.value+offset, tlv1.length, &tlv2);
 			if (result == -1) {
 				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
@@ -461,21 +461,19 @@ OPGP_ERROR_STATUS parse_application_data(PBYTE data, DWORD dataLength,
 			switch (tlv2.tag) {
 				case 0xC5:
 					// C5 privileges - only first byte supported
-					if (tlv2.length != 3) {
+					if (tlv2.length != 3 && tlv2.length != 1) {
 						OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 						goto end;
 					}
 					applData->privileges = tlv2.value[0];
-					// +tag + length + 3 byte
-					offset+=5;
+					// +tag + length + data length
+
 					break;
-				default:
-					// remaining tags not supported
-					// tag + length of data length
-					offset += 2+tlv2.length;
+				// remaining tags not supported
 			}
+			// tag + length of data length
+			offset += 2 + tlv2.length;
 		}
-		while (offset < dataLength && offset < tlv1.length);
 		// add TL of tlv1
 		offset += 2;
 	}
@@ -583,7 +581,7 @@ OPGP_ERROR_STATUS parse_executable_load_file_data(PBYTE data, DWORD dataLength,
 		// +tag + length + n byte
 		offset+=2+tlv2.length;
 
-		for (int k=0; offset<dataLength &&
+		for (int k=0; offset<dataLength && offset < tlv1.length &&
 				k < (sizeof(modulesData->executableModules) / sizeof(OPGP_AID)); k++) {
 			// tag 0x84 AID
 			result = read_TLV(tlv1.value+offset, tlv1.length, &tlv2);
@@ -730,10 +728,10 @@ OPGP_ERROR_STATUS put_rsa_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO card
 				 BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion,
 				 OPGP_STRING PEMKeyFileName, char *passPhrase) {
 	OPGP_ERROR_STATUS status;
-	BYTE sendBuffer[261];
-	DWORD sendBufferLength=261;
-	DWORD recvBufferLength=256;
-	BYTE recvBuffer[256];
+	BYTE sendBuffer[APDU_COMMAND_LEN];
+	DWORD sendBufferLength=APDU_COMMAND_LEN;
+	DWORD recvBufferLength=APDU_RESPONSE_LEN;
+	BYTE recvBuffer[APDU_RESPONSE_LEN];
 	DWORD i=0;
 	BYTE rsa_modulus[128];
 	LONG rsa_exponent;
@@ -886,10 +884,10 @@ OPGP_ERROR_STATUS put_delegated_management_keys(OPGP_CARD_CONTEXT cardContext, O
 								   OPGP_STRING PEMKeyFileName, char *passPhrase,
 								   BYTE receiptKey[16]) {
 	OPGP_ERROR_STATUS status;
-	BYTE sendBuffer[261];
-	DWORD sendBufferLength=261;
-	DWORD recvBufferLength=256;
-	BYTE recvBuffer[256];
+	BYTE sendBuffer[APDU_COMMAND_LEN];
+	DWORD sendBufferLength = 0;
+	DWORD recvBufferLength=APDU_RESPONSE_LEN;
+	BYTE recvBuffer[APDU_RESPONSE_LEN];
 	BYTE keyCheckValue[8];
 
 	BYTE keyDataField[22];
@@ -1251,10 +1249,10 @@ OPGP_ERROR_STATUS delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_IN
 				   OPGP_AID *AIDs, DWORD AIDsLength, GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataLength, DWORD mode) {
 	OPGP_ERROR_STATUS status;
 	DWORD count=0;
-	BYTE sendBuffer[261];
-	DWORD sendBufferLength;
-	DWORD recvBufferLength=255;
-	BYTE recvBuffer[255];
+	BYTE sendBuffer[APDU_COMMAND_LEN];
+	DWORD sendBufferLength = 0;
+	DWORD recvBufferLength = APDU_RESPONSE_LEN;
+	BYTE recvBuffer[APDU_RESPONSE_LEN];
 	DWORD j,i=0;
 	OPGP_LOG_START(_T("delete_application"));
 	sendBuffer[i++] = 0x80;
@@ -1994,10 +1992,10 @@ OPGP_ERROR_STATUS load_from_buffer(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 				 PBYTE loadFileBuf, DWORD loadFileBufSize,
 				 GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable, OPGP_PROGRESS_CALLBACK *callback) {
 	OPGP_ERROR_STATUS status;
-	DWORD sendBufferLength;
-	DWORD recvBufferLength=256;
-	BYTE recvBuffer[256];
-	BYTE sendBuffer[261];
+	DWORD sendBufferLength = 0;
+	DWORD recvBufferLength = APDU_RESPONSE_LEN;
+	BYTE recvBuffer[APDU_RESPONSE_LEN];
+	BYTE sendBuffer[APDU_COMMAND_LEN];
 	BYTE dapBuf[256];
 	DWORD dapBufSize=sizeof(dapBuf);
 
@@ -2350,9 +2348,9 @@ OPGP_ERROR_STATUS install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 {
 	OPGP_ERROR_STATUS status;
 	DWORD sendBufferLength = 0;
-	DWORD recvBufferLength=256;
-	BYTE recvBuffer[256];
-	BYTE sendBuffer[261];
+	DWORD recvBufferLength = APDU_RESPONSE_LEN;
+	BYTE recvBuffer[APDU_RESPONSE_LEN];
+	BYTE sendBuffer[APDU_COMMAND_LEN];
 	DWORD i=0;
 	BYTE buf[256];
 	DWORD bufLength = sizeof(buf);
@@ -2448,9 +2446,9 @@ OPGP_ERROR_STATUS install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_I
 						 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable) {
 	OPGP_ERROR_STATUS status;
 	DWORD sendBufferLength = 0;
-	DWORD recvBufferLength=256;
-	BYTE recvBuffer[256];
-	BYTE sendBuffer[261];
+	DWORD recvBufferLength = APDU_RESPONSE_LEN;
+	BYTE recvBuffer[APDU_RESPONSE_LEN];
+	BYTE sendBuffer[APDU_COMMAND_LEN];
 	DWORD i=0;
 	BYTE buf[256];
 	DWORD bufLength = sizeof(buf);
@@ -2551,10 +2549,10 @@ OPGP_ERROR_STATUS install_for_install_and_make_selectable(OPGP_CARD_CONTEXT card
 						 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData,
 						 PDWORD receiptDataAvailable) {
 	OPGP_ERROR_STATUS status;
-	DWORD sendBufferLength=0;
-	DWORD recvBufferLength=256;
-	BYTE recvBuffer[256];
-	BYTE sendBuffer[261];
+	DWORD sendBufferLength = 0;
+	DWORD recvBufferLength = APDU_RESPONSE_LEN;
+	BYTE recvBuffer[APDU_RESPONSE_LEN];
+	BYTE sendBuffer[APDU_COMMAND_LEN];
 	DWORD i=0;
 	BYTE buf[256];
 	DWORD bufLength = sizeof(buf);
@@ -2627,10 +2625,10 @@ OPGP_ERROR_STATUS GP211_install_for_extradition(OPGP_CARD_CONTEXT cardContext, O
 						 BYTE extraditionToken[128], GP211_RECEIPT_DATA *receiptData,
 						 PDWORD receiptDataAvailable) {
 	OPGP_ERROR_STATUS status;
-	DWORD sendBufferLength=0;
-	DWORD recvBufferLength=256;
-	BYTE recvBuffer[256];
-	BYTE sendBuffer[261];
+	DWORD sendBufferLength = 0;
+	DWORD recvBufferLength = APDU_RESPONSE_LEN;
+	BYTE recvBuffer[APDU_RESPONSE_LEN];
+	BYTE sendBuffer[APDU_COMMAND_LEN];
 	DWORD i=0;
 	BYTE buf[256];
 	DWORD bufLength = sizeof(buf);
@@ -2688,9 +2686,9 @@ OPGP_ERROR_STATUS GP211_install_for_personalization(OPGP_CARD_CONTEXT cardContex
 						 DWORD applicationAIDLength) {
 	OPGP_ERROR_STATUS status;
 	DWORD sendBufferLength=0;
-	DWORD recvBufferLength=256;
-	BYTE recvBuffer[256];
-	BYTE sendBuffer[261];
+	DWORD recvBufferLength=APDU_RESPONSE_LEN;
+	BYTE recvBuffer[APDU_RESPONSE_LEN];
+	BYTE sendBuffer[APDU_COMMAND_LEN];
 	DWORD i=0;
 
 	OPGP_LOG_START(_T("install_for_personalization"));
@@ -2760,10 +2758,10 @@ OPGP_ERROR_STATUS install_for_make_selectable(OPGP_CARD_CONTEXT cardContext, OPG
 								 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData,
 								 PDWORD receiptDataAvailable) {
 	OPGP_ERROR_STATUS status;
-	DWORD sendBufferLength=0;
-	DWORD recvBufferLength=256;
-	BYTE recvBuffer[256];
-	BYTE sendBuffer[261];
+	DWORD sendBufferLength = 0;
+	DWORD recvBufferLength = APDU_RESPONSE_LEN;
+	BYTE recvBuffer[APDU_RESPONSE_LEN];
+	BYTE sendBuffer[APDU_COMMAND_LEN];
 	DWORD i=0;
 	OPGP_LOG_START(_T("install_for_make_selectable"));
 	*receiptDataAvailable = 0;
@@ -4606,16 +4604,15 @@ end:
 OPGP_ERROR_STATUS GP211_store_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 				 PBYTE data, DWORD dataLength) {
 	OPGP_ERROR_STATUS status;
-	DWORD sendBufferLength;
-	DWORD recvBufferLength=256;
-	BYTE recvBuffer[256];
-	BYTE sendBuffer[261];
+	DWORD sendBufferLength = 0;
+	DWORD recvBufferLength = APDU_RESPONSE_LEN;
+	BYTE recvBuffer[APDU_RESPONSE_LEN];
+	BYTE sendBuffer[APDU_COMMAND_LEN];
 	DWORD left, read;
 	BYTE blockNumber=0x00;
 	OPGP_LOG_START(_T("GP211_store_data"));
 	sendBuffer[0] = 0x80;
 	sendBuffer[1] = 0xE2;
-
 	read = 0;
 	left = dataLength;
 	while(left > 0) {
@@ -5071,7 +5068,6 @@ OPGP_ERROR_STATUS OP201_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 	i=0;
 	do {
 		recvBufferLength=256;
-
 		status = OP201_send_APDU(cardContext, cardInfo, secInfo, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
 		if (OPGP_ERROR_CHECK(status)) {
 			goto end;
@@ -5081,32 +5077,14 @@ OPGP_ERROR_STATUS OP201_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 		}
 
 		for (j=0; j<recvBufferLength-2; ) {
+			DWORD dataRead;
+			GP211_APPLICATION_DATA gp211AppData;
 			if (*applDataLength <= i ) {
 				{ OPGP_ERROR_CREATE_ERROR(status, OP201_ERROR_MORE_APPLICATION_DATA, OPGP_stringify_error(OP201_ERROR_MORE_APPLICATION_DATA)); goto end; }
 			}
-			applData[i].AIDLength = recvBuffer[j++];
-
-            /* BUGFIX: Don't read beyond recvBuffer array bounds or into 0x9000 */
-            if (applData[i].AIDLength > recvBufferLength - j - 2){
-                applData[i].AIDLength = (BYTE)(recvBufferLength - j - 2);
-            }
-
-            /* BUGFIX: Don't write beyond AID array bounds */
-            memcpy(applData[i].AID, recvBuffer+j, (applData[i].AIDLength > 16) ? 16 : applData[i].AIDLength);
-			j+=applData[i].AIDLength;
-
-            /* BUGFIX: Don't read beyond recvBuffer array bounds or into 0x9000 */
-            if (j >= recvBufferLength - 2){
-                applData[i].lifeCycleState = 0xFF;
-            }else{
-                applData[i].lifeCycleState = recvBuffer[j++];
-            }
-            /* BUGFIX: Don't read beyond recvBuffer array bounds or into 0x9000 */
-            if (j >= recvBufferLength - 2){
-                applData[i].privileges = 0xFF;
-            }else{
-                applData[i].privileges = recvBuffer[j++];
-            }
+			parse_application_data(recvBuffer + j, recvBufferLength - 2 - j, cardElement, GP211_STATUS_FORMAT_DEPRECATED, &gp211AppData, &dataRead);
+			mapGP211ToOP201ApplicationData(gp211AppData, &applData[i]);
+			j += dataRead;
 			i++;
 		}
 		sendBuffer[3]=0x01;

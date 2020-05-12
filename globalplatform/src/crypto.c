@@ -1382,7 +1382,7 @@ OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE
 	// C_MAC on modified APDU
 	// Philip Wendland: Update the APDU header first, calculate MAC then.
 	if ((secInfo->secureChannelProtocol == GP211_SCP02 &&
-			(secInfo->secureChannelProtocol & 0x02) == 0)
+			(secInfo->secureChannelProtocolImpl & 0x02) == 0)
 		|| secInfo->secureChannelProtocol == GP211_SCP03) {
 		switch (caseAPDU) {
 			case 1:
@@ -1402,11 +1402,11 @@ OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE
 
 	if (secInfo->secureChannelProtocol == GP211_SCP02) {
 		// ICV set to MAC over AID
-		if ((secInfo->secureChannelProtocolImpl & 0x08) == 0) {
+		if ((secInfo->secureChannelProtocolImpl & 0x08) != 0) {
 			memcpy(C_MAC_ICV, secInfo->lastC_MAC, 8);
 		}
 		// ICV encryption
-		if ((secInfo->secureChannelProtocolImpl & 0x10) == 0) {
+		if ((secInfo->secureChannelProtocolImpl & 0x10) != 0) {
 			 status = calculate_enc_ecb_single_des(secInfo->C_MACSessionKey,
 				 secInfo->lastC_MAC, 8, C_MAC_ICV, &C_MAC_ICVLength);
 			if (OPGP_ERROR_CHECK(status)) {
