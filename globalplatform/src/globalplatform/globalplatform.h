@@ -94,8 +94,8 @@ static const BYTE GP211_STATUS_ISSUER_SECURITY_DOMAIN = 0x80; //!< Indicate Issu
 static const BYTE GP211_STATUS_LOAD_FILES = 0x20; //!< Request GP211_APPLICATION_DATA for Executable Load Files in GP211_get_status().
 static const BYTE GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES = 0x10; //!< Request GP211_EXECUTABLE_MODULES_DATA for Executable Load Files and their Executable Modules in GP211_get_status().
 
-
-
+static const BYTE GP211_STATUS_FORMAT_NEW = 0x02; //!< New GP2.1.1 GET STATUS format
+static const BYTE GP211_STATUS_FORMAT_DEPRECATED = 0x00; //!< New GP2.1.1 GET STATUS deprecated format
 
 
 // Some possible identifiers to retrieve card data with get_data() and put_data().
@@ -334,6 +334,7 @@ typedef struct {
 	BYTE AIDLength; //!< The length of the Executable Load File AID.
 	BYTE AID[16]; //!< The Executable Load File AID.
 	BYTE lifeCycleState; //!< The Executable Load File life cycle state.
+	BYTE versionNumber[2]; //!< On a Java Card based card, this is a 2-byte version number reflecting the major and minor version attributes (in this order) of the Java Card CAP file. Shorted if longer.
 	BYTE numExecutableModules; //!< Number of associated Executable Modules.
 	OPGP_AID executableModules[256]; //!< Array for the maximum possible associated Executable Modules.
 } GP211_EXECUTABLE_MODULES_DATA;
@@ -348,7 +349,7 @@ OPGP_ERROR_STATUS OPGP_select_application(OPGP_CARD_CONTEXT cardContext, OPGP_CA
  */
 OPGP_API
 OPGP_ERROR_STATUS GP211_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-				BYTE cardElement, GP211_APPLICATION_DATA *applData,
+				BYTE cardElement, BYTE format, GP211_APPLICATION_DATA *applData,
 				GP211_EXECUTABLE_MODULES_DATA *executableData, PDWORD dataLength);
 
 //! \brief GlobalPlatform2.1.1: Sets the life cycle status of Applications, Security Domains or the Card Manager.

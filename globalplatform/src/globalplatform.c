@@ -367,8 +367,248 @@ void mapGP211ToOP201ApplicationData(GP211_APPLICATION_DATA gp211applData,
 	op201applData->privileges = gp211applData.privileges;
 }
 
+
+/**
+ * Reads a DAP block and parses it to the buffer buf.
+ * \param buf [out] The buffer.
+ * \param bufLength [in, out] The length of the buffer and the returned data.
+ * \param dapBlock [in] The Load File Data Block DAP block.
+ * \return OPGP_ERROR_SUCCESS if no error, error code else
+ */
 OPGP_NO_API
-OPGP_ERROR_STATUS readDAPBlock(PBYTE buf, PDWORD bufLength, OP201_DAP_BLOCK dapBlock);
+OPGP_ERROR_STATUS readDAPBlock(PBYTE buf, PDWORD bufLength, OP201_DAP_BLOCK dapBlock) {
+	OPGP_ERROR_STATUS status;
+	GP211_DAP_BLOCK gp211dapBlock;
+	mapOP201ToGP211DAPBlock(dapBlock, &gp211dapBlock);
+	status = read_load_file_data_block_signature(buf, bufLength, gp211dapBlock);
+	return status;
+}
+
+OPGP_NO_API
+OPGP_ERROR_STATUS parse_application_data(PBYTE data, DWORD dataLength,
+		BYTE cardElement, BYTE format, GP211_APPLICATION_DATA *applData, PDWORD dataRead) {
+	OPGP_ERROR_STATUS status;
+	DWORD offset = 0;
+	if (format == GP211_STATUS_FORMAT_DEPRECATED) {
+		if (dataLength < 1) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+		applData->AIDLength = data[offset++];
+		// check also buffer overrun for AID
+		if ((applData->AIDLength > dataLength - offset) || applData->AIDLength > sizeof(applData->AID)) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+		memcpy(applData->AID, data+offset, applData->AIDLength);
+		offset+=applData->AIDLength;
+
+		if (dataLength - offset < 1){
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+		applData->lifeCycleState = data[offset++];
+		if (cardElement != GP211_STATUS_LOAD_FILES) {
+			if (dataLength - offset < 1){
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+				goto end;
+			}
+			applData->privileges = data[offset++];
+		}
+		else {
+			applData->privileges = 0x00;
+			offset++;
+		}
+	}
+	else {
+		DWORD result;
+		TLV tlv1, tlv2;
+		// read outer tag, must be 0xE3
+		result = read_TLV(data, dataLength, &tlv1);
+		if (result == -1 || tlv1.tag != 0xE3) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+
+		// tag 0x4F AID
+		result = read_TLV(tlv1.value+offset, tlv1.length, &tlv2);
+		// check also buffer overrun for AID
+		if (result == -1 || tlv2.length > sizeof(applData->AID)) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+		applData->AIDLength = tlv2.length;
+		memcpy(applData->AID, tlv2.value, applData->AIDLength);
+		// tag + length
+		offset+=applData->AIDLength+2;
+		// 9F70 Life Cycle State
+		result = read_TTLV(tlv1.value+offset, tlv1.length, &tlv2);
+		// also 2 bytes seen on a ST eUICC
+		if (result == -1) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+		applData->lifeCycleState = tlv2.value[0];
+		// tag + length + 1 byte
+		offset += 3 + tlv2.length;
+		// undocumented tags seen on ST eUICC
+		do {
+			result = read_TLV(tlv1.value+offset, tlv1.length, &tlv2);
+			if (result == -1) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+				goto end;
+			}
+			switch (tlv2.tag) {
+				case 0xC5:
+					// C5 privileges - only first byte supported
+					if (tlv2.length != 3) {
+						OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+						goto end;
+					}
+					applData->privileges = tlv2.value[0];
+					// +tag + length + 3 byte
+					offset+=5;
+					break;
+				default:
+					// remaining tags not supported
+					// tag + length of data length
+					offset += 2+tlv2.length;
+			}
+		}
+		while (offset < dataLength && offset < tlv1.length);
+		// add TL of tlv1
+		offset += 2;
+	}
+	*dataRead = offset;
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	return status;
+}
+
+OPGP_NO_API
+OPGP_ERROR_STATUS parse_executable_load_file_data(PBYTE data, DWORD dataLength,
+		BYTE format, GP211_EXECUTABLE_MODULES_DATA *modulesData, PDWORD dataRead) {
+	OPGP_ERROR_STATUS status;
+	DWORD offset = 0;
+	if (format == GP211_STATUS_FORMAT_DEPRECATED) {
+		if (dataLength < 1) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+		modulesData->AIDLength = data[offset++];
+		// check also buffer overrun for AID
+		if ((modulesData->AIDLength > dataLength - offset) || modulesData->AIDLength > sizeof(modulesData->AID)) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+		memcpy(modulesData->AID, data+offset, modulesData->AIDLength);
+		offset+=modulesData->AIDLength;
+
+		if (dataLength - offset < 1){
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+		modulesData->lifeCycleState = data[offset++];
+		/* Ignore Application Privileges */
+		if (dataLength - offset < 1){
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+		offset++;
+
+		/* Number of associated Executable Modules */
+		if (dataLength - offset < 1){
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+		modulesData->numExecutableModules = data[offset++];
+		for (int k=0; k<modulesData->numExecutableModules && (offset<dataLength) &&
+		k < (sizeof(modulesData->executableModules) / sizeof(OPGP_AID)); k++) {
+			/* Length of Executable Module AID */
+			modulesData->executableModules[k].AIDLength = data[offset++];
+			// check also buffer overrun for AID
+			if ((modulesData->executableModules[k].AIDLength > dataLength - offset) ||
+					modulesData->executableModules[k].AIDLength > sizeof(modulesData->executableModules[k].AID)) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+				goto end;
+			}
+			memcpy(modulesData->executableModules[k].AID, data+offset, modulesData->executableModules[k].AIDLength);
+			offset+=modulesData->executableModules[k].AIDLength;
+		}
+	}
+	else {
+		DWORD result;
+		int versionNumberSize;
+		TLV tlv1, tlv2;
+		// read outer tag, must be 0xE3
+		result = read_TLV(data, dataLength, &tlv1);
+		if (result == -1 || tlv1.tag != 0xE3) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+		// tag 0x4F AID
+		result = read_TLV(tlv1.value+offset, tlv1.length, &tlv2);
+		// check also buffer overrun for AID
+		if (result == -1 || tlv2.length > sizeof(modulesData->AID)) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+		modulesData->AIDLength = tlv2.length;
+		memcpy(modulesData->AID, tlv2.value, modulesData->AIDLength);
+		// tag + length
+		offset+=modulesData->AIDLength+2;
+		// 9F70 Life Cycle State
+		result = read_TTLV(tlv1.value+offset, tlv1.length, &tlv2);
+		if (result == -1) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+		modulesData->lifeCycleState = tlv2.value[0];
+		// +tag + length + 1 byte
+		offset += 3 + tlv2.length;
+		// CE privileges - Executable Load File Version Number only 2 bytes supported
+		result = read_TLV(tlv1.value+offset, tlv1.length, &tlv2);
+		if (result == -1) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+		memset(modulesData->versionNumber, 0, sizeof(modulesData->versionNumber));
+		versionNumberSize = tlv2.length;
+		if (sizeof(modulesData->versionNumber) < versionNumberSize) {
+			versionNumberSize = sizeof(modulesData->versionNumber);
+		}
+		memcpy(modulesData->versionNumber +
+				(sizeof(modulesData->versionNumber) - versionNumberSize),
+				tlv2.value+offset, versionNumberSize);
+		// +tag + length + n byte
+		offset+=2+tlv2.length;
+
+		for (int k=0; offset<dataLength &&
+				k < (sizeof(modulesData->executableModules) / sizeof(OPGP_AID)); k++) {
+			// tag 0x84 AID
+			result = read_TLV(tlv1.value+offset, tlv1.length, &tlv2);
+			// reached end of executable module AIDs
+			if (tlv2.tag != 0x84) {
+				break;
+			}
+			// check also buffer overrun for AID
+			if (result == -1 || tlv2.length > sizeof(modulesData->executableModules[k].AID)) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+				goto end;
+			}
+			modulesData->executableModules[k].AIDLength = tlv2.length;
+			memcpy(modulesData->executableModules[k].AID, tlv2.value, modulesData->executableModules[k].AIDLength);
+			offset+=modulesData->executableModules[k].AIDLength;
+		}
+		// remaining tags not supported
+		// tag + length of data length
+		offset = tlv1.length +2;
+	}
+	*dataRead = offset;
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	return status;
+}
 
 /**
  * Reads a valid buffer containing a (delete, load, install) receipt and parses it in a GP211_RECEIPT_DATA.
@@ -1589,13 +1829,15 @@ end:
  * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
  * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * \param cardElement [in] Identifier to retrieve data for Load Files, Applications or the Card Manager.
+ * \param format [in] The GET STATUS output format. Newer cards might not support the legacy format.
  * See GP211_STATUS_APPLICATIONS and related.
  * \param *applData [out] The GP211_APPLICATION_DATA structure.
  * \param *executableData [out] The GP211_APPLICATION_DATA structure.
  * \param dataLength [in, out] The number of GP211_APPLICATION_DATA or GP211_EXECUTABLE_MODULES_DATA passed and returned.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
-OPGP_ERROR_STATUS GP211_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE cardElement, GP211_APPLICATION_DATA *applData, GP211_EXECUTABLE_MODULES_DATA *executableData, PDWORD dataLength) {
+OPGP_ERROR_STATUS GP211_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+		BYTE cardElement, BYTE format, GP211_APPLICATION_DATA *applData, GP211_EXECUTABLE_MODULES_DATA *executableData, PDWORD dataLength) {
 	OPGP_ERROR_STATUS status;
 	DWORD sendBufferLength=8;
 	DWORD recvBufferLength=256;
@@ -1607,7 +1849,7 @@ OPGP_ERROR_STATUS GP211_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xF2;
 	sendBuffer[i++] = cardElement;
-	sendBuffer[i++] = 0x00;
+	sendBuffer[i++] = format;
 	sendBuffer[i++] = 2;
 	sendBuffer[i++] = 0x4F;
 	sendBuffer[i++] = 0x00;
@@ -1615,7 +1857,6 @@ OPGP_ERROR_STATUS GP211_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 	i=0;
 	do {
 		recvBufferLength=256;
-
 		status = OPGP_send_APDU(cardContext, cardInfo, secInfo,sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
 		if ( OPGP_ERROR_CHECK(status)) {
 			goto end;
@@ -1624,90 +1865,23 @@ OPGP_ERROR_STATUS GP211_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 			CHECK_SW_9000(recvBuffer, recvBufferLength, status);
 		}
 		for (j=0; j<recvBufferLength-2; ) {
+			DWORD dataRead;
 			if (*dataLength <= i ) {
 				{ OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_MORE_APPLICATION_DATA, OPGP_stringify_error(GP211_ERROR_MORE_APPLICATION_DATA)); goto end; }
 			}
 			if (cardElement == GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES) {
-				/* Length of Executable Load File AID */
-				executableData[i].AIDLength = recvBuffer[j++];
-
-                /* BUGFIX: Don't read beyond recvBuffer array bounds or into 0x9000 */
-                if (executableData[i].AIDLength > recvBufferLength - j - 2){
-                    executableData[i].AIDLength = (BYTE)(recvBufferLength - j - 2);
-                }
-
-				/* Executable Load File AID */
-                /* BUGFIX: Don't write beyond AID array bounds */
-                memcpy(executableData[i].AID, recvBuffer+j, (executableData[i].AIDLength > 16) ? 16 : executableData[i].AIDLength);
-				j+=executableData[i].AIDLength;
-
-                /* Executable Load File Life Cycle State */
-                /* BUGFIX: Don't read beyond recvBuffer array bounds or into 0x9000 */
-                if (j >= recvBufferLength - 2){
-                    executableData[i].lifeCycleState = 0xFF;
-                }else{
-                    executableData[i].lifeCycleState = recvBuffer[j++];
-                }
-
-				/* Ignore Application Privileges */
-				j++;
-
-				/* Number of associated Executable Modules */
-                /* BUGFIX: Don't read beyond recvBuffer array bounds or into 0x9000 */
-                if (j >= recvBufferLength - 2){
-                    numExecutableModules = 0;
-                }else{
-                    numExecutableModules = recvBuffer[j++];
-                }
-
-				for (k=0; k<numExecutableModules && (j<recvBufferLength-2); k++) {
-					/* Length of Executable Module AID */
-					executableData[i].executableModules[k].AIDLength = recvBuffer[j++];
-
-                    /* BUGFIX: Don't read beyond recvBuffer array bounds or into 0x9000 */
-                    if (executableData[i].executableModules[k].AIDLength > recvBufferLength - j - 2){
-                        executableData[i].executableModules[k].AIDLength = (BYTE)(recvBufferLength - j - 2);
-                    }
-
-					/* Executable Module AID */
-                    /* BUGFIX: Don't write beyond AID array bounds */
-                    memcpy(executableData[i].executableModules[k].AID, recvBuffer+j, (executableData[i].executableModules[k].AIDLength > 16) ? 16 : executableData[i].executableModules[k].AIDLength);
-					j+=executableData[i].executableModules[k].AIDLength;
+				status = parse_executable_load_file_data(recvBuffer+j, recvBufferLength-2-j, format, &executableData[i], &dataRead);
+				if ( OPGP_ERROR_CHECK(status)) {
+					goto end;
 				}
-				executableData[i].numExecutableModules = numExecutableModules;
 			}
 			else {
-				applData[i].AIDLength = recvBuffer[j++];
-
-                /* BUGFIX: Don't read beyond recvBuffer array bounds or into 0x9000 */
-                if (applData[i].AIDLength > recvBufferLength - j - 2){
-                    applData[i].AIDLength = (BYTE)(recvBufferLength - j - 2);
-                }
-
-                /* BUGFIX: Don't write beyond AID array bounds */
-                memcpy(applData[i].AID, recvBuffer+j, (applData[i].AIDLength > 16) ? 16 : applData[i].AIDLength);
-				j+=applData[i].AIDLength;
-
-                /* BUGFIX: Don't read beyond recvBuffer array bounds or into 0x9000 */
-                if (j >= recvBufferLength - 2){
-                    applData[i].lifeCycleState = 0xFF;
-                }else{
-                    applData[i].lifeCycleState = recvBuffer[j++];
-                }
-
-				if (cardElement != GP211_STATUS_LOAD_FILES) {
-                    /* BUGFIX: Don't read beyond recvBuffer array bounds or into 0x9000 */
-                    if (j >= recvBufferLength - 2){
-                        applData[i].privileges = 0xFF;
-                    }else{
-                        applData[i].privileges = recvBuffer[j++];
-                    }
-				}
-				else {
-					applData[i].privileges = 0x00;
-					j++;
+				status = parse_application_data(recvBuffer+j, recvBufferLength-2-j, cardElement, format, &applData[i], &dataRead);
+				if ( OPGP_ERROR_CHECK(status)) {
+					goto end;
 				}
 			}
+			j += dataRead;
 			i++;
 		}
 		sendBuffer[3]=0x01;
@@ -4003,11 +4177,8 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
         memcpy(secInfo->dataEncryptionSessionKey, dek, 16);
 	}
 	else if (secInfo->secureChannelProtocol == GP211_SCP02) {
-		/* Secure Channel base key */
-		if (secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i04
-			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i14
-			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i44
-			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i54) {
+		/* 1 Secure Channel base key */
+		if ((secInfo->secureChannelProtocolImpl & 0x01) == 0) {
 			// calculation of encryption session key
 			status = create_session_key_SCP02(baseKey, ENCDerivationConstant, sequenceCounter, secInfo->encryptionSessionKey);
 			if (OPGP_ERROR_CHECK(status)) {
@@ -4034,10 +4205,7 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 
 		}
 		/* 3 Secure Channel Keys */
-		else if (secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i05
-			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i15
-			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i55
-			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i45) {
+		else {
 			// calculation of encryption session key
 			status = create_session_key_SCP02(sEnc, ENCDerivationConstant, sequenceCounter, secInfo->encryptionSessionKey);
 			if (OPGP_ERROR_CHECK(status)) {
@@ -4061,10 +4229,6 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 			if (OPGP_ERROR_CHECK(status)) {
 				goto end;
 			}
-		}
-		else {
-			OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_INVALID_SCP_IMPL, OPGP_stringify_error(GP211_ERROR_INVALID_SCP_IMPL));
-			goto end;
 		}
 	}
 	else if (secInfo->secureChannelProtocol == GP211_SCP01) {
@@ -5788,21 +5952,6 @@ OPGP_ERROR_STATUS OP201_pin_change(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 	memcpy(gp211secInfo.dataEncryptionSessionKey, KEK, 16);
 	status = pin_change(cardContext, cardInfo, &gp211secInfo, tryLimit, newPIN, newPINLength);
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
-	return status;
-}
-
-/**
- * Reads a DAP block and parses it to the buffer buf.
- * \param buf [out] The buffer.
- * \param bufLength [in, out] The length of the buffer and the returned data.
- * \param dapBlock [in] The Load File Data Block DAP block.
- * \return OPGP_ERROR_SUCCESS if no error, error code else
- */
-OPGP_ERROR_STATUS readDAPBlock(PBYTE buf, PDWORD bufLength, OP201_DAP_BLOCK dapBlock) {
-	OPGP_ERROR_STATUS status;
-	GP211_DAP_BLOCK gp211dapBlock;
-	mapOP201ToGP211DAPBlock(dapBlock, &gp211dapBlock);
-	status = read_load_file_data_block_signature(buf, bufLength, gp211dapBlock);
 	return status;
 }
 

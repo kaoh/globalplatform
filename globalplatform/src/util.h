@@ -38,20 +38,24 @@ extern "C"
  * A TLV object. Only simple objects with tags sizes of 1 byte and lengths <= 127 are supported.
  **/
 typedef struct {
-	BYTE tag; //!< The Tag.
+	USHORT tag; //!< The Tag.
 	BYTE length; //!< The length of the value.
 	BYTE value[127]; //!< The value.
 } TLV;
 
-//! \brief Reads a TLV struct form the given buffer
+//! \brief Reads a TLV struct from the given buffer
 OPGP_NO_API
 LONG read_TLV(PBYTE buffer, DWORD length, TLV *tlv);
+
+//! \brief Reads a TLV struct with 2 octects for the tag from the given buffer
+OPGP_NO_API
+LONG read_TTLV(PBYTE buffer, DWORD length, TLV *tlv);
 
 //! \brief Converts a ISO 7816-4 Le Byte into its value.
 OPGP_NO_API
 DWORD convert_byte(BYTE b);
 
-//! \brief Returns a short int from the given postion,
+//! \brief Returns a short int from the given position
 OPGP_NO_API
 DWORD get_short(PBYTE buf, DWORD offset);
 

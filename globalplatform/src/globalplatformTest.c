@@ -429,7 +429,7 @@ START_TEST (test_get_status) {
 		if (OPGP_ERROR_CHECK(status)) {
 			fail("Could not do mutual authentication: %s", status.errorMessage);
 		}
-		status = GP211_get_status(cardContext, cardInfo, &securityInfo211, GP211_STATUS_APPLICATIONS, appData, modulesData, &dataLength);
+		status = GP211_get_status(cardContext, cardInfo, &securityInfo211, GP211_STATUS_APPLICATIONS, GP211_STATUS_FORMAT_DEPRECATED, appData, modulesData, &dataLength);
 		if (OPGP_ERROR_CHECK(status)) {
 			fail("Could not get status from applications: %s", status.errorMessage);
 		}
@@ -440,7 +440,7 @@ START_TEST (test_get_status) {
 		fail_unless(memcmp(appData[0].AID, appAID, sizeof(appAID))==0, "Incorrect application status AID");
 
         dataLength = 10;
-		status = GP211_get_status(cardContext, cardInfo, &securityInfo211, GP211_STATUS_LOAD_FILES, appData, modulesData, &dataLength);
+		status = GP211_get_status(cardContext, cardInfo, &securityInfo211, GP211_STATUS_LOAD_FILES, GP211_STATUS_FORMAT_DEPRECATED, appData, modulesData, &dataLength);
 		if (OPGP_ERROR_CHECK(status)) {
 			fail("Could not get status from applications: %s", status.errorMessage);
 		}
@@ -450,7 +450,7 @@ START_TEST (test_get_status) {
 		fail_unless(memcmp(appData[0].AID, loadFileAID, sizeof(loadFileAID))==0, "Incorrect load file status");
 
         dataLength = 10;
-		status = GP211_get_status(cardContext, cardInfo, &securityInfo211, GP211_STATUS_ISSUER_SECURITY_DOMAIN, appData, modulesData, &dataLength);
+		status = GP211_get_status(cardContext, cardInfo, &securityInfo211, GP211_STATUS_ISSUER_SECURITY_DOMAIN, GP211_STATUS_FORMAT_DEPRECATED, appData, modulesData, &dataLength);
 		if (OPGP_ERROR_CHECK(status)) {
 			fail("Could not get status from applications: %s", status.errorMessage);
 		}

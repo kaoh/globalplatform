@@ -89,7 +89,8 @@ typedef struct _OptionStr
     char passPhrase[PASSPHRASELEN+1];
     BYTE instParam[INSTPARAMLEN+1];
     DWORD instParamLen;
-    BYTE element;
+    BYTE element; //!< GET STATUS element (application, security domains, executable load files) to get
+    BYTE format; //!< GET STATUS format
     BYTE privilege;
     BYTE scp;
     BYTE scpImpl;
@@ -217,6 +218,7 @@ static int handleOptions(OptionStr *pOptionStr)
     pOptionStr->instParam[0] = '\0';
     pOptionStr->instParamLen = 0;
     pOptionStr->element = 0;
+    pOptionStr->format = 2;
     pOptionStr->privilege = 0;
     pOptionStr->scp = 0;
     pOptionStr->scpImpl = 0;
@@ -1660,6 +1662,7 @@ static int handleCommands(FILE *fd)
                     GP211_EXECUTABLE_MODULES_DATA execData[NUM_APPLICATIONS];
                     status = GP211_get_status(cardContext, cardInfo, &securityInfo211,
                                           optionStr.element,
+										  optionStr.format,
                                           appData,
                                           execData,
                                           &numData);
