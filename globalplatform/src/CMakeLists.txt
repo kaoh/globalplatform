@@ -116,7 +116,12 @@ IF(TESTING)
       SOURCES scp02Test.c testUtil.c ${SOURCES}
       MOCKS RAND_bytes 
       LINK_LIBRARIES ${LIBRARIES})
-              
+
+    add_mocked_test(scp01Test 
+      SOURCES scp01Test.c testUtil.c ${SOURCES}
+      MOCKS RAND_bytes 
+      LINK_LIBRARIES ${LIBRARIES})
+                    
   ENDIF(CMOCKA_FOUND AND NOT WIN32)
 ENDIF(TESTING)
 

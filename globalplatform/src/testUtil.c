@@ -52,3 +52,4 @@ OPGP_ERROR_STATUS send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardIn
 	OPGP_ERROR_CREATE_NO_ERROR(status);
 	return status;
 }
+

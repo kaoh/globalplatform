@@ -2030,7 +2030,7 @@ OPGP_ERROR_STATUS load_from_buffer(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 			sendBuffer[2] = 0x00;
 			sendBuffer[3] = sequenceNumber++;
 			sendBuffer[4]=(BYTE)j;
-			// CFlex behavior strange, so commented out
+			// CFlex behavior strange if Le is set, so commented out
 			//sendBufferLength++;
 			//sendBuffer[sendBufferLength-1] = 0x00;
 
@@ -2112,7 +2112,7 @@ OPGP_ERROR_STATUS load_from_buffer(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 			//sendBuffer[sendBufferLength-1] = 0x00;
 		}
 
-		recvBufferLength=256;
+		recvBufferLength=APDU_RESPONSE_LEN;
 
 		status = OPGP_send_APDU(cardContext, cardInfo, secInfo, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
 		if (OPGP_ERROR_CHECK(status)) {
@@ -2133,7 +2133,7 @@ OPGP_ERROR_STATUS load_from_buffer(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 		sendBuffer[2] = 0x00;
 		sendBuffer[3] = sequenceNumber++;
 		sendBuffer[4]=(BYTE)j;
-		recvBufferLength=256;
+		recvBufferLength=APDU_RESPONSE_LEN;
 
 		status = OPGP_send_APDU(cardContext, cardInfo, secInfo, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
 		if (OPGP_ERROR_CHECK(status)) {
@@ -2186,7 +2186,7 @@ OPGP_ERROR_STATUS load_from_buffer(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 			//sendBuffer[sendBufferLength-1] = 0x00;
 		}
 
-		recvBufferLength=256;
+		recvBufferLength=APDU_RESPONSE_LEN;
 
 		status = OPGP_send_APDU(cardContext, cardInfo, secInfo, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
 		if (OPGP_ERROR_CHECK(status)) {
@@ -2231,7 +2231,7 @@ OPGP_ERROR_STATUS load_from_buffer(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 			//sendBuffer[sendBufferLength-1] = 0x00;
 		}
 
-		recvBufferLength=256;
+		recvBufferLength=APDU_RESPONSE_LEN;
 		status = OPGP_send_APDU(cardContext, cardInfo, secInfo, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
 		if (OPGP_ERROR_CHECK(status)) {
 			goto end;
@@ -2579,6 +2579,7 @@ OPGP_ERROR_STATUS install_for_install_and_make_selectable(OPGP_CARD_CONTEXT card
 		sendBuffer[i++] = 0x00; // Length of install token
 	}
 	sendBuffer[4] = (BYTE)i-5; // Lc
+	// TODO: is this special JCOP handling needed? not generic
 	if (memcmp(JCOP21V22_ATR, cardInfo.ATR, max(cardInfo.ATRLength, sizeof(JCOP21V22_ATR))) != 0) {
 		sendBuffer[i++] = 0x00; // Le
 	}
@@ -3989,10 +3990,10 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	BYTE sEnc[16];
 	BYTE dek[16];
 
-	DWORD sendBufferLength=256;
-	DWORD recvBufferLength=256;
-	BYTE recvBuffer[256];
-	BYTE sendBuffer[256];
+	DWORD sendBufferLength = APDU_COMMAND_LEN;
+	DWORD recvBufferLength = APDU_RESPONSE_LEN;
+	BYTE recvBuffer[APDU_RESPONSE_LEN];
+	BYTE sendBuffer[APDU_COMMAND_LEN];
 	// random for host challenge
 
 	OPGP_LOG_START(_T("mutual_authentication"));
@@ -5134,8 +5135,9 @@ OPGP_ERROR_STATUS OP201_load(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardI
 	}
 	status = load(cardContext, cardInfo, &gp211secInfo, gp211dapBlock, dapBlockLength,
 		executableLoadFileName, &gp211receiptData, receiptDataAvailable, callback);
-	if (*receiptDataAvailable)
+	if (*receiptDataAvailable) {
 		mapGP211ToOP201ReceiptData(gp211receiptData, receiptData);
+	}
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 end:
 	if (gp211dapBlock)
@@ -5327,8 +5329,9 @@ OPGP_ERROR_STATUS OP201_install_for_install_and_make_selectable(OPGP_CARD_CONTEX
 		applicationPrivileges, volatileDataSpaceLimit, nonVolatileDataSpaceLimit,
 		applicationInstallParameters, applicationInstallParametersLength, installToken,
 		&gp211receiptData, receiptDataAvailable);
-	if (*receiptDataAvailable)
+	if (*receiptDataAvailable) {
 		mapGP211ToOP201ReceiptData(gp211receiptData, receiptData);
+	}
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 	return status;
 }

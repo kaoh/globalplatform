@@ -16,6 +16,23 @@
  */
 #include "globalplatform/globalplatform.h"
 
+// This as a function gives a segmentation fault when accessing the responses
+#define ENQUEUE_COMMANDS(commands, responses, numCommands) {\
+	BYTE commandRequest[APDU_COMMAND_LEN];\
+	DWORD commandRequestLen = APDU_COMMAND_LEN;\
+	BYTE commandResponse[APDU_RESPONSE_LEN];\
+	DWORD commandResponseLen = APDU_RESPONSE_LEN;\
+	for (int i=0; i<numCommands; i++) {\
+		commandRequestLen = APDU_COMMAND_LEN;\
+		commandResponseLen = APDU_RESPONSE_LEN;\
+		hex_to_byte_array(*(commands + i), commandRequest, &commandRequestLen);\
+		hex_to_byte_array(*(responses + i), commandResponse, &commandResponseLen);\
+		expect_memory(send_APDU, capdu, commandRequest, commandRequestLen);\
+		will_return(send_APDU, commandResponse);\
+		will_return(send_APDU, &commandResponseLen);\
+	}\
+}
+
 void hex_to_byte_array(OPGP_CSTRING hexString, PBYTE buffer, PDWORD bufferLength);
 
 int __wrap_RAND_bytes(unsigned char *buf, int num);

@@ -240,7 +240,7 @@ OPGP_ERROR_STATUS OPGP_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO c
     if (plugin_sendAPDUFunction == NULL){
         OPGP_ERROR_CREATE_ERROR(errorStatus, 0, _T("sendAPDUFunction is NULL. Likely no connection library is set."));
         goto end;
-    }else{
+    } else {
         errorStatus = (*plugin_sendAPDUFunction) (cardContext, cardInfo, apduCommand, apduCommandLength, rapdu, rapduLength);
         if (OPGP_ERROR_CHECK(errorStatus)) {
             goto end;

@@ -1383,7 +1383,8 @@ OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE
 	// Philip Wendland: Update the APDU header first, calculate MAC then.
 	if ((secInfo->secureChannelProtocol == GP211_SCP02 &&
 			(secInfo->secureChannelProtocolImpl & 0x02) == 0)
-		|| secInfo->secureChannelProtocol == GP211_SCP03) {
+		|| secInfo->secureChannelProtocol == GP211_SCP03
+		|| secInfo->secureChannelProtocol == GP211_SCP01) {
 		switch (caseAPDU) {
 			case 1:
 			case 2: {
@@ -1395,7 +1396,7 @@ OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE
 				wrappedApduCommand[4] += 8;
 				break;
 			}
-		} // switch (caseAPDU)
+		}
 		// CLA - indicate security level 1 or 3
 		wrappedApduCommand[0] = apduCommand[0] | 0x04;
 	}
@@ -1435,7 +1436,7 @@ OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE
 		}
 	}
 	// Philip Wendland: Added SCP01 check as this would apply to SCP03 otherwise.
-	else if (secInfo->secureChannelProtocol == GP211_SCP01){
+	else if (secInfo->secureChannelProtocol == GP211_SCP01) {
 		status = calculate_MAC(secInfo->C_MACSessionKey, wrappedApduCommand, wrappedLength-paddingSize-8,
 			C_MAC_ICV, mac);
 		if (OPGP_ERROR_CHECK(status)) {
@@ -1505,43 +1506,31 @@ OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE
 
 	// Philip Wendland: if we have to encrypt for SCP01 and SCP02:
 	if (secInfo->secureChannelProtocol != GP211_SCP03
-			&& (secInfo->securityLevel == GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC
-		|| secInfo->securityLevel == GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC
-		|| secInfo->securityLevel == GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC)
-		// SCP01 does not encrypt in no data is contained
-		&& !(secInfo->secureChannelProtocol == GP211_SCP01 && lc == 0)) {
-		switch (caseAPDU) {
-			case 1:
-			case 3:
-				if (secInfo->secureChannelProtocol == GP211_SCP02) {
-					status = calculate_enc_cbc_SCP02(secInfo->encryptionSessionKey,
-						wrappedApduCommand+5, lc, encryption, &encryptionLength);
-					if (OPGP_ERROR_CHECK(status)) {
-						goto end;
-					}
-				}
-				break;
-			case 2:
-			case 4:
-				if (secInfo->secureChannelProtocol == GP211_SCP02) {
-					status = calculate_enc_cbc_SCP02(secInfo->encryptionSessionKey,
-						wrappedApduCommand+5, lc, encryption, &encryptionLength);
-					if (OPGP_ERROR_CHECK(status)) {
-						goto end;
-					}
-				}
-				else {
-					// SCP01 prepends a length byte
-					BYTE wrappedLc = wrappedApduCommand[4];
-					wrappedApduCommand[4] = lc;
-					status = calculate_enc_cbc(secInfo->encryptionSessionKey,
-						wrappedApduCommand+4, lc+1, encryption, &encryptionLength);
-					if (OPGP_ERROR_CHECK(status)) {
-						goto end;
-					}
-					wrappedApduCommand[4] = wrappedLc;
-				}
-				break;
+		&& (
+			(secInfo->secureChannelProtocol == GP211_SCP01 && secInfo->securityLevel == GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC)
+			|| (secInfo->secureChannelProtocol == GP211_SCP02 &&
+					(secInfo->securityLevel == GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC
+					|| secInfo->securityLevel == GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC))
+			)
+			// SCP01 does not encrypt if no data is contained
+			&& !(secInfo->secureChannelProtocol == GP211_SCP01 && lc == 0)) {
+		if (secInfo->secureChannelProtocol == GP211_SCP02) {
+			status = calculate_enc_cbc_SCP02(secInfo->encryptionSessionKey,
+				wrappedApduCommand+5, lc, encryption, &encryptionLength);
+			if (OPGP_ERROR_CHECK(status)) {
+				goto end;
+			}
+		}
+		else {
+			// SCP01 prepends a length byte
+			BYTE wrappedLc = wrappedApduCommand[4];
+			wrappedApduCommand[4] = lc;
+			status = calculate_enc_cbc(secInfo->encryptionSessionKey,
+				wrappedApduCommand+4, lc+1, encryption, &encryptionLength);
+			if (OPGP_ERROR_CHECK(status)) {
+				goto end;
+			}
+			wrappedApduCommand[4] = wrappedLc;
 		}
 		wrappedApduCommand[4] += paddingSize;
 		memcpy(wrappedApduCommand + 5, encryption, encryptionLength);

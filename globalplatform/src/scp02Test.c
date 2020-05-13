@@ -100,6 +100,122 @@ static void get_status_mac_only(void **state) {
 	assert_int_equal(applicationData[6].privileges, 0);
 }
 
+static void install_mac_enc(void **state) {
+	OPGP_ERROR_STATUS status;
+
+	BYTE hostChallenge[8];
+	DWORD hostChallengeLen = 8;
+	BYTE initializeUpdateRequest[APDU_COMMAND_LEN], extAuthRequest[APDU_COMMAND_LEN];
+
+	DWORD initializeUpdateRequestLen, extAuthRequestLen;
+	initializeUpdateRequestLen = extAuthRequestLen = APDU_COMMAND_LEN;
+
+	BYTE initializeUpdateResponse[APDU_RESPONSE_LEN];
+	DWORD initializeUpdateResponseLen = APDU_RESPONSE_LEN;
+
+	BYTE extAuthResponse[] = {0x90, 0x00};
+	DWORD extAuthResponseLen = sizeof(extAuthResponse);
+
+	GP211_RECEIPT_DATA receiptData;
+	DWORD receiptDataLength = 1;
+	OPGP_AID aid;
+
+	OPGP_CSTRING commands[] = {
+				"84E4008018BC146FA0403BE4BAD3BC089E4ABD8674DA7EFEA21047B85800",
+				"84E4008018C2748C1669FAFC0E20C5253680388A4A49C9A6038D77B45700",
+				"84E60200280839B761AA201C218FD6607C56803CFD2D098CBAA9946976EEFAE3F210038EB4965D6E04EDEF801700",
+				"84E80000F8562EFDC9F22082A5184831F1DA6A0F495C5DF0FD71E8014A2B94EA81069FB630346197CDF1C3BD9CDBDD9513BFE6FE7992730FCF2089019D1374DA1021BD74E2085B806B8DA57431FF008406E1C695F2E27E0C2A554E01047B9B36F4058CFC1C2FB8D0A45B01C626DF5CB2509436283BE22B9E7750B3B7F36E29E3C97C69533B35C2DBEF13904D06E96BEBB6FA38D3E7EB7EB9170F3004824F5A32278AE7CBC3E591BA0C79B090FBD8038B60AC5F83E4E250B32AD5B92768E775AA974A4FAFC81356FA333D5AB4FAF1A0056E08420AF95D18CA0DF726BA560C5C340CCA81A1BEA294AAFE3AED250EF6865AA2D3F11D058FDFE5EE7622AE19",
+				"84E88001787FFE538F755D612CEE738FA68E177E8E146E66EF2A840387F7086C1CA8659C9F985585E11001A12D4940CB3EF200DFEC9EC7FB59CADED4A7F82EDA5BE808552A3CD3B65D41F9F61A23E6FDA2C1BF2493F4929950FA62030FF023B34398247A2E01BBF949E819B5EEA117DC6E0D91D40D85ABDE0BC2A76D8600",
+				"84E60C00300839B761AA201C21EDAE7D003F76B62164B363AF56A2C7FE12AEF9FDC790DFC8FFE6B0346E9BF02674684247652F109A00"
+	};
+	OPGP_CSTRING responses[] = {
+				"6A88",
+				"009000",
+				"009000",
+				"009000",
+				"9000",
+				"9000"
+	};
+	DWORD aidLength;
+
+	OPGP_LOAD_FILE_PARAMETERS loadFileParams;
+	DWORD receiptDataAvailable;
+	char installParam[1];
+	installParam[0] = 0;
+
+	hex_to_byte_array("8050000008EBAA9E53C696281B00", initializeUpdateRequest, &initializeUpdateRequestLen);
+	hex_to_byte_array("000074746E6E6E626262010206A15086BBEE58F467149061DA4B6EAE9000", initializeUpdateResponse, &initializeUpdateResponseLen);
+	hex_to_byte_array("848203001005814C116071EB67D8BA9D9879454564", extAuthRequest, &extAuthRequestLen);
+	hex_to_byte_array("EBAA9E53C696281B", hostChallenge, &hostChallengeLen);
+
+	will_return(__wrap_RAND_bytes, hostChallenge);
+	expect_value(__wrap_RAND_bytes, num, 8);
+
+	expect_memory(send_APDU, capdu, initializeUpdateRequest, initializeUpdateRequestLen);
+	will_return(send_APDU, initializeUpdateResponse);
+	will_return(send_APDU, &initializeUpdateResponseLen);
+
+	expect_memory(send_APDU, capdu, extAuthRequest, extAuthRequestLen);
+	will_return(send_APDU, extAuthResponse);
+	will_return(send_APDU, &extAuthResponseLen);
+
+	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, 0, 0,
+			GP211_SCP02, GP211_SCP02_IMPL_i15, GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC, 0, &securityInfo211);
+	assert_int_equal(status.errorCode, OPGP_ERROR_STATUS_SUCCESS);
+
+	// the macro looses one 9000 response ????
+	//ENQUEUE_COMMANDS(commands, responses, 6)
+	BYTE commandRequest[APDU_COMMAND_LEN];
+	DWORD commandRequestLen = APDU_COMMAND_LEN;
+	BYTE commandResponse[APDU_RESPONSE_LEN];
+	DWORD commandResponseLen = APDU_RESPONSE_LEN;
+	for (int i=0; i<6; i++) {
+		commandRequestLen = APDU_COMMAND_LEN;
+		commandResponseLen = APDU_RESPONSE_LEN;
+		hex_to_byte_array(*(commands + i), commandRequest, &commandRequestLen);
+		hex_to_byte_array(*(responses + i), commandResponse, &commandResponseLen);
+		expect_memory(send_APDU, capdu, commandRequest, commandRequestLen);
+		will_return(send_APDU, commandResponse);
+		will_return(send_APDU, &commandResponseLen);
+	}
+
+	aidLength = sizeof(aid.AID);
+	hex_to_byte_array("D0D1D2D3D4D50101", aid.AID, &aidLength);
+	aid.AIDLength = aidLength;
+	status = GP211_delete_application(cardContext, cardInfo, &securityInfo211, &aid, 1, &receiptData, &receiptDataLength);
+	assert_int_equal(status.errorCode, OPGP_ERROR_STATUS_SUCCESS);
+
+	aidLength = sizeof(aid.AID);
+	hex_to_byte_array("D0D1D2D3D4D501", aid.AID, &aidLength);
+	aid.AIDLength = aidLength;
+	receiptDataLength = 1;
+	status = GP211_delete_application(cardContext, cardInfo, &securityInfo211, &aid, 1, &receiptData, &receiptDataLength);
+	assert_int_equal(status.errorCode, OPGP_ERROR_STATUS_SUCCESS);
+
+//  install -file helloworld.cap -nvDataLimit 2000 -instParam 00 -priv 2
+
+	status = OPGP_read_executable_load_file_parameters("helloworld.cap", &loadFileParams);
+	assert_int_equal(status.errorCode, OPGP_ERROR_STATUS_SUCCESS);
+
+	aidLength = sizeof(aid.AID);
+	hex_to_byte_array("a000000003000000", aid.AID, &aidLength);
+	aid.AIDLength = aidLength;
+	status = GP211_install_for_load(cardContext, cardInfo, &securityInfo211,
+								loadFileParams.loadFileAID.AID, loadFileParams.loadFileAID.AIDLength,
+								aid.AID, aidLength, NULL, NULL,
+								loadFileParams.loadFileSize, 0, 2000);
+	assert_int_equal(status.errorCode, OPGP_ERROR_STATUS_SUCCESS);
+	status = GP211_load(cardContext, cardInfo, &securityInfo211, NULL, 0, "helloworld.cap", NULL, &receiptDataAvailable, NULL);
+	assert_int_equal(status.errorCode, OPGP_ERROR_STATUS_SUCCESS);
+	status = GP211_install_for_install_and_make_selectable(
+		cardContext, cardInfo, &securityInfo211,
+		loadFileParams.loadFileAID.AID, loadFileParams.loadFileAID.AIDLength,
+		loadFileParams.appletAIDs[0].AID, loadFileParams.appletAIDs[0].AIDLength,
+		loadFileParams.appletAIDs[0].AID, loadFileParams.appletAIDs[0].AIDLength,
+		2, 0, 2000, installParam, 1, NULL, &receiptData, &receiptDataAvailable);
+	assert_int_equal(status.errorCode, OPGP_ERROR_STATUS_SUCCESS);
+}
+
 static int setup(void **state) {
 	cardContext.connectionFunctions.sendAPDU = &send_APDU;
 	return 0;
@@ -107,7 +223,8 @@ static int setup(void **state) {
 
 int main(void) {
 	const struct CMUnitTest tests[] = {
-			cmocka_unit_test(get_status_mac_only)
+			cmocka_unit_test(get_status_mac_only),
+			cmocka_unit_test(install_mac_enc)
 	};
 	return cmocka_run_group_tests_name("SCP02", tests, setup, NULL);
 }

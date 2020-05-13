@@ -1,7 +1,7 @@
 .\" Process this file with
 .\" groff -man -Tascii gpshell.1
 .\"
-.TH GPSHELL 1 "MARCH 2010" Linux "User Manuals"
+.TH GPSHELL 1 "May 2020" Linux "User Manuals"
 .SH NAME
 gpshell \- command line tool for the management of GlobalPlatform compliant smart cards
 .SH SYNOPSIS
@@ -12,25 +12,25 @@ gpshell \- command line tool for the management of GlobalPlatform compliant smar
 .B gpshell
 gpshell can manage applications on smart cards supporting the GlobalPlatform.
 This comprises the installation and deletion of applications, getting the
-applications status and card data. These appications are practical always Java Card applets.
+applications status and card data. These applications are practical always Java Card applets.
 Additional key management commands are provided.
 
-The most common way to use gpshell is a scriptfile. But it is also possible to read the commands from stdin.
+The most common way to use gpshell is a script file. But it is also possible to read the commands from stdin.
 .SH COMMANDS
 .IP mode_201
 Set protocol mode to OpenPlatform 2.0.1
 .IP mode_211
-Set protocol mode to GlobalPlatform 2.1.1
+Set protocol mode to GlobalPlatform 2.1.1 and later
 .IP visa_key_derivation
 If you have a card which uses the VISA key derivation scheme for the key calculation,
-like GemXpresso Pro or some JCOP cards you must set this.
+like GemXpresso Pro, Palmera or some JCOP cards you must set this.
 .IP  emv_cps11_key_derivation
 If you have a card which uses the EMV CPS 1.1 key derivation scheme for the key calculation, like a Sm@rtCafe Expert 3.0 you must set this.
 .IP enable_trace
 Enable APDU trace
 
 You will see the sent APDUs in clear text. The last two bytes of the
-reponse are the response code. A reponse code of 9000 means success,
+response are the response code. A response code of 9000 means success,
 otherwise the response code indicates an error. This may be OK when
 deleting a non existing applet or package.
 .IP enable_timer
@@ -47,8 +47,8 @@ Connect to card in the xth reader in the system
 .I "-keyind x -keyver x -key xyz -mac_key xyz -enc_key xyz -kek_key xyz -security x -scp x -scpimpl x -keyDerivation x"
 Open secure channel
 
-For OpenPlatform 2.0.1' card only -keyind -keyver -mac_key and enc_key are necessary.
-For GlobalPlatform 2.1.1 cards -scp and -scpimpl should be not necessary to supply. You must also specify -kek_key.
+For OpenPlatform 2.0.1' card only -keyind -keyver -mac_key and -enc_key are necessary.
+For GlobalPlatform 2.1.1 cards -scp and -scpimpl should not be necessary to supply. You must also specify -kek_key.
 If your card supports a Secure Channel Protocol Implementation with only one base key, specify this key with -key and omit the others.
 If you have a card which uses key derivation you must enable the derivation mode with the -keyDerivation option and you must specify with -key the master (mother) key.
  -kek_key, -mac_key and -enc_key are not relevant. See the section Options and Key derivation.
@@ -61,12 +61,12 @@ Load and installs in one step
 
 The parameters -AID -instAID -pkgAID -nvCodeLimit can be detected automatically and the -AID and -instAID is set to the first applet in appletfile.
 
-For the sdAID the AID selected with the select command is chosen if not given. Otherwise the default Card Manager / Security Issuer Domain AID is chosen. So usually you do not have to pass it.
+For the sdAID the AID selected with the select command is chosen if not given. Otherwise the default Card Manager / Security Issuer Domain AID is chosen. Usually you do not have to pass it.
 .IP install_for_load
 .I "-pkgAID x -sdAID sdAID -nvCodeLimit y"
 Install for Load
 
-For the sdAID the AID selected with the select command is chosen if not given. Otherwise the default Card Manager / Security Issuer Domain AID is chosen. So usually you do not have to pass it.
+For the sdAID the AID selected with the select command is chosen if not given. Otherwise the default Card Manager / Security Issuer Domain AID is chosen. Usually you do not have to pass it.
 You may need to use this command if the combined install command does not work.
 .IP load
 .I "-file appletFile"
@@ -77,7 +77,7 @@ You may need to use this command if the combined install command does not work.
 .I "-priv privilege -AID AIDInPkg -pkgAID pkgAID -instAID instanceAID -nvDataLimit x"
 Instantiate applet
 
-You may need to use this command if the combined install command does not work. Or you want to install a preinstalled Security Domain.
+You may need to use this command if the combined install command does not work. Or you want to install a pre-installed Security Domain.
 .IP card_disconnect
 Disconnect card
 .IP get_status
@@ -197,13 +197,22 @@ Element type to be listed in hex
 80 - Card Manager / Card Issuer Security Domain only.
 .RE
 .RS
-40 - Applications (and Security Domains only in GP211).
+40 - Applications (and Security Domains only in GP211 and later).
 .RE
 .RS
 20 - Executable Load Files only.
 .RE
 .RS
-10 - Executable Load Files and their Executable Modules only (Only GP211)
+10 - Executable Load Files and their Executable Modules only (Only GP211 and later)
+.RE
+.IP -format
+.I x
+Sets the format of the response of the get_status command. This is only used for GlobalPlatform cards and required and only needed if the default is not supported by the smart card.
+.RS
+0 - Deprecated format
+.RE
+.RS
+2 - New format (default)
 .RE
 .IP -sc
 .I x
@@ -216,7 +225,7 @@ APDU to be sent. Must be in hex format, e.g. 80CA00CF00.
 Privilege. E.g. 0x04 Default Selected
 .IP -scp
 .I x
-Secure Channel Protocol (1 SCP01, 2 SCP02, default no set).
+Secure Channel Protocol (1 SCP01, 2 SCP02, 3 SCP03, default no set).
 Should not be necessary to be stated explicitly.
 .IP -scpimpl
 .I x
@@ -227,7 +236,7 @@ Should not be necessary to be stated explicitly.
 Password for key decryption
 .IP -identifier
 .I identifier
-Identifer for the tag for the get_data command. Must be in hex format, e.g. 9F7F.
+Identifier for the tag for the get_data command. Must be in hex format, e.g. 9F7F.
 .IP -keyDerivation
 .I "derivation method"
 Possible values are "none", "visa2" or "emvcps11"
