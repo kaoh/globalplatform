@@ -201,7 +201,6 @@ OPGP_ERROR_STATUS OPGP_card_disconnect(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_
  */
 OPGP_ERROR_STATUS OPGP_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBYTE capdu, DWORD capduLength, PBYTE rapdu, PDWORD rapduLength) {
 	OPGP_ERROR_STATUS errorStatus;
-	OPGP_ERROR_STATUS securityStatus;
 	OPGP_ERROR_STATUS(*plugin_sendAPDUFunction) (OPGP_CARD_CONTEXT, OPGP_CARD_INFO, PBYTE, DWORD, PBYTE, PDWORD);
 	BYTE apduCommand[APDU_COMMAND_LEN];
 	DWORD apduCommandLength = APDU_COMMAND_LEN;
@@ -249,13 +248,20 @@ OPGP_ERROR_STATUS OPGP_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO c
 
 	OPGP_LOG_HEX(_T("OPGP_send_APDU: Response <-- "), rapdu, *rapduLength);
 
-	securityStatus = GP211_check_R_MAC(capdu, capduLength, rapdu, *rapduLength, secInfo);
-	if (OPGP_ERROR_CHECK(securityStatus)) {
-		goto securityFailed;
-	}
-
 	if (traceEnable) {
 		_ftprintf(traceFile, _T("Response <-- "));
+		for (i=0; (DWORD)i<*rapduLength; i++) {
+			_ftprintf(traceFile, _T("%02X"), rapdu[i] & 0x00FF);
+		}
+		_ftprintf(traceFile, _T("\n"));
+	}
+
+	errorStatus = unwrap_command(capdu, capduLength, rapdu, *rapduLength, rapdu, rapduLength, secInfo);
+	if (OPGP_ERROR_CHECK(errorStatus)) {
+		goto end;
+	}
+	if (traceEnable) {
+		_ftprintf(traceFile, _T("Unwrapped response <-- "));
 		for (i=0; (DWORD)i<*rapduLength; i++) {
 			_ftprintf(traceFile, _T("%02X"), rapdu[i] & 0x00FF);
 		}
@@ -265,10 +271,6 @@ OPGP_ERROR_STATUS OPGP_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO c
 end:
 	OPGP_LOG_END(_T("OPGP_send_APDU"), errorStatus);
 	return errorStatus;
-securityFailed:
-	OPGP_LOG_END(_T("OPGP_send_APDU"), securityStatus);
-	return securityStatus;
-
 }
 
 

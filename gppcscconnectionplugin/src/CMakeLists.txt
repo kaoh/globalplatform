@@ -1,6 +1,6 @@
 INCLUDE(FindPCSC)
 INCLUDE(FindGlobalPlatform)
-SET(SOURCES gppcscconnectionplugin.c util.c)
+SET(SOURCES gppcscconnectionplugin.c "${CMAKE_HOME_DIRECTORY}/../globalplatform/src/util.c")
 
 IF(DEBUG)
   SET(CMAKE_BUILD_TYPE "Debug")

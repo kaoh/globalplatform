@@ -215,6 +215,12 @@ cmake -DDEBUG=ON
 
 ```
 
+## Man Page
+
+The man page uses the groff syntax. To render a preview of the result use:
+
+    groff -man -T ascii src/gpshell.1
+    
 ## CMake Issues
 
  

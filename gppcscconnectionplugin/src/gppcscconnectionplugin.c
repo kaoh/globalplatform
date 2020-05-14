@@ -287,7 +287,7 @@ OPGP_ERROR_STATUS OPGP_PL_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 	// modified for managing all 4 cases with automatic APDU chaining
 
 	DWORD result;
-	DWORD caseAPDU;
+	BYTE caseAPDU;
 	BYTE lc;
 	BYTE le=0;
 	BYTE la;
@@ -327,35 +327,14 @@ OPGP_ERROR_STATUS OPGP_PL_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 		} // if ( SCARD_S_SUCCESS != result)
 		offset += responseDataLength - 2;
 	} else {
-		// Determine which type of Exchange between the reader
-		if (capduLength == 4) {
-			// Case 1 short
-
-			caseAPDU = 1;
-		} else if (capduLength == 5) {
-			// Case 2 short
-
-			caseAPDU = 2;
-			le = capdu[4];
-		} else {
-			lc = capdu[4];
-			if ((convert_byte(lc) + 5) == capduLength) {
-				// Case 3 short
-
-				caseAPDU = 3;
-			} else if ((convert_byte(lc) + 5 + 1) == capduLength) {
-				// Case 4 short
-
-				caseAPDU = 4;
-
-				le = capdu[capduLength - 1];
-				capduLength--;
-			} else {
-				result = OPGP_ERROR_UNRECOGNIZED_APDU_COMMAND;
-				HANDLE_STATUS(status, result);
-				goto end;
-			}
-		} // if (Determine which type of Exchange)
+		if (parse_apdu_case(capdu, capduLength, &caseAPDU, &lc, &le)) {
+			result = OPGP_ERROR_UNRECOGNIZED_APDU_COMMAND;
+			HANDLE_STATUS(status, result);
+			goto end;
+		}
+		if (caseAPDU == 4) {
+			capduLength--;
+		}
 
 		// T=0 transmission (first command)
 

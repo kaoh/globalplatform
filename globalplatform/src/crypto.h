@@ -120,15 +120,21 @@ OPGP_ERROR_STATUS calculate_host_cryptogram_SCP03(BYTE S_MACSessionKey[16],
 											BYTE hostChallenge[8],
 											BYTE hostCryptogram[8]);
 
+//! \brief Wraps a command, i.e. encrypts and add the MAC to the APDU with the necessary security information according to secInfo.
 OPGP_NO_API
 OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrappedApduCommand,
 						 PDWORD wrappedApduCommandLength, GP211_SECURITY_INFO *secInfo);
 
-// TODO: rename to unwrap and make more generic and include response decryption
+//! \brief Unwraps a response, i.e. decrypts and checks the R-MAC of a response APDU with the necessary security information according to secInfo.
+OPGP_NO_API
+OPGP_ERROR_STATUS unwrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE responseData,
+				 DWORD responseDataLength, PBYTE unwrappedResponseData,
+				 PDWORD unwrappedResponseDataLength, GP211_SECURITY_INFO *secInfo);
+
 //! \brief Checks the R-MAC of an APDU with the necessary security information according to secInfo.
 OPGP_NO_API
 OPGP_ERROR_STATUS GP211_check_R_MAC(PBYTE apduCommand, DWORD apduCommandLength, PBYTE responseData,
-				 DWORD responseDataLength, GP211_SECURITY_INFO *secInfo);
+				 DWORD responseDataLength, PBYTE unwrappedResponseApdu, PDWORD unwrappedResponseApduLength, GP211_SECURITY_INFO *secInfo);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS calculate_enc_ecb_two_key_triple_des(BYTE key[16], BYTE *message,

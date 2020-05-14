@@ -16,7 +16,7 @@
  */
 #include "globalplatform/globalplatform.h"
 
-// This as a function gives a segmentation fault when accessing the responses
+// This provided as a function gives a segmentation fault when accessing the responses
 #define ENQUEUE_COMMANDS(commands, responses, numCommands) {\
 	BYTE commandRequest[APDU_COMMAND_LEN];\
 	DWORD commandRequestLen = APDU_COMMAND_LEN;\

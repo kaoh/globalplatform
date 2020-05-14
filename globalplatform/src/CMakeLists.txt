@@ -108,7 +108,7 @@ IF(TESTING)
     #SET_TESTS_PROPERTIES(globalplatformTest PROPERTIES PASS_REGULAR_EXPRESSION "Failures: 0")
     
     add_mocked_test(scp03Test 
-      SOURCES scp03Test.c ${SOURCES}
+      SOURCES scp03Test.c testUtil.c ${SOURCES}
       MOCKS RAND_bytes 
       LINK_LIBRARIES ${LIBRARIES})
 

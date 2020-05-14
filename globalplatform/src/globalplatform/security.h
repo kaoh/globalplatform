@@ -210,7 +210,7 @@ typedef struct {
      * for MAC code generation is 16 Bytes (according to GP 2.2 Amendment D), not 8.
      * TODO This probably affects R_MAC too.
      */
-    BYTE lastC_MAC[16]; //!< The last computed C-MAC. Only 8 byte used for SCP01 and SCP02.
+    BYTE lastC_MAC[16]; //!< The last computed C-MAC. Only 8 byte used for SCP01 and SCP02. Used as MAC Chaining Value for SCP03.
 	BYTE lastR_MAC[8]; //!< The last computed R-MAC.
 	/* Augusto: added two more attributes for key information */
 	BYTE keySetVersion; //!< The keyset version used in secure channel

@@ -60,33 +60,11 @@ static const BYTE PADDING[8] = {(char) 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 static const BYTE AES_PADDING[16] = {(char)0x80,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00}; //!< Padding pattern applied for SCP03.
 
 OPGP_NO_API
-OPGP_ERROR_STATUS calculate_enc_cbc_SCP02(BYTE key[16], BYTE *message, int messageLength,
-							  BYTE *encryption, int *encryptionLength);
-
-OPGP_NO_API
 OPGP_ERROR_STATUS calculate_enc_cbc(BYTE key[16], BYTE *message, int messageLength,
 							  BYTE *encryption, int *encryptionLength);
+
 OPGP_NO_API
 OPGP_ERROR_STATUS calculate_MAC_aes(BYTE key[16], BYTE *message, int messageLength, BYTE mac[16]);
-
-OPGP_NO_API
-OPGP_ERROR_STATUS calculate_enc_ecb_single_des(BYTE key[8], BYTE *message, int messageLength,
-							  BYTE *encryption, int *encryptionLength);
-
-OPGP_NO_API
-OPGP_ERROR_STATUS calculate_cryptogram_SCP03(BYTE key[16], const BYTE derivationConstant, PBYTE context1, DWORD context1Length,
-	PBYTE context2, DWORD context2Length, PBYTE cryptogram, DWORD cryptogramSize);
-
-//! \brief Calculates a R-MAC.
-OPGP_NO_API
-OPGP_ERROR_STATUS GP211_calculate_R_MAC(BYTE commandHeader[4],
-						   PBYTE commandData,
-						   DWORD commandDataLength,
-						   PBYTE responseData,
-						   DWORD responseDataLength,
-						   BYTE statusWord[2],
-						   GP211_SECURITY_INFO *secInfo,
-						   BYTE mac[8]);
 
 /**
     * Calculates the a cryptogram for multiple SCP03 operation like host cryptogram, card cryptogram and card challenge calculation.
@@ -291,6 +269,60 @@ end:
 	}
 
 	OPGP_LOG_END(_T("calculate_enc_cbc_SCP03"), status);
+	return status;
+}
+
+/**
+ * Calculates the decryption of a message in CBC mode for SCP03 using AES.
+ * Pads the message with 0x80 and additional 0x00 until message length is a multiple of 16.
+ * \param key [in] An AES key used to decrypt.
+ * \param *message [in] The message to decrypt.
+ * \param messageLength [in] The length of the message.
+ * \param icv [in] The ICV to use.
+ * \param *decryption [out] The encryption.
+ * \param *decryptionLength [out] The length of the encryption.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS calculate_dec_cbc_SCP03(BYTE key[16], BYTE *message, DWORD messageLength,
+							  BYTE icv[16],
+							  BYTE *decryption, DWORD *decryptionLength) {
+	OPGP_ERROR_STATUS status;
+	int result;
+	int i,outl;
+	EVP_CIPHER_CTX_define;
+	OPGP_LOG_START(_T("calculate_dec_cbc_SCP03"));
+	ctx = EVP_CIPHER_CTX_create;
+	EVP_CIPHER_CTX_init(ctx);
+	*decryptionLength = 0;
+
+	result = EVP_DecryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, key, icv);
+	if (result != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	EVP_CIPHER_CTX_set_padding(ctx, 0);
+	result = EVP_DecryptUpdate(ctx, decryption, &outl, message, messageLength);
+	if (result != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	*decryptionLength += outl;
+	result = EVP_DecryptUpdate(ctx, decryption + *decryptionLength, &outl, AES_PADDING, (16 - messageLength % 16));
+	if (result != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	*decryptionLength += outl;
+	result = EVP_DecryptFinal_ex(ctx, decryption+*decryptionLength,
+		&outl);
+	if (result != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	*decryptionLength+=outl;
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	if (EVP_CIPHER_CTX_cleanup(ctx) != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); }
+	}
+
+	OPGP_LOG_END(_T("calculate_dec_cbc_SCP03"), status);
 	return status;
 }
 
@@ -1303,7 +1335,7 @@ OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE
 	// 8 bytes reserved for MAC
 	BYTE encryption[247];
 	int encryptionLength = 247;
-	DWORD caseAPDU;
+	BYTE caseAPDU;
 	BYTE C_MAC_ICV[8];
 	int C_MAC_ICVLength = 8;
 	BYTE ENC_ICV[16] = {0};
@@ -1314,7 +1346,7 @@ OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE
 	OPGP_LOG_START(_T("wrap_command"));
 	if (*wrappedApduCommandLength < apduCommandLength)
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
-	memcpy(wrappedApduCommand, apduCommand, apduCommandLength);
+	memmove(wrappedApduCommand, apduCommand, apduCommandLength);
 
 	// trivial case, just return
 	if (secInfo == NULL || secInfo->securityLevel == GP211_SCP02_SECURITY_LEVEL_NO_SECURE_MESSAGING
@@ -1324,43 +1356,35 @@ OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE
 		{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 	}
 
-	// Determine which type of Exchange between the reader
-	if (apduCommandLength == 4) {
-	// Case 1 short
-		wrappedLength = 4;
-		caseAPDU = 1;
-	} else if (apduCommandLength == 5) {
-	// Case 2 short
-		wrappedLength = 4;
-		caseAPDU = 2;
-		le = apduCommand[4];
-	} else {
-		lc = apduCommand[4];
-		if (lc + 5 == apduCommandLength) {
-		// Case 3 short
-			wrappedLength = lc + 5;
-			caseAPDU = 3;
-		} else if (lc + 5 + 1 == apduCommandLength) {
-		// Case 4 short
-			wrappedLength = lc + 5;
-			caseAPDU = 4;
-			// Le byte is ignored for crypto operations, so save it and append it again later.
-			le = apduCommand[apduCommandLength - 1];
-		} else {
-			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_UNRECOGNIZED_APDU_COMMAND, OPGP_stringify_error(OPGP_ERROR_UNRECOGNIZED_APDU_COMMAND)); goto end; }
-		}
-	} // if (Determine which type of Exchange)
+	if (parse_apdu_case(apduCommand, apduCommandLength, &caseAPDU, &lc, &le)) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_UNRECOGNIZED_APDU_COMMAND, OPGP_stringify_error(OPGP_ERROR_UNRECOGNIZED_APDU_COMMAND)); goto end; }
+	}
 
+	switch(caseAPDU) {
+		case 1:
+		case 2:
+			wrappedLength = 4;
+			break;
+		case 3:
+		case 4:
+			wrappedLength = lc + 5;
+			break;
+	}
 
 	/*
 	 * Philip Wendland: Check max length of APDU for Security Level 3.
 	 * Added SCP03 stuff.
 	 * Note: SCP03 AES uses padding to 16 bytes * X. The pad is bigger.
 	 */
-	if (lc > 0 && (secInfo->securityLevel == GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC
-		|| secInfo->securityLevel == GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC
-		|| secInfo->securityLevel == GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC
-		|| secInfo->securityLevel == GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC)) {
+	if (((lc > 0 && secInfo->secureChannelProtocol == GP211_SCP01 && secInfo->securityLevel == GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC)
+		|| (secInfo->secureChannelProtocol == GP211_SCP02 &&
+			(secInfo->securityLevel == GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC
+					|| secInfo->securityLevel == GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC))
+		|| (lc > 0 && secInfo->secureChannelProtocol == GP211_SCP03
+				&& (secInfo->securityLevel == GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC
+						|| secInfo->securityLevel == GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC
+						|| secInfo->securityLevel == GP211_SCP03_SECURITY_LEVEL_C_DEC_R_ENC_C_MAC_R_MAC)))
+			) {
 
 		if (secInfo->secureChannelProtocol == GP211_SCP03) {
 			blockSize = 16;
@@ -1642,56 +1666,62 @@ end:
 }
 
 /**
- * \param commandHeader [in] The APDU command header.
- * \param commandData [in] The APDU command body.
- * \param commandDataLength [in] The APDU command body length.
- * \param responseData [in] The APDU response body.
- * \param responseDataLength [in] The APDU response body length.
+ * \brief Calculates a R-MAC.
+ * \param apduCommand [in] The APDU command.
+ * \param apduCommandLength [in] The APDU command length.
+ * \param responseApdu [in] The APDU response APDU.
+ * \param responseApduLength [in] The APDU response APDU length.
  * \param statusWord [in] The status word of the response.
  * \param *secInfo [in] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * \param mac [out] The R-MAC.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
-OPGP_ERROR_STATUS GP211_calculate_R_MAC(BYTE commandHeader[4],
-						   PBYTE commandData,
-						   DWORD commandDataLength,
-						   PBYTE responseData,
-						   DWORD responseDataLength,
-						   BYTE statusWord[2],
+OPGP_ERROR_STATUS GP211_calculate_R_MAC(PBYTE apduCommand, DWORD apduCommandLength,
+						   PBYTE responseApdu,
+						   DWORD responseApduLength,
 						   GP211_SECURITY_INFO *secInfo,
 						   BYTE mac[8])
 {
 	OPGP_ERROR_STATUS status;
-	PBYTE r_MacData;
+	BYTE r_MacData[261 + 258];
 	DWORD offset=0;
-	DWORD r_MacDataLength;
 	OPGP_LOG_START(_T("GP211_calculate_R_MAC"));
-	r_MacDataLength = 4 + 1 + commandDataLength + 1 + responseDataLength + 2;
-	r_MacData = (PBYTE)malloc(r_MacDataLength*sizeof(BYTE));
-	if (r_MacData == NULL) {
-		OPGP_ERROR_CREATE_ERROR(status, ENOMEM, OPGP_stringify_error(ENOMEM));
-		goto end;
+	if (secInfo->secureChannelProtocol == GP211_SCP02) {
+		DWORD r_MacDataLength;
+		BYTE caseAPDU;
+		BYTE lc;
+		BYTE le;
+		if (parse_apdu_case(apduCommand, apduCommandLength, &caseAPDU, &lc, &le)) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_UNRECOGNIZED_APDU_COMMAND, OPGP_stringify_error(OPGP_ERROR_UNRECOGNIZED_APDU_COMMAND)); goto end; }
+		}
+		memcpy(r_MacData, apduCommand, 4);
+		offset+=4;
+		r_MacData[offset++] = lc;
+		memcpy(r_MacData+offset, apduCommand, lc);
+		offset+=lc;
+		r_MacData[offset++] = responseApduLength;
+		memcpy(r_MacData+offset, responseApdu, responseApduLength);
+		offset+=responseApduLength;
+		status = calculate_MAC_des_3des(secInfo->R_MACSessionKey, r_MacData, r_MacDataLength, secInfo->lastR_MAC, mac);
+		if (OPGP_ERROR_CHECK(status))
+			goto end;
+		{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 	}
-	memcpy(r_MacData, commandHeader, 4);
-	offset+=4;
-	memset(r_MacData+offset++, commandDataLength, sizeof(BYTE));
-	memcpy(r_MacData+offset, commandData, commandDataLength);
-	offset+=commandDataLength;
-	memset(r_MacData+offset++, responseDataLength%256, sizeof(BYTE));
-	memcpy(r_MacData+offset, responseData, responseDataLength);
-	offset+=responseDataLength;
-	memcpy(r_MacData+offset, statusWord, 2);
-	offset+=2;
-	status = calculate_MAC_des_3des(secInfo->R_MACSessionKey, r_MacData, r_MacDataLength, secInfo->lastR_MAC,
-		mac);
-	if (OPGP_ERROR_CHECK(status))
-		goto end;
+	if (secInfo->secureChannelProtocol == GP211_SCP03) {
+		BYTE scp03_mac[16];
+		memcpy(r_MacData, responseApdu, responseApduLength-10);
+		offset+=responseApduLength-10;
+		// append SW
+		memcpy(r_MacData+offset, responseApdu+responseApduLength-2, 2);
+		offset+=2;
+		status = calculate_CMAC_aes(secInfo->R_MACSessionKey, r_MacData, offset, secInfo->lastC_MAC, scp03_mac);
+		if (OPGP_ERROR_CHECK(status)) {
+			goto end;
+		}
+		memcpy(mac, scp03_mac, 8);
+	}
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
-
-	if (r_MacData) {
-		free(r_MacData);
-	}
 	OPGP_LOG_END(_T("GP211_calculate_R_MAC"), status);
 	return status;
 }
@@ -1699,65 +1729,117 @@ end:
 /**
  * \param apduCommand [in] The command APDU.
  * \param apduCommandLength [in] The length of the command APDU.
- * \param responseData [in] The response data.
- * \param responseDataLength [in] The length of the response data.
+ * \param responseApdu [in] The response data.
+ * \param responseApduLength [in] The length of the response data.
+ * \param unwrappedResponseApdu [out] The buffer for the unwrapped response APDU.
+ * \param unwrappedResponseApduLength [in, out] The available and returned modified length of the unwrappedResponseAPDU buffer.
  * \param *secInfo [in] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
-OPGP_ERROR_STATUS GP211_check_R_MAC(PBYTE apduCommand, DWORD apduCommandLength, PBYTE responseData,
-				 DWORD responseDataLength, GP211_SECURITY_INFO *secInfo) {
+OPGP_ERROR_STATUS unwrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE responseApdu,
+				 DWORD responseApduLength, PBYTE unwrappedResponseApdu,
+				 PDWORD unwrappedResponseApduLength, GP211_SECURITY_INFO *secInfo) {
 	OPGP_ERROR_STATUS status;
-	BYTE lc;
-	DWORD le;
-	BYTE mac[8];
-	DWORD caseAPDU;
-	OPGP_LOG_START(_T("GP211_check_R_MAC"));
+	// 8 bytes reserved for MAC - 1 bytes for 0x80 padding at least
+	BYTE decryption[246];
+	DWORD decryptionLength = 246;
+	BYTE ENC_ICV[16] = {0};
 
-	// no security level defined, just return
-	if (secInfo == NULL) {
-		{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
-	}
-
-	// trivial case, just return
-	if ((secInfo->securityLevel != GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC) &&
-		(secInfo->securityLevel != GP211_SCP02_SECURITY_LEVEL_R_MAC) &&
-		(secInfo->securityLevel != GP211_SCP02_SECURITY_LEVEL_C_MAC_R_MAC)) {
-		{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
-	}
-
-	// Determine which type of Exchange between the reader
-	if (apduCommandLength == 4) {
-	// Case 1 short
-		lc = 0;
-		caseAPDU = 1;
-	} else if (apduCommandLength == 5) {
-	// Case 2 short
-		lc = 0;
-		caseAPDU = 2;
-	} else {
-		lc = apduCommand[4];
-		if ((convert_byte(lc) + 5) == apduCommandLength) {
-		// Case 3 short
-			caseAPDU = 3;
-		} else if ((convert_byte(lc) + 5 + 1) == apduCommandLength) {
-		// Case 4 short
-			caseAPDU = 4;
-		} else {
-			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_UNRECOGNIZED_APDU_COMMAND, OPGP_stringify_error(OPGP_ERROR_UNRECOGNIZED_APDU_COMMAND)); goto end; }
-		}
-	} // if (Determine which type of Exchange)
-	le = responseDataLength-2;
-	GP211_calculate_R_MAC(apduCommand, apduCommand, lc, responseData, le,
-			responseData+responseDataLength-2, secInfo, mac);
-#ifdef OPGP_DEBUG
-	OPGP_LOG_HEX(_T("check_R_MAC: received R-MAC: "), responseData-10, responseDataLength-10);
-	OPGP_LOG_HEX(_T("check_R_MAC: calculated R-MAC: "), mac, 8);
-#endif
-	if (memcmp(mac, responseData+responseDataLength-10, 8)) {
-		OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_VALIDATION_R_MAC, OPGP_stringify_error(GP211_ERROR_VALIDATION_R_MAC));
+	status = GP211_check_R_MAC(apduCommand, apduCommandLength, responseApdu, responseApduLength, unwrappedResponseApdu,
+			unwrappedResponseApduLength, secInfo);
+	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	memcpy(secInfo->lastR_MAC, mac, 8);
+	// decrypt for SCP03
+	if (secInfo != NULL && secInfo->secureChannelProtocol == GP211_SCP03 &&
+			secInfo->securityLevel == GP211_SCP03_SECURITY_LEVEL_C_DEC_R_ENC_C_MAC_R_MAC
+			// more than status words
+			&& responseApduLength > 2) {
+		status = calculate_enc_icv_SCP03(secInfo->encryptionSessionKey, secInfo->sessionEncryptionCounter, ENC_ICV);
+		if (OPGP_ERROR_CHECK(status)) {
+			goto end;
+		}
+		status = calculate_dec_cbc_SCP03(secInfo->encryptionSessionKey, unwrappedResponseApdu,
+				*unwrappedResponseApduLength, ENC_ICV, decryption, &decryptionLength);
+		if (OPGP_ERROR_CHECK(status)) {
+			goto end;
+		}
+		if (*unwrappedResponseApduLength < responseApduLength)
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		memcpy(unwrappedResponseApdu, decryption, decryptionLength);
+		*unwrappedResponseApduLength = decryptionLength + 2;
+		// append SW
+		memmove(unwrappedResponseApdu, responseApdu + responseApduLength - 2, 2);
+	}
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	OPGP_LOG_END(_T("unwrap_command"), status);
+	return status;
+}
+
+/**
+ * \param apduCommand [in] The command APDU.
+ * \param apduCommandLength [in] The length of the command APDU.
+ * \param responseApdu [in] The response APDU.
+ * \param responseApduLength [in] The length of the response APDU.
+ * \param unwrappedResponseApdu [out] The buffer for the unwrapped response APDU.
+ * \param unwrappedResponseApduLength [in, out] The available and returned modified length of the unwrappedResponseAPDU buffer.
+ * \param *secInfo [in] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS GP211_check_R_MAC(PBYTE apduCommand, DWORD apduCommandLength,
+		PBYTE responseApdu, DWORD responseApduLength,
+				 PBYTE unwrappedResponseApdu, PDWORD unwrappedResponseApduLength,
+				 GP211_SECURITY_INFO *secInfo) {
+	OPGP_ERROR_STATUS status;
+	BYTE mac[8];
+	DWORD sw;
+	OPGP_LOG_START(_T("GP211_check_R_MAC"));
+
+	// trivial case, just return
+	if (secInfo == NULL || secInfo->secureChannelProtocol == GP211_SCP01
+			|| (secInfo->secureChannelProtocol == GP211_SCP02 && (secInfo->securityLevel != GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC) &&
+		(secInfo->securityLevel != GP211_SCP02_SECURITY_LEVEL_R_MAC) &&
+		(secInfo->securityLevel != GP211_SCP02_SECURITY_LEVEL_C_MAC_R_MAC))
+			||
+			(secInfo->secureChannelProtocol == GP211_SCP03 && (secInfo->securityLevel != GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC) &&
+					(secInfo->securityLevel != GP211_SCP03_SECURITY_LEVEL_C_DEC_R_ENC_C_MAC_R_MAC) &&
+					(secInfo->securityLevel != GP211_SCP03_SECURITY_LEVEL_C_MAC_R_MAC))) {
+		if (*unwrappedResponseApduLength < responseApduLength)
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		memmove(unwrappedResponseApdu, responseApdu, responseApduLength);
+		*unwrappedResponseApduLength = responseApduLength;
+		{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+	}
+	sw = get_short(responseApdu, responseApduLength-2);
+// SCP03:	No R-MAC shall be generated and no protection shall be applied to a response that includes an error status
+//word: in this case only the status word shall be returned in the response. All status words except '9000' and
+//warning status words (i.e. '62xx' and '63xx') shall be interpreted as error status words.
+	if ((sw == 0x9000 || (sw >> 8) == 0x62 || (sw >> 8) == 0x63) || secInfo->secureChannelProtocol != GP211_SCP03) {
+		GP211_calculate_R_MAC(apduCommand, apduCommandLength, responseApdu, responseApduLength, secInfo, mac);
+	#ifdef OPGP_DEBUG
+		OPGP_LOG_HEX(_T("check_R_MAC: received R-MAC: "), responseApdu-10, 8);
+		OPGP_LOG_HEX(_T("check_R_MAC: calculated R-MAC: "), mac, 8);
+	#endif
+		if (memcmp(mac, responseApdu+responseApduLength-10, 8)) {
+			OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_VALIDATION_R_MAC, OPGP_stringify_error(GP211_ERROR_VALIDATION_R_MAC));
+			goto end;
+		}
+		memcpy(secInfo->lastR_MAC, mac, 8);
+		// remove R-MAC
+		if (*unwrappedResponseApduLength-8+2 < responseApduLength)
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		// - 8 bytes for MAC and 2 bytes for SW
+		// use memmove, because the buffer may overlap
+		memmove(unwrappedResponseApdu, responseApdu, responseApduLength-8);
+		// append SW
+		memmove(unwrappedResponseApdu, responseApdu + responseApduLength -2, 2);
+		*unwrappedResponseApduLength = responseApduLength - 8;
+	}
+	else {
+		memmove(unwrappedResponseApdu, responseApdu, responseApduLength);
+		*unwrappedResponseApduLength = responseApduLength;
+	}
 
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:

@@ -4150,19 +4150,19 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
         if (secInfo->secureChannelProtocolImpl == GP211_SCP03_IMPL_i10 ||
             secInfo->secureChannelProtocolImpl == GP211_SCP03_IMPL_i30 ||
             secInfo->secureChannelProtocolImpl == GP211_SCP03_IMPL_i70) {
-        		if (secInfo->invokingAidLength == 0) {
-        			memcpy(secInfo->invokingAid, GP231_ISD_AID, sizeof(GP231_ISD_AID));
-        			secInfo->invokingAidLength = sizeof(GP231_ISD_AID);
-        		}
-                status = calculate_card_challenge_SCP03(sEnc, sequenceCounter, secInfo->invokingAid, secInfo->invokingAidLength, calculatedCardChallenge);
-                if (OPGP_ERROR_CHECK(status)) {
-                    goto end;
-                }
-                OPGP_LOG_HEX(_T("mutual_authentication: Calculated Pseudo Card Challenge: "), calculatedCardChallenge, 8);
-                if (memcmp(cardChallenge, calculatedCardChallenge, 8)) {
-                    OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_INCORRECT_CARD_CHALLENGE, OPGP_stringify_error(GP211_ERROR_INCORRECT_CARD_CHALLENGE));
-                    goto end;
-                }
+			if (secInfo->invokingAidLength == 0) {
+				memcpy(secInfo->invokingAid, GP231_ISD_AID, sizeof(GP231_ISD_AID));
+				secInfo->invokingAidLength = sizeof(GP231_ISD_AID);
+			}
+			status = calculate_card_challenge_SCP03(sEnc, sequenceCounter, secInfo->invokingAid, secInfo->invokingAidLength, calculatedCardChallenge);
+			if (OPGP_ERROR_CHECK(status)) {
+				goto end;
+			}
+			OPGP_LOG_HEX(_T("mutual_authentication: Calculated Pseudo Card Challenge: "), calculatedCardChallenge, 8);
+			if (memcmp(cardChallenge, calculatedCardChallenge, 8)) {
+				OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_INCORRECT_CARD_CHALLENGE, OPGP_stringify_error(GP211_ERROR_INCORRECT_CARD_CHALLENGE));
+				goto end;
+			}
         }
         status = create_session_key_SCP03(sEnc, S_ENC_DerivationConstant_SCP03, cardChallenge, hostChallenge, secInfo->encryptionSessionKey);
         if (OPGP_ERROR_CHECK(status)) {
