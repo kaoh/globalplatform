@@ -56,7 +56,7 @@
 #include "loadfile.h"
 
 // 255 bytes minus 8 byte MAC minus 8 byte encryption padding
-#define MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING 239
+#define MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING 231
 
 #ifndef MAX_PATH
 #define MAX_PATH 257
