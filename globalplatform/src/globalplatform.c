@@ -56,7 +56,11 @@
 #include "loadfile.h"
 
 // 255 bytes minus 8 byte MAC minus 8 byte encryption padding
-#define MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING 231
+#define MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING 239
+// 255 bytes minus 8 byte MAC minus 16 byte encryption padding
+#define MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING_SCP03 231
+
+#define MAX_APDU_DATA_SIZE(secInfo) (secInfo->secureChannelProtocol == GP211_SCP03 ? MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING_SCP03 : MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING)
 
 #ifndef MAX_PATH
 #define MAX_PATH 257
@@ -2017,11 +2021,11 @@ OPGP_ERROR_STATUS load_from_buffer(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 		if (OPGP_ERROR_CHECK(status)) {
 			goto end;
 		}
-		if (k > MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING) {
+		if (k > MAX_APDU_DATA_SIZE(secInfo)) {
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_SECURE_MESSAGING_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_SECURE_MESSAGING_TOO_LARGE)); goto end;
 			goto end;
 		}
-		if (j+k <= MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING) {
+		if (j+k <= MAX_APDU_DATA_SIZE(secInfo)) {
 			memcpy(sendBuffer+5+j, dapBuf, k);
 			j+=k;
 		}
@@ -2062,13 +2066,13 @@ OPGP_ERROR_STATUS load_from_buffer(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 	}
 	// load file can only have 256 blocks (minus the already sent blocks)
 	// times the maximum APDU size minus the tag and length and the current position in the APDU
-	if (((256-sequenceNumber) * MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING - j - 1 - fileSizeSize) < loadFileBufSize) {
+	if (((256-sequenceNumber) * MAX_APDU_DATA_SIZE(secInfo) - j - 1 - fileSizeSize) < loadFileBufSize) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_APPLICATION_TOO_BIG, OPGP_stringify_error(OPGP_ERROR_APPLICATION_TOO_BIG)); goto end; }
 	}
 
 	// Enough space left to start load file data block
 
-	if ((MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING-j) > fileSizeSize+1+1) { // At least one byte of the load file data block must be sent.
+	if ((MAX_APDU_DATA_SIZE(secInfo)-j) > fileSizeSize+1+1) { // At least one byte of the load file data block must be sent.
 		sendBuffer[5+j++] = 0xC4;
 		switch(fileSizeSize) {
 			case 1: {
@@ -2086,8 +2090,8 @@ OPGP_ERROR_STATUS load_from_buffer(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 				sendBuffer[5+j++] = (BYTE)(loadFileBufSize - (sendBuffer[5+j-1] << 8));
 					}
 		}
-		if (loadFileBufSize > MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING-j) {
-			count=MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING-j;
+		if (loadFileBufSize > MAX_APDU_DATA_SIZE(secInfo)-j) {
+			count=MAX_APDU_DATA_SIZE(secInfo)-j;
 		}
 		else {
 			count=loadFileBufSize;
@@ -2159,8 +2163,8 @@ OPGP_ERROR_STATUS load_from_buffer(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 				sendBuffer[5+j++] = (BYTE)(loadFileBufSize - (sendBuffer[5+j-1] << 8));
 				}
 		}
-		if (loadFileBufSize > MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING-1-fileSizeSize) {
-			count=MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING-1-fileSizeSize;
+		if (loadFileBufSize > MAX_APDU_DATA_SIZE(secInfo)-1-fileSizeSize) {
+			count=MAX_APDU_DATA_SIZE(secInfo)-1-fileSizeSize;
 		}
 		else {
 			count=loadFileBufSize;
@@ -2205,8 +2209,8 @@ OPGP_ERROR_STATUS load_from_buffer(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 	while(!(total == loadFileBufSize)) {
 		j = 0;
 		OPGP_LOG_MSG(_T("load_from_buffer: left: %d"), loadFileBufSize-total);
-		if (loadFileBufSize-total > MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING) {
-			count=MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING;
+		if (loadFileBufSize-total > MAX_APDU_DATA_SIZE(secInfo)) {
+			count=MAX_APDU_DATA_SIZE(secInfo);
 		}
 		else {
 			count=loadFileBufSize-total;
@@ -4617,7 +4621,7 @@ OPGP_ERROR_STATUS GP211_store_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 	read = 0;
 	left = dataLength;
 	while(left > 0) {
-		if (left <= MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING) {
+		if (left <= MAX_APDU_DATA_SIZE(secInfo)) {
 			sendBuffer[2] = 0x80;
 			memcpy(sendBuffer+5, data+read, left);
 			read+=left;
@@ -4627,11 +4631,11 @@ OPGP_ERROR_STATUS GP211_store_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 		}
 		else {
 			sendBuffer[2] = 0x00;
-			memcpy(sendBuffer+5, data+read, MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING);
-			read+=MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING;
-			sendBufferLength=5+MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING;
-			sendBuffer[4] = MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING;
-			left-=MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING;
+			memcpy(sendBuffer+5, data+read, MAX_APDU_DATA_SIZE(secInfo));
+			read+=MAX_APDU_DATA_SIZE(secInfo);
+			sendBufferLength=5+MAX_APDU_DATA_SIZE(secInfo);
+			sendBuffer[4] = MAX_APDU_DATA_SIZE(secInfo);
+			left-=MAX_APDU_DATA_SIZE(secInfo);
 		}
 		sendBuffer[3] = blockNumber++;
 
