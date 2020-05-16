@@ -294,7 +294,9 @@ typedef struct {
 	BYTE keySetVersion; //!< The key set version.
 	BYTE keyIndex; //!< The key index.
 	BYTE keyType; //!< The key type.
-	BYTE keyLength; //!< The key length.
+	USHORT keyLength; //!< The key length.
+	BYTE keyUsage; //!< Key usage used in extended format.
+	BYTE keyAccess; //!< Key access used in extended format.
 } GP211_KEY_INFORMATION;
 
 

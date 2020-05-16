@@ -322,7 +322,7 @@ static void get_status(void **state) {
 			executablesData, &dataLength);
 	assert_int_equal(status.errorCode, OPGP_ERROR_STATUS_SUCCESS);
 	assert_int_equal(dataLength, 4);
-	assert_int_equal(applicationData[3].AIDLength, 9);
+	assert_int_equal(applicationData[3].aid.AIDLength, 9);
 	assert_int_equal(applicationData[3].lifeCycleState, 7);
 	assert_int_equal(applicationData[3].privileges, 0);
 }

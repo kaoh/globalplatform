@@ -50,17 +50,23 @@ extern "C"
 #define APDU_RESPONSE_LEN 258 //!< The APDU response length: 256 data + 2 bytes SW
 
 /** The default key value for new cards defined in a VISA specification. */
-static const BYTE OPGP_VISA_DEFAULT_KEY[16] = {0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F};
+static const BYTE OPGP_VISA_DEFAULT_KEY[16] = { 0x40, 0x41, 0x42, 0x43, 0x44,
+		0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F };
 
 /** The default mother key value for new GemXpresso cards. */
-static const BYTE OPGP_GEMXPRESSO_DEFAULT_KEY[16] = {0x47, 0x45, 0x4d, 0x58, 0x50, 0x52, 0x45, 0x53, 0x53, 0x4f, 0x53, 0x41, 0x4d, 0x50, 0x4c, 0x45};
+static const BYTE OPGP_GEMXPRESSO_DEFAULT_KEY[16] = { 0x47, 0x45, 0x4d, 0x58,
+		0x50, 0x52, 0x45, 0x53, 0x53, 0x4f, 0x53, 0x41, 0x4d, 0x50, 0x4c, 0x45 };
 
-static const BYTE GP211_CARD_MANAGER_AID[7] = {0xA0, 0x00, 0x00, 0x01, 0x51, 0x00, 0x00}; //!< The AID of the Issuer Security Domain defined by GlobalPlatform 2.1.1 specification.
+static const BYTE GP211_CARD_MANAGER_AID[7] = { 0xA0, 0x00, 0x00, 0x01, 0x51,
+		0x00, 0x00 }; //!< The AID of the Issuer Security Domain defined by GlobalPlatform 2.1.1 specification.
 
 /** The AID of the Issuer Security Domain defined by GlobalPlatform 2.3.1 specification. */
-static const BYTE GP231_ISD_AID[8] = {0xA0, 0x00, 0x00, 0x01, 0x51, 0x00, 0x00, 0x00};
 
-static const BYTE GP211_CARD_MANAGER_AID_ALT1[8] = {0xA0, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00}; //!< This AID is also used for the Issuer Security Domain, e.g. by JCOP 41 cards.
+static const BYTE GP231_ISD_AID[8] = { 0xA0, 0x00, 0x00, 0x01, 0x51, 0x00, 0x00,
+		0x00 };
+
+static const BYTE GP211_CARD_MANAGER_AID_ALT1[8] = { 0xA0, 0x00, 0x00, 0x00,
+		0x03, 0x00, 0x00, 0x00 }; //!< This AID is also used for the Issuer Security Domain, e.g. by JCOP 41 cards.
 
 static const BYTE GP211_LIFE_CYCLE_LOAD_FILE_LOADED = 0x01; //!< Executable Load File is loaded.
 static const BYTE GP211_LIFE_CYCLE_CARD_OP_READY = 0x01; //!< Card is OP ready.
@@ -81,15 +87,33 @@ static const BYTE GP211_LIFE_CYCLE_SECURITY_DOMAIN_LOCKED = 0xff; //!< Applicati
 static const BYTE GP211_MANAGE_CHANNEL_OPEN = 0x00; //!< Open the next available Supplementary Logical Channel.
 static const BYTE GP211_MANAGE_CHANNEL_CLOSE = 0x80; //!< Close the Supplementary Logical Channel.
 
+/**
+ * \brief Application privileges.
+ */
+typedef enum {
+	GP211_SECURITY_DOMAIN = 1u << 7 + 16, //!< Application is security domain.
+	GP211_DAP_VERIFICATION = 1u << 6 + 16, //!< Application can require DAP verification for loading and installing applications.
+	GP211_DELEGATED_MANAGEMENT = 1u << 5 + 16, //!< Security domain has delegated management right.
+	GP211_CARD_MANAGER_LOCK_PRIVILEGE = 1u << 4 + 16, //!< Application can lock the Card Manager.
+	GP211_CARD_MANAGER_TERMINATE_PRIVILEGE = 1u << 3 + 16, //!< Application can terminate the card.
+	GP211_DEFAULT_SELECTED = 1u << 2 + 16, //!< Application is default selected.
+	GP211_PIN_CHANGE_PRIVILEGE = 1u << 1 + 16, //!< Application can change global PIN.
+	GP211_MANDATED_DAP_VERIFICATION = 1u << 0 + 16, //!< Security domain requires DAP verification for loading and installing applications.
 
-static const BYTE GP211_APPLICATION_PRIVILEGE_SECURITY_DOMAIN = 0x80; //!< Application is security domain.
-static const BYTE GP211_APPLICATION_PRIVILEGE_DAP_VERIFICATION = 0x40; //!< Application can require DAP verification for loading and installating applications.
-static const BYTE GP211_APPLICATION_PRIVILEGE_DELEGATED_MANAGEMENT = 0x20; //!< Security domain has delegeted management right.
-static const BYTE GP211_APPLICATION_PRIVILEGE_CARD_MANAGER_LOCK_PRIVILEGE = 0x10; //!< Application can lock the Card Manager.
-static const BYTE GP211_APPLICATION_PRIVILEGE_CARD_MANAGER_TERMINATE_PRIVILEGE = 0x08; //!< Application can terminate the card.
-static const BYTE GP211_APPLICATION_PRIVILEGE_DEFAULT_SELECTED = 0x04; //!< Application is default selected.
-static const BYTE GP211_APPLICATION_PRIVILEGE_PIN_CHANGE_PRIVILEGE = 0x02; //!< Application can change global PIN.
-static const BYTE GP211_APPLICATION_PRIVILEGE_MANDATED_DAP_VERIFICATION = 0x01; //!< Security domain requires DAP verification for loading and installating applications.
+	GP211_TRUSTED_PATH = 1u << 7 + 8, //!< Application is a Trusted Path for inter-application communication.
+	GP211_AUTHORIZED_MANAGEMENT = 1u << 6 + 8, //!< Application is capable of Card Content Management; Security Domain privilege shall also be set.
+	GP211_TOKEN_VERIFICATION = 1u << 5 + 8, //!< Application is capable of verifying a token for Delegated Card Content Management.
+	GP211_GLOBAL_DELETE = 1u << 4 + 8, //!< Application may delete any Card Content.
+	GP211_GLOBAL_LOCK = 1u << 3 + 8, //!< Application may lock or unlock any Application.
+	GP211_GLOBAL_REGISTRY = 1u << 2 + 8, //!< Application may access any entry in the GlobalPlatform Registry.
+	GP211_FINAL_APPLICATION = 1u << 1 + 8, //!< The only Application selectable in card Life Cycle State CARD_LOCKED and TERMINATED.
+	GP211_GLOBAL_SERVICE = 1u << 0 + 8, //!< Application provides services to other Applications on the card.
+
+	GP211_RECEIPT_GENERATION = 1u << 7, //!< Application is capable of generating a receipt for Delegated Card Content Management.
+	GP211_CIPHERED_LOAD_FILE_DATA_BLOCK = 1u << 6, //!< The Security Domain requires that the Load File being associated to it is to be loaded ciphered.
+	GP211_CONTACTLESS_ACTIVATION = 1u << 5, //!< Application is capable of activating and deactivating any Application on the contactless interface.
+	GP211_CONTACTLESS_SELF_ACTIVATION = 1u << 4 //!< Application is capable of activating itself on the contactless interface without a prior request to the Application with the Contactless Activation privilege.
+} GP211_APPLICATION_PRIVILEGES;
 
 static const BYTE GP211_STATUS_APPLICATIONS = 0x40; //!< Indicate Applications or Security Domains in GP211_get_status() (request GP211_APPLICATION_DATA) or GP211_set_status().
 static const BYTE GP211_STATUS_ISSUER_SECURITY_DOMAIN = 0x80; //!< Indicate Issuer Security Domain in GP211_get_status() (request GP211_APPLICATION_DATA) or GP211_set_status().
@@ -110,10 +134,13 @@ static const BYTE GP211_GET_DATA_SECURITY_DOMAIN_IMAGE_NUMBER[2] = {0x00, 0x45};
 
 static const BYTE GP211_GET_DATA_ISSUER_SECURITY_DOMAIN_AID[2] = {0x00, 0x4F}; //!< Issuer Security Domain AID, if Issuer Security Domain selected.
 static const BYTE GP211_GET_DATA_SECURITY_DOMAIN_AID[2] = {0x00, 0x4F}; //!< Security Domain AID, if Security Domain selected.
+static const BYTE GP211_GET_DATA_LIST_OF_APPLICATIONS[2] = {0x2F, 0x00}; //!< List of applications present on the card.
+static const BYTE GP211_GET_DATA_EXTENDED_CARD_RESOURCES[2] = {0xFF, 0x21}; //!< Extended card resources according TS 102 226.
 
 static const BYTE GP211_GET_DATA_CARD_DATA[2] = {0x00, 0x66}; //!< Card Data.
+static const BYTE GP211_GET_DATA_SECURITY_DOMAIN_MANAGEMENT_DATA[2] = {0x00, 0x66}; //!< Security Domain Management Data if Security Domain is selected.
 static const BYTE GP211_GET_DATA_SEQUENCE_COUNTER_DEFAULT_KEY_VERSION[2] = {0x00, 0xC1}; //!< Sequence Counter of the default Key Version Number.
-static const BYTE GP211_GET_DATA_CONFIRMATION_COUNTER[2] = {0x00, 0xC2}; //!< Confirmation Counter.
+static const BYTE GP211_GET_DATA_CONFIRMATION_COUNTER[2] = {0x00, 0xC2}; //!< Confirmation Counter for generating receipts.
 static const BYTE GP211_GET_DATA_FREE_EEPROM_MEMORY_SPACE[2] = {0x00, 0xC6}; //!< Free EEPROM memory space.
 static const BYTE GP211_GET_DATA_FREE_COR_RAM[2] = {0x00, 0xC7}; //!< Free transient Clear on Reset memory space (COR RAM).
 static const BYTE GP211_GET_DATA_DIVERSIFICATION_DATA[2] = {0x00, 0xCF}; //!< Diversification data.
@@ -147,8 +174,8 @@ static const BYTE GP211_GET_DATA_CPLC_FABRICATION_DATE_SERIAL_NUMBER_BATCH_IDENT
  * 0000// icc manufacturer
  * 8148 // ic embedding date
  * 0000 // pre - personalizer
- * 0000 // IC PrePersonalization Date
- * 00000000 //IC PrePersonalization Equipment Identifier
+ * 0000 // IC Pre-Personalization Date
+ * 00000000 //IC Pre-Personalization Equipment Identifier
  * 0000// IC Personalizer
  * 0000 // IC Personalization Date
  * 00000000 // IC Personalization Equipment Identifier
@@ -174,13 +201,9 @@ static const BYTE GP211_GET_DATA_WHOLE_EF_PROD[2] = {0xDF, 0x7F}; //!< Whole EF<
 
 static const BYTE GP211_GET_DATA_KEY_DIVERSIFICATION[2] = {0x00, 0xCF}; //!< Key diversification data. KMC_ID (6 bytes) + CSN (4 bytes). KMC_ID is usually the IIN (Issuer identification number). CSN is the card serial number.
 
-
-
-
-
+// OP 2.0.1' specifific
 
 static const BYTE OP201_CARD_MANAGER_AID[7] = {0xA0, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00}; //!< The AID of the Card Manager defined by Open Platform specification.
-
 
 static const BYTE OP201_LIFE_CYCLE_LOAD_FILE_LOGICALLY_DELETED = 0x00; //!< Executable Load File is logically deleted.
 static const BYTE OP201_LIFE_CYCLE_LOAD_FILE_LOADED = 0x01; //!< Executable Load File is loaded.
@@ -196,14 +219,19 @@ static const BYTE OP201_LIFE_CYCLE_APPLICATION_PERSONALIZED = 0x0f; //!< Applica
 static const BYTE OP201_LIFE_CYCLE_APPLICATION_BLOCKED = 0x7f; //!< Application is blocked.
 static const BYTE OP201_LIFE_CYCLE_APPLICATION_LOCKED = 0xff; //!< Application is locked.
 
-static const BYTE OP201_APPLICATION_PRIVILEGE_SECURITY_DOMAIN = 0x80; //!< Application is security domain.
-static const BYTE OP201_APPLICATION_PRIVILEGE_DAP_VERIFICATION = 0x40; //!< Application can require DAP verification for loading and installating applications.
-static const BYTE OP201_APPLICATION_PRIVILEGE_DELEGATED_MANAGEMENT = 0x20; //!< Security domain has delegeted management right.
-static const BYTE OP201_APPLICATION_PRIVILEGE_CARD_MANAGER_LOCK_PRIVILEGE = 0x10; //!< Application can lock the Card Manager.
-static const BYTE OP201_APPLICATION_PRIVILEGE_CARD_MANAGER_TERMINATE_PRIVILEGE = 0x08; //!< Application can terminate the card.
-static const BYTE OP201_APPLICATION_PRIVILEGE_DEFAULT_SELECTED = 0x04; //!< Application is default selected.
-static const BYTE OP201_APPLICATION_PRIVILEGE_PIN_CHANGE_PRIVILEGE = 0x02; //!< Application can change global PIN.
-static const BYTE OP201_APPLICATION_PRIVILEGE_MANDATED_DAP_VERIFICATION = 0x01; //!< Security domain requires DAP verification for loading and installating applications.
+/**
+ * \brief Application privileges.
+ */
+typedef enum {
+	OP201_SECURITY_DOMAIN = 1u << 7 + 16, //!< Application is security domain.
+	OP201_DAP_VERIFICATION = 1u << 6 + 16, //!< Application can require DAP verification for loading and installing applications.
+	OP201_DELEGATED_MANAGEMENT = 1u << 5 + 16, //!< Security domain has delegated management right.
+	OP201_CARD_MANAGER_LOCK_PRIVILEGE = 1u << 4 + 16, //!< Application can lock the Card Manager.
+	OP201_CARD_MANAGER_TERMINATE_PRIVILEGE = 1u << 3 + 16, //!< Application can terminate the card.
+	OP201_DEFAULT_SELECTED = 1u << 2 + 16, //!< Application is default selected.
+	OP201_PIN_CHANGE_PRIVILEGE = 1u << 1 + 16, //!< Application can change global PIN.
+	OP201_MANDATED_DAP_VERIFICATION = 1u << 0 + 16, //!< Security domain requires DAP verification for loading and installing applications.
+} OP201_APPLICATION_PRIVILEGES;
 
 static const BYTE OP201_STATUS_APPLICATIONS = 0x40; //!< Indicate Applications or Security Domains in OP201_get_status() or OP201_set_status().
 static const BYTE OP201_STATUS_CARD_MANAGER = 0x80; //!< Indicate Card Manager in OP201_get_status() or OP201_set_status().
@@ -287,17 +315,6 @@ typedef struct {
 } OPGP_PROGRESS_CALLBACK;
 
 /**
- * The structure containing Card Manager, Executable Load File and application life cycle states and privileges returned by get_status().
- */
-typedef struct {
-	BYTE AIDLength; //!< The length of the AID.
-	BYTE AID[16]; //!< The AID.
-	BYTE lifeCycleState; //!< The Card Manager, Executable Load File or application life cycle state.
-	BYTE privileges; //!< The Card Manager or application privileges.
-} OP201_APPLICATION_DATA;
-
-
-/**
  * A structure describing an AID.
  */
 typedef struct {
@@ -305,6 +322,15 @@ typedef struct {
 	BYTE AID[16]; //!< The AID.
 } OPGP_AID;
 
+
+/**
+ * The structure containing Card Manager, Executable Load File and application life cycle states and privileges returned by get_status().
+ */
+typedef struct {
+	OPGP_AID aid; //!< The AID.
+	BYTE lifeCycleState; //!< The Card Manager, Executable Load File or application life cycle state.
+	OP201_APPLICATION_PRIVILEGES privileges; //!< The Card Manager or application privileges.
+} OP201_APPLICATION_DATA;
 
 /**
  * A structure describing an Executable Load File.
@@ -323,22 +349,23 @@ typedef struct {
  * and Application life cycle states and privileges returned by get_status().
  */
 typedef struct {
-	BYTE AIDLength; //!< The length of the AID.
-	BYTE AID[16]; //!< The AID.
+	OPGP_AID aid; //!< The AID.
 	BYTE lifeCycleState; //!< The Issuer Security Domain, Security Domains, Executable Load Files and Application life cycle state.
-	BYTE privileges; //!< The Issuer Security Domain, Security Domains or Application privileges. Has no meaning for Executable Load Files.
+	GP211_APPLICATION_PRIVILEGES privileges; //!< The Issuer Security Domain, Security Domains or Application privileges. Has no meaning for Executable Load Files.
+	BYTE versionNumber[2]; //!< On a Java Card based card, this is a 2-byte version number reflecting the major and minor version attributes (in this order) of the Java Card CAP file. Shorted if longer.
+	OPGP_AID associatedSecurityDomainAID; //!< The associated Security Domain's AID.
 } GP211_APPLICATION_DATA;
 
 /**
  * The structure containing Executable Load Files and their Executable Module returned by get_status().
  */
 typedef struct {
-	BYTE AIDLength; //!< The length of the Executable Load File AID.
-	BYTE AID[16]; //!< The Executable Load File AID.
+	OPGP_AID aid; //!< The Executable Load File AID.
 	BYTE lifeCycleState; //!< The Executable Load File life cycle state.
 	BYTE versionNumber[2]; //!< On a Java Card based card, this is a 2-byte version number reflecting the major and minor version attributes (in this order) of the Java Card CAP file. Shorted if longer.
 	BYTE numExecutableModules; //!< Number of associated Executable Modules.
 	OPGP_AID executableModules[256]; //!< Array for the maximum possible associated Executable Modules.
+	OPGP_AID associatedSecurityDomainAID; //!< The associated Security Domain's AID.
 } GP211_EXECUTABLE_MODULES_DATA;
 
 //! \brief GlobalPlatform2.1.1: Selects an application on a card by AID.

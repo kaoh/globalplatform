@@ -291,17 +291,6 @@ void mapOP201ToGP211DAPBlock(OP201_DAP_BLOCK op201dapBlock,
 }
 
 OPGP_NO_API
-void mapGP211ToOP201DAPBlock(GP211_DAP_BLOCK gp211dapBlock,
-										OP201_DAP_BLOCK *op201dapBlock) {
-	if (op201dapBlock == NULL)
-		return;
-	op201dapBlock->securityDomainAIDLength = gp211dapBlock.securityDomainAIDLength;
-	memcpy(op201dapBlock->securityDomainAID, gp211dapBlock.securityDomainAID, gp211dapBlock.securityDomainAIDLength);
-	op201dapBlock->signatureLength = gp211dapBlock.signatureLength;
-	memcpy(op201dapBlock->signature, gp211dapBlock.signature, gp211dapBlock.signatureLength);
-}
-
-OPGP_NO_API
 void mapOP201ToGP211ReceiptData(OP201_RECEIPT_DATA op201receiptData,
 									   GP211_RECEIPT_DATA *gp211receiptData) {
 	if (gp211receiptData == NULL)
@@ -328,17 +317,6 @@ void mapGP211ToOP201ReceiptData(GP211_RECEIPT_DATA gp211receiptData,
 }
 
 OPGP_NO_API
-void mapOP201ToGP211KeyInformation(OP201_KEY_INFORMATION op201keyInformation,
-										  GP211_KEY_INFORMATION *gp211keyInformation) {
-	if (gp211keyInformation == NULL)
-		return;
-	gp211keyInformation->keyIndex = op201keyInformation.keyIndex;
-	gp211keyInformation->keyLength = op201keyInformation.keyLength;
-	gp211keyInformation->keySetVersion = op201keyInformation.keySetVersion;
-	gp211keyInformation->keyType = op201keyInformation.keyType;
-}
-
-OPGP_NO_API
 void mapGP211ToOP201KeyInformation(GP211_KEY_INFORMATION gp211keyInformation,
 										  OP201_KEY_INFORMATION *op201keyInformation) {
 	if (op201keyInformation == NULL)
@@ -350,25 +328,14 @@ void mapGP211ToOP201KeyInformation(GP211_KEY_INFORMATION gp211keyInformation,
 }
 
 OPGP_NO_API
-void mapOP201ToGP211ApplicationData(OP201_APPLICATION_DATA op201applData,
-										  GP211_APPLICATION_DATA *gp211applData) {
-	if (gp211applData == NULL)
-		return;
-	gp211applData->AIDLength = op201applData.AIDLength;
-	memcpy(gp211applData->AID, op201applData.AID, op201applData.AIDLength);
-	gp211applData->lifeCycleState = op201applData.lifeCycleState;
-	gp211applData->privileges = op201applData.privileges;
-}
-
-OPGP_NO_API
 void mapGP211ToOP201ApplicationData(GP211_APPLICATION_DATA gp211applData,
 										   OP201_APPLICATION_DATA *op201applData) {
 	if (op201applData == NULL)
 		return;
-	op201applData->AIDLength = gp211applData.AIDLength;
-	memcpy(op201applData->AID, gp211applData.AID, gp211applData.AIDLength);
+	op201applData->aid.AIDLength = gp211applData.aid.AIDLength;
+	memcpy(op201applData->aid.AID, gp211applData.aid.AID, gp211applData.aid.AIDLength);
 	op201applData->lifeCycleState = gp211applData.lifeCycleState;
-	op201applData->privileges = gp211applData.privileges;
+	op201applData->privileges = gp211applData.privileges >> 16;
 }
 
 
@@ -398,14 +365,14 @@ OPGP_ERROR_STATUS parse_application_data(PBYTE data, DWORD dataLength,
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 			goto end;
 		}
-		applData->AIDLength = data[offset++];
+		applData->aid.AIDLength = data[offset++];
 		// check also buffer overrun for AID
-		if ((applData->AIDLength > dataLength - offset) || applData->AIDLength > sizeof(applData->AID)) {
+		if ((applData->aid.AIDLength > dataLength - offset) || applData->aid.AIDLength > sizeof(applData->aid.AID)) {
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 			goto end;
 		}
-		memcpy(applData->AID, data+offset, applData->AIDLength);
-		offset+=applData->AIDLength;
+		memcpy(applData->aid.AID, data+offset, applData->aid.AIDLength);
+		offset+=applData->aid.AIDLength;
 
 		if (dataLength - offset < 1){
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
@@ -437,14 +404,14 @@ OPGP_ERROR_STATUS parse_application_data(PBYTE data, DWORD dataLength,
 		// tag 0x4F AID
 		result = read_TLV(tlv1.value+offset, tlv1.length, &tlv2);
 		// check also buffer overrun for AID
-		if (result == -1 || tlv2.length > sizeof(applData->AID)) {
+		if (result == -1 || tlv2.length > sizeof(applData->aid.AID)) {
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 			goto end;
 		}
-		applData->AIDLength = tlv2.length;
-		memcpy(applData->AID, tlv2.value, applData->AIDLength);
+		applData->aid.AIDLength = tlv2.length;
+		memcpy(applData->aid.AID, tlv2.value, applData->aid.AIDLength);
 		// tag + length
-		offset+=applData->AIDLength+2;
+		offset+=applData->aid.AIDLength+2;
 		// 9F70 Life Cycle State
 		result = read_TTLV(tlv1.value+offset, tlv1.length, &tlv2);
 		// also 2 bytes seen on a ST eUICC
@@ -455,8 +422,9 @@ OPGP_ERROR_STATUS parse_application_data(PBYTE data, DWORD dataLength,
 		applData->lifeCycleState = tlv2.value[0];
 		// tag + length + 1 byte
 		offset += 3 + tlv2.length;
-		// undocumented tags seen on ST eUICC
+		// undocumented tags seen on ST eUICC, use a loop to skip them
 		while (offset < dataLength && offset < tlv1.length) {
+			DWORD versionNumberSize;
 			result = read_TLV(tlv1.value+offset, tlv1.length, &tlv2);
 			if (result == -1) {
 				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
@@ -471,8 +439,22 @@ OPGP_ERROR_STATUS parse_application_data(PBYTE data, DWORD dataLength,
 					}
 					applData->privileges = tlv2.value[0];
 					// +tag + length + data length
-
 					break;
+				case 0xCC:
+					memcpy(applData->associatedSecurityDomainAID.AID, tlv2.value, tlv2.length);
+					applData->associatedSecurityDomainAID.AIDLength = tlv2.length;
+					break;
+				case 0xCE:
+					versionNumberSize = tlv2.length;
+					memset(applData->versionNumber, 0, sizeof(applData->versionNumber));
+					if (sizeof(applData->versionNumber) < versionNumberSize) {
+						versionNumberSize = sizeof(applData->versionNumber);
+					}
+					memcpy(applData->versionNumber +
+							(sizeof(applData->versionNumber) - versionNumberSize),
+							tlv2.value+offset, versionNumberSize);
+					break;
+
 				// remaining tags not supported
 			}
 			// tag + length of data length
@@ -497,14 +479,14 @@ OPGP_ERROR_STATUS parse_executable_load_file_data(PBYTE data, DWORD dataLength,
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 			goto end;
 		}
-		modulesData->AIDLength = data[offset++];
+		modulesData->aid.AIDLength = data[offset++];
 		// check also buffer overrun for AID
-		if ((modulesData->AIDLength > dataLength - offset) || modulesData->AIDLength > sizeof(modulesData->AID)) {
+		if ((modulesData->aid.AIDLength > dataLength - offset) || modulesData->aid.AIDLength > sizeof(modulesData->aid.AID)) {
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 			goto end;
 		}
-		memcpy(modulesData->AID, data+offset, modulesData->AIDLength);
-		offset+=modulesData->AIDLength;
+		memcpy(modulesData->aid.AID, data+offset, modulesData->aid.AIDLength);
+		offset+=modulesData->aid.AIDLength;
 
 		if (dataLength - offset < 1){
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
@@ -551,14 +533,14 @@ OPGP_ERROR_STATUS parse_executable_load_file_data(PBYTE data, DWORD dataLength,
 		// tag 0x4F AID
 		result = read_TLV(tlv1.value+offset, tlv1.length, &tlv2);
 		// check also buffer overrun for AID
-		if (result == -1 || tlv2.length > sizeof(modulesData->AID)) {
+		if (result == -1 || tlv2.length > sizeof(modulesData->aid.AID)) {
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 			goto end;
 		}
-		modulesData->AIDLength = tlv2.length;
-		memcpy(modulesData->AID, tlv2.value, modulesData->AIDLength);
+		modulesData->aid.AIDLength = tlv2.length;
+		memcpy(modulesData->aid.AID, tlv2.value, modulesData->aid.AIDLength);
 		// tag + length
-		offset+=modulesData->AIDLength+2;
+		offset+=modulesData->aid.AIDLength+2;
 		// 9F70 Life Cycle State
 		result = read_TTLV(tlv1.value+offset, tlv1.length, &tlv2);
 		if (result == -1) {
@@ -568,7 +550,7 @@ OPGP_ERROR_STATUS parse_executable_load_file_data(PBYTE data, DWORD dataLength,
 		modulesData->lifeCycleState = tlv2.value[0];
 		// +tag + length + 1 byte
 		offset += 3 + tlv2.length;
-		// CE privileges - Executable Load File Version Number only 2 bytes supported
+		// CE - Executable Load File Version Number only 2 bytes supported
 		result = read_TLV(tlv1.value+offset, tlv1.length, &tlv2);
 		if (result == -1) {
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
@@ -585,7 +567,7 @@ OPGP_ERROR_STATUS parse_executable_load_file_data(PBYTE data, DWORD dataLength,
 		// +tag + length + n byte
 		offset+=2+tlv2.length;
 
-		for (int k=0; offset<dataLength && offset < tlv1.length &&
+		for (int k=0; offset < tlv1.length &&
 				k < (sizeof(modulesData->executableModules) / sizeof(OPGP_AID)); k++) {
 			// tag 0x84 AID
 			result = read_TLV(tlv1.value+offset, tlv1.length, &tlv2);
@@ -601,6 +583,18 @@ OPGP_ERROR_STATUS parse_executable_load_file_data(PBYTE data, DWORD dataLength,
 			modulesData->executableModules[k].AIDLength = tlv2.length;
 			memcpy(modulesData->executableModules[k].AID, tlv2.value, modulesData->executableModules[k].AIDLength);
 			offset+=modulesData->executableModules[k].AIDLength;
+		}
+		if (offset < tlv1.length) {
+			// CC is associated security domain
+			result = read_TLV(tlv1.value+offset, tlv1.length, &tlv2);
+			if (result == -1) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+				goto end;
+			}
+			if (tlv2.tag == 0xCC) {
+				memcpy(modulesData->associatedSecurityDomainAID.AID, tlv2.value, tlv2.length);
+				modulesData->associatedSecurityDomainAID.AIDLength = tlv2.length;
+			}
 		}
 		// remaining tags not supported
 		// tag + length of data length
@@ -867,10 +861,10 @@ end:
 OPGP_ERROR_STATUS GP211_put_symmetric_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 				  BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion, BYTE key[16], BYTE keyType) {
 	OPGP_ERROR_STATUS status;
-	BYTE sendBuffer[29];
-	DWORD sendBufferLength = 29;
-	DWORD recvBufferLength=256;
-	BYTE recvBuffer[256];
+	BYTE sendBuffer[APDU_COMMAND_LEN];
+	DWORD sendBufferLength = APDU_COMMAND_LEN;
+	DWORD recvBufferLength = APDU_RESPONSE_LEN;
+	BYTE recvBuffer[APDU_RESPONSE_LEN];
 	BYTE keyCheckValue[3];
 	BYTE keyDataField[22];
 	DWORD keyDataFieldLength=22;
@@ -881,7 +875,8 @@ OPGP_ERROR_STATUS GP211_put_symmetric_key(OPGP_CARD_CONTEXT cardContext, OPGP_CA
 	sendBuffer[i++] = 0xD8;
 	sendBuffer[i++] = keySetVersion;
 	sendBuffer[i++] = keyIndex;
-	sendBuffer[i++] = 0x17;
+	// Lc
+	i++;
 	sendBuffer[i++] = newKeySetVersion;
 
 	status = get_key_data_field(secInfo, key, 16, keyType, 1, keyDataField, &keyDataFieldLength, keyCheckValue);
@@ -892,6 +887,8 @@ OPGP_ERROR_STATUS GP211_put_symmetric_key(OPGP_CARD_CONTEXT cardContext, OPGP_CA
 	memcpy(sendBuffer+i, keyDataField, keyDataFieldLength); // key
 	i+=keyDataFieldLength;
 
+	// Lc
+	sendBuffer[i++] = i-5;
 	sendBuffer[i] = 0x00; // Le
 
 	status = OPGP_send_APDU(cardContext, cardInfo, secInfo, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
@@ -1745,9 +1742,12 @@ OPGP_ERROR_STATUS get_key_information_templates(OPGP_CARD_CONTEXT cardContext, O
 	OPGP_ERROR_STATUS status;
 	BYTE sendBuffer[5];
 	DWORD sendBufferLength = 5;
-	BYTE cardData[256];
-	DWORD cardDataLength = 256;
-	DWORD j,i=0;
+	BYTE cardData[APDU_RESPONSE_LEN];
+	DWORD cardDataLength = APDU_RESPONSE_LEN;
+	DWORD offset = 0;
+	DWORD i = 0;
+	DWORD result;
+	TLV tlv1, tlv2;
 	OPGP_LOG_START(_T("get_key_information_templates"));
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xCA;
@@ -1762,21 +1762,60 @@ OPGP_ERROR_STATUS get_key_information_templates(OPGP_CARD_CONTEXT cardContext, O
 	CHECK_SW_9000(cardData, cardDataLength, status);
 
 	i=0;
-	for (j=4; j<cardDataLength-2; j+=2) {
-		// our key information template is actually wrong, it should be able to
-		// contain multiple key components
-		// another key component follows
-		while (cardData[j] != 0xC0 && j<cardDataLength-2) {
-			if (*keyInformationLength <= i ) {
-				{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_MORE_KEY_INFORMATION_TEMPLATES, OPGP_stringify_error(OPGP_ERROR_MORE_KEY_INFORMATION_TEMPLATES)); goto end; };
-			}
-			keyInformation[i].keyIndex = cardData[j++];
-			keyInformation[i].keySetVersion = cardData[j++];
-			keyInformation[i].keyType = cardData[j++];
-			keyInformation[i].keyLength = cardData[j++];
-			i++;
-		}
+	// example: E006C00401FF80109000
+	// parse E0
+	result = read_TLV(cardData, cardDataLength, &tlv1);
+	if (result == -1 || tlv1.tag != 0xE0) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
 	}
+	// skip TL
+	offset+=2;
+	while (offset<tlv1.length) {
+		BOOL extended = 0;
+		DWORD j = 0;
+		// parse C0
+		result = read_TLV(tlv1.value, tlv1.length, &tlv2);
+		if (result == -1 || tlv1.tag != 0xC0) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+		// TODO: our key information template is actually wrong, it should be able to hold multiple key types + length in it
+		if (*keyInformationLength <= i ) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_MORE_KEY_INFORMATION_TEMPLATES, OPGP_stringify_error(OPGP_ERROR_MORE_KEY_INFORMATION_TEMPLATES)); goto end; };
+		}
+		keyInformation[i].keyIndex = tlv2.value[j++];
+		keyInformation[i].keySetVersion = tlv2.value[j++];
+		// extended format if 0xFF
+		if (cardData[j] == 0xFF) {
+			extended = 1;
+		}
+		if (extended) {
+			while (tlv2.value[j] == 0xFF) {
+				// skip 0xFF
+				j++;
+				keyInformation[i].keyType = tlv2.value[j++];
+				keyInformation[i].keyLength = get_short(tlv2.value, j);
+				j+=2;
+			}
+			// extended has key usage and key access at the end
+			if (tlv2.value[j++]) {
+				keyInformation[i].keyUsage = tlv2.value[j++];
+			}
+			if (tlv2.value[j++]) {
+				keyInformation[i].keyAccess = tlv2.value[j++];
+			}
+		}
+		else {
+			keyInformation[i].keyType = tlv2.value[j++];
+			keyInformation[i].keyLength = tlv2.value[j++];
+		}
+
+		i++;
+		// increment by TLV
+		offset += 2 + tlv2.length;
+	}
+
 
 	*keyInformationLength = i;
 #ifdef OPGP_DEBUG

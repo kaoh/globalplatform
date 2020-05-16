@@ -1648,9 +1648,9 @@ static int handleCommands(FILE *fd)
                     {
                         int j;
 
-                        for (j=0; j<data[i].AIDLength; j++)
+                        for (j=0; j<data[i].aid.AIDLength; j++)
                         {
-                            _tprintf(_T("%02x"), data[i].AID[j]);
+                            _tprintf(_T("%02x"), data[i].aid.AID[j]);
                         }
 
                         _tprintf(_T("\t%x"), data[i].lifeCycleState);
@@ -1691,9 +1691,9 @@ static int handleCommands(FILE *fd)
 
                         if (optionStr.element == GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES)
                         {
-                            for (j=0; j<execData[i].AIDLength; j++)
+                            for (j=0; j<execData[i].aid.AIDLength; j++)
                             {
-                                _tprintf(_T("%02x"), execData[i].AID[j]);
+                                _tprintf(_T("%02x"), execData[i].aid.AID[j]);
                             }
                             _tprintf(_T("\t%x\n"), execData[i].lifeCycleState);
                             for (k=0; k<execData[i].numExecutableModules; k++)
@@ -1709,9 +1709,9 @@ static int handleCommands(FILE *fd)
                         }
                         else
                         {
-                            for (j=0; j<appData[i].AIDLength; j++)
+                            for (j=0; j<appData[i].aid.AIDLength; j++)
                             {
-                                _tprintf(_T("%02x"), appData[i].AID[j]);
+                                _tprintf(_T("%02x"), appData[i].aid.AID[j]);
                             }
 
                             _tprintf(_T("\t%x"), appData[i].lifeCycleState);

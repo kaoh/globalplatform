@@ -70,7 +70,7 @@ static LONG _read_TLV(PBYTE buffer, DWORD length, TLV *tlv, DWORD numOctetsForTa
 		result = -1;
 		goto end;
 	}
-	memcpy(tlv->value, buffer+tlSize, tlv->length);
+	memmove(tlv->value, buffer+tlSize, tlv->length);
 	result = tlv->length + tlSize;
 end:
 	return result;

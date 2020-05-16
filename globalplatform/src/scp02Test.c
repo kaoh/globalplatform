@@ -94,8 +94,8 @@ static void get_status_mac_only(void **state) {
 			executablesData, &dataLength);
 	assert_int_equal(status.errorCode, OPGP_ERROR_STATUS_SUCCESS);
 	assert_int_equal(dataLength, 6);
-	assert_int_equal(applicationData[5].AIDLength, 7);
-	assert_memory_equal(applicationData[5].AID, refAid, applicationData[5].AIDLength);
+	assert_int_equal(applicationData[5].aid.AIDLength, 7);
+	assert_memory_equal(applicationData[5].aid.AID, refAid, applicationData[5].aid.AIDLength);
 	assert_int_equal(applicationData[5].lifeCycleState, 1);
 	assert_int_equal(applicationData[6].privileges, 0);
 }
