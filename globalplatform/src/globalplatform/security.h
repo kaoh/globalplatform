@@ -137,7 +137,7 @@ extern "C"
 
 #define GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC 0x13 //!< Secure Channel Protocol '02': C-DECRYPTION, C-MAC and R-MAC
 #define GP211_SCP02_SECURITY_LEVEL_C_MAC_R_MAC 0x11 //!< Secure Channel Protocol '02': C-MAC and R-MAC
-#define GP211_SCP02_SECURITY_LEVEL_R_MAC 0x10 //!< Secure Channel Protocol '02': R-MAC
+#define GP211_SCP02_SECURITY_LEVEL_R_MAC 0x10 //!< Secure Channel Protocol '02': R-MAC. Used only with BEGIN R-MAC.
 #define GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC 0x03 //!< Secure Channel Protocol '02': C-DECRYPTION and C-MAC
 #define GP211_SCP02_SECURITY_LEVEL_C_MAC 0x01 //!< Secure Channel Protocol '02': C-MAC
 #define GP211_SCP02_SECURITY_LEVEL_NO_SECURE_MESSAGING 0x00 //!< Secure Channel Protocol '02': No secure messaging expected.
@@ -146,9 +146,12 @@ extern "C"
 #define GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC 0x03 //!< Secure Channel Protocol '03': C-Decryption and C-MAC
 #define GP211_SCP03_SECURITY_LEVEL_C_MAC 0x01 //!< Secure Channel Protocol '03': C-MAC
 #define GP211_SCP03_SECURITY_LEVEL_NO_SECURE_MESSAGING 0x00 //!< Secure Channel Protocol '03': No secure messaging expected.
-#define GP211_SCP03_SECURITY_LEVEL_C_DEC_R_ENC_C_MAC_R_MAC 0x33 //!< Secure Channel Protocol '03': C-Decryption, C-MAC, R-Mac and R-Encryption
-#define GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC 0x13 //!< Secure Channel Protocol '03': C-Decryption, C-MAC and R-Mac
-#define GP211_SCP03_SECURITY_LEVEL_C_MAC_R_MAC 0x11 //!< Secure Channel Protocol '03': C-MAC and R-Mac
+#define GP211_SCP03_SECURITY_LEVEL_C_DEC_R_ENC_C_MAC_R_MAC 0x33 //!< Secure Channel Protocol '03': C-Decryption, C-MAC, R-MAC and R-Encryption
+#define GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC 0x13 //!< Secure Channel Protocol '03': C-Decryption, C-MAC and R-MAC
+#define GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC_R_ENC_R_MAC 0x33 //!< Secure Channel Protocol '03': C-Decryption, C-MAC, R-Encryption and R-MAC
+#define GP211_SCP03_SECURITY_LEVEL_C_MAC_R_MAC 0x11 //!< Secure Channel Protocol '03': C-MAC and R-MAC
+#define GP211_SCP03_SECURITY_LEVEL_R_MAC 0x10 //!< Secure Channel Protocol '03': R-MAC. Used only with BEGIN R-MAC.
+#define GP211_SCP03_SECURITY_LEVEL_R_ENC_R_MAC 0x30 //!< Secure Channel Protocol '03': R-Encryption and R-MAC. Used only with BEGIN R-MAC.
 
 #define GP211_KEY_TYPE_RSA_PUB_N 0xA1 //!< 'A1' RSA Public Key - modulus N component (clear text).
 #define GP211_KEY_TYPE_RSA_PUB_E 0xA0 //!< 'A0' RSA Public Key - public exponent e component (clear text)

@@ -143,7 +143,7 @@ OPGP_ERROR_STATUS calculate_enc_ecb_two_key_triple_des(BYTE key[16], BYTE *messa
 
 OPGP_NO_API
 OPGP_ERROR_STATUS validate_receipt(PBYTE validationData, DWORD validationDataLength,
-							 BYTE receipt[16], BYTE receiptKey[16]);
+							 BYTE receipt[16], BYTE receiptKey[16], BYTE secureChannelProtocol);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS calculate_MAC_des_3des(BYTE _3des_key[16], BYTE *message, int messageLength,
@@ -154,24 +154,28 @@ OPGP_ERROR_STATUS validate_install_receipt(DWORD confirmationCounter, PBYTE card
 							  DWORD cardUniqueDataLength,
 						   BYTE receiptKey[16], GP211_RECEIPT_DATA receiptData,
 						   PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
-						   PBYTE applicationAID, DWORD applicationAIDLength);
+						   PBYTE applicationAID, DWORD applicationAIDLength, BYTE secureChannelProtocol);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS validate_delete_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
 							 DWORD cardUniqueDataLength,
 						   BYTE receiptKey[16], GP211_RECEIPT_DATA receiptData,
-						   PBYTE AID, DWORD AIDLength);
+						   PBYTE AID, DWORD AIDLengthv, BYTE secureChannelProtocol);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS validate_load_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
 						   DWORD cardUniqueDataLength,
 						   BYTE receiptKey[16], GP211_RECEIPT_DATA receiptData,
 						   PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
-						   PBYTE securityDomainAID, DWORD securityDomainAIDLength);
+						   PBYTE securityDomainAID, DWORD securityDomainAIDLength, BYTE secureChannelProtocol);
 
 //! \brief Reads a public RSA key from a file
 OPGP_NO_API
 OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhrase, BYTE rsaModulus[128], LONG *rsaExponent);
+
+//! \brief Calculates a SHA-256 hash.
+OPGP_NO_API
+OPGP_ERROR_STATUS calculate_sha256_hash(PBYTE message, DWORD messageLength, BYTE hash[32]);
 
 //! \brief Calculates a SHA-1 hash.
 OPGP_NO_API

@@ -65,7 +65,6 @@ typedef struct _OptionStr
     BYTE mac_key[DDES_KEY_LEN];
     BYTE enc_key[DDES_KEY_LEN];
     BYTE kek_key[DDES_KEY_LEN];
-    BYTE current_kek[DDES_KEY_LEN];
     BYTE securityLevel;
     BYTE AID[AIDLEN+1];
     DWORD AIDLen;
@@ -454,21 +453,6 @@ static int handleOptions(OptionStr *pOptionStr)
             {
 
                 ConvertStringToByteArray(token, DDES_KEY_LEN, pOptionStr->kek_key);
-            }
-        }
-        else if (_tcscmp(token, _T("-current_kek")) == 0)
-        {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -current_kek not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-
-                ConvertStringToByteArray(token, DDES_KEY_LEN, pOptionStr->current_kek);
             }
         }
         else if (_tcscmp(token, _T("-AID")) == 0)
@@ -1534,8 +1518,7 @@ static int handleCommands(FILE *fd)
                                                        optionStr.newKeySetVersion,
                                                        optionStr.enc_key,
                                                        optionStr.mac_key,
-                                                       optionStr.kek_key,
-                                                       optionStr.current_kek);
+                                                       optionStr.kek_key);
                 }
                 else if (platform_mode == PLATFORM_MODE_GP_211)
                 {
@@ -1612,8 +1595,7 @@ static int handleCommands(FILE *fd)
                             optionStr.newKeySetVersion,
                             optionStr.file,
                             optionStr.passPhrase,
-                            optionStr.key,
-                            optionStr.current_kek);
+                            optionStr.key);
                 }
                 else if (platform_mode == PLATFORM_MODE_GP_211)
                 {

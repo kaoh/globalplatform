@@ -407,6 +407,16 @@ OPGP_API
 OPGP_ERROR_STATUS GP211_pin_change(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 				BYTE tryLimit, PBYTE newPIN, DWORD newPINLength);
 
+//! \brief GlobalPlatform2.1.1: replaces a single symmetric key in a key set or adds a new key.
+OPGP_API
+OPGP_ERROR_STATUS GP211_put_symmetric_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+				  BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion, BYTE key[16], BYTE keyType);
+
+//! \brief GlobalPlatform2.1.1: replaces a single AES key in a key set or adds a new AES key.
+OPGP_API
+OPGP_ERROR_STATUS GP211_put_aes_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+				  BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion, BYTE aesKey[16]);
+
 //! \brief GlobalPlatform2.1.1: replaces a single 3DES key in a key set or adds a new 3DES key.
 OPGP_API
 OPGP_ERROR_STATUS GP211_put_3des_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -499,7 +509,7 @@ OPGP_ERROR_STATUS GP211_calculate_install_token(BYTE P1, PBYTE executableLoadFil
 //! \brief GlobalPlatform2.1.1: Calculates a Load File Data Block Hash.
 OPGP_API
 OPGP_ERROR_STATUS GP211_calculate_load_file_data_block_hash(OPGP_STRING executableLoadFileName,
-							 unsigned char hash[20]);
+							 BYTE hash[32], BYTE secureChannelProtocol);
 
 //! \brief GlobalPlatform2.1.1: Loads a Executable Load File (containing an application) to the card.
 OPGP_API
@@ -588,7 +598,7 @@ OPGP_API
 OPGP_ERROR_STATUS GP211_validate_delete_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
 						   DWORD cardUniqueDataLength,
 						   BYTE receiptKey[16], GP211_RECEIPT_DATA receiptData,
-						   PBYTE AID, DWORD AIDLength);
+						   PBYTE AID, DWORD AIDLength, BYTE secureChannelProtocol);
 
 //! \brief GlobalPlatform2.1.1: Validates an Install Receipt.
 OPGP_API
@@ -596,7 +606,7 @@ OPGP_ERROR_STATUS GP211_validate_install_receipt(DWORD confirmationCounter, PBYT
 						   DWORD cardUniqueDataLength,
 						   BYTE receiptKey[16], GP211_RECEIPT_DATA receiptData,
 						   PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
-						   PBYTE applicationAID, DWORD applicationAIDLength);
+						   PBYTE applicationAID, DWORD applicationAIDLength, BYTE secureChannelProtocol);
 
 //! \brief GlobalPlatform2.1.1: Validates a Load Receipt.
 OPGP_API
@@ -604,7 +614,7 @@ OPGP_ERROR_STATUS GP211_validate_load_receipt(DWORD confirmationCounter, PBYTE c
 						   DWORD cardUniqueDataLength,
 						   BYTE receiptKey[16], GP211_RECEIPT_DATA receiptData,
 						   PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
-						   PBYTE securityDomainAID, DWORD securityDomainAIDLength);
+						   PBYTE securityDomainAID, DWORD securityDomainAIDLength, BYTE secureChannelProtocol);
 
 //! \brief GlobalPlatform2.1.1: Validates an Extradition Receipt.
 OPGP_ERROR_STATUS GP211_validate_extradition_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
@@ -613,7 +623,7 @@ OPGP_ERROR_STATUS GP211_validate_extradition_receipt(DWORD confirmationCounter, 
 						   PBYTE oldSecurityDomainAID, DWORD oldSecurityDomainAIDLength,
 						   PBYTE newSecurityDomainAID, DWORD newSecurityDomainAIDLength,
 						   PBYTE applicationOrExecutableLoadFileAID,
-						   DWORD applicationOrExecutableLoadFileAIDLength);
+						   DWORD applicationOrExecutableLoadFileAIDLength, BYTE secureChannelProtocol);
 
 //! \brief ISO 7816-4 / GlobalPlatform2.1.1: Opens or closes a Logical Channel.
 OPGP_API
@@ -664,8 +674,7 @@ OPGP_ERROR_STATUS OP201_pin_change(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 //! \brief Open Platform: replaces a single 3DES key in a key set or adds a new 3DES key.
 OPGP_API
 OPGP_ERROR_STATUS OP201_put_3desKey(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
-				  BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion, BYTE _3desKey[16],
-				  BYTE KEK[16]);
+				  BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion, BYTE _3desKey[16]);
 
 //! \brief Open Platform: replaces a single public RSA key in a key set or adds a new public RSA key.
 OPGP_API
@@ -676,7 +685,7 @@ OPGP_ERROR_STATUS OP201_put_rsa_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 OPGP_API
 OPGP_ERROR_STATUS OP201_put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 							 BYTE keySetVersion, BYTE newKeySetVersion,
-							 BYTE new_encKey[16], BYTE new_macKey[16], BYTE new_KEK[16], BYTE KEK[16]);
+							 BYTE new_encKey[16], BYTE new_macKey[16], BYTE new_KEK[16]);
 
 //! \brief Open Platform: deletes a key or multiple keys.
 OPGP_API
@@ -787,7 +796,7 @@ OPGP_ERROR_STATUS OP201_put_delegated_management_keys(OPGP_CARD_CONTEXT cardCont
 								   BYTE keySetVersion,
 								   BYTE newKeySetVersion,
 								   OPGP_STRING PEMKeyFileName, char *passPhrase,
-								   BYTE receiptGenerationKey[16], BYTE KEK[16]);
+								   BYTE receiptGenerationKey[16]);
 
 //! \brief Sends an application protocol data unit.
 OPGP_API
@@ -832,7 +841,7 @@ OPGP_ERROR_STATUS GP211_begin_R_MAC(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 
 //! \brief Terminates a R-MAC session.
 OPGP_API
-OPGP_ERROR_STATUS GP211_end_R_MAC(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo);
+OPGP_ERROR_STATUS GP211_end_R_MAC(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE secureChannelProtocol);
 
 //! \brief Reads the parameters of an Executable Load File.
 OPGP_API
