@@ -92,13 +92,13 @@ static const BYTE GP211_CARD_MANAGER_AID_ALT1[8] = { 0xA0, 0x00, 0x00, 0x00,
  */
 typedef enum {
 	GP211_SECURITY_DOMAIN = 1u << 7 + 16, //!< Application is security domain.
-	GP211_DAP_VERIFICATION = 1u << 6 + 16, //!< Application can require DAP verification for loading and installing applications.
-	GP211_DELEGATED_MANAGEMENT = 1u << 5 + 16, //!< Security domain has delegated management right.
+	GP211_DAP_VERIFICATION = 0xC0 << 16, //!< Application can require DAP verification for loading and installing applications.
+	GP211_DELEGATED_MANAGEMENT = 0xA0 << 16, //!< Security domain has delegated management right.
 	GP211_CARD_MANAGER_LOCK_PRIVILEGE = 1u << 4 + 16, //!< Application can lock the Card Manager.
 	GP211_CARD_MANAGER_TERMINATE_PRIVILEGE = 1u << 3 + 16, //!< Application can terminate the card.
-	GP211_DEFAULT_SELECTED = 1u << 2 + 16, //!< Application is default selected.
+	GP211_DEFAULT_SELECTED_CARD_RESET_PRIVILEGE = 1u << 2 + 16, //!< Application is default selected. In GlobalPlatform 2.3.1 this was redefined as Card Reset privilege.
 	GP211_PIN_CHANGE_PRIVILEGE = 1u << 1 + 16, //!< Application can change global PIN.
-	GP211_MANDATED_DAP_VERIFICATION = 1u << 0 + 16, //!< Security domain requires DAP verification for loading and installing applications.
+	GP211_MANDATED_DAP_VERIFICATION = 0xD0 << 16, //!< Security domain requires DAP verification for loading and installing applications.
 
 	GP211_TRUSTED_PATH = 1u << 7 + 8, //!< Application is a Trusted Path for inter-application communication.
 	GP211_AUTHORIZED_MANAGEMENT = 1u << 6 + 8, //!< Application is capable of Card Content Management; Security Domain privilege shall also be set.
@@ -223,14 +223,14 @@ static const BYTE OP201_CARD_MANAGER_AID[7] = {0xA0, 0x00, 0x00, 0x00, 0x03, 0x0
  * \brief Application privileges.
  */
 typedef enum {
-	OP201_SECURITY_DOMAIN = 1u << 7 + 16, //!< Application is security domain.
-	OP201_DAP_VERIFICATION = 1u << 6 + 16, //!< Application can require DAP verification for loading and installing applications.
-	OP201_DELEGATED_MANAGEMENT = 1u << 5 + 16, //!< Security domain has delegated management right.
-	OP201_CARD_MANAGER_LOCK_PRIVILEGE = 1u << 4 + 16, //!< Application can lock the Card Manager.
-	OP201_CARD_MANAGER_TERMINATE_PRIVILEGE = 1u << 3 + 16, //!< Application can terminate the card.
-	OP201_DEFAULT_SELECTED = 1u << 2 + 16, //!< Application is default selected.
-	OP201_PIN_CHANGE_PRIVILEGE = 1u << 1 + 16, //!< Application can change global PIN.
-	OP201_MANDATED_DAP_VERIFICATION = 1u << 0 + 16, //!< Security domain requires DAP verification for loading and installing applications.
+	OP201_SECURITY_DOMAIN = 1u << 7, //!< Application is security domain.
+	OP201_DAP_VERIFICATION = 0xC0, //!< Application can require DAP verification for loading and installing applications.
+	OP201_DELEGATED_MANAGEMENT = 0xA0, //!< Security domain has delegated management right.
+	OP201_CARD_MANAGER_LOCK_PRIVILEGE = 1u << 4, //!< Application can lock the Card Manager.
+	OP201_CARD_MANAGER_TERMINATE_PRIVILEGE = 1u << 3, //!< Application can terminate the card.
+	OP201_DEFAULT_SELECTED = 1u << 2, //!< Application is default selected.
+	OP201_PIN_CHANGE_PRIVILEGE = 1u << 1, //!< Application can change global PIN.
+	OP201_MANDATED_DAP_VERIFICATION = 0xD0, //!< Security domain requires DAP verification for loading and installing applications.
 } OP201_APPLICATION_PRIVILEGES;
 
 #define OP201_STATUS_APPLICATIONS 0x40 //!< Indicate Applications or Security Domains in OP201_get_status() or OP201_set_status().

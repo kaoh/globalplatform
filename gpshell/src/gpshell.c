@@ -217,7 +217,7 @@ static LPSTR lifeCycleToString(BYTE lifeCycle, BYTE element) {
 	LPCSTR lcOpReady = _T("OP Ready");
 	LPCSTR lcInitialized = _T("Initialized");
 	LPCSTR lcSecured = _T("Secured");
-	LPCSTR lccardLocked = _T("Card Locked");
+	LPCSTR lcCardLocked = _T("Card Locked");
 	LPCSTR lcTerminated = _T("Terminated");
 
 	static LPSTR lifeCycleState;
@@ -225,38 +225,38 @@ static LPSTR lifeCycleToString(BYTE lifeCycle, BYTE element) {
 	switch (element) {
 		case GP211_STATUS_LOAD_FILES:
 		case GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES:
-			if (lifeCycle & GP211_LIFE_CYCLE_LOAD_FILE_LOADED == GP211_LIFE_CYCLE_LOAD_FILE_LOADED) {
+			if ((lifeCycle & GP211_LIFE_CYCLE_LOAD_FILE_LOADED) == GP211_LIFE_CYCLE_LOAD_FILE_LOADED) {
 				lifeCycleState = (LPSTR)lcLoaded;
 			}
 			break;
 		case GP211_STATUS_APPLICATIONS:
-			if (lifeCycle & GP211_LIFE_CYCLE_APPLICATION_INSTALLED == GP211_LIFE_CYCLE_APPLICATION_INSTALLED) {
+			if ((lifeCycle & GP211_LIFE_CYCLE_APPLICATION_INSTALLED) == GP211_LIFE_CYCLE_APPLICATION_INSTALLED) {
 				lifeCycleState = (LPSTR)lcInstalled;
 			}
-			if (lifeCycle & GP211_LIFE_CYCLE_APPLICATION_SELECTABLE == GP211_LIFE_CYCLE_APPLICATION_SELECTABLE) {
+			if ((lifeCycle & GP211_LIFE_CYCLE_APPLICATION_SELECTABLE) == GP211_LIFE_CYCLE_APPLICATION_SELECTABLE) {
 				lifeCycleState = (LPSTR)lcSelectable;
 			}
-			if (lifeCycle & GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED  == GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED) {
+			if ((lifeCycle & GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED)  == GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED) {
 				lifeCycleState = (LPSTR)lcPersonalized;
 			}
-			if (lifeCycle & GP211_LIFE_CYCLE_APPLICATION_LOCKED == GP211_LIFE_CYCLE_APPLICATION_LOCKED) {
+			if ((lifeCycle & GP211_LIFE_CYCLE_APPLICATION_LOCKED) == GP211_LIFE_CYCLE_APPLICATION_LOCKED) {
 				lifeCycleState = (LPSTR)lcLocked;
 			}
 			break;
 		case GP211_STATUS_ISSUER_SECURITY_DOMAIN:
-			if (lifeCycle & GP211_LIFE_CYCLE_CARD_OP_READY == GP211_LIFE_CYCLE_CARD_OP_READY) {
+			if ((lifeCycle & GP211_LIFE_CYCLE_CARD_OP_READY) == GP211_LIFE_CYCLE_CARD_OP_READY) {
 				lifeCycleState = (LPSTR)lcOpReady;
 			}
-			if (lifeCycle & GP211_LIFE_CYCLE_CARD_INITIALIZED == GP211_LIFE_CYCLE_CARD_INITIALIZED) {
+			if ((lifeCycle & GP211_LIFE_CYCLE_CARD_INITIALIZED) == GP211_LIFE_CYCLE_CARD_INITIALIZED) {
 				lifeCycleState = (LPSTR)lcInitialized;
 			}
-			if (lifeCycle & GP211_LIFE_CYCLE_CARD_SECURED  == GP211_LIFE_CYCLE_CARD_SECURED) {
+			if ((lifeCycle & GP211_LIFE_CYCLE_CARD_SECURED)  == GP211_LIFE_CYCLE_CARD_SECURED) {
 				lifeCycleState = (LPSTR)lcSecured;
 			}
-			if (lifeCycle & GP211_LIFE_CYCLE_CARD_LOCKED == GP211_LIFE_CYCLE_CARD_LOCKED) {
-				lifeCycleState = (LPSTR)lccardLocked;
+			if ((lifeCycle & GP211_LIFE_CYCLE_CARD_LOCKED) == GP211_LIFE_CYCLE_CARD_LOCKED) {
+				lifeCycleState = (LPSTR)lcCardLocked;
 			}
-			if (lifeCycle & GP211_LIFE_CYCLE_CARD_TERMINATED == GP211_LIFE_CYCLE_CARD_TERMINATED) {
+			if ((lifeCycle & GP211_LIFE_CYCLE_CARD_TERMINATED) == GP211_LIFE_CYCLE_CARD_TERMINATED) {
 				lifeCycleState = (LPSTR)lcTerminated;
 			}
 			break;
@@ -265,62 +265,94 @@ static LPSTR lifeCycleToString(BYTE lifeCycle, BYTE element) {
 	return lifeCycleState;
 }
 
-static void privilegesToString(DWORD privileges, PRIVILEGES_STRING *privilegesStrings, PDWORD privilegesStringsLength) {
+static void privilegesToString(DWORD privileges, PRIVILEGES_STRING privilegesStrings[20]) {
+	int i, j;
+	LPCSTR lcSd = _T("Security Domain");
+	LPCSTR lcDapVerfification = _T("DAP Verification");
+	LPCSTR lcDelegatedManagement = _T("Delegated Management");
+	LPCSTR lcCardLock = _T("Card Lock");
+	LPCSTR lcCardTerminate = _T("Card Terminate");
+	LPCSTR lcCardReset = _T("Default Selected / Card Reset");
+	LPCSTR lcCVMManagement = _T("CVM Management");
+	LPCSTR lcMandatedDapVerification = _T("Mandated DAP Verification");
+	LPCSTR lcTrustedPath = _T("Trusted Path");
+	LPCSTR lcAuthManagement = _T("Authorized Management");
+	LPCSTR lcTokenManagement = _T("Token Management");
+	LPCSTR lcGlobalDelete = _T("Global Delete");
+	LPCSTR lcGlobalLock = _T("Global Lock");
+	LPCSTR lcGlobalRegistry = _T("Global Registry");
+	LPCSTR lcFinalApplication = _T("Final Application");
+	LPCSTR lcGlobalService = _T("Global Service");
 
-//	LPCSTR lcLoaded = _T("Loaded");
-//	LPCSTR lcInstalled = _T("Installed");
-//	LPCSTR lcSelectable = _T("Selectable");
-//	LPCSTR lcLocked = _T("Locked");
-//	LPCSTR lcPersonalized = _T("Personalized");
-//	LPCSTR lcOpReady = _T("OP Ready");
-//	LPCSTR lcInitialized = _T("Initialized");
-//	LPCSTR lcSecured = _T("Secured");
-//	LPCSTR lccardLocked = _T("Card Locked");
-//	LPCSTR lcTerminated = _T("Terminated");
-//
-//	static LPSTR lifeCycleState;
-//
-//	switch (element) {
-//		case GP211_STATUS_LOAD_FILES:
-//		case GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES:
-//			if (lifeCycle & GP211_LIFE_CYCLE_LOAD_FILE_LOADED == GP211_LIFE_CYCLE_LOAD_FILE_LOADED) {
-//				lifeCycleState = (LPSTR)lcLoaded;
-//			}
-//			break;
-//		case GP211_STATUS_APPLICATIONS:
-//			if (lifeCycle & GP211_LIFE_CYCLE_APPLICATION_INSTALLED == GP211_LIFE_CYCLE_APPLICATION_INSTALLED) {
-//				lifeCycleState = (LPSTR)lcInstalled;
-//			}
-//			if (lifeCycle & GP211_LIFE_CYCLE_APPLICATION_SELECTABLE == GP211_LIFE_CYCLE_APPLICATION_SELECTABLE) {
-//				lifeCycleState = (LPSTR)lcSelectable;
-//			}
-//			if (lifeCycle & GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED  == GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED) {
-//				lifeCycleState = (LPSTR)lcPersonalized;
-//			}
-//			if (lifeCycle & GP211_LIFE_CYCLE_APPLICATION_LOCKED == GP211_LIFE_CYCLE_APPLICATION_LOCKED) {
-//				lifeCycleState = (LPSTR)lcLocked;
-//			}
-//			break;
-//		case GP211_STATUS_ISSUER_SECURITY_DOMAIN:
-//			if (lifeCycle & GP211_LIFE_CYCLE_CARD_OP_READY == GP211_LIFE_CYCLE_CARD_OP_READY) {
-//				lifeCycleState = (LPSTR)lcOpReady;
-//			}
-//			if (lifeCycle & GP211_LIFE_CYCLE_CARD_INITIALIZED == GP211_LIFE_CYCLE_CARD_INITIALIZED) {
-//				lifeCycleState = (LPSTR)lcInitialized;
-//			}
-//			if (lifeCycle & GP211_LIFE_CYCLE_CARD_SECURED  == GP211_LIFE_CYCLE_CARD_SECURED) {
-//				lifeCycleState = (LPSTR)lcSecured;
-//			}
-//			if (lifeCycle & GP211_LIFE_CYCLE_CARD_LOCKED == GP211_LIFE_CYCLE_CARD_LOCKED) {
-//				lifeCycleState = (LPSTR)lccardLocked;
-//			}
-//			if (lifeCycle & GP211_LIFE_CYCLE_CARD_TERMINATED == GP211_LIFE_CYCLE_CARD_TERMINATED) {
-//				lifeCycleState = (LPSTR)lcTerminated;
-//			}
-//			break;
-//	}
-//
-//	return lifeCycleState;
+	LPCSTR lcReceiptGeneration = _T("Receipt Generation");
+	LPCSTR lcCipheredLoadFileDataBlock = _T("Ciphered Load File Data Block");
+	LPCSTR lcContactlessActivation = _T("Contactless Activation");
+	LPCSTR lcContactlessSelfActivation = _T("Contactless Self-Activation");
+	// null all
+	for (i = 0; i<20; i++) {
+		strcpy(privilegesStrings[i].privilege, EMPTY_STRING);
+	}
+	i=0;
+	if ((privileges & GP211_SECURITY_DOMAIN) == GP211_SECURITY_DOMAIN) {
+		strcpy(privilegesStrings[i++].privilege, lcSd);
+	}
+	if ((privileges & GP211_DAP_VERIFICATION) == GP211_DAP_VERIFICATION) {
+		strcpy(privilegesStrings[i++].privilege, lcDapVerfification);
+	}
+	if ((privileges & GP211_DELEGATED_MANAGEMENT) == GP211_DELEGATED_MANAGEMENT) {
+		strcpy(privilegesStrings[i++].privilege, lcDelegatedManagement);
+	}
+	if ((privileges & GP211_CARD_MANAGER_LOCK_PRIVILEGE) == GP211_CARD_MANAGER_LOCK_PRIVILEGE) {
+		strcpy(privilegesStrings[i++].privilege, lcCardLock);
+	}
+	if ((privileges & GP211_CARD_MANAGER_TERMINATE_PRIVILEGE) == GP211_CARD_MANAGER_TERMINATE_PRIVILEGE) {
+		strcpy(privilegesStrings[i++].privilege, lcCardTerminate);
+	}
+	if ((privileges & GP211_DEFAULT_SELECTED_CARD_RESET_PRIVILEGE) == GP211_DEFAULT_SELECTED_CARD_RESET_PRIVILEGE) {
+		strcpy(privilegesStrings[i++].privilege, lcCardReset);
+	}
+	if ((privileges & GP211_PIN_CHANGE_PRIVILEGE) == GP211_PIN_CHANGE_PRIVILEGE) {
+		strcpy(privilegesStrings[i++].privilege, lcCVMManagement);
+	}
+	if ((privileges & GP211_MANDATED_DAP_VERIFICATION) == GP211_MANDATED_DAP_VERIFICATION) {
+		strcpy(privilegesStrings[i++].privilege, lcMandatedDapVerification);
+	}
+	if ((privileges & GP211_TRUSTED_PATH) == GP211_TRUSTED_PATH) {
+		strcpy(privilegesStrings[i++].privilege, lcTrustedPath);
+	}
+	if ((privileges & GP211_AUTHORIZED_MANAGEMENT) == GP211_AUTHORIZED_MANAGEMENT) {
+		strcpy(privilegesStrings[i++].privilege, lcAuthManagement);
+	}
+	if ((privileges & GP211_TOKEN_VERIFICATION) == GP211_TOKEN_VERIFICATION) {
+		strcpy(privilegesStrings[i++].privilege, lcTokenManagement);
+	}
+	if ((privileges & GP211_GLOBAL_DELETE) == GP211_GLOBAL_DELETE) {
+		strcpy(privilegesStrings[i++].privilege, lcGlobalDelete);
+	}
+	if ((privileges & GP211_GLOBAL_LOCK) == GP211_GLOBAL_LOCK) {
+		strcpy(privilegesStrings[i++].privilege, lcGlobalLock);
+	}
+	if ((privileges & GP211_GLOBAL_REGISTRY) == GP211_GLOBAL_REGISTRY) {
+		strcpy(privilegesStrings[i++].privilege, lcGlobalRegistry);
+	}
+	if ((privileges & GP211_GLOBAL_SERVICE) == GP211_GLOBAL_SERVICE) {
+		strcpy(privilegesStrings[i++].privilege, lcGlobalService);
+	}
+	if ((privileges & GP211_FINAL_APPLICATION) == GP211_FINAL_APPLICATION) {
+		strcpy(privilegesStrings[i++].privilege, lcFinalApplication);
+	}
+	if ((privileges & GP211_RECEIPT_GENERATION) == GP211_RECEIPT_GENERATION) {
+		strcpy(privilegesStrings[i++].privilege, lcReceiptGeneration);
+	}
+	if ((privileges & GP211_CIPHERED_LOAD_FILE_DATA_BLOCK) == GP211_CIPHERED_LOAD_FILE_DATA_BLOCK) {
+		strcpy(privilegesStrings[i++].privilege, lcCipheredLoadFileDataBlock);
+	}
+	if ((privileges & GP211_CONTACTLESS_ACTIVATION) == GP211_CONTACTLESS_ACTIVATION) {
+		strcpy(privilegesStrings[i++].privilege, lcContactlessActivation);
+	}
+	if ((privileges & GP211_CONTACTLESS_SELF_ACTIVATION) == GP211_CONTACTLESS_SELF_ACTIVATION) {
+		strcpy(privilegesStrings[i++].privilege, lcContactlessSelfActivation);
+	}
 }
 
 static void displayLoadFilesAndModulesGp211(GP211_EXECUTABLE_MODULES_DATA *executables, int count) {
@@ -356,7 +388,6 @@ static void displayLoadApplicationsGp211(GP211_APPLICATION_DATA *applications, i
 	TCHAR versionStr[5];
 	LPSTR lifeCycleState;
 	PRIVILEGES_STRING privileges[20];
-	DWORD privilegesLength = 20;
 	int i,j;
 	format = _T("%-32s | %-12s | %-16s | %-7s | %-32s\n");
 	_tprintf(format, _T("AID"), _T("State"), _T("Privileges"), _T("Version"), _T("Linked Security Domain"));
@@ -367,12 +398,12 @@ static void displayLoadApplicationsGp211(GP211_APPLICATION_DATA *applications, i
 		ConvertByteArrayToString(applications[i].versionNumber, sizeof(applications[i].versionNumber), sizeof(versionStr), versionStr);
 		lifeCycleState = lifeCycleToString(applications[i].lifeCycleState, element);
 		_tprintf(format, aidStr, lifeCycleState, EMPTY_STRING, versionStr, sdAidStr);
-		privilegesToString(applications[i].privileges, privileges, &privilegesLength);
-//		for (j=0; j<20; j++) {
-//			if (strlen(privileges[i].privilege) > 0) {
-//				_tprintf(format, EMPTY_STRING, EMPTY_STRING, privileges[j], EMPTY_STRING, EMPTY_STRING);
-//			}
-//		}
+		privilegesToString(applications[i].privileges, privileges);
+		for (j=0; j<20; j++) {
+			if (strlen(privileges[i].privilege) > 0) {
+				_tprintf(format, EMPTY_STRING, EMPTY_STRING, privileges[j], EMPTY_STRING, EMPTY_STRING);
+			}
+		}
 	}
 }
 
@@ -383,14 +414,19 @@ static void displayApplicationsOp201(OP201_APPLICATION_DATA *applications, int c
 	LPSTR lifeCycleState;
 	PRIVILEGES_STRING privileges[20];
 	int i,j;
-	format = _T("%-32s | %-7s | %-16s\n");
-	_tprintf(format, _T("Load File AID"), _T("State"), _T("Privileges"));
+	format = _T("%-32s | %-12s | %-16s\n");
+	_tprintf(format, _T("AID"), _T("State"), _T("Privileges"));
 	for (i=0; i<count; i++) {
 		_tprintf(format, _T("--"), _T("--"), _T("--"));
 		ConvertByteArrayToString(applications[i].aid.AID, applications[i].aid.AIDLength, sizeof(aidStr), aidStr);
 		lifeCycleState = lifeCycleToString(applications[i].lifeCycleState, element);
 		_tprintf(format, aidStr, lifeCycleState, EMPTY_STRING);
-		// TODO: privileges
+		privilegesToString(applications[i].privileges, privileges);
+		for (j=0; j<20; j++) {
+			if (strlen(privileges[i].privilege) > 0) {
+				_tprintf(format, EMPTY_STRING, EMPTY_STRING, privileges[j], EMPTY_STRING, EMPTY_STRING);
+			}
+		}
 	}
 }
 
