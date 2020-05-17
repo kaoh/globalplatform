@@ -390,6 +390,7 @@ OPGP_ERROR_STATUS parse_application_data(PBYTE data, DWORD dataLength,
 			applData->privileges = 0x00;
 			offset++;
 		}
+		applData->associatedSecurityDomainAID.AIDLength = 0;
 	}
 	else {
 		DWORD result;
@@ -422,9 +423,13 @@ OPGP_ERROR_STATUS parse_application_data(PBYTE data, DWORD dataLength,
 		applData->lifeCycleState = tlv2.value[0];
 		// tag + length + 1 byte
 		offset += 3 + tlv2.length;
-		// undocumented tags seen on ST eUICC, use a loop to skip them
-		while (offset < dataLength && offset < tlv1.length) {
+
+		applData->associatedSecurityDomainAID.AIDLength = 0;
+		memset(applData->versionNumber, 0, 2);
+		// undocumented tags seen on some cards, use a loop to skip unknown tags
+		while (offset < tlv1.length) {
 			DWORD versionNumberSize;
+			BYTE privBytes[4];
 			result = read_TLV(tlv1.value+offset, tlv1.length, &tlv2);
 			if (result == -1) {
 				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
@@ -432,12 +437,19 @@ OPGP_ERROR_STATUS parse_application_data(PBYTE data, DWORD dataLength,
 			}
 			switch (tlv2.tag) {
 				case 0xC5:
-					// C5 privileges - only first byte supported
+					// C5 privileges
 					if (tlv2.length != 3 && tlv2.length != 1) {
 						OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 						goto end;
 					}
-					applData->privileges = tlv2.value[0];
+					if (tlv2.length == 3) {
+						privBytes[0] = 0;
+						memcpy(privBytes, tlv2.value, 3);
+						applData->privileges = *privBytes;
+					}
+					else {
+						applData->privileges = tlv2.value[0];
+					}
 					// +tag + length + data length
 					break;
 				case 0xCC:
@@ -452,7 +464,7 @@ OPGP_ERROR_STATUS parse_application_data(PBYTE data, DWORD dataLength,
 					}
 					memcpy(applData->versionNumber +
 							(sizeof(applData->versionNumber) - versionNumberSize),
-							tlv2.value+offset, versionNumberSize);
+							tlv2.value, versionNumberSize);
 					break;
 
 				// remaining tags not supported
@@ -519,11 +531,13 @@ OPGP_ERROR_STATUS parse_executable_load_file_data(PBYTE data, DWORD dataLength,
 			memcpy(modulesData->executableModules[k].AID, data+offset, modulesData->executableModules[k].AIDLength);
 			offset+=modulesData->executableModules[k].AIDLength;
 		}
+		modulesData->associatedSecurityDomainAID.AIDLength = 0;
 	}
 	else {
-		DWORD result;
-		int versionNumberSize;
+		int result;
+		DWORD exLoadFileAidCount = 0;
 		TLV tlv1, tlv2;
+		DWORD numSupportedExLoadFileAid = (sizeof(modulesData->executableModules) / sizeof(OPGP_AID));
 		// read outer tag, must be 0xE3
 		result = read_TLV(data, dataLength, &tlv1);
 		if (result == -1 || tlv1.tag != 0xE3) {
@@ -550,52 +564,49 @@ OPGP_ERROR_STATUS parse_executable_load_file_data(PBYTE data, DWORD dataLength,
 		modulesData->lifeCycleState = tlv2.value[0];
 		// +tag + length + 1 byte
 		offset += 3 + tlv2.length;
-		// CE - Executable Load File Version Number only 2 bytes supported
-		result = read_TLV(tlv1.value+offset, tlv1.length, &tlv2);
-		if (result == -1) {
-			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-			goto end;
-		}
-		memset(modulesData->versionNumber, 0, sizeof(modulesData->versionNumber));
-		versionNumberSize = tlv2.length;
-		if (sizeof(modulesData->versionNumber) < versionNumberSize) {
-			versionNumberSize = sizeof(modulesData->versionNumber);
-		}
-		memcpy(modulesData->versionNumber +
-				(sizeof(modulesData->versionNumber) - versionNumberSize),
-				tlv2.value+offset, versionNumberSize);
-		// +tag + length + n byte
-		offset+=2+tlv2.length;
 
-		for (int k=0; offset < tlv1.length &&
-				k < (sizeof(modulesData->executableModules) / sizeof(OPGP_AID)); k++) {
-			// tag 0x84 AID
-			result = read_TLV(tlv1.value+offset, tlv1.length, &tlv2);
-			// reached end of executable module AIDs
-			if (tlv2.tag != 0x84) {
-				break;
-			}
-			// check also buffer overrun for AID
-			if (result == -1 || tlv2.length > sizeof(modulesData->executableModules[k].AID)) {
-				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-				goto end;
-			}
-			modulesData->executableModules[k].AIDLength = tlv2.length;
-			memcpy(modulesData->executableModules[k].AID, tlv2.value, modulesData->executableModules[k].AIDLength);
-			offset+=modulesData->executableModules[k].AIDLength;
-		}
-		if (offset < tlv1.length) {
+		modulesData->associatedSecurityDomainAID.AIDLength = 0;
+		memset(modulesData->versionNumber, 0, 2);
+		while (offset < tlv1.length) {
+			DWORD versionNumberSize;
+
 			// CC is associated security domain
 			result = read_TLV(tlv1.value+offset, tlv1.length, &tlv2);
 			if (result == -1) {
 				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 				goto end;
 			}
-			if (tlv2.tag == 0xCC) {
-				memcpy(modulesData->associatedSecurityDomainAID.AID, tlv2.value, tlv2.length);
-				modulesData->associatedSecurityDomainAID.AIDLength = tlv2.length;
+			switch (tlv2.tag) {
+				case 0xCC:
+					memcpy(modulesData->associatedSecurityDomainAID.AID, tlv2.value, tlv2.length);
+					modulesData->associatedSecurityDomainAID.AIDLength = tlv2.length;
+					break;
+			// CE - Executable Load File Version Number only 2 bytes supported
+				case 0xCE:
+					memset(modulesData->versionNumber, 0, sizeof(modulesData->versionNumber));
+					versionNumberSize = tlv2.length;
+					if (sizeof(modulesData->versionNumber) < versionNumberSize) {
+						versionNumberSize = sizeof(modulesData->versionNumber);
+					}
+					memcpy(modulesData->versionNumber +
+							(sizeof(modulesData->versionNumber) - versionNumberSize),
+							tlv2.value, versionNumberSize);
+					break;
+				case 0x84:
+					if (tlv2.length > sizeof(modulesData->executableModules[exLoadFileAidCount].AID)) {
+						OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+						goto end;
+					}
+					if (exLoadFileAidCount < numSupportedExLoadFileAid) {
+						modulesData->executableModules[exLoadFileAidCount].AIDLength = tlv2.length;
+						memcpy(modulesData->executableModules[exLoadFileAidCount].AID, tlv2.value, modulesData->executableModules[exLoadFileAidCount].AIDLength);
+					}
+					exLoadFileAidCount++;
+					break;
 			}
+			offset += tlv2.length + 2;
 		}
+		modulesData->numExecutableModules = exLoadFileAidCount;
 		// remaining tags not supported
 		// tag + length of data length
 		offset = tlv1.length +2;

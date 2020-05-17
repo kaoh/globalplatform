@@ -118,6 +118,12 @@ static unsigned int GetTime()
 #endif
 }
 
+LPCSTR EMPTY_STRING = _T("");
+
+typedef struct {
+	TCHAR privilege[32];
+} PRIVILEGES_STRING;
+
 /* Functions */
 static void ConvertTToC(char* pszDest, const TCHAR* pszSrc)
 {
@@ -129,18 +135,31 @@ static void ConvertTToC(char* pszDest, const TCHAR* pszSrc)
     pszDest[_tcslen(pszSrc)] = '\0';
 }
 
-static int ConvertStringToByteArray(TCHAR *src, int maxLength, BYTE *dest)
+static int ConvertStringToByteArray(TCHAR *src, int destLength, BYTE *dest)
 {
-    TCHAR dummy[BUFLEN+1];
+    TCHAR dummy[destLength*2+1];
     int temp, i = 0;
-    _tcsncpy(dummy, src, maxLength*2+1);
-    dummy[maxLength*2] = _T('\0');
+    _tcsncpy(dummy, src, destLength*2+1);
+    dummy[destLength*2] = _T('\0');
     while (_stscanf(&(dummy[i*2]), _T("%02x"), &temp) > 0)
     {
         dest[i] = temp;
         i++;
     }
     return i;
+}
+
+static void ConvertByteArrayToString(BYTE *src, int srcLength, int destLength, TCHAR *dest)
+{
+	int j;
+	dest[destLength-1] =  _T('\0');
+	for (j=0; j<srcLength && j*2 < destLength ; j++)
+	{
+		_snprintf(dest+j*2, destLength-(j-2), _T("%02x"), src[j]);
+	}
+	if (destLength > j*2) {
+		dest[j*2] =  _T('\0');
+	}
 }
 
 static TCHAR *strtokCheckComment(TCHAR *buf)
@@ -189,6 +208,191 @@ static TCHAR *strtokCheckComment(TCHAR *buf)
     }
 }
 
+static LPSTR lifeCycleToString(BYTE lifeCycle, BYTE element) {
+	LPCSTR lcLoaded = _T("Loaded");
+	LPCSTR lcInstalled = _T("Installed");
+	LPCSTR lcSelectable = _T("Selectable");
+	LPCSTR lcLocked = _T("Locked");
+	LPCSTR lcPersonalized = _T("Personalized");
+	LPCSTR lcOpReady = _T("OP Ready");
+	LPCSTR lcInitialized = _T("Initialized");
+	LPCSTR lcSecured = _T("Secured");
+	LPCSTR lccardLocked = _T("Card Locked");
+	LPCSTR lcTerminated = _T("Terminated");
+
+	static LPSTR lifeCycleState;
+
+	switch (element) {
+		case GP211_STATUS_LOAD_FILES:
+		case GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES:
+			if (lifeCycle & GP211_LIFE_CYCLE_LOAD_FILE_LOADED == GP211_LIFE_CYCLE_LOAD_FILE_LOADED) {
+				lifeCycleState = (LPSTR)lcLoaded;
+			}
+			break;
+		case GP211_STATUS_APPLICATIONS:
+			if (lifeCycle & GP211_LIFE_CYCLE_APPLICATION_INSTALLED == GP211_LIFE_CYCLE_APPLICATION_INSTALLED) {
+				lifeCycleState = (LPSTR)lcInstalled;
+			}
+			if (lifeCycle & GP211_LIFE_CYCLE_APPLICATION_SELECTABLE == GP211_LIFE_CYCLE_APPLICATION_SELECTABLE) {
+				lifeCycleState = (LPSTR)lcSelectable;
+			}
+			if (lifeCycle & GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED  == GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED) {
+				lifeCycleState = (LPSTR)lcPersonalized;
+			}
+			if (lifeCycle & GP211_LIFE_CYCLE_APPLICATION_LOCKED == GP211_LIFE_CYCLE_APPLICATION_LOCKED) {
+				lifeCycleState = (LPSTR)lcLocked;
+			}
+			break;
+		case GP211_STATUS_ISSUER_SECURITY_DOMAIN:
+			if (lifeCycle & GP211_LIFE_CYCLE_CARD_OP_READY == GP211_LIFE_CYCLE_CARD_OP_READY) {
+				lifeCycleState = (LPSTR)lcOpReady;
+			}
+			if (lifeCycle & GP211_LIFE_CYCLE_CARD_INITIALIZED == GP211_LIFE_CYCLE_CARD_INITIALIZED) {
+				lifeCycleState = (LPSTR)lcInitialized;
+			}
+			if (lifeCycle & GP211_LIFE_CYCLE_CARD_SECURED  == GP211_LIFE_CYCLE_CARD_SECURED) {
+				lifeCycleState = (LPSTR)lcSecured;
+			}
+			if (lifeCycle & GP211_LIFE_CYCLE_CARD_LOCKED == GP211_LIFE_CYCLE_CARD_LOCKED) {
+				lifeCycleState = (LPSTR)lccardLocked;
+			}
+			if (lifeCycle & GP211_LIFE_CYCLE_CARD_TERMINATED == GP211_LIFE_CYCLE_CARD_TERMINATED) {
+				lifeCycleState = (LPSTR)lcTerminated;
+			}
+			break;
+	}
+
+	return lifeCycleState;
+}
+
+static void privilegesToString(DWORD privileges, PRIVILEGES_STRING *privilegesStrings, PDWORD privilegesStringsLength) {
+
+//	LPCSTR lcLoaded = _T("Loaded");
+//	LPCSTR lcInstalled = _T("Installed");
+//	LPCSTR lcSelectable = _T("Selectable");
+//	LPCSTR lcLocked = _T("Locked");
+//	LPCSTR lcPersonalized = _T("Personalized");
+//	LPCSTR lcOpReady = _T("OP Ready");
+//	LPCSTR lcInitialized = _T("Initialized");
+//	LPCSTR lcSecured = _T("Secured");
+//	LPCSTR lccardLocked = _T("Card Locked");
+//	LPCSTR lcTerminated = _T("Terminated");
+//
+//	static LPSTR lifeCycleState;
+//
+//	switch (element) {
+//		case GP211_STATUS_LOAD_FILES:
+//		case GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES:
+//			if (lifeCycle & GP211_LIFE_CYCLE_LOAD_FILE_LOADED == GP211_LIFE_CYCLE_LOAD_FILE_LOADED) {
+//				lifeCycleState = (LPSTR)lcLoaded;
+//			}
+//			break;
+//		case GP211_STATUS_APPLICATIONS:
+//			if (lifeCycle & GP211_LIFE_CYCLE_APPLICATION_INSTALLED == GP211_LIFE_CYCLE_APPLICATION_INSTALLED) {
+//				lifeCycleState = (LPSTR)lcInstalled;
+//			}
+//			if (lifeCycle & GP211_LIFE_CYCLE_APPLICATION_SELECTABLE == GP211_LIFE_CYCLE_APPLICATION_SELECTABLE) {
+//				lifeCycleState = (LPSTR)lcSelectable;
+//			}
+//			if (lifeCycle & GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED  == GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED) {
+//				lifeCycleState = (LPSTR)lcPersonalized;
+//			}
+//			if (lifeCycle & GP211_LIFE_CYCLE_APPLICATION_LOCKED == GP211_LIFE_CYCLE_APPLICATION_LOCKED) {
+//				lifeCycleState = (LPSTR)lcLocked;
+//			}
+//			break;
+//		case GP211_STATUS_ISSUER_SECURITY_DOMAIN:
+//			if (lifeCycle & GP211_LIFE_CYCLE_CARD_OP_READY == GP211_LIFE_CYCLE_CARD_OP_READY) {
+//				lifeCycleState = (LPSTR)lcOpReady;
+//			}
+//			if (lifeCycle & GP211_LIFE_CYCLE_CARD_INITIALIZED == GP211_LIFE_CYCLE_CARD_INITIALIZED) {
+//				lifeCycleState = (LPSTR)lcInitialized;
+//			}
+//			if (lifeCycle & GP211_LIFE_CYCLE_CARD_SECURED  == GP211_LIFE_CYCLE_CARD_SECURED) {
+//				lifeCycleState = (LPSTR)lcSecured;
+//			}
+//			if (lifeCycle & GP211_LIFE_CYCLE_CARD_LOCKED == GP211_LIFE_CYCLE_CARD_LOCKED) {
+//				lifeCycleState = (LPSTR)lccardLocked;
+//			}
+//			if (lifeCycle & GP211_LIFE_CYCLE_CARD_TERMINATED == GP211_LIFE_CYCLE_CARD_TERMINATED) {
+//				lifeCycleState = (LPSTR)lcTerminated;
+//			}
+//			break;
+//	}
+//
+//	return lifeCycleState;
+}
+
+static void displayLoadFilesAndModulesGp211(GP211_EXECUTABLE_MODULES_DATA *executables, int count) {
+	LPCSTR format;
+	TCHAR aidStr[33];
+	TCHAR moduleAidStr[33];
+	TCHAR sdAidStr[33];
+	TCHAR versionStr[5];
+	LPCSTR lcLoaded = _T("Loaded");
+	LPSTR lifeCycleState;
+	int i,j;
+	format = _T("%-32s | %-12s | %-7s | %-32s | %-32s\n");
+	_tprintf(format, _T("Load File AID"), _T("State"), _T("Version"), _T("Module AID"), _T("Linked Security Domain"));
+	for (i=0; i<count; i++) {
+		_tprintf(format, _T("--"), _T("--"), _T("--"), _T("--"), _T("--"));
+		ConvertByteArrayToString(executables[i].aid.AID, executables[i].aid.AIDLength, sizeof(aidStr), aidStr);
+		ConvertByteArrayToString(executables[i].associatedSecurityDomainAID.AID, executables[i].associatedSecurityDomainAID.AIDLength, sizeof(sdAidStr), sdAidStr);
+		ConvertByteArrayToString(executables[i].versionNumber, sizeof(executables[i].versionNumber), sizeof(versionStr), versionStr);
+		lifeCycleState = lifeCycleToString(executables[i].lifeCycleState, GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES);
+		_tprintf(format, aidStr, lifeCycleState, versionStr, EMPTY_STRING, sdAidStr);
+		for (j=0; j<executables[i].numExecutableModules; j++) {
+			ConvertByteArrayToString(executables[i].executableModules[j].AID, executables[i].executableModules[j].AIDLength, sizeof(moduleAidStr), moduleAidStr);
+			_tprintf(format, EMPTY_STRING, EMPTY_STRING, EMPTY_STRING, moduleAidStr, EMPTY_STRING);
+		}
+	}
+}
+
+static void displayLoadApplicationsGp211(GP211_APPLICATION_DATA *applications, int count, BYTE element) {
+	LPCSTR format;
+	TCHAR aidStr[33];
+	TCHAR moduleAidStr[33];
+	TCHAR sdAidStr[33];
+	TCHAR versionStr[5];
+	LPSTR lifeCycleState;
+	PRIVILEGES_STRING privileges[20];
+	DWORD privilegesLength = 20;
+	int i,j;
+	format = _T("%-32s | %-12s | %-16s | %-7s | %-32s\n");
+	_tprintf(format, _T("AID"), _T("State"), _T("Privileges"), _T("Version"), _T("Linked Security Domain"));
+	for (i=0; i<count; i++) {
+		_tprintf(format, _T("--"), _T("--"), _T("--"), _T("--"), _T("--"));
+		ConvertByteArrayToString(applications[i].aid.AID, applications[i].aid.AIDLength, sizeof(aidStr), aidStr);
+		ConvertByteArrayToString(applications[i].associatedSecurityDomainAID.AID, applications[i].associatedSecurityDomainAID.AIDLength, sizeof(sdAidStr), sdAidStr);
+		ConvertByteArrayToString(applications[i].versionNumber, sizeof(applications[i].versionNumber), sizeof(versionStr), versionStr);
+		lifeCycleState = lifeCycleToString(applications[i].lifeCycleState, element);
+		_tprintf(format, aidStr, lifeCycleState, EMPTY_STRING, versionStr, sdAidStr);
+		privilegesToString(applications[i].privileges, privileges, &privilegesLength);
+//		for (j=0; j<20; j++) {
+//			if (strlen(privileges[i].privilege) > 0) {
+//				_tprintf(format, EMPTY_STRING, EMPTY_STRING, privileges[j], EMPTY_STRING, EMPTY_STRING);
+//			}
+//		}
+	}
+}
+
+static void displayApplicationsOp201(OP201_APPLICATION_DATA *applications, int count, BYTE element) {
+	LPCSTR format;
+	TCHAR aidStr[33];
+	LPCSTR lcLoaded = _T("Loaded");
+	LPSTR lifeCycleState;
+	PRIVILEGES_STRING privileges[20];
+	int i,j;
+	format = _T("%-32s | %-7s | %-16s\n");
+	_tprintf(format, _T("Load File AID"), _T("State"), _T("Privileges"));
+	for (i=0; i<count; i++) {
+		_tprintf(format, _T("--"), _T("--"), _T("--"));
+		ConvertByteArrayToString(applications[i].aid.AID, applications[i].aid.AIDLength, sizeof(aidStr), aidStr);
+		lifeCycleState = lifeCycleToString(applications[i].lifeCycleState, element);
+		_tprintf(format, aidStr, lifeCycleState, EMPTY_STRING);
+		// TODO: privileges
+	}
+}
 
 static int handleOptions(OptionStr *pOptionStr)
 {
@@ -1643,19 +1847,20 @@ static int handleCommands(FILE *fd)
                         goto end;
                     }
 
-                    _tprintf(_T("\nList of applets (AID state privileges)\n"));
-                    for (i=0; i<(int)numData; i++)
-                    {
-                        int j;
-
-                        for (j=0; j<data[i].aid.AIDLength; j++)
-                        {
-                            _tprintf(_T("%02x"), data[i].aid.AID[j]);
-                        }
-
-                        _tprintf(_T("\t%x"), data[i].lifeCycleState);
-                        _tprintf(_T("\t%x\n"), data[i].privileges);
-                    }
+                    displayApplicationsOp201(data, numData, optionStr.element);
+//                    _tprintf(_T("\nList of applets (AID state privileges)\n"));
+//                    for (i=0; i<(int)numData; i++)
+//                    {
+//                        int j;
+//
+//                        for (j=0; j<data[i].aid.AIDLength; j++)
+//                        {
+//                            _tprintf(_T("%02x"), data[i].aid.AID[j]);
+//                        }
+//
+//                        _tprintf(_T("\t%x"), data[i].lifeCycleState);
+//                        _tprintf(_T("\t%x\n"), data[i].privileges);
+//                    }
                 }
                 else if (platform_mode == PLATFORM_MODE_GP_211)
                 {
@@ -1678,46 +1883,47 @@ static int handleCommands(FILE *fd)
 
                     if (optionStr.element == GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES)
                     {
-                        _tprintf(_T("\nList of Ex. Load File (AID state Ex. Module AIDs)\n"));
+                    	displayLoadFilesAndModulesGp211(execData, numData);
                     }
                     else
                     {
-                        _tprintf(_T("\nList of elements (AID state privileges)\n"));
+                    	displayLoadApplicationsGp211(appData, numData, optionStr.element);
+//                        _tprintf(_T("\nList of elements (AID state privileges)\n"));
                     }
-                    for (i=0; i<(int)numData; i++)
-                    {
-                        int j;
-                        int k;
-
-                        if (optionStr.element == GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES)
-                        {
-                            for (j=0; j<execData[i].aid.AIDLength; j++)
-                            {
-                                _tprintf(_T("%02x"), execData[i].aid.AID[j]);
-                            }
-                            _tprintf(_T("\t%x\n"), execData[i].lifeCycleState);
-                            for (k=0; k<execData[i].numExecutableModules; k++)
-                            {
-                                int h;
-                                printf("\t");
-                                for (h=0; h<execData[i].executableModules[k].AIDLength; h++)
-                                {
-                                    _tprintf(_T("%02x"), execData[i].executableModules[k].AID[h]);
-                                }
-                            }
-                            _tprintf(_T("\n"));
-                        }
-                        else
-                        {
-                            for (j=0; j<appData[i].aid.AIDLength; j++)
-                            {
-                                _tprintf(_T("%02x"), appData[i].aid.AID[j]);
-                            }
-
-                            _tprintf(_T("\t%x"), appData[i].lifeCycleState);
-                            _tprintf(_T("\t%x\n"), appData[i].privileges);
-                        }
-                    }
+//                    for (i=0; i<(int)numData; i++)
+//                    {
+//                        int j;
+//                        int k;
+//
+//                        if (optionStr.element == GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES)
+//                        {
+//                            for (j=0; j<execData[i].aid.AIDLength; j++)
+//                            {
+//                                _tprintf(_T("%02x"), execData[i].aid.AID[j]);
+//                            }
+//                            _tprintf(_T("\t%x\n"), execData[i].lifeCycleState);
+//                            for (k=0; k<execData[i].numExecutableModules; k++)
+//                            {
+//                                int h;
+//                                printf("\t");
+//                                for (h=0; h<execData[i].executableModules[k].AIDLength; h++)
+//                                {
+//                                    _tprintf(_T("%02x"), execData[i].executableModules[k].AID[h]);
+//                                }
+//                            }
+//                            _tprintf(_T("\n"));
+//                        }
+//                        else
+//                        {
+//                            for (j=0; j<appData[i].aid.AIDLength; j++)
+//                            {
+//                                _tprintf(_T("%02x"), appData[i].aid.AID[j]);
+//                            }
+//
+//                            _tprintf(_T("\t%x"), appData[i].lifeCycleState);
+//                            _tprintf(_T("\t%x\n"), appData[i].privileges);
+//                        }
+//                    }
                 }
                 goto timer;
             }

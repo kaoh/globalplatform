@@ -29,7 +29,7 @@ DWORD convert_byte(BYTE b) {
 /**
  * \param buf [in] The buffer.
  * \param offset [in] The offset in the buffer.
- * \return the short int value.
+ * \return the unsigned short int value.
  */
 DWORD get_short(PBYTE buf, DWORD offset) {
 	return ((buf[offset] & 0xFF) << 8) | (buf[offset+1] & 0xFF);

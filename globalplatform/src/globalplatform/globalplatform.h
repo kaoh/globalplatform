@@ -68,24 +68,24 @@ static const BYTE GP231_ISD_AID[8] = { 0xA0, 0x00, 0x00, 0x01, 0x51, 0x00, 0x00,
 static const BYTE GP211_CARD_MANAGER_AID_ALT1[8] = { 0xA0, 0x00, 0x00, 0x00,
 		0x03, 0x00, 0x00, 0x00 }; //!< This AID is also used for the Issuer Security Domain, e.g. by JCOP 41 cards.
 
-static const BYTE GP211_LIFE_CYCLE_LOAD_FILE_LOADED = 0x01; //!< Executable Load File is loaded.
-static const BYTE GP211_LIFE_CYCLE_CARD_OP_READY = 0x01; //!< Card is OP ready.
-static const BYTE GP211_LIFE_CYCLE_CARD_INITIALIZED = 0x07; //!< Card is initialized.
-static const BYTE GP211_LIFE_CYCLE_CARD_SECURED = 0x0f; //!< Card is in secured state.
-static const BYTE GP211_LIFE_CYCLE_CARD_LOCKED = 0x7f; //!< Card is locked.
-static const BYTE GP211_LIFE_CYCLE_CARD_TERMINATED = 0xff; //!< Card is terminated.
-static const BYTE GP211_LIFE_CYCLE_APPLICATION_INSTALLED = 0x03; //!< Application is installed
-static const BYTE GP211_LIFE_CYCLE_APPLICATION_SELECTABLE = 0x07; //!< Application is selectable.
-static const BYTE GP211_LIFE_CYCLE_APPLICATION_LOCKED = 0xff; //!< Application is locked.
-static const BYTE GP211_LIFE_CYCLE_SECURITY_DOMAIN_INSTALLED = 0x03; //!< Application is installed
-static const BYTE GP211_LIFE_CYCLE_SECURITY_DOMAIN_SELECTABLE = 0x07; //!< Application is selectable.
-static const BYTE GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED = 0xff; //!< Application is personalized.
-static const BYTE GP211_LIFE_CYCLE_SECURITY_DOMAIN_LOCKED = 0xff; //!< Application is locked.
+#define GP211_LIFE_CYCLE_LOAD_FILE_LOADED 0x01 //!< Executable Load File is loaded.
+#define GP211_LIFE_CYCLE_CARD_OP_READY 0x01 //!< Card is OP ready.
+#define GP211_LIFE_CYCLE_CARD_INITIALIZED 0x07 //!< Card is initialized.
+#define GP211_LIFE_CYCLE_CARD_SECURED 0x0f //!< Card is in secured state.
+#define GP211_LIFE_CYCLE_CARD_LOCKED 0x7f //!< Card is locked.
+#define GP211_LIFE_CYCLE_CARD_TERMINATED 0xff //!< Card is terminated.
+#define GP211_LIFE_CYCLE_APPLICATION_INSTALLED 0x03 //!< Application is installed
+#define GP211_LIFE_CYCLE_APPLICATION_SELECTABLE 0x07 //!< Application is selectable.
+#define GP211_LIFE_CYCLE_APPLICATION_LOCKED 0xff //!< Application is locked.
+#define GP211_LIFE_CYCLE_SECURITY_DOMAIN_INSTALLED 0x03 //!< Application is installed
+#define GP211_LIFE_CYCLE_SECURITY_DOMAIN_SELECTABLE 0x07 //!< Application is selectable.
+#define GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED 0xff //!< Application is personalized.
+#define GP211_LIFE_CYCLE_SECURITY_DOMAIN_LOCKED 0xff //!< Application is locked.
 
 /* consts for MANAGE CHANNEL */
 
-static const BYTE GP211_MANAGE_CHANNEL_OPEN = 0x00; //!< Open the next available Supplementary Logical Channel.
-static const BYTE GP211_MANAGE_CHANNEL_CLOSE = 0x80; //!< Close the Supplementary Logical Channel.
+#define GP211_MANAGE_CHANNEL_OPEN 0x00 //!< Open the next available Supplementary Logical Channel.
+#define GP211_MANAGE_CHANNEL_CLOSE 0x80 //!< Close the Supplementary Logical Channel.
 
 /**
  * \brief Application privileges.
@@ -115,13 +115,13 @@ typedef enum {
 	GP211_CONTACTLESS_SELF_ACTIVATION = 1u << 4 //!< Application is capable of activating itself on the contactless interface without a prior request to the Application with the Contactless Activation privilege.
 } GP211_APPLICATION_PRIVILEGES;
 
-static const BYTE GP211_STATUS_APPLICATIONS = 0x40; //!< Indicate Applications or Security Domains in GP211_get_status() (request GP211_APPLICATION_DATA) or GP211_set_status().
-static const BYTE GP211_STATUS_ISSUER_SECURITY_DOMAIN = 0x80; //!< Indicate Issuer Security Domain in GP211_get_status() (request GP211_APPLICATION_DATA) or GP211_set_status().
-static const BYTE GP211_STATUS_LOAD_FILES = 0x20; //!< Request GP211_APPLICATION_DATA for Executable Load Files in GP211_get_status().
-static const BYTE GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES = 0x10; //!< Request GP211_EXECUTABLE_MODULES_DATA for Executable Load Files and their Executable Modules in GP211_get_status().
+#define GP211_STATUS_APPLICATIONS 0x40 //!< Indicate Applications or Security Domains in GP211_get_status() (request GP211_APPLICATION_DATA) or GP211_set_status().
+#define GP211_STATUS_ISSUER_SECURITY_DOMAIN 0x80 //!< Indicate Issuer Security Domain in GP211_get_status() (request GP211_APPLICATION_DATA) or GP211_set_status().
+#define GP211_STATUS_LOAD_FILES 0x20 //!< Request GP211_APPLICATION_DATA for Executable Load Files in GP211_get_status().
+#define GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES 0x10 //!< Request GP211_EXECUTABLE_MODULES_DATA for Executable Load Files and their Executable Modules in GP211_get_status().
 
-static const BYTE GP211_STATUS_FORMAT_NEW = 0x02; //!< New GP2.1.1 GET STATUS format
-static const BYTE GP211_STATUS_FORMAT_DEPRECATED = 0x00; //!< New GP2.1.1 GET STATUS deprecated format
+#define GP211_STATUS_FORMAT_NEW 0x02 //!< New GP2.1.1 GET STATUS format
+#define GP211_STATUS_FORMAT_DEPRECATED 0x00 //!< New GP2.1.1 GET STATUS deprecated format
 
 
 // Some possible identifiers to retrieve card data with get_data() and put_data().
@@ -205,19 +205,19 @@ static const BYTE GP211_GET_DATA_KEY_DIVERSIFICATION[2] = {0x00, 0xCF}; //!< Key
 
 static const BYTE OP201_CARD_MANAGER_AID[7] = {0xA0, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00}; //!< The AID of the Card Manager defined by Open Platform specification.
 
-static const BYTE OP201_LIFE_CYCLE_LOAD_FILE_LOGICALLY_DELETED = 0x00; //!< Executable Load File is logically deleted.
-static const BYTE OP201_LIFE_CYCLE_LOAD_FILE_LOADED = 0x01; //!< Executable Load File is loaded.
-static const BYTE OP201_LIFE_CYCLE_CARD_MANAGER_OP_READY = 0x01; //!< Card is OP ready.
-static const BYTE OP201_LIFE_CYCLE_CARD_MANAGER_INITIALIZED = 0x07; //!< Card is initialized.
-static const BYTE OP201_LIFE_CYCLE_CARD_MANAGER_SECURED = 0x0f; //!< Card is in secured state.
-static const BYTE OP201_LIFE_CYCLE_CARD_MANAGER_CM_LOCKED = 0x7f; //!< Card is locked.
-static const BYTE OP201_LIFE_CYCLE_CARD_MANAGER_TERMINATED = 0xff; //!< Card is terminated.
-static const BYTE OP201_LIFE_CYCLE_APPLICATION_LOGICALLY_DELETED = 0x00; //!< Application is logically deleted.
-static const BYTE OP201_LIFE_CYCLE_APPLICATION_INSTALLED = 0x03; //!< Application is installed
-static const BYTE OP201_LIFE_CYCLE_APPLICATION_SELECTABLE = 0x07; //!< Application is selectable.
-static const BYTE OP201_LIFE_CYCLE_APPLICATION_PERSONALIZED = 0x0f; //!< Application is personalized.
-static const BYTE OP201_LIFE_CYCLE_APPLICATION_BLOCKED = 0x7f; //!< Application is blocked.
-static const BYTE OP201_LIFE_CYCLE_APPLICATION_LOCKED = 0xff; //!< Application is locked.
+#define OP201_LIFE_CYCLE_LOAD_FILE_LOGICALLY_DELETED 0x00 //!< Executable Load File is logically deleted.
+#define OP201_LIFE_CYCLE_LOAD_FILE_LOADED 0x01 //!< Executable Load File is loaded.
+#define OP201_LIFE_CYCLE_CARD_MANAGER_OP_READY 0x01 //!< Card is OP ready.
+#define OP201_LIFE_CYCLE_CARD_MANAGER_INITIALIZED 0x07 //!< Card is initialized.
+#define OP201_LIFE_CYCLE_CARD_MANAGER_SECURED 0x0f //!< Card is in secured state.
+#define OP201_LIFE_CYCLE_CARD_MANAGER_CM_LOCKED 0x7f //!< Card is locked.
+#define OP201_LIFE_CYCLE_CARD_MANAGER_TERMINATED 0xff //!< Card is terminated.
+#define OP201_LIFE_CYCLE_APPLICATION_LOGICALLY_DELETED 0x00 //!< Application is logically deleted.
+#define OP201_LIFE_CYCLE_APPLICATION_INSTALLED 0x03 //!< Application is installed
+#define OP201_LIFE_CYCLE_APPLICATION_SELECTABLE0x07 //!< Application is selectable.
+#define OP201_LIFE_CYCLE_APPLICATION_PERSONALIZED 0x0f //!< Application is personalized.
+#define OP201_LIFE_CYCLE_APPLICATION_BLOCKED 0x7f //!< Application is blocked.
+#define OP201_LIFE_CYCLE_APPLICATION_LOCKED 0xff //!< Application is locked.
 
 /**
  * \brief Application privileges.
@@ -233,9 +233,9 @@ typedef enum {
 	OP201_MANDATED_DAP_VERIFICATION = 1u << 0 + 16, //!< Security domain requires DAP verification for loading and installing applications.
 } OP201_APPLICATION_PRIVILEGES;
 
-static const BYTE OP201_STATUS_APPLICATIONS = 0x40; //!< Indicate Applications or Security Domains in OP201_get_status() or OP201_set_status().
-static const BYTE OP201_STATUS_CARD_MANAGER = 0x80; //!< Indicate Card Manager in OP201_get_status() or OP201_set_status().
-static const BYTE OP201_STATUS_LOAD_FILES = 0x20; //!< Request OP201_APPLICATION_DATA for Executable Load Files in OP201_get_status().
+#define OP201_STATUS_APPLICATIONS 0x40 //!< Indicate Applications or Security Domains in OP201_get_status() or OP201_set_status().
+#define OP201_STATUS_CARD_MANAGER 0x80 //!< Indicate Card Manager in OP201_get_status() or OP201_set_status().
+#define OP201_STATUS_LOAD_FILES 0x20 //!< Request OP201_APPLICATION_DATA for Executable Load Files in OP201_get_status().
 
 
 // Some possible identifiers to retrieve card data with get_data() and put_data().
@@ -285,10 +285,10 @@ static const BYTE OP201_GET_DATA_EF_PROD_DATA_LOCATION_MACHINE_DATE_TIME[2] = {0
 
 static const BYTE OP201_GET_DATA_WHOLE_EF_PROD[2] = {0xDF, 0x7F}; //!< Whole EF<sub>prod</sub> data block (39 Byte).
 
-static const BYTE OPGP_DERIVATION_METHOD_NONE = 0; //!< No key derivation is used during mutual authentication.
-static const BYTE OPGP_DERIVATION_METHOD_VISA2 = 1; //!< The VISA2 key derivation is used during mutual authentication.
-static const BYTE OPGP_DERIVATION_METHOD_EMV_CPS11 = 2; //!< The EMV CPS 11 derivation is used during mutual authentication.
-static const BYTE OPGP_DERIVATION_METHOD_VISA1 = 3; //!< The VISA1 key derivation is used during mutual authentication.
+#define OPGP_DERIVATION_METHOD_NONE 0 //!< No key derivation is used during mutual authentication.
+#define OPGP_DERIVATION_METHOD_VISA2 1 //!< The VISA2 key derivation is used during mutual authentication.
+#define OPGP_DERIVATION_METHOD_EMV_CPS11 2 //!< The EMV CPS 11 derivation is used during mutual authentication.
+#define OPGP_DERIVATION_METHOD_VISA1 3 //!< The VISA1 key derivation is used during mutual authentication.
 
 #define OPGP_WORK_UNKNOWN -1 //!< The amount of work is not known.
 #define OPGP_TASK_FINISHED 1 //!< The task is finished.
@@ -364,7 +364,7 @@ typedef struct {
 	BYTE lifeCycleState; //!< The Executable Load File life cycle state.
 	BYTE versionNumber[2]; //!< On a Java Card based card, this is a 2-byte version number reflecting the major and minor version attributes (in this order) of the Java Card CAP file. Shorted if longer.
 	BYTE numExecutableModules; //!< Number of associated Executable Modules.
-	OPGP_AID executableModules[256]; //!< Array for the maximum possible associated Executable Modules.
+	OPGP_AID executableModules[64]; //!< Array for the maximum possible associated Executable Modules.
 	OPGP_AID associatedSecurityDomainAID; //!< The associated Security Domain's AID.
 } GP211_EXECUTABLE_MODULES_DATA;
 
