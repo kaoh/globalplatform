@@ -1825,6 +1825,7 @@ OPGP_ERROR_STATUS unwrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBY
 	BYTE decryption[246];
 	DWORD decryptionLength = 246;
 	BYTE ENC_ICV[16] = {0};
+	DWORD sw;
 
 	status = GP211_check_R_MAC(apduCommand, apduCommandLength, responseApdu, responseApduLength, unwrappedResponseApdu,
 			unwrappedResponseApduLength, secInfo);
@@ -1832,10 +1833,16 @@ OPGP_ERROR_STATUS unwrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBY
 		goto end;
 	}
 	// decrypt for SCP03
+	sw = get_short(responseApdu, responseApduLength-2);
 	if (secInfo != NULL && secInfo->secureChannelProtocol == GP211_SCP03 &&
 			secInfo->securityLevel == GP211_SCP03_SECURITY_LEVEL_C_DEC_R_ENC_C_MAC_R_MAC
 			// more than status words
-			&& responseApduLength > 2) {
+			&& responseApduLength > 2
+			// SCP03:	No R-MAC shall be generated and no protection shall be applied to a response that includes an error status
+			//word: in this case only the status word shall be returned in the response. All status words except '9000' and
+			//warning status words (i.e. '62xx' and '63xx') shall be interpreted as error status words.
+			&& (sw == 0x9000 || (sw >> 8) == 0x62 || (sw >> 8) == 0x63)
+	) {
 		status = calculate_enc_icv_SCP03(secInfo->encryptionSessionKey, secInfo->sessionEncryptionCounter, ENC_ICV, 1);
 		if (OPGP_ERROR_CHECK(status)) {
 			goto end;

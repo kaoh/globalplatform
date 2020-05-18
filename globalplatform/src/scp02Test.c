@@ -83,7 +83,7 @@ static void get_status_mac_only(void **state) {
 
 	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, 0, 0,
 			GP211_SCP02, GP211_SCP02_IMPL_i15, GP211_SCP02_SECURITY_LEVEL_C_MAC, 0, &securityInfo211);
-	assert_int_equal(status.errorCode, OPGP_ERROR_STATUS_SUCCESS);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 
 	// 80f24002024f0000
 	expect_memory(send_APDU, capdu, getStatusRequest, getStatusRequestLen);
@@ -92,7 +92,7 @@ static void get_status_mac_only(void **state) {
 
 	status = GP211_get_status(cardContext, cardInfo, &securityInfo211, GP211_STATUS_LOAD_FILES, GP211_STATUS_FORMAT_NEW, applicationData,
 			executablesData, &dataLength);
-	assert_int_equal(status.errorCode, OPGP_ERROR_STATUS_SUCCESS);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 	assert_int_equal(dataLength, 6);
 	assert_int_equal(applicationData[5].aid.AIDLength, 7);
 	assert_memory_equal(applicationData[5].aid.AID, refAid, applicationData[5].aid.AIDLength);
@@ -161,41 +161,27 @@ static void install_mac_enc(void **state) {
 
 	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, 0, 0,
 			GP211_SCP02, GP211_SCP02_IMPL_i15, GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC, 0, &securityInfo211);
-	assert_int_equal(status.errorCode, OPGP_ERROR_STATUS_SUCCESS);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 
-	// the macro looses one 9000 response ????
-	//ENQUEUE_COMMANDS(commands, responses, 6)
-	BYTE commandRequest[APDU_COMMAND_LEN];
-	DWORD commandRequestLen = APDU_COMMAND_LEN;
-	BYTE commandResponse[APDU_RESPONSE_LEN];
-	DWORD commandResponseLen = APDU_RESPONSE_LEN;
-	for (int i=0; i<6; i++) {
-		commandRequestLen = APDU_COMMAND_LEN;
-		commandResponseLen = APDU_RESPONSE_LEN;
-		hex_to_byte_array(*(commands + i), commandRequest, &commandRequestLen);
-		hex_to_byte_array(*(responses + i), commandResponse, &commandResponseLen);
-		expect_memory(send_APDU, capdu, commandRequest, commandRequestLen);
-		will_return(send_APDU, commandResponse);
-		will_return(send_APDU, &commandResponseLen);
-	}
+	enqueue_commands(commands, responses, 6);
 
 	aidLength = sizeof(aid.AID);
 	hex_to_byte_array("D0D1D2D3D4D50101", aid.AID, &aidLength);
 	aid.AIDLength = aidLength;
 	status = GP211_delete_application(cardContext, cardInfo, &securityInfo211, &aid, 1, &receiptData, &receiptDataLength);
-	assert_int_equal(status.errorCode, OPGP_ERROR_STATUS_SUCCESS);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_FAILURE);
 
 	aidLength = sizeof(aid.AID);
 	hex_to_byte_array("D0D1D2D3D4D501", aid.AID, &aidLength);
 	aid.AIDLength = aidLength;
 	receiptDataLength = 1;
 	status = GP211_delete_application(cardContext, cardInfo, &securityInfo211, &aid, 1, &receiptData, &receiptDataLength);
-	assert_int_equal(status.errorCode, OPGP_ERROR_STATUS_SUCCESS);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 
 //  install -file helloworld.cap -nvDataLimit 2000 -instParam 00 -priv 2
 
 	status = OPGP_read_executable_load_file_parameters("helloworld.cap", &loadFileParams);
-	assert_int_equal(status.errorCode, OPGP_ERROR_STATUS_SUCCESS);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 
 	aidLength = sizeof(aid.AID);
 	hex_to_byte_array("a000000003000000", aid.AID, &aidLength);
@@ -204,16 +190,16 @@ static void install_mac_enc(void **state) {
 								loadFileParams.loadFileAID.AID, loadFileParams.loadFileAID.AIDLength,
 								aid.AID, aidLength, NULL, NULL,
 								loadFileParams.loadFileSize, 0, 2000);
-	assert_int_equal(status.errorCode, OPGP_ERROR_STATUS_SUCCESS);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 	status = GP211_load(cardContext, cardInfo, &securityInfo211, NULL, 0, "helloworld.cap", NULL, &receiptDataAvailable, NULL);
-	assert_int_equal(status.errorCode, OPGP_ERROR_STATUS_SUCCESS);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 	status = GP211_install_for_install_and_make_selectable(
 		cardContext, cardInfo, &securityInfo211,
 		loadFileParams.loadFileAID.AID, loadFileParams.loadFileAID.AIDLength,
 		loadFileParams.appletAIDs[0].AID, loadFileParams.appletAIDs[0].AIDLength,
 		loadFileParams.appletAIDs[0].AID, loadFileParams.appletAIDs[0].AIDLength,
 		2, 0, 2000, installParam, 1, NULL, &receiptData, &receiptDataAvailable);
-	assert_int_equal(status.errorCode, OPGP_ERROR_STATUS_SUCCESS);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 }
 
 static int setup(void **state) {

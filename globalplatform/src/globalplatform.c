@@ -384,7 +384,7 @@ OPGP_ERROR_STATUS parse_application_data(PBYTE data, DWORD dataLength,
 				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 				goto end;
 			}
-			applData->privileges = data[offset++];
+			applData->privileges = data[offset++] << 16;
 		}
 		else {
 			applData->privileges = 0x00;
@@ -444,11 +444,11 @@ OPGP_ERROR_STATUS parse_application_data(PBYTE data, DWORD dataLength,
 					}
 					if (tlv2.length == 3) {
 						privBytes[0] = 0;
-						memcpy(privBytes, tlv2.value, 3);
-						applData->privileges = *privBytes;
+						memcpy(privBytes+1, tlv2.value, 3);
+						applData->privileges = get_int(privBytes, 0);
 					}
 					else {
-						applData->privileges = tlv2.value[0];
+						applData->privileges = tlv2.value[0] << 16;
 					}
 					// +tag + length + data length
 					break;
@@ -1905,12 +1905,13 @@ end:
 OPGP_ERROR_STATUS GP211_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 		BYTE cardElement, BYTE format, GP211_APPLICATION_DATA *applData, GP211_EXECUTABLE_MODULES_DATA *executableData, PDWORD dataLength) {
 	OPGP_ERROR_STATUS status;
-	DWORD sendBufferLength=8;
-	DWORD recvBufferLength=256;
-	BYTE recvBuffer[256];
+	DWORD sendBufferLength = 8;
+	DWORD recvBufferLength = APDU_RESPONSE_LEN;
+	BYTE recvBuffer[APDU_RESPONSE_LEN];
 	BYTE sendBuffer[8];
 	BYTE numExecutableModules;
 	DWORD j=0, k=0, i=0;
+	DWORD apduErrorCode;
 	OPGP_LOG_START(_T("get_status"));
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xF2;
@@ -1922,7 +1923,7 @@ OPGP_ERROR_STATUS GP211_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 	sendBuffer[i] = 0x00;
 	i=0;
 	do {
-		recvBufferLength=256;
+		recvBufferLength = APDU_RESPONSE_LEN;
 		status = OPGP_send_APDU(cardContext, cardInfo, secInfo,sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
 		if ( OPGP_ERROR_CHECK(status)) {
 			goto end;
@@ -1930,6 +1931,7 @@ OPGP_ERROR_STATUS GP211_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 		if (status.errorCode != OPGP_ISO7816_ERROR_MORE_DATA_AVAILABLE) {
 			CHECK_SW_9000(recvBuffer, recvBufferLength, status);
 		}
+		apduErrorCode = status.errorCode;
 		for (j=0; j<recvBufferLength-2; ) {
 			DWORD dataRead;
 			if (*dataLength <= i ) {
@@ -1950,8 +1952,8 @@ OPGP_ERROR_STATUS GP211_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 			j += dataRead;
 			i++;
 		}
-		sendBuffer[3]=0x01;
-	} while (status.errorCode == OPGP_ISO7816_ERROR_MORE_DATA_AVAILABLE);
+		sendBuffer[3] |= 0x01;
+	} while (apduErrorCode == OPGP_ISO7816_ERROR_MORE_DATA_AVAILABLE);
 
 	*dataLength = i;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
@@ -5155,10 +5157,11 @@ OPGP_ERROR_STATUS OP201_set_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 OPGP_ERROR_STATUS OP201_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, BYTE cardElement, OP201_APPLICATION_DATA *applData, PDWORD applDataLength) {
 	OPGP_ERROR_STATUS status;
 	DWORD sendBufferLength=8;
-	DWORD recvBufferLength=256;
-	BYTE recvBuffer[256];
+	DWORD recvBufferLength=APDU_RESPONSE_LEN;
+	BYTE recvBuffer[APDU_RESPONSE_LEN];
 	BYTE sendBuffer[8];
 	DWORD j,i=0;
+	DWORD apduErrorCode;
 	OPGP_LOG_START(_T("get_status"));
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xF2;
@@ -5170,7 +5173,7 @@ OPGP_ERROR_STATUS OP201_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 	sendBuffer[i] = 0x00;
 	i=0;
 	do {
-		recvBufferLength=256;
+		recvBufferLength=APDU_RESPONSE_LEN;
 		status = OP201_send_APDU(cardContext, cardInfo, secInfo, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
 		if (OPGP_ERROR_CHECK(status)) {
 			goto end;
@@ -5178,7 +5181,7 @@ OPGP_ERROR_STATUS OP201_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 		if (status.errorCode != OPGP_ISO7816_ERROR_MORE_DATA_AVAILABLE) {
 			CHECK_SW_9000(recvBuffer, recvBufferLength, status);
 		}
-
+		apduErrorCode = status.errorCode;
 		for (j=0; j<recvBufferLength-2; ) {
 			DWORD dataRead;
 			GP211_APPLICATION_DATA gp211AppData;
@@ -5191,7 +5194,7 @@ OPGP_ERROR_STATUS OP201_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 			i++;
 		}
 		sendBuffer[3]=0x01;
-	} while (status.errorCode == OPGP_ISO7816_ERROR_MORE_DATA_AVAILABLE);
+	} while (apduErrorCode == OPGP_ISO7816_ERROR_MORE_DATA_AVAILABLE);
 
 	*applDataLength = i;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }

@@ -204,6 +204,7 @@ OPGP_ERROR_STATUS OPGP_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO c
 	OPGP_ERROR_STATUS(*plugin_sendAPDUFunction) (OPGP_CARD_CONTEXT, OPGP_CARD_INFO, PBYTE, DWORD, PBYTE, PDWORD);
 	BYTE apduCommand[APDU_COMMAND_LEN];
 	DWORD apduCommandLength = APDU_COMMAND_LEN;
+	DWORD errorCode;
 	int i=0;
 
 	OPGP_LOG_START(_T("OPGP_send_APDU"));
@@ -244,6 +245,7 @@ OPGP_ERROR_STATUS OPGP_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO c
         if (OPGP_ERROR_CHECK(errorStatus)) {
             goto end;
         }
+        errorCode = errorStatus.errorCode;
     }
 
 	OPGP_LOG_HEX(_T("OPGP_send_APDU: Response <-- "), rapdu, *rapduLength);
@@ -260,6 +262,8 @@ OPGP_ERROR_STATUS OPGP_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO c
 	if (OPGP_ERROR_CHECK(errorStatus)) {
 		goto end;
 	}
+	// add code from sendAPDUFunction again
+	errorStatus.errorCode = errorCode;
 	if (traceEnable) {
 		_ftprintf(traceFile, _T("Unwrapped response <-- "));
 		for (i=0; (DWORD)i<*rapduLength; i++) {

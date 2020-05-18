@@ -19,6 +19,7 @@
 #include <string.h>
 #include <setjmp.h>
 #include "testUtil.h"
+#include <util.h>
 #include <cmocka.h>
 
 #define MIN(a,b) a < b ? a : b
@@ -44,12 +45,32 @@ int __wrap_RAND_bytes(unsigned char *buf, int num) {
 
 OPGP_ERROR_STATUS send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, PBYTE capdu, DWORD capduLength, PBYTE rapdu, PDWORD rapduLength) {
 	OPGP_ERROR_STATUS status;
+	DWORD result;
 	PBYTE __rapdu = (PBYTE) mock();
 	PDWORD __rapduLength = (PDWORD) mock();
 	check_expected(capdu);
 	memcpy(rapdu, __rapdu, *__rapduLength);
 	*rapduLength = *__rapduLength;
-	OPGP_ERROR_CREATE_NO_ERROR(status);
+	result = get_short(rapdu, *rapduLength-2);
+	OPGP_ERROR_CREATE_NO_ERROR_WITH_CODE(status, OPGP_ISO7816_ERROR_PREFIX | result, OPGP_stringify_error(OPGP_ISO7816_ERROR_PREFIX | result));
 	return status;
+}
+
+void enqueue_commands(OPGP_CSTRING *commands, OPGP_CSTRING *responses, int size) {
+	// prevent clean from heap after return
+	static BYTE commandRequest[10][APDU_COMMAND_LEN];
+	static BYTE commandResponse[10][APDU_RESPONSE_LEN];
+	static DWORD commandRequestLen[10];
+	static DWORD commandResponseLen[10];
+
+	for (int i=0; i<size; i++) {
+		commandRequestLen[i] = APDU_COMMAND_LEN;
+		commandResponseLen[i] = APDU_RESPONSE_LEN;
+		hex_to_byte_array(*(commands + i), commandRequest[i], &commandRequestLen[i]);
+		hex_to_byte_array(*(responses + i), commandResponse[i], &commandResponseLen[i]);
+		expect_memory(send_APDU, capdu, commandRequest[i], commandRequestLen[i]);
+		will_return(send_APDU, commandResponse[i]);
+		will_return(send_APDU, &commandResponseLen[i]);
+	}
 }
 

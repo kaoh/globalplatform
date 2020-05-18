@@ -214,7 +214,7 @@ static const BYTE OP201_CARD_MANAGER_AID[7] = {0xA0, 0x00, 0x00, 0x00, 0x03, 0x0
 #define OP201_LIFE_CYCLE_CARD_MANAGER_TERMINATED 0xff //!< Card is terminated.
 #define OP201_LIFE_CYCLE_APPLICATION_LOGICALLY_DELETED 0x00 //!< Application is logically deleted.
 #define OP201_LIFE_CYCLE_APPLICATION_INSTALLED 0x03 //!< Application is installed
-#define OP201_LIFE_CYCLE_APPLICATION_SELECTABLE0x07 //!< Application is selectable.
+#define OP201_LIFE_CYCLE_APPLICATION_SELECTABLE 0x07 //!< Application is selectable.
 #define OP201_LIFE_CYCLE_APPLICATION_PERSONALIZED 0x0f //!< Application is personalized.
 #define OP201_LIFE_CYCLE_APPLICATION_BLOCKED 0x7f //!< Application is blocked.
 #define OP201_LIFE_CYCLE_APPLICATION_LOCKED 0xff //!< Application is locked.

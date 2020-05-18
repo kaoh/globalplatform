@@ -59,6 +59,10 @@ DWORD convert_byte(BYTE b);
 OPGP_NO_API
 DWORD get_short(PBYTE buf, DWORD offset);
 
+//! \brief Returns a int from the given position
+OPGP_NO_API
+DWORD get_int(PBYTE buf, DWORD offset);
+
 //! \brief Parse the APDU case.
 OPGP_NO_API
 LONG parse_apdu_case(PBYTE apduCommand, DWORD apduCommandLength, PBYTE caseAPDU, PBYTE lc, PBYTE le);

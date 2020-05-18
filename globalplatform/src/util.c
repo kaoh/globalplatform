@@ -29,6 +29,15 @@ DWORD convert_byte(BYTE b) {
 /**
  * \param buf [in] The buffer.
  * \param offset [in] The offset in the buffer.
+ * \return the unsigned int value.
+ */
+DWORD get_int(PBYTE buf, DWORD offset) {
+	return ((buf[offset] & 0xFF) << 24) | ((buf[offset+1] & 0xFF) << 16) | ((buf[offset+2] & 0xFF) << 8) | (buf[offset+3] & 0xFF);
+}
+
+/**
+ * \param buf [in] The buffer.
+ * \param offset [in] The offset in the buffer.
  * \return the unsigned short int value.
  */
 DWORD get_short(PBYTE buf, DWORD offset) {
@@ -45,7 +54,7 @@ DWORD get_short(PBYTE buf, DWORD offset) {
  */
 static LONG _read_TLV(PBYTE buffer, DWORD length, TLV *tlv, DWORD numOctetsForTag) {
 	LONG result;
-	LONG tlSize = 1 + numOctetsForTag;
+	DWORD tlSize = 1 + numOctetsForTag;
 	if (numOctetsForTag != 1 && numOctetsForTag != 2) {
 		result = -1;
 		goto end;
