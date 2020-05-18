@@ -402,28 +402,6 @@ OPGP_ERROR_STATUS parse_application_data(PBYTE data, DWORD dataLength,
 			goto end;
 		}
 
-		// tag 0x4F AID
-		result = read_TLV(tlv1.value+offset, tlv1.length, &tlv2);
-		// check also buffer overrun for AID
-		if (result == -1 || tlv2.length > sizeof(applData->aid.AID)) {
-			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-			goto end;
-		}
-		applData->aid.AIDLength = tlv2.length;
-		memcpy(applData->aid.AID, tlv2.value, applData->aid.AIDLength);
-		// tag + length
-		offset+=applData->aid.AIDLength+2;
-		// 9F70 Life Cycle State
-		result = read_TTLV(tlv1.value+offset, tlv1.length, &tlv2);
-		// also 2 bytes seen on a ST eUICC
-		if (result == -1) {
-			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-			goto end;
-		}
-		applData->lifeCycleState = tlv2.value[0];
-		// tag + length + 1 byte
-		offset += 3 + tlv2.length;
-
 		applData->associatedSecurityDomainAID.AIDLength = 0;
 		memset(applData->versionNumber, 0, 2);
 		// undocumented tags seen on some cards, use a loop to skip unknown tags
@@ -436,6 +414,18 @@ OPGP_ERROR_STATUS parse_application_data(PBYTE data, DWORD dataLength,
 				goto end;
 			}
 			switch (tlv2.tag) {
+				case 0x4F:
+					// check also buffer overrun for AID
+					if (tlv2.length > sizeof(applData->aid.AID)) {
+						OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+						goto end;
+					}
+					applData->aid.AIDLength = tlv2.length;
+					memcpy(applData->aid.AID, tlv2.value, applData->aid.AIDLength);
+					break;
+				case 0x9f70:
+					applData->lifeCycleState = tlv2.value[0];
+					break;
 				case 0xC5:
 					// C5 privileges
 					if (tlv2.length != 3 && tlv2.length != 1) {
@@ -469,11 +459,9 @@ OPGP_ERROR_STATUS parse_application_data(PBYTE data, DWORD dataLength,
 
 				// remaining tags not supported
 			}
-			// tag + length of data length
-			offset += 2 + tlv2.length;
+			offset += tlv2.tlvLength;
 		}
-		// add TL of tlv1
-		offset += 2;
+		offset = tlv1.tlvLength;
 	}
 	*dataRead = offset;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
@@ -544,39 +532,28 @@ OPGP_ERROR_STATUS parse_executable_load_file_data(PBYTE data, DWORD dataLength,
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 			goto end;
 		}
-		// tag 0x4F AID
-		result = read_TLV(tlv1.value+offset, tlv1.length, &tlv2);
-		// check also buffer overrun for AID
-		if (result == -1 || tlv2.length > sizeof(modulesData->aid.AID)) {
-			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-			goto end;
-		}
-		modulesData->aid.AIDLength = tlv2.length;
-		memcpy(modulesData->aid.AID, tlv2.value, modulesData->aid.AIDLength);
-		// tag + length
-		offset+=modulesData->aid.AIDLength+2;
-		// 9F70 Life Cycle State
-		result = read_TTLV(tlv1.value+offset, tlv1.length, &tlv2);
-		if (result == -1) {
-			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-			goto end;
-		}
-		modulesData->lifeCycleState = tlv2.value[0];
-		// +tag + length + 1 byte
-		offset += 3 + tlv2.length;
 
 		modulesData->associatedSecurityDomainAID.AIDLength = 0;
 		memset(modulesData->versionNumber, 0, 2);
 		while (offset < tlv1.length) {
 			DWORD versionNumberSize;
-
-			// CC is associated security domain
 			result = read_TLV(tlv1.value+offset, tlv1.length, &tlv2);
 			if (result == -1) {
 				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 				goto end;
 			}
 			switch (tlv2.tag) {
+				case 0x4F:
+					if (tlv2.length > sizeof(modulesData->aid.AID)) {
+						OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+						goto end;
+					}
+					modulesData->aid.AIDLength = tlv2.length;
+					memcpy(modulesData->aid.AID, tlv2.value, modulesData->aid.AIDLength);
+					break;
+				case 0x9F70:
+					modulesData->lifeCycleState = tlv2.value[0];
+					break;
 				case 0xCC:
 					memcpy(modulesData->associatedSecurityDomainAID.AID, tlv2.value, tlv2.length);
 					modulesData->associatedSecurityDomainAID.AIDLength = tlv2.length;
@@ -604,12 +581,11 @@ OPGP_ERROR_STATUS parse_executable_load_file_data(PBYTE data, DWORD dataLength,
 					exLoadFileAidCount++;
 					break;
 			}
-			offset += tlv2.length + 2;
+			offset += tlv2.tlvLength;
 		}
 		modulesData->numExecutableModules = exLoadFileAidCount;
 		// remaining tags not supported
-		// tag + length of data length
-		offset = tlv1.length +2;
+		offset = tlv1.tlvLength;
 	}
 	*dataRead = offset;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
@@ -1824,9 +1800,8 @@ OPGP_ERROR_STATUS get_key_information_templates(OPGP_CARD_CONTEXT cardContext, O
 
 		i++;
 		// increment by TLV
-		offset += 2 + tlv2.length;
+		offset += tlv2.tlvLength;
 	}
-
 
 	*keyInformationLength = i;
 #ifdef OPGP_DEBUG

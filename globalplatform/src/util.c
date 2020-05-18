@@ -45,66 +45,69 @@ DWORD get_short(PBYTE buf, DWORD offset) {
 }
 
 /**
- * The tag must be coded on two octet and the length must be < 127.
- * \param buffer [in] The buffer.
- * \param length [in] The length of the buffer.
- * \param *tlv [out] the returned TLV struct.
- * \param numOctetsForTag [in] The number of octes for the tag. 1 or 2.
- * \return -1 in case of error, consumed length otherwise.
- */
-static LONG _read_TLV(PBYTE buffer, DWORD length, TLV *tlv, DWORD numOctetsForTag) {
-	LONG result;
-	DWORD tlSize = 1 + numOctetsForTag;
-	if (numOctetsForTag != 1 && numOctetsForTag != 2) {
-		result = -1;
-		goto end;
-	}
-
-	if (length < tlSize) {
-		result = -1;
-		goto end;
-	}
-	if (numOctetsForTag == 1) {
-		tlv->tag = buffer[0];
-	}
-	else {
-		tlv->tag = get_short(buffer, 0);
-	}
-	tlv->length = buffer[tlSize-1];
-	if (tlv->length > 127) {
-		result = -1;
-		goto end;
-	}
-	if (length - tlSize < tlv->length) {
-		result = -1;
-		goto end;
-	}
-	memmove(tlv->value, buffer+tlSize, tlv->length);
-	result = tlv->length + tlSize;
-end:
-	return result;
-}
-
-/**
- * The tag must be coded on one octet and the length must be < 127.
+ * The tag must be coded on at most two octet and the length must be < 65535.
  * \param buffer [in] The buffer.
  * \param length [in] The length of the buffer.
  * \param *tlv [out] the returned TLV struct.
  * \return -1 in case of error, consumed length otherwise.
  */
 LONG read_TLV(PBYTE buffer, DWORD length, TLV *tlv) {
-	return _read_TLV(buffer, length, tlv, 1);
-}
+	LONG result;
+	DWORD offset = 0;
+	DWORD numLengthOctets;
+	BYTE l1, l2;
+	BYTE tag1, tag2;
+	int i;
+	tag1 = buffer[offset++];
+	// if bit 5 to 1 = 11111 not a single octet
+	if ((tag1 & 31) == 31) {
+		// we support only tags with two octets, so bit 8 must be not set to
+		// mark this octet as last octet
+		if (length < offset+1) {
+			result = -1;
+			goto end;
+		}
+		tag2 = buffer[offset++];
+		if ((tag2 & 0x80) != 0) {
+			result = -1;
+			goto end;
+		}
+		tlv->tag = ((tag1 << 8) | tag2);
+	} else {
+		tlv->tag = tag1;
+	}
 
-/**
- * The tag must be coded on two octet and the length must be < 127.
- * \param buffer [in] The buffer.
- * \param length [in] The length of the buffer.
- * \param *tlv [out] the returned TLV struct.
- * \return -1 in case of error, consumed length otherwise.
- */
-LONG read_TTLV(PBYTE buffer, DWORD length, TLV *tlv) {
-	return _read_TLV(buffer, length, tlv, 2);
+	if (length < offset+1) {
+		result = -1;
+		goto end;
+	}
+	l1 = buffer[offset++];
+	if ((l1 & 0x80) != 0) {
+		if (length < offset+1) {
+			result = -1;
+			goto end;
+		}
+		l2 = buffer[offset++];
+		numLengthOctets = l1 & 127;
+		// we support only 65535
+		if (numLengthOctets > 2) {
+			result = -1;
+			goto end;
+		}
+		tlv->length = l2 << 8 * (numLengthOctets - 1);
+		for (i = numLengthOctets - 1; i > 0; i--) {
+			tlv->length |= (buffer[offset++] << 8) * (i - 1);
+		}
+	} else {
+		tlv->length = l1;
+	}
+
+	memmove(tlv->value, buffer+offset, tlv->length);
+	offset += tlv->length;
+	result = offset;
+	tlv->tlvLength = result;
+end:
+	return result;
 }
 
 LONG parse_apdu_case(PBYTE apduCommand, DWORD apduCommandLength, PBYTE caseAPDU, PBYTE lc, PBYTE le) {

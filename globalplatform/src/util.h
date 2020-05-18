@@ -39,17 +39,14 @@ extern "C"
  **/
 typedef struct {
 	USHORT tag; //!< The Tag.
-	BYTE length; //!< The length of the value.
+	DWORD length; //!< The length of the value.
 	BYTE value[127]; //!< The value.
+	DWORD tlvLength; //!< The length of the whole TLV.
 } TLV;
 
 //! \brief Reads a TLV struct from the given buffer
 OPGP_NO_API
 LONG read_TLV(PBYTE buffer, DWORD length, TLV *tlv);
-
-//! \brief Reads a TLV struct with 2 octects for the tag from the given buffer
-OPGP_NO_API
-LONG read_TTLV(PBYTE buffer, DWORD length, TLV *tlv);
 
 //! \brief Converts a ISO 7816-4 Le Byte into its value.
 OPGP_NO_API
