@@ -124,6 +124,9 @@ The APDU is given as hex without spaces and without leadings 0x.
 .IP get_data
 .I "-identifier identifier"
 A GET DATA command returning the data for the given identifier.
+.IP get_key_information_templates
+.I "-keyTemplate index"
+A GET DATA command returning the key information templates in the selected security domain.
 .SH OPTIONS
 .IP -keyind
 .I x
@@ -205,6 +208,9 @@ Element type to be listed in hex
 .IP -format
 .I x
 Sets the format of the response of the get_status command. This is only used for GlobalPlatform cards and required and only needed if the default is not supported by the smart card.
+.IP -keyTemplate
+.I x
+Sets the key template index to return for the get_key_templates command. Default 0.
 .RS
 0 - Deprecated format
 .RE

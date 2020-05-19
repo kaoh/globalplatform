@@ -1,0 +1,8 @@
+mode_201
+enable_trace
+establish_context
+card_connect
+select -AID a0000000030000
+get_key_information_templates
+card_disconnect
+release_context

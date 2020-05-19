@@ -1757,13 +1757,13 @@ OPGP_ERROR_STATUS get_key_information_templates(OPGP_CARD_CONTEXT cardContext, O
 		goto end;
 	}
 	// skip TL
-	offset+=2;
+	offset = 0;
 	while (offset<tlv1.length) {
 		BOOL extended = 0;
 		DWORD j = 0;
 		// parse C0
 		result = read_TLV(tlv1.value, tlv1.length, &tlv2);
-		if (result == -1 || tlv1.tag != 0xC0) {
+		if (result == -1 || tlv2.tag != 0xC0) {
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 			goto end;
 		}
@@ -1774,7 +1774,7 @@ OPGP_ERROR_STATUS get_key_information_templates(OPGP_CARD_CONTEXT cardContext, O
 		keyInformation[i].keyIndex = tlv2.value[j++];
 		keyInformation[i].keySetVersion = tlv2.value[j++];
 		// extended format if 0xFF
-		if (cardData[j] == 0xFF) {
+		if (tlv2.value[j] == 0xFF) {
 			extended = 1;
 		}
 		if (extended) {
@@ -5089,14 +5089,17 @@ OPGP_ERROR_STATUS OP201_get_key_information_templates(OPGP_CARD_CONTEXT cardCont
 
 	status = get_key_information_templates(cardContext, cardInfo, &gp211secInfo, keyInformationTemplate,
 		gp211keyInformation, keyInformationLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
 	for (i=0; i<*keyInformationLength; i++) {
 		mapGP211ToOP201KeyInformation(gp211keyInformation[i], &(keyInformation[i]));
 	}
-
-	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 end:
-	if (keyInformation)
-		free(keyInformation);
+	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
+	if (keyInformation) {
+		free(gp211keyInformation);
+	}
 	return status;
 }
 

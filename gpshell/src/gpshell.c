@@ -55,6 +55,14 @@
 #define PASSPHRASELEN 64
 #define AUTOREADER -1
 
+#define CHECK_TOKEN(token, option) token = strtokCheckComment(NULL);\
+if (token == NULL)\
+{\
+    _tprintf(_T("Error: option %s not followed by data\n"), option);\
+    rv = EXIT_FAILURE;\
+    goto end;\
+}
+
 /* Data Structures */
 typedef struct _OptionStr
 {
@@ -89,6 +97,7 @@ typedef struct _OptionStr
     DWORD instParamLen;
     BYTE element; //!< GET STATUS element (application, security domains, executable load files) to get
     BYTE format; //!< GET STATUS format
+    BYTE keyTemplate; //!< The key template index to return.
     BYTE privilege;
     BYTE scp;
     BYTE scpImpl;
@@ -188,7 +197,6 @@ static TCHAR *strtokCheckComment(TCHAR *buf)
             _sntprintf(dummy+read, avail, _T(" %s"), token);
         }
         /* BUGFIX: sizeof returns size in bytes not number of elements; use BUFLEN instead */
-        /*dummy[sizeof(dummy)-1] = _T('\0');*/
         dummy[BUFLEN-1] = _T('\0');
 
         /* Skip next delimiter */
@@ -430,6 +438,31 @@ static void displayApplicationsOp201(OP201_APPLICATION_DATA *applications, int c
 	}
 }
 
+static void displayGpKeyInformation(GP211_KEY_INFORMATION *keyInformation, int count) {
+	LPCSTR format1, format2;
+	int i,j;
+	format1 = _T("%-3s | %-7s | %-6s | %-6s | %-5s | %-6s \n");
+	_tprintf(format1, _T("ID"), _T("Version"), _T("Type"), _T("Length"), _T("Usage"), _T("Access"));
+	format2 = _T("%-3d | %-7d | %-6.2x | %-6d | %-5.2x | %-6.2x \n");
+	for (i=0; i<count; i++) {
+		_tprintf(format1, _T("--"), _T("--"), _T("--"), _T("--"), _T("--"), _T("--"));
+		_tprintf(format2, keyInformation[i].keyIndex, keyInformation[i].keySetVersion,
+				keyInformation[i].keyType, keyInformation[i].keyLength,
+				keyInformation[i].keyUsage, keyInformation[i].keyAccess);
+	}
+}
+
+static void displayOpKeyInformation(OP201_KEY_INFORMATION *keyInformation, int count) {
+	LPCSTR format;
+	int i,j;
+	format = _T("%-3d | %-7d | %-4.2x | %-6%d \n");
+	_tprintf(format, _T("ID"), _T("Version"), _T("Type"), _T("Length"));
+	for (i=0; i<count; i++) {
+		_tprintf(format, _T("--"), _T("--"), _T("--"), _T("--"));
+		_tprintf(format, keyInformation[i].keyIndex, keyInformation[i].keySetVersion, keyInformation[i].keyType, keyInformation[i].keyLength);
+	}
+}
+
 static int handleOptions(OptionStr *pOptionStr)
 {
     int rv = EXIT_SUCCESS;
@@ -463,481 +496,229 @@ static int handleOptions(OptionStr *pOptionStr)
 	pOptionStr->identifier[0] = 0;
 	pOptionStr->identifier[1] = 0;
 	pOptionStr->keyDerivation = OPGP_DERIVATION_METHOD_NONE;
+	pOptionStr->keyTemplate = 0;
 
     token = strtokCheckComment(NULL);
 
     while (token != NULL)
     {
-
         if (_tcscmp(token, _T("-identifier")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -identifier not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-            	BYTE temp;
-            	ConvertStringToByteArray(token, 2, pOptionStr->identifier);
-            	if (_tcslen(token) == 2) {
-					temp = pOptionStr->identifier[0];
-					pOptionStr->identifier[0] = pOptionStr->identifier[1];
-					pOptionStr->identifier[1] = temp;
-            	}
-            }
+        	CHECK_TOKEN(token, _T("-identifier"));
+			BYTE temp;
+			ConvertStringToByteArray(token, 2, pOptionStr->identifier);
+			if (_tcslen(token) == 2) {
+				temp = pOptionStr->identifier[0];
+				pOptionStr->identifier[0] = pOptionStr->identifier[1];
+				pOptionStr->identifier[1] = temp;
+			}
         }
+        else if (_tcscmp(token, _T("-keyTemplate")) == 0)
+		{
+			CHECK_TOKEN(token, _T("-keyTemplate"));
+			pOptionStr->keyTemplate = _tstoi(token);
+		}
         else if (_tcscmp(token, _T("-keyind")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -keyind not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-                pOptionStr->keyIndex = _tstoi(token);
-            }
+        	CHECK_TOKEN(token, _T("-keyind"));
+            pOptionStr->keyIndex = _tstoi(token);
         }
         else if (_tcscmp(token, _T("-keyver")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -keyver not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-                pOptionStr->keySetVersion = _tstoi(token);
-            }
+        	CHECK_TOKEN(token, _T("-keyver"));
+            pOptionStr->keySetVersion = _tstoi(token);
         }
         else if (_tcscmp(token, _T("-newkeyver")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -newkeyver not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-                pOptionStr->newKeySetVersion = _tstoi(token);
-            }
+        	CHECK_TOKEN(token, _T("-newkeyver"));
+            pOptionStr->newKeySetVersion = _tstoi(token);
         }
         else if (_tcscmp(token, _T("-sc")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -sc not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-                if (_tstoi(token) == 0)
-                    pOptionStr->secureChannel = 0;
-                else if (_tstoi(token) == 1)
-                    pOptionStr->secureChannel = 1;
-                else
-                {
-                    _tprintf(_T("Error: option -sc not followed 0 (secure channel off) or 1 (secure channel on)\n"));
-                    rv = EXIT_FAILURE;
-                    goto end;
-                }
-            }
+        	int sc;
+        	CHECK_TOKEN(token, _T("-sc"));
+        	sc = _tstoi(token);
+			if (sc == 0) {
+				pOptionStr->secureChannel = 0;
+			}
+			else if (sc == 1) {
+				pOptionStr->secureChannel = 1;
+			}
+			else
+			{
+				_tprintf(_T("Error: option -sc not followed 0 (secure channel off) or 1 (secure channel on)\n"));
+				rv = EXIT_FAILURE;
+				goto end;
+			}
         }
         else if (_tcscmp(token, _T("-security")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -security not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-                pOptionStr->securityLevel = _tstoi(token);
-            }
+        	CHECK_TOKEN(token, _T("-security"));
+        	pOptionStr->securityLevel = _tstoi(token);
         }
         else if (_tcscmp(token, _T("-readerNumber")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -readerNumber not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-                if (_tcscmp(token,_T("0")) == 0)
-                {
-                    _tprintf(_T("Error: option -readerNumber must be followed by number > 0\n"));
-                    rv = EXIT_FAILURE;
-                    goto end;
-                }
-                pOptionStr->readerNumber = _tstoi(token)-1;
-            }
+        	CHECK_TOKEN(token, _T("-readerNumber"));
+        	int readerNumber = _tstoi(token)-1;
+			if (readerNumber < 0)
+			{
+				_tprintf(_T("Error: option -readerNumber must be followed by number > 0\n"));
+				rv = EXIT_FAILURE;
+				goto end;
+			}
+			pOptionStr->readerNumber = readerNumber;
         }
         else if (_tcscmp(token, _T("-reader")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -reader not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-                _tcsncpy(pOptionStr->reader, token, READERNAMELEN);
+        	CHECK_TOKEN(token, _T("-reader"));
+            _tcsncpy(pOptionStr->reader, token, READERNAMELEN);
 #ifdef DEBUG
-                _tprintf ( _T("reader name %s\n"), pOptionStr->reader);
+            _tprintf ( _T("reader name %s\n"), pOptionStr->reader);
 #endif
-            }
         }
         else if (_tcscmp(token, _T("-file")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -file not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-                _tcsncpy(pOptionStr->file, token, FILENAMELEN);
+        	CHECK_TOKEN(token, _T("-file"));
+            _tcsncpy(pOptionStr->file, token, FILENAMELEN);
 #ifdef DEBUG
-                _tprintf ( _T("file name %s\n"), pOptionStr->file);
+            _tprintf ( _T("file name %s\n"), pOptionStr->file);
 #endif
-            }
         }
         else if (_tcscmp(token, _T("-pass")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -pass not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-                ConvertTToC(pOptionStr->passPhrase, token);
-                pOptionStr->passPhrase[PASSPHRASELEN] = '\0';
-            }
+        	CHECK_TOKEN(token, _T("-pass"));
+            ConvertTToC(pOptionStr->passPhrase, token);
+            pOptionStr->passPhrase[PASSPHRASELEN] = '\0';
         }
         else if (_tcscmp(token, _T("-key")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -key not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-
-                ConvertStringToByteArray(token, DDES_KEY_LEN, pOptionStr->key);
-            }
+        	CHECK_TOKEN(token, _T("-key"));
+        	ConvertStringToByteArray(token, DDES_KEY_LEN, pOptionStr->key);
         }
         else if (_tcscmp(token, _T("-mac_key")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -key not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-                ConvertStringToByteArray(token, DDES_KEY_LEN, pOptionStr->mac_key);
-            }
+        	CHECK_TOKEN(token, _T("-mac_key"));
+            ConvertStringToByteArray(token, DDES_KEY_LEN, pOptionStr->mac_key);
         }
         else if (_tcscmp(token, _T("-enc_key")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -enc_key not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-                ConvertStringToByteArray(token, DDES_KEY_LEN, pOptionStr->enc_key);
-            }
+        	CHECK_TOKEN(token, _T("-enc_key"));
+            ConvertStringToByteArray(token, DDES_KEY_LEN, pOptionStr->enc_key);
         }
         else if (_tcscmp(token, _T("-kek_key")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -kek_key not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-
-                ConvertStringToByteArray(token, DDES_KEY_LEN, pOptionStr->kek_key);
-            }
+        	CHECK_TOKEN(token, _T("-kek_key"));
+            ConvertStringToByteArray(token, DDES_KEY_LEN, pOptionStr->kek_key);
         }
         else if (_tcscmp(token, _T("-AID")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -AID not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-                pOptionStr->AIDLen = ConvertStringToByteArray(token, AIDLEN, pOptionStr->AID);
-            }
+        	CHECK_TOKEN(token, _T("-AID"));
+            pOptionStr->AIDLen = ConvertStringToByteArray(token, AIDLEN, pOptionStr->AID);
         }
         else if (_tcscmp(token, _T("-sdAID")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -sdAID not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-                pOptionStr->sdAIDLen = ConvertStringToByteArray(token, AIDLEN, pOptionStr->sdAID);
-            }
+        	CHECK_TOKEN(token, _T("-sdAID"));
+            pOptionStr->sdAIDLen = ConvertStringToByteArray(token, AIDLEN, pOptionStr->sdAID);
         }
         else if (_tcscmp(token, _T("-pkgAID")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -pkgAID not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-                pOptionStr->pkgAIDLen = ConvertStringToByteArray(token, AIDLEN, pOptionStr->pkgAID);
-            }
+        	CHECK_TOKEN(token, _T("-pkgAID"));
+            pOptionStr->pkgAIDLen = ConvertStringToByteArray(token, AIDLEN, pOptionStr->pkgAID);
         }
         else if (_tcscmp(token, _T("-instAID")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -instAID not followed by data\n"));
-                exit (EXIT_FAILURE);
-            }
-            else
-            {
-                pOptionStr->instAIDLen = ConvertStringToByteArray(token, AIDLEN, pOptionStr->instAID);
-            }
+        	CHECK_TOKEN(token, _T("-instAID"));
+            pOptionStr->instAIDLen = ConvertStringToByteArray(token, AIDLEN, pOptionStr->instAID);
         }
         else if (_tcscmp(token, _T("-APDU")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -APDU not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-                pOptionStr->APDULen = ConvertStringToByteArray(token, APDU_COMMAND_LEN, pOptionStr->APDU);
-            }
+        	CHECK_TOKEN(token, _T("-APDU"));
+            pOptionStr->APDULen = ConvertStringToByteArray(token, APDU_COMMAND_LEN, pOptionStr->APDU);
         }
         else if (_tcscmp(token, _T("-protocol")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -protocol not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-                if (_tstoi(token) == 0)
-                {
-                    pOptionStr->protocol = OPGP_CARD_PROTOCOL_T0;
-                }
-                else if (_tstoi(token) == 1)
-                {
-                    pOptionStr->protocol = OPGP_CARD_PROTOCOL_T1;
-                }
-                else
-                {
-                    _tprintf(_T("Unknown protocol type %s\n"), token);
-                    rv = EXIT_FAILURE;
-                    goto end;
-                }
-            }
+        	DWORD protocol;
+        	CHECK_TOKEN(token, _T("-protocol"));
+        	protocol = _tstoi(token);
+			if (protocol == 0)
+			{
+				pOptionStr->protocol = OPGP_CARD_PROTOCOL_T0;
+			}
+			else if (protocol == 1)
+			{
+				pOptionStr->protocol = OPGP_CARD_PROTOCOL_T1;
+			}
+			else
+			{
+				_tprintf(_T("Unknown protocol type %s\n"), token);
+				rv = EXIT_FAILURE;
+				goto end;
+			}
         }
         else if (_tcscmp(token, _T("-nvCodeLimit")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -nvCodeLimit not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-                pOptionStr->nvCodeLimit = _tstoi(token);
-            }
+        	CHECK_TOKEN(token, _T("-nvCodeLimit"));
+            pOptionStr->nvCodeLimit = _tstoi(token);
         }
         else if (_tcscmp(token, _T("-nvDataLimit")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -nvDataLimit not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-                pOptionStr->nvDataLimit = _tstoi(token);
-            }
+        	CHECK_TOKEN(token, _T("-nvDataLimit"));
+            pOptionStr->nvDataLimit = _tstoi(token);
         }
         else if (_tcscmp(token, _T("-vDataLimit")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -vDataLimit not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-                pOptionStr->vDataLimit = _tstoi(token);
-            }
+        	CHECK_TOKEN(token, _T("-vDataLimit"));
+            pOptionStr->vDataLimit = _tstoi(token);
         }
         else if (_tcscmp(token, _T("-instParam")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -instParam not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-                pOptionStr->instParamLen = ConvertStringToByteArray(token, INSTPARAMLEN, pOptionStr->instParam);
-            }
+        	CHECK_TOKEN(token, _T("-instParam"));
+            pOptionStr->instParamLen = ConvertStringToByteArray(token, INSTPARAMLEN, pOptionStr->instParam);
         }
         else if (_tcscmp(token, _T("-element")) == 0)
         {
-            int temp;
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -element not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-
-            if (_stscanf (token, _T("%02x"), &temp) <= 0)
+            int element;
+            CHECK_TOKEN(token, _T("-element"));
+            if (_stscanf (token, _T("%02x"), &element) <= 0)
             {
                 _tprintf(_T("Error: option -element followed by an illegal string %s\n"),
                         token);
                 rv = EXIT_FAILURE;
                 goto end;
             }
-            pOptionStr->element = temp;
+            pOptionStr->element = element;
         }
         else if (_tcscmp(token, _T("-format")) == 0)
 		{
-			int temp;
-			token = strtokCheckComment(NULL);
-			if (token == NULL)
+        	int format;
+        	CHECK_TOKEN(token, _T("-format"));
+        	format = _tstoi(token);
+        	if (format != 0 && format != 2)
 			{
-				_tprintf(_T("Error: option -format not followed by data\n"));
+				_tprintf(_T("Error: option -format followed by an unsupported format %s\n"), token);
 				rv = EXIT_FAILURE;
 				goto end;
 			}
-
-			if (_stscanf (token, _T("%02x"), &temp) <= 0)
-			{
-				_tprintf(_T("Error: option -format followed by an illegal string %s\n"),
-						token);
-				rv = EXIT_FAILURE;
-				goto end;
-			}
-			pOptionStr->format = temp;
+			pOptionStr->format = format;
 		}
         else if (_tcscmp(token, _T("-priv")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -priv not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-                pOptionStr->privilege = _tstoi(token);
-            }
+        	CHECK_TOKEN(token, _T("-priv"));
+            pOptionStr->privilege = _tstoi(token);
         }
         else if (_tcscmp(token, _T("-scp")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -scp not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-                pOptionStr->scp = (int)_tcstol(token, NULL, 0);
-            }
+        	CHECK_TOKEN(token, _T("-scp"));
+            pOptionStr->scp = (int)_tcstol(token, NULL, 0);
         }
         else if (_tcscmp(token, _T("-scpimpl")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -scpimpl not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
-            else
-            {
-                pOptionStr->scpImpl = (int)_tcstol(token, NULL, 0);
-            }
+        	CHECK_TOKEN(token, _T("-scpimpl"));
+            pOptionStr->scpImpl = (int)_tcstol(token, NULL, 0);
         }
         else if (_tcscmp(token, _T("-keyDerivation")) == 0)
         {
-            token = strtokCheckComment(NULL);
-            if (token == NULL)
-            {
-                _tprintf(_T("Error: option -keyDerivation not followed by data\n"));
-                rv = EXIT_FAILURE;
-                goto end;
-            }
+        	CHECK_TOKEN(token, _T("-keyDerivation"));
             if (_tcscmp(token, _T("none")) == 0) {
             	pOptionStr->keyDerivation = OPGP_DERIVATION_METHOD_NONE;
             }
@@ -952,7 +733,7 @@ static int handleOptions(OptionStr *pOptionStr)
             }
             else
             {
-                _tprintf(_T("Error: Unknown key derivation method\n"));
+                _tprintf(_T("Error: Unknown key derivation method %s\n"), token);
                 rv = EXIT_FAILURE;
                 goto end;
             }
@@ -1170,6 +951,45 @@ static int handleCommands(FILE *fd)
                               status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
+                }
+                goto timer;
+            }
+            else if (_tcscmp(token, _T("get_key_information_templates")) == 0)
+            {
+            	GP211_KEY_INFORMATION gpKeyInformation[64];
+            	OP201_KEY_INFORMATION opKeyInformation[64];
+            	DWORD keyInformationLength = 64;
+            	rv = handleOptions(&optionStr);
+                if (rv != EXIT_SUCCESS)
+                {
+                    goto end;
+                }
+                if (platform_mode == PLATFORM_MODE_OP_201)
+                {
+                    status = OP201_get_key_information_templates(cardContext, cardInfo,
+                                                     &securityInfo201,
+													 optionStr.keyTemplate,
+													 opKeyInformation, &keyInformationLength);
+                }
+                else if (platform_mode == PLATFORM_MODE_GP_211)
+                {
+                    status = GP211_get_key_information_templates(cardContext, cardInfo,
+                    		&securityInfo211,
+							optionStr.keyTemplate,
+							gpKeyInformation, &keyInformationLength);
+                }
+                if (OPGP_ERROR_CHECK(status))
+                {
+                    _tprintf (_T("get_key_information_templates() returns 0x%08lX (%s)\n"),
+                              status.errorCode, status.errorMessage);
+                    rv = EXIT_FAILURE;
+                    goto end;
+                }
+                if (platform_mode == PLATFORM_MODE_OP_201) {
+                	displayOpKeyInformation(opKeyInformation, keyInformationLength);
+                }
+                else {
+                	displayGpKeyInformation(gpKeyInformation, keyInformationLength);
                 }
                 goto timer;
             }
