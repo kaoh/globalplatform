@@ -27,8 +27,8 @@ default `C:\Temp\GlobalPlatform.log` is chosen. The log file must be
 writable for the user.
 Under Unix systems if syslog is available it will be used by default.
  The default log file under Unix systems is
-`/tmp/GlobalPlatform.log` if syslog is not available or cannot be written by the user. 
-If you don't have access to the syslog or don't want to use it you can still set the 
+`/tmp/GlobalPlatform.log` if syslog is not available or cannot be written by the user.
+If you don't have access to the syslog or don't want to use it you can still set the
 `GLOBALPLATFORM_LOGFILE` manually.
 Keep in mind that the debugging output may contain sensitive information,
 e.g. keys!
@@ -54,7 +54,7 @@ make install
 It might be necessary to create a symlink to the correct library search directory, e.g. under Ubuntu 18.04 execute:
 
     sudo ln -s /usr/local/lib/libglobalplatform.so.6 /usr/lib/x86_64-linux-gnu/libglobalplatform.so.6
-    
+
 Or include the `/usr/local/lib ` under `/etc/ld.so.conf.d/` and run `sudo ldconfig`
 
 ## FreeBSD
@@ -299,15 +299,15 @@ cmake -DDEBUG=ON
 
 ## Testing
 
-Testing is only supported under Linux for now. 
+Testing is only supported under Linux for now.
 
 2 dependencies are required:
 
  * [cmocka](https://cmocka.org/)
  * [check](https://libcheck.github.io/check/)
- 
+
  Under Ubuntu this can be installed with:
- 
+
     sudo apt-get install libcmocka-dev
     sudo apt-get install check
 
@@ -327,8 +327,11 @@ For the unit tests a JCOP v2.2 41 card is used.
 
 You must rebuild the build system if your build tools have changed. Otherwise
 CMake uses out dated values and compilation might fail. You have to delete manually
-the `CMakeCache.txt` file and also the CMake specific directories like `CMakeFiles` and
-`cmake_install.cmake` in the top folder and the `src` directory.
+
+* `CMakeCache.txt`
+* `CMakeFiles`
+* `cmake_install.cmake` in the top folder and the `src` directory.
+* `_CPack_Packages`
 
 If your are using Cygwin and you have installed the GNU compiler tools and the
 bin directory is on the PATH environment variable CMake will favor these tools

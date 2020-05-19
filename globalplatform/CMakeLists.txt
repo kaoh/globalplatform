@@ -29,8 +29,8 @@ set(DOXYFILE_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
 set(DOXYFILE_LATEX OFF)
 include(UseDoxygen)
 
-set(INSTALL_FILES	${CMAKE_CURRENT_SOURCE_DIR}/AUTHORS ${CMAKE_CURRENT_SOURCE_DIR}/ChangeLog 
-              ${CMAKE_CURRENT_SOURCE_DIR}/COPYING ${CMAKE_CURRENT_SOURCE_DIR}/COPYING.LESSER 
+set(INSTALL_FILES	${CMAKE_CURRENT_SOURCE_DIR}/AUTHORS ${CMAKE_CURRENT_SOURCE_DIR}/ChangeLog
+              ${CMAKE_CURRENT_SOURCE_DIR}/COPYING ${CMAKE_CURRENT_SOURCE_DIR}/COPYING.LESSER
               ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.OpenSSL
               ${CMAKE_CURRENT_SOURCE_DIR}/NEWS ${CMAKE_CURRENT_SOURCE_DIR}/README.md)
 
@@ -38,10 +38,10 @@ INSTALL(FILES ${INSTALL_FILES} DESTINATION ${DOCUMENTATION_DIRECTORY})
 
 INSTALL(FILES ${INSTALL_FILES} DESTINATION ${DOCUMENTATION_DIRECTORY}
               COMPONENT dev)
-              
+
 INSTALL(
 CODE "FILE (GLOB_RECURSE ALL_DOCS \"${CMAKE_CURRENT_BINARY_DIR}/doc/html/*\")"
-CODE "FILE (INSTALL DESTINATION \"\${CMAKE_INSTALL_PREFIX}/${DOCUMENTATION_DIRECTORY}/html\" TYPE FILE FILES \${ALL_DOCS})" 
+CODE "FILE (INSTALL DESTINATION \"\${CMAKE_INSTALL_PREFIX}/${DOCUMENTATION_DIRECTORY}/html\" TYPE FILE FILES \${ALL_DOCS})"
 COMPONENT dev)
 
 # build a CPack driven installer package
@@ -75,7 +75,12 @@ set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_HOME_DIRECTORY}/COPYING.LESSER")
 set(CPACK_PACKAGE_VERSION_MAJOR        "${${CMAKE_PROJECT_NAME}_CURRENT}")
 set(CPACK_PACKAGE_VERSION_MINOR        "${${CMAKE_PROJECT_NAME}_REVISION}")
 set(CPACK_PACKAGE_VERSION_PATCH        "${${CMAKE_PROJECT_NAME}_AGE}")
-set(CPACK_SOURCE_IGNORE_FILES "doc;.*~;Debian;debian;\\\\.svn;\\\\globalplatform.lib$;\\\\globalplatform.dll;\\\\CMakeFiles;/${CPACK_SOURCE_PACKAGE_FILE_NAME}.*;/${CPACK_PACKAGE_FILE_NAME}.*;\\\\CPack*;\\\\CMakeCache.txt;\\\\cmake_install.*;\\\\Makefile;\\\\_CPack_Packages;\\\\libglobalplatform.so;\\\\libglobalplatform.a;\\\\globalplatform.exp;\\\\globalplatform.manifest;\\\\install_manifest.txt;\\\\.tar.gz;\\\\Doxyfile$;${CPACK_SOURCE_IGNORE_FILES}")
+set(CPACK_SOURCE_IGNORE_FILES "doc;.*~;Debian;debian;\\\\.svn;\\\\.settings;Testing;CMakeFiles;Doxyfile;
+CPack.*;CMakeCache\\\\.txt;cmake_install.*;Makefile;CMakeDoxyfile\\\\.in;
+_.*;\\\\.cproject;\\\\.project;DartConfiguration.tcl;
+\\\\.manifest;.*Test;\\\\.pc;description\\\\.txt;\\\\.sh;\\\\.cmake;install.*;
+\\\\.tar\\\\.gz;\\\\.zip;\\\\.lib;\\\\.ilk;\\\\.pdb;\\\\.exp;\\\\.a;\\\\.so;\\\\.dll;\\\\.lib$;
+Doxyfile$;${CPACK_SOURCE_IGNORE_FILES}")
 
 include(CPack)
 
