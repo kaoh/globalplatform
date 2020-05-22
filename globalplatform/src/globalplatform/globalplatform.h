@@ -368,9 +368,23 @@ typedef struct {
 	OPGP_AID associatedSecurityDomainAID; //!< The associated Security Domain's AID.
 } GP211_EXECUTABLE_MODULES_DATA;
 
+/**
+ * The structure containing the extended card resource information according ETSI TS 102 226, sect. 8.2.1.7.2.
+ */
+typedef struct {
+	DWORD numInstalledApplications; //!< The number of the installed applications.
+	DWORD freeVolatileMemory; //!< Free volatile memory.
+	DWORD freeNonVolatileMemory; //!< Free non volatile memory.
+} OPGP_EXTENDED_CARD_RESOURCE_INFORMATION;
+
 //! \brief GlobalPlatform2.1.1: Selects an application on a card by AID.
 OPGP_API
 OPGP_ERROR_STATUS OPGP_select_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, PBYTE AID, DWORD AIDLength);
+
+//! \brief Reads the extended card resource information (number of applications + free memory).
+OPGP_API
+OPGP_ERROR_STATUS OPGP_get_extended_card_resources_information(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+								   OPGP_EXTENDED_CARD_RESOURCE_INFORMATION *extendedCardResourceInformation);
 
 /** \brief GlobalPlatform2.1.1: Gets the life cycle status of Applications, the Issuer Security
  * Domains, Security Domains and Executable Load Files and their privileges or information about

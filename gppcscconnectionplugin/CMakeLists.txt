@@ -24,8 +24,8 @@ ELSE(UNIX)
   set(DOCUMENTATION_DIRECTORY "doc")
 ENDIf(UNIX)
 
-INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/AUTHORS ${CMAKE_CURRENT_SOURCE_DIR}/ChangeLog 
-              ${CMAKE_CURRENT_SOURCE_DIR}/COPYING ${CMAKE_CURRENT_SOURCE_DIR}/COPYING.LESSER 
+INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/AUTHORS ${CMAKE_CURRENT_SOURCE_DIR}/ChangeLog
+              ${CMAKE_CURRENT_SOURCE_DIR}/COPYING ${CMAKE_CURRENT_SOURCE_DIR}/COPYING.LESSER
               ${CMAKE_CURRENT_SOURCE_DIR}/NEWS ${CMAKE_CURRENT_SOURCE_DIR}/README.md DESTINATION ${DOCUMENTATION_DIRECTORY})
 
 # build a CPack driven installer package
@@ -57,7 +57,12 @@ set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_HOME_DIRECTORY}/COPYING.LESSER")
 set(CPACK_PACKAGE_VERSION_MAJOR        "${${CMAKE_PROJECT_NAME}_CURRENT}")
 set(CPACK_PACKAGE_VERSION_MINOR        "${${CMAKE_PROJECT_NAME}_REVISION}")
 set(CPACK_PACKAGE_VERSION_PATCH        "${${CMAKE_PROJECT_NAME}_AGE}")
-set(CPACK_SOURCE_IGNORE_FILES "doc;.*~;Debian;debian;\\\\.svn;\\\\gppcscconnectionplugin.lib$;\\\\gppcscconnectionplugin.dll;\\\\CMakeFiles;/${CPACK_SOURCE_PACKAGE_FILE_NAME}.*;/${CPACK_PACKAGE_FILE_NAME}.*;\\\\CPack*;\\\\CMakeCache.txt;\\\\cmake_install.*;\\\\Makefile;\\\\_CPack_Packages;\\\\libgppcscconnectionplugin.so;\\\\libgppcscconnectionplugin.a;\\\\gppcscconnectionplugin.exp;\\\\gppcscconnectionplugin.manifest;\\\\install_manifest.txt;\\\\.tar.gz;${CPACK_SOURCE_IGNORE_FILES}")
+set(CPACK_SOURCE_IGNORE_FILES "doc;.*~;Debian;debian;\\\\.svn;\\\\.settings;Testing;CMakeFiles;Doxyfile;
+CPack.*;CMakeCache\\\\.txt;cmake_install.*;Makefile;CMakeDoxyfile\\\\.in;
+_.*;\\\\.cproject;\\\\.project;DartConfiguration.tcl;.*vcxproj.*;.*patch;
+\\\\.manifest;.*Test;\\\\.pc;description\\\\.txt;\\\\.sh;\\\\.cmake;install.*;
+\\\\.tar\\\\.gz;\\\\.zip;\\\\.lib;\\\\.ilk;\\\\.pdb;\\\\.exe;\\\\.exp;\\\\.a;\\\\.so;\\\\.dll;\\\\.lib$;
+Doxyfile$;${CPACK_SOURCE_IGNORE_FILES}")
 
 include(CPack)
 

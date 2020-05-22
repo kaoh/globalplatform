@@ -38,6 +38,28 @@ DWORD get_int(PBYTE buf, DWORD offset) {
 /**
  * \param buf [in] The buffer.
  * \param offset [in] The offset in the buffer.
+ * \param numLength The length of the number.
+ * \return the unsigned int value.
+ */
+DWORD get_number(PBYTE buf, DWORD offset, BYTE numLength) {
+	if (numLength == 1) {
+		return buf[offset];
+	}
+	if (numLength == 2) {
+		return get_short(buf, offset);
+	}
+	if (numLength == 3) {
+		return buf[offset] << 16 | get_short(buf, offset+1);
+	}
+	if (numLength == 4) {
+		return get_int(buf, offset);
+	}
+	return 0;
+}
+
+/**
+ * \param buf [in] The buffer.
+ * \param offset [in] The offset in the buffer.
  * \return the unsigned short int value.
  */
 DWORD get_short(PBYTE buf, DWORD offset) {

@@ -438,9 +438,19 @@ static void displayApplicationsOp201(OP201_APPLICATION_DATA *applications, int c
 	}
 }
 
+static void displayExtCardResorcesInfo(OPGP_EXTENDED_CARD_RESOURCE_INFORMATION extCardResorcesInfo) {
+	LPCSTR format1, format2;
+	format1 = _T("%-16s | %-21s | %-17s \n");
+	_tprintf(format1, _T("Num Applications"), _T("Free non volatile mem"), _T("Free volatile mem"));
+	format2 = _T("%-16d | %-21d | %-17d \n");
+	_tprintf(format1, _T("--"), _T("--"), _T("--"));
+	_tprintf(format2, extCardResorcesInfo.numInstalledApplications, extCardResorcesInfo.freeNonVolatileMemory,
+			extCardResorcesInfo.freeVolatileMemory);
+}
+
 static void displayGpKeyInformation(GP211_KEY_INFORMATION *keyInformation, int count) {
 	LPCSTR format1, format2;
-	int i,j;
+	int i;
 	format1 = _T("%-3s | %-7s | %-6s | %-6s | %-5s | %-6s \n");
 	_tprintf(format1, _T("ID"), _T("Version"), _T("Type"), _T("Length"), _T("Usage"), _T("Access"));
 	format2 = _T("%-3d | %-7d | %-6.2x | %-6d | %-5.2x | %-6.2x \n");
@@ -993,6 +1003,25 @@ static int handleCommands(FILE *fd)
                 }
                 goto timer;
             }
+            else if (_tcscmp(token, _T("get_extended_card_resources_information")) == 0)
+			  {
+				OPGP_EXTENDED_CARD_RESOURCE_INFORMATION extendedCardResourcesInfo;
+				rv = handleOptions(&optionStr);
+				  if (rv != EXIT_SUCCESS)
+				  {
+					  goto end;
+				  }
+				  status = OPGP_get_extended_card_resources_information(cardContext, cardInfo, &securityInfo211, &extendedCardResourcesInfo);
+				  if (OPGP_ERROR_CHECK(status))
+				  {
+					  _tprintf (_T("get_extended_card_resources_information() returns 0x%08lX (%s)\n"),
+								status.errorCode, status.errorMessage);
+					  rv = EXIT_FAILURE;
+					  goto end;
+				  }
+				  displayExtCardResorcesInfo(extendedCardResourcesInfo);
+				  goto timer;
+			  }
             else if (_tcscmp(token, _T("select")) == 0)
             {
                 // select instance

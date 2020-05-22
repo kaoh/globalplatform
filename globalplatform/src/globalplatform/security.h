@@ -300,7 +300,6 @@ typedef struct {
 } GP211_KEY_INFORMATION;
 
 
-
 #ifdef __cplusplus
 }
 #endif

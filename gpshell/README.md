@@ -220,14 +220,17 @@ cmake -DDEBUG=ON
 The man page uses the groff syntax. To render a preview of the result use:
 
     groff -man -T ascii src/gpshell.1
-    
+
 ## CMake Issues
 
- 
-You must rebuild the build system if your build tools have changed. Otherwise
+ You must rebuild the build system if your build tools have changed. Otherwise
 CMake uses out dated values and compilation might fail. You have to delete manually
 the `CMakeCache.txt` file and also the CMake specific directories like `CMakeFiles` and
 `cmake_install.cmake` in the top folder and the `src` directory.
+
+```
+rm CMakeCache.txt && rm cmake_install.cmake && rm -rf CMakeFiles && rm -rf _CPack_Packages && rm CPack* && rm -rf src/CMakeFiles && cmake -DTESTING=ON -DDEBUG=ON .
+```
 
 If your are using Cygwin and you have installed the GNU compiler tools and the
 bin directory is on the PATH environment variable CMake will favor these tools

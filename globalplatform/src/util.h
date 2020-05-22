@@ -52,13 +52,16 @@ LONG read_TLV(PBYTE buffer, DWORD length, TLV *tlv);
 OPGP_NO_API
 DWORD convert_byte(BYTE b);
 
-//! \brief Returns a short int from the given position
+//! \brief Returns an unsigned short int from the given position
 OPGP_NO_API
 DWORD get_short(PBYTE buf, DWORD offset);
 
-//! \brief Returns a int from the given position
+//! \brief Returns an unsigned int from the given position
 OPGP_NO_API
 DWORD get_int(PBYTE buf, DWORD offset);
+
+//! \brief Returns an unsigned int from the given position by taking just numLength bytes starting at offset into account.
+DWORD get_number(PBYTE buf, DWORD offset, BYTE numLength);
 
 //! \brief Parse the APDU case.
 OPGP_NO_API

@@ -129,6 +129,10 @@ OPGP_ERROR_STATUS get_key_information_templates(OPGP_CARD_CONTEXT cardContext, O
 								   GP211_KEY_INFORMATION *keyInformation, PDWORD keyInformationLength);
 
 OPGP_NO_API
+OPGP_ERROR_STATUS get_extended_card_resources_information(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+		OPGP_EXTENDED_CARD_RESOURCE_INFORMATION *extendedCardResourceInformation);
+
+OPGP_NO_API
 OPGP_ERROR_STATUS set_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE cardElement, PBYTE AID, DWORD AIDLength, BYTE lifeCycleState);
 
 OPGP_NO_API
@@ -1756,7 +1760,6 @@ OPGP_ERROR_STATUS get_key_information_templates(OPGP_CARD_CONTEXT cardContext, O
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 		goto end;
 	}
-	// skip TL
 	offset = 0;
 	while (offset<tlv1.length) {
 		BOOL extended = 0;
@@ -1804,18 +1807,80 @@ OPGP_ERROR_STATUS get_key_information_templates(OPGP_CARD_CONTEXT cardContext, O
 	}
 
 	*keyInformationLength = i;
-#ifdef OPGP_DEBUG
-	for (i=0; i<*keyInformationLength; i++) {
-		OPGP_log_Msg(_T("get_key_information_templates: Key index: 0x%02x\n"), keyInformation[i].keyIndex);
-		OPGP_log_Msg(_T("get_key_information_templates: Key set version: 0x%02x\n"), keyInformation[i].keySetVersion);
-		OPGP_log_Msg(_T("get_key_information_templates: Key type: 0x%02x\n"), keyInformation[i].keyType);
-		OPGP_log_Msg(_T("get_key_information_templates: Key length: 0x%02x\n"), keyInformation[i].keyLength);
-	}
-#endif
-
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
 	OPGP_LOG_END(_T("get_key_information_templates"), status);
+	return status;
+}
+
+/**
+ * The ISD must support the optional report of extended card resources information.
+ * The format is defined in ETSI TS 102 226, sect. 8.2.1.7.2.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param *extendedCardResourceInformation [out] A pointer to an array of OPGP_EXTENDED_CARD_RESOURCE_INFORMATION structures.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS OPGP_get_extended_card_resources_information(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+								   OPGP_EXTENDED_CARD_RESOURCE_INFORMATION *extendedCardResourceInformation) {
+	return get_extended_card_resources_information(cardContext, cardInfo, secInfo, extendedCardResourceInformation);
+}
+
+OPGP_ERROR_STATUS get_extended_card_resources_information(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+		OPGP_EXTENDED_CARD_RESOURCE_INFORMATION *extendedCardResourceInformation) {
+	OPGP_ERROR_STATUS status;
+	BYTE sendBuffer[5];
+	DWORD sendBufferLength = 5;
+	BYTE cardData[APDU_RESPONSE_LEN];
+	DWORD cardDataLength = APDU_RESPONSE_LEN;
+	DWORD offset = 0;
+	int i=0;
+	DWORD result;
+	TLV tlv1, tlv2;
+	OPGP_LOG_START(_T("get_extended_card_resources_information"));
+	sendBuffer[i++] = 0x80;
+	sendBuffer[i++] = 0xCA;
+	sendBuffer[i++] = 0xFF;
+	sendBuffer[i++] = 0x21;
+	sendBuffer[i] = 0x00;
+
+	status = OPGP_send_APDU(cardContext, cardInfo, secInfo, sendBuffer, sendBufferLength, cardData, &cardDataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	CHECK_SW_9000(cardData, cardDataLength, status);
+
+	result = read_TLV(cardData, cardDataLength, &tlv1);
+	if (result == -1 || tlv1.tag != 0xFF21) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+	offset = 0;
+	while (offset<tlv1.length) {
+		result = read_TLV(tlv1.value+offset, tlv1.length-offset, &tlv2);
+		if (result == -1) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+		switch(tlv2.tag) {
+			case 0x81:
+				extendedCardResourceInformation->numInstalledApplications = get_number(tlv2.value, 0, tlv2.length);
+				break;
+			case 0x82:
+				extendedCardResourceInformation->freeNonVolatileMemory = get_number(tlv2.value, 0, tlv2.length);
+				break;
+			case 0x83:
+				extendedCardResourceInformation->freeVolatileMemory = get_number(tlv2.value, 0, tlv2.length);
+				break;
+		}
+		i++;
+		// increment by TLV
+		offset += tlv2.tlvLength;
+	}
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	OPGP_LOG_END(_T("get_extended_card_resources_information"), status);
 	return status;
 }
 

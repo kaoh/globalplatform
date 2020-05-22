@@ -123,10 +123,12 @@ Does not stop in case of an error
 The APDU is given as hex without spaces and without leadings 0x.
 .IP get_data
 .I "-identifier identifier"
-A GET DATA command returning the data for the given identifier.
+A GET DATA command returning the data for the given identifier. See the identifier options for details.
 .IP get_key_information_templates
 .I "-keyTemplate index"
 A GET DATA command returning the key information templates in the selected security domain.
+.IP get_extended_card_resources_information
+A GET DATA command returning the extended card resources information in the issuer security domain.
 .SH OPTIONS
 .IP -keyind
 .I x
@@ -239,13 +241,22 @@ Should not be necessary to be stated explicitly.
 Password for key decryption
 .IP -identifier
 .I identifier
-Identifier for the tag for the get_data command. Must be in hex format, e.g. 9F7F. It is useful to use some ASN.1 parser to interpret these data, like https://lapo.it/asn1js 
+Identifier for the tag for the get_data command. Must be in hex format, e.g. 9F7F. 
+There are several identifiers available but in general not all cards are supporting them. The GlobalPlatform specification v2.3.1 lists a few in section 11.3.3.1.
+It is useful to use some ASN.1 parser to interpret these data, like https://lapo.it/asn1js 
 Some useful identifier are:
 .RS
 9F7F - CPLC (Card Production Life Cycle) Data
 .RE
 .RS
-00E0 - Key Information Templates. Instead of the first 00 also 01, ... can be used to get more key information templates if available.
+00E0 - Key Information Templates. Instead of the first byte 00 also 01, ... can be used to get more key information templates if available. 
+There is a dedicated command for getting this: get_key_information_templates
+.RE
+.RS
+2F00 - List of applications
+.RE
+.RS
+FF21 - Extended card resources. There is a dedicated command for getting this: get_extended_card_resources_information
 .RE
 .IP -keyDerivation
 .I "derivation method"
