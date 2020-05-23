@@ -29,3 +29,8 @@ globalplatform.pc
 scp03Test
 *.zip
 *-bundle
+.idea
+.iml
+target
+helloworld.iml
+*.tar.gz
