@@ -1,35 +1,31 @@
 # Summary
 
-- Title    : Global Platform Shell (GPShell)
-- Authors  :  
- * Karsten Ohme <k_o_@users.sourceforge.net>
- * snitmo@gmail.com
-- License  : See file COPYING.LESSER
-- Requires :
- * GlobalPlatform http://sourceforge.net/projects/globalplatform/
- * PC/SC Lite http://www.musclecard.com/ (for UNIXes)
- * OpenSSL http://www.openssl.org/
- * zlib http://www.zlib.net/
+GPShell (GlobalPlatform Shell) is a script interpreter which talks to a smart card.  It is written on top of the GlobalPlatform library, which was developed by Karsten Ohme.
+It uses smart card communication protocols ISO-7816-4 and OpenPlatform 2.0.1 and GlobalPlatform 2.1.1.
+It can establish a secure channel with a smart card, load, instantiate, delete, list applets on a smart card.
 
- GPShell is a script interpreter which talks to a smart card.  It is written on top of the GlobalPlatform library, which was developed by Karsten Ohme.
- It uses smart card communication protocols ISO-7816-4 and OpenPlatform 2.0.1 and GlobalPlatform 2.1.1.
- It can establish a secure channel with a smart card, load, instantiate, delete, list applets on a smart card.
+__!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!__
 
- You need also the libraries GlobalPlatform 6.0.0, zlib 1.2.3 (zlib1.dll) and OpenSSL >= v1.0.1c (`libeay32.dll` and `ssleay32.dll`) or
- compatible and must place them in the directory where GPShell is called or better the system directory (`C:\Windows\System32` or `/usr/(local/)lib` usually).
- You also need at least one connection plugin, e.g. the shipped `gppcscconnectionplugin` to use PC/SC.
+__PLEASE OBEY THAT EVERY CARD GETS LOCKED AFTER A FEW (USUALLY 10) UNSUCCESSFUL MUTUAL AUTHENTICATIONS.
+THE CONTENTS OF A LOCKED CARD CANNOT BE MANAGED ANYMORE (DELETED, INSTALLED)!!!
+IF YOU EXPERIENCE SOME UNSUCCESSFUL MUTUAL AUTHENTICATION ATTEMPTS FIRST EXECUTE A SUCCESSFUL MUTUAL AUTHENTICATION WITH A KNOWN WORKING PROGRAM
+TO RESET THE RETRY COUNTER BEFORE YOU PROCEED WITH GPSHELL. CHECK THE PARAMETERS FOR MUTUAL AUTHENTICATION (KEYS, SECURITY PROTOCOL) AND ASK IF ANYBODY KNOWS IF THE CARD IS SUPPORTED.__
 
- For MacOSX you might set:
+__!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!__
+
+# Execution
+
+You also need at least one connection plugin, e.g. the shipped `gppcscconnectionplugin` to use PC/SC.
+
+## MacOSX
+
+For MacOSX you might set:
 
       export DYLD_LIBRARY_PATH=/opt/local/lib
 
- so that all needed libraries are found.
+so that all needed libraries are found.
 
-For more information contact the author through the mailing list at:
-
-http://sourceforge.net/projects/globalplatform/
-
-# Debug Output
+## Debug Output
 
 If you experience problems a DEBUG output is always helpful.
 Set the variable GLOBALPLATFORM_DEBUG=1 in the environment. You can set
@@ -42,18 +38,14 @@ if you don't have access to the syslog or don't want to use it.
 Keep in mind that the debugging output may contain sensitive information,
 e.g. keys!
 
-__!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!__
-
-__PLEASE OBEY THAT EVERY CARD GETS LOCKED AFTER A FEW (USUALLY 10) UNSUCCESSFUL MUTUAL AUTHENTICATIONS.
-THE CONTENTS OF A LOCKED CARD CANNOT BE MANAGED ANYMORE (DELETED, INSTALLED)!!!
-IF YOU EXPERIENCE SOME UNSUCCESSFUL MUTUAL AUTHENTICATION ATTEMPS FIRST EXECUTE A SUCCESSFUL MUTUAL AUTHENTICATION WITH A KNOWN WORKING PROGRAM
-TO RESET THE RETRY COUNTER BEFORE YOU PROCEED WITH GPSHELL. CHECK THE PARAMETERS FOR MUTUAL AUTHENTICATION (KEYS, SECURITY PROTOCOL) AND ASK IF ANYBODY KNOWS IF THE CARD IS SUPPORTED.__
-
-__!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!__
-
 # Compilation
 
-If you compile this on your own:
+## Dependencies
+
+  * [GlobalPlatform](http://sourceforge.net/projects/globalplatform/)
+  * [PC/SC Lite](https://pcsclite.apdu.fr) (only for UNIXes)
+  * [OpenSSL](http://www.openssl.org/)
+  * [zlib](http://www.zlib.net/)
 
 ## Unix
 
@@ -110,7 +102,7 @@ See http://kobyk.wordpress.com/2007/07/20/dynamically-linking-with-msvcrtdll-usi
 
 #### OpenSSL
 http://www.slproweb.com/products/Win32OpenSSL.html
-* Win32 OpenSSL v1.0.1c or higher , not a "light" version
+* Win32 OpenSSL v1.0.1c or higher, not a "light" version
 * Visual C++ 2008 Redistributables might be necessary
 * Let it install the DLLs to the Windows system directory
 
@@ -119,8 +111,8 @@ http://www.slproweb.com/products/Win32OpenSSL.html
 See the instructions in the `globalplatform` module in the upper directory for this.
 
 #### CMake
-http://www.cmake.org/
---> CMake 3.5.0 or higher
+
+[CMake 3.5.0 or higher](http://www.cmake.org/)
 
 ### Compile
 
@@ -146,7 +138,8 @@ nmake
 ```
 cmake -G "NMake Makefiles" -DWINDDK_DIR=C:\WinDDK\7600.16385.1 -DCMAKE_BUILD_TYPE=Release
 nmake     
-```  
+```
+
 * Done!  
 
 ## Source Packages
@@ -161,51 +154,6 @@ Execute:
 
     make/nmake package
 
-## Documentation
-
-For documentation you also must have Doxygen installed.
-
-Execute:
-
-```
-cmake .
-make/nmake doc
-```
-
-## Ubuntu/Debian packages
-
-You must also have `dput`, `pbuilder` and `debhelper` installed.
-
-Execute:
-```
-cmake .
-make package_ubuntu
-```
-
-The script ubuntu-package.sh iterates over all Ubuntu series and creates dsc files for Debian package creation or Launchpad uploads.
-
-You can also upload the automatically created `sources.changes` to Launchpad. You must be registered there and you must have a `.dput.cf` in place. Follow the instructions on https://help.launchpad.net/Packaging/PPA/Uploading
-
-Execute:
-
-    make dput
-
-If you have used the ubuntu-package.sh script you must manually upload the source.changes files.
-
-Execute:
-
-    dput gpsnapshots-ppa gpshell_1.4.4+5SNAPSHOT20120524080448+0200-0ubuntu1~precise.changes
-
-You can create a Ubuntu/Debian package from a `dsc` file.
-
-Execute:
-
-```
-dpkg-source -x gpshell_1.4.4+5SNAPSHOT20120524080448+0200-0ubuntu1~precise.dsc
-cd gpshell-1.4.4+5
-fakeroot debian/rules binary
-```
-
 ## Debug Builds
 
 To be able to debug the library enable the debug symbols:
@@ -215,7 +163,7 @@ cmake -DDEBUG=ON
 
 ```
 
-## Man Page
+## Man Page (Only for UNIXes)
 
 The man page uses the groff syntax. To render a preview of the result use:
 
@@ -239,3 +187,9 @@ and the linking step will fail. Remove the Cygwin bin directory from the path.
 ## Troubleshooting
 
 See README in `globalplatform` module.
+
+## Issues and Contact
+
+For more information contact the author through the mailing list at:
+
+http://sourceforge.net/projects/globalplatform/
