@@ -165,9 +165,9 @@ cmake -DDEBUG=ON
 
 ## Man Page (Only for UNIXes)
 
-The man page uses the groff syntax. To render a preview of the result use:
+The man page is translated with [pandoc](https://pandoc.org) from markdown to groff syntax. To render a preview of the result use:
 
-    groff -man -T ascii src/gpshell.1
+    pandoc --standalone --to man gpshell.1.md | groff -man -Tascii
 
 ## CMake Issues
 
@@ -177,16 +177,12 @@ the `CMakeCache.txt` file and also the CMake specific directories like `CMakeFil
 `cmake_install.cmake` in the top folder and the `src` directory.
 
 ```
-rm CMakeCache.txt && rm cmake_install.cmake && rm -rf CMakeFiles && rm -rf _CPack_Packages && rm CPack* && rm -rf src/CMakeFiles && cmake -DTESTING=ON -DDEBUG=ON .
+rm -f CMakeCache.txt && rm -f cmake_install.cmake && rm -rf CMakeFiles && rm -rf _CPack_Packages && rm -f CPack* && rm -rf src/CMakeFiles && rm -f src/CMakeCache.txt && cmake -DDEBUG=ON .
 ```
 
 If your are using Cygwin and you have installed the GNU compiler tools and the
 bin directory is on the PATH environment variable CMake will favor these tools
 and the linking step will fail. Remove the Cygwin bin directory from the path.  
-
-## Troubleshooting
-
-See README in `globalplatform` module.
 
 ## Issues and Contact
 

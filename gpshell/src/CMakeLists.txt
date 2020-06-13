@@ -30,3 +30,32 @@ ENDIF(WINDDK_DIR)
 # Install
 INSTALL(TARGETS gpshell DESTINATION bin)
 
+# pandoc man page generation
+
+if(NOT EXISTS ${PANDOC_EXECUTABLE})
+    message("-- Checking for pandoc")
+    find_program(PANDOC_EXECUTABLE pandoc)
+    mark_as_advanced(PANDOC_EXECUTABLE)
+    if(NOT EXISTS ${PANDOC_EXECUTABLE})
+        message(FATAL_ERROR "--   Pandoc not found. Install Pandoc (http://johnmacfarlane.net/pandoc/) or set cache variable PANDOC_EXECUTABLE.")
+        return()
+    else()
+        message("--   Found pandoc")
+    endif()
+endif()
+
+add_custom_command(
+    OUTPUT gpshell.1
+    COMMAND ${PANDOC_EXECUTABLE} --standalone --to man -o gpshell.1 gpshell.1.md
+    COMMENT "Creating man page ..."
+    )
+
+add_custom_target(gpshell_manpage ALL DEPENDS gpshell.1)
+
+file(TO_NATIVE_PATH ${CMAKE_CURRENT_BINARY_DIR}/gpshell.1 native_filepath)
+get_directory_property(make_clean_files ADDITIONAL_MAKE_CLEAN_FILES)
+set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${make_clean_files};${native_filepath}")
+
+IF(UNIX)
+  INSTALL(FILES gpshell.1 DESTINATION ${MANPAGE_DIRECTORY}/man1)
+ENDIF(UNIX)

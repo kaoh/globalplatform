@@ -1,24 +1,11 @@
 # Summary
 
-- Title    : GlobalPlatform
-- Authors  : Karsten Ohme <k_o_@users.sourceforge.net>
-- License  : See file COPYING.LESSER
-- Requires :
- * PC/SC Lite http://www.musclecard.com/ (for UNIXes)
- * OpenSSL http://www.openssl.org/
- * zlib http://www.zlib.net/
-
 This is a library for providing access to OpenPlatform 2.0.1' and
-GlobalPlatform 2.1.1 conforming smart cards.
+GlobalPlatform 2.1.1 conforming smart cards and later.
 
-You need also the libraries `zlib 1.2.3` (zlib1.dll in Windows) and OpenSSL >= v1.0.1c
-(`libeay32.dll` and `ssleay32.dll` in Windows) or compatible.
+# Execution
 
-For more information contact the author through the mailing list at:
-
-http://sourceforge.net/projects/globalplatform/
-
-# Debug Output
+## Debug Output
 
 If you experience problems a DEBUG output is always helpful.
 Set the variable GLOBALPLATFORM_DEBUG=1 in the environment. You can set
@@ -36,6 +23,12 @@ e.g. keys!
 # Compilation
 
 If you compile this on your own:
+
+## Dependencies
+
+  * [PC/SC Lite](https://pcsclite.apdu.fr) (only for UNIXes)
+  * [OpenSSL](http://www.openssl.org/)
+  * [zlib](http://www.zlib.net/)
 
 ## Unix
 
@@ -153,6 +146,7 @@ You need Doxygen for generating the documentation.
 www.doxygen.org/
 
 #### CMake
+
 http://www.cmake.org/
 --> CMake 3.5.0 or higher
 
@@ -254,40 +248,6 @@ cmake .
 make/nmake doc
 ```
 
-## Ubuntu/Debian packages
-
-You must also have `dput`, `pbuilder` and `debhelper` installed.
-
-Execute:
-```
-cmake .
-make package_ubuntu
-```
-
-The script ubuntu-package.sh iterates over all Ubuntu series and creates dsc files for Debian package creation or Launchpad uploads.
-
-You can also upload the automatically created `sources.changes` to Launchpad. You must be registered there and you must have a `.dput.cf` in place. Follow the instructions on https://help.launchpad.net/Packaging/PPA/Uploading
-
-Execute:
-
-    make dput
-
-If you have used the ubuntu-package.sh script you must manually upload the source.changes files.
-
-Execute:
-
-    dput gpsnapshots-ppa libglobalplatform6_6.1.0-0ubuntu1SNAPSHOT20120520195953+0200~precise.changes
-
-You can create a Ubuntu/Debian package from a `dsc` file.
-
-Execute:
-
-```
-dpkg-source -x libglobalplatform6_6.1.0-0ubuntu1SNAPSHOT20120520195953+0200~precise.dsc
-cd libglobalplatform6-6.1.0
-fakeroot debian/rules binary
-```
-
 ## Debug Builds
 
 To be able to debug the library enable the debug symbols:
@@ -327,12 +287,19 @@ For the unit tests a JCOP v2.2 41 card is used.
 
 You must rebuild the build system if your build tools have changed. Otherwise
 CMake uses out dated values and compilation might fail. You have to delete manually
+the `CMakeCache.txt` file and also the CMake specific directories like `CMakeFiles` and
+`cmake_install.cmake` in the top folder and the `src` directory.
 
-* `CMakeCache.txt`
-* `CMakeFiles`
-* `cmake_install.cmake` in the top folder and the `src` directory.
-* `_CPack_Packages`
+```
+rm -f CMakeCache.txt && rm -f cmake_install.cmake && rm -rf CMakeFiles && rm -rf _CPack_Packages && rm -f CPack* && rm -rf src/CMakeFiles && cmake -DTESTING=ON -DDEBUG=ON .
+```
 
 If your are using Cygwin and you have installed the GNU compiler tools and the
 bin directory is on the PATH environment variable CMake will favor these tools
-and the linking step will fail. Remove the Cygwin bin directory from the path.  
+and the linking step will fail. Remove the Cygwin bin directory from the path.
+
+## Issues and Contact
+
+For more information contact the author through the mailing list at:
+
+http://sourceforge.net/projects/globalplatform/  

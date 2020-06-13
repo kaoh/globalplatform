@@ -1,19 +1,10 @@
 # Summary
 
-- Title    : GlobalPlatform PC/SC Connection Plugin
-- Authors  : Karsten Ohme <k_o_@users.sourceforge.net>
-- License  : See file COPYING.LESSER
-- Requires :
- * PC/SC Lite http://www.musclecard.com/ (for UNIXes)
- * GlobalPlatformn http://globalplatform.sourceforge.net
-
 This is a PC/SC connection plugin for the GlobalPlatform Library.
 
-For more information contact the author through the mailing list at:
+# Execution
 
-http://sourceforge.net/projects/globalplatform/
-
-# Debug Output
+## Debug Output
 
 If you experience problems a DEBUG output is always helpful.
 Set the variable GLOBALPLATFORM_DEBUG=1 in the environment. You can set
@@ -28,7 +19,10 @@ e.g. keys!
 
 # Compilation
 
-If you compile this on your own:
+## Dependencies
+
+  * [GlobalPlatform](http://sourceforge.net/projects/globalplatform/)
+  * [PC/SC Lite](https://pcsclite.apdu.fr) (only for UNIXes)
 
 ## Unix
 
@@ -131,42 +125,6 @@ Execute:
   make/nmake doc
   ```
 
-## Ubuntu/Debian packages
-
-  You must also have `dput`, `pbuilder` and `debhelper` installed.
-
-Execute:
-  ```
-  cmake .
-  make package_ubuntu
-  ```
-
-The script ubuntu-package.sh iterates over all Ubuntu series and creates dsc files for Debian package creation or Launchpad uploads.
-
-You can also upload the automatically created `sources.changes` to Launchpad. You must be registered there and you must have a `.dput.cf` in place. Follow the instructions on https://help.launchpad.net/Packaging/PPA/Uploading
-
-Execute:
-
-      make dput
-
-If you have used the ubuntu-package.sh script you must manually upload the source.changes files.
-
-Execute:
-
-```
-dput gpsnapshots-ppa libgppcscconnectionplugin1_1.2.2+3SNAPSHOT20120524080448+0200-0ubuntu1~precise.changes
-```
-
-You can create a Ubuntu/Debian package from a dsc file.
-
-Execute:
-
-```
-dpkg-source -x libgppcscconnectionplugin1_1.2.2+3SNAPSHOT20120524080448+0200-0ubuntu1~precise.dsc
-cd libgppcscconnectionplugin1-1.2.2+3
-fakeroot debian/rules binary
-```
-
 ## Debug Builds
 
 To be able to debug the library enable the debug symbols:
@@ -193,10 +151,16 @@ CMake uses out dated values and compilation might fail. You have to delete manua
 the `CMakeCache.txt` file and also the CMake specific directories like `CMakeFiles` and
 `cmake_install.cmake` in the top folder and the `src` directory.
 
+```
+rm -f CMakeCache.txt && rm -f cmake_install.cmake && rm -rf CMakeFiles && rm -rf _CPack_Packages && rm -f CPack* && rm -rf src/CMakeFiles && cmake -DDEBUG=ON .
+```
+
 If your are using Cygwin and you have installed the GNU compiler tools and the
 bin directory is on the PATH environment variable CMake will favor these tools
 and the linking step will fail. Remove the Cygwin bin directory from the path.  
 
-## Troubleshooting
+## Issues and Contact
 
-See README in `globalplatform` module.
+For more information contact the author through the mailing list at:
+
+http://sourceforge.net/projects/globalplatform/

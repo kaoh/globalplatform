@@ -3,9 +3,6 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 cmake_policy(VERSION 2.8)
 
-# set this to snapshot so that snapshot specific version number can be set
-set(CPACK_DEBIAN_PACKAGE_TYPE	"snapshot")
-
 SET( ${PROJECT_NAME}_CURRENT 1 )
 SET( ${PROJECT_NAME}_REVISION 2 )
 SET( ${PROJECT_NAME}_AGE 2+3 )
@@ -46,13 +43,6 @@ set(CPACK_PACKAGE_VENDOR               "Karsten Ohme")
 set(CPACK_PACKAGE_CONTACT              "Karsten Ohme <k_o_@users.sourceforge.net>")
 set(CPACK_PACKAGE_VERSION              "${VERSION}")
 
-# add snapshot specific versioning information
-IF(CPACK_DEBIAN_PACKAGE_TYPE STREQUAL "snapshot")
-  execute_process(COMMAND date +%Y%m%d%0k%0M%0S%z OUTPUT_VARIABLE SNAPSHOT_DATE_TIME)
-  set(CPACK_PACKAGE_VERSION "${VERSION}SNAPSHOT${SNAPSHOT_DATE_TIME}")
-  STRING(REPLACE "\n" "" CPACK_PACKAGE_VERSION ${CPACK_PACKAGE_VERSION})
-ENDIF(CPACK_DEBIAN_PACKAGE_TYPE STREQUAL "snapshot")
-
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_HOME_DIRECTORY}/COPYING.LESSER")
 set(CPACK_PACKAGE_VERSION_MAJOR        "${${CMAKE_PROJECT_NAME}_CURRENT}")
 set(CPACK_PACKAGE_VERSION_MINOR        "${${CMAKE_PROJECT_NAME}_REVISION}")
@@ -65,29 +55,6 @@ _.*;\\\\.cproject;\\\\.project;DartConfiguration.tcl;.*vcxproj.*;.*patch;
 Doxyfile$;${CPACK_SOURCE_IGNORE_FILES}")
 
 include(CPack)
-
-IF(UNIX)
-# build a Debian package for Launchpad
-set(CPACK_DEBIAN_PACKAGE_NAME "libgppcscconnectionplugin1")
-set(CPACK_DEBIAN_PACKAGE_PRIORITY "extra")
-set(CPACK_DEBIAN_PACKAGE_SECTION "libs")
-set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "http://globalplatform.sourceforge.net/")
-set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_HOME_DIRECTORY}/description.txt")
-set(CPACK_DEBIAN_PACKAGE_LICENSE "lgpl")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libglobalplatform7")
-set(CPACK_DEBIAN_PACKAGE_BUILD_NUMBER_PREFIX "0ubuntu")
-set(CPACK_DEBIAN_PACKAGE_BUILD_NUMBER "1")
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Launchpad PPA for GlobalPlatform <globalplatform-developers@lists.sourceforge.net>")
-set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://launchpad.net/~k-o-/+archive/globalplatform")
-set(CPACK_DEBIAN_PACKAGE_SNAPSHOT_HOMEPAGE "https://launchpad.net/~k-o-/+archive/globalplatformsnapshots")
-set(DPUT_HOST "gp-ppa")
-set(DPUT_SNAPSHOT_HOST "gpsnapshots-ppa")
-set(CPACK_DEBIAN_BUILD_DEPENDS "debhelper (>=5), pkg-config, libglobalplatform7-dev, libpcsclite-dev (>=1.2.9), doxygen (>=1.4), check (>=0.9.2)")
-set(CPACK_DEBIAN_PACKAGE_INSTALL "/usr/lib/*.so;/usr/lib/*.so.*")
-set(CPACK_DEBIAN_PACKAGE_DOCS "/usr/share/doc/${CPACK_DEBIAN_PACKAGE_NAME}/*")
-
-include(UploadPPA)
-ENDIF(UNIX)
 
 # Enable usual make dist behavior
 add_custom_target(dist COMMAND ${CMAKE_MAKE_PROGRAM} package_source)

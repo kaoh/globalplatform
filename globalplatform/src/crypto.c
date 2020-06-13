@@ -580,7 +580,7 @@ end:
 
 /**
  * Calculates the card challenge when using pseudo-random challenge generation for SCP03.
- * \param S_EN C[in] The static S-ENC Key.
+ * \param S_ENC [in] The static S-ENC Key.
  * \param sequenceCounter [in] The sequence counter.
  * \param invokingAID The invoking AID byte buffer.
  * \param invokingAIDLength The length of the invoking AID byte buffer.

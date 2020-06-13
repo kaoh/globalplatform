@@ -101,6 +101,7 @@ IF(TESTING)
     INCLUDE(AddCMockaTest)
     include(AddMockedTest)
         
+    # gives /usr/bin/ld: /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/libcheck_pic.a(check_pack.o): undefined reference to symbol '__pthread_unregister_cancel@@GLIBC_2.3.3'
     #INCLUDE_DIRECTORIES(${CHECK_INCLUDE_DIRS})
     #ADD_EXECUTABLE(globalplatformTest globalplatformTest.c)
     #TARGET_LINK_LIBRARIES(globalplatformTest globalplatform ${CHECK_LIBRARIES})

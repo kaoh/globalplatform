@@ -1425,7 +1425,7 @@ end:
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
  * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \params secureChannelProtocol [in] The security channel protocol.
+ * \param secureChannelProtocol [in] The security channel protocol.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_end_R_MAC(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE secureChannelProtocol)
@@ -3484,6 +3484,7 @@ OPGP_ERROR_STATUS GP211_validate_load_receipt(DWORD confirmationCounter, PBYTE c
  * \param executableLoadFileAIDLength [in] The length of the Executable Load File AID.
  * \param applicationAID [in] The AID of the installed application.
  * \param applicationAIDLength [in] The length of the application instance AID.
+ * \param secureChannelProtocol [in] The Secure Channel Protocol.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_validate_install_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
@@ -3836,6 +3837,7 @@ end:
 /**
   * E.g. GemXpresso cards use this scheme.
   * \param cardSerialNumber [in] The card serial number.
+  * \param masterKey [in] The master key.
   * \param S_ENC [out] The static Encryption key.
   * \param S_MAC [out] The static Message Authentication Code key.
   * \param DEK [out] The static Key Encryption Key.

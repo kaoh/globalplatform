@@ -3,9 +3,6 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 cmake_policy(VERSION 2.8)
 
-# set this to snapshot so that snapshot specific version number can be set
-set(CPACK_DEBIAN_PACKAGE_TYPE	"snapshot")
-
 SET( ${PROJECT_NAME}_CURRENT 1 )
 SET( ${PROJECT_NAME}_REVISION 4 )
 SET( ${PROJECT_NAME}_AGE 4+5 )
@@ -34,10 +31,6 @@ LIST(REMOVE_ITEM samples "${CMAKE_CURRENT_SOURCE_DIR}/install_manifest.txt")
 LIST(REMOVE_ITEM samples "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
 INSTALL(FILES ${samples} DESTINATION ${DOCUMENTATION_DIRECTORY})
 
-IF(UNIX)
-  INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/gpshell.1 DESTINATION ${MANPAGE_DIRECTORY}/man1)
-ENDIF(UNIX)
-
 # build a CPack driven installer package
 
 IF(WIN32)
@@ -56,13 +49,6 @@ set(CPACK_PACKAGE_VENDOR               "Karsten Ohme")
 set(CPACK_PACKAGE_CONTACT              "Karsten Ohme <k_o_@users.sourceforge.net>")
 set(CPACK_PACKAGE_VERSION              "${VERSION}")
 
-# add snapshot specific versioning information
-IF(CPACK_DEBIAN_PACKAGE_TYPE STREQUAL "snapshot")
-  execute_process(COMMAND date +%Y%m%d%0k%0M%0S%z OUTPUT_VARIABLE SNAPSHOT_DATE_TIME)
-  set(CPACK_PACKAGE_VERSION "${VERSION}SNAPSHOT${SNAPSHOT_DATE_TIME}")
-  STRING(REPLACE "\n" "" CPACK_PACKAGE_VERSION ${CPACK_PACKAGE_VERSION})
-ENDIF(CPACK_DEBIAN_PACKAGE_TYPE STREQUAL "snapshot")
-
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_HOME_DIRECTORY}/COPYING")
 set(CPACK_PACKAGE_VERSION_MAJOR        "${${CMAKE_PROJECT_NAME}_CURRENT}")
 set(CPACK_PACKAGE_VERSION_MINOR        "${${CMAKE_PROJECT_NAME}_REVISION}")
@@ -76,30 +62,6 @@ Doxyfile$;${CPACK_SOURCE_IGNORE_FILES}")
 set(CPACK_SOURCE_IGNORE_FILES "src/gpshell;${CPACK_SOURCE_IGNORE_FILES}")
 
 include(CPack)
-
-IF(UNIX)
-# build a Debian package for Launchpad
-set(CPACK_DEBIAN_PACKAGE_NAME "gpshell")
-set(CPACK_DEBIAN_PACKAGE_PRIORITY "extra")
-set(CPACK_DEBIAN_PACKAGE_SECTION "devel")
-set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "http://globalplatform.sourceforge.net/")
-set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_HOME_DIRECTORY}/description.txt")
-set(CPACK_DEBIAN_PACKAGE_LICENSE "gpl")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libglobalplatform7, libgppcscconnectionplugin1")
-set(CPACK_DEBIAN_PACKAGE_BUILD_NUMBER_PREFIX "0ubuntu")
-set(CPACK_DEBIAN_PACKAGE_BUILD_NUMBER "1")
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Launchpad PPA for GlobalPlatform <globalplatform-developers@lists.sourceforge.net>")
-set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://launchpad.net/~k-o-/+archive/globalplatform")
-set(CPACK_DEBIAN_PACKAGE_SNAPSHOT_HOMEPAGE "https://launchpad.net/~k-o-/+archive/globalplatformsnapshots")
-set(DPUT_HOST "gp-ppa")
-set(CPACK_DEBIAN_PACKAGE_MANPAGES "/usr/share/doc/${CPACK_DEBIAN_PACKAGE_NAME}/gpshell.1")
-set(DPUT_SNAPSHOT_HOST "gpsnapshots-ppa")
-set(CPACK_DEBIAN_BUILD_DEPENDS "debhelper (>=5), libc6 (>= 2.7), libglobalplatform7-dev, libpcsclite-dev (>= 1.5.3), pkg-config (>=0.20-1~)")
-set(CPACK_DEBIAN_PACKAGE_INSTALL "/usr/bin/gpshell")
-set(CPACK_DEBIAN_PACKAGE_DOCS "/usr/share/doc/${CPACK_DEBIAN_PACKAGE_NAME}/*")
-
-include(UploadPPA)
-ENDIF(UNIX)
 
 # Enable usual make dist behavior
 add_custom_target(dist COMMAND ${CMAKE_MAKE_PROGRAM} package_source)
