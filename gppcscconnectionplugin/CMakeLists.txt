@@ -6,14 +6,9 @@ cmake_policy(VERSION 2.8)
 SET( ${PROJECT_NAME}_CURRENT 1 )
 SET( ${PROJECT_NAME}_REVISION 2 )
 SET( ${PROJECT_NAME}_AGE 2+3 )
-SET(SOVERSION "${${CMAKE_PROJECT_NAME}_CURRENT}")
 SET(VERSION "${${CMAKE_PROJECT_NAME}_CURRENT}.${${CMAKE_PROJECT_NAME}_REVISION}.${${CMAKE_PROJECT_NAME}_AGE}")
 
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules/;${PROJECT_SOURCE_DIR}/../globalplatform/cmake_modules/)
-
-set(DOXYFILE_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
-set(DOXYFILE_LATEX OFF)
-include(UseDoxygen)
 
 IF(UNIX)
   set(DOCUMENTATION_DIRECTORY "share/doc/lib${PROJECT_NAME}${${PROJECT_NAME}_CURRENT}")
@@ -43,7 +38,7 @@ set(CPACK_PACKAGE_VENDOR               "Karsten Ohme")
 set(CPACK_PACKAGE_CONTACT              "Karsten Ohme <k_o_@users.sourceforge.net>")
 set(CPACK_PACKAGE_VERSION              "${VERSION}")
 
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_HOME_DIRECTORY}/COPYING.LESSER")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING.LESSER")
 set(CPACK_PACKAGE_VERSION_MAJOR        "${${CMAKE_PROJECT_NAME}_CURRENT}")
 set(CPACK_PACKAGE_VERSION_MINOR        "${${CMAKE_PROJECT_NAME}_REVISION}")
 set(CPACK_PACKAGE_VERSION_PATCH        "${${CMAKE_PROJECT_NAME}_AGE}")
@@ -55,8 +50,5 @@ _.*;\\\\.cproject;\\\\.project;DartConfiguration.tcl;.*vcxproj.*;.*patch;
 Doxyfile$;${CPACK_SOURCE_IGNORE_FILES}")
 
 include(CPack)
-
-# Enable usual make dist behavior
-add_custom_target(dist COMMAND ${CMAKE_MAKE_PROGRAM} package_source)
 
 ADD_SUBDIRECTORY(src)

@@ -1,6 +1,6 @@
 INCLUDE(FindPCSC)
 INCLUDE(FindGlobalPlatform)
-SET(SOURCES gppcscconnectionplugin.c "${CMAKE_HOME_DIRECTORY}/../globalplatform/src/util.c")
+SET(SOURCES gppcscconnectionplugin.c "${PROJECT_SOURCE_DIR}/../globalplatform/src/util.c")
 
 IF(DEBUG)
   SET(CMAKE_BUILD_TYPE "Debug")
@@ -18,7 +18,7 @@ IF(WIN32)
     ADD_DEFINITIONS(-DUNICODE)
 ENDIF(WIN32)
 
-INCLUDE_DIRECTORIES(${PCSC_INCLUDE_DIRS} "${CMAKE_HOME_DIRECTORY}/../globalplatform/src")
+INCLUDE_DIRECTORIES(${PCSC_INCLUDE_DIRS} "${PROJECT_SOURCE_DIR}/../globalplatform/src")
 
 ADD_LIBRARY(gppcscconnectionplugin SHARED ${SOURCES})
 TARGET_LINK_LIBRARIES(gppcscconnectionplugin ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES})
@@ -28,7 +28,7 @@ IF(WINDDK_DIR)
 ENDIF(WINDDK_DIR)
 
 IF(UNIX)
-  SET_TARGET_PROPERTIES(gppcscconnectionplugin PROPERTIES VERSION ${VERSION} SOVERSION ${SOVERSION})
+  SET_TARGET_PROPERTIES(gppcscconnectionplugin PROPERTIES VERSION ${VERSION})
 ENDIF(UNIX)
 
 IF(WIN32)
@@ -49,7 +49,6 @@ IF(TESTING)
   # https://github.com/libcheck/check/issues/48
   # PKG_CHECK_MODULES(CHECK check>=0.9.2)
 #  IF(CHECK_FOUND)
-#    ENABLE_TESTING()
 #    INCLUDE_DIRECTORIES(${CHECK_INCLUDE_DIRS})
 #    ADD_EXECUTABLE(gppcscconnectionpluginTest gppcscconnectionpluginTest.c)
 #    TARGET_LINK_LIBRARIES(gppcscconnectionpluginTest gppcscconnectionplugin ${CHECK_LIBRARIES})

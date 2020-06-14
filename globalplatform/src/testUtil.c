@@ -19,7 +19,7 @@
 #include <string.h>
 #include <setjmp.h>
 #include "testUtil.h"
-#include <util.h>
+#include "util.h"
 #include <cmocka.h>
 
 #define MIN(a,b) a < b ? a : b

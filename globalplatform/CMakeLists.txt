@@ -59,7 +59,7 @@ set(CPACK_PACKAGE_VENDOR               "Karsten Ohme")
 set(CPACK_PACKAGE_CONTACT              "Karsten Ohme <k_o_@users.sourceforge.net>")
 set(CPACK_PACKAGE_VERSION              "${VERSION}")
 
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_HOME_DIRECTORY}/COPYING.LESSER")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING.LESSER")
 set(CPACK_PACKAGE_VERSION_MAJOR        "${${CMAKE_PROJECT_NAME}_CURRENT}")
 set(CPACK_PACKAGE_VERSION_MINOR        "${${CMAKE_PROJECT_NAME}_REVISION}")
 set(CPACK_PACKAGE_VERSION_PATCH        "${${CMAKE_PROJECT_NAME}_AGE}")
@@ -72,7 +72,8 @@ Doxyfile$;${CPACK_SOURCE_IGNORE_FILES}")
 
 include(CPack)
 
-# Enable usual make dist behavior
-add_custom_target(dist COMMAND ${CMAKE_MAKE_PROGRAM} package_source)
+IF(TESTING)
+    ENABLE_TESTING()
+ENDIF()
 
 ADD_SUBDIRECTORY(src)
