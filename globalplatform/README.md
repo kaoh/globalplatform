@@ -1,6 +1,6 @@
 # Summary
 
-This is a library for providing access to OpenPlatform 2.0.1' and
+This is a C library providing an API to access OpenPlatform 2.0.1' and
 GlobalPlatform 2.1.1 conforming smart cards and later.
 
 # Compilation
