@@ -51,8 +51,6 @@
 #  For details see the accompanying COPYING-CMAKE-SCRIPTS file.
 #
 
-cmake_policy(SET CMP0045 OLD)
-
 macro(usedoxygen_set_default name value type docstring)
 	if(NOT DEFINED "${name}")
 		set("${name}" "${value}" CACHE "${type}" "${docstring}")
@@ -137,8 +135,7 @@ if(DOXYGEN_FOUND AND DOXYFILE_IN_FOUND)
 
 	configure_file("${DOXYFILE_IN}" "${DOXYFILE}" @ONLY)
 
-	get_target_property(DOC_TARGET doc TYPE)
-	if(NOT DOC_TARGET)
+	if(NOT (TARGET doc))
 		add_custom_target(doc)
 	endif()
 
