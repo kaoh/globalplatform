@@ -53,9 +53,13 @@ IF(USE_SYSTEM_MINIZIP)
   INCLUDE_DIRECTORIES(${MINIZIP_INCLUDE_DIRS})
 ENDIF(USE_SYSTEM_MINIZIP)
 
+# without this the compilation in the homebrew docker image does not work
+IF(UNIX)
+  link_directories(${PCSC_LIBDIR})
+ENDIF()
+
 ADD_LIBRARY(globalplatformStatic STATIC ${SOURCES})
 ADD_LIBRARY(globalplatform SHARED ${SOURCES})
-
 
 SET(LIBRARIES ${PCSC_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES})
 

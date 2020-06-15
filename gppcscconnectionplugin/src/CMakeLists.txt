@@ -20,6 +20,11 @@ ENDIF(WIN32)
 
 INCLUDE_DIRECTORIES(${PCSC_INCLUDE_DIRS} "${PROJECT_SOURCE_DIR}/../globalplatform/src")
 
+# without this the compilation in the homebrew docker image does not work
+IF(UNIX)
+  link_directories(${PCSC_LIBDIR})
+ENDIF()
+
 ADD_LIBRARY(gppcscconnectionplugin SHARED ${SOURCES})
 TARGET_LINK_LIBRARIES(gppcscconnectionplugin ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES})
 
