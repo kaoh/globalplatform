@@ -13,7 +13,6 @@ FIND_PACKAGE (PkgConfig)
 IF(PKG_CONFIG_FOUND)
     # Will find GlobalPlatform library on Linux/BSDs using PkgConfig
     PKG_CHECK_MODULES(GLOBALPLATFORM libglobalplatform)
-#   PKG_CHECK_MODULES(GLOBALPLATFORM QUIET libglobalplatform)   # IF CMake >= 2.8.2?
 ENDIF(PKG_CONFIG_FOUND)
 
 IF(NOT GLOBALPLATFORM_FOUND)

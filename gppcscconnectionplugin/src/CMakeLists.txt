@@ -18,7 +18,8 @@ IF(WIN32)
     ADD_DEFINITIONS(-DUNICODE)
 ENDIF(WIN32)
 
-INCLUDE_DIRECTORIES(${PCSC_INCLUDE_DIRS} "${PROJECT_SOURCE_DIR}/../globalplatform/src")
+# The last is needed to support a system where the globalplatform headers are already installed, but the util.h must still be found in the sub project of globalplatform
+INCLUDE_DIRECTORIES(${PCSC_INCLUDE_DIRS} ${GLOBALPLATFORM_INCLUDE_DIRS} "${PROJECT_SOURCE_DIR}/../globalplatform/src")
 
 # without this the compilation in the homebrew docker image does not work
 IF(UNIX)
@@ -29,7 +30,7 @@ ADD_LIBRARY(gppcscconnectionplugin SHARED ${SOURCES})
 TARGET_LINK_LIBRARIES(gppcscconnectionplugin ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES})
 
 IF(WINDDK_DIR)
-  TARGET_LINK_LIBRARIES(gppcscconnectionplugin optimized ${WINDDK_DIR}/lib/win7/i386/msvcrt_win2000.obj optimized ${WINDDK_DIR}/lib/Crt/i386/msvcrt.lib)
+  TARGET_LINK_LIBRARIES(gppcscconnectionplugin ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES} optimized ${WINDDK_DIR}/lib/win7/i386/msvcrt_win2000.obj optimized ${WINDDK_DIR}/lib/Crt/i386/msvcrt.lib)
 ENDIF(WINDDK_DIR)
 
 IF(UNIX)

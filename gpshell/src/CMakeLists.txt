@@ -18,39 +18,46 @@ IF(WIN32)
     ADD_DEFINITIONS(-DUNICODE)
 ENDIF(WIN32)
 
-INCLUDE_DIRECTORIES(${PCSC_INCLUDE_DIRS} "${CMAKE_HOME_DIRECTORY}/../globalplatform/src")
+INCLUDE_DIRECTORIES(${PCSC_INCLUDE_DIRS} ${GLOBALPLATFORM_INCLUDE_DIRS})
+
+# without this the compilation in the homebrew docker image does not work
+IF(UNIX)
+  link_directories(${PCSC_LIBDIR})
+ENDIF()
 
 ADD_EXECUTABLE(gpshell ${SOURCES})
 TARGET_LINK_LIBRARIES(gpshell ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES})
 
 IF(WINDDK_DIR)
-  TARGET_LINK_LIBRARIES(gpshell optimized ${WINDDK_DIR}/lib/win7/i386/msvcrt_win2000.obj optimized ${WINDDK_DIR}/lib/Crt/i386/msvcrt.lib)
+  TARGET_LINK_LIBRARIES(gpshell ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES} optimized ${WINDDK_DIR}/lib/win7/i386/msvcrt_win2000.obj optimized ${WINDDK_DIR}/lib/Crt/i386/msvcrt.lib)
 ENDIF(WINDDK_DIR)
 
 # Install
 INSTALL(TARGETS gpshell DESTINATION bin)
 
-# pandoc man page generation
-
-if(NOT EXISTS ${PANDOC_EXECUTABLE})
-    message("-- Checking for pandoc")
-    find_program(PANDOC_EXECUTABLE pandoc)
-    mark_as_advanced(PANDOC_EXECUTABLE)
-    if(NOT EXISTS ${PANDOC_EXECUTABLE})
-        message(FATAL_ERROR "--   Pandoc not found. Install Pandoc (http://johnmacfarlane.net/pandoc/) or set cache variable PANDOC_EXECUTABLE.")
-        return()
-    else()
-        message("--   Found pandoc")
-    endif()
+IF(NOT(WIN32))
+	# pandoc man page generation
+	
+	if(NOT EXISTS ${PANDOC_EXECUTABLE})
+	    message("-- Checking for pandoc")
+	    find_program(PANDOC_EXECUTABLE pandoc)
+	    mark_as_advanced(PANDOC_EXECUTABLE)
+	    if(NOT EXISTS ${PANDOC_EXECUTABLE})
+	        message(FATAL_ERROR "--   Pandoc not found. Install Pandoc (http://johnmacfarlane.net/pandoc/) or set cache variable PANDOC_EXECUTABLE.")
+	        return()
+	    else()
+	        message("--   Found pandoc")
+	    endif()
+	endif()
+	
+	add_custom_command(
+	    OUTPUT gpshell.1
+	    COMMAND ${PANDOC_EXECUTABLE} --standalone --to man -o gpshell.1 gpshell.1.md
+	    COMMENT "Creating man page ..."
+	    )
+	
+	add_custom_target(gpshell_manpage ALL DEPENDS gpshell.1)
 endif()
-
-add_custom_command(
-    OUTPUT gpshell.1
-    COMMAND ${PANDOC_EXECUTABLE} --standalone --to man -o gpshell.1 gpshell.1.md
-    COMMENT "Creating man page ..."
-    )
-
-add_custom_target(gpshell_manpage ALL DEPENDS gpshell.1)
 
 file(TO_NATIVE_PATH ${CMAKE_CURRENT_BINARY_DIR}/gpshell.1 native_filepath)
 get_directory_property(make_clean_files ADDITIONAL_MAKE_CLEAN_FILES)
