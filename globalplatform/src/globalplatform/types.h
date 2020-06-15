@@ -23,7 +23,7 @@
 #define OPGP_TYPES_H
 
 #ifndef _WIN32
-#include <PCSC/wintypes.h>
+#include <wintypes.h>
 #else
 #include <windows.h>
 #endif

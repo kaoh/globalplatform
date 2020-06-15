@@ -25,7 +25,7 @@
 #ifdef WIN32
 #include <WinSCard.h>
 #else
-#include <PCSC/winscard.h>
+#include <winscard.h>
 #endif
 #include <globalplatform/library.h>
 
