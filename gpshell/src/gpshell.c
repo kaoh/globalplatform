@@ -29,7 +29,7 @@
 #include <sys/time.h>
 #endif
 
-#include "globalplatform/globalplatform.h"
+#include <globalplatform/globalplatform.h>
 
 #ifndef WIN32
 #define _snprintf snprintf
