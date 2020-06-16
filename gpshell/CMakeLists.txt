@@ -6,7 +6,7 @@ cmake_policy(VERSION 2.8)
 SET( ${PROJECT_NAME}_CURRENT 1 )
 SET( ${PROJECT_NAME}_REVISION 4 )
 SET( ${PROJECT_NAME}_AGE 4+5 )
-SET(VERSION "${${CMAKE_PROJECT_NAME}_CURRENT}.${${CMAKE_PROJECT_NAME}_REVISION}.${${CMAKE_PROJECT_NAME}_AGE}")
+SET(VERSION "${${PROJECT_NAME}_CURRENT}.${${PROJECT_NAME}_REVISION}.${${PROJECT_NAME}_AGE}")
 
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules/;${PROJECT_SOURCE_DIR}/../globalplatform/cmake_modules/)
 
@@ -42,17 +42,17 @@ set(CPACK_SOURCE_GENERATOR "TGZ")
 ENDIF(WIN32)
 
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY  "GPShell is a script interpreter which talks to a smart card. It is written on top of the GlobalPlatform library.")
-set(CPACK_PACKAGE_FILE_NAME            "${CMAKE_PROJECT_NAME}-binary-${VERSION}")
-set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${VERSION}")
-set(CPACK_PACKAGE_INSTALL_DIRECTORY    "${CMAKE_PROJECT_NAME}-${VERSION}")
+set(CPACK_PACKAGE_FILE_NAME            "${PROJECT_NAME}-binary-${VERSION}")
+set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${VERSION}")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY    "${PROJECT_NAME}-${VERSION}")
 set(CPACK_PACKAGE_VENDOR               "Karsten Ohme")
 set(CPACK_PACKAGE_CONTACT              "Karsten Ohme <k_o_@users.sourceforge.net>")
 set(CPACK_PACKAGE_VERSION              "${VERSION}")
 
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING")
-set(CPACK_PACKAGE_VERSION_MAJOR        "${${CMAKE_PROJECT_NAME}_CURRENT}")
-set(CPACK_PACKAGE_VERSION_MINOR        "${${CMAKE_PROJECT_NAME}_REVISION}")
-set(CPACK_PACKAGE_VERSION_PATCH        "${${CMAKE_PROJECT_NAME}_AGE}")
+set(CPACK_PACKAGE_VERSION_MAJOR        "${${PROJECT_NAME}_CURRENT}")
+set(CPACK_PACKAGE_VERSION_MINOR        "${${PROJECT_NAME}_REVISION}")
+set(CPACK_PACKAGE_VERSION_PATCH        "${${PROJECT_NAME}_AGE}")
 set(CPACK_SOURCE_IGNORE_FILES "doc;.*~;Debian;debian;\\\\.svn;\\\\.settings;Testing;CMakeFiles;Doxyfile;
 CPack.*;CMakeCache\\\\.txt;cmake_install.*;Makefile;CMakeDoxyfile\\\\.in;
 _.*;\\\\.cproject;\\\\.project;DartConfiguration.tcl;.*vcxproj.*;.*patch;
