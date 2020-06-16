@@ -67,7 +67,7 @@ OPGP_ERROR_STATUS DYN_LoadLibrary(PVOID *libraryHandle, LPCTSTR libraryName, LPC
 	offset +=  _tcslen(libraryName);
 	// added version for MacOSX
 #ifdef MACOSX
-	if (version != NULL) {
+	if (version != NULL && _tcslen(version) > 0) {
 		_tcsncpy(internalLibraryName + offset, LIBRARY_NAME_VERSION_SEPARATOR, MAX_LIBRARY_NAME_SIZE - offset);
 		offset += _tcslen(LIBRARY_NAME_VERSION_SEPARATOR);
 	    for (i=0; i<_tcslen(version), offset<MAX_LIBRARY_NAME_SIZE; i++) {
@@ -84,9 +84,9 @@ OPGP_ERROR_STATUS DYN_LoadLibrary(PVOID *libraryHandle, LPCTSTR libraryName, LPC
 #endif
 	_tcsncpy(internalLibraryName + offset, LIBRARY_NAME_EXTENSION, MAX_LIBRARY_NAME_SIZE - offset);
 	offset += _tcslen(LIBRARY_NAME_EXTENSION);
-	// MacOSX uses a different version scheme, so skip it for now
+	// MacOSX uses a different version scheme
 #ifndef MACOSX
-	if (version != NULL) {
+	if (version != NULL && _tcslen(version) > 0) {
 		_tcsncpy(internalLibraryName + offset, LIBRARY_NAME_VERSION_SEPARATOR, MAX_LIBRARY_NAME_SIZE - offset);
 		offset += _tcslen(LIBRARY_NAME_VERSION_SEPARATOR);
 		_tcsncpy(internalLibraryName + offset, version, MAX_LIBRARY_NAME_SIZE - offset);
