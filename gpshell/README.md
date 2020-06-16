@@ -19,7 +19,9 @@ You also need at least one connection plugin, e.g. the shipped `gppcscconnection
 
 ## Example Script Files
 
-In the source directory of this project several script files are provided as an example.
+In the source directory of this project several script files are provided as an example. After being installed 
+the sample files can be found in `/usr/share/doc/gpshell<version>` or `/usr/local/share/doc/gpshell<version>` or 
+`~/.linuxbrew/share/doc/gpshell<version>`
 
 ## MacOS
 

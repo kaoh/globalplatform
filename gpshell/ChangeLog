@@ -1,8 +1,15 @@
 History
 =======
 
-01/21/2013	1.4.5	Karsten Ohme
+SCP03 supported
+getting key information templates
+getting extended card resources information
+
+06/01/2020	1.4.5	Karsten Ohme
                         CMake Build System
+                        SCP03 supported
+                        getting key information templates
+                        getting extended card resources information
                         Added LGPL OpenSSL Exception
                         Compiled against GlobalPlatform 7.0.0
 

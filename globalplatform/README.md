@@ -30,6 +30,7 @@ On a command line type:
 cd \path\to\globalplatform
 cmake .
 make
+make doc
 make install
 ```
 
@@ -51,6 +52,7 @@ Launch Visual Studio Command Prompt / Developer Command Prompt:
 cd \path\to\globalplatform
 cmake -G "NMake Makefiles"  
 nmake
+nmake doc
 ```
 
 ## FreeBSD
@@ -72,6 +74,9 @@ For documentation Doxygen must be installed.
 Execute:
 
     make/nmake doc
+    
+After being installed with `make install` the HTML documentation can be found in `/usr/share/doc/libglobalplatform<version>` or `/usr/local/share/doc/libglobalplatform<version>` or `~/.linuxbrew/share/doc/libglobalplatform<version>`
+
 
 ## Binary Packages
 
