@@ -802,7 +802,7 @@ static int handleCommands(FILE *fd)
                 status = OPGP_establish_context(&cardContext);
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("establish_context failed with error 0x%08lX (%s)\n"), status.errorCode, status.errorMessage);
+                    _tprintf (_T("establish_context failed with error 0x%08X (%s)\n"), (unsigned int)status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
                 }
@@ -814,7 +814,7 @@ static int handleCommands(FILE *fd)
                 status = OPGP_release_context(&cardContext);
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("release_context failed with error 0x%08lX (%s)\n"), status.errorCode, status.errorMessage);
+                    _tprintf (_T("release_context failed with error 0x%08X (%s)\n"), (unsigned int)status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
                 }
@@ -839,7 +839,7 @@ static int handleCommands(FILE *fd)
                     status = OPGP_list_readers (cardContext, buf, &readerStrLen);
                     if (OPGP_ERROR_CHECK(status))
                     {
-                        _tprintf(_T("list_readers failed with error 0x%08lX (%s)\n"), status.errorCode, status.errorMessage);
+                        _tprintf(_T("list_readers failed with error 0x%08X (%s)\n"), (unsigned int)status.errorCode, status.errorMessage);
                         rv = EXIT_FAILURE;
                         goto end;
                     }
@@ -888,7 +888,7 @@ static int handleCommands(FILE *fd)
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("card_connect() returns 0x%08lX (%s)\n"), status.errorCode, status.errorMessage);
+                    _tprintf (_T("card_connect() returns 0x%08X (%s)\n"), (unsigned int)status.errorCode, status.errorMessage);
 					rv = EXIT_FAILURE;
                     goto end;
                 }
@@ -929,8 +929,8 @@ static int handleCommands(FILE *fd)
                                 &optionStr.scpImpl);
                         if (OPGP_ERROR_CHECK(status))
                         {
-                            _tprintf (_T("GP211_get_secure_channel_protocol_details() returns 0x%08lX (%s)\n"),
-                                      status.errorCode, status.errorMessage);
+                            _tprintf (_T("GP211_get_secure_channel_protocol_details() returns 0x%08X (%s)\n"),
+                                      (unsigned int)status.errorCode, status.errorMessage);
                             rv = EXIT_FAILURE;
                             goto end;
                         }
@@ -955,8 +955,8 @@ static int handleCommands(FILE *fd)
                 }
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("mutual_authentication() returns 0x%08lX (%s)\n"),
-                              status.errorCode, status.errorMessage);
+                    _tprintf (_T("mutual_authentication() returns 0x%08X (%s)\n"),
+                              (unsigned int)status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
                 }
@@ -988,8 +988,8 @@ static int handleCommands(FILE *fd)
                 }
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("get_key_information_templates() returns 0x%08lX (%s)\n"),
-                              status.errorCode, status.errorMessage);
+                    _tprintf (_T("get_key_information_templates() returns 0x%08X (%s)\n"),
+                              (unsigned int)status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
                 }
@@ -1012,8 +1012,8 @@ static int handleCommands(FILE *fd)
 				  status = OPGP_get_extended_card_resources_information(cardContext, cardInfo, &securityInfo211, &extendedCardResourcesInfo);
 				  if (OPGP_ERROR_CHECK(status))
 				  {
-					  _tprintf (_T("get_extended_card_resources_information() returns 0x%08lX (%s)\n"),
-								status.errorCode, status.errorMessage);
+					  _tprintf (_T("get_extended_card_resources_information() returns 0x%08X (%s)\n"),
+								(unsigned int)status.errorCode, status.errorMessage);
 					  rv = EXIT_FAILURE;
 					  goto end;
 				  }
@@ -1032,9 +1032,9 @@ static int handleCommands(FILE *fd)
                                               (PBYTE)optionStr.AID, optionStr.AIDLen);
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("select_application() returns 0x%08lX (%s)\n"),
-                              status.errorCode, status.errorMessage);
-                    /* 6283 is warning  we want to continue  and unlock */
+                    _tprintf (_T("select_application() returns 0x%08X (%s)\n"),
+                              (unsigned int)status.errorCode, status.errorMessage);
+                    /* 6283 is warning we want to continue and unlock */
                     if (status.errorCode != OPGP_ISO7816_WARNING_CM_LOCKED)
                     {
                         rv = EXIT_FAILURE;
@@ -1073,8 +1073,8 @@ static int handleCommands(FILE *fd)
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("get_data() returns 0x%08lX (%s)\n"),
-                              status.errorCode, status.errorMessage);
+                    _tprintf (_T("get_data() returns 0x%08X (%s)\n"),
+                              (unsigned int)status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
                 }
@@ -1110,8 +1110,8 @@ static int handleCommands(FILE *fd)
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("load() returns 0x%08lX (%s)\n"),
-                              status.errorCode, status.errorMessage);
+                    _tprintf (_T("load() returns 0x%08X (%s)\n"),
+                              (unsigned int)status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
                 }
@@ -1151,8 +1151,8 @@ static int handleCommands(FILE *fd)
                 }
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("delete() returns 0x%08lX (%s)\n"),
-                              status.errorCode, status.errorMessage);
+                    _tprintf (_T("delete() returns 0x%08X (%s)\n"),
+                              (unsigned int)status.errorCode, status.errorMessage);
                 }
                 goto timer;
             }
@@ -1187,8 +1187,8 @@ static int handleCommands(FILE *fd)
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("delete_key() return 0x%08lX (%s)\n"),
-                              status.errorCode, status.errorMessage);
+                    _tprintf (_T("delete_key() return 0x%08X (%s)\n"),
+                              (unsigned int)status.errorCode, status.errorMessage);
                 }
                 goto timer;
             }
@@ -1209,8 +1209,8 @@ static int handleCommands(FILE *fd)
                 status = OPGP_read_executable_load_file_parameters(optionStr.file, &loadFileParams);
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("read_executable_load_file_parameters() returns 0x%08lX (%s)\n"),
-                              status.errorCode, status.errorMessage);
+                    _tprintf (_T("read_executable_load_file_parameters() returns 0x%08X (%s)\n"),
+                              (unsigned int)status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
                 }
@@ -1272,8 +1272,8 @@ static int handleCommands(FILE *fd)
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("install_for_load() returns 0x%08lX (%s)\n"),
-                              status.errorCode, status.errorMessage);
+                    _tprintf (_T("install_for_load() returns 0x%08X (%s)\n"),
+                              (unsigned int)status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
                 }
@@ -1294,8 +1294,8 @@ static int handleCommands(FILE *fd)
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("load() returns 0x%08lX (%s)\n"),
-                              status.errorCode, status.errorMessage);
+                    _tprintf (_T("load() returns 0x%08X (%s)\n"),
+                              (unsigned int)status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
                 }
@@ -1409,8 +1409,8 @@ static int handleCommands(FILE *fd)
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("install_for_install_and_make_selectable() returns 0x%08lX (%s)\n"),
-                              status.errorCode, status.errorMessage);
+                    _tprintf (_T("install_for_install_and_make_selectable() returns 0x%08X (%s)\n"),
+                              (unsigned int)status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
                 }
@@ -1473,8 +1473,8 @@ static int handleCommands(FILE *fd)
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("install_for_load() returns 0x%08lX (%s)\n"),
-                              status.errorCode, status.errorMessage);
+                    _tprintf (_T("install_for_load() returns 0x%08X (%s)\n"),
+                              (unsigned int)status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
                 }
@@ -1531,8 +1531,8 @@ static int handleCommands(FILE *fd)
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("install_for_install_and_make_selectable() returns 0x%08lX (%s)\n"),
-                              status.errorCode, status.errorMessage);
+                    _tprintf (_T("install_for_install_and_make_selectable() returns 0x%08X (%s)\n"),
+                              (unsigned int)status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
                 }
@@ -1544,8 +1544,8 @@ static int handleCommands(FILE *fd)
                 status = OPGP_card_disconnect(cardContext, &cardInfo);
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("card_disconnect() returns 0x%08lX (%s)\n"),
-                              status.errorCode, status.errorMessage);
+                    _tprintf (_T("card_disconnect() returns 0x%08X (%s)\n"),
+                              (unsigned int)status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
                 }
@@ -1564,8 +1564,8 @@ static int handleCommands(FILE *fd)
                         status = OP201_EMV_CPS11_derive_keys(cardContext, cardInfo, &securityInfo201, optionStr.key, optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
                         if (OPGP_ERROR_CHECK(status))
                         {
-                            _tprintf (_T("EMV_CPS11_derive_keys() returns 0x%08lX (%s)\n"),
-                                        status.errorCode, status.errorMessage);
+                            _tprintf (_T("EMV_CPS11_derive_keys() returns 0x%08X (%s)\n"),
+                                        (unsigned int)status.errorCode, status.errorMessage);
                             rv = EXIT_FAILURE;
                             goto end;
                         }
@@ -1575,8 +1575,8 @@ static int handleCommands(FILE *fd)
 						OP201_get_data(cardContext, cardInfo, &securityInfo201, (PBYTE)OP201_GET_DATA_CARD_MANAGER_AID, optionStr.APDU, &(optionStr.APDULen));
 						if (OPGP_ERROR_CHECK(status))
 						{
-							_tprintf (_T("VISA2_derive_keys() returns 0x%08lX (%s)\n"),
-										status.errorCode, status.errorMessage);
+							_tprintf (_T("VISA2_derive_keys() returns 0x%08X (%s)\n"),
+										(unsigned int)status.errorCode, status.errorMessage);
 							rv = EXIT_FAILURE;
 							goto end;
 						}
@@ -1584,8 +1584,8 @@ static int handleCommands(FILE *fd)
 						status = OP201_VISA2_derive_keys(cardContext, cardInfo, &securityInfo201, optionStr.APDU+3, optionStr.APDULen-3, optionStr.key, optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
 						if (OPGP_ERROR_CHECK(status))
 						{
-							_tprintf (_T("VISA2_derive_keys() returns 0x%08lX (%s)\n"),
-										status.errorCode, status.errorMessage);
+							_tprintf (_T("VISA2_derive_keys() returns 0x%08X (%s)\n"),
+										(unsigned int)status.errorCode, status.errorMessage);
 							rv = EXIT_FAILURE;
 							goto end;
 						}
@@ -1594,8 +1594,8 @@ static int handleCommands(FILE *fd)
 						status = OP201_VISA1_derive_keys(cardContext, cardInfo, &securityInfo201, optionStr.key, optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
 						if (OPGP_ERROR_CHECK(status))
 						{
-							_tprintf (_T("VISA1_derive_keys() returns 0x%08lX (%s)\n"),
-										status.errorCode, status.errorMessage);
+							_tprintf (_T("VISA1_derive_keys() returns 0x%08X (%s)\n"),
+										(unsigned int)status.errorCode, status.errorMessage);
 							rv = EXIT_FAILURE;
 							goto end;
 						}
@@ -1613,8 +1613,8 @@ static int handleCommands(FILE *fd)
                         status = GP211_EMV_CPS11_derive_keys(cardContext, cardInfo, &securityInfo211, optionStr.key, optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
                         if (OPGP_ERROR_CHECK(status))
                         {
-                            _tprintf (_T("EMV_CPS11_derive_keys() returns 0x%08lX (%s)\n"),
-                                      status.errorCode, status.errorMessage);
+                            _tprintf (_T("EMV_CPS11_derive_keys() returns 0x%08X (%s)\n"),
+                                      (unsigned int)status.errorCode, status.errorMessage);
                             rv = EXIT_FAILURE;
                             goto end;
                         }
@@ -1624,8 +1624,8 @@ static int handleCommands(FILE *fd)
                         GP211_get_data(cardContext, cardInfo, &securityInfo211, (PBYTE)GP211_GET_DATA_ISSUER_SECURITY_DOMAIN_AID, optionStr.APDU, &(optionStr.APDULen));
                         if (OPGP_ERROR_CHECK(status))
                         {
-                            _tprintf (_T("VISA2_derive_keys() returns 0x%08lX (%s)\n"),
-                                      status.errorCode, status.errorMessage);
+                            _tprintf (_T("VISA2_derive_keys() returns 0x%08X (%s)\n"),
+                                      (unsigned int)status.errorCode, status.errorMessage);
                             rv = EXIT_FAILURE;
                             goto end;
                         }
@@ -1633,8 +1633,8 @@ static int handleCommands(FILE *fd)
                         status = GP211_VISA2_derive_keys(cardContext, cardInfo, &securityInfo211, optionStr.APDU+3, optionStr.APDULen-3, optionStr.key, optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
                         if (OPGP_ERROR_CHECK(status))
                         {
-                            _tprintf (_T("VISA2_derive_keys() returns 0x%08lX (%s)\n"),
-                                      status.errorCode, status.errorMessage);
+                            _tprintf (_T("VISA2_derive_keys() returns 0x%08X (%s)\n"),
+                                      (unsigned int)status.errorCode, status.errorMessage);
                             rv = EXIT_FAILURE;
                             goto end;
                         }
@@ -1643,8 +1643,8 @@ static int handleCommands(FILE *fd)
                         status = GP211_VISA1_derive_keys(cardContext, cardInfo, &securityInfo211, optionStr.key, optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
                         if (OPGP_ERROR_CHECK(status))
                         {
-                            _tprintf (_T("VISA1_derive_keys() returns 0x%08lX (%s)\n"),
-                                      status.errorCode, status.errorMessage);
+                            _tprintf (_T("VISA1_derive_keys() returns 0x%08X (%s)\n"),
+                                      (unsigned int)status.errorCode, status.errorMessage);
                             rv = EXIT_FAILURE;
                             goto end;
                         }
@@ -1661,8 +1661,8 @@ static int handleCommands(FILE *fd)
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("put_secure_channel_keys() returns 0x%08lX (%s)\n"),
-                              status.errorCode, status.errorMessage);
+                    _tprintf (_T("put_secure_channel_keys() returns 0x%08X (%s)\n"),
+                              (unsigned int)status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
                 }
@@ -1697,8 +1697,8 @@ static int handleCommands(FILE *fd)
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("put_delegated_management_keys() returns 0x%08lX (%s)\n"),
-                              status.errorCode, status.errorMessage);
+                    _tprintf (_T("put_delegated_management_keys() returns 0x%08X (%s)\n"),
+                              (unsigned int)status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
                 }
@@ -1724,8 +1724,8 @@ static int handleCommands(FILE *fd)
 
                     if (OPGP_ERROR_CHECK(status))
                     {
-                        _tprintf (_T("get_status() returns 0x%08lX (%s)\n"),
-                                  status.errorCode, status.errorMessage);
+                        _tprintf (_T("get_status() returns 0x%08X (%s)\n"),
+                                  (unsigned int)status.errorCode, status.errorMessage);
                         rv = EXIT_FAILURE;
                         goto end;
                     }
@@ -1744,8 +1744,8 @@ static int handleCommands(FILE *fd)
 
                     if (OPGP_ERROR_CHECK(status))
                     {
-                        _tprintf (_T("get_status() returns 0x%08lX (%s)\n"),
-                                  status.errorCode, status.errorMessage);
+                        _tprintf (_T("get_status() returns 0x%08X (%s)\n"),
+                                  (unsigned int)status.errorCode, status.errorMessage);
                         rv = EXIT_FAILURE;
                         goto end;
                     }
@@ -1786,8 +1786,8 @@ static int handleCommands(FILE *fd)
                                          (PBYTE)(optionStr.APDU), optionStr.APDULen,
                                          recvAPDU, &recvAPDULen);
                 }
-				_tprintf (_T("send_APDU() returns 0x%08lX (%s)\n"),
-						  status.errorCode, status.errorMessage);
+				_tprintf (_T("send_APDU() returns 0x%08X (%s)\n"),
+						  (unsigned int)status.errorCode, status.errorMessage);
                 if (OPGP_ERROR_CHECK(status))
                 {
 
@@ -1841,7 +1841,7 @@ static int handleCommands(FILE *fd)
                 status = OPGP_list_readers (cardContext, buf, &readerStrLen);
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf(_T("list_readers failed with error 0x%08lX (%s)\n"), status.errorCode, status.errorMessage);
+                    _tprintf(_T("list_readers failed with error 0x%08X (%s)\n"), (unsigned int)status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
                 }
