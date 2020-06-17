@@ -91,23 +91,23 @@ static const BYTE GP211_CARD_MANAGER_AID_ALT1[8] = { 0xA0, 0x00, 0x00, 0x00,
  * \brief Application privileges.
  */
 typedef enum {
-	GP211_SECURITY_DOMAIN = 1u << 7 + 16, //!< Application is security domain.
+	GP211_SECURITY_DOMAIN = 1u << (7 + 16), //!< Application is security domain.
 	GP211_DAP_VERIFICATION = 0xC0 << 16, //!< Application can require DAP verification for loading and installing applications.
 	GP211_DELEGATED_MANAGEMENT = 0xA0 << 16, //!< Security domain has delegated management right.
-	GP211_CARD_MANAGER_LOCK_PRIVILEGE = 1u << 4 + 16, //!< Application can lock the Card Manager.
-	GP211_CARD_MANAGER_TERMINATE_PRIVILEGE = 1u << 3 + 16, //!< Application can terminate the card.
-	GP211_DEFAULT_SELECTED_CARD_RESET_PRIVILEGE = 1u << 2 + 16, //!< Application is default selected. In GlobalPlatform 2.3.1 this was redefined as Card Reset privilege.
-	GP211_PIN_CHANGE_PRIVILEGE = 1u << 1 + 16, //!< Application can change global PIN.
+	GP211_CARD_MANAGER_LOCK_PRIVILEGE = 1u << (4 + 16), //!< Application can lock the Card Manager.
+	GP211_CARD_MANAGER_TERMINATE_PRIVILEGE = 1u << (3 + 16), //!< Application can terminate the card.
+	GP211_DEFAULT_SELECTED_CARD_RESET_PRIVILEGE = 1u << (2 + 16), //!< Application is default selected. In GlobalPlatform 2.3.1 this was redefined as Card Reset privilege.
+	GP211_PIN_CHANGE_PRIVILEGE = 1u << (1 + 16), //!< Application can change global PIN.
 	GP211_MANDATED_DAP_VERIFICATION = 0xD0 << 16, //!< Security domain requires DAP verification for loading and installing applications.
 
-	GP211_TRUSTED_PATH = 1u << 7 + 8, //!< Application is a Trusted Path for inter-application communication.
-	GP211_AUTHORIZED_MANAGEMENT = 1u << 6 + 8, //!< Application is capable of Card Content Management; Security Domain privilege shall also be set.
-	GP211_TOKEN_VERIFICATION = 1u << 5 + 8, //!< Application is capable of verifying a token for Delegated Card Content Management.
-	GP211_GLOBAL_DELETE = 1u << 4 + 8, //!< Application may delete any Card Content.
-	GP211_GLOBAL_LOCK = 1u << 3 + 8, //!< Application may lock or unlock any Application.
-	GP211_GLOBAL_REGISTRY = 1u << 2 + 8, //!< Application may access any entry in the GlobalPlatform Registry.
-	GP211_FINAL_APPLICATION = 1u << 1 + 8, //!< The only Application selectable in card Life Cycle State CARD_LOCKED and TERMINATED.
-	GP211_GLOBAL_SERVICE = 1u << 0 + 8, //!< Application provides services to other Applications on the card.
+	GP211_TRUSTED_PATH = 1u << (7 + 8), //!< Application is a Trusted Path for inter-application communication.
+	GP211_AUTHORIZED_MANAGEMENT = 1u << (6 + 8), //!< Application is capable of Card Content Management; Security Domain privilege shall also be set.
+	GP211_TOKEN_VERIFICATION = 1u << (5 + 8), //!< Application is capable of verifying a token for Delegated Card Content Management.
+	GP211_GLOBAL_DELETE = 1u << (4 + 8), //!< Application may delete any Card Content.
+	GP211_GLOBAL_LOCK = 1u << (3 + 8), //!< Application may lock or unlock any Application.
+	GP211_GLOBAL_REGISTRY = 1u << (2 + 8), //!< Application may access any entry in the GlobalPlatform Registry.
+	GP211_FINAL_APPLICATION = 1u << (1 + 8), //!< The only Application selectable in card Life Cycle State CARD_LOCKED and TERMINATED.
+	GP211_GLOBAL_SERVICE = 1u << (0 + 8), //!< Application provides services to other Applications on the card.
 
 	GP211_RECEIPT_GENERATION = 1u << 7, //!< Application is capable of generating a receipt for Delegated Card Content Management.
 	GP211_CIPHERED_LOAD_FILE_DATA_BLOCK = 1u << 6, //!< The Security Domain requires that the Load File being associated to it is to be loaded ciphered.

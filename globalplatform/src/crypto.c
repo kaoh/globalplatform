@@ -1978,9 +1978,9 @@ OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhra
     #endif
     // only 3 and 65337 are supported
     eLength = BN_num_bytes(e);
-    BN_bn2bin(e, ((char*)rsaExponent)+sizeof(LONG)-eLength);
+    BN_bn2bin(e, ((unsigned char *)rsaExponent)+sizeof(LONG)-eLength);
     nLength = BN_num_bytes(n);
-    BN_bn2bin(n, ((char*)rsaModulus)+128-nLength);
+    BN_bn2bin(n, rsaModulus+128-nLength);
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
     if (key != NULL) {

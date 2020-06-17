@@ -879,7 +879,8 @@ OPGP_ERROR_STATUS GP211_put_symmetric_key(OPGP_CARD_CONTEXT cardContext, OPGP_CA
 	i+=keyDataFieldLength;
 
 	// Lc
-	sendBuffer[i++] = i-5;
+	sendBuffer[i] = i-5;
+	i++;
 	sendBuffer[i] = 0x00; // Le
 
 	status = OPGP_send_APDU(cardContext, cardInfo, secInfo, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
@@ -2193,7 +2194,8 @@ OPGP_ERROR_STATUS load_from_buffer(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 			case 3: {
 				sendBuffer[5+j++] = 0x82;
 				sendBuffer[5+j++] = (BYTE)(loadFileBufSize >> 8);
-				sendBuffer[5+j++] = (BYTE)(loadFileBufSize - (sendBuffer[5+j-1] << 8));
+				sendBuffer[5+j] = (BYTE)(loadFileBufSize - (sendBuffer[5+j-1] << 8));
+				j++;
 					}
 		}
 		if (loadFileBufSize > MAX_APDU_DATA_SIZE(secInfo)-j) {
@@ -2266,7 +2268,8 @@ OPGP_ERROR_STATUS load_from_buffer(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 			case 3: {
 				sendBuffer[5+j++] = 0x82;
 				sendBuffer[5+j++] = (BYTE)(loadFileBufSize >> 8);
-				sendBuffer[5+j++] = (BYTE)(loadFileBufSize - (sendBuffer[5+j-1] << 8));
+				sendBuffer[5+j] = (BYTE)(loadFileBufSize - (sendBuffer[5+j-1] << 8));
+				j++;
 				}
 		}
 		if (loadFileBufSize > MAX_APDU_DATA_SIZE(secInfo)-1-fileSizeSize) {

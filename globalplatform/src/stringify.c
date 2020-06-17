@@ -138,13 +138,13 @@ OPGP_STRING OPGP_stringify_error(DWORD errorCode) {
 	if (errorCode == OPGP_ERROR_SCP03_SECURITY_R_ENCRYPTION_R_MAC_NOT_SUPPORTED)
 		return _T("SCP03 with R-Encryption and R-MAC is not supported.");
 	if ((errorCode & ((DWORD)0xFFFFFF00L)) == OPGP_ISO7816_ERROR_CORRECT_LENGTH) {
-        _sntprintf(strError, strErrorSize, _T("Wrong length Le: Exact length: 0x%02lX"),
+        _sntprintf(strError, strErrorSize, _T("Wrong length Le: Exact length: 0x%02X"),
 					errorCode&0x000000ff);
 		strError[strErrorSize-1] = _T('\0');
 		return strError;
 	}
 	if ((errorCode & ((DWORD)0xFFFFFF00L)) == OPGP_ISO7816_ERROR_RESPONSE_LENGTH) {
-        _sntprintf(strError, strErrorSize, _T("Number of response bytes still available: 0x%02lX"),
+        _sntprintf(strError, strErrorSize, _T("Number of response bytes still available: 0x%02X"),
 					errorCode&0x000000ff);
 		strError[strErrorSize-1] = _T('\0');
 		return strError;
@@ -233,7 +233,7 @@ OPGP_STRING OPGP_stringify_error(DWORD errorCode) {
 // 0x94
 
 			default:
-                _sntprintf(strError, strErrorSize, _T("Unknown ISO7816 error: 0x%04lX"),
+                _sntprintf(strError, strErrorSize, _T("Unknown ISO7816 error: 0x%04X"),
 					errorCode&0x0000ffff);
 				strError[strErrorSize-1] = _T('\0');
 				return strError;
