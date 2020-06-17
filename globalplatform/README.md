@@ -16,10 +16,10 @@ Use a suitable packet manager for your OS or install the programs and libraries 
 * [CMake 3.5.0](http://www.cmake.org/) or higher is needed
 * [PC/SC Lite](https://pcsclite.apdu.fr) (only for UNIXes, Windows and MacOS is already including this)
 * [Doxygen](www.doxygen.org/) for generating the documentation
-* [OpenSSL](http://www.openssl.org/) (MacOS should already bundle this)
+* [OpenSSL](http://www.openssl.org/) (MacOS should already bundle this as LibreSSL, but the original version might be still needed)
 * [zlib](http://www.zlib.net/) (MacOS should already bundle this, for Windows a pre-built version is included)
 
-## Unix/MacOS
+## Unix
 
 You must have CMake installed. http://www.cmake.org/
 This can be obtained in standard Unix distributions over the integrated package system.
@@ -33,6 +33,21 @@ make
 make doc
 make install
 ```
+
+## MacOS
+
+The compilation was executed on a system with [Homebrew](https://brew.sh) as package manager.
+
+It can be necessary to set the `OPENSSL_ROOT_DIR`. In case of the usage of Homebrew this works:
+
+```
+cd \path\to\globalplatform
+cmake . -DOPENSSL_ROOT_DIR=$(brew --prefix openssl)
+make
+make install
+```
+
+In case the system is using a different package manager further settings might be necessary.
 
 ### Linux
 

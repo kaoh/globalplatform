@@ -93,18 +93,11 @@ ELSE(WIN32)
  INSTALL(TARGETS globalplatform LIBRARY DESTINATION lib${LIB_SUFFIX}) 
 ENDIF(WIN32)
 
-
 # Testing
 IF(TESTING)
 #  PKG_CHECK_MODULES(CHECK check>=0.9.2)
   PKG_CHECK_MODULES(CMOCKA cmocka>=1.1)
 
-# Mocking is not supported on Windows
-  IF(CMOCKA_FOUND AND NOT WIN32)
-        
-    INCLUDE(AddCMockaTest)
-    include(AddMockedTest)
-        
     # gives /usr/bin/ld: /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/libcheck_pic.a(check_pack.o): undefined reference to symbol '__pthread_unregister_cancel@@GLIBC_2.3.3'
     #INCLUDE_DIRECTORIES(${CHECK_INCLUDE_DIRS})
     #ADD_EXECUTABLE(globalplatformTest globalplatformTest.c)
@@ -112,22 +105,37 @@ IF(TESTING)
     #ADD_TEST(globalplatformTest ${EXECUTABLE_OUTPUT_PATH}/globalplatformTest)
     #SET_TESTS_PROPERTIES(globalplatformTest PROPERTIES PASS_REGULAR_EXPRESSION "Failures: 0")
     
-    add_mocked_test(scp03Test 
-      SOURCES scp03Test.c testUtil.c ${SOURCES}
-      MOCKS RAND_bytes 
-      LINK_LIBRARIES ${LIBRARIES})
+  IF(CMOCKA_FOUND)
 
-    add_mocked_test(scp02Test 
-      SOURCES scp02Test.c testUtil.c ${SOURCES}
-      MOCKS RAND_bytes 
-      LINK_LIBRARIES ${LIBRARIES})
+    # check if --wrap flag is supported in linker
+    INCLUDE(CMakePushCheckState)
+	CMAKE_PUSH_CHECK_STATE() 
+	INCLUDE(CheckCCompilerFlag)
+    SET(CMAKE_REQUIRED_FLAGS "-Wl,--wrap=malloc")
+    CHECK_C_COMPILER_FLAG("" WRAP_SUPPORTED)
+    IF(WRAP_SUPPORTED)
+      INCLUDE(AddCMockaTest)
+      include(AddMockedTest)
+      add_mocked_test(scp03Test 
+        SOURCES scp03Test.c testUtil.c ${SOURCES}
+        MOCKS RAND_bytes 
+        LINK_LIBRARIES ${LIBRARIES})
 
-    add_mocked_test(scp01Test 
-      SOURCES scp01Test.c testUtil.c ${SOURCES}
-      MOCKS RAND_bytes 
-      LINK_LIBRARIES ${LIBRARIES})
+      add_mocked_test(scp02Test 
+        SOURCES scp02Test.c testUtil.c ${SOURCES}
+        MOCKS RAND_bytes 
+        LINK_LIBRARIES ${LIBRARIES})
+
+      add_mocked_test(scp01Test 
+        SOURCES scp01Test.c testUtil.c ${SOURCES}
+        MOCKS RAND_bytes 
+        LINK_LIBRARIES ${LIBRARIES})
+    ELSE()
+	  MESSAGE("--wrap linker flag not supported, not executing tests.")
+    ENDIF()
+    CMAKE_POP_CHECK_STATE() 
                     
-  ENDIF(CMOCKA_FOUND AND NOT WIN32)
+  ENDIF()
 ENDIF(TESTING)
 
 
