@@ -24,6 +24,11 @@
 
 #ifndef _WIN32
 #include <wintypes.h>
+
+#ifdef __APPLE__
+typedef const char *LPCTSTR;
+#endif
+
 #else
 #include <windows.h>
 #endif
