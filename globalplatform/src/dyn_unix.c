@@ -70,7 +70,7 @@ OPGP_ERROR_STATUS DYN_LoadLibrary(PVOID *libraryHandle, LPCTSTR libraryName, LPC
 	if (version != NULL && _tcslen(version) > 0) {
 		_tcsncpy(internalLibraryName + offset, LIBRARY_NAME_VERSION_SEPARATOR, MAX_LIBRARY_NAME_SIZE - offset);
 		offset += _tcslen(LIBRARY_NAME_VERSION_SEPARATOR);
-	    for (i=0; i<_tcslen(version), offset<MAX_LIBRARY_NAME_SIZE; i++) {
+	    for (i=0; i<_tcslen(version) && offset<MAX_LIBRARY_NAME_SIZE; i++) {
 	        if (version[i] == _T('0')) {
 	  	        break;
 	         }
