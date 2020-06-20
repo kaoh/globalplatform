@@ -23,7 +23,6 @@ INCLUDE_DIRECTORIES(${PCSC_INCLUDE_DIRS} ${GLOBALPLATFORM_INCLUDE_DIRS} "${PROJE
 
 # without this the compilation in the homebrew docker image does not work
 IF(UNIX)
-  INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/../globalplatform/src/pcsclite-includes ${INCLUDE_DIRECTORIES})
   link_directories(${PCSC_LIBDIR})
 ENDIF()
 

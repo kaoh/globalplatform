@@ -55,7 +55,6 @@ ENDIF(USE_SYSTEM_MINIZIP)
 
 # without this the compilation in the homebrew docker image does not work
 IF(UNIX)
-  INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/pcsclite-includes ${INCLUDE_DIRECTORIES})
   link_directories(${PCSC_LIBDIR})
 ENDIF()
 
