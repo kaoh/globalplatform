@@ -89,7 +89,7 @@ For documentation Doxygen must be installed.
 Execute:
 
     make/nmake doc
-    
+
 After being installed with `make install` the HTML documentation can be found in `/usr/share/doc/libglobalplatform<version>` or `/usr/local/share/doc/libglobalplatform<version>` or `~/.linuxbrew/share/doc/libglobalplatform<version>`
 
 
@@ -284,3 +284,5 @@ E.g. under Linux:
 ```
 rm -f CMakeCache.txt && rm -f cmake_install.cmake && rm -rf CMakeFiles && rm -rf _CPack_Packages && rm -f CPack* && rm -rf src/CMakeFiles && cmake -DTESTING=ON -DDEBUG=ON .
 ```
+
+The file `cleanCMake.sh` in the parent folder can be used which is cleaning all projects.

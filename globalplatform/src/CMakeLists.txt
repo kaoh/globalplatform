@@ -32,7 +32,7 @@ IF(UNIX)
 
   # Enable plugin loader
   ADD_DEFINITIONS(-DHAVE_DLFCN_H)
-  
+
   # enable syslog
   include (CheckSymbolExists)
   CHECK_SYMBOL_EXISTS (vsyslog syslog.h HAVE_VSYSLOG)
@@ -90,7 +90,7 @@ IF(WIN32)
 ELSE(WIN32)
 # Static library must be build first, otherwise under Ubuntu Karmic the static build removes the .so file of the shared library version.
  INSTALL(TARGETS globalplatformStatic ARCHIVE DESTINATION lib${LIB_SUFFIX} COMPONENT dev)
- INSTALL(TARGETS globalplatform LIBRARY DESTINATION lib${LIB_SUFFIX}) 
+ INSTALL(TARGETS globalplatform LIBRARY DESTINATION lib${LIB_SUFFIX})
 ENDIF(WIN32)
 
 # Testing
@@ -104,37 +104,40 @@ IF(TESTING)
     #TARGET_LINK_LIBRARIES(globalplatformTest globalplatform ${CHECK_LIBRARIES})
     #ADD_TEST(globalplatformTest ${EXECUTABLE_OUTPUT_PATH}/globalplatformTest)
     #SET_TESTS_PROPERTIES(globalplatformTest PROPERTIES PASS_REGULAR_EXPRESSION "Failures: 0")
-    
+
   IF(CMOCKA_FOUND)
 
     # check if --wrap flag is supported in linker
     INCLUDE(CMakePushCheckState)
-	CMAKE_PUSH_CHECK_STATE() 
+	CMAKE_PUSH_CHECK_STATE()
 	INCLUDE(CheckCCompilerFlag)
     SET(CMAKE_REQUIRED_FLAGS "-Wl,--wrap=malloc")
     CHECK_C_COMPILER_FLAG("" WRAP_SUPPORTED)
     IF(WRAP_SUPPORTED)
       INCLUDE(AddCMockaTest)
       include(AddMockedTest)
-      add_mocked_test(scp03Test 
+      add_mocked_test(scp03Test
         SOURCES scp03Test.c testUtil.c ${SOURCES}
-        MOCKS RAND_bytes 
+        COMPILE_OPTIONS -I${PCSC_INCLUDE_DIRS}
+        MOCKS RAND_bytes
         LINK_LIBRARIES ${LIBRARIES})
 
-      add_mocked_test(scp02Test 
+      add_mocked_test(scp02Test
         SOURCES scp02Test.c testUtil.c ${SOURCES}
-        MOCKS RAND_bytes 
+        COMPILE_OPTIONS -I${PCSC_INCLUDE_DIRS}
+        MOCKS RAND_bytes
         LINK_LIBRARIES ${LIBRARIES})
 
-      add_mocked_test(scp01Test 
+      add_mocked_test(scp01Test
         SOURCES scp01Test.c testUtil.c ${SOURCES}
-        MOCKS RAND_bytes 
+        COMPILE_OPTIONS -I${PCSC_INCLUDE_DIRS}
+        MOCKS RAND_bytes
         LINK_LIBRARIES ${LIBRARIES})
     ELSE()
 	  MESSAGE("--wrap linker flag not supported, not executing tests.")
     ENDIF()
-    CMAKE_POP_CHECK_STATE() 
-                    
+    CMAKE_POP_CHECK_STATE()
+
   ENDIF()
 ENDIF(TESTING)
 

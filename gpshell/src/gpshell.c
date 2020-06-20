@@ -174,7 +174,7 @@ static void ConvertByteArrayToString(BYTE *src, int srcLength, int destLength, T
 static TCHAR *strtokCheckComment(TCHAR *buf)
 {
     TCHAR *token;
-    TCHAR dummy[BUFLEN];
+    static TCHAR dummy[BUFLEN];
     int avail = sizeof(dummy);
     int size = 0, read = 0;
 
@@ -190,13 +190,13 @@ static TCHAR *strtokCheckComment(TCHAR *buf)
         avail -= size;
         read += size;
         token = _tcstok(buf, _T("\""));
-        if (token == NULL)
+        if (token == NULL) {
             return NULL;
+        }
         if (size > 0)
         {
             _sntprintf(dummy+read, avail, _T(" %s"), token);
         }
-        /* BUGFIX: sizeof returns size in bytes not number of elements; use BUFLEN instead */
         dummy[BUFLEN-1] = _T('\0');
 
         /* Skip next delimiter */
