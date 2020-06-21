@@ -286,3 +286,13 @@ rm -f CMakeCache.txt && rm -f cmake_install.cmake && rm -rf CMakeFiles && rm -rf
 ```
 
 The file `cleanCMake.sh` in the parent folder can be used which is cleaning all projects.
+
+# GitHub Documentation
+
+The GitHub documentation is located under the `docs` folder and is using [Jekyll](https://jekyllrb.com).
+
+Useful commands inside the `docs` folder:
+
+* Cleaning local generated site: `bundle exec jekyll clean`
+* Serving site in a local browser updating automatically on content changes: `bundle exec jekyll serve`
+* Update configuration in the Gemfile: `bundle update`

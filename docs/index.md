@@ -3,7 +3,7 @@
 # To modify the layout, see https://jekyllrb.com/docs/themes/#overriding-theme-defaults
 ---
 
-# Abstract
+# Overview
 
 The GlobalPlatform card specification is a standard for the management of the contents on a smart card. Mainly this comprises the installation and the removal of applications. Practically these applications are always [JavaCard](http://www.oracle.com/technetwork/java/javacard/overview/index.html)
 This project offers a C library and a command line shell.
@@ -27,7 +27,7 @@ Inspect the [manual](https://github.com/kaoh/globalplatform/blob/master/gpshell/
 
 # GlobalPlatform Library
 
-The C library is called GlobalPlatform. This library is intended for developers who want to integrate it in their own programs.
+The C library is called GlobalPlatform. This library is intended for developers who want to integrate it in their own programs using the provided [API](api/index.html).
 
 The most prominent features of the Open and GlobalPlatform specification are implemented supporting the secure channel protocols SCP01, SCP02 and SCP03.
 Support for delegated management and DAP verification is implemented in the library but because of missing test data and incomplete card support this might not work.
