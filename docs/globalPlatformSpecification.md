@@ -1,4 +1,4 @@
-# Summary
+# GlobalPlatform Specification
 
 The [GlobalPlatform](http://www.globalplatform.org/) card specification is a standard for the
 management of the infrastructure of a smart card. This management comprises the installation, the

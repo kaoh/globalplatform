@@ -1,3 +1,8 @@
+---
+# Feel free to add content and custom Front Matter to this file.
+# To modify the layout, see https://jekyllrb.com/docs/themes/#overriding-theme-defaults
+---
+
 # Abstract
 
 The GlobalPlatform card specification is a standard for the management of the contents on a smart card. Mainly this comprises the installation and the removal of applications. Practically these applications are always [JavaCard](http://www.oracle.com/technetwork/java/javacard/overview/index.html)

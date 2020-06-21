@@ -1,4 +1,4 @@
-# Abstract
+# Connection Plugins
 
 Previous versions of the [GlobalPlatform Library] did only support smart cards connected to the system by a card reader using [PC/SC](http://en.wikipedia.org/wiki/PC/SC ). The connectivity was limited to local connected cards in general. Since version 6.0.0 of the GlobalPlatform Library it is possible to integrate other means of connecting to a card.
 
