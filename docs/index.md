@@ -27,7 +27,7 @@ The C library is called GlobalPlatform. This library is intended for developers 
 The most prominent features of the Open and GlobalPlatform specification are implemented supporting the secure channel protocols SCP01, SCP02 and SCP03.
 Support for delegated management and DAP verification is implemented in the library but because of missing test data and incomplete card support this might not work.
 
-This [article](globalplatformSpecification.md) provides an overview of the functions defined in the GlobalPlatform specification.
+This [article](globalPlatformSpecification.md) provides an overview of the functions defined in the GlobalPlatform specification.
 
 # Connection Plugins
 
