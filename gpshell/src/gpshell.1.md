@@ -17,47 +17,49 @@ Additional key management commands are provided.
 
 The most common way to use gpshell is a script file. But it is also possible to read the commands from stdin if no script file is provided.
 
+There are several `txt` example scripts provided which gets installed into `usr/local/share/docs` or `/home/linuxbrew/.linuxbrew/opt/globalplatform/share/doc/gpshell1/` or can be found [online](https://github.com/kaoh/globalplatform/tree/master/gpshell).
+
 # COMMANDS
 
--mode_201
+__-mode_201__
 
 :    Set protocol mode to OpenPlatform 2.0.1. This is the default.
 
--mode_211
+__-mode_211__
 
 :    Set protocol mode to GlobalPlatform 2.1.1 and later
 
--visa_key_derivation
+__-visa_key_derivation__
 
 :   For cards which use the VISA key derivation scheme for the key calculation, like GemXpresso Pro, Palmera Protect or some JCOP cards this must be set.
 
--emv_cps11_key_derivation
+__-emv_cps11_key_derivation__
 
 :    For cards which uses the EMV CPS 1.1 key derivation scheme for the key calculation, like a Sm@rtCafe Expert 3.0 this must be set.
 
--enable_trace
+__-enable_trace__
 
 :    Enable APDU trace
 
 You will see the sent APDUs in clear text. The last two bytes of the response are the response code. A response code of 9000 means success, otherwise the response code indicates an error. This may be OK when deleting a non existing applet or package.
 
--enable_timer
+__-enable_timer__
 
 :    Enable the logging of the execution times of commands.
 
--establish_context
+__-establish_context__
 
 :    Establish context. This must always be executed before connecting to a card.
 
--card_connect -reader *readerName*
+__-card_connect__ -reader *readerName*
 
 :    Connect to card in the reader with *readerName*
 
--card_connect -readerNumber *x*
+__-card_connect__ -readerNumber *x*
 
 :    Connect to card in the *x* th reader in the system
 
--open_sc -keyind *x* -keyver *x* -key *key* -mac_key *mac-key* -enc_key *enc-key* -kek_key *kek-key* -security *securityLevel* -scp *protocol* -scpimpl *impl* -keyDerivation *derivation*
+__-open_sc__ -keyind *x* -keyver *x* -key *key* -mac_key *mac-key* -enc_key *enc-key* -kek_key *kek-key* -security *securityLevel* -scp *protocol* -scpimpl *impl* -keyDerivation *derivation*
 
 :    Open a secure channel
 
@@ -69,11 +71,11 @@ If the card supports a Secure Channel Protocol Implementation with only one base
 
 If the card uses a key derivation mechanism you must enable the derivation mode with the -keyDerivation option and you must specify with -key the master (mother) key. -kek_key, -mac_key and -enc_key are not relevant is this case. See the section Options and Key Derivation.
 
--select -AID *AID*
+__-select__ -AID *AID*
 
 :    Select AID instance
 
--install -file *appletFile* -priv *privilege* -sdAID *sdAID* -AID *AIDInPkg* -pkgAID *packageAID* -instAID *instanceAID* -nvCodeLimit *x* -nvDataLimit *y*
+__-install__ -file *appletFile* -priv *privilege* -sdAID *sdAID* -AID *AIDInPkg* -pkgAID *packageAID* -instAID *instanceAID* -nvCodeLimit *x* -nvDataLimit *y*
 
 :    Load and installs in one step
 
@@ -81,7 +83,7 @@ The parameters -AID -instAID -pkgAID -nvCodeLimit can be detected automatically 
 
 For the *sdAID* the AID selected with the select command is chosen if not given. Otherwise the default Card Manager / Security Issuer Domain AID is chosen. Usually you do not have to pass it.
 
--install_for_load -pkgAID *packageAID* -sdAID *sdAID* -nvCodeLimit *y*
+__-install_for_load__ -pkgAID *packageAID* -sdAID *sdAID* -nvCodeLimit *y*
 
 :    Install for Load
 
@@ -89,163 +91,163 @@ For the *sdAID* the AID selected with the select command is chosen if not given.
 
 This command may be needed if the combined install command does not work.
 
--load -file *appletFile*
+__-load__ -file *appletFile*
 
 :    Load applet
 
 This command may be needed if the combined install command does not work.
 
--install_for_install -priv *privilege* -AID *AIDInPkg* -pkgAID *pkgAID* -instAID *instanceAID* -nvDataLimit *x*
+__-install_for_install__ -priv *privilege* -AID *AIDInPkg* -pkgAID *pkgAID* -instAID *instanceAID* -nvDataLimit *x*
 
 :     Instantiate applet
 
 This command may be needed if the combined install command does not work. Or you want to install a pre-installed Security Domain.
 
--card_disconnect
+__-card_disconnect__
 
 :    Disconnect card
 
--get_status -element *e0*
+__-get_status__ -element *e0*
 
 :     List applets and packages and security domains
 
--get_status -element *20*
+__-get_status__ -element *20*
 
 :    List packages
 
--get_status -element *40*
+__-get_status__ -element *40*
 
 :     List applets or security domains
 
--get_status -element *80*
+__-get_status__ -element *80*
 
 :    List Card Manager / Security Issuer Domain
 
--release_context
+__-release_context__
 
 :    Release context
 
--put_sc_key -keyver *keyver* -newkeyver *newkeyver* -mac_key *new_MAC_key* -enc_key *new_ENC_key* -kek_key *new_KEK_key*
+__-put_sc_key__ -keyver *keyver* -newkeyver *newkeyver* -mac_key *new_MAC_key* -enc_key *new_ENC_key* -kek_key *new_KEK_key*
 
 :    Add or replace a key set version
 
 If a new key set version is to be added *keyver* must be set to 0.
 If *keyver* equals *newkeyver* an existing key version is replaced.
 
--put_sc_key -keyver *keyver* -newkeyver *newkeyver* -key *key* -keyDerivation "derivation"
+__-put_sc_key__ -keyver *keyver* -newkeyver *newkeyver* -key *key* -keyDerivation "derivation"
 
 :    Replace key set version *keyver* using key derivation *derivation* using the master (mother) key *y*
 
--put_dm_keys -keyver *keyver* -newkeyver *newkeyver* -file *public_rsa_key_file* -pass *password* -key *new_receipt_generation_key*
+__-put_dm_keys__ -keyver *keyver* -newkeyver *newkeyver* -file *public_rsa_key_file* -pass *password* -key *new_receipt_generation_key*
 
 :     Add a RSA delegated management key in version *newkeyver*
 
--send_apdu -sc 0 -APDU *apdu*
+__-send_apdu__ -sc 0 -APDU *apdu*
 
 :    Send APDU *apdu* without secure channel
 
 The APDU is given as hex without spaces and without leadings 0x.
 
--send_apdu_nostop -sc 0 -APDU *apdu*
+__-send_apdu_nostop__ -sc 0 -APDU *apdu*
 
 :    Does not stop in case of an error
 
 The APDU is given as hex without spaces and without leadings 0x.
 
--get_data -identifier *identifier*
+__-get_data__ -identifier *identifier*
 
 :    A GET DATA command returning the data for the given identifier. See the identifier options for details.
 
--get_key_information_templates -keyTemplate *index*
+__-get_key_information_templates__ -keyTemplate *index*
 
 :    A GET DATA command returning the key information templates in the selected security domain.
 
--get_extended_card_resources_information
+__-get_extended_card_resources_information__
 
 :     A GET DATA command returning the extended card resources information in the issuer security domain.
 
 # OPTIONS
 
---keyind *x*
+__--keyind__ *x*
 
 :    Key index *x*
 
---keyver *x*
+__--keyver__ *x*
 Key set version x
 
 --newkeyver *x*
 
 :    New key set version x
 
---key *key*
+__--key__ *key*
 
 :    Key value in hex
 
---mac_key *key*
+__--mac_key__ *key*
 
 :    MAC key value in hex
 
---enc_key *key*
+__--enc_key__ *key*
 
 :    ENC key value in hex
 
---kek_key *key*
+__--kek_key__ *key*
 
 :    KEK key value in hex
 
---security *x*
+__--security__ *x*
 
 :    0: clear, 1: MAC, 3: MAC+ENC, 51: MAC+ENC+R-MAC+E-ENC (SCP03 only), 19: MAC+ENC-R-MAC (SCP02+SCP03 only), 17: MAC+R-MAC (SCP02+SCP03 only)
 
---reader *readerName*
+__--reader__ *readerName*
 
 :    Smart card reader name
 
---readerNumber *x*
+__--readerNumber__ *x*
 
 :    Number of the reader in the system to connect to. If -reader is given this is ignored.
 
---protocol *x*
+__--protocol__ *x*
 
 :    Protocol, 0:T=0, 1:T=1 Should not be necessary to be stated explicitly.
 
---AID *aid*
+__--AID__ *aid*
 
 :    Applet ID
 
---sdAID *aid*
+__--sdAID__ *aid*
 
 :    Security Domain AID
 
---pkgAID *aid*
+__--pkgAID__ *aid*
 
 :    Package AID
 
---instAID *aid*
+__--instAID__ *aid*
 
 :    Instance AID
 
---nvCodeLimit *x*
+__--nvCodeLimit__ *x*
 
 :    Non-volatile code size limit
 
---nvDataLimit *x*
+__--nvDataLimit__ *x*
 
 :    Non-volatile data size limit
 
---vDataLimit *x*
+__--vDataLimit__ *x*
 
 :    Volatile data size limit
 
---file *name*
+__--file__ *name*
 
 :    File name
 
---instParam *param*
+__--instParam__ *param*
 
 :    Installation parameter
 
---element *x*
+__--element__ *x*
 
 :    Element type to be listed in hex
 
@@ -254,43 +256,43 @@ Key set version x
 * 20 - Executable Load Files only.
 * 10 - Executable Load Files and their Executable Modules only (Only GP211 and later)
 
---format *x*
+__--format__ *x*
 
 :    Sets the format of the response of the get_status command. This is only used for GlobalPlatform cards and required and only needed if the default is not supported by the smart card.
 
---keyTemplate *x*
+__--keyTemplate__ *x*
 
 :    Sets the key template index to return for the get_key_templates command. Default 0.
 
 * 0 - Deprecated format
 * 2 - New format (default)
 
---sc *x*
+__--sc__ *x*
 
 :    Secure Channel mode (0 off, 1 on)
 
---APDU *apdu*
+__--APDU__ *apdu*
 
 :    APDU to be sent. Must be in hex format, e.g. 80CA00CF00.
 
---priv *x*
+__--priv__ *x*
 
 :    Privilege. E.g. 0x04 Default Selected
 
---scp *x*
+__--scp__ *x*
 
 :    Secure Channel Protocol (1 SCP01, 2 SCP02, 3 SCP03, default no set). Should not be necessary to be stated explicitly.
 
---scpimpl *x*
+__--scpimpl__ *x*
 
 :    Secure Channel Implementation (default not set)
 Should not be necessary to be stated explicitly.
 
---pass *password*
+__--pass__ *password*
 
 :    Password for key decryption
 
---identifier *identifier*
+__--identifier__ *identifier*
 
 :    Identifier for the tag for the get_data command. Must be in hex format, e.g. 9F7F.
 
@@ -304,7 +306,39 @@ Some useful identifier are:
 * 2F00 - List of applications
 * FF21 - Extended card resources. There is a dedicated command for getting this: get_extended_card_resources_information
 
---keyDerivation *derivation method*
+## Format of CPLC data
+
+You see the command trace of a GET DATA command and the interpreted result.
+
+~~~
+=> 80 CA 9F 7F 00 .....
+(12102 usec)
+<= 9F 7F 2A 47 90 50 40 47 91 81 02 31 00 83 58 00 ..*G.P@G...1..X.
+11 68 91 45 81 48 12 83 65 00 00 00 00 01 2F 31 .h.E.H..e...../1
+30 31 31 36 38 00 00 00 00 00 00 00 00 90 00 01168..........
+Status: No Error
+IC Fabricator : 4790
+IC Type : 5040
+Operating System ID : 4791
+Operating System release date : 8102 (11.4.2008)
+Operating System release level : 3100
+IC Fabrication Date : 8358 (23.12.2008)
+IC Serial Number : 00116891
+IC Batch Identifier : 4581
+IC Module Fabricator : 4812
+IC Module Packaging Date : 8365 (30.12.2008)
+ICC Manufacturer : 0000
+IC Embedding Date : 0000
+IC Pre-Personalizer : 012F
+IC Pre-Perso. Equipment Date : 3130 (10.5.2003)
+IC Pre-Perso. Equipment ID : 31313638
+IC Personalizer : 0000
+IC Personalization Date : 0000
+IC Perso. Equipment ID : 00000000
+~~~
+Dates are stored as 2 bytes, the first specifying the year in the decade and the last 3 bytes the day within the year.
+
+__--keyDerivation__ *derivation method*
 
 :    Possible values are *none*, *visa2* or *emvcps11*
 
@@ -315,21 +349,21 @@ Also for put_sc_key this is necessary for Sm@rtcafe 5.0 (and earlier(?)) cards
 
 # ENVIRONMENT
 
--GLOBALPLATFORM_DEBUG
+__GLOBALPLATFORM_DEBUG__
 
 :    Enables debugging output from the underlying GlobalPlatform library.
 
--GLOBALPLATFORM_LOGFILE
+__GLOBALPLATFORM_LOGFILE__
 
 :    Sets the log file name for the debugging output.
 
 # Key Derivation
 
--visa2
+__-visa2__
 
 :     For the VISA2 key derivation scheme, like used in a GemXpresso Pro or some JCOP cards.
 
--emvcps11
+__-emvcps11__
 
 :    For the key derivation according to EMV CPS 1.1 (CDK (CPG 2.04)), like Sm@rtCafe Expert 3.0 and later.
 
@@ -338,11 +372,56 @@ Known unsupported key derivation schemes are:
 * CDK (CPG 2.02)
 * ISK(D)
 
+# Tested Cards
+
+* Gemalto IDCore 3010
+* Oberthur CosmopoliC 32K (OP201)
+* CosmopoliC 64K V5.2 (GP211, SCP01, Impl05)
+* Axalto Cyberflex e-gate 32k (OP201)
+* GemXpresso R3.2 E64
+* IBM JCOP v2.2 41 (GP211)
+* IBM JCOP 31 (36k)
+* Palmera Protect V5
+* JTopV15
+* Nokia 6131 NFC Phone (GP211)
+* Axalto Cyberflex Access 64k
+* Gemalto Generations Flexible
+* Sm@rtCafe Expert 3.0
+* Tongfang420
+
+# Misc
+
+## About install_for_load and install
+
+For CosmopoliC 64K (tested on V5.2), you need to specify the Security Domain AID. For example,
+
+    install -file helloworld.cap -sdAID A000000003000000 -nvCodeLimit 4000
+
+For GemXpresso R3.2 E64, you need to specify the Security Domain AID (Card Manager AID). For example,
+
+    install -file helloworld.cap -sdAID A000000018434D00 -nvCodeLimit 4000
+
+## JCOP cards
+
+If you cannot authenticate to your card it might be not fused. In this case you need the transport key from the vendor.
+Execute the JCOP IDENTIFY command.
+
+select -aid A000000167413000FF
+Offset 14 (decimal) of the response has the pre-personalized state. 00h is not fused (not personalized), 01h is fused.
+
+## CyberFlex cards
+
+For the Cyberflex you also need the CAP transformer (I believe this is
+a kind of obfuscator) which you must apply to the CAP file. Download it
+from http://www.trusted-logic.fr/down.php and use it.
+
 # BUGS
 
 JCOP 10
 
 :    install_for_load fails for unknown reason, so nothing can be installed.
+
+Some cards are not supporting the GET DATA command. This command is used by GPShell for retrieving the secure channel parameters. So you have to pass -scp 2 -scpimpl 0x15 to open_sc command.
 
 # AUTHOR
 

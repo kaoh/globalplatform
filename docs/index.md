@@ -45,7 +45,7 @@ There are Homebrew package for [Linux and MacOS](https://github.com/kaoh/homebre
 
 For a manual compilation consult the [Readme](https://github.com/kaoh/globalplatform).
 
-For Windows and older version can be downloaded on [SourceForge](https://sourceforge.net/projects/globalplatform/files/GPShell/GPShell-1.4.4/). THis will be updated soon.
+For Windows and older version can be downloaded on [SourceForge](https://sourceforge.net/projects/globalplatform/files/GPShell/GPShell-1.4.4/). This will be updated soon.
 
 # Issues
 
