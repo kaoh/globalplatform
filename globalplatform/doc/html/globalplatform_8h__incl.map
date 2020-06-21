@@ -1,0 +1,13 @@
+<map id="globalplatform.h" name="globalplatform.h">
+<area shape="rect" id="node3" href="$types_8h.html" title="types.h" alt="" coords="178,229,243,256"/>
+<area shape="rect" id="node5" href="$unicode_8h.html" title="unicode.h" alt="" coords="574,229,653,256"/>
+<area shape="rect" id="node6" href="$error_8h.html" title="error.h" alt="" coords="467,155,525,181"/>
+<area shape="rect" id="node7" href="$errorcodes_8h.html" title="errorcodes.h" alt="" coords="702,80,797,107"/>
+<area shape="rect" id="node8" href="$library_8h.html" title="library.h" alt="" coords="374,155,442,181"/>
+<area shape="rect" id="node9" href="$connection_8h.html" title="connection.h" alt="" coords="259,80,355,107"/>
+<area shape="rect" id="node12" href="$security_8h.html" title="security.h" alt="" coords="110,155,189,181"/>
+<area shape="rect" id="node13" href="$stringify_8h.html" title="stringify.h" alt="" coords="489,80,567,107"/>
+<area shape="rect" id="node4" href="$wintypes_8h.html" title="This keeps a list of Windows(R) types. " alt="" coords="216,304,301,331"/>
+<area shape="rect" id="node10" href="$winscard_8h.html" title="This handles smartcard reader communications. " alt="" coords="264,155,349,181"/>
+<area shape="rect" id="node11" href="$pcsclite_8h.html" title="This keeps a list of defines for pcsc&#45;lite. " alt="" coords="267,229,346,256"/>
+</map>
