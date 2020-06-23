@@ -4,11 +4,10 @@ SET(SOURCES gppcscconnectionplugin.c "${PROJECT_SOURCE_DIR}/../globalplatform/sr
 
 IF(DEBUG)
   SET(CMAKE_BUILD_TYPE "Debug")
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -fsanitize=address -Wall -Wpedantic")
 ELSE(DEBUG)
   SET(CMAKE_BUILD_TYPE "Release")
 ENDIF(DEBUG)
-
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0")
 
 # Enable debugging output
 ADD_DEFINITIONS(-DOPGP_DEBUG)

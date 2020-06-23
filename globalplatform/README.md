@@ -272,6 +272,15 @@ Solution: If your are using Cygwin and you have installed the GNU compiler tools
 bin directory is on the PATH environment variable CMake will favor these tools
 and the linking step will fail. Remove the Cygwin bin directory from the path.
 
+## Checking Memory Leaks
+
+[Valgrind](https://valgrind.org) can be used to check for memory leaks during the execution: 
+
+~~~
+valgrind --leak-check=full gpshell listSCP03.txt
+~~~
+
+
 ## Clean CMake Files
 
 You must rebuild the build system if your build tools have changed. Otherwise
@@ -287,12 +296,4 @@ rm -f CMakeCache.txt && rm -f cmake_install.cmake && rm -rf CMakeFiles && rm -rf
 
 The file `cleanCMake.sh` in the parent folder can be used which is cleaning all projects.
 
-# GitHub Documentation
 
-The GitHub documentation is located under the `docs` folder and is using [Jekyll](https://jekyllrb.com).
-
-Useful commands inside the `docs` folder:
-
-* Cleaning local generated site: `bundle exec jekyll clean`
-* Serving site in a local browser updating automatically on content changes: `bundle exec jekyll serve`
-* Update configuration in the Gemfile: `bundle update`

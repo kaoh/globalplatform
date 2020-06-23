@@ -232,7 +232,7 @@ OPGP_ERROR_STATUS calculate_enc_cbc_SCP03_min_padding(BYTE key[16], BYTE *messag
 							  BYTE *encryption, int *encryptionLength) {
 	OPGP_ERROR_STATUS status;
 	int result;
-	int i,outl;
+	int outl;
 	EVP_CIPHER_CTX_define;
 	OPGP_LOG_START(_T("calculate_enc_cbc_SCP03_min_padding"));
 	ctx = EVP_CIPHER_CTX_create;
@@ -283,7 +283,7 @@ OPGP_ERROR_STATUS calculate_enc_cbc_SCP03(BYTE key[16], BYTE *message, int messa
 							  BYTE *encryption, int *encryptionLength) {
 	OPGP_ERROR_STATUS status;
 	int result;
-	int i,outl;
+	int outl;
 	EVP_CIPHER_CTX_define;
 	OPGP_LOG_START(_T("calculate_enc_cbc_SCP03"));
 	ctx = EVP_CIPHER_CTX_create;
@@ -335,7 +335,7 @@ OPGP_ERROR_STATUS calculate_dec_cbc_SCP03(BYTE key[16], BYTE *message, DWORD mes
 							  BYTE *decryption, DWORD *decryptionLength) {
 	OPGP_ERROR_STATUS status;
 	int result;
-	int i,outl;
+	int outl;
 	EVP_CIPHER_CTX_define;
 	OPGP_LOG_START(_T("calculate_dec_cbc_SCP03"));
 	ctx = EVP_CIPHER_CTX_create;
@@ -382,7 +382,7 @@ end:
 OPGP_ERROR_STATUS calculate_enc_icv_SCP03(BYTE key[16], LONG sessionEncryptionCounter, BYTE *icv, BOOL forResponse) {
 	OPGP_ERROR_STATUS status;
 	int result;
-	int i,outl;
+	int outl;
 	EVP_CIPHER_CTX_define;
 	BYTE encryptionCounter[16];
 	OPGP_LOG_START(_T("calculate_enc_icv_SCP03"));
@@ -1393,7 +1393,6 @@ OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE
 	BYTE C_MAC_ICV[8];
 	int C_MAC_ICVLength = 8;
 	BYTE ENC_ICV[16] = {0};
-	int ENC_ICVLength = 16;
 	// padding is only needed for encryption
 	DWORD paddingSize = 0;
 	DWORD blockSize = 8;
@@ -1741,7 +1740,7 @@ OPGP_ERROR_STATUS GP211_calculate_R_MAC(PBYTE apduCommand, DWORD apduCommandLeng
 	DWORD offset=0;
 	OPGP_LOG_START(_T("GP211_calculate_R_MAC"));
 	if (secInfo->secureChannelProtocol == GP211_SCP02) {
-		DWORD r_MacDataLength;
+		DWORD r_MacDataLength = sizeof(r_MacData);
 		BYTE caseAPDU;
 		BYTE lc;
 		BYTE le;

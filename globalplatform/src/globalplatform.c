@@ -821,7 +821,6 @@ OPGP_ERROR_STATUS put_3des_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO car
 		keyType = GP211_KEY_TYPE_DES;
 	}
 	status = GP211_put_symmetric_key(cardContext, cardInfo, secInfo, keySetVersion, keyIndex, newKeySetVersion, _3DESKey, keyType);
-end:
 	OPGP_LOG_END(_T("put_3des_key"), status);
 	return status;
 }
@@ -844,7 +843,6 @@ OPGP_ERROR_STATUS GP211_put_aes_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 	OPGP_LOG_START(_T("GP211_put_aes_key"));
 	OPGP_ERROR_STATUS status;
 	status = GP211_put_symmetric_key(cardContext, cardInfo, secInfo, keySetVersion, keyIndex, newKeySetVersion, aesKey, GP211_KEY_TYPE_AES);
-end:
 	OPGP_LOG_END(_T("GP211_put_aes_key"), status);
 	return status;
 }
@@ -1950,8 +1948,7 @@ OPGP_ERROR_STATUS GP211_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 	DWORD recvBufferLength = APDU_RESPONSE_LEN;
 	BYTE recvBuffer[APDU_RESPONSE_LEN];
 	BYTE sendBuffer[8];
-	BYTE numExecutableModules;
-	DWORD j=0, k=0, i=0;
+	DWORD j=0, i=0;
 	DWORD apduErrorCode;
 	OPGP_LOG_START(_T("get_status"));
 	sendBuffer[i++] = 0x80;
@@ -5785,7 +5782,7 @@ OPGP_ERROR_STATUS OP201_calculate_load_file_DAP(OP201_DAP_BLOCK *dapBlock, DWORD
 {
 	OPGP_ERROR_STATUS status;
 	int count;
-	DWORD k,j,i;
+	DWORD k,i;
 	BYTE buf[4];
 
 	BYTE dapBuf[256];
@@ -5803,7 +5800,6 @@ OPGP_ERROR_STATUS OP201_calculate_load_file_DAP(OP201_DAP_BLOCK *dapBlock, DWORD
 
 	for (i=0; i<dapBlockLength; i++) {
 		OPGP_LOG_MSG(_T("OP201_calculate_load_file_DAP: Hashing DAP block %lu."), i);
-		j=0;
 		k = dapBufSize;
 		status = readDAPBlock(dapBuf, &k, dapBlock[i]);
 		if (OPGP_ERROR_CHECK(status)) {
