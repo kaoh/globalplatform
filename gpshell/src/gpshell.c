@@ -1891,7 +1891,12 @@ int main(int argc, char* argv[])
     else if (argc == 2)
     {
         // read input from script file
-        fd = fopen (argv[1], "r");
+    	// fix for MAC eclipse bug using single quotes: https://bugs.eclipse.org/bugs/show_bug.cgi?id=516027
+        if (argv[1][0] == '\'') {
+        	argv[1]++;
+        	argv[1][_tcslen(argv[1])-1] = '\0';
+        }
+    	fd = fopen (argv[1], "r");
         // error
         if (fd == NULL)
         {
