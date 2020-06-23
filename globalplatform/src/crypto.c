@@ -51,6 +51,7 @@
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 #define EVP_CIPHER_CTX_define EVP_CIPHER_CTX *ctx;  EVP_CIPHER_CTX _ctx
 #define EVP_CIPHER_CTX_create &_ctx
+#define EVP_CIPHER_CTX_free EVP_CIPHER_CTX_cleanup
 #else
 #define EVP_CIPHER_CTX_define EVP_CIPHER_CTX *ctx
 #define EVP_CIPHER_CTX_create EVP_CIPHER_CTX_new()
@@ -209,9 +210,7 @@ OPGP_ERROR_STATUS calculate_enc_ecb_SCP03(BYTE key[16], BYTE *message, int messa
 	*encryptionLength+=outl;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
-	if (EVP_CIPHER_CTX_cleanup(ctx) != 1) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); }
-	}
+	EVP_CIPHER_CTX_free(ctx);
 
 	OPGP_LOG_END(_T("calculate_enc_ecb_SCP03"), status);
 	return status;
@@ -263,10 +262,7 @@ OPGP_ERROR_STATUS calculate_enc_cbc_SCP03_min_padding(BYTE key[16], BYTE *messag
 	*encryptionLength+=outl;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
-	if (EVP_CIPHER_CTX_cleanup(ctx) != 1) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); }
-	}
-
+	EVP_CIPHER_CTX_free(ctx);
 	OPGP_LOG_END(_T("calculate_enc_cbc_SCP03_min_padding"), status);
 	return status;
 }
@@ -317,9 +313,7 @@ OPGP_ERROR_STATUS calculate_enc_cbc_SCP03(BYTE key[16], BYTE *message, int messa
 	*encryptionLength+=outl;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
-	if (EVP_CIPHER_CTX_cleanup(ctx) != 1) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); }
-	}
+    EVP_CIPHER_CTX_free(ctx);
 
 	OPGP_LOG_END(_T("calculate_enc_cbc_SCP03"), status);
 	return status;
@@ -371,9 +365,7 @@ OPGP_ERROR_STATUS calculate_dec_cbc_SCP03(BYTE key[16], BYTE *message, DWORD mes
 	*decryptionLength+=outl;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
-	if (EVP_CIPHER_CTX_cleanup(ctx) != 1) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); }
-	}
+    EVP_CIPHER_CTX_free(ctx);
 
 	OPGP_LOG_END(_T("calculate_dec_cbc_SCP03"), status);
 	return status;
@@ -421,9 +413,7 @@ OPGP_ERROR_STATUS calculate_enc_icv_SCP03(BYTE key[16], LONG sessionEncryptionCo
 	}
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
-	if (EVP_CIPHER_CTX_cleanup(ctx) != 1) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); }
-	}
+    EVP_CIPHER_CTX_free(ctx);
 
 	OPGP_LOG_END(_T("calculate_enc_icv_SCP03"), status);
 	return status;
@@ -486,9 +476,7 @@ OPGP_ERROR_STATUS calculate_enc_cbc_SCP02(BYTE key[16], BYTE *message, int messa
 	*encryptionLength+=outl;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
-	if (EVP_CIPHER_CTX_cleanup(ctx) != 1) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); }
-	}
+    EVP_CIPHER_CTX_free(ctx);
 
 	OPGP_LOG_END(_T("calculate_enc_cbc_SCP02"), status);
 	return status;
@@ -841,10 +829,7 @@ OPGP_ERROR_STATUS calculate_enc_ecb_two_key_triple_des(BYTE key[16], BYTE *messa
 	*encryptionLength+=outl;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
-
-	if (EVP_CIPHER_CTX_cleanup(ctx) != 1) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); }
-	}
+    EVP_CIPHER_CTX_free(ctx);
 	OPGP_LOG_END(_T("calculate_enc_ecb_two_key_triple_des"), status);
 	return status;
 }
@@ -906,9 +891,7 @@ OPGP_ERROR_STATUS calculate_enc_ecb_single_des(BYTE key[8], BYTE *message, int m
 	*encryptionLength+=outl;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
-	if (EVP_CIPHER_CTX_cleanup(ctx) != 1) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); }
-	}
+    EVP_CIPHER_CTX_free(ctx);
 
 	OPGP_LOG_END(_T("calculate_enc_ecb_single_des"), status);
 	return status;
@@ -965,9 +948,7 @@ OPGP_ERROR_STATUS calculate_MAC(BYTE sessionKey[16], BYTE *message, int messageL
 	}
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
-	if (EVP_CIPHER_CTX_cleanup(ctx) != 1) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); }
-	}
+    EVP_CIPHER_CTX_free(ctx);
 
 	OPGP_LOG_END(_T("calculate_MAC"), status);
 	return status;
@@ -1067,9 +1048,7 @@ OPGP_ERROR_STATUS calculate_enc_cbc(BYTE key[16], BYTE *message, int messageLeng
 	*encryptionLength+=outl;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
-	if (EVP_CIPHER_CTX_cleanup(ctx) != 1) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); }
-	}
+    EVP_CIPHER_CTX_free(ctx);
 
 	OPGP_LOG_END(_T("calculate_enc_cbc"), status);
 	return status;
@@ -1184,10 +1163,7 @@ OPGP_ERROR_STATUS calculate_MAC_des_3des(BYTE _3des_key[16], BYTE *message, int 
 	if (result != 1) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 	}
-	result = EVP_CIPHER_CTX_cleanup(ctx);
-	if (result != 1) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
-	}
+	EVP_CIPHER_CTX_free(ctx);
 //  3DES mode
 	EVP_CIPHER_CTX_init(ctx);
 	result = EVP_EncryptInit_ex(ctx, EVP_des_ede_cbc(), NULL, _3des_key, mac);
@@ -1214,10 +1190,7 @@ OPGP_ERROR_STATUS calculate_MAC_des_3des(BYTE _3des_key[16], BYTE *message, int 
 	}
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
-	if (EVP_CIPHER_CTX_cleanup(ctx) != 1) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); }
-	}
-
+    EVP_CIPHER_CTX_free(ctx);
 	OPGP_LOG_END(_T("calculate_MAC_des_3des"), status);
 	return status;
 }
@@ -2088,10 +2061,7 @@ OPGP_ERROR_STATUS calculate_MAC_right_des_3des(BYTE key[16], BYTE *message, int 
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 	}
 
-	result = EVP_CIPHER_CTX_cleanup(ctx);
-	if (result != 1) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
-	}
+    EVP_CIPHER_CTX_free(ctx);
 	EVP_CIPHER_CTX_init(ctx);
 
 	// 3DES CBC mode
@@ -2120,9 +2090,7 @@ OPGP_ERROR_STATUS calculate_MAC_right_des_3des(BYTE key[16], BYTE *message, int 
 
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
-	if (EVP_CIPHER_CTX_cleanup(ctx) != 1) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); }
-	}
+    EVP_CIPHER_CTX_free(ctx);
 	OPGP_LOG_END(_T("calculate_MAC_des_final_3des"), status);
 	return status;
 }
