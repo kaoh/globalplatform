@@ -40,7 +40,7 @@ extern "C"
 #include "error.h"
 
 #if !defined __winscard_h__
-#define MAX_ATR_SIZE 32 //!< Maximum ATR size
+#define MAX_ATR_SIZE 33 //!< Maximum ATR size
 #endif
 
 #define OPGP_TRACE_MODE_ENABLE 1 //!< Switch trace mode on

@@ -140,7 +140,7 @@ static void install_mac_enc(void **state) {
 
 	OPGP_LOAD_FILE_PARAMETERS loadFileParams;
 	DWORD receiptDataAvailable;
-	char installParam[1];
+	unsigned char installParam[1];
 	installParam[0] = 0;
 
 	hex_to_byte_array("8050000008EBAA9E53C696281B00", initializeUpdateRequest, &initializeUpdateRequestLen);

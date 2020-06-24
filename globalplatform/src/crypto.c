@@ -1644,7 +1644,7 @@ OPGP_ERROR_STATUS validate_install_receipt(DWORD confirmationCounter, PBYTE card
 	validationDataLength = 1 + 2 + 1 + cardUniqueDataLength + 1 + executableLoadFileAIDLength + 1 + applicationAIDLength;
 	validationData = (PBYTE)malloc(validationDataLength);
 	if (validationData == NULL) {
-
+		OPGP_ERROR_CREATE_ERROR(status, ENOMEM, OPGP_stringify_error(ENOMEM));
 		goto end;
 	}
 
@@ -1917,7 +1917,7 @@ end:
 OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhrase, BYTE rsaModulus[128], LONG *rsaExponent) {
 	OPGP_ERROR_STATUS status;
 	EVP_PKEY *key = NULL;
-	FILE *PEMKeyFile;
+	FILE *PEMKeyFile = NULL;
 	RSA* rsa = NULL;
 	const BIGNUM *n;
     const BIGNUM *e;

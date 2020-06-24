@@ -194,8 +194,8 @@ OPGP_ERROR_STATUS OPGP_PL_card_connect(OPGP_CARD_CONTEXT cardContext, OPGP_CSTRI
 		DWORD activeProtocol;
 		DWORD state;
 		DWORD dummy;
-		BYTE ATR[32];
-		DWORD ATRLength=32;
+		BYTE ATR[MAX_ATR_SIZE];
+		DWORD ATRLength=MAX_ATR_SIZE;
 		TCHAR readerNameTemp[1024];
 		DWORD readerNameTempLength = 1024;
 
