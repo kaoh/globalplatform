@@ -40,7 +40,7 @@ extern "C"
 typedef struct {
 	USHORT tag; //!< The Tag.
 	DWORD length; //!< The length of the value.
-	BYTE value[127]; //!< The value.
+	BYTE value[256]; //!< The value.
 	DWORD tlvLength; //!< The length of the whole TLV.
 } TLV;
 
