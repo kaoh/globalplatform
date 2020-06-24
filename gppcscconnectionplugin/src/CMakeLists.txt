@@ -2,9 +2,22 @@ INCLUDE(FindPCSC)
 INCLUDE(FindGlobalPlatform)
 SET(SOURCES gppcscconnectionplugin.c "${PROJECT_SOURCE_DIR}/../globalplatform/src/util.c")
 
+INCLUDE(CheckCCompilerFlag)
+INCLUDE(CMakePushCheckState)
+
 IF(DEBUG)
   SET(CMAKE_BUILD_TYPE "Debug")
-  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -fsanitize=address -Wall -Wpedantic")
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -Wall -Wpedantic")
+
+  # check for fsanitize support
+  CMAKE_PUSH_CHECK_STATE()
+  SET(CMAKE_REQUIRED_FLAGS "-fsanitize=address")
+  check_c_compiler_flag("-fsanitize=address" FSANITIZE)
+  CMAKE_POP_CHECK_STATE()
+  IF(FSANITIZE)
+  MESSAGE("fsanitize supported")
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address")
+  ENDIF()
 ELSE(DEBUG)
   SET(CMAKE_BUILD_TYPE "Release")
 ENDIF(DEBUG)

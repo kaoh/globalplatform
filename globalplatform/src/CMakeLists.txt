@@ -8,9 +8,23 @@ SET(SOURCES connection.c stringify.c crypto.c loadfile.c util.c debug.c globalpl
 
 # TODO: if "Release" is set, package_ubuntu does only honor INSTALL(TARGETS globalplatform LIBRARY DESTINATION lib${LIB_SUFFIX})
 
+INCLUDE(CheckCCompilerFlag)
+INCLUDE(CMakePushCheckState)
+
 IF(DEBUG)
   SET(CMAKE_BUILD_TYPE "Debug")
-  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -fsanitize=address -Wall -Wpedantic")
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -Wall -Wpedantic")
+
+  # check for fsanitize support
+  CMAKE_PUSH_CHECK_STATE()
+  SET(CMAKE_REQUIRED_FLAGS "-fsanitize=address")
+  check_c_compiler_flag("-fsanitize=address" FSANITIZE)
+  CMAKE_POP_CHECK_STATE()
+  IF(FSANITIZE)
+  MESSAGE("fsanitize supported")
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address")
+  ENDIF()
+  
 ELSE(DEBUG)
   SET(CMAKE_BUILD_TYPE "Release")
 ENDIF(DEBUG)
@@ -108,10 +122,8 @@ IF(TESTING)
 
   IF(CMOCKA_FOUND)
 
-    # check if --wrap flag is supported in linker
-    INCLUDE(CMakePushCheckState)
+    # check if --wrap flag is supported in linker    
 	CMAKE_PUSH_CHECK_STATE()
-	INCLUDE(CheckCCompilerFlag)
     SET(CMAKE_REQUIRED_FLAGS "-Wl,--wrap=malloc")
     CHECK_C_COMPILER_FLAG("" WRAP_SUPPORTED)
     IF(WRAP_SUPPORTED)

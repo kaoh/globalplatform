@@ -108,7 +108,17 @@ make test
 
 The variable `GLOBALPLATFORM_DEBUG=1` in the environment must be set. The logfile can be set with `GLOBALPLATFORM_LOGFILE=<file>`. Under Windows by default `C:\Temp\GlobalPlatform.log` is chosen, under Unix systems if syslog is available it will be used by default. The default log file under Unix systems is `/tmp/GlobalPlatform.log` if syslog is not available.
 
-## Issues and Contact
+# GitHub Documentation
+
+The GitHub documentation is located under the `docs` folder and is using [Jekyll](https://jekyllrb.com).
+
+Useful commands inside the `docs` folder:
+
+* Cleaning local generated site: `bundle exec jekyll clean`
+* Serving site in a local browser updating automatically on content changes: `bundle exec jekyll serve`
+* Update configuration in the Gemfile: `bundle update`
+
+# Issues and Contact
 
 For more information contact the author through the mailing list at:
 

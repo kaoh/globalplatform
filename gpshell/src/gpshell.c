@@ -147,7 +147,7 @@ static void ConvertTToC(char* pszDest, const TCHAR* pszSrc)
 static int ConvertStringToByteArray(TCHAR *src, int destLength, BYTE *dest)
 {
     TCHAR dummy[destLength*2+1];
-    int temp, i = 0;
+    unsigned int temp, i = 0;
     _tcsncpy(dummy, src, destLength*2+1);
     dummy[destLength*2] = _T('\0');
     while (_stscanf(&(dummy[i*2]), _T("%02x"), &temp) > 0)
@@ -369,7 +369,6 @@ static void displayLoadFilesAndModulesGp211(GP211_EXECUTABLE_MODULES_DATA *execu
 	TCHAR moduleAidStr[33];
 	TCHAR sdAidStr[33];
 	TCHAR versionStr[5];
-	LPCSTR lcLoaded = _T("Loaded");
 	LPSTR lifeCycleState;
 	int i,j;
 	format = _T("%-32s | %-12s | %-7s | %-32s | %-32s\n");
@@ -391,7 +390,6 @@ static void displayLoadFilesAndModulesGp211(GP211_EXECUTABLE_MODULES_DATA *execu
 static void displayLoadApplicationsGp211(GP211_APPLICATION_DATA *applications, int count, BYTE element) {
 	LPCSTR format;
 	TCHAR aidStr[33];
-	TCHAR moduleAidStr[33];
 	TCHAR sdAidStr[33];
 	TCHAR versionStr[5];
 	LPSTR lifeCycleState;
@@ -418,7 +416,6 @@ static void displayLoadApplicationsGp211(GP211_APPLICATION_DATA *applications, i
 static void displayApplicationsOp201(OP201_APPLICATION_DATA *applications, int count, BYTE element) {
 	LPCSTR format;
 	TCHAR aidStr[33];
-	LPCSTR lcLoaded = _T("Loaded");
 	LPSTR lifeCycleState;
 	PRIVILEGES_STRING privileges[20];
 	int i,j;
@@ -464,7 +461,7 @@ static void displayGpKeyInformation(GP211_KEY_INFORMATION *keyInformation, int c
 
 static void displayOpKeyInformation(OP201_KEY_INFORMATION *keyInformation, int count) {
 	LPCSTR format;
-	int i,j;
+	int i;
 	format = _T("%-3d | %-7d | %-4.2x | %-6%d \n");
 	_tprintf(format, _T("ID"), _T("Version"), _T("Type"), _T("Length"));
 	for (i=0; i<count; i++) {
@@ -687,7 +684,7 @@ static int handleOptions(OptionStr *pOptionStr)
         }
         else if (_tcscmp(token, _T("-element")) == 0)
         {
-            int element;
+            unsigned int element;
             CHECK_TOKEN(token, _T("-element"));
             if (_stscanf (token, _T("%02x"), &element) <= 0)
             {
@@ -765,7 +762,7 @@ end:
 static int handleCommands(FILE *fd)
 {
     TCHAR buf[BUFLEN + 1], commandLine[BUFLEN + 1];
-    int rv = EXIT_SUCCESS, i;
+    int rv = EXIT_SUCCESS;
     unsigned int it=0, ft=0;
     OPGP_ERROR_STATUS status;
     TCHAR *token;
@@ -1198,9 +1195,6 @@ static int handleCommands(FILE *fd)
                 OPGP_LOAD_FILE_PARAMETERS loadFileParams;
                 DWORD receiptDataAvailable = 0;
                 DWORD receiptDataLen = 0;
-                char installParam[1];
-                installParam[0] = 0;
-
                 rv = handleOptions(&optionStr);
                 if (rv != EXIT_SUCCESS)
                 {
@@ -1482,11 +1476,7 @@ static int handleCommands(FILE *fd)
             else if (_tcscmp(token, _T("install_for_install")) == 0)
             {
 
-
                 DWORD receiptDataAvailable = 0;
-                char installParam[1];
-                installParam[0] = 0;
-
                 // Install for Install
                 rv = handleOptions(&optionStr);
                 if (rv != EXIT_SUCCESS)

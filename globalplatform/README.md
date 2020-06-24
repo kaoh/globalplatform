@@ -272,14 +272,15 @@ Solution: If your are using Cygwin and you have installed the GNU compiler tools
 bin directory is on the PATH environment variable CMake will favor these tools
 and the linking step will fail. Remove the Cygwin bin directory from the path.
 
-## Checking Memory Leaks
+## Checking Memory Leaks / Stack Corruption
 
-[Valgrind](https://valgrind.org) can be used to check for memory leaks during the execution: 
+[Valgrind](https://valgrind.org) can be used to check for memory leaks during the execution:
 
 ~~~
 valgrind --leak-check=full gpshell listSCP03.txt
 ~~~
 
+When passing `-DDEBUG=ON` to `cmake` the ` fsanitize=address` is passed as `CFLAG` to identify stack corruptions.
 
 ## Clean CMake Files
 
@@ -295,5 +296,3 @@ rm -f CMakeCache.txt && rm -f cmake_install.cmake && rm -rf CMakeFiles && rm -rf
 ```
 
 The file `cleanCMake.sh` in the parent folder can be used which is cleaning all projects.
-
-
