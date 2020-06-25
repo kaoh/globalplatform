@@ -1,7 +1,7 @@
 mode_201
 enable_trace
 establish_context
-card_connect -readerNumber 1
+card_connect
 select -AID a0000000030000
 open_sc -security 1 -keyind 0 -keyver 0 -key 404142434445464748494a4b4c4d4e4f -keyDerivation visa2
 get_status -element 20

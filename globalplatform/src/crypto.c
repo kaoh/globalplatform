@@ -1165,6 +1165,7 @@ OPGP_ERROR_STATUS calculate_MAC_des_3des(BYTE _3des_key[16], BYTE *message, int 
 	}
 	EVP_CIPHER_CTX_free(ctx);
 //  3DES mode
+	ctx = EVP_CIPHER_CTX_create;
 	EVP_CIPHER_CTX_init(ctx);
 	result = EVP_EncryptInit_ex(ctx, EVP_des_ede_cbc(), NULL, _3des_key, mac);
 	if (result != 1) {
@@ -2061,6 +2062,7 @@ OPGP_ERROR_STATUS calculate_MAC_right_des_3des(BYTE key[16], BYTE *message, int 
 	}
 
     EVP_CIPHER_CTX_free(ctx);
+    ctx = EVP_CIPHER_CTX_create;
 	EVP_CIPHER_CTX_init(ctx);
 
 	// 3DES CBC mode
