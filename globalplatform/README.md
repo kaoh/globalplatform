@@ -16,15 +16,18 @@ Use a suitable packet manager for your OS or install the programs and libraries 
 * [CMake 3.5.0](http://www.cmake.org/) or higher is needed
 * [PC/SC Lite](https://pcsclite.apdu.fr) (only for UNIXes, Windows and MacOS is already including this)
 * [Doxygen](www.doxygen.org/) for generating the documentation
-* [OpenSSL](http://www.openssl.org/) (MacOS should already bundle this as LibreSSL, but the original version might be still needed)
+* [OpenSSL](http://www.openssl.org/) (MacOS is already providing this as LibreSSL)
 * [zlib](http://www.zlib.net/) (MacOS should already bundle this, for Windows a pre-built version is included)
 
 ## Unix
 
-You must have CMake installed. http://www.cmake.org/
-This can be obtained in standard Unix distributions over the integrated package system.
+Install the dependencies with `brew` or your distribution's package system:
 
-On a command line type:
+~~~
+brew install openssl doxygen pandoc cmake zlib
+~~~
+
+### Compile
 
 ```
 cd \path\to\globalplatform
@@ -38,6 +41,14 @@ make install
 
 The compilation was executed on a system with [Homebrew](https://brew.sh) as package manager.
 
+Install the dependencies with `brew`:
+
+~~~
+brew install openssl doxygen pandoc cmake
+~~~
+
+### Compile
+
 It can be necessary to set the `OPENSSL_ROOT_DIR`. In case of the usage of Homebrew this works:
 
 ```
@@ -47,7 +58,7 @@ make
 make install
 ```
 
-In case the system is using a different package manager further settings might be necessary.
+In case the system is using a different package manager other settings will be necessary.
 
 ### Linux
 
@@ -61,14 +72,32 @@ Or include the `/usr/local/lib ` under `/etc/ld.so.conf.d/` and run `sudo ldconf
 
 ## Windows
 
+Install the dependencies with [Chocolatey](https://chocolatey.org) in an administrator's PowerShell or install the dependencies manually:
+
+~~~
+choco install cmake doxygen.install openssl
+~~~
+
+__NOTE:__ `zlib` must be installed manually. Copy the zlibwapi.dll to `C:\Windows\System32` from the upper module's `zlib-1.2.8/zlib-1.2.8.zip`.
+__NOTE:__ OpenSSL must be installed manually. Chocolatey is using the the systems architecture, which is nowadays 64 bit, but the compilation needs the 32 bit version. Download [OpenSSL](https://slproweb.com/products/Win32OpenSSL.html) and choose the Win32 bit version and no light version.
+
+### Compile
+
 Launch Visual Studio Command Prompt / Developer Command Prompt:
+It will be necessary to set the `ZLIB_ROOT`. Use the pre-built `zlib` version of the project for convenience.
 
 ```
 cd \path\to\globalplatform
-cmake -G "NMake Makefiles"  
+cmake -G "NMake Makefiles" -DZLIB_ROOT="C:\Users\john\Desktop\globalplatform\zlib-1.2.8\win32-build"
 nmake
-nmake doc
 ```
+
+__NOTE:__ CMake might fail if different compilers are on the path, e.g. MingW. CMake will pick the wrong linker.
+A way to set the linker explicitly is (replace the linker path with the correct one for your version):
+
+~~~
+cmake -G "NMake Makefiles" -DCMAKE_LINKER="C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\link.exe" -DCMAKE_C_LINK_EXECUTABLE=link.exe -DTESTING=ON -DDEBUG=ON
+~~~
 
 ## FreeBSD
 
@@ -84,7 +113,7 @@ See the compilation errors and fix the mentioned locations.
 
 ## Documentation
 
-For documentation Doxygen must be installed.
+For documentation Doxygen must be installed and also the `dot` package for getting graphics.
 
 Execute:
 
@@ -141,6 +170,7 @@ Tested with:
 
 * Visual Studio 2013 Community Edition
 * VISUAL C++ 2010 EXPRESS
+* Visual Studio 2015
 * Visual Studio 2017
 
 ### Prerequisites
@@ -179,7 +209,7 @@ See http://kobyk.wordpress.com/2007/07/20/dynamically-linking-with-msvcrtdll-usi
 The standard zLib from http://www.zlib.net/ is using the CDECL calling convention, but STDCALL is
 needed for the compilation under Windows. So it does not work. See for details http://www.tannerhelland.com/5076/compile-zlib-winapi-wapi-stdcall/
 
-__NOTE:__ This project contains a bundled pre-build version of zLib 1.2.8 in the upper module `zlib-1.2.8/zlib-1.2.8.zip`
+__NOTE:__ This project contains a bundled pre-build version of zLib 1.2.8 in the upper module's `zlib-1.2.8/zlib-1.2.8.zip`
 
 If not using this version you will get errors like:
 
@@ -188,33 +218,6 @@ If not using this version you will get errors like:
 ```
 
   * Copy the zlibwapi.dll to `C:\Windows\System32` (dll32 version)
-
-##### VISUAL C++ 2010 EXPRESS
-
-  * Copy `zlib.h` and `zconf.h` from the sources of zlib to
-    `C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Include`
-  * Copy the file `zlibwapi.lib` from the lib directory to
-    `C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Lib`
-
-##### Visual Studio 2013 Community Edition
-
-  * Copy `zlib.h` and `zconf.h` from the sources of zlib to
-	`C:\Program Files (x86)\Windows Kits\8.1\Include\um`
-  * Copy the file `zlibwapi.lib` from the lib directory to
-    `C:\Program Files (x86)\Windows Kits\8.1\Lib\winv6.3\um\x86`
-
-##### Visual Studio 2017
-
-* Copy `zlib.h` and `zconf.h` from the sources of zlib to
-`C:\Program Files (x86)\Windows Kits\10\Include\10.0.17134.0\um`
-* Copy the file `zlibwapi.lib` from the lib directory to
-	`C:\Program Files (x86)\Windows Kits\10\Lib\10.0.17134.0\um\x86`
-* __NOTE:__ There can be several directories under `Lib` and `Include`. Use the version matching your compiler.
-
-__NOTE:__ The paths given here are working only with the above toolchains respectively.
-This path must be adjusted. When the command prompt of visual studio is open execute "set" and look for an
-environment variable `WindowsSdkDir`. This value should be taken instead as search path for the right
-sub directories.
 
 #### Windows Backward Compatible Build
 

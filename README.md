@@ -2,6 +2,12 @@
 
 This is the top level project for the GlobalPlatform library for providing access to OpenPlatform 2.0.1' and GlobalPlatform 2.1.1 conforming smart cards and later, the command line shell GPShell using the GlobalPlatform library and the PC/SC connection plugin for the GlobalPlatform Library.
 
+# Pre-build Packages
+
+There are Homebrew package for [Linux and MacOS](https://github.com/kaoh/homebrew-globalplatform)
+
+For Windows and older version can be downloaded on [SourceForge](https://sourceforge.net/projects/globalplatform/files/GPShell/GPShell-1.4.4/). This will be updated soon.
+
 # Compilation
 
 Consult the individual sub projects for further instructions and prerequisites. It is also possible to compile the sub projects individually.
@@ -17,26 +23,38 @@ Use a suitable packet manager for your OS or install the programs and libraries 
 * [CMake 3.5.0](http://www.cmake.org/) or higher is needed
 * [PC/SC Lite](https://pcsclite.apdu.fr) (only for UNIXes, Windows and MacOS is already including this)
 * [Doxygen](www.doxygen.org/) for generating the documentation
-* [OpenSSL](http://www.openssl.org/) (MacOS should already bundle this as LibreSSL, but the original version might be still needed)
+* [OpenSSL](http://www.openssl.org/) (MacOS is already providing this as LibreSSL)
 * [zlib](http://www.zlib.net/) (MacOS should already bundle this, for Windows a pre-built version is included)
 
 ## Unix
 
-You must have CMake installed. http://www.cmake.org/
-This can be obtained in standard Unix distributions over the integrated package system.
+Install the dependencies with `brew` or your distribution's package system:
 
-On a command line type:
+~~~
+brew install openssl doxygen pandoc cmake zlib
+~~~
+
+### Compile
 
 ```
 cd \path\to\globalplatform
 cmake .
 make
+make doc
 make install
 ```
 
 ## MacOS
 
 The compilation was executed on a system with [Homebrew](https://brew.sh) as package manager.
+
+Install the dependencies with `brew`:
+
+~~~
+brew install openssl doxygen pandoc cmake
+~~~
+
+### Compile
 
 It can be necessary to set the `OPENSSL_ROOT_DIR`. In case of the usage of Homebrew this works:
 
@@ -47,21 +65,31 @@ make
 make install
 ```
 
-In case the system is using a different package manager further settings might be necessary.
-
 ## Windows
 
-Launch Visual Studio Command Prompt / Developer Command Prompt:
+Install the dependencies with [Chocolatey](https://chocolatey.org) in an administrator's PowerShell or install the dependencies manually:
+
+~~~
+choco install cmake doxygen.install
+~~~
+
+__NOTE:__ `zlib` must be installed manually. Copy the zlibwapi.dll to `C:\Windows\System32` from the upper module's `zlib-1.2.8/zlib-1.2.8.zip`.
+__NOTE:__ OpenSSL must be installed manually. Chocolatey is using the the systems architecture, which is nowadays 64 bit, but the compilation needs the 32 bit version. Download [OpenSSL](https://slproweb.com/products/Win32OpenSSL.html) and choose the Win32 bit version and no light version.
+
+### Compile
+
+Launch Visual Studio Command Prompt / Developer Command Prompt.
+It will be necessary to set the `ZLIB_ROOT`. Use the pre-built `zlib` version of the project for convenience.
 
 ```
 cd \path\to\globalplatform
-cmake -G "NMake Makefiles"  
+cmake -G "NMake Makefiles" -DZLIB_ROOT="C:\Users\john\Desktop\globalplatform\zlib-1.2.8\win32-build"
 nmake
 ```
 
 ## Documentation
 
-For documentation Doxygen must be installed.
+For documentation Doxygen must be installed and also the `dot` package for getting graphics.
 
 Execute:
 
@@ -118,8 +146,8 @@ Useful commands inside the `docs` folder:
 * Serving site in a local browser updating automatically on content changes: `bundle exec jekyll serve`
 * Update configuration in the Gemfile: `bundle update`
 
-# Issues and Contact
+# Issues
 
-For more information contact the author through the mailing list at:
+For issues please use the [GitHub issue tracker](https://github.com/kaoh/globalplatform/issues).
 
-http://sourceforge.net/projects/globalplatform/
+You can also use the [Mailing List](https://sourceforge.net/p/globalplatform/mailman/) or ask a question on Stack Overflow assigning the tags `gpshell` or `globalplatform`.

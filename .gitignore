@@ -39,3 +39,6 @@ gpshell.1
 *.filters
 *.sln
 globalplatform/doc
+gpshell/src/gpshell
+scp01Test
+scp02Test
