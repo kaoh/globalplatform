@@ -148,7 +148,7 @@ static int ConvertStringToByteArray(TCHAR *src, int destLength, BYTE *dest)
 {
     TCHAR *dummy;
     unsigned int temp, i = 0;
-	dummy = malloc(destLength*2+1);
+	dummy = malloc(destLength*2*sizeof(TCHAR) + sizeof(TCHAR));
     _tcsncpy(dummy, src, destLength*2+1);
     dummy[destLength*2] = _T('\0');
     while (_stscanf(&(dummy[i*2]), _T("%02x"), &temp) > 0)
