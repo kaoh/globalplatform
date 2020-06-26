@@ -13,7 +13,11 @@ INCLUDE(CMakePushCheckState)
 
 IF(DEBUG)
   SET(CMAKE_BUILD_TYPE "Debug")
-  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -Wall -Wpedantic")
+  IF(MSVC_VERSION)
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -W4")
+  ELSE()
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -Wall")
+  ENDIF()
 
   # check for fsanitize support
   CMAKE_PUSH_CHECK_STATE()
@@ -23,6 +27,16 @@ IF(DEBUG)
   IF(FSANITIZE)
   MESSAGE("fsanitize supported")
   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address")
+  ENDIF()
+  
+  # check for Wpedantic support
+  CMAKE_PUSH_CHECK_STATE()
+  SET(CMAKE_REQUIRED_FLAGS "-Wpedantic")
+  check_c_compiler_flag("-Wpedantic" PEDANTIC)
+  CMAKE_POP_CHECK_STATE()
+  IF(PEDANTIC)
+  MESSAGE("pedantic supported")
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wpedantic")
   ENDIF()
   
 ELSE(DEBUG)

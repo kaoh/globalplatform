@@ -20,7 +20,7 @@
  */
 /**
  * @file
- * @brief This abstracts dynamic library loading functions and timing.
+ * @brief This abstracts dynamic library loading functions.
  */
 
 #include <stdio.h>

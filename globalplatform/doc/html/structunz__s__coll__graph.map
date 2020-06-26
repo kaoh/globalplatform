@@ -1,8 +1,0 @@
-<map id="unz_s" name="unz_s">
-<area shape="rect" id="node2" href="$structfile__in__zip__read__info__s.html" title="file_in_zip_read_info_s" alt="" coords="247,65,402,92"/>
-<area shape="rect" id="node3" href="$structzlib__filefunc__def__s.html" title="zlib_filefunc_def_s" alt="" coords="5,35,136,61"/>
-<area shape="rect" id="node4" href="$structunz__file__info__internal__s.html" title="unz_file_info_internal_s" alt="" coords="245,116,404,143"/>
-<area shape="rect" id="node5" href="$structunz__global__info__s.html" title="unz_global_info_s" alt="" coords="261,167,388,193"/>
-<area shape="rect" id="node6" href="$structunz__file__info__s.html" title="unz_file_info_s" alt="" coords="270,217,379,244"/>
-<area shape="rect" id="node7" href="$structtm__unz__s.html" title="tm_unz_s" alt="" coords="31,217,110,244"/>
-</map>

@@ -35,3 +35,7 @@ target
 helloworld.iml
 *.tar.gz
 gpshell.1
+*.vcxproj
+*.filters
+*.sln
+globalplatform/doc

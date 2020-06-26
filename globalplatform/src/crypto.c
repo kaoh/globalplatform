@@ -28,6 +28,11 @@
  * files in the program, then also delete it here.
  */
 
+/**
+ * @file
+ * @brief This implements all crypto functions.
+ */
+
 #include "crypto.h"
 #include "globalplatform/stringify.h"
 #include "globalplatform/errorcodes.h"

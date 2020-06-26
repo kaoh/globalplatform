@@ -35,7 +35,8 @@
  * use Unicode functions and compile your application with the switches UNICODE and _UNICODE in your own code. Under Unixes
  * only ASCII is supported for now but to be portable use the mappings in globalplatform/unicode.h
  * </p>
- *
+ * @file
+ * @brief This implements all Open- and GlobalPlatform functions.
  */
 #ifdef WIN32
 #include "stdafx.h"
