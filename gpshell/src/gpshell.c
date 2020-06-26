@@ -127,7 +127,7 @@ static unsigned int GetTime()
 #endif
 }
 
-LPCSTR EMPTY_STRING = _T("");
+LPCTSTR EMPTY_STRING = _T("");
 
 typedef struct {
 	TCHAR privilege[32];
@@ -146,15 +146,17 @@ static void ConvertTToC(char* pszDest, const TCHAR* pszSrc)
 
 static int ConvertStringToByteArray(TCHAR *src, int destLength, BYTE *dest)
 {
-    TCHAR dummy[destLength*2+1];
+    TCHAR *dummy;
     unsigned int temp, i = 0;
+	dummy = malloc(destLength*2+1);
     _tcsncpy(dummy, src, destLength*2+1);
     dummy[destLength*2] = _T('\0');
     while (_stscanf(&(dummy[i*2]), _T("%02x"), &temp) > 0)
     {
-        dest[i] = temp;
+        dest[i] = (BYTE)temp;
         i++;
     }
+	free(dummy);
     return i;
 }
 
@@ -164,7 +166,7 @@ static void ConvertByteArrayToString(BYTE *src, int srcLength, int destLength, T
 	dest[destLength-1] =  _T('\0');
 	for (j=0; j<srcLength && j*2 < destLength ; j++)
 	{
-		_snprintf(dest+j*2, destLength-(j-2), _T("%02x"), src[j]);
+		_sntprintf(dest+j*2, destLength-(j-2), _T("%02x"), src[j]);
 	}
 	if (destLength > j*2) {
 		dest[j*2] =  _T('\0');
@@ -216,56 +218,56 @@ static TCHAR *strtokCheckComment(TCHAR *buf)
     }
 }
 
-static LPSTR lifeCycleToString(BYTE lifeCycle, BYTE element) {
-	LPCSTR lcLoaded = _T("Loaded");
-	LPCSTR lcInstalled = _T("Installed");
-	LPCSTR lcSelectable = _T("Selectable");
-	LPCSTR lcLocked = _T("Locked");
-	LPCSTR lcPersonalized = _T("Personalized");
-	LPCSTR lcOpReady = _T("OP Ready");
-	LPCSTR lcInitialized = _T("Initialized");
-	LPCSTR lcSecured = _T("Secured");
-	LPCSTR lcCardLocked = _T("Card Locked");
-	LPCSTR lcTerminated = _T("Terminated");
+static LPTSTR lifeCycleToString(BYTE lifeCycle, BYTE element) {
+	LPCTSTR lcLoaded = _T("Loaded");
+	LPCTSTR lcInstalled = _T("Installed");
+	LPCTSTR lcSelectable = _T("Selectable");
+	LPCTSTR lcLocked = _T("Locked");
+	LPCTSTR lcPersonalized = _T("Personalized");
+	LPCTSTR lcOpReady = _T("OP Ready");
+	LPCTSTR lcInitialized = _T("Initialized");
+	LPCTSTR lcSecured = _T("Secured");
+	LPCTSTR lcCardLocked = _T("Card Locked");
+	LPCTSTR lcTerminated = _T("Terminated");
 
-	static LPSTR lifeCycleState;
+	static LPTSTR lifeCycleState;
 
 	switch (element) {
 		case GP211_STATUS_LOAD_FILES:
 		case GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES:
 			if ((lifeCycle & GP211_LIFE_CYCLE_LOAD_FILE_LOADED) == GP211_LIFE_CYCLE_LOAD_FILE_LOADED) {
-				lifeCycleState = (LPSTR)lcLoaded;
+				lifeCycleState = (LPTSTR)lcLoaded;
 			}
 			break;
 		case GP211_STATUS_APPLICATIONS:
 			if ((lifeCycle & GP211_LIFE_CYCLE_APPLICATION_INSTALLED) == GP211_LIFE_CYCLE_APPLICATION_INSTALLED) {
-				lifeCycleState = (LPSTR)lcInstalled;
+				lifeCycleState = (LPTSTR)lcInstalled;
 			}
 			if ((lifeCycle & GP211_LIFE_CYCLE_APPLICATION_SELECTABLE) == GP211_LIFE_CYCLE_APPLICATION_SELECTABLE) {
-				lifeCycleState = (LPSTR)lcSelectable;
+				lifeCycleState = (LPTSTR)lcSelectable;
 			}
 			if ((lifeCycle & GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED)  == GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED) {
-				lifeCycleState = (LPSTR)lcPersonalized;
+				lifeCycleState = (LPTSTR)lcPersonalized;
 			}
 			if ((lifeCycle & GP211_LIFE_CYCLE_APPLICATION_LOCKED) == GP211_LIFE_CYCLE_APPLICATION_LOCKED) {
-				lifeCycleState = (LPSTR)lcLocked;
+				lifeCycleState = (LPTSTR)lcLocked;
 			}
 			break;
 		case GP211_STATUS_ISSUER_SECURITY_DOMAIN:
 			if ((lifeCycle & GP211_LIFE_CYCLE_CARD_OP_READY) == GP211_LIFE_CYCLE_CARD_OP_READY) {
-				lifeCycleState = (LPSTR)lcOpReady;
+				lifeCycleState = (LPTSTR)lcOpReady;
 			}
 			if ((lifeCycle & GP211_LIFE_CYCLE_CARD_INITIALIZED) == GP211_LIFE_CYCLE_CARD_INITIALIZED) {
-				lifeCycleState = (LPSTR)lcInitialized;
+				lifeCycleState = (LPTSTR)lcInitialized;
 			}
 			if ((lifeCycle & GP211_LIFE_CYCLE_CARD_SECURED)  == GP211_LIFE_CYCLE_CARD_SECURED) {
-				lifeCycleState = (LPSTR)lcSecured;
+				lifeCycleState = (LPTSTR)lcSecured;
 			}
 			if ((lifeCycle & GP211_LIFE_CYCLE_CARD_LOCKED) == GP211_LIFE_CYCLE_CARD_LOCKED) {
-				lifeCycleState = (LPSTR)lcCardLocked;
+				lifeCycleState = (LPTSTR)lcCardLocked;
 			}
 			if ((lifeCycle & GP211_LIFE_CYCLE_CARD_TERMINATED) == GP211_LIFE_CYCLE_CARD_TERMINATED) {
-				lifeCycleState = (LPSTR)lcTerminated;
+				lifeCycleState = (LPTSTR)lcTerminated;
 			}
 			break;
 	}
@@ -275,101 +277,101 @@ static LPSTR lifeCycleToString(BYTE lifeCycle, BYTE element) {
 
 static void privilegesToString(DWORD privileges, PRIVILEGES_STRING privilegesStrings[20]) {
 	int i;
-	LPCSTR lcSd = _T("Security Domain");
-	LPCSTR lcDapVerfification = _T("DAP Verification");
-	LPCSTR lcDelegatedManagement = _T("Delegated Management");
-	LPCSTR lcCardLock = _T("Card Lock");
-	LPCSTR lcCardTerminate = _T("Card Terminate");
-	LPCSTR lcCardReset = _T("Default Selected / Card Reset");
-	LPCSTR lcCVMManagement = _T("CVM Management");
-	LPCSTR lcMandatedDapVerification = _T("Mandated DAP Verification");
-	LPCSTR lcTrustedPath = _T("Trusted Path");
-	LPCSTR lcAuthManagement = _T("Authorized Management");
-	LPCSTR lcTokenManagement = _T("Token Management");
-	LPCSTR lcGlobalDelete = _T("Global Delete");
-	LPCSTR lcGlobalLock = _T("Global Lock");
-	LPCSTR lcGlobalRegistry = _T("Global Registry");
-	LPCSTR lcFinalApplication = _T("Final Application");
-	LPCSTR lcGlobalService = _T("Global Service");
+	LPCTSTR lcSd = _T("Security Domain");
+	LPCTSTR lcDapVerfification = _T("DAP Verification");
+	LPCTSTR lcDelegatedManagement = _T("Delegated Management");
+	LPCTSTR lcCardLock = _T("Card Lock");
+	LPCTSTR lcCardTerminate = _T("Card Terminate");
+	LPCTSTR lcCardReset = _T("Default Selected / Card Reset");
+	LPCTSTR lcCVMManagement = _T("CVM Management");
+	LPCTSTR lcMandatedDapVerification = _T("Mandated DAP Verification");
+	LPCTSTR lcTrustedPath = _T("Trusted Path");
+	LPCTSTR lcAuthManagement = _T("Authorized Management");
+	LPCTSTR lcTokenManagement = _T("Token Management");
+	LPCTSTR lcGlobalDelete = _T("Global Delete");
+	LPCTSTR lcGlobalLock = _T("Global Lock");
+	LPCTSTR lcGlobalRegistry = _T("Global Registry");
+	LPCTSTR lcFinalApplication = _T("Final Application");
+	LPCTSTR lcGlobalService = _T("Global Service");
 
-	LPCSTR lcReceiptGeneration = _T("Receipt Generation");
-	LPCSTR lcCipheredLoadFileDataBlock = _T("Ciphered Load File Data Block");
-	LPCSTR lcContactlessActivation = _T("Contactless Activation");
-	LPCSTR lcContactlessSelfActivation = _T("Contactless Self-Activation");
+	LPCTSTR lcReceiptGeneration = _T("Receipt Generation");
+	LPCTSTR lcCipheredLoadFileDataBlock = _T("Ciphered Load File Data Block");
+	LPCTSTR lcContactlessActivation = _T("Contactless Activation");
+	LPCTSTR lcContactlessSelfActivation = _T("Contactless Self-Activation");
 	// null all
 	for (i = 0; i<20; i++) {
-		strcpy(privilegesStrings[i].privilege, EMPTY_STRING);
+		_tcscpy(privilegesStrings[i].privilege, EMPTY_STRING);
 	}
 	i=0;
 	if ((privileges & GP211_SECURITY_DOMAIN) == GP211_SECURITY_DOMAIN) {
-		strcpy(privilegesStrings[i++].privilege, lcSd);
+		_tcscpy(privilegesStrings[i++].privilege, lcSd);
 	}
 	if ((privileges & GP211_DAP_VERIFICATION) == GP211_DAP_VERIFICATION) {
-		strcpy(privilegesStrings[i++].privilege, lcDapVerfification);
+		_tcscpy(privilegesStrings[i++].privilege, lcDapVerfification);
 	}
 	if ((privileges & GP211_DELEGATED_MANAGEMENT) == GP211_DELEGATED_MANAGEMENT) {
-		strcpy(privilegesStrings[i++].privilege, lcDelegatedManagement);
+		_tcscpy(privilegesStrings[i++].privilege, lcDelegatedManagement);
 	}
 	if ((privileges & GP211_CARD_MANAGER_LOCK_PRIVILEGE) == GP211_CARD_MANAGER_LOCK_PRIVILEGE) {
-		strcpy(privilegesStrings[i++].privilege, lcCardLock);
+		_tcscpy(privilegesStrings[i++].privilege, lcCardLock);
 	}
 	if ((privileges & GP211_CARD_MANAGER_TERMINATE_PRIVILEGE) == GP211_CARD_MANAGER_TERMINATE_PRIVILEGE) {
-		strcpy(privilegesStrings[i++].privilege, lcCardTerminate);
+		_tcscpy(privilegesStrings[i++].privilege, lcCardTerminate);
 	}
 	if ((privileges & GP211_DEFAULT_SELECTED_CARD_RESET_PRIVILEGE) == GP211_DEFAULT_SELECTED_CARD_RESET_PRIVILEGE) {
-		strcpy(privilegesStrings[i++].privilege, lcCardReset);
+		_tcscpy(privilegesStrings[i++].privilege, lcCardReset);
 	}
 	if ((privileges & GP211_PIN_CHANGE_PRIVILEGE) == GP211_PIN_CHANGE_PRIVILEGE) {
-		strcpy(privilegesStrings[i++].privilege, lcCVMManagement);
+		_tcscpy(privilegesStrings[i++].privilege, lcCVMManagement);
 	}
 	if ((privileges & GP211_MANDATED_DAP_VERIFICATION) == GP211_MANDATED_DAP_VERIFICATION) {
-		strcpy(privilegesStrings[i++].privilege, lcMandatedDapVerification);
+		_tcscpy(privilegesStrings[i++].privilege, lcMandatedDapVerification);
 	}
 	if ((privileges & GP211_TRUSTED_PATH) == GP211_TRUSTED_PATH) {
-		strcpy(privilegesStrings[i++].privilege, lcTrustedPath);
+		_tcscpy(privilegesStrings[i++].privilege, lcTrustedPath);
 	}
 	if ((privileges & GP211_AUTHORIZED_MANAGEMENT) == GP211_AUTHORIZED_MANAGEMENT) {
-		strcpy(privilegesStrings[i++].privilege, lcAuthManagement);
+		_tcscpy(privilegesStrings[i++].privilege, lcAuthManagement);
 	}
 	if ((privileges & GP211_TOKEN_VERIFICATION) == GP211_TOKEN_VERIFICATION) {
-		strcpy(privilegesStrings[i++].privilege, lcTokenManagement);
+		_tcscpy(privilegesStrings[i++].privilege, lcTokenManagement);
 	}
 	if ((privileges & GP211_GLOBAL_DELETE) == GP211_GLOBAL_DELETE) {
-		strcpy(privilegesStrings[i++].privilege, lcGlobalDelete);
+		_tcscpy(privilegesStrings[i++].privilege, lcGlobalDelete);
 	}
 	if ((privileges & GP211_GLOBAL_LOCK) == GP211_GLOBAL_LOCK) {
-		strcpy(privilegesStrings[i++].privilege, lcGlobalLock);
+		_tcscpy(privilegesStrings[i++].privilege, lcGlobalLock);
 	}
 	if ((privileges & GP211_GLOBAL_REGISTRY) == GP211_GLOBAL_REGISTRY) {
-		strcpy(privilegesStrings[i++].privilege, lcGlobalRegistry);
+		_tcscpy(privilegesStrings[i++].privilege, lcGlobalRegistry);
 	}
 	if ((privileges & GP211_GLOBAL_SERVICE) == GP211_GLOBAL_SERVICE) {
-		strcpy(privilegesStrings[i++].privilege, lcGlobalService);
+		_tcscpy(privilegesStrings[i++].privilege, lcGlobalService);
 	}
 	if ((privileges & GP211_FINAL_APPLICATION) == GP211_FINAL_APPLICATION) {
-		strcpy(privilegesStrings[i++].privilege, lcFinalApplication);
+		_tcscpy(privilegesStrings[i++].privilege, lcFinalApplication);
 	}
 	if ((privileges & GP211_RECEIPT_GENERATION) == GP211_RECEIPT_GENERATION) {
-		strcpy(privilegesStrings[i++].privilege, lcReceiptGeneration);
+		_tcscpy(privilegesStrings[i++].privilege, lcReceiptGeneration);
 	}
 	if ((privileges & GP211_CIPHERED_LOAD_FILE_DATA_BLOCK) == GP211_CIPHERED_LOAD_FILE_DATA_BLOCK) {
-		strcpy(privilegesStrings[i++].privilege, lcCipheredLoadFileDataBlock);
+		_tcscpy(privilegesStrings[i++].privilege, lcCipheredLoadFileDataBlock);
 	}
 	if ((privileges & GP211_CONTACTLESS_ACTIVATION) == GP211_CONTACTLESS_ACTIVATION) {
-		strcpy(privilegesStrings[i++].privilege, lcContactlessActivation);
+		_tcscpy(privilegesStrings[i++].privilege, lcContactlessActivation);
 	}
 	if ((privileges & GP211_CONTACTLESS_SELF_ACTIVATION) == GP211_CONTACTLESS_SELF_ACTIVATION) {
-		strcpy(privilegesStrings[i++].privilege, lcContactlessSelfActivation);
+		_tcscpy(privilegesStrings[i++].privilege, lcContactlessSelfActivation);
 	}
 }
 
 static void displayLoadFilesAndModulesGp211(GP211_EXECUTABLE_MODULES_DATA *executables, int count) {
-	LPCSTR format;
+	LPCTSTR format;
 	TCHAR aidStr[33];
 	TCHAR moduleAidStr[33];
 	TCHAR sdAidStr[33];
 	TCHAR versionStr[5];
-	LPSTR lifeCycleState;
+	LPTSTR lifeCycleState;
 	int i,j;
 	format = _T("%-32s | %-12s | %-7s | %-32s | %-32s\n");
 	_tprintf(format, _T("Load File AID"), _T("State"), _T("Version"), _T("Module AID"), _T("Linked Security Domain"));
@@ -388,11 +390,11 @@ static void displayLoadFilesAndModulesGp211(GP211_EXECUTABLE_MODULES_DATA *execu
 }
 
 static void displayLoadApplicationsGp211(GP211_APPLICATION_DATA *applications, int count, BYTE element) {
-	LPCSTR format;
+	LPCTSTR format;
 	TCHAR aidStr[33];
 	TCHAR sdAidStr[33];
 	TCHAR versionStr[5];
-	LPSTR lifeCycleState;
+	LPTSTR lifeCycleState;
 	PRIVILEGES_STRING privileges[20];
 	int i,j;
 	format = _T("%-32s | %-12s | %-30s | %-7s | %-32s\n");
@@ -406,7 +408,7 @@ static void displayLoadApplicationsGp211(GP211_APPLICATION_DATA *applications, i
 		_tprintf(format, aidStr, lifeCycleState, EMPTY_STRING, versionStr, sdAidStr);
 		privilegesToString(applications[i].privileges, privileges);
 		for (j=0; j<20; j++) {
-			if (strlen(privileges[j].privilege) > 0) {
+			if (_tcslen(privileges[j].privilege) > 0) {
 				_tprintf(format, EMPTY_STRING, EMPTY_STRING, privileges[j].privilege, EMPTY_STRING, EMPTY_STRING);
 			}
 		}
@@ -414,9 +416,9 @@ static void displayLoadApplicationsGp211(GP211_APPLICATION_DATA *applications, i
 }
 
 static void displayApplicationsOp201(OP201_APPLICATION_DATA *applications, int count, BYTE element) {
-	LPCSTR format;
+	LPCTSTR format;
 	TCHAR aidStr[33];
-	LPSTR lifeCycleState;
+	LPTSTR lifeCycleState;
 	PRIVILEGES_STRING privileges[20];
 	int i,j;
 	format = _T("%-32s | %-12s | %-30s\n");
@@ -428,7 +430,7 @@ static void displayApplicationsOp201(OP201_APPLICATION_DATA *applications, int c
 		_tprintf(format, aidStr, lifeCycleState, EMPTY_STRING);
 		privilegesToString(applications[i].privileges << 16, privileges);
 		for (j=0; j<20; j++) {
-			if (strlen(privileges[j].privilege) > 0) {
+			if (_tcslen(privileges[j].privilege) > 0) {
 				_tprintf(format, EMPTY_STRING, EMPTY_STRING, privileges[j].privilege, EMPTY_STRING, EMPTY_STRING);
 			}
 		}
@@ -436,7 +438,7 @@ static void displayApplicationsOp201(OP201_APPLICATION_DATA *applications, int c
 }
 
 static void displayExtCardResorcesInfo(OPGP_EXTENDED_CARD_RESOURCE_INFORMATION extCardResorcesInfo) {
-	LPCSTR format1, format2;
+	LPCTSTR format1, format2;
 	format1 = _T("%-16s | %-21s | %-17s \n");
 	_tprintf(format1, _T("Num Applications"), _T("Free non volatile mem"), _T("Free volatile mem"));
 	format2 = _T("%-16d | %-21d | %-17d \n");
@@ -446,7 +448,7 @@ static void displayExtCardResorcesInfo(OPGP_EXTENDED_CARD_RESOURCE_INFORMATION e
 }
 
 static void displayGpKeyInformation(GP211_KEY_INFORMATION *keyInformation, int count) {
-	LPCSTR format1, format2;
+	LPCTSTR format1, format2;
 	int i;
 	format1 = _T("%-3s | %-7s | %-6s | %-6s | %-5s | %-6s \n");
 	_tprintf(format1, _T("ID"), _T("Version"), _T("Type"), _T("Length"), _T("Usage"), _T("Access"));
@@ -460,7 +462,7 @@ static void displayGpKeyInformation(GP211_KEY_INFORMATION *keyInformation, int c
 }
 
 static void displayOpKeyInformation(OP201_KEY_INFORMATION *keyInformation, int count) {
-	LPCSTR format;
+	LPCTSTR format;
 	int i;
 	format = _T("%-3d | %-7d | %-4.2x | %-6%d \n");
 	_tprintf(format, _T("ID"), _T("Version"), _T("Type"), _T("Length"));
@@ -1867,7 +1869,7 @@ end:
     return rv;
 }
 
-int main(int argc, char* argv[])
+int _tmain(int argc, TCHAR* argv[])
 {
     FILE *fd = NULL;
     int rv = EXIT_SUCCESS;
@@ -1882,15 +1884,15 @@ int main(int argc, char* argv[])
     {
         // read input from script file
     	// fix for MAC eclipse bug using single quotes: https://bugs.eclipse.org/bugs/show_bug.cgi?id=516027
-        if (argv[1][0] == '\'') {
+        if (argv[1][0] == _T('\'')) {
         	argv[1]++;
-        	argv[1][_tcslen(argv[1])-1] = '\0';
+        	argv[1][_tcslen(argv[1])-1] = _T('\0');
         }
-    	fd = fopen (argv[1], "r");
+    	fd = _tfopen(argv[1], _T("r"));
         // error
         if (fd == NULL)
         {
-            fprintf(stderr, "Could not open scriptfile !\n");
+            _ftprintf(stderr, _T("Could not open scriptfile !\n"));
             rv = EXIT_FAILURE;
             goto end;
         }
@@ -1898,7 +1900,7 @@ int main(int argc, char* argv[])
     else
     {
         // error
-        fprintf (stderr, "Usage: gpshell [scriptfile]\n");
+        _ftprintf (stderr, _T("Usage: gpshell [scriptfile]\n"));
         rv = EXIT_FAILURE;
         goto end;
     }
