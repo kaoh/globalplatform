@@ -1246,8 +1246,19 @@ OPGP_ERROR_STATUS GP211_delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_C
 }
 
 /**
-* \param mode OpenPlatform 2.0.1' or GlobalPlatform 2.1.1 delete command.
-*/
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param AIDs [in] A pointer to the an array of OPGP_AID structures describing the applications and load files to delete.
+ * \param AIDsLength [in] The number of OPGP_AID structures.
+ * \param *receiptData [out] A GP211_RECEIPT_DATA array. If the deletion is performed by a
+ * security domain with delegated management privilege
+ * this structure contains the according data for each deleted application or package.
+ * \param receiptDataLength [in, out] A pointer to the length of the receiptData array.
+ * If no receiptData is available this length is 0;
+ * \param mode OpenPlatform 2.0.1' or GlobalPlatform 2.1.1 delete command.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
+ */
 OPGP_ERROR_STATUS delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 				   OPGP_AID *AIDs, DWORD AIDsLength, GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataLength, DWORD mode) {
 	OPGP_ERROR_STATUS status;

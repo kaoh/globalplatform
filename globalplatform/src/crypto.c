@@ -78,9 +78,9 @@ OPGP_ERROR_STATUS calculate_MAC_aes(BYTE key[16], BYTE *message, int messageLeng
     * \param key The AES key to use for the calculation.
     * \param derivationConstant The derivation constant for the key derivation function.
     * \param context1 The context1 for the internal key derivation.
-	* \param context1length The length of the context1 buffer.
+	* \param context1Length The length of the context1 buffer.
     * \param context2 The context2 for the internal key derivation.
-	* \param context3length The length of the context3 buffer.
+	* \param context2Length The length of the context3 buffer.
 	* \param cryptogram [out] The calculated cryptogram. Must be large enough to hold the result. For session keys this is 128 bits, 64 bits otherwise.
     * \param cryptogramSize [in] The result size in bits of the cryptogram. Must be a multiple of 8.
     * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
@@ -1730,7 +1730,6 @@ end:
  * \param apduCommandLength [in] The APDU command length.
  * \param responseApdu [in] The APDU response APDU.
  * \param responseApduLength [in] The APDU response APDU length.
- * \param statusWord [in] The status word of the response.
  * \param *secInfo [in] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * \param mac [out] The R-MAC.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
@@ -1978,6 +1977,7 @@ end:
  * \param message [in] The message to generate the hash for.
  * \param messageLength [in] The length of the message buffer.
  * \param hash [out] The calculated hash.
+ * \param md [in] The message digest to use.
  */
 OPGP_ERROR_STATUS calculate_hash(PBYTE message, DWORD messageLength, BYTE hash[32], const EVP_MD *md) {
 	int result;

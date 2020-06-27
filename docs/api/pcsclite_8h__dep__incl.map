@@ -1,8 +1,10 @@
 <map id="pcsclite.h" name="pcsclite.h">
-<area shape="rect" id="node2" href="$winscard_8h.html" title="This handles smartcard reader communications. " alt="" coords="123,80,208,107"/>
-<area shape="rect" id="node3" href="$connection_8h.html" title="connection.h" alt="" coords="117,155,213,181"/>
-<area shape="rect" id="node4" href="$globalplatform_8h.html" title="globalplatform.h" alt="" coords="35,229,149,256"/>
-<area shape="rect" id="node7" href="$connectionplugin_8h.html" title="connectionplugin.h" alt="" coords="173,229,304,256"/>
-<area shape="rect" id="node5" href="$loadfile_8h.html" title="loadfile.h" alt="" coords="5,304,80,331"/>
-<area shape="rect" id="node6" href="$testUtil_8h_source.html" title="testUtil.h" alt="" coords="104,304,179,331"/>
+<area shape="rect" id="node1" title="This keeps a list of defines for pcsc&#45;lite." alt="" coords="133,5,212,32"/>
+<area shape="rect" id="node2" href="$winscard_8h.html" title="This handles smartcard reader communications." alt="" coords="131,80,215,107"/>
+<area shape="rect" id="node3" href="$connection_8h.html" title=" " alt="" coords="125,155,221,181"/>
+<area shape="rect" id="node4" href="$globalplatform_8h.html" title=" " alt="" coords="43,229,156,256"/>
+<area shape="rect" id="node8" href="$connectionplugin_8h.html" title=" " alt="" coords="181,229,311,256"/>
+<area shape="rect" id="node5" href="$globalplatform_8c.html" title="This implements all Open&#45; and GlobalPlatform functions." alt="" coords="5,379,119,405"/>
+<area shape="rect" id="node6" href="$loadfile_8h.html" title=" " alt="" coords="63,304,136,331"/>
+<area shape="rect" id="node7" href="$testUtil_8h_source.html" title=" " alt="" coords="161,304,235,331"/>
 </map>

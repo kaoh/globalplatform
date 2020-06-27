@@ -1,7 +1,8 @@
 <map id="dyn_generic.h" name="dyn_generic.h">
-<area shape="rect" id="node2" href="$unicode_8h.html" title="globalplatform/unicode.h" alt="" coords="5,155,168,181"/>
-<area shape="rect" id="node3" href="$types_8h.html" title="globalplatform/types.h" alt="" coords="238,80,389,107"/>
-<area shape="rect" id="node5" href="$error_8h.html" title="globalplatform/error.h" alt="" coords="69,80,213,107"/>
-<area shape="rect" id="node6" href="$library_8h.html" title="globalplatform/library.h" alt="" coords="413,80,566,107"/>
-<area shape="rect" id="node4" href="$wintypes_8h.html" title="This keeps a list of Windows(R) types. " alt="" coords="271,155,356,181"/>
+<area shape="rect" id="node1" title="This abstracts dynamic library loading functions." alt="" coords="175,5,278,32"/>
+<area shape="rect" id="node2" href="$unicode_8h.html" title=" " alt="" coords="5,155,168,181"/>
+<area shape="rect" id="node3" href="$types_8h.html" title=" " alt="" coords="237,80,387,107"/>
+<area shape="rect" id="node5" href="$error_8h.html" title=" " alt="" coords="70,80,213,107"/>
+<area shape="rect" id="node6" href="$library_8h.html" title=" " alt="" coords="411,80,563,107"/>
+<area shape="rect" id="node4" href="$wintypes_8h.html" title="This keeps a list of Windows(R) types." alt="" coords="270,155,354,181"/>
 </map>
