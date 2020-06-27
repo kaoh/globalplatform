@@ -23,15 +23,17 @@ Use a suitable packet manager for your OS or install the programs and libraries 
 * [CMake 3.5.0](http://www.cmake.org/) or higher is needed
 * [PC/SC Lite](https://pcsclite.apdu.fr) (only for UNIXes, Windows and MacOS is already including this)
 * [Doxygen](www.doxygen.org/) for generating the documentation
+* [Graphviz](https://graphviz.org) for generating graphics in the documentation
 * [OpenSSL](http://www.openssl.org/) (MacOS is already providing this as LibreSSL)
 * [zlib](http://www.zlib.net/) (MacOS should already bundle this, for Windows a pre-built version is included)
+* [cmocka](https://cmocka.org/) for running the tests
 
 ## Unix
 
 Install the dependencies with `brew` or your distribution's package system:
 
 ~~~
-brew install openssl doxygen pandoc cmake zlib
+brew install openssl doxygen pandoc cmake cmocka zlib graphviz
 ~~~
 
 ### Compile
@@ -51,7 +53,7 @@ The compilation was executed on a system with [Homebrew](https://brew.sh) as pac
 Install the dependencies with `brew`:
 
 ~~~
-brew install openssl doxygen pandoc cmake
+brew install openssl doxygen cmocka pandoc cmake graphviz
 ~~~
 
 ### Compile
@@ -70,10 +72,11 @@ make install
 Install the dependencies with [Chocolatey](https://chocolatey.org) in an administrator's PowerShell or install the dependencies manually:
 
 ~~~
-choco install cmake doxygen.install
+choco install cmake doxygen.install graphviz
 ~~~
 
 __NOTE:__ `zlib` must be installed manually. Copy the zlibwapi.dll to `C:\Windows\System32` from the upper module's `zlib-1.2.8/zlib-1.2.8.zip`.
+
 __NOTE:__ OpenSSL must be installed manually. Chocolatey is using the the systems architecture, which is nowadays 64 bit, but the compilation needs the 32 bit version. Download [OpenSSL](https://slproweb.com/products/Win32OpenSSL.html) and choose the Win32 bit version and no light version.
 
 ### Compile
@@ -88,8 +91,6 @@ nmake
 ```
 
 ## Documentation
-
-For documentation Doxygen must be installed and also the `dot` package for getting graphics.
 
 Execute:
 
@@ -117,12 +118,6 @@ cmake . -DDEBUG=ON
 ```
 
 ## Testing
-
- * [cmocka](https://cmocka.org/) is required
-
-Under Ubuntu this can be installed with:
-
-    sudo apt-get install libcmocka-dev
 
 To generate the tests execute:
 
