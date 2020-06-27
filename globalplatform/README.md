@@ -5,6 +5,8 @@ GlobalPlatform 2.1.1 conforming smart cards and later.
 
 # Compilation
 
+Clone the project from GitHub or download the zip file (also available under the Clone tab).
+
 ## Prerequisites
 
 Use a suitable packet manager for your OS or install the programs and libraries manually if applicable.

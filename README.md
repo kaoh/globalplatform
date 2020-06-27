@@ -10,6 +10,8 @@ For Windows and older version can be downloaded on [SourceForge](https://sourcef
 
 # Compilation
 
+Clone the project from GitHub or download the zip file (also available under the Clone tab).
+
 Consult the individual sub projects for further instructions and prerequisites. It is also possible to compile the sub projects individually.
 
 ## Prerequisites
