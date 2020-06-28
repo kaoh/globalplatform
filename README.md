@@ -6,7 +6,9 @@ This is the top level project for the GlobalPlatform library for providing acces
 
 There are Homebrew package for [Linux and MacOS](https://github.com/kaoh/homebrew-globalplatform)
 
-For Windows and older version can be downloaded on [SourceForge](https://sourceforge.net/projects/globalplatform/files/GPShell/GPShell-1.4.4/). This will be updated soon.
+For Windows binaries can be downloaded from [SourceForge](https://sourceforge.net/projects/globalplatform/files/GPShell/).
+
+__NOTE:__ The [Microsoft Visual C++ 2015 Redistributable](https://www.microsoft.com/en-us/download/confirmation.aspx?id=52685) must be also installed.
 
 # Compilation
 
