@@ -918,6 +918,8 @@ static int handleCommands(FILE *fd)
 					rv = EXIT_FAILURE;
 					goto end;
 				}
+				_tprintf(_T("SCP: 0x%02x\n"), scp);
+				_tprintf(_T("SCP Impl: 0x%02x\n"), scpImpl);
 				goto timer;
 			}
             else if (_tcscmp(token, _T("open_sc")) == 0)
