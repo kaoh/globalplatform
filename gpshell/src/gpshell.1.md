@@ -70,7 +70,7 @@ For GlobalPlatform 2.1.1 and later cards -scp and -scpimpl should not be necessa
 If the card supports a Secure Channel Protocol Implementation with only one base key, specify this key with -key and omit the others.
 
 If the card uses a key derivation mechanism you must enable the derivation mode with the -keyDerivation option and you must specify with -key the master (mother) key. -kek_key, -mac_key and -enc_key are not relevant is this case. See the section Options and Key Derivation.
-__NOTE:__ If the secure channel is going to be opened when no security domain is selected then for SCP02 cards the command  get_secure_channel_protocol_details must be executed before to be able to get the Secure Channel Protocol Implementation.
+__NOTE:__ If the secure channel is going to be opened when no security domain is selected then the command  get_secure_channel_protocol_details must be executed before to be able to get the Secure Channel Protocol Implementation.
 
 __-select__ -AID *AID*
 
