@@ -46,6 +46,19 @@ OPGP_ERROR_STATUS calculate_CMAC_aes(BYTE sMacKey[16], BYTE *message,
 								BYTE mac[16]);
 
 OPGP_NO_API
+OPGP_ERROR_STATUS calculate_key_check_value(GP211_SECURITY_INFO *secInfo,
+	PBYTE keyData,
+	DWORD keyDataLength,
+	BYTE keyCheckValue[3]);
+
+OPGP_NO_API
+OPGP_ERROR_STATUS encrypt_sensitive_data(GP211_SECURITY_INFO *secInfo,
+	PBYTE data,
+	DWORD dataLength,
+	PBYTE encryptedData,
+	PDWORD encryptedDataLength);
+
+OPGP_NO_API
 OPGP_ERROR_STATUS get_key_data_field(GP211_SECURITY_INFO *secInfo,
 								 PBYTE keyData,
 								 DWORD keyDataLength,

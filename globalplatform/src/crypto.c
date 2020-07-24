@@ -1284,6 +1284,82 @@ end:
 	return status;
 }
 
+/**
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param data [in] The data to encrypt.
+ * \param dataLength [in] The data length.
+ * \param encryptedData [out] The encrypted data. No length checking is done. The buffer must have sufficient size, e.g. the next block size or twice the data size if unsure.
+ * \param encryptedDataLength [out] The length of the encrypted data.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS encrypt_sensitive_data(GP211_SECURITY_INFO *secInfo,
+	PBYTE data,
+	DWORD dataLength,
+	PBYTE encryptedData,
+	PDWORD encryptedDataLength) {
+	OPGP_ERROR_STATUS status;
+	BYTE dummy[16];
+	int dummyLength;
+	OPGP_LOG_START(_T("encrypt_sensitive_data"));
+	// sensitive - encrypt
+	// Initiation mode implicit
+	if (secInfo->secureChannelProtocol == GP211_SCP02 && (secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i0B
+		|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i1B
+		|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i1A
+		|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i0A)) {
+		status = calculate_enc_cbc_SCP02(secInfo->dataEncryptionSessionKey, data, dataLength, encryptedData, &encryptedDataLength);
+	}
+	else if (secInfo->secureChannelProtocol == GP211_SCP03) {
+		status = calculate_enc_cbc_SCP03_min_padding(secInfo->dataEncryptionSessionKey, data, dataLength, (PBYTE)SCP03_ICV, encryptedData, &encryptedDataLength);
+	}
+	else {
+		// same for SCP01 and SCP02 in explicit mode
+		status = calculate_enc_ecb_two_key_triple_des(secInfo->dataEncryptionSessionKey, data, dataLength, encryptedData, &encryptedDataLength);
+	}
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+
+	OPGP_LOG_END(_T("encrypt_sensitive_data"), status);
+	return status;
+}
+
+/**
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param keyData [in] The key data.
+ * \param keyDataLength [in] The key data length.
+ * \param keyCheckValue [out] The key check value.
+  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS calculate_key_check_value(GP211_SECURITY_INFO *secInfo,
+	PBYTE keyData,
+	DWORD keyDataLength,
+	BYTE keyCheckValue[3]) {
+	OPGP_ERROR_STATUS status;
+	BYTE dummy[16];
+	int dummyLength;
+	BYTE keyCheckTest[16];
+	OPGP_LOG_START(_T("calculate_key_check_value"));
+	memset(keyCheckTest, 0, 16);
+	if (secInfo->secureChannelProtocol == GP211_SCP03) {
+		memset(keyCheckTest, 0x01, sizeof(keyCheckTest));
+		status = calculate_enc_ecb_SCP03(keyData, keyCheckTest, 16, dummy, &dummyLength);
+	}
+	else {
+		status = calculate_enc_ecb_two_key_triple_des(keyData, keyCheckTest, 8, dummy, &dummyLength);
+	}
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	memcpy(keyCheckValue, dummy, 3);
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	OPGP_LOG_END(_T("calculate_key_check_value"), status);
+	return status;
+}
+
 OPGP_ERROR_STATUS get_key_data_field(GP211_SECURITY_INFO *secInfo,
 							 PBYTE keyData,
 							 DWORD keyDataLength,
@@ -1319,20 +1395,7 @@ OPGP_ERROR_STATUS get_key_data_field(GP211_SECURITY_INFO *secInfo,
 	keyDataField[i++] = keyType;
 	keyDataField[i++] = (BYTE)keyDataLength;
 	if (isSensitive) {
-		// sensitive - encrypt
-		// Initiation mode implicit
-		if (secInfo->secureChannelProtocol == GP211_SCP02 && (secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i0B
-			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i1B
-			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i1A
-			|| secInfo->secureChannelProtocolImpl == GP211_SCP02_IMPL_i0A)) {
-				status = calculate_enc_cbc_SCP02(secInfo->dataEncryptionSessionKey, keyData, keyDataLength, encrypted_key, &encrypted_key_length);
-		}
-		else if (secInfo->secureChannelProtocol == GP211_SCP03) {
-			status = calculate_enc_cbc_SCP03_min_padding(secInfo->dataEncryptionSessionKey, keyData, keyDataLength, (PBYTE)SCP03_ICV, encrypted_key, &encrypted_key_length);
-		}
-		else {
-			status = calculate_enc_ecb_two_key_triple_des(secInfo->dataEncryptionSessionKey, keyData, keyDataLength, encrypted_key, &encrypted_key_length);
-		}
+		status = encrypt_sensitive_data(secInfo, keyData, keyDataLength, encrypted_key, &encrypted_key_length);
 		if (OPGP_ERROR_CHECK(status)) {
 			goto end;
 		}
@@ -1344,8 +1407,8 @@ OPGP_ERROR_STATUS get_key_data_field(GP211_SECURITY_INFO *secInfo,
 			// we assume that each key is a multiple of 8 bytes and no length must be specified for < SCP03.
 			keyDataField[1] = encrypted_key_length;
 		}
-		memcpy(keyDataField+i, encrypted_key, keyDataLength);
-		i+=keyDataLength;
+		memcpy(keyDataField+i, encrypted_key, encrypted_key_length);
+		i+= encrypted_key_length;
 	}
 	else {
 		// not sensitive - copy directly
@@ -1354,18 +1417,11 @@ OPGP_ERROR_STATUS get_key_data_field(GP211_SECURITY_INFO *secInfo,
 	}
 	// we always use key check values
 	keyDataField[i++] = 0x03; // length of key check value
-	if (secInfo->secureChannelProtocol == GP211_SCP03) {
-		memset(keyCheckTest, 0x01, sizeof(keyCheckTest));
-		status = calculate_enc_ecb_SCP03(keyData, keyCheckTest, 16, dummy, &dummyLength);
-	}
-	else {
-		status = calculate_enc_ecb_two_key_triple_des(keyData, keyCheckTest, 8, dummy, &dummyLength);
-	}
+	status = calculate_key_check_value(secInfo, keyData, keyDataLength, keyCheckValue);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	memcpy(keyDataField+i, dummy, 3);
-	memcpy(keyCheckValue, dummy, 3);
+	memcpy(keyDataField+i, keyCheckValue, 3);
 	i+=3;
 	*keyDataFieldLength = i;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }

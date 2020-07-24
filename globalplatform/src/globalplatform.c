@@ -1457,6 +1457,10 @@ OPGP_ERROR_STATUS GP211_end_R_MAC(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO 
 		/* Switch on, if R-MAC is only applied to last command of session. */
 		secInfo->securityLevel |= GP211_SCP02_SECURITY_LEVEL_R_MAC;
 	}
+	if (secureChannelProtocol == GP211_SCP03) {
+		/* Switch on, if R-MAC is only applied to last command of session. */
+		secInfo->securityLevel |= GP211_SCP03_SECURITY_LEVEL_R_MAC;
+	}
 
 	status = OPGP_send_APDU(cardContext, cardInfo, secInfo, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
 	if (OPGP_ERROR_CHECK(status)) {
@@ -1464,7 +1468,7 @@ OPGP_ERROR_STATUS GP211_end_R_MAC(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO 
 	}
 	CHECK_SW_9000(recvBuffer, recvBufferLength, status);
 	// invert, this is the higher nibble
-	secInfo->securityLevel &= ~0x30;
+	secInfo->securityLevel &= ~GP211_SCP03_SECURITY_LEVEL_R_ENC_R_MAC;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
 	OPGP_LOG_END(_T("GP211_end_R_MAC"), status);
@@ -4329,7 +4333,7 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 
 	if (secInfo->secureChannelProtocol == GP211_SCP03) {
         // compare card challenge value when calculated from pseudo random value
-        if (secInfo->secureChannelProtocolImpl & 0x10 != 0) {
+        if ((secInfo->secureChannelProtocolImpl & 0x10) != 0) {
 			if (secInfo->invokingAidLength == 0) {
 				memcpy(secInfo->invokingAid, GP231_ISD_AID, sizeof(GP231_ISD_AID));
 				secInfo->invokingAidLength = sizeof(GP231_ISD_AID);
@@ -4778,16 +4782,19 @@ end:
 }
 
 /**
- * If STORE DATA is used for personalizing an application, a GP211_install_for_personalization().
+ * If STORE DATA is used for personalizing an application, a GP211_install_for_personalization() must be called first.
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
  * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param encryptionFlags [in] Flag defining the encryption settings. See NO_INFORMATION.
+ * \param formatFlags [in] Flag defining the format settings. See STORE_DATA_DGI.
+ * \param responseDataExpected [in] TRUE if response data is expected. In this case a case 4 APDU is used. FALSE to use a case 3 APDU.
  * \param *data [in] Data to send to application or Security Domain.
  * \param dataLength [in] The length of the data buffer.
- * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_store_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-				 PBYTE data, DWORD dataLength) {
+	BYTE encryptionFlags, BYTE formatFlags, BOOL responseDataExpected, PBYTE data, DWORD dataLength) {
 	OPGP_ERROR_STATUS status;
 	DWORD sendBufferLength = 0;
 	DWORD recvBufferLength = APDU_RESPONSE_LEN;
@@ -4800,17 +4807,22 @@ OPGP_ERROR_STATUS GP211_store_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 	sendBuffer[1] = 0xE2;
 	read = 0;
 	left = dataLength;
+	// encrypt if encryption flag is 0x11 and DGI is used and DGI starts with 0x81xy
+	// see GP Spec 2.2 Amd A 1.0.1 4.10
 	while(left > 0) {
 		if (left <= MAX_APDU_DATA_SIZE(secInfo)) {
-			sendBuffer[2] = 0x80;
+			sendBuffer[2] = 0x80 | encryptionFlags | formatFlags;
 			memcpy(sendBuffer+5, data+read, left);
 			read+=left;
 			sendBufferLength=5+left;
 			sendBuffer[4] = (BYTE)left;
 			left-=left;
+			if (responseDataExpected) {
+				sendBuffer[sendBufferLength++] = 0;
+			}
 		}
 		else {
-			sendBuffer[2] = 0x00;
+			sendBuffer[2] = 0x00 | encryptionFlags | formatFlags;
 			memcpy(sendBuffer+5, data+read, MAX_APDU_DATA_SIZE(secInfo));
 			read+=MAX_APDU_DATA_SIZE(secInfo);
 			sendBufferLength=5+MAX_APDU_DATA_SIZE(secInfo);
@@ -6174,5 +6186,53 @@ OPGP_ERROR_STATUS calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, 
 end:
 
 	OPGP_LOG_END(_T("calculate_install_token"), status);
+	return status;
+}
+
+/**
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param keyData [in] The key data.
+ * \param keyDataLength [in] The key data length.
+ * \param keyCheckValue [out] The key check value.
+  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS OPGP_calculate_key_check_value(GP211_SECURITY_INFO *secInfo,
+	PBYTE keyData,
+	DWORD keyDataLength,
+	BYTE keyCheckValue[3]) {
+	OPGP_ERROR_STATUS status;
+	OPGP_LOG_START(_T("OPGP_calculate_key_check_value"));
+	status = calculate_key_check_value(secInfo, keyData, keyDataLength, keyCheckValue);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	OPGP_LOG_END(_T("OPGP_calculate_key_check_value"), status);
+	return status;
+}
+
+/**
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param data [in] The data to encrypt.
+ * \param dataLength [in] The data length.
+ * \param encryptedData [out] The encrypted data. No length checking is done. The buffer must have sufficient size, e.g. the next block size or twice the data size if unsure.
+ * \param encryptedDataLength [out] The length of the encrypted data.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS OPGP_encrypt_sensitive_data(GP211_SECURITY_INFO *secInfo,
+	PBYTE data,
+	DWORD dataLength,
+	PBYTE encryptedData,
+	PDWORD encryptedDataLength) {
+	OPGP_ERROR_STATUS status;
+	OPGP_LOG_START(_T("OPGP_encrypt_sensitive_data"));
+	status = encrypt_sensitive_data(secInfo, data, dataLength, encryptedData, encryptedDataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	OPGP_LOG_END(_T("OPGP_encrypt_sensitive_data"), status);
 	return status;
 }

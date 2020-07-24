@@ -46,3 +46,4 @@ scp02Test
 .vs
 *.dir
 Win32
+*.manifest

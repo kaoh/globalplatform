@@ -123,6 +123,18 @@ typedef enum {
 #define GP211_STATUS_FORMAT_NEW 0x02 //!< New GP2.1.1 GET STATUS format
 #define GP211_STATUS_FORMAT_DEPRECATED 0x00 //!< New GP2.1.1 GET STATUS deprecated format
 
+// flags for STORE DATA
+
+#define STORE_DATA_ENCRYPTION_NO_INFORMATION 0x00 //!< No general encryption information or non - encrypted data
+#define STORE_DATA_ENCRYPTION_APPLICATION_DEPENDENT 0x20 //!< Application dependent encryption of the data
+#define STORE_DATA_ENCRYPTION_RFU 0x40 //!< RFU(encryption indicator)
+#define STORE_DATA_ENCRYPTION_ENCRYPTED 0x60 //!< Encrypted data. Must be encrypted with data encryption key.
+
+#define STORE_DATA_FORMAT_NO_INFORMATION 0x00 //!< No general data structure information
+#define STORE_DATA_FORMAT_DGI 0x08 //!< DGI format of the command data field
+#define STORE_DATA_FORMAT_BER_TLV 0x10 //!< BER-TLV format of the command data field
+#define STORE_DATA_FORMAT_RFU 0x18 //!< RFU (data structure information)
+
 
 // Some possible identifiers to retrieve card data with get_data() and put_data().
 
@@ -676,10 +688,19 @@ OPGP_ERROR_STATUS OPGP_manage_channel(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_I
 OPGP_API
 OPGP_ERROR_STATUS OPGP_select_channel(OPGP_CARD_INFO *cardInfo, BYTE channelNumber);
 
+//! \brief Calculates the key check value of a key.
+OPGP_ERROR_STATUS OPGP_calculate_key_check_value(GP211_SECURITY_INFO *secInfo,
+	PBYTE keyData, DWORD keyDataLength, BYTE keyCheckValue[3]);
+
+//! \brief Encrypts sensitive data like keys or other data which is used in STORE DATA.
+OPGP_ERROR_STATUS OPGP_encrypt_sensitive_data(GP211_SECURITY_INFO *secInfo,
+	PBYTE data, DWORD dataLength,
+	PBYTE encryptedData, PDWORD encryptedDataLength);
+
 //! \brief GlobalPlatform2.1.1: The STORE DATA command is used to transfer data to an Application or the Security Domain processing the command.
 OPGP_API
 OPGP_ERROR_STATUS GP211_store_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-				 PBYTE data, DWORD dataLength);
+				 BYTE encryptionFlags, BYTE formatFlags, BOOL responseDataExpected, PBYTE data, DWORD dataLength);
 
 //! \brief Open Platform: Gets the life cycle status of Applications, the Card Manager and Executable Load Files and their privileges.
 OPGP_API
@@ -791,7 +812,7 @@ OPGP_ERROR_STATUS OP201_calculate_install_token(BYTE P1, PBYTE executableLoadFil
 //! \brief Open Platform: Calculates a Load File DAP.
 OPGP_API
 OPGP_ERROR_STATUS OP201_calculate_load_file_DAP(OP201_DAP_BLOCK *dapBlock, DWORD dapBlockLength,
-							 OPGP_STRING executableLoadFileName, unsigned char hash[20]);
+							 OPGP_STRING executableLoadFileName, BYTE hash[20]);
 
 //! \brief Open Platform: Loads a Executable Load File (containing an application) to the card.
 OPGP_API
