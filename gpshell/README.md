@@ -23,6 +23,10 @@ In the source directory of this project several script files are provided as an 
 the sample files can be found in `/usr/share/doc/gpshell<version>` or `/usr/local/share/doc/gpshell<version>` or 
 `~/.linuxbrew/share/doc/gpshell<version>`
 
+## Command Line Documentation
+
+Read the [GPShell man page](./src/gpshell.1.md) for all commands and their options.
+
 ## MacOS
 
 For MacOS you might set:
@@ -100,7 +104,7 @@ The man page is translated with [pandoc](https://pandoc.org) from markdown to gr
 ## Debug Output
 
 If you experience problems a DEBUG output is helpful.
-The variable `GLOBALPLATFORM_DEBUG=1` in the environment must be set. The logfile can be set with `GLOBALPLATFORM_LOGFILE=<file>`. Under Windows by default `C:\Temp\GlobalPlatform.log` is chosen. The log file must be writable for the user.
+The variable `GLOBALPLATFORM_DEBUG=1` in the environment must be set. The log file can be set with `GLOBALPLATFORM_LOGFILE=<file>`. Under Windows by default `C:\Temp\GlobalPlatform.log` is chosen. The log file must be writeable for the user.
 Under Unix systems if syslog is available it will be used by default.
  The default log file under Unix systems is `/tmp/GlobalPlatform.log` if syslog is not available or cannot be written by the user. If you don't have access to the syslog or don't want to use it you can still set the
 `GLOBALPLATFORM_LOGFILE` manually. Keep in mind that the debugging output may contain sensitive information, e.g. keys!

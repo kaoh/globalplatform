@@ -70,6 +70,7 @@ For GlobalPlatform 2.1.1 and later cards -scp and -scpimpl should not be necessa
 If the card supports a Secure Channel Protocol Implementation with only one base key, specify this key with -key and omit the others.
 
 If the card uses a key derivation mechanism you must enable the derivation mode with the -keyDerivation option and you must specify with -key the master (mother) key. -kek_key, -mac_key and -enc_key are not relevant is this case. See the section Options and Key Derivation.
+__NOTE:__ If the secure channel is going to be opened when no security domain is selected then for SCP02 cards the command  get_secure_channel_protocol_details must be executed before to be able to get the Secure Channel Protocol Implementation.
 
 __-select__ -AID *AID*
 
@@ -146,13 +147,13 @@ __-send_apdu__ -sc 0 -APDU *apdu*
 
 :    Send APDU *apdu* without secure channel
 
-The APDU is given as hex without spaces and without leadings 0x.
+The APDU is given as hex without spaces and without leading 0x.
 
 __-send_apdu_nostop__ -sc 0 -APDU *apdu*
 
 :    Does not stop in case of an error
 
-The APDU is given as hex without spaces and without leadings 0x.
+The APDU is given as hex without spaces and without leading 0x.
 
 __-get_data__ -identifier *identifier*
 
@@ -160,11 +161,15 @@ __-get_data__ -identifier *identifier*
 
 __-get_key_information_templates__ -keyTemplate *index*
 
-:    A GET DATA command returning the key information templates in the selected security domain.
+:    A GET DATA command returning the key information templates in the selected security domain. __NOTE:__ The security domain must be selected.
 
 __-get_extended_card_resources_information__
 
-:     A GET DATA command returning the extended card resources information in the issuer security domain.
+:     A GET DATA command returning the extended card resources information in the issuer security domain. __NOTE:__ The security domain must be selected.
+
+__-get_secure_channel_protocol_details__
+
+:     A GET DATA command returning the secure channel protocol details and remembering them for a later open_sc. __NOTE:__ The security domain must be selected.
 
 # OPTIONS
 

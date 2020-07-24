@@ -17,6 +17,7 @@ copy "%dirNamegpshell%\lib\gppcscconnectionplugin.dll" "%dirNamegpshell%\bin"
 
 copy "C:\Program Files (x86)\OpenSSL-Win32\libcrypto*.dll" "%dirNamegpshell%\bin"
 copy "C:\Program Files (x86)\OpenSSL-Win32\libssl*.dll" "%dirNamegpshell%\bin"
+copy "C:\Program Files (x86)\OpenSSL-Win32\libeay*.dll" "%dirNamegpshell%\bin"
 copy %dirName%\zlib-1.2.8\zlibwapi.dll "%dirNamegpshell%\bin"
 
 del /F %dirNamegpshell%\doc\CMakeLists.txt > NUL

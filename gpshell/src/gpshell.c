@@ -115,6 +115,8 @@ static int platform_mode = OP_201;
 static int timer = 0;
 static BYTE selectedAID[AIDLEN+1];
 static DWORD selectedAIDLength = 0;
+static BYTE scp = 0;
+static BYTE scpImpl = 0;
 
 static unsigned int GetTime()
 {
@@ -164,11 +166,13 @@ static void ConvertByteArrayToString(BYTE *src, int srcLength, int destLength, T
 {
 	int j;
 	dest[destLength-1] =  _T('\0');
-	for (j=0; j<srcLength && j*2 < destLength ; j++)
+	for (j=0; j<srcLength && j*2 < destLength-1 ; j++)
 	{
-		_sntprintf(dest+j*2, destLength-(j-2), _T("%02x"), src[j]);
+		// use 3 to have space for null terminator
+		_sntprintf(dest+j*2, 3, _T("%02x"), src[j]);
 	}
-	if (destLength > j*2) {
+	// if string is empty add null terminator
+	if (destLength-1 > j*2) {
 		dest[j*2] =  _T('\0');
 	}
 }
@@ -377,13 +381,14 @@ static void displayLoadFilesAndModulesGp211(GP211_EXECUTABLE_MODULES_DATA *execu
 	_tprintf(format, _T("Load File AID"), _T("State"), _T("Version"), _T("Module AID"), _T("Linked Security Domain"));
 	for (i=0; i<count; i++) {
 		_tprintf(format, _T("--"), _T("--"), _T("--"), _T("--"), _T("--"));
-		ConvertByteArrayToString(executables[i].aid.AID, executables[i].aid.AIDLength, sizeof(aidStr), aidStr);
-		ConvertByteArrayToString(executables[i].associatedSecurityDomainAID.AID, executables[i].associatedSecurityDomainAID.AIDLength, sizeof(sdAidStr), sdAidStr);
-		ConvertByteArrayToString(executables[i].versionNumber, sizeof(executables[i].versionNumber), sizeof(versionStr), versionStr);
+		ConvertByteArrayToString(executables[i].aid.AID, executables[i].aid.AIDLength, sizeof(aidStr)/sizeof(TCHAR), aidStr);
+		ConvertByteArrayToString(executables[i].associatedSecurityDomainAID.AID, executables[i].associatedSecurityDomainAID.AIDLength, sizeof(sdAidStr) / sizeof(TCHAR), sdAidStr);
+		ConvertByteArrayToString(executables[i].versionNumber, sizeof(executables[i].versionNumber), sizeof(versionStr) / sizeof(TCHAR), versionStr);
 		lifeCycleState = lifeCycleToString(executables[i].lifeCycleState, GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES);
 		_tprintf(format, aidStr, lifeCycleState, versionStr, EMPTY_STRING, sdAidStr);
+		_tprintf(format, aidStr, lifeCycleState, versionStr, EMPTY_STRING, EMPTY_STRING);
 		for (j=0; j<executables[i].numExecutableModules; j++) {
-			ConvertByteArrayToString(executables[i].executableModules[j].AID, executables[i].executableModules[j].AIDLength, sizeof(moduleAidStr), moduleAidStr);
+			ConvertByteArrayToString(executables[i].executableModules[j].AID, executables[i].executableModules[j].AIDLength, sizeof(moduleAidStr) / sizeof(TCHAR), moduleAidStr);
 			_tprintf(format, EMPTY_STRING, EMPTY_STRING, EMPTY_STRING, moduleAidStr, EMPTY_STRING);
 		}
 	}
@@ -401,9 +406,9 @@ static void displayLoadApplicationsGp211(GP211_APPLICATION_DATA *applications, i
 	_tprintf(format, _T("AID"), _T("State"), _T("Privileges"), _T("Version"), _T("Linked Security Domain"));
 	for (i=0; i<count; i++) {
 		_tprintf(format, _T("--"), _T("--"), _T("--"), _T("--"), _T("--"));
-		ConvertByteArrayToString(applications[i].aid.AID, applications[i].aid.AIDLength, sizeof(aidStr), aidStr);
-		ConvertByteArrayToString(applications[i].associatedSecurityDomainAID.AID, applications[i].associatedSecurityDomainAID.AIDLength, sizeof(sdAidStr), sdAidStr);
-		ConvertByteArrayToString(applications[i].versionNumber, sizeof(applications[i].versionNumber), sizeof(versionStr), versionStr);
+		ConvertByteArrayToString(applications[i].aid.AID, applications[i].aid.AIDLength, sizeof(aidStr) / sizeof(TCHAR), aidStr);
+		ConvertByteArrayToString(applications[i].associatedSecurityDomainAID.AID, applications[i].associatedSecurityDomainAID.AIDLength, sizeof(sdAidStr) / sizeof(TCHAR), sdAidStr);
+		ConvertByteArrayToString(applications[i].versionNumber, sizeof(applications[i].versionNumber), sizeof(versionStr) / sizeof(TCHAR), versionStr);
 		lifeCycleState = lifeCycleToString(applications[i].lifeCycleState, element);
 		_tprintf(format, aidStr, lifeCycleState, EMPTY_STRING, versionStr, sdAidStr);
 		privilegesToString(applications[i].privileges, privileges);
@@ -425,7 +430,7 @@ static void displayApplicationsOp201(OP201_APPLICATION_DATA *applications, int c
 	_tprintf(format, _T("AID"), _T("State"), _T("Privileges"));
 	for (i=0; i<count; i++) {
 		_tprintf(format, _T("--"), _T("--"), _T("--"));
-		ConvertByteArrayToString(applications[i].aid.AID, applications[i].aid.AIDLength, sizeof(aidStr), aidStr);
+		ConvertByteArrayToString(applications[i].aid.AID, applications[i].aid.AIDLength, sizeof(aidStr) / sizeof(TCHAR), aidStr);
 		lifeCycleState = lifeCycleToString(applications[i].lifeCycleState, element);
 		_tprintf(format, aidStr, lifeCycleState, EMPTY_STRING);
 		privilegesToString(applications[i].privileges << 16, privileges);
@@ -500,8 +505,8 @@ static int handleOptions(OptionStr *pOptionStr)
     pOptionStr->element = 0;
     pOptionStr->format = 2;
     pOptionStr->privilege = 0;
-    pOptionStr->scp = 0;
-    pOptionStr->scpImpl = 0;
+    pOptionStr->scp = scp;
+    pOptionStr->scpImpl = scpImpl;
 	pOptionStr->identifier[0] = 0;
 	pOptionStr->identifier[1] = 0;
 	pOptionStr->keyDerivation = OPGP_DERIVATION_METHOD_NONE;
@@ -895,6 +900,26 @@ static int handleCommands(FILE *fd)
                 cardInfo.specVersion = platform_mode;
                 goto timer;
             }
+			else if (_tcscmp(token, _T("get_secure_channel_protocol_details")) == 0)
+			{
+				// select instance
+				rv = handleOptions(&optionStr);
+				if (rv != EXIT_SUCCESS)
+				{
+					goto end;
+				}
+				status = GP211_get_secure_channel_protocol_details(cardContext, cardInfo,
+					&scp,
+					&scpImpl);
+				if (OPGP_ERROR_CHECK(status))
+				{
+					_tprintf(_T("get_secure_channel_protocol_details() returns 0x%08X (%s)\n"),
+						(unsigned int)status.errorCode, status.errorMessage);
+					rv = EXIT_FAILURE;
+					goto end;
+				}
+				goto timer;
+			}
             else if (_tcscmp(token, _T("open_sc")) == 0)
             {
                 // open secure channel
@@ -928,7 +953,7 @@ static int handleCommands(FILE *fd)
                                 &optionStr.scpImpl);
                         if (OPGP_ERROR_CHECK(status))
                         {
-                            _tprintf (_T("GP211_get_secure_channel_protocol_details() returns 0x%08X (%s)\n"),
+                            _tprintf (_T("get_secure_channel_protocol_details() returns 0x%08X (%s)\n"),
                                       (unsigned int)status.errorCode, status.errorMessage);
                             rv = EXIT_FAILURE;
                             goto end;

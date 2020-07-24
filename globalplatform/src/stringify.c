@@ -83,6 +83,8 @@ OPGP_STRING OPGP_stringify_error(DWORD errorCode) {
 		return _T("The Secure Channel Protocol passed and reported do not match.");
 	if (errorCode == GP211_ERROR_INCONSISTENT_SCP_IMPL)
 	    return _T("The Secure Channel Protocol Implementation passed and the one reported by the card do not match.");
+	if (errorCode == GP211_ERROR_MISSING_SCP_IMPL)
+		return _T("The Secure Channel Protocol Implementation must be provided as parameter.");
 	if (errorCode == OPGP_ERROR_CAP_UNZIP)
 		return _T("The CAP file cannot be unzipped.");
 	if (errorCode == OPGP_ERROR_INVALID_LOAD_FILE)

@@ -4099,8 +4099,8 @@ end:
  * \param keySetVersion [in] The key set version on the card to use for mutual authentication.
  * \param keyIndex [in] The key index of the encryption key in the key set version on the card to use for
  * mutual authentication.
- * \param secureChannelProtocol [in] The Secure Channel Protocol.
- * \param secureChannelProtocolImpl [in] The Secure Channel Protocol Implementation.
+ * \param secureChannelProtocol [in] The Secure Channel Protocol. 0 for auto detection.
+ * \param secureChannelProtocolImpl [in] The Secure Channel Protocol Implementation. 0 for auto detection. NOTE: auto detection is not support for SCP02, the implementation must be passed.
  * \param securityLevel [in] The requested security level. See GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC and others.
  * \param derivationMethod [in] The derivation method to use for. See OPGP_DERIVATION_METHOD_VISA2.
  * \param *secInfo [out] The returned GP211_SECURITY_INFO structure.
@@ -4173,12 +4173,6 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 		memcpy(dek, DEK, 16);
 	}
 
-	secInfo->secureChannelProtocol = secureChannelProtocol;
-
-#ifdef OPGP_DEBUG
-	OPGP_log_Msg(_T("mutual_authentication: Secure Channel Protocol: 0x%02X"), secureChannelProtocol);
-#endif
-
 	status = get_random(hostChallenge, 8);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
@@ -4215,12 +4209,25 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	memcpy(keyDiversificationData, recvBuffer, 10);
 	memcpy(keyInformationData, recvBuffer+10, 3); // Copy the 3rd byte regardless - ignored for SCP01/SCP02
 
-	// test if reported SCP is consistent with passed SCP
+	// set detected SCP
 	if (cardInfo.specVersion == GP_211) {
-		if (secureChannelProtocol != keyInformationData[1]) {
+		if (secureChannelProtocol == -1) {
+			secureChannelProtocol = keyInformationData[1];
+		}
+		// test if reported SCP is consistent with passed SCP
+		else if (secureChannelProtocol != keyInformationData[1]) {
 			OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_INCONSISTENT_SCP, OPGP_stringify_error(GP211_ERROR_INCONSISTENT_SCP));
 			goto end;
 		}
+		secInfo->secureChannelProtocol = secureChannelProtocol;
+	}
+	else {
+		// OP201 does not contain secure channel protocol in keyInformationData[1]
+		if (secureChannelProtocol != GP211_SCP01) {
+			OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_INCONSISTENT_SCP, OPGP_stringify_error(GP211_ERROR_INCONSISTENT_SCP));
+			goto end;
+		}
+		secInfo->secureChannelProtocol = secureChannelProtocol;
 	}
 
 	secInfo->keySetVersion = keyInformationData[0];
@@ -4234,11 +4241,18 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	}
 	/* end */
 
+#ifdef OPGP_DEBUG
+	OPGP_log_Msg(_T("mutual_authentication: Secure Channel Protocol: 0x%02X"), secureChannelProtocol);
+#endif
+
 	if (secInfo->secureChannelProtocol == GP211_SCP03) {
-		if (secureChannelProtocolImpl != keyInformationData[2]) {
-					OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_INCONSISTENT_SCP_IMPL, OPGP_stringify_error(GP211_ERROR_INCONSISTENT_SCP_IMPL));
-					goto end;
-				}
+		if (secureChannelProtocolImpl == -1) {
+			secureChannelProtocolImpl = keyInformationData[2];
+		}
+		else if (secureChannelProtocolImpl != keyInformationData[2]) {
+			OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_INCONSISTENT_SCP_IMPL, OPGP_stringify_error(GP211_ERROR_INCONSISTENT_SCP_IMPL));
+			goto end;
+		}
 		if (secInfo->securityLevel == GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC ||
 				secInfo->securityLevel == GP211_SCP03_SECURITY_LEVEL_C_DEC_R_ENC_C_MAC_R_MAC ||
 				secInfo->securityLevel == GP211_SCP03_SECURITY_LEVEL_C_MAC_R_MAC){
@@ -4254,6 +4268,10 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 		}
 	}
 	else if (secInfo->secureChannelProtocol == GP211_SCP02) {
+		if (secureChannelProtocolImpl == -1) {
+			OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_MISSING_SCP_IMPL, OPGP_stringify_error(GP211_ERROR_MISSING_SCP_IMPL));
+			goto end;
+		}
 		keyInformationDataLength = 2;
 		cardChallengeLength = 6;
 		memcpy(sequenceCounter, recvBuffer+12, 2);
@@ -4261,6 +4279,10 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 		memcpy(cardCryptogram, recvBuffer+20, 8);
 	}
 	else {
+		if (secureChannelProtocolImpl == -1) {
+			OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_MISSING_SCP_IMPL, OPGP_stringify_error(GP211_ERROR_MISSING_SCP_IMPL));
+			goto end;
+		}
         // BUGFIX: Need to set length value so OPGP_LOG_HEX doesn't access-violate.
         keyInformationDataLength = 2;
 
@@ -4307,9 +4329,7 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 
 	if (secInfo->secureChannelProtocol == GP211_SCP03) {
         // compare card challenge value when calculated from pseudo random value
-        if (secInfo->secureChannelProtocolImpl == GP211_SCP03_IMPL_i10 ||
-            secInfo->secureChannelProtocolImpl == GP211_SCP03_IMPL_i30 ||
-            secInfo->secureChannelProtocolImpl == GP211_SCP03_IMPL_i70) {
+        if (secInfo->secureChannelProtocolImpl & 0x10 != 0) {
 			if (secInfo->invokingAidLength == 0) {
 				memcpy(secInfo->invokingAid, GP231_ISD_AID, sizeof(GP231_ISD_AID));
 				secInfo->invokingAidLength = sizeof(GP231_ISD_AID);

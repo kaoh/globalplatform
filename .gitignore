@@ -42,3 +42,7 @@ globalplatform/doc
 gpshell/src/gpshell
 scp01Test
 scp02Test
+*.user
+.vs
+*.dir
+Win32
