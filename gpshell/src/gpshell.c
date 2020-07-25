@@ -47,7 +47,8 @@
 #define FILENAMELEN 256
 #define READERNAMELEN 256
 #define AIDLEN 16
-#define INSTPARAMLEN 32
+#define DATALEN 4096
+#define INSTPARAMLEN 128
 #define DELIMITER _T(" \t\r\n,")
 #define DDES_KEY_LEN 16
 #define PLATFORM_MODE_OP_201 OP_201
@@ -97,12 +98,17 @@ typedef struct _OptionStr
     DWORD instParamLen;
     BYTE element; //!< GET STATUS element (application, security domains, executable load files) to get
     BYTE format; //!< GET STATUS format
+	BYTE dataFormat; //!< data format of STORE DATA
+	BYTE responseDataExpected; //!< 1 if STORE DATA expects response data.
     BYTE keyTemplate; //!< The key template index to return.
     BYTE privilege;
     BYTE scp;
     BYTE scpImpl;
     BYTE identifier[2];
     BYTE keyDerivation;
+	BYTE dataEncryption; //!< STORE DATA encryption flag
+	BYTE data[DATALEN+1];
+	DWORD dataLen;
 } OptionStr;
 
 /* Global Variables */
@@ -511,6 +517,11 @@ static int handleOptions(OptionStr *pOptionStr)
 	pOptionStr->identifier[1] = 0;
 	pOptionStr->keyDerivation = OPGP_DERIVATION_METHOD_NONE;
 	pOptionStr->keyTemplate = 0;
+	pOptionStr->dataFormat = 2;
+	pOptionStr->dataLen = 0;
+	pOptionStr->data[0] = '\0';
+	pOptionStr->dataEncryption = 0;
+	pOptionStr->responseDataExpected = 0;
 
     token = strtokCheckComment(NULL);
 
@@ -714,6 +725,32 @@ static int handleOptions(OptionStr *pOptionStr)
 				goto end;
 			}
 			pOptionStr->format = format;
+		}
+		else if (_tcscmp(token, _T("-dataFormat")) == 0)
+		{
+			int dataFormat;
+			CHECK_TOKEN(token, _T("-dataFormat"));
+			dataFormat = _tstoi(token);
+			pOptionStr->dataFormat = dataFormat;
+		}
+		else if (_tcscmp(token, _T("-dataEncryption")) == 0)
+		{
+			int dataEncryption;
+			CHECK_TOKEN(token, _T("-dataEncryption"));
+			dataEncryption = _tstoi(token);
+			pOptionStr->dataEncryption = dataEncryption;
+		}
+		else if (_tcscmp(token, _T("-responseDataExpected")) == 0)
+		{
+			int responseDataExpected;
+			CHECK_TOKEN(token, _T("-responseDataExpected"));
+			responseDataExpected = _tstoi(token);
+			pOptionStr->responseDataExpected = responseDataExpected;
+		}
+		else if (_tcscmp(token, _T("-data")) == 0)
+		{
+			CHECK_TOKEN(token, _T("-data"));
+			pOptionStr->dataLen = ConvertStringToByteArray(token, DATALEN, pOptionStr->data);
 		}
         else if (_tcscmp(token, _T("-priv")) == 0)
         {
@@ -988,6 +1025,55 @@ static int handleCommands(FILE *fd)
                 }
                 goto timer;
             }
+			else if (_tcscmp(token, _T("install_for_personalization")) == 0)
+			{
+				rv = handleOptions(&optionStr);
+				if (rv != EXIT_SUCCESS)
+				{
+					goto end;
+				}
+				// only supported in GP211+
+				if (platform_mode == PLATFORM_MODE_GP_211)
+				{
+					status = GP211_install_for_personalization(cardContext, cardInfo,
+						&securityInfo211,
+						optionStr.AID, optionStr.AIDLen);
+				}
+				if (OPGP_ERROR_CHECK(status))
+				{
+					_tprintf(_T("install_for_personalization() returns 0x%08X (%s)\n"),
+						(unsigned int)status.errorCode, status.errorMessage);
+					rv = EXIT_FAILURE;
+					goto end;
+				}
+				goto timer;
+			}
+			else if (_tcscmp(token, _T("store_data")) == 0)
+			{
+				rv = handleOptions(&optionStr);
+				if (rv != EXIT_SUCCESS)
+				{
+					goto end;
+				}
+				// only supported in GP211+
+				if (platform_mode == PLATFORM_MODE_GP_211)
+				{
+					status = GP211_store_data(cardContext, cardInfo,
+						&securityInfo211,
+						optionStr.dataEncryption,
+						optionStr.dataFormat,
+						optionStr.responseDataExpected,
+						optionStr.data, optionStr.dataLen);
+				}
+				if (OPGP_ERROR_CHECK(status))
+				{
+					_tprintf(_T("store_data() returns 0x%08X (%s)\n"),
+						(unsigned int)status.errorCode, status.errorMessage);
+					rv = EXIT_FAILURE;
+					goto end;
+				}
+				goto timer;
+			}
             else if (_tcscmp(token, _T("get_key_information_templates")) == 0)
             {
             	GP211_KEY_INFORMATION gpKeyInformation[64];

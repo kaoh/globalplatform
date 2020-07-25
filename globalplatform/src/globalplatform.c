@@ -4811,7 +4811,7 @@ OPGP_ERROR_STATUS GP211_store_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 	// see GP Spec 2.2 Amd A 1.0.1 4.10
 	while(left > 0) {
 		if (left <= MAX_APDU_DATA_SIZE(secInfo)) {
-			sendBuffer[2] = 0x80 | encryptionFlags | formatFlags;
+			sendBuffer[2] = 0x80;
 			memcpy(sendBuffer+5, data+read, left);
 			read+=left;
 			sendBufferLength=5+left;
@@ -4822,12 +4822,16 @@ OPGP_ERROR_STATUS GP211_store_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 			}
 		}
 		else {
-			sendBuffer[2] = 0x00 | encryptionFlags | formatFlags;
+			sendBuffer[2] = 0x00;
 			memcpy(sendBuffer+5, data+read, MAX_APDU_DATA_SIZE(secInfo));
 			read+=MAX_APDU_DATA_SIZE(secInfo);
 			sendBufferLength=5+MAX_APDU_DATA_SIZE(secInfo);
 			sendBuffer[4] = MAX_APDU_DATA_SIZE(secInfo);
 			left-=MAX_APDU_DATA_SIZE(secInfo);
+		}
+		sendBuffer[2] |= encryptionFlags | formatFlags;
+		if (responseDataExpected) {
+			sendBuffer[2] |= 0x01;
 		}
 		sendBuffer[3] = blockNumber++;
 
