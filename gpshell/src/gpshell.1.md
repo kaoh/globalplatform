@@ -278,9 +278,19 @@ __-dataFormat__ *x*
 
 :    Sets the data format flag for store_data command. Default 0.
 
+* 0 - No general encryption information or non - encrypted data
+* 0x20 - Application dependent encryption of the data
+* 0x40 - RFU(encryption indicator)
+* 0x60 - Encrypted data. Must be encrypted with data encryption key.
+
 __-dataEncryption__ *x*
 
 :    Sets the encryption format flag for store_data command. Note that this is just a flag and the data must be passed already in the correct encryption. Default 0.
+
+* 0 - No general data structure information
+* 0x08 - DGI format of the command data field
+* 0x10 - BER-TLV format of the command data field
+* 0x18 - RFU (data structure information)
 
 __-responseDataExpected__ *x*
 

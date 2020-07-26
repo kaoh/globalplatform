@@ -730,14 +730,14 @@ static int handleOptions(OptionStr *pOptionStr)
 		{
 			int dataFormat;
 			CHECK_TOKEN(token, _T("-dataFormat"));
-			dataFormat = _tstoi(token);
+			dataFormat = (int)_tcstol(token, NULL, 0);
 			pOptionStr->dataFormat = dataFormat;
 		}
 		else if (_tcscmp(token, _T("-dataEncryption")) == 0)
 		{
 			int dataEncryption;
 			CHECK_TOKEN(token, _T("-dataEncryption"));
-			dataEncryption = _tstoi(token);
+			dataEncryption = (int)_tcstol(token, NULL, 0);
 			pOptionStr->dataEncryption = dataEncryption;
 		}
 		else if (_tcscmp(token, _T("-responseDataExpected")) == 0)

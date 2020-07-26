@@ -1,0 +1,16 @@
+mode_211
+enable_trace
+establish_context
+card_connect
+select -AID A0000001510000
+get_secure_channel_protocol_details
+select -AID A00000015141434C00
+open_sc -security 0 -keyind 0 -keyver 0 -mac_key 60F13AD37709CF74989E9E78DAFC8403 -enc_key 0D8A415856A270C3833A3BC6F8578D79 -kek_key 95A9B3EA9E491168322F770AEF2E37DC // Open secure channel
+get_data -identifier FF40
+// delete rules
+store_data -data F100 -dataFormat 0x10
+open_sc -security 0 -keyind 0 -keyver 0 -mac_key 60F13AD37709CF74989E9E78DAFC8403 -enc_key 0D8A415856A270C3833A3BC6F8578D79 -kek_key 95A9B3EA9E491168322F770AEF2E37DC // Open secure channel
+store_data -data F031E22FE11E4F06FFFFFFFFFFFFC114BDF6A732CDE67DB225A839364317BD36005221AEE30DD00101DB080000000000000001 -dataFormat 0x10
+store_data -data F02BE229E1184F00C114BDF6A732CDE67DB225A839364317BD36005221AEE30DD00101DB080000000000000001 -dataFormat 0x10
+card_disconnect
+release_context
