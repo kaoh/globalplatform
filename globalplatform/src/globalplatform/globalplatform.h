@@ -35,6 +35,9 @@ extern "C"
 #ifndef max
 #define max(a,b) (((a)>(b))?(a):(b))
 #endif
+#ifndef min
+#define min(a,b) (((a)>(b))?(b):(a))
+#endif
 
 #include <stdio.h>
 #include "types.h"
@@ -389,6 +392,24 @@ typedef struct {
 	DWORD freeNonVolatileMemory; //!< Free non volatile memory.
 } OPGP_EXTENDED_CARD_RESOURCE_INFORMATION;
 
+/**
+ * The Card Recognition Data returned for tag 0x66 with GET DATA.
+ */
+typedef struct {
+	DWORD version; //!< The GlobalPlatform version.
+	BYTE scp[16]; //!< The secure channel protocols.
+	BYTE scpImpl[16]; //!< The secure channel protocol implementations.
+	DWORD scpLength; //!< The length of the SCP.
+	BYTE cardConfigurationDetails[64]; //!< Card configuration details.
+	DWORD cardConfigurationDetailsLength; //!< Card configuration details length.
+	BYTE cardChipDetails[64]; //!< Card configuration details.
+	DWORD cardChipDetailsLength; //!< Card configuration details length.
+	BYTE issuerSecurityDomainsTrustPointCertificateInformation[64]; //!< Issuer Security Domain’s Trust Point certificate information.
+	DWORD issuerSecurityDomainsTrustPointCertificateInformationLength; //!< Issuer Security Domain’s Trust Point certificate information length.
+	BYTE issuerSecurityDomainCertificateInformation[64]; //!< Issuer Security Domain certificate information.
+	DWORD issuerSecurityDomainCertificateInformationLength; //!< Issuer Security Domain certificate information length.
+} GP211_CARD_RECOGNITION_DATA;
+
 //! \brief GlobalPlatform2.1.1: Selects an application on a card by AID.
 OPGP_API
 OPGP_ERROR_STATUS OPGP_select_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, PBYTE AID, DWORD AIDLength);
@@ -439,6 +460,9 @@ OPGP_ERROR_STATUS GP211_get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO c
 //! \brief Retrieve card data according ISO/IEC 7816-4 command not within a secure channel.
 OPGP_API
 OPGP_ERROR_STATUS GP211_get_data_iso7816_4(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength);
+
+//! \brief GlobalPlatform2.1.1: Return the card recognition data.
+OPGP_ERROR_STATUS GP211_get_card_recognition_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_CARD_RECOGNITION_DATA *cardData);
 
 //! \brief GlobalPlatform2.1.1: This returns the Secure Channel Protocol and the Secure Channel Protocol implementation.
 OPGP_API

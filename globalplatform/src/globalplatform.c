@@ -76,7 +76,13 @@ static BYTE S_ENC_DerivationConstant_SCP03  = 0x04; //!< Constant to derive S-EN
 static BYTE S_MAC_DerivationConstant_SCP03  = 0x06; //!< Constant to derive S-MAC session key for SCP03.
 static BYTE S_RMAC_DerivationConstant_SCP03 = 0x07; //!< Constant to derive S-RMAC session key for SCP03.
 
+#define CARD_DATA_APPLICATION_TAG_8 0x68
+#define CARD_DATA_APPLICATION_TAG_7 0x67
+#define CARD_DATA_APPLICATION_TAG_6 0x66
+#define CARD_DATA_APPLICATION_TAG_5 0x65
 #define CARD_DATA_APPLICATION_TAG_4 0x64
+#define CARD_DATA_APPLICATION_TAG_3 0x63
+#define CARD_DATA_APPLICATION_TAG_0 0x60
 #define OID_TAG 0x06
 
 OPGP_NO_API
@@ -1556,34 +1562,23 @@ end:
 }
 
 /**
+ * Can only be executed before a secure channel is created.
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secureChannelProtocol [out] A pointer to the Secure Channel Protocol to use.
- * \param *secureChannelProtocolImpl [out] A pointer to the implementation of the Secure Channel Protocol.
+ * \param *cardData [out] A pointer to the card recognition data.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
-OPGP_ERROR_STATUS GP211_get_secure_channel_protocol_details(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
-										 BYTE *secureChannelProtocol, BYTE *secureChannelProtocolImpl) {
+OPGP_ERROR_STATUS GP211_get_card_recognition_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
+		GP211_CARD_RECOGNITION_DATA *cardData) {
 	OPGP_ERROR_STATUS status;
 	LONG result;
 	BYTE recvBuffer[256];
 	DWORD recvBufferLength = sizeof(recvBuffer);
 	DWORD offset = 0, nestedOffset = 0;
-	BYTE OIDCardRecognitionData[256];
-	DWORD OIDCardRecognitionDataLength;
-	BYTE OIDCardManagementTypeAndVersion[256];
-	DWORD OIDCardManagementTypeAndVersionLength;
-	BYTE OIDCardIdentificationScheme[256];
-	DWORD OIDCardIdentificationSchemeLength;
-	BYTE OIDSecureChannelProtocol[256];
-	DWORD OIDSecureChannelProtocolLength;
-	BYTE CardConfigurationDetails[256];
-	DWORD CardConfigurationDetailsLength;
-	BYTE CardChipDetails[256];
-	DWORD CardChipDetailsLength;
+	BYTE numSCPs = 0;
 	TLV tlv1, tlv2, _73tlv;
 
-	OPGP_LOG_START(_T("GP211_get_secure_channel_protocol_details"));
+	OPGP_LOG_START(_T("GP211_get_card_data"));
 	status = GP211_get_data(cardContext, cardInfo, NULL, (PBYTE)GP211_GET_DATA_CARD_DATA, recvBuffer, &recvBufferLength);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
@@ -1615,58 +1610,56 @@ OPGP_ERROR_STATUS GP211_get_secure_channel_protocol_details(OPGP_CARD_CONTEXT ca
 	offset += result;
 
 	/* {globalPlatform 1} OID for Card Recognition Data */
-	memcpy(OIDCardRecognitionData, tlv1.value, tlv1.length);
-	OIDCardRecognitionDataLength = tlv1.length;
-	OPGP_LOG_HEX(_T("GP211_get_secure_channel_protocol_details: OIDCardRecognitionData: "), OIDCardRecognitionData, OIDCardRecognitionDataLength);
+	OPGP_LOG_HEX(_T("GP211_get_card_data: OIDCardRecognitionData: "), tlv1.value, tlv1.length);
 
 	/* Application tag 0 and length */
 	result = read_TLV(_73tlv.value+offset, _73tlv.length-offset, &tlv1);
-	if (result == -1) {
+	if (result == -1 || tlv1.tag != CARD_DATA_APPLICATION_TAG_0) {
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 		goto end;
 	}
 	offset += result;
-	/* inner tag: 0x06 Universal tag for �Object Identifier� (OID) and Length */
+	/* inner tag: 0x06 Universal tag for Object Identifier (OID) and Length */
 	result = read_TLV(tlv1.value, tlv1.length, &tlv2);
 	if (result == -1) {
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 		goto end;
 	}
 	/* {globalPlatform 2 v} OID for Card Management Type and Version */
-	memcpy(OIDCardManagementTypeAndVersion, tlv2.value, tlv2.length);
-	OIDCardManagementTypeAndVersionLength = tlv2.length;
-	OPGP_LOG_HEX(_T("GP211_get_secure_channel_protocol_details: OIDCardManagementTypeAndVersion: "), OIDCardManagementTypeAndVersion, OIDCardManagementTypeAndVersionLength);
+	// 7 bytes is GP OID {globalPlatform 2}
+	if (tlv2.length > 7) {
+		memcpy(&(cardData->version), tlv2.value + 7, min(sizeof(DWORD), tlv2.length-7));
+	}
+	OPGP_LOG_HEX(_T("GP211_get_card_data: OIDCardManagementTypeAndVersion: "), tlv2.value, tlv2.length);
 
 	/* Application tag 3 and length */
 	result = read_TLV(_73tlv.value+offset, _73tlv.length-offset, &tlv1);
-	if (result == -1) {
+	if (result == -1 || tlv1.tag != CARD_DATA_APPLICATION_TAG_3) {
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 		goto end;
 	}
 	offset += result;
-	/* inner tag: 0x06 Universal tag for �Object Identifier� (OID) and Length */
+	/* inner tag: 0x06 Universal tag for Object Identifier (OID) and Length */
 	result = read_TLV(tlv1.value, tlv1.length, &tlv2);
 	if (result == -1) {
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 		goto end;
 	}
 	/* {globalPlatform 3} OID for Card Identification Scheme */
-	memcpy(OIDCardIdentificationScheme, tlv2.value, tlv2.length);
-	OIDCardIdentificationSchemeLength = tlv2.length;
-	OPGP_LOG_HEX(_T("GP211_get_secure_channel_protocol_details: OIDCardIdentificationScheme: "), OIDCardIdentificationScheme, OIDCardIdentificationSchemeLength);
+	OPGP_LOG_HEX(_T("GP211_get_card_data: OIDCardIdentificationScheme: "), tlv2.value, tlv2.length);
 
 	/* Application tag 4 (=0x64) and length */
 	// this can be multiple SCP information in Application tag 4 or a sequence of OIDs in 0x06
 	do {
 		result = read_TLV(_73tlv.value+offset, _73tlv.length-offset, &tlv1);
-		if (result == -1) {
+		if (result == -1 || tlv1.tag != CARD_DATA_APPLICATION_TAG_4) {
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 			goto end;
 		}
 		offset += result;
 		nestedOffset = 0;
 		do {
-			/* inner tag: 0x06 Universal tag for �Object Identifier� (OID) and Length */
+			/* inner tag: 0x06 Universal tag for Object Identifier (OID) and Length */
 			result = read_TLV(tlv1.value+nestedOffset, tlv1.length, &tlv2);
 			if (result == -1) {
 				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
@@ -1676,23 +1669,19 @@ OPGP_ERROR_STATUS GP211_get_secure_channel_protocol_details(OPGP_CARD_CONTEXT ca
 			/* {globalPlatform 4 scp i} OID for Secure Channel Protocol of
 			* the Issuer Security Domain and its implementation options
 			*/
-			memcpy(OIDSecureChannelProtocol, tlv2.value, tlv2.length);
-			OIDSecureChannelProtocolLength = tlv2.length;
-			OPGP_LOG_HEX(_T("GP211_get_secure_channel_protocol_details: OIDSecureChannelProtocol: "), OIDSecureChannelProtocol, OIDSecureChannelProtocolLength);
-			// only supporting SCP01 - SCP03
-			if (OIDSecureChannelProtocol[OIDSecureChannelProtocolLength-2] == GP211_SCP01 || OIDSecureChannelProtocol[OIDSecureChannelProtocolLength-2] == GP211_SCP02
-					|| OIDSecureChannelProtocol[OIDSecureChannelProtocolLength-2] == GP211_SCP03) {
-				*secureChannelProtocol = OIDSecureChannelProtocol[OIDSecureChannelProtocolLength-2];
-				*secureChannelProtocolImpl = OIDSecureChannelProtocol[OIDSecureChannelProtocolLength-1];
-				OPGP_log_Msg(_T("Using Secure Channel Protocol 0x%02x with Secure Channel Protocol Impl: 0x%02x\n"), *secureChannelProtocol, *secureChannelProtocolImpl);
+			if (numSCPs < sizeof(cardData->scp)) {
+				cardData->scp[numSCPs] = tlv2.value[tlv2.length-2];
+				cardData->scpImpl[numSCPs++] = tlv2.value[tlv2.length-1];
 			}
+			OPGP_LOG_HEX(_T("GP211_get_card_data: OIDSecureChannelProtocol: "), tlv2.value, tlv2.length);
 		}
 		while (tlv1.length > nestedOffset && tlv1.value[nestedOffset] == OID_TAG);
+		cardData->scpLength = numSCPs;
 	}
 	while (_73tlv.length > offset && _73tlv.value[offset] == CARD_DATA_APPLICATION_TAG_4);
 	/* optional part */
 
-	if (_73tlv.length > offset) {
+	while (_73tlv.length > offset) {
 		/* Application tag 5 and length */
 		result = read_TLV(_73tlv.value+offset, _73tlv.length-offset, &tlv1);
 		if (result == -1) {
@@ -1700,24 +1689,73 @@ OPGP_ERROR_STATUS GP211_get_secure_channel_protocol_details(OPGP_CARD_CONTEXT ca
 			goto end;
 		}
 		offset += result;
-		/* Card configuration details */
-		memcpy(CardConfigurationDetails, tlv1.value, tlv1.length);
-		CardConfigurationDetailsLength = tlv1.length;
-		OPGP_LOG_HEX(_T("GP211_get_secure_channel_protocol_details: CardConfigurationDetails: "), CardConfigurationDetails, CardConfigurationDetailsLength);
-	}
-	if (_73tlv.length > offset) {
-		/* Application tag 6 and length */
-		result = read_TLV(_73tlv.value+offset, _73tlv.length-offset, &tlv1);
-		if (result == -1) {
-			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-			goto end;
+		switch (tlv1.tag) {
+			case CARD_DATA_APPLICATION_TAG_5:
+				/* Card configuration details */
+				memcpy(cardData->cardConfigurationDetails, tlv1.value, min(tlv1.length, sizeof(cardData->cardConfigurationDetails)));
+				cardData->cardChipDetailsLength = min(tlv1.length, sizeof(cardData->cardConfigurationDetails));
+				OPGP_LOG_HEX(_T("GP211_get_card_data: CardConfigurationDetails: "), tlv1.value, tlv1.length);
+				break;
+			case CARD_DATA_APPLICATION_TAG_6:
+				/* Card / chip details */
+				memcpy(cardData->cardChipDetails, tlv1.value, min(tlv1.length, sizeof(cardData->cardChipDetails)));
+				cardData->cardChipDetailsLength = min(tlv1.length, sizeof(cardData->cardChipDetails));
+				OPGP_LOG_HEX(_T("GP211_get_card_data: CardChipDetails: "), tlv1.value, tlv1.length);
+				break;
+			case CARD_DATA_APPLICATION_TAG_7:
+				/* Issuer Security Domain’s Trust Point certificate information */
+				memcpy(cardData->issuerSecurityDomainsTrustPointCertificateInformation, tlv1.value, min(tlv1.length,
+						sizeof(cardData->issuerSecurityDomainsTrustPointCertificateInformation)));
+				cardData->issuerSecurityDomainsTrustPointCertificateInformationLength = min(tlv1.length, sizeof(cardData->issuerSecurityDomainsTrustPointCertificateInformation));
+				OPGP_LOG_HEX(_T("GP211_get_card_data: Issuer Security Domain’s Trust Point certificate information: "), tlv1.value, tlv1.length);
+				break;
+			case CARD_DATA_APPLICATION_TAG_8:
+				/* Issuer Security Domain certificate information */
+				memcpy(cardData->issuerSecurityDomainCertificateInformation, tlv1.value, min(tlv1.length,
+						sizeof(cardData->issuerSecurityDomainCertificateInformation)));
+				cardData->issuerSecurityDomainCertificateInformationLength = min(tlv1.length, sizeof(cardData->issuerSecurityDomainCertificateInformation));
+				OPGP_LOG_HEX(_T("GP211_get_card_data: Issuer Security Domain certificate information: "), tlv1.value, tlv1.length);
+				break;
 		}
-		offset += result;
-		/* Card / chip details */
-		memcpy(CardChipDetails, tlv1.value, tlv1.length);
-		CardChipDetailsLength = tlv1.length;
-		OPGP_LOG_HEX(_T("GP211_get_secure_channel_protocol_details: CardChipDetails: "), CardChipDetails, CardChipDetailsLength);
+
 	}
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	OPGP_LOG_END(_T("GP211_get_card_data"), status);
+	return status;
+}
+
+/**
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secureChannelProtocol [out] A pointer to the Secure Channel Protocol to use.
+ * \param *secureChannelProtocolImpl [out] A pointer to the implementation of the Secure Channel Protocol.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS GP211_get_secure_channel_protocol_details(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
+										 BYTE *secureChannelProtocol, BYTE *secureChannelProtocolImpl) {
+	OPGP_ERROR_STATUS status;
+	DWORD i=0;
+	GP211_CARD_RECOGNITION_DATA cardData;
+
+	OPGP_LOG_START(_T("GP211_get_secure_channel_protocol_details"));
+
+	status = GP211_get_card_recognition_data(cardContext, cardInfo, &cardData);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	while (i < cardData.scpLength) {
+		// only supporting SCP01 - SCP03
+		if (cardData.scp[i] == GP211_SCP01 || cardData.scp[i] == GP211_SCP02 || cardData.scp[i] == GP211_SCP03) {
+			*secureChannelProtocol = cardData.scp[i++];
+			*secureChannelProtocolImpl = cardData.scpImpl[i++];
+			OPGP_log_Msg(_T("Using Secure Channel Protocol 0x%02x with Secure Channel Protocol Impl: 0x%02x\n"), *secureChannelProtocol, *secureChannelProtocolImpl);
+			goto found;
+		}
+	}
+	OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_NO_SUPPORTED_SCP_FOUND, OPGP_stringify_error(OPGP_ERROR_NO_SUPPORTED_SCP_FOUND));
+	goto end;
+found:
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
 	OPGP_LOG_END(_T("GP211_get_secure_channel_protocol_details"), status);
@@ -3705,7 +3743,7 @@ end:
 OPGP_ERROR_STATUS VISA2_derive_keys(BYTE baseKeyDiversificationData[10], BYTE masterKey[16],
 							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]) {
 	OPGP_ERROR_STATUS status;
-	int outl;
+	DWORD outl;
 	BYTE keyDiversificationData[16];
 
 	OPGP_LOG_START(_T("VISA2_derive_keys"));
@@ -3862,7 +3900,7 @@ end:
 OPGP_ERROR_STATUS VISA1_derive_keys(BYTE cardSerialNumber[8], BYTE masterKey[16],
 							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]) {
 	OPGP_ERROR_STATUS status;
-	int outl;
+	DWORD outl;
 	BYTE keyDiversificationData[16];
 
 	OPGP_LOG_START(_T("VISA1_derive_keys"));
@@ -3991,7 +4029,7 @@ end:
 OPGP_ERROR_STATUS EMV_CPS11_derive_keys(BYTE baseKeyDiversificationData[10], BYTE masterKey[16],
 							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]) {
 	OPGP_ERROR_STATUS status;
-	int outl;
+	DWORD outl;
 	BYTE keyDiversificationData[16];
 
 	OPGP_LOG_START(_T("EMV_CPS11_derive_keys"));
@@ -4734,7 +4772,7 @@ OPGP_ERROR_STATUS pin_change(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardI
 	BYTE sendBuffer[13];
 	BYTE PINFormat[8];
 	BYTE encryption[8];
-	int encryptionLength;
+	DWORD encryptionLength;
 	DWORD j,i=0;
 	OPGP_LOG_START(_T("pin_change"));
 	if ((tryLimit != 0) && !((tryLimit >= 0x03) && (tryLimit <= 0x0a))) {

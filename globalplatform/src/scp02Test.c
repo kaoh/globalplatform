@@ -208,6 +208,7 @@ static int setup(void **state) {
 }
 
 int main(void) {
+	cardInfo.specVersion = GP_211;
 	const struct CMUnitTest tests[] = {
 			cmocka_unit_test(get_status_mac_only),
 			cmocka_unit_test(install_mac_enc)

@@ -42,7 +42,7 @@ static const BYTE SCP03_ICV[16] = {0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x0
 
 OPGP_NO_API
 OPGP_ERROR_STATUS calculate_CMAC_aes(BYTE sMacKey[16], BYTE *message, 
-								int messageLength, BYTE chainingValue[16], 
+		DWORD messageLength, BYTE chainingValue[16],
 								BYTE mac[16]);
 
 OPGP_NO_API
@@ -81,7 +81,7 @@ OPGP_ERROR_STATUS calculate_rsa_signature(PBYTE message, DWORD messageLength, OP
 									char *passPhrase, BYTE signature[128]);
 
 OPGP_NO_API
-OPGP_ERROR_STATUS calculate_MAC(BYTE sessionKey[16], BYTE *message, int messageLength,
+OPGP_ERROR_STATUS calculate_MAC(BYTE sessionKey[16], BYTE *message, DWORD messageLength,
 						  BYTE icv[8], BYTE mac[8]);
 
 OPGP_NO_API
@@ -138,7 +138,7 @@ OPGP_NO_API
 OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrappedApduCommand,
 						 PDWORD wrappedApduCommandLength, GP211_SECURITY_INFO *secInfo);
 
-//! \brief Unwraps a response, i.e. decrypts and checks the R-MAC of a response APDU with the necessary security information according to secInfo.
+//! \brief Unwraps a response, i.e. decrypt and check the R-MAC of a response APDU with the necessary security information according to secInfo.
 OPGP_NO_API
 OPGP_ERROR_STATUS unwrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE responseData,
 				 DWORD responseDataLength, PBYTE unwrappedResponseData,
@@ -151,15 +151,15 @@ OPGP_ERROR_STATUS GP211_check_R_MAC(PBYTE apduCommand, DWORD apduCommandLength, 
 
 OPGP_NO_API
 OPGP_ERROR_STATUS calculate_enc_ecb_two_key_triple_des(BYTE key[16], BYTE *message,
-												 int messageLength, BYTE *encryption,
-												 int *encryptionLength);
+		DWORD messageLength, BYTE *encryption,
+												 DWORD *encryptionLength);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS validate_receipt(PBYTE validationData, DWORD validationDataLength,
 							 BYTE receipt[16], BYTE receiptKey[16], BYTE secureChannelProtocol);
 
 OPGP_NO_API
-OPGP_ERROR_STATUS calculate_MAC_des_3des(BYTE _3des_key[16], BYTE *message, int messageLength,
+OPGP_ERROR_STATUS calculate_MAC_des_3des(BYTE _3des_key[16], BYTE *message, DWORD messageLength,
 		BYTE initialICV[8], BYTE mac[8]);
 
 OPGP_NO_API
@@ -196,7 +196,7 @@ OPGP_ERROR_STATUS calculate_sha1_hash(PBYTE message, DWORD messageLength, BYTE h
 
 //! \brief Calculates a MAC using first DES and 3DES for the final round when the padding is applied.
 OPGP_NO_API
-OPGP_ERROR_STATUS calculate_MAC_right_des_3des(BYTE key[16], BYTE *message, int messageLength, BYTE mac[8]);
+OPGP_ERROR_STATUS calculate_MAC_right_des_3des(BYTE key[16], BYTE *message, DWORD messageLength, BYTE mac[8]);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS get_random(BYTE *random, int randomLength);

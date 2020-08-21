@@ -62,6 +62,8 @@
 #define GP211_ERROR_INCORRECT_CARD_CHALLENGE ((DWORD)0x8030F00DL) //!< The calculated pseudo random card challenge from the card does not match.
 #define GP211_ERROR_INCONSISTENT_SCP_IMPL ((DWORD)0x8030F00CL) //!< The Secure Channel Protocol Implementation passed and the one reported by the card do not match.
 #define GP211_ERROR_MISSING_SCP_IMPL ((DWORD)0x8030F00EL) //!< The Secure Channel Protocol Implementation must be provided as parameter.
+#define OPGP_ERROR_NO_SUPPORTED_SCP_FOUND ((DWORD)0x8030F00FL) //!< No supported Secure Channel Protocol was found.
+
 
 /* Mapping of ISO7816-4 errors to error codes.
  * 0x8020XXXX is the general meaning error.

@@ -161,23 +161,27 @@ __get_data__ -identifier *identifier*
 
 __get_key_information_templates__ -keyTemplate *index*
 
-:    A GET DATA command returning the key information templates in the selected security domain. __NOTE:__ The security domain must be selected.
+:    A GET DATA command returning the key information templates in the selected security domain. __NOTE:__ The security domain must be selected and this only works outside of a secure channel.
 
 __get_extended_card_resources_information__
 
-:     A GET DATA command returning the extended card resources information in the issuer security domain. __NOTE:__ The security domain must be selected.
+:     A GET DATA command returning the extended card resources information in the issuer security domain. __NOTE:__ The security domain must be selected and this only works outside of a secure channel.
 
 __get_secure_channel_protocol_details__
 
-:     A GET DATA command returning the secure channel protocol details and remembering them for a later open_sc. __NOTE:__ The security domain must be selected.
+:     A GET DATA command returning the secure channel protocol details and remembering them for a later open_sc. __NOTE:__ The security domain must be selected and this only works outside of a secure channel.
 
 __install_for_personalization__ -aid *AID*
 
-:     Prepare a security domain for the personalization of an applet with following store_data commands. __NOTE:__ The security domain must be selected.
+:     Prepare a security domain for the personalization of an applet with following store_data commands. __NOTE:__ The security domain must be selected and this only works outside of a secure channel.
 
 __store_data__ -dataFormat *format* -dataEncryption *encryption* -data *data*
 
 :     Executes a STORE DATA command passing the *data* to the selected applet. 
+
+__get_card_recognition_data__
+
+:     A GET DATA command returning the card recognition data. __NOTE:__ The security domain must be selected.
 
 
 # OPTIONS
@@ -341,6 +345,7 @@ Some useful identifier are:
 * 00E0 - Key Information Templates. Instead of the first byte 00 also 01, ... can be used to get more key information templates if available. There is a dedicated command for getting this: get_key_information_templates
 * 2F00 - List of applications
 * FF21 - Extended card resources. There is a dedicated command for getting this: get_extended_card_resources_information
+* 0066 - Card Recogniti0on Data. There is a dedicated command for getting this: get_card_recognition_data
 
 __-data
 

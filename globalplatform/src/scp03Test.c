@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <cmocka.h>
+#include "crypto.h"
 #include "testUtil.h"
 
 /**
@@ -443,17 +444,50 @@ static void get_status_enc_mac(void **state) {
 	assert_int_equal(executablesData[0].numExecutableModules, 0);
 }
 
+static void calculate_pseudo_random_challenge(void **state) {
+	OPGP_ERROR_STATUS status;
+	BYTE hostChallenge[8];
+	DWORD hostChallengeLen = 8;
+	BYTE initializeUpdateRequest[APDU_COMMAND_LEN], extAuthRequest[APDU_COMMAND_LEN];
+	DWORD initializeUpdateRequestLen, extAuthRequestLen;
+	initializeUpdateRequestLen = extAuthRequestLen = APDU_COMMAND_LEN;
+	BYTE initializeUpdateResponse[APDU_RESPONSE_LEN];
+	DWORD initializeUpdateResponseLen = APDU_RESPONSE_LEN;
+
+	BYTE sequenceCounter[3];
+	BYTE cardChallenge[8];
+
+	BYTE calculatedCardChallenge[8];
+
+	securityInfo211.invokingAidLength = 16;
+	hex_to_byte_array("A000000151000000", securityInfo211.invokingAid, &securityInfo211.invokingAidLength);
+
+	hex_to_byte_array("80500000084B8912CF82B197B400", initializeUpdateRequest, &initializeUpdateRequestLen);
+	hex_to_byte_array("00008301A8186727A822020310A4B0CCBAAB1DDD9E73D36450CA82F2A90000029000", initializeUpdateResponse, &initializeUpdateResponseLen);
+	hex_to_byte_array("4B8912CF82B197B4", hostChallenge, &hostChallengeLen);
+
+	memcpy(cardChallenge, initializeUpdateResponse+13, 8);
+	memcpy(sequenceCounter, initializeUpdateResponse+29, 3);
+
+	status = calculate_card_challenge_SCP03(OPGP_VISA_DEFAULT_KEY, sequenceCounter, securityInfo211.invokingAid,
+			securityInfo211.invokingAidLength, calculatedCardChallenge);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+	assert_memory_equal(calculatedCardChallenge, cardChallenge, 8);
+}
+
 static int setup(void **state) {
 	cardContext.connectionFunctions.sendAPDU = &send_APDU;
 	return 0;
 }
 
 int main(void) {
+	cardInfo.specVersion = GP_211;
 	const struct CMUnitTest tests[] = {
 			cmocka_unit_test(delete_application),
 			cmocka_unit_test(mutual_auth),
 			cmocka_unit_test(get_status),
-			cmocka_unit_test(get_status_enc_mac)
+			cmocka_unit_test(get_status_enc_mac),
+			cmocka_unit_test(calculate_pseudo_random_challenge)
 			//cmocka_unit_test(send_apdu_rmac_rencryption)
 	};
 	return cmocka_run_group_tests_name("SCP03", tests, setup, NULL);

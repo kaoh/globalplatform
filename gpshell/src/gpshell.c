@@ -228,6 +228,34 @@ static TCHAR *strtokCheckComment(TCHAR *buf)
     }
 }
 
+static void displayCardRecognitionData(GP211_CARD_RECOGNITION_DATA cardData) {
+	DWORD i=0;
+	TCHAR temp[128];
+	if (cardData.version > 0) {
+		_tprintf(_T("Version: %04x\n"), (unsigned int)cardData.version);
+	}
+	for (i=0; i<cardData.scpLength; i++) {
+		_tprintf(_T("SCP: %d SCP Impl: %02x\n"), cardData.scp[i], cardData.scpImpl[i]);
+	}
+	if (cardData.cardChipDetailsLength > 0) {
+		ConvertByteArrayToString(cardData.cardChipDetails, cardData.cardChipDetailsLength, sizeof(temp)/sizeof(TCHAR), temp);
+		_tprintf(_T("Card Chip Details: %s\n"), temp);
+	}
+	if (cardData.cardConfigurationDetailsLength > 0) {
+		ConvertByteArrayToString(cardData.cardConfigurationDetails, cardData.cardConfigurationDetailsLength, sizeof(temp)/sizeof(TCHAR), temp);
+		_tprintf(_T("Card Configuration Details: %s\n"), temp);
+	}
+	if (cardData.issuerSecurityDomainsTrustPointCertificateInformationLength > 0) {
+		ConvertByteArrayToString(cardData.issuerSecurityDomainsTrustPointCertificateInformation,
+				cardData.issuerSecurityDomainsTrustPointCertificateInformationLength, sizeof(temp)/sizeof(TCHAR), temp);
+		_tprintf(_T("Issuer Security Domains Trust Point Certificate Information: %s\n"), temp);
+	}
+	if (cardData.issuerSecurityDomainCertificateInformationLength > 0) {
+		ConvertByteArrayToString(cardData.issuerSecurityDomainCertificateInformation, cardData.issuerSecurityDomainCertificateInformationLength, sizeof(temp)/sizeof(TCHAR), temp);
+		_tprintf(_T("Issuer Security Domain Certificate Information: %s\n"), temp);
+	}
+}
+
 static LPTSTR lifeCycleToString(BYTE lifeCycle, BYTE element) {
 	LPCTSTR lcLoaded = _T("Loaded");
 	LPCTSTR lcInstalled = _T("Installed");
@@ -502,7 +530,7 @@ static int handleOptions(OptionStr *pOptionStr)
     pOptionStr->readerNumber = AUTOREADER;
     pOptionStr->file[0] = _T('\0');
     pOptionStr->passPhrase[0] = _T('\0');
-    pOptionStr->protocol = OPGP_CARD_PROTOCOL_T0 | OPGP_CARD_PROTOCOL_T1;
+    pOptionStr->protocol = OPGP_CARD_PROTOCOL_T0;
     pOptionStr->nvCodeLimit = 0;
     pOptionStr->nvDataLimit = 0;
     pOptionStr->vDataLimit = 0;
@@ -1809,6 +1837,25 @@ static int handleCommands(FILE *fd)
                 }
                 goto timer;
             }
+            else if (_tcscmp(token, _T("get_card_recognition_data")) == 0)
+			{
+            	GP211_CARD_RECOGNITION_DATA cardData;
+				rv = handleOptions(&optionStr);
+				if (rv != EXIT_SUCCESS)
+				{
+					goto end;
+				}
+				status = GP211_get_card_recognition_data(cardContext, cardInfo, &cardData);
+
+				if (OPGP_ERROR_CHECK(status))
+				{
+					_tprintf (_T("get_card_recognition_data() returns 0x%08X (%s)\n"),
+							  (unsigned int)status.errorCode, status.errorMessage);
+					rv = EXIT_FAILURE;
+					goto end;
+				}
+				displayCardRecognitionData(cardData);
+			}
             else if (_tcscmp(token, _T("get_status")) == 0)
             {
 #define NUM_APPLICATIONS 64
