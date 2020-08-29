@@ -81,7 +81,8 @@ static void get_status_mac_only(void **state) {
 	will_return(send_APDU, extAuthResponse);
 	will_return(send_APDU, &extAuthResponseLen);
 
-	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, 0, 0,
+	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY,
+			sizeof(OPGP_VISA_DEFAULT_KEY), 0, 0,
 			GP211_SCP02, GP211_SCP02_IMPL_i15, GP211_SCP02_SECURITY_LEVEL_C_MAC, 0, &securityInfo211);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 
@@ -159,7 +160,8 @@ static void install_mac_enc(void **state) {
 	will_return(send_APDU, extAuthResponse);
 	will_return(send_APDU, &extAuthResponseLen);
 
-	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, 0, 0,
+	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY,
+			sizeof(OPGP_VISA_DEFAULT_KEY), 0, 0,
 			GP211_SCP02, GP211_SCP02_IMPL_i15, GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC, 0, &securityInfo211);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 

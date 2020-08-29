@@ -97,7 +97,7 @@ OPGP_NO_API
 OPGP_ERROR_STATUS put_delegated_management_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 								   BYTE keySetVersion, BYTE newKeySetVersion,
 								   OPGP_STRING PEMKeyFileName, char *passPhrase,
-								   BYTE receiptKey[16]);
+								   BYTE receiptKey[32], DWORD keyLength);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS put_3des_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -188,9 +188,9 @@ OPGP_ERROR_STATUS pin_change(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardI
 				PBYTE newPIN, DWORD newPINLength);
 
 OPGP_NO_API
-OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE baseKey[16],
-						   BYTE S_ENC[16], BYTE S_MAC[16],
-						   BYTE DEK[16], BYTE keySetVersion,
+OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE baseKey[32],
+						   BYTE S_ENC[32], BYTE S_MAC[32],
+						   BYTE DEK[32], DWORD keyLength, BYTE keySetVersion,
 						   BYTE keyIndex, BYTE secureChannelProtocol,
 						   BYTE secureChannelProtocolImpl, BYTE securityLevel,
 						   BYTE derivationMethod,
@@ -827,7 +827,7 @@ OPGP_ERROR_STATUS put_3des_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO car
 	else {
 		keyType = GP211_KEY_TYPE_DES;
 	}
-	status = GP211_put_symmetric_key(cardContext, cardInfo, secInfo, keySetVersion, keyIndex, newKeySetVersion, _3DESKey, keyType);
+	status = GP211_put_symmetric_key(cardContext, cardInfo, secInfo, keySetVersion, keyIndex, newKeySetVersion, _3DESKey, 16, keyType);
 	OPGP_LOG_END(_T("put_3des_key"), status);
 	return status;
 }
@@ -844,18 +844,20 @@ OPGP_ERROR_STATUS put_3des_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO car
  * \param keyIndex [in] The position of the key in the key set version.
  * \param newKeySetVersion [in] The new key set version.
  * \param aesKey [in] The new AES key.
+ * \param keyLength [in] The key length. 16, 24 or 32 bytes.
  */
 OPGP_ERROR_STATUS GP211_put_aes_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-				  BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion, BYTE aesKey[16]) {
+				  BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion, BYTE aesKey[32], DWORD keyLength) {
 	OPGP_LOG_START(_T("GP211_put_aes_key"));
 	OPGP_ERROR_STATUS status;
-	status = GP211_put_symmetric_key(cardContext, cardInfo, secInfo, keySetVersion, keyIndex, newKeySetVersion, aesKey, GP211_KEY_TYPE_AES);
+	status = GP211_put_symmetric_key(cardContext, cardInfo, secInfo, keySetVersion, keyIndex, newKeySetVersion, aesKey,
+			keyLength, GP211_KEY_TYPE_AES);
 	OPGP_LOG_END(_T("GP211_put_aes_key"), status);
 	return status;
 }
 
 OPGP_ERROR_STATUS GP211_put_symmetric_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-				  BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion, BYTE key[16], BYTE keyType) {
+				  BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion, BYTE key[32], DWORD keyLength, BYTE keyType) {
 	OPGP_ERROR_STATUS status;
 	BYTE sendBuffer[APDU_COMMAND_LEN];
 	DWORD sendBufferLength = APDU_COMMAND_LEN;
@@ -905,7 +907,7 @@ end:
 OPGP_ERROR_STATUS put_delegated_management_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 								   BYTE keySetVersion, BYTE newKeySetVersion,
 								   OPGP_STRING PEMKeyFileName, char *passPhrase,
-								   BYTE receiptKey[16]) {
+								   BYTE receiptKey[32], DWORD keyLength) {
 	OPGP_ERROR_STATUS status;
 	BYTE sendBuffer[APDU_COMMAND_LEN];
 	DWORD sendBufferLength = 0;
@@ -973,7 +975,7 @@ OPGP_ERROR_STATUS put_delegated_management_keys(OPGP_CARD_CONTEXT cardContext, O
 		keyType = GP211_KEY_TYPE_DES;
 	}
 
-	status = get_key_data_field(secInfo, receiptKey, 16, keyType, 1, keyDataField, &keyDataFieldLength, keyCheckValue);
+	status = get_key_data_field(secInfo, receiptKey, keyLength, keyType, 1, keyDataField, &keyDataFieldLength, keyCheckValue);
 	if ( OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -1044,8 +1046,8 @@ OPGP_ERROR_STATUS put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CA
 							 BYTE newS_ENC[16],
 							 BYTE newS_MAC[16], BYTE newDEK[16]) {
 	OPGP_ERROR_STATUS status;
-	BYTE sendBuffer[73];
-	DWORD sendBufferLength = 73;
+	BYTE sendBuffer[255];
+	DWORD sendBufferLength = 255;
 	DWORD recvBufferLength = APDU_RESPONSE_LEN;
 	BYTE recvBuffer[APDU_RESPONSE_LEN];
 	BYTE keyDataField[255];
@@ -1153,20 +1155,21 @@ end:
  * \param PEMKeyFileName [in] A PEM file name with the public RSA key.
  * \param *passPhrase [in] The passphrase. Must be an ASCII string.
  * \param receiptKey [in] The new Receipt Generation key.
+ * \param keyLength [in] The receipt key length. 16, 24 or 32 bytes.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_put_delegated_management_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 								   BYTE keySetVersion, BYTE newKeySetVersion,
 								   OPGP_STRING PEMKeyFileName, char *passPhrase,
-								   BYTE receiptKey[16]) {
+								   BYTE receiptKey[32], DWORD keyLength) {
 	return put_delegated_management_keys(cardContext, cardInfo, secInfo,
 								   keySetVersion, newKeySetVersion,
 								   PEMKeyFileName, passPhrase,
-								   receiptKey);
+								   receiptKey, keyLength);
 }
 
 /**
- * If keyIndex is 0xFF (=-1) all keys within a keySetVersion are deleted.
+ * If keyIndex is 0xFF all keys within a keySetVersion are deleted.
  * If keySetVersion is 0x00 all keys with the specified keyIndex are deleted.
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
@@ -1196,7 +1199,7 @@ OPGP_ERROR_STATUS delete_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardI
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xE4;
 	sendBuffer[i++] = 0x00;
-	sendBuffer[i++] = 0x00;
+	sendBuffer[i++] = 0x80;
 	if (keySetVersion == 0x00) {
 		sendBuffer[i++] = 0x03;
 		sendBuffer[i++] = 0xD0;
@@ -1747,7 +1750,7 @@ OPGP_ERROR_STATUS GP211_get_secure_channel_protocol_details(OPGP_CARD_CONTEXT ca
 	while (i < cardData.scpLength) {
 		// only supporting SCP01 - SCP03
 		if (cardData.scp[i] == GP211_SCP01 || cardData.scp[i] == GP211_SCP02 || cardData.scp[i] == GP211_SCP03) {
-			*secureChannelProtocol = cardData.scp[i++];
+			*secureChannelProtocol = cardData.scp[i];
 			*secureChannelProtocolImpl = cardData.scpImpl[i++];
 			OPGP_log_Msg(_T("Using Secure Channel Protocol 0x%02x with Secure Channel Protocol Impl: 0x%02x\n"), *secureChannelProtocol, *secureChannelProtocolImpl);
 			goto found;
@@ -1818,7 +1821,7 @@ OPGP_ERROR_STATUS get_key_information_templates(OPGP_CARD_CONTEXT cardContext, O
 		BOOL extended = 0;
 		DWORD j = 0;
 		// parse C0
-		result = read_TLV(tlv1.value, tlv1.length, &tlv2);
+		result = read_TLV(tlv1.value+offset, tlv1.length, &tlv2);
 		if (result == -1 || tlv2.tag != 0xC0) {
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 			goto end;
@@ -3357,14 +3360,15 @@ end:
 }
 
 /**
- * This is a hash of the Load File Data Block with SHA-1 for SCP02 or SHA-256 for SCP03.
+ * This is a hash of the Load File Data Block with SHA-1 for SCP02 or SHA-256, SHA-384, SHA-512 for SCP03.
  * \param executableLoadFileName [in] The name of the Executable Load File to hash.
  * \param hash [out] The hash value.
+ * \param hashLength [in] The hash length for SCP03: 32 for AES-128, 48 for AES-192, 64 for AES-256.
  * \param secureChannelProtocol [in] The Secure Channel Protocol.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_calculate_load_file_data_block_hash(OPGP_STRING executableLoadFileName,
-							 BYTE hash[32], BYTE secureChannelProtocol) {
+							 BYTE hash[64], DWORD hashLength, BYTE secureChannelProtocol) {
 	OPGP_ERROR_STATUS status;
 	PBYTE loadFileBuf = NULL;
 	DWORD loadFileBufSize;
@@ -3388,7 +3392,7 @@ OPGP_ERROR_STATUS GP211_calculate_load_file_data_block_hash(OPGP_STRING executab
 		status = calculate_sha1_hash(loadFileBuf, loadFileBufSize, hash);
 	}
 	if (secureChannelProtocol == GP211_SCP03) {
-		status = calculate_sha256_hash(loadFileBuf, loadFileBufSize, hash);
+		status = calculate_sha2_hash(loadFileBuf, loadFileBufSize, hash, hashLength);
 	}
 	else {
 		OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_INVALID_SCP, OPGP_stringify_error(GP211_ERROR_INVALID_SCP));
@@ -3407,54 +3411,32 @@ end:
 }
 
 /**
- * This is used with SCP02. If a security domain has DAP verification privilege the security domain validates this DAP.
- * The loadFileDataBlockHash can be calculated using calculate_load_file_data_block_hash().
- * \param loadFileDataBlockHash [in] The Load File Data Block Hash.
- * \param securityDomainAID [in] A buffer containing the Security Domain AID.
- * \param securityDomainAIDLength [in] The length of the Security Domain AID.
- * \param DAPCalculationKey [in] The key to calculate the DAP.
- * \param *loadFileDataBlockSignature [out] A pointer to the returned GP211_DAP_BLOCK structure.
- * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
- */
-OPGP_ERROR_STATUS GP211_calculate_3des_DAP(BYTE loadFileDataBlockHash[20], PBYTE securityDomainAID,
-						DWORD securityDomainAIDLength,
-						BYTE DAPCalculationKey[16], GP211_DAP_BLOCK *loadFileDataBlockSignature)
-{
-	OPGP_ERROR_STATUS status;
-	OPGP_LOG_START(_T("GP211_calculate_3des_DAP"));
-	calculate_MAC_des_3des(DAPCalculationKey, loadFileDataBlockHash, 20, NULL,
-		loadFileDataBlockSignature->signature);
-
-	loadFileDataBlockSignature->signatureLength = 8;
-	memcpy(loadFileDataBlockSignature->securityDomainAID, securityDomainAID, securityDomainAIDLength);
-	loadFileDataBlockSignature->securityDomainAIDLength = (BYTE)securityDomainAIDLength;
-
-	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
-end:
-	OPGP_LOG_END(_T("GP211_calculate_3des_DAP"), status);
-	return status;
-}
-
-/**
- * This is used with SCP03. If a security domain has DAP verification privilege the security domain validates this DAP.
+ * This is used with SCP02 or SCP03. If a security domain has DAP verification privilege the security domain validates this DAP.
  * The loadFileDataBlockHash can be calculated using calculate_load_file_data_block_hash().
  * \param loadFileDataBlockHash [in] The Load File Data Block Hash. Must be a SHA-256, SHA-384 or SHA-512 hash.
  * \param hashLength [in] The length of the hash.
  * \param securityDomainAID [in] A buffer containing the Security Domain AID.
  * \param securityDomainAIDLength [in] The length of the Security Domain AID.
  * \param DAPCalculationKey [in] The key to calculate the DAP.
+ * \param keyLength [in] The key length of the DAPCalculationKey.
  * \param *loadFileDataBlockSignature [out] A pointer to the returned GP211_DAP_BLOCK structure.
+ * \param secureChannelProtocol [in] The Secure Channel Protocol.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
-OPGP_ERROR_STATUS GP211_calculate_aes_DAP(BYTE loadFileDataBlockHash[64], BYTE hashLength, PBYTE securityDomainAID,
+OPGP_ERROR_STATUS GP211_calculate_DAP(BYTE loadFileDataBlockHash[64], BYTE hashLength, PBYTE securityDomainAID,
 						DWORD securityDomainAIDLength,
-						BYTE DAPCalculationKey[16], GP211_DAP_BLOCK *loadFileDataBlockSignature)
+						BYTE DAPCalculationKey[32], DWORD keyLength, GP211_DAP_BLOCK *loadFileDataBlockSignature, BYTE secureChannelProtocol)
 {
 	OPGP_ERROR_STATUS status;
 	OPGP_LOG_START(_T("GP211_calculate_aes_DAP"));
-	calculate_CMAC_aes(DAPCalculationKey, loadFileDataBlockHash, hashLength, NULL, loadFileDataBlockSignature->signature);
-
-	loadFileDataBlockSignature->signatureLength = 16;
+	if (secureChannelProtocol == GP211_SCP02) {
+		calculate_MAC_des_3des(DAPCalculationKey, loadFileDataBlockHash, 20, NULL, loadFileDataBlockSignature->signature);
+			loadFileDataBlockSignature->signatureLength = 8;
+	}
+	else {
+		calculate_CMAC_aes(DAPCalculationKey, keyLength, loadFileDataBlockHash, hashLength, NULL, loadFileDataBlockSignature->signature);
+		loadFileDataBlockSignature->signatureLength = 16;
+	}
 	memcpy(loadFileDataBlockSignature->securityDomainAID, securityDomainAID, securityDomainAIDLength);
 	loadFileDataBlockSignature->securityDomainAIDLength = (BYTE)securityDomainAIDLength;
 
@@ -3502,7 +3484,8 @@ end:
  * \param confirmationCounter [in] The confirmation counter.
  * \param cardUniqueData [in] The card unique data.
  * \param cardUniqueDataLength [in] The length of the card unique data buffer.
- * \param receiptKey [in] The 3DES key to generate the receipt.
+ * \param receiptKey [in] The 3DES or AES key to generate the receipt.
+ * \param keyLength [in] The key length. 16, 24 or 32 bytes.
  * \param receiptData [in] The GP211_RECEIPT_DATA structure containing the receipt returned
  * from load() to verify.
  * \param executableLoadFileAID [in] A buffer with AID of the Executable Load File which was INSTALL [for load].
@@ -3514,12 +3497,12 @@ end:
  */
 OPGP_ERROR_STATUS GP211_validate_load_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
 						   DWORD cardUniqueDataLength,
-						   BYTE receiptKey[16], GP211_RECEIPT_DATA receiptData,
+						   BYTE receiptKey[32], DWORD keyLength, GP211_RECEIPT_DATA receiptData,
 						   PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 						   PBYTE securityDomainAID, DWORD securityDomainAIDLength, BYTE secureChannelProtocol) {
 	return validate_load_receipt(confirmationCounter, cardUniqueData,
 						   cardUniqueDataLength,
-						   receiptKey, receiptData,
+						   receiptKey, keyLength, receiptData,
 						   executableLoadFileAID, executableLoadFileAIDLength,
 						   securityDomainAID, securityDomainAIDLength, secureChannelProtocol);
 }
@@ -3531,7 +3514,8 @@ OPGP_ERROR_STATUS GP211_validate_load_receipt(DWORD confirmationCounter, PBYTE c
  * \param confirmationCounter [in] The confirmation counter.
  * \param cardUniqueData [in] The card unique data.
  * \param cardUniqueDataLength [in] The length of the card unique data buffer.
- * \param receiptKey [in] The 3DES key to generate the receipt.
+ * \param receiptKey [in] The 3DES or AES key to generate the receipt.
+ * \param keyLength [in] The key length. 16, 24 or 32 bytes.
  * \param receiptData [in] The GP211_RECEIPT_DATA structure containing the receipt returned
  * from GP211_install_for_install() to verify.
  * \param executableLoadFileAID [in] A buffer with AID of the Executable Load File which was INSTALL [for install].
@@ -3543,12 +3527,12 @@ OPGP_ERROR_STATUS GP211_validate_load_receipt(DWORD confirmationCounter, PBYTE c
  */
 OPGP_ERROR_STATUS GP211_validate_install_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
 							  DWORD cardUniqueDataLength,
-						   BYTE receiptKey[16], GP211_RECEIPT_DATA receiptData,
+						   BYTE receiptKey[32], DWORD keyLength, GP211_RECEIPT_DATA receiptData,
 						   PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 						   PBYTE applicationAID, DWORD applicationAIDLength, BYTE secureChannelProtocol) {
 	return validate_install_receipt(confirmationCounter, cardUniqueData,
 							  cardUniqueDataLength,
-						   receiptKey, receiptData,
+						   receiptKey, keyLength, receiptData,
 						   executableLoadFileAID, executableLoadFileAIDLength,
 						   applicationAID, applicationAIDLength, secureChannelProtocol);
 }
@@ -3560,7 +3544,8 @@ OPGP_ERROR_STATUS GP211_validate_install_receipt(DWORD confirmationCounter, PBYT
  * \param confirmationCounter [in] The confirmation counter.
  * \param cardUniqueData [in] The card unique data.
  * \param cardUniqueDataLength [in] The length of the card unique data buffer.
- * \param receiptKey [in] The 3DES key to generate the receipt.
+ * \param receiptKey [in] The 3DES or AES key to generate the receipt.
+ * \param keyLength [in] The key length. 16, 24 or 32 bytes.
  * \param receiptData [in] The GP211_RECEIPT_DATA structure containing the receipt returned
  * from delete_application() to verify.
  * \param AID [in] A buffer with AID of the application which was deleted.
@@ -3570,11 +3555,11 @@ OPGP_ERROR_STATUS GP211_validate_install_receipt(DWORD confirmationCounter, PBYT
  */
 OPGP_ERROR_STATUS GP211_validate_delete_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
 							 DWORD cardUniqueDataLength,
-						   BYTE receiptKey[16], GP211_RECEIPT_DATA receiptData,
+						   BYTE receiptKey[32], DWORD keyLength, GP211_RECEIPT_DATA receiptData,
 						   PBYTE AID, DWORD AIDLength, BYTE secureChannelProtocol) {
 	return validate_delete_receipt(confirmationCounter, cardUniqueData,
 							 cardUniqueDataLength,
-						   receiptKey, receiptData,
+						   receiptKey, keyLength, receiptData,
 						   AID, AIDLength, secureChannelProtocol);
 }
 
@@ -3584,7 +3569,8 @@ OPGP_ERROR_STATUS GP211_validate_delete_receipt(DWORD confirmationCounter, PBYTE
  * \param confirmationCounter [in] The confirmation counter.
  * \param cardUniqueData [in] The card unique data.
  * \param cardUniqueDataLength [in] The length of the card unique data buffer.
- * \param receiptKey [in] The 3DES key to generate the receipt.
+ * \param receiptKey [in] The 3DES oe AES key to generate the receipt.
+ * \param keyLength [in] The key length. 16, 24 or 32 bytes.
  * \param receiptData [in] The GP211_RECEIPT_DATA structure containing the receipt returned
  * from GP211_install_for_extradition() to verify.
  * \param oldSecurityDomainAID [in] The AID of the old associated Security Domain.
@@ -3598,7 +3584,7 @@ OPGP_ERROR_STATUS GP211_validate_delete_receipt(DWORD confirmationCounter, PBYTE
  */
 OPGP_ERROR_STATUS GP211_validate_extradition_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
 							  DWORD cardUniqueDataLength,
-						   BYTE receiptKey[16], GP211_RECEIPT_DATA receiptData,
+						   BYTE receiptKey[32], DWORD keyLength, GP211_RECEIPT_DATA receiptData,
 						   PBYTE oldSecurityDomainAID, DWORD oldSecurityDomainAIDLength,
 						   PBYTE newSecurityDomainAID, DWORD newSecurityDomainAIDLength,
 						   PBYTE applicationOrExecutableLoadFileAID,
@@ -3633,7 +3619,7 @@ OPGP_ERROR_STATUS GP211_validate_extradition_receipt(DWORD confirmationCounter, 
 	validationData[i++] = (BYTE)newSecurityDomainAIDLength;
 	memcpy(validationData, newSecurityDomainAID, newSecurityDomainAIDLength);
 	i+=newSecurityDomainAIDLength;
-	status = validate_receipt(validationData, validationDataLength, receiptData.receipt, receiptKey, secureChannelProtocol);
+	status = validate_receipt(validationData, validationDataLength, receiptData.receipt, receiptKey, keyLength, secureChannelProtocol);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -4138,6 +4124,7 @@ end:
  * \param S_ENC [in] Secure Channel Encryption Key.
  * \param S_MAC [in] Secure Channel Message Authentication Code Key.
  * \param DEK [in] Data Encryption Key.
+ * \param keyLength [in] The key length. 16, 24 or 32 bytes.
  * \param keySetVersion [in] The key set version on the card to use for mutual authentication.
  * \param keyIndex [in] The key index of the encryption key in the key set version on the card to use for
  * mutual authentication.
@@ -4148,25 +4135,30 @@ end:
  * \param *secInfo [out] The returned GP211_SECURITY_INFO structure.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
-OPGP_ERROR_STATUS GP211_mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE baseKey[16],
-						   BYTE S_ENC[16], BYTE S_MAC[16],
-						   BYTE DEK[16], BYTE keySetVersion,
+OPGP_ERROR_STATUS GP211_mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE baseKey[32],
+						   BYTE S_ENC[32], BYTE S_MAC[32],
+						   BYTE DEK[32],
+						   DWORD keyLength,
+						   BYTE keySetVersion,
 						   BYTE keyIndex, BYTE secureChannelProtocol,
 						   BYTE secureChannelProtocolImpl, BYTE securityLevel,
 						   BYTE derivationMethod,
 						   GP211_SECURITY_INFO *secInfo) {
 	return mutual_authentication(cardContext, cardInfo, baseKey,
 						   S_ENC, S_MAC,
-						   DEK, keySetVersion,
+						   DEK, keyLength,
+						   keySetVersion,
 						   keyIndex, secureChannelProtocol,
 						   secureChannelProtocolImpl, securityLevel,
 						   derivationMethod,
 						   secInfo);
 }
 
-OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE baseKey[16],
-						   BYTE S_ENC[16], BYTE S_MAC[16],
-						   BYTE DEK[16], BYTE keySetVersion,
+OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE baseKey[32],
+						   BYTE S_ENC[32], BYTE S_MAC[32],
+						   BYTE DEK[32],
+						   DWORD keyLength,
+						   BYTE keySetVersion,
 						   BYTE keyIndex, BYTE secureChannelProtocol,
 						   BYTE secureChannelProtocolImpl, BYTE securityLevel,
 						   BYTE derivationMethod,
@@ -4192,9 +4184,9 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	 */
     BYTE mac[16]; // Philip Wendland: Only the fist 8 byte used by SCP01/02
 
-	BYTE sMac[16];
-	BYTE sEnc[16];
-	BYTE dek[16];
+	BYTE sMac[32];
+	BYTE sEnc[32];
+	BYTE dek[32];
 
 	DWORD sendBufferLength = APDU_COMMAND_LEN;
 	DWORD recvBufferLength = APDU_RESPONSE_LEN;
@@ -4206,19 +4198,20 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 
 	// copy keys to internal buffer
 	if (S_MAC != NULL) {
-		memcpy(sMac, S_MAC, 16);
+		memcpy(sMac, S_MAC, keyLength);
 	}
 	if (S_ENC != NULL) {
-		memcpy(sEnc, S_ENC, 16);
+		memcpy(sEnc, S_ENC, keyLength);
 	}
 	if (DEK != NULL) {
-		memcpy(dek, DEK, 16);
+		memcpy(dek, DEK, keyLength);
 	}
 
 	status = get_random(hostChallenge, 8);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
+	secInfo->keyLength = keyLength;
 
 	OPGP_LOG_HEX(_T("mutual_authentication: Generated Host Challenge: "), hostChallenge, 8);
 
@@ -4376,7 +4369,7 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 				memcpy(secInfo->invokingAid, GP231_ISD_AID, sizeof(GP231_ISD_AID));
 				secInfo->invokingAidLength = sizeof(GP231_ISD_AID);
 			}
-			status = calculate_card_challenge_SCP03(sEnc, sequenceCounter, secInfo->invokingAid, secInfo->invokingAidLength, calculatedCardChallenge);
+			status = calculate_card_challenge_SCP03(sEnc, keyLength, sequenceCounter, secInfo->invokingAid, secInfo->invokingAidLength, calculatedCardChallenge);
 			if (OPGP_ERROR_CHECK(status)) {
 				goto end;
 			}
@@ -4386,20 +4379,20 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 				goto end;
 			}
         }
-        status = create_session_key_SCP03(sEnc, S_ENC_DerivationConstant_SCP03, cardChallenge, hostChallenge, secInfo->encryptionSessionKey);
+        status = create_session_key_SCP03(sEnc, keyLength, S_ENC_DerivationConstant_SCP03, cardChallenge, hostChallenge, secInfo->encryptionSessionKey);
         if (OPGP_ERROR_CHECK(status)) {
             goto end;
         }
-        status = create_session_key_SCP03(sMac, S_MAC_DerivationConstant_SCP03, cardChallenge, hostChallenge, secInfo->C_MACSessionKey);
+        status = create_session_key_SCP03(sMac, keyLength, S_MAC_DerivationConstant_SCP03, cardChallenge, hostChallenge, secInfo->C_MACSessionKey);
         if (OPGP_ERROR_CHECK(status)) {
             goto end;
         }
-        status = create_session_key_SCP03(sMac, S_RMAC_DerivationConstant_SCP03, cardChallenge, hostChallenge, secInfo->R_MACSessionKey);
+        status = create_session_key_SCP03(sMac, keyLength, S_RMAC_DerivationConstant_SCP03, cardChallenge, hostChallenge, secInfo->R_MACSessionKey);
         if (OPGP_ERROR_CHECK(status)) {
             goto end;
         }
         // in SCP03 there is no data encryption session key
-        memcpy(secInfo->dataEncryptionSessionKey, dek, 16);
+        memcpy(secInfo->dataEncryptionSessionKey, dek, keyLength);
 	}
 	else if (secInfo->secureChannelProtocol == GP211_SCP02) {
 		/* 1 Secure Channel base key */
@@ -4503,7 +4496,7 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	// calculation of card cryptogram
 	if (secInfo->secureChannelProtocol == GP211_SCP03) {
 		status = calculate_card_cryptogram_SCP03(secInfo->C_MACSessionKey,
-			cardChallenge, hostChallenge, cardCryptogramVer);
+				keyLength, cardChallenge, hostChallenge, cardCryptogramVer);
 		if (OPGP_ERROR_CHECK(status)) {
 			goto end;
 		}
@@ -4535,7 +4528,7 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 		/*
 		 * Philip Wendland: SCP03 uses the S-MAC session key, not the S-ENC key for host cryptogram generation.
 		 */
-		calculate_host_cryptogram_SCP03(secInfo->C_MACSessionKey, cardChallenge, hostChallenge,
+		calculate_host_cryptogram_SCP03(secInfo->C_MACSessionKey, keyLength, cardChallenge, hostChallenge,
 			hostCryptogram);
 	}
 	else if (secInfo->secureChannelProtocol == GP211_SCP02) {
@@ -4559,7 +4552,7 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 
 	if (secInfo->secureChannelProtocol == GP211_SCP03) {
         // Philip Wendland: the MAC chaining value of EXTERNAL AUTHENTICATE is the initial chaining vector (16 Bytes '00')
-	    status = calculate_CMAC_aes(secInfo->C_MACSessionKey, sendBuffer, sendBufferLength-8, (PBYTE)SCP03_ICV, mac);
+	    status = calculate_CMAC_aes(secInfo->C_MACSessionKey, keyLength, sendBuffer, sendBufferLength-8, (PBYTE)SCP03_ICV, mac);
 	    if (OPGP_ERROR_CHECK(status)) {
 	        goto end;
 	    }
@@ -5091,7 +5084,7 @@ OPGP_ERROR_STATUS OP201_put_delegated_management_keys(OPGP_CARD_CONTEXT cardCont
 	GP211_SECURITY_INFO gp211secInfo;
 	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
 	status = put_delegated_management_keys(cardContext, cardInfo, &gp211secInfo, keySetVersion, newKeySetVersion,
-		PEMKeyFileName, passPhrase, receiptGenerationKey);
+		PEMKeyFileName, passPhrase, receiptGenerationKey, 16);
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 	return status;
 }
@@ -6091,7 +6084,7 @@ OPGP_ERROR_STATUS OP201_validate_load_receipt(DWORD confirmationCounter, BYTE ca
 	GP211_RECEIPT_DATA gp211receiptData;
 	mapOP201ToGP211ReceiptData(receiptData, &gp211receiptData);
 	status = validate_load_receipt(confirmationCounter, cardUniqueData,
-		10, receiptGenerationKey, gp211receiptData, executableLoadFileAID,
+		10, receiptGenerationKey, 16, gp211receiptData, executableLoadFileAID,
 		executableLoadFileAIDLength, securityDomainAID, securityDomainAIDLength, GP211_SCP02);
 	return status;
 }
@@ -6118,7 +6111,7 @@ OPGP_ERROR_STATUS OP201_validate_install_receipt(DWORD confirmationCounter, BYTE
 	GP211_RECEIPT_DATA gp211receiptData;
 	mapOP201ToGP211ReceiptData(receiptData, &gp211receiptData);
 	status = validate_install_receipt(confirmationCounter, cardUniqueData,
-		10, receiptGenerationKey, gp211receiptData, executableLoadFileAID,
+		10, receiptGenerationKey, 16, gp211receiptData, executableLoadFileAID,
 		executableLoadFileAIDLength, applicationInstanceAID, applicationInstanceAIDLength, GP211_SCP02);
 	return status;
 }
@@ -6142,7 +6135,7 @@ OPGP_ERROR_STATUS OP201_validate_delete_receipt(DWORD confirmationCounter, BYTE 
 	GP211_RECEIPT_DATA gp211receiptData;
 	mapOP201ToGP211ReceiptData(receiptData, &gp211receiptData);
 	status = validate_delete_receipt(confirmationCounter, cardUniqueData,
-		10, receiptGenerationKey, gp211receiptData, AID, AIDLength, GP211_SCP02);
+		10, receiptGenerationKey, 16, gp211receiptData, AID, AIDLength, GP211_SCP02);
 	return status;
 }
 
@@ -6195,7 +6188,7 @@ OPGP_ERROR_STATUS OP201_mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPG
 								 OP201_SECURITY_INFO *secInfo) {
 	OPGP_ERROR_STATUS status;
 	GP211_SECURITY_INFO gp211secInfo;
-	status = mutual_authentication(cardContext, cardInfo, baseKey, encKey, macKey, kekKey, keySetVersion,
+	status = mutual_authentication(cardContext, cardInfo, baseKey, encKey, macKey, kekKey, 16, keySetVersion,
 		keyIndex, GP211_SCP01, GP211_SCP01_IMPL_i05, securityLevel, derivationMethod, &gp211secInfo);
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 	return status;

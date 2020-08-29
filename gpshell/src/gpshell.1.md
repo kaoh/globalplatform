@@ -59,7 +59,7 @@ __card_connect__ -readerNumber *x*
 
 :    Connect to card in the *x* th reader in the system
 
-__open_sc__ -keyind *x* -keyver *x* -key *key* -mac_key *mac-key* -enc_key *enc-key* -kek_key *kek-key* -security *securityLevel* -scp *protocol* -scpimpl *impl* -keyDerivation *derivation*
+__open_sc__ -keyind *x* -keyver *x* -key *key* -mac_key *mac-key* -enc_key *enc-key* -kek_key *kek-key* -security *securityLevel* -scp *protocol* -scpimpl *impl* -keyDerivation *derivation* -keyLength *keyLength*
 
 :    Open a secure channel
 
@@ -71,6 +71,8 @@ If the card supports a Secure Channel Protocol Implementation with only one base
 
 If the card uses a key derivation mechanism you must enable the derivation mode with the -keyDerivation option and you must specify with -key the master (mother) key. -kek_key, -mac_key and -enc_key are not relevant is this case. See the section Options and Key Derivation.
 __NOTE:__ If the secure channel is going to be opened when no security domain is selected then the command  get_secure_channel_protocol_details must be executed before to be able to get the Secure Channel Protocol Implementation.
+
+-keyLength is only needed for SCP03 and only if a AES-256 or AES-192 bit key is used.
 
 __select__ -AID *AID*
 
@@ -128,16 +130,20 @@ __release_context__
 
 :    Release context
 
-__put_sc_key__ -keyver *keyver* -newkeyver *newkeyver* -mac_key *new_MAC_key* -enc_key *new_ENC_key* -kek_key *new_KEK_key*
+__put_sc_key__ -keyver *keyver* -newkeyver *newkeyver* -keyLength *keyLength* -mac_key *new_MAC_key* -enc_key *new_ENC_key* -kek_key *new_KEK_key*
 
 :    Add or replace a key set version
 
 If a new key set version is to be added *keyver* must be set to 0.
 If *keyver* equals *newkeyver* an existing key version is replaced.
 
-__put_sc_key__ -keyver *keyver* -newkeyver *newkeyver* -key *key* -keyDerivation "derivation"
+-keyLength is only needed for SCP03 and only if a AES-256 or AES-192 bit key is used.
+
+__put_sc_key__ -keyver *keyver* -newkeyver *newkeyver* -keyLength *keyLength* -key *key* -keyDerivation "derivation"
 
 :    Replace key set version *keyver* using key derivation *derivation* using the master (mother) key *y*
+
+-keyLength is only needed for SCP03 and only if a AES-256 or AES-192 bit key is used.
 
 __put_dm_keys__ -keyver *keyver* -newkeyver *newkeyver* -file *public_rsa_key_file* -pass *password* -key *new_receipt_generation_key*
 
@@ -183,6 +189,11 @@ __get_card_recognition_data__
 
 :     A GET DATA command returning the card recognition data. __NOTE:__ The security domain must be selected.
 
+__delete_key__ -keyver *keyver* -keyind *keyind*
+
+:     Deletes a key set version with a DELETE command. 
+If only the keyver is passed the complete key set version is deleted.
+By default keyind is 0xFF. If keyver is 0 all key set with keyind are deleted.
 
 # OPTIONS
 
@@ -216,6 +227,10 @@ __-kek_key__ *key*
 __-security__ *x*
 
 :    0: clear, 1: MAC, 3: MAC+ENC, 51: MAC+ENC+R-MAC+E-ENC (SCP03 only), 19: MAC+ENC-R-MAC (SCP02+SCP03 only), 17: MAC+R-MAC (SCP02+SCP03 only)
+
+__-keyLength__ *x*
+
+:    The key length of the key, enc_key, mac_key and kex_key in case SCP03 is used. The default are 16 bytes (AES-128), but SCP03 can also use 24 (AES-192) and 32 bytes (AES-256)
 
 __-reader__ *readerName*
 

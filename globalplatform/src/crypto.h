@@ -37,11 +37,11 @@ extern "C"
 #include "globalplatform/error.h"
 #include "globalplatform/security.h"
 
-static const BYTE ICV[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; //!< Initial chaining vector.
-static const BYTE SCP03_ICV[16] = {0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00}; //!< Initial chaining vector for SCP03.
+static const BYTE ICV[8] = {0}; //!< Initial chaining vector.
+static const BYTE SCP03_ICV[32] = {0}; //!< Initial chaining vector for SCP03.
 
 OPGP_NO_API
-OPGP_ERROR_STATUS calculate_CMAC_aes(BYTE sMacKey[16], BYTE *message, 
+OPGP_ERROR_STATUS calculate_CMAC_aes(BYTE sMacKey[32], DWORD keyLength, BYTE *message,
 		DWORD messageLength, BYTE chainingValue[16],
 								BYTE mac[16]);
 
@@ -111,24 +111,27 @@ OPGP_ERROR_STATUS calculate_host_cryptogram_SCP02(BYTE S_ENCSessionKey[16],
 											BYTE hostCryptogram[8]);
 
 OPGP_NO_API
-OPGP_ERROR_STATUS create_session_key_SCP03(BYTE key[16], BYTE derivationConstant, BYTE cardChallenge[8],
+OPGP_ERROR_STATUS create_session_key_SCP03(BYTE key[32], DWORD keyLength, BYTE derivationConstant, BYTE cardChallenge[8],
 							   BYTE hostChallenge[8], BYTE sessionKey[16]);
 
 OPGP_NO_API
-OPGP_ERROR_STATUS calculate_card_challenge_SCP03(BYTE S_ENC[16],
+OPGP_ERROR_STATUS calculate_card_challenge_SCP03(BYTE S_ENC[32],
+											DWORD keyLength,
 											BYTE sequenceCounter[3],
 											PBYTE invokingAID,
 											DWORD invokingAIDLength,
 											BYTE cardChallenge[8]);
 
 OPGP_NO_API
-OPGP_ERROR_STATUS calculate_card_cryptogram_SCP03(BYTE S_MACSessionKey[16],
+OPGP_ERROR_STATUS calculate_card_cryptogram_SCP03(BYTE S_MACSessionKey[32],
+											DWORD keyLength,
 											BYTE cardChallenge[8],
 											BYTE hostChallenge[8],
 											BYTE cardCryptogram[8]);
 
 OPGP_NO_API
-OPGP_ERROR_STATUS calculate_host_cryptogram_SCP03(BYTE S_MACSessionKey[16],
+OPGP_ERROR_STATUS calculate_host_cryptogram_SCP03(BYTE S_MACSessionKey[32],
+											DWORD keyLength,
 											BYTE cardChallenge[8],
 											BYTE hostChallenge[8],
 											BYTE hostCryptogram[8]);
@@ -156,7 +159,7 @@ OPGP_ERROR_STATUS calculate_enc_ecb_two_key_triple_des(BYTE key[16], BYTE *messa
 
 OPGP_NO_API
 OPGP_ERROR_STATUS validate_receipt(PBYTE validationData, DWORD validationDataLength,
-							 BYTE receipt[16], BYTE receiptKey[16], BYTE secureChannelProtocol);
+							 BYTE receipt[16], BYTE receiptKey[32], DWORD keyLength, BYTE secureChannelProtocol);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS calculate_MAC_des_3des(BYTE _3des_key[16], BYTE *message, DWORD messageLength,
@@ -165,20 +168,20 @@ OPGP_ERROR_STATUS calculate_MAC_des_3des(BYTE _3des_key[16], BYTE *message, DWOR
 OPGP_NO_API
 OPGP_ERROR_STATUS validate_install_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
 							  DWORD cardUniqueDataLength,
-						   BYTE receiptKey[16], GP211_RECEIPT_DATA receiptData,
+						   BYTE receiptKey[32], DWORD keyLength, GP211_RECEIPT_DATA receiptData,
 						   PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 						   PBYTE applicationAID, DWORD applicationAIDLength, BYTE secureChannelProtocol);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS validate_delete_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
 							 DWORD cardUniqueDataLength,
-						   BYTE receiptKey[16], GP211_RECEIPT_DATA receiptData,
+						   BYTE receiptKey[32], DWORD keyLength, GP211_RECEIPT_DATA receiptData,
 						   PBYTE AID, DWORD AIDLengthv, BYTE secureChannelProtocol);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS validate_load_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
 						   DWORD cardUniqueDataLength,
-						   BYTE receiptKey[16], GP211_RECEIPT_DATA receiptData,
+						   BYTE receiptKey[32], DWORD keyLength, GP211_RECEIPT_DATA receiptData,
 						   PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 						   PBYTE securityDomainAID, DWORD securityDomainAIDLength, BYTE secureChannelProtocol);
 
@@ -188,7 +191,7 @@ OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhra
 
 //! \brief Calculates a SHA-256 hash.
 OPGP_NO_API
-OPGP_ERROR_STATUS calculate_sha256_hash(PBYTE message, DWORD messageLength, BYTE hash[32]);
+OPGP_ERROR_STATUS calculate_sha2_hash(PBYTE message, DWORD messageLength, BYTE hash[64], DWORD hashLength);
 
 //! \brief Calculates a SHA-1 hash.
 OPGP_NO_API

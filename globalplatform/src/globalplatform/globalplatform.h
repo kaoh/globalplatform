@@ -435,8 +435,8 @@ OPGP_ERROR_STATUS GP211_set_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 //! \brief GlobalPlatform2.1.1: Mutual authentication.
 OPGP_API
 OPGP_ERROR_STATUS GP211_mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
-						   BYTE baseKey[16], BYTE S_ENC[16], BYTE S_MAC[16],
-						   BYTE DEK[16], BYTE keySetVersion,
+						   BYTE baseKey[16], BYTE S_ENC[32], BYTE S_MAC[32],
+						   BYTE DEK[32], DWORD keyLength, BYTE keySetVersion,
 						   BYTE keyIndex, BYTE secureChannelProtocol,
 						   BYTE secureChannelProtocolImpl,
 						   BYTE securityLevel, BYTE derivationMethod, GP211_SECURITY_INFO *secInfo);
@@ -487,12 +487,12 @@ OPGP_ERROR_STATUS GP211_pin_change(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 //! \brief GlobalPlatform2.1.1: replaces a single symmetric key in a key set or adds a new key.
 OPGP_API
 OPGP_ERROR_STATUS GP211_put_symmetric_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-				  BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion, BYTE key[16], BYTE keyType);
+				  BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion, BYTE key[32], DWORD keyLength, BYTE keyType);
 
 //! \brief GlobalPlatform2.1.1: replaces a single AES key in a key set or adds a new AES key.
 OPGP_API
 OPGP_ERROR_STATUS GP211_put_aes_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-				  BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion, BYTE aesKey[16]);
+				  BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion, BYTE aesKey[32], DWORD keyLength);
 
 //! \brief GlobalPlatform2.1.1: replaces a single 3DES key in a key set or adds a new 3DES key.
 OPGP_API
@@ -586,7 +586,7 @@ OPGP_ERROR_STATUS GP211_calculate_install_token(BYTE P1, PBYTE executableLoadFil
 //! \brief GlobalPlatform2.1.1: Calculates a Load File Data Block Hash.
 OPGP_API
 OPGP_ERROR_STATUS GP211_calculate_load_file_data_block_hash(OPGP_STRING executableLoadFileName,
-							 BYTE hash[32], BYTE secureChannelProtocol);
+							 BYTE hash[64], DWORD hashLength, BYTE secureChannelProtocol);
 
 //! \brief GlobalPlatform2.1.1: Loads a Executable Load File (containing an application) to the card.
 OPGP_API
@@ -649,7 +649,7 @@ OPGP_ERROR_STATUS GP211_put_delegated_management_keys(OPGP_CARD_CONTEXT cardCont
 								   BYTE keySetVersion,
 								   BYTE newKeySetVersion,
 								   OPGP_STRING PEMKeyFileName, char *passPhrase,
-								   BYTE receiptKey[16]);
+								   BYTE receiptKey[32], DWORD keyLength);
 
 //! \brief Sends an application protocol data unit.
 OPGP_API
@@ -657,12 +657,11 @@ OPGP_ERROR_STATUS GP211_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO 
 			   PBYTE capdu, DWORD capduLength, PBYTE rapdu,
 			   PDWORD rapduLength);
 
-//! \brief GlobalPlatform2.1.1: Calculates a Load File Data Block Signature using 3DES.
+//! \brief GlobalPlatform2.1.1: Calculates a Load File Data Block Signature using AES or 3DES.
 OPGP_API
-OPGP_ERROR_STATUS GP211_calculate_3des_DAP(BYTE loadFileDataBlockHash[20],
-						PBYTE securityDomainAID,
-						DWORD securityDomainAIDLength,
-						BYTE DAPVerificationKey[16], GP211_DAP_BLOCK *loadFileDataBlockSignature);
+OPGP_ERROR_STATUS GP211_calculate_DAP(BYTE loadFileDataBlockHash[64], BYTE hashLength, PBYTE securityDomainAID,
+		DWORD securityDomainAIDLength,
+		BYTE DAPCalculationKey[32], DWORD keyLength, GP211_DAP_BLOCK *loadFileDataBlockSignature, BYTE secureChannelProtocol);
 
 //! \brief GlobalPlatform2.1.1: Calculates a Load File Data Block Signature using SHA-1 and PKCS#1 (RSA).
 OPGP_API
@@ -674,14 +673,14 @@ OPGP_ERROR_STATUS GP211_calculate_rsa_DAP(BYTE loadFileDataBlockHash[20], PBYTE 
 OPGP_API
 OPGP_ERROR_STATUS GP211_validate_delete_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
 						   DWORD cardUniqueDataLength,
-						   BYTE receiptKey[16], GP211_RECEIPT_DATA receiptData,
+						   BYTE receiptKey[32], DWORD keyLength, GP211_RECEIPT_DATA receiptData,
 						   PBYTE AID, DWORD AIDLength, BYTE secureChannelProtocol);
 
 //! \brief GlobalPlatform2.1.1: Validates an Install Receipt.
 OPGP_API
 OPGP_ERROR_STATUS GP211_validate_install_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
 						   DWORD cardUniqueDataLength,
-						   BYTE receiptKey[16], GP211_RECEIPT_DATA receiptData,
+						   BYTE receiptKey[32], DWORD keyLength, GP211_RECEIPT_DATA receiptData,
 						   PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 						   PBYTE applicationAID, DWORD applicationAIDLength, BYTE secureChannelProtocol);
 
@@ -689,14 +688,14 @@ OPGP_ERROR_STATUS GP211_validate_install_receipt(DWORD confirmationCounter, PBYT
 OPGP_API
 OPGP_ERROR_STATUS GP211_validate_load_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
 						   DWORD cardUniqueDataLength,
-						   BYTE receiptKey[16], GP211_RECEIPT_DATA receiptData,
+						   BYTE receiptKey[32], DWORD keyLength, GP211_RECEIPT_DATA receiptData,
 						   PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 						   PBYTE securityDomainAID, DWORD securityDomainAIDLength, BYTE secureChannelProtocol);
 
 //! \brief GlobalPlatform2.1.1: Validates an Extradition Receipt.
 OPGP_ERROR_STATUS GP211_validate_extradition_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
 							  DWORD cardUniqueDataLength,
-						   BYTE receiptKey[16], GP211_RECEIPT_DATA receiptData,
+						   BYTE receiptKey[32], DWORD keyLength, GP211_RECEIPT_DATA receiptData,
 						   PBYTE oldSecurityDomainAID, DWORD oldSecurityDomainAIDLength,
 						   PBYTE newSecurityDomainAID, DWORD newSecurityDomainAIDLength,
 						   PBYTE applicationOrExecutableLoadFileAID,

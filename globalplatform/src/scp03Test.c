@@ -65,10 +65,6 @@ static void delete_application(void **state) {
 	BYTE deleteResponse[] = {0x00, 0x90, 0x00};
 	DWORD deleteResponseLength = sizeof(deleteResponse);
 
-	BYTE cardChallenge[] = {0xC4, 0x09, 0x32, 0xA6, 0xFE, 0xFE, 0xAE, 0xB2};
-	BYTE cardCryptogram[] = {0xE1, 0x27, 0x18, 0x51, 0x70, 0xF4, 0x5F, 0xCA};
-	BYTE sequenceCounter[] = {0x00, 0x00, 0x15};
-
 	OPGP_AID appAid;
 	BYTE aid[] = {0xA0, 0x01, 0x00, 0x01, 0x51, 0x41, 0x43, 0x4C};
 	memcpy(appAid.AID, aid, sizeof(aid));
@@ -91,7 +87,7 @@ static void delete_application(void **state) {
 	memcpy(securityInfo211.invokingAid, (void *)GP231_ISD_AID, sizeof(GP231_ISD_AID));
 	securityInfo211.invokingAidLength = sizeof(GP231_ISD_AID);
 
-	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, sEnc, sMac, dek, 0, 0,
+	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, sEnc, sMac, dek, 16, 0, 0,
 			GP211_SCP03, GP211_SCP03_IMPL_i70, GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC, 0, &securityInfo211);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 	assert_memory_equal(securityInfo211.encryptionSessionKey, sessionEnc, 16);
@@ -145,10 +141,6 @@ static void send_apdu_rmac_rencryption(void **state) {
 	hex_to_byte_array("8482330010A75F1CD48F3B93DFA57E690937921F92", extAuthRequest, &extAuthRequestLen);
 	hex_to_byte_array("2C8130E574247B1B", hostChallenge, &hostChallengeLen);
 
-	GP211_APPLICATION_DATA applicationData[10];
-	GP211_EXECUTABLE_MODULES_DATA executablesData[10];
-	DWORD dataLength = 10;
-
 	will_return(__wrap_RAND_bytes, hostChallenge);
 	expect_value(__wrap_RAND_bytes, num, 8);
 
@@ -160,7 +152,8 @@ static void send_apdu_rmac_rencryption(void **state) {
 	will_return(send_APDU, extAuthResponse);
 	will_return(send_APDU, &extAuthResponseLen);
 
-	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, 0, 0,
+	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY,
+			sizeof(OPGP_VISA_DEFAULT_KEY), 0, 0,
 			GP211_SCP03, GP211_SCP03_IMPL_i70, GP211_SCP03_SECURITY_LEVEL_C_DEC_R_ENC_C_MAC_R_MAC, 0, &securityInfo211);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 
@@ -223,7 +216,7 @@ static void mutual_auth(void **state) {
 	memcpy(securityInfo211.invokingAid, (void *)GP231_ISD_AID, sizeof(GP231_ISD_AID));
 	securityInfo211.invokingAidLength = sizeof(GP231_ISD_AID);
 
-	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, sEnc, sMac, dek, 0, 0,
+	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, sEnc, sMac, dek, 16, 0, 0,
 			GP211_SCP03, GP211_SCP03_IMPL_i70, GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC, 0, &securityInfo211);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 	assert_memory_equal(securityInfo211.encryptionSessionKey, sessionEnc, 16);
@@ -283,7 +276,7 @@ static void get_status(void **state) {
 	memcpy(securityInfo211.invokingAid, (void *)GP231_ISD_AID, sizeof(GP231_ISD_AID));
 	securityInfo211.invokingAidLength = sizeof(GP231_ISD_AID);
 
-	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, sEnc, sMac, dek, 0, 0,
+	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, sEnc, sMac, dek, 16, 0, 0,
 			GP211_SCP03, GP211_SCP03_IMPL_i70, GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC, 0, &securityInfo211);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 
@@ -316,9 +309,6 @@ static void get_status_enc_mac(void **state) {
 
 	BYTE extAuthResponse[] = {0x90, 0x00};
 	DWORD extAuthResponseLen = sizeof(extAuthResponse);
-	DWORD commandRequestLen, commandResponseLen;
-	BYTE commandRequest[APDU_COMMAND_LEN];
-	BYTE commandResponse[APDU_RESPONSE_LEN];
 
 	BYTE sMac[] = {0x58, 0x56, 0x33, 0x62, 0xEC, 0x5A, 0x45, 0x41, 0xAB, 0xCD, 0x32, 0xB3, 0x4B, 0x1E, 0xAE, 0x7D};
 	BYTE sEnc[] = {0xF9, 0x95, 0xD0, 0xA0, 0x69, 0x33, 0x5C, 0x7D, 0xF4, 0x2E, 0x59, 0x03, 0x17, 0xFF, 0xEA, 0x6D};
@@ -363,7 +353,7 @@ static void get_status_enc_mac(void **state) {
 	will_return(send_APDU, extAuthResponse);
 	will_return(send_APDU, &extAuthResponseLen);
 
-	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, sEnc, sMac, dek, 0, 0,
+	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, sEnc, sMac, dek, 16, 0, 0,
 			GP211_SCP03, GP211_SCP03_IMPL_i70, GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC, 0, &securityInfo211);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 
@@ -444,7 +434,7 @@ static void get_status_enc_mac(void **state) {
 	assert_int_equal(executablesData[0].numExecutableModules, 0);
 }
 
-static void calculate_pseudo_random_challenge(void **state) {
+static void get_status_aes_192(void **state) {
 	OPGP_ERROR_STATUS status;
 	BYTE hostChallenge[8];
 	DWORD hostChallengeLen = 8;
@@ -454,25 +444,58 @@ static void calculate_pseudo_random_challenge(void **state) {
 	BYTE initializeUpdateResponse[APDU_RESPONSE_LEN];
 	DWORD initializeUpdateResponseLen = APDU_RESPONSE_LEN;
 
-	BYTE sequenceCounter[3];
-	BYTE cardChallenge[8];
+	BYTE extAuthResponse[] = {0x90, 0x00};
+	DWORD extAuthResponseLen = sizeof(extAuthResponse);
 
-	BYTE calculatedCardChallenge[8];
+	DWORD refAidLen = 16;
+	BYTE refAid[16];
+	DWORD dataLength;
+	GP211_APPLICATION_DATA appData[1];
+
+	BYTE key[] = {0xDE, 0x2A, 0x36, 0x29, 0xCB, 0xC2, 0x4E, 0x8D, 0x88, 0x69, 0xE8, 0x2C, 0x8B, 0x4C, 0x0D, 0x87, 0x4D, 0x88, 0x16, 0x6B, 0x6F, 0x8A, 0x1C, 0x12};
+
+	OPGP_CSTRING commands[] = {
+				"84F2200218110C222888859059700E5D42AD65F41299B0BFFC03BF79A800"
+	};
+	OPGP_CSTRING responses[] = {
+				"E30D4F07A00000015153509F7001019000"
+	};
 
 	securityInfo211.invokingAidLength = 16;
 	hex_to_byte_array("A000000151000000", securityInfo211.invokingAid, &securityInfo211.invokingAidLength);
 
-	hex_to_byte_array("80500000084B8912CF82B197B400", initializeUpdateRequest, &initializeUpdateRequestLen);
-	hex_to_byte_array("00008301A8186727A822020310A4B0CCBAAB1DDD9E73D36450CA82F2A90000029000", initializeUpdateResponse, &initializeUpdateResponseLen);
-	hex_to_byte_array("4B8912CF82B197B4", hostChallenge, &hostChallengeLen);
+	hex_to_byte_array("80500000084157115CAD7D2FE700", initializeUpdateRequest, &initializeUpdateRequestLen);
+	hex_to_byte_array("00008301A8186727A822020310726B1E22EED4F4BBAB21001BFD4B6F020000129000", initializeUpdateResponse, &initializeUpdateResponseLen);
+	hex_to_byte_array("84820300109B126D1B1557297F3C06766CA9ACBD27", extAuthRequest, &extAuthRequestLen);
+	hex_to_byte_array("4157115CAD7D2FE7", hostChallenge, &hostChallengeLen);
 
-	memcpy(cardChallenge, initializeUpdateResponse+13, 8);
-	memcpy(sequenceCounter, initializeUpdateResponse+29, 3);
+	will_return(__wrap_RAND_bytes, hostChallenge);
+	expect_value(__wrap_RAND_bytes, num, 8);
 
-	status = calculate_card_challenge_SCP03(OPGP_VISA_DEFAULT_KEY, sequenceCounter, securityInfo211.invokingAid,
-			securityInfo211.invokingAidLength, calculatedCardChallenge);
+	expect_memory(send_APDU, capdu, initializeUpdateRequest, initializeUpdateRequestLen);
+	will_return(send_APDU, initializeUpdateResponse);
+	will_return(send_APDU, &initializeUpdateResponseLen);
+
+	expect_memory(send_APDU, capdu, extAuthRequest, extAuthRequestLen);
+	will_return(send_APDU, extAuthResponse);
+	will_return(send_APDU, &extAuthResponseLen);
+
+	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, key, key, key, sizeof(key), 0, 0,
+			GP211_SCP03, GP211_SCP03_IMPL_i10, GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC, 0, &securityInfo211);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
-	assert_memory_equal(calculatedCardChallenge, cardChallenge, 8);
+
+	enqueue_commands(commands, responses, 1);
+
+	dataLength = 8;
+	status = GP211_get_status(cardContext, cardInfo, &securityInfo211, GP211_STATUS_LOAD_FILES,
+				GP211_STATUS_FORMAT_NEW, appData, NULL, &dataLength);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+
+	refAidLen = 16;
+	hex_to_byte_array("a0000001515350", refAid, &refAidLen);
+	assert_int_equal(dataLength, 1);
+	assert_int_equal(appData[0].aid.AIDLength, 7);
+	assert_memory_equal(appData[0].aid.AID, refAid, refAidLen);
 }
 
 static int setup(void **state) {
@@ -487,7 +510,7 @@ int main(void) {
 			cmocka_unit_test(mutual_auth),
 			cmocka_unit_test(get_status),
 			cmocka_unit_test(get_status_enc_mac),
-			cmocka_unit_test(calculate_pseudo_random_challenge)
+			cmocka_unit_test(get_status_aes_192)
 			//cmocka_unit_test(send_apdu_rmac_rencryption)
 	};
 	return cmocka_run_group_tests_name("SCP03", tests, setup, NULL);

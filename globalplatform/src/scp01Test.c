@@ -105,7 +105,6 @@ static void get_status(void **state) {
 				"08D0D1D2D3D4D5010107029000",
 				"07A000000003000007009000"
 	};
-	DWORD aidLength;
 
 	OP201_APPLICATION_DATA appData[10];
 	DWORD appDataLen = 10;
@@ -317,7 +316,8 @@ static void get_status_mac_enc(void **state) {
 	will_return(send_APDU, extAuthResponse);
 	will_return(send_APDU, &extAuthResponseLen);
 
-	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, 0, 0,
+	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY,
+			sizeof(OPGP_VISA_DEFAULT_KEY), 0, 0,
 			GP211_SCP01, GP211_SCP01_IMPL_i05, GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC, 0, &gpSecurityInfo211);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 

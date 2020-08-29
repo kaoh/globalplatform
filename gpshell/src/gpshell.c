@@ -50,7 +50,7 @@
 #define DATALEN 4096
 #define INSTPARAMLEN 128
 #define DELIMITER _T(" \t\r\n,")
-#define DDES_KEY_LEN 16
+#define KEY_LEN 32
 #define PLATFORM_MODE_OP_201 OP_201
 #define PLATFORM_MODE_GP_211 GP_211
 #define PASSPHRASELEN 64
@@ -70,11 +70,12 @@ typedef struct _OptionStr
     BYTE keyIndex;
     BYTE keySetVersion;
     BYTE newKeySetVersion;
-    BYTE key[DDES_KEY_LEN];
-    BYTE mac_key[DDES_KEY_LEN];
-    BYTE enc_key[DDES_KEY_LEN];
-    BYTE kek_key[DDES_KEY_LEN];
+    BYTE key[KEY_LEN];
+    BYTE mac_key[KEY_LEN];
+    BYTE enc_key[KEY_LEN];
+    BYTE kek_key[KEY_LEN];
     BYTE securityLevel;
+    BYTE keyLength;
     BYTE AID[AIDLEN+1];
     DWORD AIDLen;
     BYTE sdAID[AIDLEN+1];
@@ -516,7 +517,7 @@ static int handleOptions(OptionStr *pOptionStr)
     int rv = EXIT_SUCCESS;
     TCHAR *token;
 
-    pOptionStr->keyIndex = 0;
+    pOptionStr->keyIndex = 0xFF;
     pOptionStr->keySetVersion = 0;
     pOptionStr->newKeySetVersion = 0;
     pOptionStr->securityLevel = 0;
@@ -550,6 +551,8 @@ static int handleOptions(OptionStr *pOptionStr)
 	pOptionStr->data[0] = '\0';
 	pOptionStr->dataEncryption = 0;
 	pOptionStr->responseDataExpected = 0;
+	// use by default 3DES / AES-128 keys
+	pOptionStr->keyLength = 16;
 
     token = strtokCheckComment(NULL);
 
@@ -570,6 +573,11 @@ static int handleOptions(OptionStr *pOptionStr)
 		{
 			CHECK_TOKEN(token, _T("-keyTemplate"));
 			pOptionStr->keyTemplate = _tstoi(token);
+		}
+        else if (_tcscmp(token, _T("-keyLength")) == 0)
+		{
+			CHECK_TOKEN(token, _T("-keyLength"));
+			pOptionStr->keyLength = _tstoi(token);
 		}
         else if (_tcscmp(token, _T("-keyind")) == 0)
         {
@@ -646,22 +654,22 @@ static int handleOptions(OptionStr *pOptionStr)
         else if (_tcscmp(token, _T("-key")) == 0)
         {
         	CHECK_TOKEN(token, _T("-key"));
-        	ConvertStringToByteArray(token, DDES_KEY_LEN, pOptionStr->key);
+        	ConvertStringToByteArray(token, KEY_LEN, pOptionStr->key);
         }
         else if (_tcscmp(token, _T("-mac_key")) == 0)
         {
         	CHECK_TOKEN(token, _T("-mac_key"));
-            ConvertStringToByteArray(token, DDES_KEY_LEN, pOptionStr->mac_key);
+            ConvertStringToByteArray(token, KEY_LEN, pOptionStr->mac_key);
         }
         else if (_tcscmp(token, _T("-enc_key")) == 0)
         {
         	CHECK_TOKEN(token, _T("-enc_key"));
-            ConvertStringToByteArray(token, DDES_KEY_LEN, pOptionStr->enc_key);
+            ConvertStringToByteArray(token, KEY_LEN, pOptionStr->enc_key);
         }
         else if (_tcscmp(token, _T("-kek_key")) == 0)
         {
         	CHECK_TOKEN(token, _T("-kek_key"));
-            ConvertStringToByteArray(token, DDES_KEY_LEN, pOptionStr->kek_key);
+            ConvertStringToByteArray(token, KEY_LEN, pOptionStr->kek_key);
         }
         else if (_tcscmp(token, _T("-AID")) == 0)
         {
@@ -1035,6 +1043,7 @@ static int handleCommands(FILE *fd)
                                                      optionStr.enc_key,
                                                      optionStr.mac_key,
                                                      optionStr.kek_key,
+													 optionStr.keyLength,
                                                      optionStr.keySetVersion,
                                                      optionStr.keyIndex,
                                                      optionStr.scp,
@@ -1825,7 +1834,8 @@ static int handleCommands(FILE *fd)
                             optionStr.newKeySetVersion,
                             optionStr.file,
                             optionStr.passPhrase,
-                            optionStr.key);
+                            optionStr.key,
+							optionStr.keyLength);
                 }
 
                 if (OPGP_ERROR_CHECK(status))

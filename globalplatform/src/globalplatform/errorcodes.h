@@ -60,8 +60,8 @@
 #define GP211_ERROR_VALIDATION_R_MAC ((DWORD)0x8030F007L) //!< The validation of the R-MAC has failed.
 #define GP211_ERROR_INCONSISTENT_SCP ((DWORD)0x8030F00AL) //!< The Secure Channel Protocol passed and the one reported by the card do not match.
 #define GP211_ERROR_INCORRECT_CARD_CHALLENGE ((DWORD)0x8030F00DL) //!< The calculated pseudo random card challenge from the card does not match.
-#define GP211_ERROR_INCONSISTENT_SCP_IMPL ((DWORD)0x8030F00CL) //!< The Secure Channel Protocol Implementation passed and the one reported by the card do not match.
-#define GP211_ERROR_MISSING_SCP_IMPL ((DWORD)0x8030F00EL) //!< The Secure Channel Protocol Implementation must be provided as parameter.
+#define GP211_ERROR_INCONSISTENT_SCP_IMPL ((DWORD)0x8030F010L) //!< The Secure Channel Protocol Implementation passed and the one reported by the card do not match.
+#define GP211_ERROR_MISSING_SCP_IMPL ((DWORD)0x8030F011L) //!< The Secure Channel Protocol Implementation must be provided as parameter.
 #define OPGP_ERROR_NO_SUPPORTED_SCP_FOUND ((DWORD)0x8030F00FL) //!< No supported Secure Channel Protocol was found.
 
 

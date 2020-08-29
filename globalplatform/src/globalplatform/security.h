@@ -204,14 +204,13 @@ typedef struct {
 	BYTE securityLevel; //!< The security level.
 	BYTE secureChannelProtocol; //!< The Secure Channel Protocol.
 	BYTE secureChannelProtocolImpl; //!< The Secure Channel Protocol implementation.
-	BYTE C_MACSessionKey[16]; //!< The Secure Channel C-MAC session key.
-	BYTE R_MACSessionKey[16]; //!< The Secure Channel R-MAC session key.
-	BYTE encryptionSessionKey[16]; //!< The Secure Channel encryption session key.
-	BYTE dataEncryptionSessionKey[16]; //!< Secure Channel data encryption key.
+	BYTE C_MACSessionKey[32]; //!< The Secure Channel C-MAC session key.
+	BYTE R_MACSessionKey[32]; //!< The Secure Channel R-MAC session key.
+	BYTE encryptionSessionKey[32]; //!< The Secure Channel encryption session key.
+	BYTE dataEncryptionSessionKey[32]; //!< Secure Channel data encryption key.
     /*
      * Philip Wendland: lastC_MAC must be 16 Bytes for SCP03 because the MAC chaining value
      * for MAC code generation is 16 Bytes (according to GP 2.2 Amendment D), not 8.
-     * TODO This probably affects R_MAC too.
      */
     BYTE lastC_MAC[16]; //!< The last computed C-MAC. Only 8 byte used for SCP01 and SCP02. Used as MAC Chaining Value for SCP03.
 	BYTE lastR_MAC[8]; //!< The last computed R-MAC.
@@ -221,6 +220,7 @@ typedef struct {
 	BYTE invokingAid[16]; //!< The invoking AID used for the mutual authentication.
 	DWORD invokingAidLength; //!< The length of the invoking AID buffer.
 	LONG sessionEncryptionCounter; //!< Session counter for SCP03 ICV encryption.
+	DWORD keyLength; //!< The key length. 16,24 or 32 bytes.
 } GP211_SECURITY_INFO;
 
 /**
