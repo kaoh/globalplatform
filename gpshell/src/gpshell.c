@@ -1798,7 +1798,8 @@ static int handleCommands(FILE *fd)
                                                        NULL,
                                                        optionStr.enc_key,
                                                        optionStr.mac_key,
-                                                       optionStr.kek_key);
+                                                       optionStr.kek_key,
+													   optionStr.keyLength);
                 }
 
                 if (OPGP_ERROR_CHECK(status))

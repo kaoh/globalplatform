@@ -112,9 +112,9 @@ OPGP_NO_API
 OPGP_ERROR_STATUS put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 							 BYTE keySetVersion,
 							 BYTE newKeySetVersion,
-							 BYTE newBaseKey[16],
-							 BYTE newS_ENC[16],
-							 BYTE newS_MAC[16], BYTE newDEK[16]);
+							 BYTE newBaseKey[32],
+							 BYTE newS_ENC[32],
+							 BYTE newS_MAC[32], BYTE newDEK[32], DWORD keyLength);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS delete_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE keySetVersion, BYTE keyIndex);
@@ -1027,24 +1027,25 @@ end:
  * \param newS_ENC [in] The new S-ENC key.
  * \param newS_MAC [in] The new S-MAC key.
  * \param newDEK [in] The new DEK.
+ * \param keyLength [in] The key length. 16, 24 or 32 bytes.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 							 BYTE keySetVersion,
-							 BYTE newKeySetVersion, BYTE newBaseKey[16],
-							 BYTE newS_ENC[16],
-							 BYTE newS_MAC[16], BYTE newDEK[16]) {
+							 BYTE newKeySetVersion, BYTE newBaseKey[32],
+							 BYTE newS_ENC[32],
+							 BYTE newS_MAC[32], BYTE newDEK[32], DWORD keyLength) {
 	return put_secure_channel_keys(cardContext, cardInfo, secInfo,
 							 keySetVersion,
 							 newKeySetVersion, newBaseKey, newS_ENC,
-							 newS_MAC, newDEK);
+							 newS_MAC, newDEK, keyLength);
 }
 
 OPGP_ERROR_STATUS put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 							 BYTE keySetVersion,
-							 BYTE newKeySetVersion, BYTE newBaseKey[16],
-							 BYTE newS_ENC[16],
-							 BYTE newS_MAC[16], BYTE newDEK[16]) {
+							 BYTE newKeySetVersion, BYTE newBaseKey[32],
+							 BYTE newS_ENC[32],
+							 BYTE newS_MAC[32], BYTE newDEK[32], DWORD keyLength) {
 	OPGP_ERROR_STATUS status;
 	BYTE sendBuffer[255];
 	DWORD sendBufferLength = 255;
@@ -1087,7 +1088,7 @@ OPGP_ERROR_STATUS put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CA
 	}
 	else {
 		// S-ENC key
-		status = get_key_data_field(secInfo, newS_ENC, 16, keyType, 1, keyDataField, &keyDataFieldLength, keyCheckValue1);
+		status = get_key_data_field(secInfo, newS_ENC, keyLength, keyType, 1, keyDataField, &keyDataFieldLength, keyCheckValue1);
 		if ( OPGP_ERROR_CHECK(status) ) {
 			goto end;
 		}
@@ -1095,7 +1096,7 @@ OPGP_ERROR_STATUS put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CA
 		i+=keyDataFieldLength;
 
 		// S-MAC key
-		status = get_key_data_field(secInfo, newS_MAC, 16, keyType, 1, keyDataField, &keyDataFieldLength, keyCheckValue2);
+		status = get_key_data_field(secInfo, newS_MAC, keyLength, keyType, 1, keyDataField, &keyDataFieldLength, keyCheckValue2);
 		if (OPGP_ERROR_CHECK(status)) {
 			goto end;
 		}
@@ -1103,7 +1104,7 @@ OPGP_ERROR_STATUS put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CA
 		i+=keyDataFieldLength;
 
 		// DEK
-		status = get_key_data_field(secInfo, newDEK, 16, keyType, 1, keyDataField, &keyDataFieldLength, keyCheckValue3);
+		status = get_key_data_field(secInfo, newDEK, keyLength, keyType, 1, keyDataField, &keyDataFieldLength, keyCheckValue3);
 		if (OPGP_ERROR_CHECK(status)) {
 			goto end;
 		}
@@ -5056,7 +5057,7 @@ OPGP_ERROR_STATUS OP201_put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, O
 	GP211_SECURITY_INFO gp211secInfo;
 	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
 	status = put_secure_channel_keys(cardContext, cardInfo, &gp211secInfo, keySetVersion, newKeySetVersion,
-		NULL, new_encKey, new_macKey, new_KEK);
+		NULL, new_encKey, new_macKey, new_KEK, 16);
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 	return status;
 }

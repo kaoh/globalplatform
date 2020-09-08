@@ -1415,25 +1415,26 @@ OPGP_ERROR_STATUS get_key_data_field(GP211_SECURITY_INFO *secInfo,
 	}
 	// set key type
 	keyDataField[i++] = keyType;
-	keyDataField[i++] = (BYTE)keyDataLength;
 	if (isSensitive) {
 		status = encrypt_sensitive_data(secInfo, keyData, keyDataLength, encrypted_key, &encrypted_key_length);
 		if (OPGP_ERROR_CHECK(status)) {
 			goto end;
 		}
-		if (secInfo->secureChannelProtocol == GP211_SCP03) {
-			keyDataField[i++] = encrypted_key_length;
-			keyDataField[1] = encrypted_key_length + 1;
+		if (encrypted_key_length != keyDataLength) {
+			// + 1 byte key component length field
+			keyDataField[i++] = encrypted_key_length + 1;
+			keyDataField[i++] = keyDataLength;
 		}
 		else {
-			// we assume that each key is a multiple of 8 bytes and no length must be specified for < SCP03.
-			keyDataField[1] = encrypted_key_length;
+			// not padded and no length must be specified
+			keyDataField[i++] = encrypted_key_length;
 		}
 		memcpy(keyDataField+i, encrypted_key, encrypted_key_length);
 		i+= encrypted_key_length;
 	}
 	else {
-		// not sensitive - copy directly
+		keyDataField[i++] = (BYTE)keyDataLength;
+		// not sensitive - copy directly, no key component length is needed
 		memcpy(keyDataField+i, keyData, keyDataLength);
 		i+=keyDataLength;
 	}

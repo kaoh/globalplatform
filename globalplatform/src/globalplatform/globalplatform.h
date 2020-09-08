@@ -507,8 +507,8 @@ OPGP_ERROR_STATUS GP211_put_rsa_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 //! \brief GlobalPlatform2.1.1: replaces or adds a secure channel key set consisting of S-ENC, S-MAC and DEK.
 OPGP_API
 OPGP_ERROR_STATUS GP211_put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-							 BYTE keySetVersion, BYTE newKeySetVersion, BYTE baseKey[16],
-							 BYTE newS_ENC[16], BYTE newS_MAC[16], BYTE newDEK[16]);
+							 BYTE keySetVersion, BYTE newKeySetVersion, BYTE baseKey[32],
+							 BYTE newS_ENC[32], BYTE newS_MAC[32], BYTE newDEK[32], DWORD keyLength);
 
 //! \brief GlobalPlatform2.1.1: deletes a key or multiple keys.
 OPGP_API
