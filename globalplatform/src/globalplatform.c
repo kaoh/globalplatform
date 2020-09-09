@@ -1191,7 +1191,7 @@ OPGP_ERROR_STATUS delete_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardI
 	BYTE recvBuffer[3];
 	DWORD i=0;
 	OPGP_LOG_START(_T("delete_key"));
-	if ((keySetVersion == 0x00) && (keyIndex == 0x00))
+	if ((keySetVersion == 0x00) && (keyIndex == 0xFF))
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_COMBINATION_KEY_SET_VERSION_KEY_INDEX, OPGP_stringify_error(OPGP_ERROR_INVALID_COMBINATION_KEY_SET_VERSION_KEY_INDEX)); goto end; }
 	//if (keySetVersion > 0x7f)
 	//	{ status = OPGP_ERROR_WRONG_KEY_VERSION; goto end; }
@@ -5091,7 +5091,7 @@ OPGP_ERROR_STATUS OP201_put_delegated_management_keys(OPGP_CARD_CONTEXT cardCont
 }
 
 /**
- * If keyIndex is 0xFF (=-1) all keys within a keySetVersion are deleted.
+ * If keyIndex is 0xFF all keys within a keySetVersion are deleted.
  * If keySetVersion is 0x00 all keys with the specified keyIndex are deleted.
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().

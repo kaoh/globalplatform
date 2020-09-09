@@ -517,7 +517,8 @@ static int handleOptions(OptionStr *pOptionStr)
     int rv = EXIT_SUCCESS;
     TCHAR *token;
 
-    pOptionStr->keyIndex = 0xFF;
+    //handle default for delete_key
+    pOptionStr->keyIndex = pOptionStr->keyIndex != 0xFF ? 0 : 0xFF;
     pOptionStr->keySetVersion = 0;
     pOptionStr->newKeySetVersion = 0;
     pOptionStr->securityLevel = 0;
@@ -573,11 +574,6 @@ static int handleOptions(OptionStr *pOptionStr)
 		{
 			CHECK_TOKEN(token, _T("-keyTemplate"));
 			pOptionStr->keyTemplate = _tstoi(token);
-		}
-        else if (_tcscmp(token, _T("-keyLength")) == 0)
-		{
-			CHECK_TOKEN(token, _T("-keyLength"));
-			pOptionStr->keyLength = _tstoi(token);
 		}
         else if (_tcscmp(token, _T("-keyind")) == 0)
         {
@@ -654,22 +650,22 @@ static int handleOptions(OptionStr *pOptionStr)
         else if (_tcscmp(token, _T("-key")) == 0)
         {
         	CHECK_TOKEN(token, _T("-key"));
-        	ConvertStringToByteArray(token, KEY_LEN, pOptionStr->key);
+        	pOptionStr->keyLength = ConvertStringToByteArray(token, KEY_LEN, pOptionStr->key);
         }
         else if (_tcscmp(token, _T("-mac_key")) == 0)
         {
         	CHECK_TOKEN(token, _T("-mac_key"));
-            ConvertStringToByteArray(token, KEY_LEN, pOptionStr->mac_key);
+        	pOptionStr->keyLength = ConvertStringToByteArray(token, KEY_LEN, pOptionStr->mac_key);
         }
         else if (_tcscmp(token, _T("-enc_key")) == 0)
         {
         	CHECK_TOKEN(token, _T("-enc_key"));
-            ConvertStringToByteArray(token, KEY_LEN, pOptionStr->enc_key);
+        	pOptionStr->keyLength = ConvertStringToByteArray(token, KEY_LEN, pOptionStr->enc_key);
         }
         else if (_tcscmp(token, _T("-kek_key")) == 0)
         {
         	CHECK_TOKEN(token, _T("-kek_key"));
-            ConvertStringToByteArray(token, KEY_LEN, pOptionStr->kek_key);
+        	pOptionStr->keyLength = ConvertStringToByteArray(token, KEY_LEN, pOptionStr->kek_key);
         }
         else if (_tcscmp(token, _T("-AID")) == 0)
         {
@@ -1308,7 +1304,8 @@ static int handleCommands(FILE *fd)
             /* Augusto: added delete_key command support */
             else if (_tcscmp(token, _T("delete_key")) == 0)
             {
-
+            	// 0xFF means that all key index for a key set version are deleted
+            	optionStr.keyIndex = 0xFF;
                 rv = handleOptions(&optionStr);
                 if (rv != EXIT_SUCCESS)
                 {
