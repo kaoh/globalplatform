@@ -462,6 +462,7 @@ OPGP_API
 OPGP_ERROR_STATUS GP211_get_data_iso7816_4(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength);
 
 //! \brief GlobalPlatform2.1.1: Return the card recognition data.
+OPGP_API
 OPGP_ERROR_STATUS GP211_get_card_recognition_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_CARD_RECOGNITION_DATA *cardData);
 
 //! \brief GlobalPlatform2.1.1: This returns the Secure Channel Protocol and the Secure Channel Protocol implementation.
