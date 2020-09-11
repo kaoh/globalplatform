@@ -41,6 +41,16 @@ make doc
 make install
 ```
 
+###  Set Library Search Directory
+
+It might be necessary to create a symlink to the correct library search directory, e.g. under Ubuntu 18.04 execute:
+
+    sudo ln -s /usr/local/lib/libglobalplatform.so.<version> /usr/lib/x86_64-linux-gnu/libglobalplatform.so.<version>
+
+Replace `<version>` with the library version.
+
+Or include the `/usr/local/lib ` under `/etc/ld.so.conf.d/` and run `sudo ldconfig`
+
 ## MacOS
 
 The compilation was executed on a system with [Homebrew](https://brew.sh) as package manager.
@@ -63,16 +73,6 @@ make install
 ```
 
 In case the system is using a different package manager other settings will be necessary.
-
-### Linux
-
-It might be necessary to create a symlink to the correct library search directory, e.g. under Ubuntu 18.04 execute:
-
-    sudo ln -s /usr/local/lib/libglobalplatform.so.<version> /usr/lib/x86_64-linux-gnu/libglobalplatform.so.<version>
-
-Replace `<version>` with the library version.
-
-Or include the `/usr/local/lib ` under `/etc/ld.so.conf.d/` and run `sudo ldconfig`
 
 ## Windows
 
