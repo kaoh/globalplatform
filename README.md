@@ -6,13 +6,18 @@ This is the top level project for the GlobalPlatform library for providing acces
 
 There are Homebrew package for [Linux and MacOS](https://github.com/kaoh/homebrew-globalplatform)
 
-For Windows binaries can be downloaded from [SourceForge](https://sourceforge.net/projects/globalplatform/files/GPShell/).
+For Windows binaries can be downloaded from the [GitHub release page](https://github.com/kaoh/globalplatform/releases) or from [SourceForge](https://sourceforge.net/projects/globalplatform/files/GPShell/).
 
 __NOTE:__ The [Microsoft Visual C++ 2015 Redistributable](https://www.microsoft.com/en-us/download/confirmation.aspx?id=52685) must be also installed.
 
+Please read also the [manual of GPShell]( https://github.com/kaoh/globalplatform/blob/master/gpshell/src/gpshell.1.md) if you are interested in the command line
+or use the installed man page with `man gpshell` under Unix like systems.
+There are several script examples available. See the [.txt files](https://github.com/kaoh/globalplatform/tree/master/gpshell) or look into the local file systems
+under `(/usr/ | /home/linuxbrew/.linuxbrew/) share/doc/gpshell1/`.
+
 # Compilation
 
-Clone the project from GitHub or download the zip file (also available under the Clone tab).
+Cor lone the project from GitHub or download the zip file (also available under the Clone tab).
 
 Consult the individual sub projects for further instructions and prerequisites. It is also possible to compile the sub projects individually.
 

@@ -51,13 +51,13 @@ __establish_context__
 
 :    Establish context. This must always be executed before connecting to a card.
 
-__card_connect__ -reader *readerName*
+__card_connect__ -reader *readerName* -protocol *protocol*
 
-:    Connect to card in the reader with *readerName*
+:    Connect to card in the reader with *readerName*. By default protocol is 0 = T0.
 
-__card_connect__ -readerNumber *x*
+__card_connect__ -readerNumber *x* -protocol *protocol*
 
-:    Connect to card in the *x* th reader in the system
+:    Connect to card in the *x* th reader in the system. By default protocol is 0 = T0.
 
 __open_sc__ -keyind *x* -keyver *x* -key *key* -mac_key *mac-key* -enc_key *enc-key* -kek_key *kek-key* -security *securityLevel* -scp *protocol* -scpimpl *impl* -keyDerivation *derivation* 
 
