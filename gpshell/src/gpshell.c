@@ -212,9 +212,6 @@ static TCHAR *strtokCheckComment(TCHAR *buf)
         }
         dummy[BUFLEN-1] = _T('\0');
 
-        /* Skip next delimiter */
-        token = _tcstok(buf, DELIMITER);
-
         token = dummy;
         return token;
     }
@@ -532,7 +529,7 @@ static int handleOptions(OptionStr *pOptionStr)
     pOptionStr->readerNumber = AUTOREADER;
     pOptionStr->file[0] = _T('\0');
     pOptionStr->passPhrase[0] = _T('\0');
-    pOptionStr->protocol = OPGP_CARD_PROTOCOL_T0;
+    pOptionStr->protocol = OPGP_CARD_PROTOCOL_T0 | OPGP_CARD_PROTOCOL_T1;
     pOptionStr->nvCodeLimit = 0;
     pOptionStr->nvDataLimit = 0;
     pOptionStr->vDataLimit = 0;
