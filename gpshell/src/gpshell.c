@@ -110,6 +110,7 @@ typedef struct _OptionStr
 	BYTE dataEncryption; //!< STORE DATA encryption flag
 	BYTE data[DATALEN+1];
 	DWORD dataLen;
+	BYTE noStop; //!< Does not stop in case of an error.
 } OptionStr;
 
 /* Global Variables */
@@ -549,6 +550,7 @@ static int handleOptions(OptionStr *pOptionStr)
 	pOptionStr->data[0] = '\0';
 	pOptionStr->dataEncryption = 0;
 	pOptionStr->responseDataExpected = 0;
+	pOptionStr->noStop = 0;
 	// use by default 3DES / AES-128 keys
 	pOptionStr->keyLength = 16;
 
@@ -571,6 +573,10 @@ static int handleOptions(OptionStr *pOptionStr)
 		{
 			CHECK_TOKEN(token, _T("-keyTemplate"));
 			pOptionStr->keyTemplate = _tstoi(token);
+		}
+        else if (_tcscmp(token, _T("-noStop")) == 0)
+		{
+			pOptionStr->noStop = 1;
 		}
         else if (_tcscmp(token, _T("-keyind")) == 0)
         {
@@ -843,6 +849,7 @@ static int handleCommands(FILE *fd)
     OPGP_ERROR_CREATE_NO_ERROR(status);
 
 	memset(&optionStr, 0, sizeof(optionStr));
+	nostop:
     while (_fgetts (buf, BUFLEN, fd) != NULL)
     {
 
@@ -2031,6 +2038,9 @@ timer:
         }
     }
 end:
+	if (optionStr.noStop) {
+		goto nostop;
+	}
     return rv;
 }
 

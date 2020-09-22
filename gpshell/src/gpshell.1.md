@@ -149,12 +149,6 @@ __send_apdu__ -sc 0 -APDU *apdu*
 
 The APDU is given as hex without spaces and without leading 0x.
 
-__send_apdu_nostop__ -sc 0 -APDU *apdu*
-
-:    Does not stop in case of an error
-
-The APDU is given as hex without spaces and without leading 0x.
-
 __get_data__ -identifier *identifier*
 
 :    A GET DATA command returning the data for the given identifier. See the identifier options for details.
@@ -352,9 +346,13 @@ Some useful identifier are:
 * FF21 - Extended card resources. There is a dedicated command for getting this: get_extended_card_resources_information
 * 0066 - Card Recogniti0on Data. There is a dedicated command for getting this: get_card_recognition_data
 
-__-data
+__-data__ *data*
 
 :    Data in hex format for the store_data command.
+
+__-noStop__
+
+:    Does not stop in case of an error
 
 ## Format of CPLC data
 
