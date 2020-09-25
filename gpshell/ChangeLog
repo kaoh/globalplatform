@@ -5,11 +5,13 @@ SCP03 supported
 getting key information templates
 getting extended card resources information
 
-06/01/2020	1.4.5	Karsten Ohme
+09/26/2020	2.0.0	Karsten Ohme
                         CMake Build System
                         SCP03 supported
+                        SCP03 AES-192 and AES-256 keys supported
                         getting key information templates
                         getting extended card resources information
+                        noStop option added
                         Added LGPL OpenSSL Exception
                         Compiled against GlobalPlatform 7.0.0
 

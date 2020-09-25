@@ -28,10 +28,13 @@ Use a suitable packet manager for your OS or install the programs and libraries 
 Install the dependencies with `brew` or your distribution's package system:
 
 ~~~
-brew install openssl doxygen pandoc cmake cmocka zlib graphviz
+brew install openssl doxygen cmake cmocka zlib graphviz pcsc-lite
 ~~~
 
 ### Compile
+
+__NOTE:__ If using Homebrew in parallel and having not used Homebrew for installing the dependencies but the distribution's package manager then several tools and libraries can be hidden by Homebrew or are not installed in Homebrew (`pkgconfig`, `PC/SC Lite`, `cmocka`, ...). One option is to install these tools and libraries with `brew` or remove the Homebrew path from the `PATH` variable temporarily
+(which should be `./home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin`).
 
 ```
 cd \path\to\globalplatform
@@ -40,6 +43,12 @@ make
 make doc
 make install
 ```
+
+__NOTE:__ The Homebrew version of pcsc-lite is not a fully functional version. It is missing the USB drivers and is also not started as a system service. The distribution's version of pcscd should be installed. Under Linux the Homebrew version of pcsc-lite must be unlinked:
+
+~~~
+brew remove --ignore-dependencies pcsc-lite
+~~~
 
 ###  Set Library Search Directory
 

@@ -16,12 +16,9 @@ Use a suitable packet manager for your OS or install the programs and libraries 
   * Windows: Visual Studio and SDK
 * [CMake 3.5.0](http://www.cmake.org/) or higher is needed
 * [PC/SC Lite](https://pcsclite.apdu.fr) (only for UNIXes, Windows and MacOS is already including this)
-* [GlobalPlatform](http://sourceforge.net/projects/globalplatform/)
+* [GlobalPlatform](https://github.com/kaoh/globalplatform)
 
 ## Unix/MacOS
-
-You must have CMake installed. http://www.cmake.org/
-This can be obtained in standard Unix distributions over the integrated package system.
 
 On a command line type:
 

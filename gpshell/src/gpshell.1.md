@@ -1,4 +1,4 @@
-% GPSHELL(1) 1.4.5 | GPShell Documentation
+% GPSHELL(1) 2.0.0 | GPShell Documentation
 
 # NAME
 
@@ -16,6 +16,9 @@ applications status and card data. These applications are practical always Java 
 Additional key management commands are provided.
 
 The most common way to use gpshell is a script file. But it is also possible to read the commands from stdin if no script file is provided.
+
+Reading the commands from stdin allows to feed in the commands dynamically and use conditionals when using the [Expect](https://en.wikipedia.org/wiki/Expect) pattern. Tools 
+are available for a variety of script languages, shells and programming languages. Example are to support environment variables and handle results and output conditionally. 
 
 There are several `txt` example scripts provided which gets installed into `usr/local/share/docs` or `/home/linuxbrew/.linuxbrew/opt/globalplatform/share/doc/gpshell1/` or can be found [online](https://github.com/kaoh/globalplatform/tree/master/gpshell).
 
