@@ -188,7 +188,7 @@ end:
 
 }
 
-OPGP_ERROR_STATUS calculate_enc_ecb_SCP03(BYTE key[16], BYTE *message, DWORD messageLength,
+OPGP_ERROR_STATUS calculate_enc_ecb_SCP03(BYTE key[32], DWORD keyLength, BYTE *message, DWORD messageLength,
 		BYTE *encryption, DWORD *encryptionLength) {
 	OPGP_ERROR_STATUS status;
 	int result;
@@ -199,7 +199,8 @@ OPGP_ERROR_STATUS calculate_enc_ecb_SCP03(BYTE key[16], BYTE *message, DWORD mes
 	EVP_CIPHER_CTX_init(ctx);
 	*encryptionLength = 0;
 
-	result = EVP_EncryptInit_ex(ctx, EVP_aes_128_ecb(), NULL, key, NULL);
+	result = EVP_EncryptInit_ex(ctx, keyLength == 16 ? EVP_aes_128_ecb() :
+				(keyLength == 24 ? EVP_aes_192_cbc() : EVP_aes_256_cbc()), NULL, key, NULL);
 	if (result != 1) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 	}
@@ -1369,7 +1370,7 @@ OPGP_ERROR_STATUS calculate_key_check_value(GP211_SECURITY_INFO *secInfo,
 	memset(keyCheckTest, 0, 16);
 	if (secInfo->secureChannelProtocol == GP211_SCP03) {
 		memset(keyCheckTest, 0x01, sizeof(keyCheckTest));
-		status = calculate_enc_ecb_SCP03(keyData, keyCheckTest, 16, dummy, &dummyLength);
+		status = calculate_enc_ecb_SCP03(keyData, keyDataLength, keyCheckTest, 16, dummy, &dummyLength);
 	}
 	else {
 		status = calculate_enc_ecb_two_key_triple_des(keyData, keyCheckTest, 8, dummy, &dummyLength);

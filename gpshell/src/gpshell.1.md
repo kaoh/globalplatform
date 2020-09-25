@@ -134,6 +134,7 @@ __put_sc_key__ -keyver *keyver* -newkeyver *newkeyver* -mac_key *new_MAC_key* -e
 
 If a new key set version is to be added *keyver* must be set to 0.
 If *keyver* equals *newkeyver* an existing key version is replaced.
+An existing key set version cannot be replaced with a key set version using a different key size.
 
 __put_sc_key__ -keyver *keyver* -newkeyver *newkeyver* -key *key* -keyDerivation "derivation"
 
