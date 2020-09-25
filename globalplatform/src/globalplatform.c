@@ -2748,7 +2748,8 @@ OPGP_ERROR_STATUS install_for_install_and_make_selectable(OPGP_CARD_CONTEXT card
 	}
 	sendBuffer[4] = (BYTE)i-5; // Lc
 	// TODO: is this special JCOP handling needed? not generic
-	if (memcmp(JCOP21V22_ATR, cardInfo.ATR, max(cardInfo.ATRLength, sizeof(JCOP21V22_ATR))) != 0) {
+	if (cardInfo.ATRLength == sizeof(JCOP21V22_ATR) &&
+			memcmp(JCOP21V22_ATR, cardInfo.ATR, cardInfo.ATRLength) != 0) {
 		sendBuffer[i++] = 0x00; // Le
 	}
 	sendBufferLength = i;

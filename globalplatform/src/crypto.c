@@ -1420,7 +1420,7 @@ OPGP_ERROR_STATUS get_key_data_field(GP211_SECURITY_INFO *secInfo,
 		if (OPGP_ERROR_CHECK(status)) {
 			goto end;
 		}
-		if (encrypted_key_length != keyDataLength) {
+		if (encrypted_key_length != keyDataLength || secInfo->secureChannelProtocol == GP211_SCP03) {
 			// + 1 byte key component length field
 			keyDataField[i++] = encrypted_key_length + 1;
 			keyDataField[i++] = keyDataLength;
