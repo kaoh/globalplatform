@@ -440,6 +440,7 @@ Known unsupported key derivation schemes are:
 * Gemalto Generations Flexible
 * Sm@rtCafe Expert 3.0
 * Tongfang420
+* Infineon SECORA™ ID S
 
 # Misc
 
