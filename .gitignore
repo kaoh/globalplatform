@@ -47,3 +47,5 @@ scp02Test
 *.dir
 Win32
 *.manifest
+*.dylib
+
