@@ -2962,8 +2962,7 @@ OPGP_ERROR_STATUS install_for_make_selectable(OPGP_CARD_CONTEXT cardContext, OPG
 		sendBuffer[i++] = 0x00; // Length of install token
 	}
 	sendBuffer[4] = (BYTE)i-5; // Lc
-	if (cardInfo.ATRLength == sizeof(JCOP21V22_ATR) && 
-	    memcmp(JCOP21V22_ATR, cardInfo.ATR, max(cardInfo.ATRLength, sizeof(JCOP21V22_ATR))) != 0) {
+	if (memcmp(JCOP21V22_ATR, cardInfo.ATR, max(cardInfo.ATRLength, sizeof(JCOP21V22_ATR))) != 0) {
 		sendBuffer[i++] = 0x00; // Le
 	}
 	sendBufferLength = i;
