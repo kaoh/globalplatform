@@ -80,7 +80,8 @@
 * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
 */
 OPGP_ERROR_STATUS OPGP_PL_establish_context(OPGP_CARD_CONTEXT *cardContext) {
-	OPGP_ERROR_STATUS status = {0};
+	OPGP_ERROR_STATUS status;
+	memset(&status, 0, sizeof(OPGP_ERROR_STATUS));
 	LONG result = SCARD_S_SUCCESS;
 	OPGP_LOG_START(_T("OPGP_PL_establish_context"));
 	cardContext->librarySpecific = malloc(sizeof(PCSC_CARD_CONTEXT_SPECIFIC));
@@ -104,7 +105,8 @@ end:
 * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
 */
 OPGP_ERROR_STATUS OPGP_PL_release_context(OPGP_CARD_CONTEXT *cardContext) {
-	OPGP_ERROR_STATUS status = {0};
+    OPGP_ERROR_STATUS status;
+    memset(&status, 0, sizeof(OPGP_ERROR_STATUS));
 	LONG result = SCARD_S_SUCCESS;
 	OPGP_LOG_START(_T("OPGP_PL_release_context"));
 	CHECK_CARD_CONTEXT_INITIALIZATION((*cardContext), status)
@@ -130,7 +132,8 @@ end:
 * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
 */
 OPGP_ERROR_STATUS OPGP_PL_list_readers(OPGP_CARD_CONTEXT cardContext, OPGP_STRING readerNames, PDWORD readerNamesLength) {
-	OPGP_ERROR_STATUS status = {0};
+    OPGP_ERROR_STATUS status;
+    memset(&status, 0, sizeof(OPGP_ERROR_STATUS));
 	LONG result = SCARD_S_SUCCESS;
 	DWORD readersSize = 0;
 	OPGP_STRING readers = NULL;
@@ -188,15 +191,18 @@ end:
 */
 OPGP_ERROR_STATUS OPGP_PL_card_connect(OPGP_CARD_CONTEXT cardContext, OPGP_CSTRING readerName, OPGP_CARD_INFO *cardInfo,
 	DWORD protocol) {
-		OPGP_ERROR_STATUS status = {0};
+        OPGP_ERROR_STATUS status;
+        memset(&status, 0, sizeof(OPGP_ERROR_STATUS));
 		LONG result = SCARD_S_SUCCESS;
 		PCSC_CARD_INFO_SPECIFIC *pcscCardInfo = NULL;
 		DWORD activeProtocol = 0;
 		DWORD state = 0;
 		DWORD dummy = 0;
-		BYTE ATR[MAX_ATR_SIZE] = {0};
+		BYTE ATR[MAX_ATR_SIZE];
+		memset(ATR, 0, sizeof(ATR));
 		DWORD ATRLength=MAX_ATR_SIZE;
-		TCHAR readerNameTemp[1024] = {0};
+		TCHAR readerNameTemp[1024];
+		memset(readerNameTemp, 0, sizeof(readerNameTemp));
 		DWORD readerNameTempLength = 1024;
 
 		OPGP_LOG_START(_T("OPGP_PL_card_connect"));
@@ -254,7 +260,8 @@ end:
 * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct.
 */
 OPGP_ERROR_STATUS OPGP_PL_card_disconnect(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO *cardInfo) {
-	OPGP_ERROR_STATUS status = {0};
+    OPGP_ERROR_STATUS status;
+    memset(&status, 0, sizeof(OPGP_ERROR_STATUS));
 	LONG result = SCARD_S_SUCCESS;
 	OPGP_LOG_START(_T("OPGP_PL_card_disconnect"));
 	CHECK_CARD_CONTEXT_INITIALIZATION(cardContext, status)
@@ -283,7 +290,8 @@ end:
 * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct.
 */
 OPGP_ERROR_STATUS OPGP_PL_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, PBYTE capdu, DWORD capduLength, PBYTE rapdu, PDWORD rapduLength) {
-	OPGP_ERROR_STATUS status;
+    OPGP_ERROR_STATUS status;
+    memset(&status, 0, sizeof(OPGP_ERROR_STATUS));
 	// modified for managing all 4 cases with automatic APDU chaining
 
 	DWORD result = SCARD_S_SUCCESS;
