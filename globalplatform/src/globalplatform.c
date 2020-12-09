@@ -1288,7 +1288,8 @@ OPGP_ERROR_STATUS delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_IN
 		sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0x00;
 	for (j=0; j< AIDsLength; j++) {
-		if (i + AIDs[j].AIDLength+2 > 260) {
+		// reserve one byte for Le
+		if (i + AIDs[j].AIDLength+2 > APDU_COMMAND_LEN-1) {
 			*receiptDataLength = 0;
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
 		}
@@ -1309,7 +1310,7 @@ OPGP_ERROR_STATUS delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_IN
 	}
 	CHECK_SW_9000(recvBuffer, recvBufferLength, status);
 	if (recvBufferLength-count > sizeof(GP211_RECEIPT_DATA)) { // assumption that a GP211_RECEIPT_DATA structure is returned in a delegated management deletion
-		*receiptDataLength=0;
+		*receiptDataLength = 0;
 		while (recvBufferLength-count > sizeof(GP211_RECEIPT_DATA)) {
 			count+=fillReceipt(recvBuffer, receiptData + *receiptDataLength++);
 		}
@@ -4575,7 +4576,8 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 			}
         }
        	memcpy(secInfo->lastC_MAC, mac, 8);
-    }
+       	memcpy(secInfo->lastR_MAC, mac, 8);
+	}
     // Philip Wendland: Moved secInfo update to if clause above as other lengths are used for SCP03.
 	memcpy(sendBuffer+i, mac, 8);
 	i+=8;
