@@ -424,7 +424,7 @@ Known unsupported key derivation schemes are:
 * CDK (CPG 2.02)
 * ISK(D)
 
-# Tested Cards
+# Supported Cards
 
 * Gemalto IDCore 3010
 * Oberthur CosmopoliC 32K (OP201)
