@@ -37,7 +37,10 @@
 #define _tcscmp strcmp
 #define _tcstok strtok
 #define _stscanf sscanf
+#define _tcsstr strstr
+#define _tcschr strchr
 #define _tstoi atoi
+#define _tgetenv getenv
 #define _tcsnccmp strncmp
 #define _tcstol strtol
 #endif
@@ -56,7 +59,7 @@
 #define PASSPHRASELEN 64
 #define AUTOREADER -1
 
-#define CHECK_TOKEN(token, option) token = strtokCheckComment(NULL);\
+#define CHECK_TOKEN(token, option) token = parseToken(NULL);\
 if (token == NULL)\
 {\
     _tprintf(_T("Error: option %s not followed by data\n"), option);\
@@ -144,7 +147,7 @@ typedef struct {
 } PRIVILEGES_STRING;
 
 /* Functions */
-static void ConvertTToC(char* pszDest, const TCHAR* pszSrc)
+static void convertTCharToChar(char* pszDest, const TCHAR* pszSrc)
 {
     unsigned int i;
 
@@ -154,7 +157,7 @@ static void ConvertTToC(char* pszDest, const TCHAR* pszSrc)
     pszDest[_tcslen(pszSrc)] = '\0';
 }
 
-static int ConvertStringToByteArray(TCHAR *src, int destLength, BYTE *dest)
+static int convertStringToByteArray(TCHAR *src, int destLength, BYTE *dest)
 {
     TCHAR *dummy;
     unsigned int temp, i = 0;
@@ -170,7 +173,7 @@ static int ConvertStringToByteArray(TCHAR *src, int destLength, BYTE *dest)
     return i;
 }
 
-static void ConvertByteArrayToString(BYTE *src, int srcLength, int destLength, TCHAR *dest)
+static void convertByteArrayToString(BYTE *src, int srcLength, int destLength, TCHAR *dest)
 {
 	int j;
 	dest[destLength-1] =  _T('\0');
@@ -185,22 +188,83 @@ static void ConvertByteArrayToString(BYTE *src, int srcLength, int destLength, T
 	}
 }
 
-static TCHAR *strtokCheckComment(TCHAR *buf)
+// You must free the result if result is non-NULL.
+TCHAR * strReplace(TCHAR *orig, TCHAR *rep, TCHAR *with) {
+	TCHAR *result; // the return string
+	TCHAR *ins;    // the next insert point
+	TCHAR *tmp;    // varies
+    int len_rep;  // length of rep (the string to remove)
+    int len_with; // length of with (the string to replace rep with)
+    int len_front; // distance between rep and end of last rep
+    int count;    // number of replacements
+
+    // sanity checks and initialization
+    if (!orig || !rep)
+        return NULL;
+    len_rep = _tcslen(rep);
+    if (len_rep == 0)
+        return NULL; // empty rep causes infinite loop during count
+    if (!with) {
+        with = "";
+    }
+    len_with = _tcslen(with);
+
+    // count the number of replacements needed
+    ins = orig;
+    for (count = 0; (tmp = _tcsstr(ins, rep)); ++count) {
+        ins = tmp + len_rep;
+    }
+
+    tmp = result = malloc(_tcslen(orig) + (len_with - len_rep) * count + 1);
+
+    if (!result) {
+        return NULL;
+    }
+
+    // first time through the loop, all the variable are set correctly
+    // from here on,
+    //    tmp points to the end of the result string
+    //    ins points to the next occurrence of rep in orig
+    //    orig points to the remainder of orig after "end of rep"
+    while (count--) {
+        ins = _tcsstr(orig, rep);
+        len_front = ins - orig;
+        tmp = _tcsncpy(tmp, orig, len_front) + len_front;
+        tmp = _tcscpy(tmp, with) + len_with;
+        orig += len_front + len_rep; // move to next "end of rep"
+    }
+    _tcscpy(tmp, orig);
+    return result;
+}
+
+
+/**
+ * Parses the next token.
+ *
+ * The tokens are separated by a whitespace.
+ * Comments starting with // or # are recognized and <code>NULL</code> is returned.
+ * This function also handles quoted strings and parses them correctly ignoring contained whitespace here (but the string cannot contain itself a quote).
+ * Environment variables are processed using the syntax ${VAR}. No support for escaping ${ is supported.
+ * \param *buf [IN] The input buffer containing the token.
+ * \return the found token. <code>NULL</code> if none is found.
+ */
+static TCHAR *parseToken(TCHAR *buf)
 {
     TCHAR *token;
     static TCHAR dummy[BUFLEN];
-    int avail = sizeof(dummy);
+    int avail = BUFLEN;
     int size = 0, read = 0;
 
     token = _tcstok(buf, DELIMITER);
 
-    if (token == NULL)
+    if (token == NULL || _tcslen(token) == 0) {
         return NULL;
+    }
 
     /* Check for quoted string */
     if (token[0] == _T('"'))
     {
-        size = _sntprintf(dummy, avail, _T("%s"), token+1);
+        size = _sntprintf(dummy, avail, _T("%s"), token + 1);
         avail -= size;
         read += size;
         token = _tcstok(buf, _T("\""));
@@ -212,19 +276,53 @@ static TCHAR *strtokCheckComment(TCHAR *buf)
             _sntprintf(dummy+read, avail, _T(" %s"), token);
         }
         dummy[BUFLEN-1] = _T('\0');
-
         token = dummy;
-        return token;
     }
-
-    if (_tcscmp(token, _T("//")) == 0 || _tcscmp(token, _T("#")) == 0)
+    else if (_tcscmp(token, _T("//")) == 0 || _tcscmp(token, _T("#")) == 0)
     {
         return NULL;
     }
-    else
-    {
-        return token;
+	 /* Check for env variable */
+    TCHAR * envVarStart = NULL;
+    TCHAR * replace = NULL;
+    TCHAR * currentPos = token;
+	while ((envVarStart = _tcsstr(currentPos, _T("${"))) != NULL)
+	{
+		TCHAR * envVarEnd = NULL;
+		if ((envVarEnd = _tcschr(envVarStart, _T('}'))) != NULL) {
+			TCHAR * envString = NULL;
+			TCHAR * envVar = NULL;
+			// minus }
+			int endPosVar = (int)((envVarEnd - envVarStart + 1)/sizeof(TCHAR));
+			// get env string + null terminator
+			envString = malloc(sizeof(TCHAR)* endPosVar - 3 + 1);
+			_tcsncpy(envString, envVarStart+2, endPosVar - 3);
+			envString[endPosVar - 3] = _T('\0');
+			// replace var
+			if ((envVar = _tgetenv(envString)) != NULL) {
+				TCHAR * newToken = NULL;
+				replace = malloc(endPosVar + 1);
+				replace[endPosVar] = _T('\0');
+				_tcsncpy(replace, envVarStart, endPosVar);
+				newToken = strReplace(token, replace, envVar);
+				if (newToken) {
+					_tcsncpy(dummy, newToken, BUFLEN);
+					dummy[BUFLEN-1] = _T('\0');
+					free(newToken);
+					token = dummy;
+				}
+				free(replace);
+			}
+			free(envString);
+		}
+		else {
+			// unclosed var
+			return NULL;
+		}
+		// increment to prevent endless loop if not env var is found
+		currentPos += 2;
     }
+	return token;
 }
 
 static void displayCardRecognitionData(GP211_CARD_RECOGNITION_DATA cardData) {
@@ -237,20 +335,20 @@ static void displayCardRecognitionData(GP211_CARD_RECOGNITION_DATA cardData) {
 		_tprintf(_T("SCP: %d SCP Impl: %02x\n"), cardData.scp[i], cardData.scpImpl[i]);
 	}
 	if (cardData.cardChipDetailsLength > 0) {
-		ConvertByteArrayToString(cardData.cardChipDetails, cardData.cardChipDetailsLength, sizeof(temp)/sizeof(TCHAR), temp);
+		convertByteArrayToString(cardData.cardChipDetails, cardData.cardChipDetailsLength, sizeof(temp)/sizeof(TCHAR), temp);
 		_tprintf(_T("Card Chip Details: %s\n"), temp);
 	}
 	if (cardData.cardConfigurationDetailsLength > 0) {
-		ConvertByteArrayToString(cardData.cardConfigurationDetails, cardData.cardConfigurationDetailsLength, sizeof(temp)/sizeof(TCHAR), temp);
+		convertByteArrayToString(cardData.cardConfigurationDetails, cardData.cardConfigurationDetailsLength, sizeof(temp)/sizeof(TCHAR), temp);
 		_tprintf(_T("Card Configuration Details: %s\n"), temp);
 	}
 	if (cardData.issuerSecurityDomainsTrustPointCertificateInformationLength > 0) {
-		ConvertByteArrayToString(cardData.issuerSecurityDomainsTrustPointCertificateInformation,
+		convertByteArrayToString(cardData.issuerSecurityDomainsTrustPointCertificateInformation,
 				cardData.issuerSecurityDomainsTrustPointCertificateInformationLength, sizeof(temp)/sizeof(TCHAR), temp);
 		_tprintf(_T("Issuer Security Domains Trust Point Certificate Information: %s\n"), temp);
 	}
 	if (cardData.issuerSecurityDomainCertificateInformationLength > 0) {
-		ConvertByteArrayToString(cardData.issuerSecurityDomainCertificateInformation, cardData.issuerSecurityDomainCertificateInformationLength, sizeof(temp)/sizeof(TCHAR), temp);
+		convertByteArrayToString(cardData.issuerSecurityDomainCertificateInformation, cardData.issuerSecurityDomainCertificateInformationLength, sizeof(temp)/sizeof(TCHAR), temp);
 		_tprintf(_T("Issuer Security Domain Certificate Information: %s\n"), temp);
 	}
 }
@@ -414,14 +512,14 @@ static void displayLoadFilesAndModulesGp211(GP211_EXECUTABLE_MODULES_DATA *execu
 	_tprintf(format, _T("Load File AID"), _T("State"), _T("Version"), _T("Module AID"), _T("Linked Security Domain"));
 	for (i=0; i<count; i++) {
 		_tprintf(format, _T("--"), _T("--"), _T("--"), _T("--"), _T("--"));
-		ConvertByteArrayToString(executables[i].aid.AID, executables[i].aid.AIDLength, sizeof(aidStr)/sizeof(TCHAR), aidStr);
-		ConvertByteArrayToString(executables[i].associatedSecurityDomainAID.AID, executables[i].associatedSecurityDomainAID.AIDLength, sizeof(sdAidStr) / sizeof(TCHAR), sdAidStr);
-		ConvertByteArrayToString(executables[i].versionNumber, sizeof(executables[i].versionNumber), sizeof(versionStr) / sizeof(TCHAR), versionStr);
+		convertByteArrayToString(executables[i].aid.AID, executables[i].aid.AIDLength, sizeof(aidStr)/sizeof(TCHAR), aidStr);
+		convertByteArrayToString(executables[i].associatedSecurityDomainAID.AID, executables[i].associatedSecurityDomainAID.AIDLength, sizeof(sdAidStr) / sizeof(TCHAR), sdAidStr);
+		convertByteArrayToString(executables[i].versionNumber, sizeof(executables[i].versionNumber), sizeof(versionStr) / sizeof(TCHAR), versionStr);
 		lifeCycleState = lifeCycleToString(executables[i].lifeCycleState, GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES);
 		_tprintf(format, aidStr, lifeCycleState, versionStr, EMPTY_STRING, sdAidStr);
 		_tprintf(format, aidStr, lifeCycleState, versionStr, EMPTY_STRING, EMPTY_STRING);
 		for (j=0; j<executables[i].numExecutableModules; j++) {
-			ConvertByteArrayToString(executables[i].executableModules[j].AID, executables[i].executableModules[j].AIDLength, sizeof(moduleAidStr) / sizeof(TCHAR), moduleAidStr);
+			convertByteArrayToString(executables[i].executableModules[j].AID, executables[i].executableModules[j].AIDLength, sizeof(moduleAidStr) / sizeof(TCHAR), moduleAidStr);
 			_tprintf(format, EMPTY_STRING, EMPTY_STRING, EMPTY_STRING, moduleAidStr, EMPTY_STRING);
 		}
 	}
@@ -439,9 +537,9 @@ static void displayLoadApplicationsGp211(GP211_APPLICATION_DATA *applications, i
 	_tprintf(format, _T("AID"), _T("State"), _T("Privileges"), _T("Version"), _T("Linked Security Domain"));
 	for (i=0; i<count; i++) {
 		_tprintf(format, _T("--"), _T("--"), _T("--"), _T("--"), _T("--"));
-		ConvertByteArrayToString(applications[i].aid.AID, applications[i].aid.AIDLength, sizeof(aidStr) / sizeof(TCHAR), aidStr);
-		ConvertByteArrayToString(applications[i].associatedSecurityDomainAID.AID, applications[i].associatedSecurityDomainAID.AIDLength, sizeof(sdAidStr) / sizeof(TCHAR), sdAidStr);
-		ConvertByteArrayToString(applications[i].versionNumber, sizeof(applications[i].versionNumber), sizeof(versionStr) / sizeof(TCHAR), versionStr);
+		convertByteArrayToString(applications[i].aid.AID, applications[i].aid.AIDLength, sizeof(aidStr) / sizeof(TCHAR), aidStr);
+		convertByteArrayToString(applications[i].associatedSecurityDomainAID.AID, applications[i].associatedSecurityDomainAID.AIDLength, sizeof(sdAidStr) / sizeof(TCHAR), sdAidStr);
+		convertByteArrayToString(applications[i].versionNumber, sizeof(applications[i].versionNumber), sizeof(versionStr) / sizeof(TCHAR), versionStr);
 		lifeCycleState = lifeCycleToString(applications[i].lifeCycleState, element);
 		_tprintf(format, aidStr, lifeCycleState, EMPTY_STRING, versionStr, sdAidStr);
 		privilegesToString(applications[i].privileges, privileges);
@@ -463,7 +561,7 @@ static void displayApplicationsOp201(OP201_APPLICATION_DATA *applications, int c
 	_tprintf(format, _T("AID"), _T("State"), _T("Privileges"));
 	for (i=0; i<count; i++) {
 		_tprintf(format, _T("--"), _T("--"), _T("--"));
-		ConvertByteArrayToString(applications[i].aid.AID, applications[i].aid.AIDLength, sizeof(aidStr) / sizeof(TCHAR), aidStr);
+		convertByteArrayToString(applications[i].aid.AID, applications[i].aid.AIDLength, sizeof(aidStr) / sizeof(TCHAR), aidStr);
 		lifeCycleState = lifeCycleToString(applications[i].lifeCycleState, element);
 		_tprintf(format, aidStr, lifeCycleState, EMPTY_STRING);
 		privilegesToString(applications[i].privileges << 16, privileges);
@@ -554,7 +652,7 @@ static int handleOptions(OptionStr *pOptionStr)
 	// use by default 3DES / AES-128 keys
 	pOptionStr->keyLength = 16;
 
-    token = strtokCheckComment(NULL);
+    token = parseToken(NULL);
 
     while (token != NULL)
     {
@@ -562,7 +660,7 @@ static int handleOptions(OptionStr *pOptionStr)
         {
         	CHECK_TOKEN(token, _T("-identifier"));
 			BYTE temp;
-			ConvertStringToByteArray(token, 2, pOptionStr->identifier);
+			convertStringToByteArray(token, 2, pOptionStr->identifier);
 			if (_tcslen(token) == 2) {
 				temp = pOptionStr->identifier[0];
 				pOptionStr->identifier[0] = pOptionStr->identifier[1];
@@ -647,53 +745,53 @@ static int handleOptions(OptionStr *pOptionStr)
         else if (_tcscmp(token, _T("-pass")) == 0)
         {
         	CHECK_TOKEN(token, _T("-pass"));
-            ConvertTToC(pOptionStr->passPhrase, token);
+            convertTCharToChar(pOptionStr->passPhrase, token);
             pOptionStr->passPhrase[PASSPHRASELEN] = '\0';
         }
         else if (_tcscmp(token, _T("-key")) == 0)
         {
         	CHECK_TOKEN(token, _T("-key"));
-        	pOptionStr->keyLength = ConvertStringToByteArray(token, KEY_LEN, pOptionStr->key);
+        	pOptionStr->keyLength = convertStringToByteArray(token, KEY_LEN, pOptionStr->key);
         }
         else if (_tcscmp(token, _T("-mac_key")) == 0)
         {
         	CHECK_TOKEN(token, _T("-mac_key"));
-        	pOptionStr->keyLength = ConvertStringToByteArray(token, KEY_LEN, pOptionStr->mac_key);
+        	pOptionStr->keyLength = convertStringToByteArray(token, KEY_LEN, pOptionStr->mac_key);
         }
         else if (_tcscmp(token, _T("-enc_key")) == 0)
         {
         	CHECK_TOKEN(token, _T("-enc_key"));
-        	pOptionStr->keyLength = ConvertStringToByteArray(token, KEY_LEN, pOptionStr->enc_key);
+        	pOptionStr->keyLength = convertStringToByteArray(token, KEY_LEN, pOptionStr->enc_key);
         }
         else if (_tcscmp(token, _T("-kek_key")) == 0)
         {
         	CHECK_TOKEN(token, _T("-kek_key"));
-        	pOptionStr->keyLength = ConvertStringToByteArray(token, KEY_LEN, pOptionStr->kek_key);
+        	pOptionStr->keyLength = convertStringToByteArray(token, KEY_LEN, pOptionStr->kek_key);
         }
         else if (_tcscmp(token, _T("-AID")) == 0)
         {
         	CHECK_TOKEN(token, _T("-AID"));
-            pOptionStr->AIDLen = ConvertStringToByteArray(token, AIDLEN, pOptionStr->AID);
+            pOptionStr->AIDLen = convertStringToByteArray(token, AIDLEN, pOptionStr->AID);
         }
         else if (_tcscmp(token, _T("-sdAID")) == 0)
         {
         	CHECK_TOKEN(token, _T("-sdAID"));
-            pOptionStr->sdAIDLen = ConvertStringToByteArray(token, AIDLEN, pOptionStr->sdAID);
+            pOptionStr->sdAIDLen = convertStringToByteArray(token, AIDLEN, pOptionStr->sdAID);
         }
         else if (_tcscmp(token, _T("-pkgAID")) == 0)
         {
         	CHECK_TOKEN(token, _T("-pkgAID"));
-            pOptionStr->pkgAIDLen = ConvertStringToByteArray(token, AIDLEN, pOptionStr->pkgAID);
+            pOptionStr->pkgAIDLen = convertStringToByteArray(token, AIDLEN, pOptionStr->pkgAID);
         }
         else if (_tcscmp(token, _T("-instAID")) == 0)
         {
         	CHECK_TOKEN(token, _T("-instAID"));
-            pOptionStr->instAIDLen = ConvertStringToByteArray(token, AIDLEN, pOptionStr->instAID);
+            pOptionStr->instAIDLen = convertStringToByteArray(token, AIDLEN, pOptionStr->instAID);
         }
         else if (_tcscmp(token, _T("-APDU")) == 0)
         {
         	CHECK_TOKEN(token, _T("-APDU"));
-            pOptionStr->APDULen = ConvertStringToByteArray(token, APDU_COMMAND_LEN, pOptionStr->APDU);
+            pOptionStr->APDULen = convertStringToByteArray(token, APDU_COMMAND_LEN, pOptionStr->APDU);
         }
         else if (_tcscmp(token, _T("-protocol")) == 0)
         {
@@ -733,7 +831,7 @@ static int handleOptions(OptionStr *pOptionStr)
         else if (_tcscmp(token, _T("-instParam")) == 0)
         {
         	CHECK_TOKEN(token, _T("-instParam"));
-            pOptionStr->instParamLen = ConvertStringToByteArray(token, INSTPARAMLEN, pOptionStr->instParam);
+            pOptionStr->instParamLen = convertStringToByteArray(token, INSTPARAMLEN, pOptionStr->instParam);
         }
         else if (_tcscmp(token, _T("-element")) == 0)
         {
@@ -785,7 +883,7 @@ static int handleOptions(OptionStr *pOptionStr)
 		else if (_tcscmp(token, _T("-data")) == 0)
 		{
 			CHECK_TOKEN(token, _T("-data"));
-			pOptionStr->dataLen = ConvertStringToByteArray(token, DATALEN, pOptionStr->data);
+			pOptionStr->dataLen = convertStringToByteArray(token, DATALEN, pOptionStr->data);
 		}
         else if (_tcscmp(token, _T("-priv")) == 0)
         {
@@ -832,7 +930,7 @@ static int handleOptions(OptionStr *pOptionStr)
             goto end;
         }
 
-        token = strtokCheckComment(NULL);
+        token = parseToken(NULL);
     }
 end:
     return rv;
@@ -856,7 +954,7 @@ static int handleCommands(FILE *fd)
         // copy command line for printing it out later
         _tcsncpy (commandLine, buf, BUFLEN);
 
-        token = strtokCheckComment(buf);
+        token = parseToken(buf);
         while (token != NULL)
         {
             if (token[0] == _T('#') || _tcsnccmp(token, _T("//"), 2) == 0)
@@ -875,7 +973,7 @@ static int handleCommands(FILE *fd)
             {
                 // Establish context
                 _tcsncpy(cardContext.libraryName, _T("gppcscconnectionplugin"),
-                         _tcslen(_T("gppcscconnectionplugin")));
+                         _tcslen(_T("gppcscconnectionplugin"))+1);
                 status = OPGP_establish_context(&cardContext);
                 if (OPGP_ERROR_CHECK(status))
                 {
