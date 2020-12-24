@@ -950,6 +950,8 @@ static int handleCommands(FILE *fd)
 	nostop:
     while (_fgetts (buf, BUFLEN, fd) != NULL)
     {
+		// prevent endless loop
+		optionStr.noStop = 0;
 
         // copy command line for printing it out later
         _tcsncpy (commandLine, buf, BUFLEN);
