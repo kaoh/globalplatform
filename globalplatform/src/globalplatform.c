@@ -3993,7 +3993,7 @@ OPGP_ERROR_STATUS GP211_EMV_CPS11_derive_keys(OPGP_CARD_CONTEXT cardContext, OPG
 OPGP_ERROR_STATUS EMV_CPS11_derive_keys_get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE masterKey[16],
 							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]) {
 	OPGP_ERROR_STATUS status;
-	BYTE diversificationData[50];
+	BYTE diversificationData[50] = {0};
 	DWORD diversificationDataLen = 50;
 
 	OPGP_LOG_START(_T("EMV_CPS11_derive_keys_get_data"));
@@ -4004,6 +4004,7 @@ OPGP_ERROR_STATUS EMV_CPS11_derive_keys_get_data(OPGP_CARD_CONTEXT cardContext, 
 		goto end;
 	}
 
+	// skip tag identifier 0xCF and length (10)
 	status = EMV_CPS11_derive_keys(diversificationData + 2, masterKey, S_ENC, S_MAC, DEK);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
@@ -4249,7 +4250,7 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 
 	// set detected SCP
 	if (cardInfo.specVersion == GP_211) {
-		if (secureChannelProtocol == -1) {
+		if (!secureChannelProtocol) {
 			secureChannelProtocol = keyInformationData[1];
 		}
 		// test if reported SCP is consistent with passed SCP
@@ -4284,7 +4285,7 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 #endif
 
 	if (secInfo->secureChannelProtocol == GP211_SCP03) {
-		if (secureChannelProtocolImpl == -1) {
+		if (!secureChannelProtocolImpl) {
 			secureChannelProtocolImpl = keyInformationData[2];
 		}
 		else if (secureChannelProtocolImpl != keyInformationData[2]) {
@@ -4306,7 +4307,7 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 		}
 	}
 	else if (secInfo->secureChannelProtocol == GP211_SCP02) {
-		if (secureChannelProtocolImpl == -1) {
+		if (!secureChannelProtocolImpl) {
 			OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_MISSING_SCP_IMPL, OPGP_stringify_error(GP211_ERROR_MISSING_SCP_IMPL));
 			goto end;
 		}
@@ -4317,7 +4318,7 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 		memcpy(cardCryptogram, recvBuffer+20, 8);
 	}
 	else {
-		if (secureChannelProtocolImpl == -1) {
+		if (!secureChannelProtocolImpl) {
 			OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_MISSING_SCP_IMPL, OPGP_stringify_error(GP211_ERROR_MISSING_SCP_IMPL));
 			goto end;
 		}

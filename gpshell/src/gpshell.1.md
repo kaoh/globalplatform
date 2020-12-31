@@ -330,6 +330,7 @@ __-scpimpl__ *x*
 
 :    Secure Channel Implementation (default not set)
 Should not be necessary to be stated explicitly. See the get_secure_channel_protocol_details command to detect the Secure Channel Protocol Implementation.
+__NOTE:__ The value can be passed as decimal value or hexadecimal prefixed by "0x". The hexadecimal version is the common one.
 
 __-pass__ *password*
 
