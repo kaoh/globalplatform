@@ -330,6 +330,7 @@ __-scpimpl__ *x*
 
 :    Secure Channel Implementation (default not set)
 Should not be necessary to be stated explicitly. See the get_secure_channel_protocol_details command to detect the Secure Channel Protocol Implementation.
+__NOTE:__ The value can be passed as decimal value or hexadecimal prefixed by "0x". The hexadecimal version is the common one.
 
 __-pass__ *password*
 
@@ -424,7 +425,7 @@ Known unsupported key derivation schemes are:
 * CDK (CPG 2.02)
 * ISK(D)
 
-# Tested Cards
+# Supported Cards
 
 * Gemalto IDCore 3010
 * Oberthur CosmopoliC 32K (OP201)
@@ -440,6 +441,13 @@ Known unsupported key derivation schemes are:
 * Gemalto Generations Flexible
 * Sm@rtCafe Expert 3.0
 * Tongfang420
+* Infineon SECORA™ ID S
+* JCOP4 P71
+* JCPO3 P60 EMV
+* JCOP3 P60 SecID CS
+* JCOP3 P40 EMV
+* JCOP3 P40 SecID
+* JCOP2.4.x
 
 # Misc
 
@@ -459,7 +467,7 @@ If you cannot authenticate to your card it might be not fused. In this case you 
 Execute the JCOP IDENTIFY command.
 
 select -aid A000000167413000FF
-Offset 14 (decimal) of the response has the pre-personalized state. 00h is not fused (not personalized), 01h is fused.
+Offset 14 (decimal) of the response has the pre-personalized state. 00h means not fused (not personalized), 01h means fused.
 
 ## CyberFlex cards
 

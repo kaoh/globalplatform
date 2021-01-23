@@ -1835,11 +1835,22 @@ OPGP_ERROR_STATUS GP211_calculate_R_MAC(PBYTE apduCommand, DWORD apduCommandLeng
 		memcpy(r_MacData, apduCommand, 4);
 		offset+=4;
 		r_MacData[offset++] = lc;
-		memcpy(r_MacData+offset, apduCommand, lc);
+		// copy data
+		memcpy(r_MacData+offset, apduCommand+5, lc);
 		offset+=lc;
-		r_MacData[offset++] = responseApduLength;
-		memcpy(r_MacData+offset, responseApdu, responseApduLength);
-		offset+=responseApduLength;
+		// if R-MAC exists
+		if (responseApduLength >= 10) {
+			r_MacData[offset++] = responseApduLength-10;
+			memcpy(r_MacData+offset, responseApdu, responseApduLength-10);
+			offset += responseApduLength - 10;
+		}
+		else {
+			r_MacData[offset++] = 0;
+		}
+		// copy SW
+		memcpy(r_MacData+offset, responseApdu+responseApduLength-2, 2);
+		offset+=2;
+		r_MacDataLength = offset;
 		status = calculate_MAC_des_3des(secInfo->R_MACSessionKey, r_MacData, r_MacDataLength, secInfo->lastR_MAC, mac);
 		if (OPGP_ERROR_CHECK(status))
 			goto end;
@@ -1963,7 +1974,7 @@ OPGP_ERROR_STATUS GP211_check_R_MAC(PBYTE apduCommand, DWORD apduCommandLength,
 	if ((sw == 0x9000 || (sw >> 8) == 0x62 || (sw >> 8) == 0x63) || secInfo->secureChannelProtocol != GP211_SCP03) {
 		GP211_calculate_R_MAC(apduCommand, apduCommandLength, responseApdu, responseApduLength, secInfo, mac);
 	#ifdef OPGP_DEBUG
-		OPGP_LOG_HEX(_T("check_R_MAC: received R-MAC: "), responseApdu-10, 8);
+		OPGP_LOG_HEX(_T("check_R_MAC: received R-MAC: "), responseApdu+responseApduLength-10, 8);
 		OPGP_LOG_HEX(_T("check_R_MAC: calculated R-MAC: "), mac, 8);
 	#endif
 		if (memcmp(mac, responseApdu+responseApduLength-10, 8)) {
@@ -1972,13 +1983,13 @@ OPGP_ERROR_STATUS GP211_check_R_MAC(PBYTE apduCommand, DWORD apduCommandLength,
 		}
 		memcpy(secInfo->lastR_MAC, mac, 8);
 		// remove R-MAC
-		if (*unwrappedResponseApduLength-8+2 < responseApduLength)
+		if (*unwrappedResponseApduLength < responseApduLength - 8)
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
 		// - 8 bytes for MAC and 2 bytes for SW
 		// use memmove, because the buffer may overlap
-		memmove(unwrappedResponseApdu, responseApdu, responseApduLength-8);
+		memmove(unwrappedResponseApdu, responseApdu, responseApduLength - 10);
 		// append SW
-		memmove(unwrappedResponseApdu, responseApdu + responseApduLength -2, 2);
+		memmove(unwrappedResponseApdu + responseApduLength - 10, responseApdu + responseApduLength - 2, 2);
 		*unwrappedResponseApduLength = responseApduLength - 8;
 	}
 	else {
