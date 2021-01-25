@@ -169,6 +169,10 @@ __get_secure_channel_protocol_details__
 
 :     A GET DATA command returning the secure channel protocol details and remembering them for a later open_sc. __NOTE:__ The security domain must be selected and this only works outside of a secure channel.
 
+__print__ <text to print>
+
+:     Prints a line of text.  Prints an empty line if no text is given.
+
 __install_for_personalization__ -aid *AID*
 
 :     Prepare a security domain for the personalization of an applet with following store_data commands. __NOTE:__ The security domain must be selected and this only works outside of a secure channel.

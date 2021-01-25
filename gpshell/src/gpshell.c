@@ -30,6 +30,7 @@
 #endif
 
 #include <globalplatform/globalplatform.h>
+#include <ctype.h>
 
 #ifndef WIN32
 #define _snprintf snprintf
@@ -102,18 +103,18 @@ typedef struct _OptionStr
     DWORD instParamLen;
     BYTE element; //!< GET STATUS element (application, security domains, executable load files) to get
     BYTE format; //!< GET STATUS format
-	BYTE dataFormat; //!< data format of STORE DATA
-	BYTE responseDataExpected; //!< 1 if STORE DATA expects response data.
+    BYTE dataFormat; //!< data format of STORE DATA
+    BYTE responseDataExpected; //!< 1 if STORE DATA expects response data.
     BYTE keyTemplate; //!< The key template index to return.
     BYTE privilege;
     BYTE scp;
     BYTE scpImpl;
     BYTE identifier[2];
     BYTE keyDerivation;
-	BYTE dataEncryption; //!< STORE DATA encryption flag
-	BYTE data[DATALEN+1];
-	DWORD dataLen;
-	BYTE noStop; //!< Does not stop in case of an error.
+    BYTE dataEncryption; //!< STORE DATA encryption flag
+    BYTE data[DATALEN+1];
+    DWORD dataLen;
+    BYTE noStop; //!< Does not stop in case of an error.
 } OptionStr;
 
 /* Global Variables */
@@ -143,7 +144,7 @@ static unsigned int GetTime()
 LPCTSTR EMPTY_STRING = _T("");
 
 typedef struct {
-	TCHAR privilege[32];
+    TCHAR privilege[32];
 } PRIVILEGES_STRING;
 
 /* Functions */
@@ -161,7 +162,7 @@ static int convertStringToByteArray(TCHAR *src, int destLength, BYTE *dest)
 {
     TCHAR *dummy;
     unsigned int temp, i = 0;
-	dummy = malloc(destLength*2*sizeof(TCHAR) + sizeof(TCHAR));
+    dummy = malloc(destLength*2*sizeof(TCHAR) + sizeof(TCHAR));
     _tcsncpy(dummy, src, destLength*2+1);
     dummy[destLength*2] = _T('\0');
     while (_stscanf(&(dummy[i*2]), _T("%02x"), &temp) > 0)
@@ -169,30 +170,30 @@ static int convertStringToByteArray(TCHAR *src, int destLength, BYTE *dest)
         dest[i] = (BYTE)temp;
         i++;
     }
-	free(dummy);
+    free(dummy);
     return i;
 }
 
 static void convertByteArrayToString(BYTE *src, int srcLength, int destLength, TCHAR *dest)
 {
-	int j;
-	dest[destLength-1] =  _T('\0');
-	for (j=0; j<srcLength && j*2 < destLength-1 ; j++)
-	{
-		// use 3 to have space for null terminator
-		_sntprintf(dest+j*2, 3, _T("%02x"), src[j]);
-	}
-	// if string is empty add null terminator
-	if (destLength-1 > j*2) {
-		dest[j*2] =  _T('\0');
-	}
+    int j;
+    dest[destLength-1] =  _T('\0');
+    for (j=0; j<srcLength && j*2 < destLength-1 ; j++)
+    {
+        // use 3 to have space for null terminator
+        _sntprintf(dest+j*2, 3, _T("%02x"), src[j]);
+    }
+    // if string is empty add null terminator
+    if (destLength-1 > j*2) {
+        dest[j*2] =  _T('\0');
+    }
 }
 
 // You must free the result if result is non-NULL.
 TCHAR * strReplace(TCHAR *orig, TCHAR *rep, TCHAR *with) {
-	TCHAR *result; // the return string
-	TCHAR *ins;    // the next insert point
-	TCHAR *tmp;    // varies
+    TCHAR *result; // the return string
+    TCHAR *ins;    // the next insert point
+    TCHAR *tmp;    // varies
     int len_rep;  // length of rep (the string to remove)
     int len_with; // length of with (the string to replace rep with)
     int len_front; // distance between rep and end of last rep
@@ -282,330 +283,330 @@ static TCHAR *parseToken(TCHAR *buf)
     {
         return NULL;
     }
-	 /* Check for env variable */
+     /* Check for env variable */
     TCHAR * envVarStart = NULL;
     TCHAR * replace = NULL;
     TCHAR * currentPos = token;
-	while ((envVarStart = _tcsstr(currentPos, _T("${"))) != NULL)
-	{
-		TCHAR * envVarEnd = NULL;
-		if ((envVarEnd = _tcschr(envVarStart, _T('}'))) != NULL) {
-			TCHAR * envString = NULL;
-			TCHAR * envVar = NULL;
-			// minus }
-			int endPosVar = (int)((envVarEnd - envVarStart + 1)/sizeof(TCHAR));
-			// get env string + null terminator
-			envString = malloc(sizeof(TCHAR)* endPosVar - 3 + 1);
-			_tcsncpy(envString, envVarStart+2, endPosVar - 3);
-			envString[endPosVar - 3] = _T('\0');
-			// replace var
-			if ((envVar = _tgetenv(envString)) != NULL) {
-				TCHAR * newToken = NULL;
-				replace = malloc(endPosVar + 1);
-				replace[endPosVar] = _T('\0');
-				_tcsncpy(replace, envVarStart, endPosVar);
-				newToken = strReplace(token, replace, envVar);
-				if (newToken) {
-					_tcsncpy(dummy, newToken, BUFLEN);
-					dummy[BUFLEN-1] = _T('\0');
-					free(newToken);
-					token = dummy;
-				}
-				free(replace);
-			}
-			free(envString);
-		}
-		else {
-			// unclosed var
-			return NULL;
-		}
-		// increment to prevent endless loop if not env var is found
-		currentPos += 2;
+    while ((envVarStart = _tcsstr(currentPos, _T("${"))) != NULL)
+    {
+        TCHAR * envVarEnd = NULL;
+        if ((envVarEnd = _tcschr(envVarStart, _T('}'))) != NULL) {
+            TCHAR * envString = NULL;
+            TCHAR * envVar = NULL;
+            // minus }
+            int endPosVar = (int)((envVarEnd - envVarStart + 1)/sizeof(TCHAR));
+            // get env string + null terminator
+            envString = malloc(sizeof(TCHAR)* endPosVar - 3 + 1);
+            _tcsncpy(envString, envVarStart+2, endPosVar - 3);
+            envString[endPosVar - 3] = _T('\0');
+            // replace var
+            if ((envVar = _tgetenv(envString)) != NULL) {
+                TCHAR * newToken = NULL;
+                replace = malloc(endPosVar + 1);
+                replace[endPosVar] = _T('\0');
+                _tcsncpy(replace, envVarStart, endPosVar);
+                newToken = strReplace(token, replace, envVar);
+                if (newToken) {
+                    _tcsncpy(dummy, newToken, BUFLEN);
+                    dummy[BUFLEN-1] = _T('\0');
+                    free(newToken);
+                    token = dummy;
+                }
+                free(replace);
+            }
+            free(envString);
+        }
+        else {
+            // unclosed var
+            return NULL;
+        }
+        // increment to prevent endless loop if not env var is found
+        currentPos += 2;
     }
-	return token;
+    return token;
 }
 
 static void displayCardRecognitionData(GP211_CARD_RECOGNITION_DATA cardData) {
-	DWORD i=0;
-	TCHAR temp[128];
-	if (cardData.version > 0) {
-		_tprintf(_T("Version: %04x\n"), (unsigned int)cardData.version);
-	}
-	for (i=0; i<cardData.scpLength; i++) {
-		_tprintf(_T("SCP: %d SCP Impl: %02x\n"), cardData.scp[i], cardData.scpImpl[i]);
-	}
-	if (cardData.cardChipDetailsLength > 0) {
-		convertByteArrayToString(cardData.cardChipDetails, cardData.cardChipDetailsLength, sizeof(temp)/sizeof(TCHAR), temp);
-		_tprintf(_T("Card Chip Details: %s\n"), temp);
-	}
-	if (cardData.cardConfigurationDetailsLength > 0) {
-		convertByteArrayToString(cardData.cardConfigurationDetails, cardData.cardConfigurationDetailsLength, sizeof(temp)/sizeof(TCHAR), temp);
-		_tprintf(_T("Card Configuration Details: %s\n"), temp);
-	}
-	if (cardData.issuerSecurityDomainsTrustPointCertificateInformationLength > 0) {
-		convertByteArrayToString(cardData.issuerSecurityDomainsTrustPointCertificateInformation,
-				cardData.issuerSecurityDomainsTrustPointCertificateInformationLength, sizeof(temp)/sizeof(TCHAR), temp);
-		_tprintf(_T("Issuer Security Domains Trust Point Certificate Information: %s\n"), temp);
-	}
-	if (cardData.issuerSecurityDomainCertificateInformationLength > 0) {
-		convertByteArrayToString(cardData.issuerSecurityDomainCertificateInformation, cardData.issuerSecurityDomainCertificateInformationLength, sizeof(temp)/sizeof(TCHAR), temp);
-		_tprintf(_T("Issuer Security Domain Certificate Information: %s\n"), temp);
-	}
+    DWORD i=0;
+    TCHAR temp[128];
+    if (cardData.version > 0) {
+        _tprintf(_T("Version: %04x\n"), (unsigned int)cardData.version);
+    }
+    for (i=0; i<cardData.scpLength; i++) {
+        _tprintf(_T("SCP: %d SCP Impl: %02x\n"), cardData.scp[i], cardData.scpImpl[i]);
+    }
+    if (cardData.cardChipDetailsLength > 0) {
+        convertByteArrayToString(cardData.cardChipDetails, cardData.cardChipDetailsLength, sizeof(temp)/sizeof(TCHAR), temp);
+        _tprintf(_T("Card Chip Details: %s\n"), temp);
+    }
+    if (cardData.cardConfigurationDetailsLength > 0) {
+        convertByteArrayToString(cardData.cardConfigurationDetails, cardData.cardConfigurationDetailsLength, sizeof(temp)/sizeof(TCHAR), temp);
+        _tprintf(_T("Card Configuration Details: %s\n"), temp);
+    }
+    if (cardData.issuerSecurityDomainsTrustPointCertificateInformationLength > 0) {
+        convertByteArrayToString(cardData.issuerSecurityDomainsTrustPointCertificateInformation,
+                cardData.issuerSecurityDomainsTrustPointCertificateInformationLength, sizeof(temp)/sizeof(TCHAR), temp);
+        _tprintf(_T("Issuer Security Domains Trust Point Certificate Information: %s\n"), temp);
+    }
+    if (cardData.issuerSecurityDomainCertificateInformationLength > 0) {
+        convertByteArrayToString(cardData.issuerSecurityDomainCertificateInformation, cardData.issuerSecurityDomainCertificateInformationLength, sizeof(temp)/sizeof(TCHAR), temp);
+        _tprintf(_T("Issuer Security Domain Certificate Information: %s\n"), temp);
+    }
 }
 
 static LPTSTR lifeCycleToString(BYTE lifeCycle, BYTE element) {
-	LPCTSTR lcLoaded = _T("Loaded");
-	LPCTSTR lcInstalled = _T("Installed");
-	LPCTSTR lcSelectable = _T("Selectable");
-	LPCTSTR lcLocked = _T("Locked");
-	LPCTSTR lcPersonalized = _T("Personalized");
-	LPCTSTR lcOpReady = _T("OP Ready");
-	LPCTSTR lcInitialized = _T("Initialized");
-	LPCTSTR lcSecured = _T("Secured");
-	LPCTSTR lcCardLocked = _T("Card Locked");
-	LPCTSTR lcTerminated = _T("Terminated");
+    LPCTSTR lcLoaded = _T("Loaded");
+    LPCTSTR lcInstalled = _T("Installed");
+    LPCTSTR lcSelectable = _T("Selectable");
+    LPCTSTR lcLocked = _T("Locked");
+    LPCTSTR lcPersonalized = _T("Personalized");
+    LPCTSTR lcOpReady = _T("OP Ready");
+    LPCTSTR lcInitialized = _T("Initialized");
+    LPCTSTR lcSecured = _T("Secured");
+    LPCTSTR lcCardLocked = _T("Card Locked");
+    LPCTSTR lcTerminated = _T("Terminated");
 
-	static LPTSTR lifeCycleState;
+    static LPTSTR lifeCycleState;
 
-	switch (element) {
-		case GP211_STATUS_LOAD_FILES:
-		case GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES:
-			if ((lifeCycle & GP211_LIFE_CYCLE_LOAD_FILE_LOADED) == GP211_LIFE_CYCLE_LOAD_FILE_LOADED) {
-				lifeCycleState = (LPTSTR)lcLoaded;
-			}
-			break;
-		case GP211_STATUS_APPLICATIONS:
-			if ((lifeCycle & GP211_LIFE_CYCLE_APPLICATION_INSTALLED) == GP211_LIFE_CYCLE_APPLICATION_INSTALLED) {
-				lifeCycleState = (LPTSTR)lcInstalled;
-			}
-			if ((lifeCycle & GP211_LIFE_CYCLE_APPLICATION_SELECTABLE) == GP211_LIFE_CYCLE_APPLICATION_SELECTABLE) {
-				lifeCycleState = (LPTSTR)lcSelectable;
-			}
-			if ((lifeCycle & GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED)  == GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED) {
-				lifeCycleState = (LPTSTR)lcPersonalized;
-			}
-			if ((lifeCycle & GP211_LIFE_CYCLE_APPLICATION_LOCKED) == GP211_LIFE_CYCLE_APPLICATION_LOCKED) {
-				lifeCycleState = (LPTSTR)lcLocked;
-			}
-			break;
-		case GP211_STATUS_ISSUER_SECURITY_DOMAIN:
-			if ((lifeCycle & GP211_LIFE_CYCLE_CARD_OP_READY) == GP211_LIFE_CYCLE_CARD_OP_READY) {
-				lifeCycleState = (LPTSTR)lcOpReady;
-			}
-			if ((lifeCycle & GP211_LIFE_CYCLE_CARD_INITIALIZED) == GP211_LIFE_CYCLE_CARD_INITIALIZED) {
-				lifeCycleState = (LPTSTR)lcInitialized;
-			}
-			if ((lifeCycle & GP211_LIFE_CYCLE_CARD_SECURED)  == GP211_LIFE_CYCLE_CARD_SECURED) {
-				lifeCycleState = (LPTSTR)lcSecured;
-			}
-			if ((lifeCycle & GP211_LIFE_CYCLE_CARD_LOCKED) == GP211_LIFE_CYCLE_CARD_LOCKED) {
-				lifeCycleState = (LPTSTR)lcCardLocked;
-			}
-			if ((lifeCycle & GP211_LIFE_CYCLE_CARD_TERMINATED) == GP211_LIFE_CYCLE_CARD_TERMINATED) {
-				lifeCycleState = (LPTSTR)lcTerminated;
-			}
-			break;
-	}
+    switch (element) {
+        case GP211_STATUS_LOAD_FILES:
+        case GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES:
+            if ((lifeCycle & GP211_LIFE_CYCLE_LOAD_FILE_LOADED) == GP211_LIFE_CYCLE_LOAD_FILE_LOADED) {
+                lifeCycleState = (LPTSTR)lcLoaded;
+            }
+            break;
+        case GP211_STATUS_APPLICATIONS:
+            if ((lifeCycle & GP211_LIFE_CYCLE_APPLICATION_INSTALLED) == GP211_LIFE_CYCLE_APPLICATION_INSTALLED) {
+                lifeCycleState = (LPTSTR)lcInstalled;
+            }
+            if ((lifeCycle & GP211_LIFE_CYCLE_APPLICATION_SELECTABLE) == GP211_LIFE_CYCLE_APPLICATION_SELECTABLE) {
+                lifeCycleState = (LPTSTR)lcSelectable;
+            }
+            if ((lifeCycle & GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED)  == GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED) {
+                lifeCycleState = (LPTSTR)lcPersonalized;
+            }
+            if ((lifeCycle & GP211_LIFE_CYCLE_APPLICATION_LOCKED) == GP211_LIFE_CYCLE_APPLICATION_LOCKED) {
+                lifeCycleState = (LPTSTR)lcLocked;
+            }
+            break;
+        case GP211_STATUS_ISSUER_SECURITY_DOMAIN:
+            if ((lifeCycle & GP211_LIFE_CYCLE_CARD_OP_READY) == GP211_LIFE_CYCLE_CARD_OP_READY) {
+                lifeCycleState = (LPTSTR)lcOpReady;
+            }
+            if ((lifeCycle & GP211_LIFE_CYCLE_CARD_INITIALIZED) == GP211_LIFE_CYCLE_CARD_INITIALIZED) {
+                lifeCycleState = (LPTSTR)lcInitialized;
+            }
+            if ((lifeCycle & GP211_LIFE_CYCLE_CARD_SECURED)  == GP211_LIFE_CYCLE_CARD_SECURED) {
+                lifeCycleState = (LPTSTR)lcSecured;
+            }
+            if ((lifeCycle & GP211_LIFE_CYCLE_CARD_LOCKED) == GP211_LIFE_CYCLE_CARD_LOCKED) {
+                lifeCycleState = (LPTSTR)lcCardLocked;
+            }
+            if ((lifeCycle & GP211_LIFE_CYCLE_CARD_TERMINATED) == GP211_LIFE_CYCLE_CARD_TERMINATED) {
+                lifeCycleState = (LPTSTR)lcTerminated;
+            }
+            break;
+    }
 
-	return lifeCycleState;
+    return lifeCycleState;
 }
 
 static void privilegesToString(DWORD privileges, PRIVILEGES_STRING privilegesStrings[20]) {
-	int i;
-	LPCTSTR lcSd = _T("Security Domain");
-	LPCTSTR lcDapVerfification = _T("DAP Verification");
-	LPCTSTR lcDelegatedManagement = _T("Delegated Management");
-	LPCTSTR lcCardLock = _T("Card Lock");
-	LPCTSTR lcCardTerminate = _T("Card Terminate");
-	LPCTSTR lcCardReset = _T("Default Selected / Card Reset");
-	LPCTSTR lcCVMManagement = _T("CVM Management");
-	LPCTSTR lcMandatedDapVerification = _T("Mandated DAP Verification");
-	LPCTSTR lcTrustedPath = _T("Trusted Path");
-	LPCTSTR lcAuthManagement = _T("Authorized Management");
-	LPCTSTR lcTokenManagement = _T("Token Management");
-	LPCTSTR lcGlobalDelete = _T("Global Delete");
-	LPCTSTR lcGlobalLock = _T("Global Lock");
-	LPCTSTR lcGlobalRegistry = _T("Global Registry");
-	LPCTSTR lcFinalApplication = _T("Final Application");
-	LPCTSTR lcGlobalService = _T("Global Service");
+    int i;
+    LPCTSTR lcSd = _T("Security Domain");
+    LPCTSTR lcDapVerfification = _T("DAP Verification");
+    LPCTSTR lcDelegatedManagement = _T("Delegated Management");
+    LPCTSTR lcCardLock = _T("Card Lock");
+    LPCTSTR lcCardTerminate = _T("Card Terminate");
+    LPCTSTR lcCardReset = _T("Default Selected / Card Reset");
+    LPCTSTR lcCVMManagement = _T("CVM Management");
+    LPCTSTR lcMandatedDapVerification = _T("Mandated DAP Verification");
+    LPCTSTR lcTrustedPath = _T("Trusted Path");
+    LPCTSTR lcAuthManagement = _T("Authorized Management");
+    LPCTSTR lcTokenManagement = _T("Token Management");
+    LPCTSTR lcGlobalDelete = _T("Global Delete");
+    LPCTSTR lcGlobalLock = _T("Global Lock");
+    LPCTSTR lcGlobalRegistry = _T("Global Registry");
+    LPCTSTR lcFinalApplication = _T("Final Application");
+    LPCTSTR lcGlobalService = _T("Global Service");
 
-	LPCTSTR lcReceiptGeneration = _T("Receipt Generation");
-	LPCTSTR lcCipheredLoadFileDataBlock = _T("Ciphered Load File Data Block");
-	LPCTSTR lcContactlessActivation = _T("Contactless Activation");
-	LPCTSTR lcContactlessSelfActivation = _T("Contactless Self-Activation");
-	// null all
-	for (i = 0; i<20; i++) {
-		_tcscpy(privilegesStrings[i].privilege, EMPTY_STRING);
-	}
-	i=0;
-	if ((privileges & GP211_SECURITY_DOMAIN) == GP211_SECURITY_DOMAIN) {
-		_tcscpy(privilegesStrings[i++].privilege, lcSd);
-	}
-	if ((privileges & GP211_DAP_VERIFICATION) == GP211_DAP_VERIFICATION) {
-		_tcscpy(privilegesStrings[i++].privilege, lcDapVerfification);
-	}
-	if ((privileges & GP211_DELEGATED_MANAGEMENT) == GP211_DELEGATED_MANAGEMENT) {
-		_tcscpy(privilegesStrings[i++].privilege, lcDelegatedManagement);
-	}
-	if ((privileges & GP211_CARD_MANAGER_LOCK_PRIVILEGE) == GP211_CARD_MANAGER_LOCK_PRIVILEGE) {
-		_tcscpy(privilegesStrings[i++].privilege, lcCardLock);
-	}
-	if ((privileges & GP211_CARD_MANAGER_TERMINATE_PRIVILEGE) == GP211_CARD_MANAGER_TERMINATE_PRIVILEGE) {
-		_tcscpy(privilegesStrings[i++].privilege, lcCardTerminate);
-	}
-	if ((privileges & GP211_DEFAULT_SELECTED_CARD_RESET_PRIVILEGE) == GP211_DEFAULT_SELECTED_CARD_RESET_PRIVILEGE) {
-		_tcscpy(privilegesStrings[i++].privilege, lcCardReset);
-	}
-	if ((privileges & GP211_PIN_CHANGE_PRIVILEGE) == GP211_PIN_CHANGE_PRIVILEGE) {
-		_tcscpy(privilegesStrings[i++].privilege, lcCVMManagement);
-	}
-	if ((privileges & GP211_MANDATED_DAP_VERIFICATION) == GP211_MANDATED_DAP_VERIFICATION) {
-		_tcscpy(privilegesStrings[i++].privilege, lcMandatedDapVerification);
-	}
-	if ((privileges & GP211_TRUSTED_PATH) == GP211_TRUSTED_PATH) {
-		_tcscpy(privilegesStrings[i++].privilege, lcTrustedPath);
-	}
-	if ((privileges & GP211_AUTHORIZED_MANAGEMENT) == GP211_AUTHORIZED_MANAGEMENT) {
-		_tcscpy(privilegesStrings[i++].privilege, lcAuthManagement);
-	}
-	if ((privileges & GP211_TOKEN_VERIFICATION) == GP211_TOKEN_VERIFICATION) {
-		_tcscpy(privilegesStrings[i++].privilege, lcTokenManagement);
-	}
-	if ((privileges & GP211_GLOBAL_DELETE) == GP211_GLOBAL_DELETE) {
-		_tcscpy(privilegesStrings[i++].privilege, lcGlobalDelete);
-	}
-	if ((privileges & GP211_GLOBAL_LOCK) == GP211_GLOBAL_LOCK) {
-		_tcscpy(privilegesStrings[i++].privilege, lcGlobalLock);
-	}
-	if ((privileges & GP211_GLOBAL_REGISTRY) == GP211_GLOBAL_REGISTRY) {
-		_tcscpy(privilegesStrings[i++].privilege, lcGlobalRegistry);
-	}
-	if ((privileges & GP211_GLOBAL_SERVICE) == GP211_GLOBAL_SERVICE) {
-		_tcscpy(privilegesStrings[i++].privilege, lcGlobalService);
-	}
-	if ((privileges & GP211_FINAL_APPLICATION) == GP211_FINAL_APPLICATION) {
-		_tcscpy(privilegesStrings[i++].privilege, lcFinalApplication);
-	}
-	if ((privileges & GP211_RECEIPT_GENERATION) == GP211_RECEIPT_GENERATION) {
-		_tcscpy(privilegesStrings[i++].privilege, lcReceiptGeneration);
-	}
-	if ((privileges & GP211_CIPHERED_LOAD_FILE_DATA_BLOCK) == GP211_CIPHERED_LOAD_FILE_DATA_BLOCK) {
-		_tcscpy(privilegesStrings[i++].privilege, lcCipheredLoadFileDataBlock);
-	}
-	if ((privileges & GP211_CONTACTLESS_ACTIVATION) == GP211_CONTACTLESS_ACTIVATION) {
-		_tcscpy(privilegesStrings[i++].privilege, lcContactlessActivation);
-	}
-	if ((privileges & GP211_CONTACTLESS_SELF_ACTIVATION) == GP211_CONTACTLESS_SELF_ACTIVATION) {
-		_tcscpy(privilegesStrings[i++].privilege, lcContactlessSelfActivation);
-	}
+    LPCTSTR lcReceiptGeneration = _T("Receipt Generation");
+    LPCTSTR lcCipheredLoadFileDataBlock = _T("Ciphered Load File Data Block");
+    LPCTSTR lcContactlessActivation = _T("Contactless Activation");
+    LPCTSTR lcContactlessSelfActivation = _T("Contactless Self-Activation");
+    // null all
+    for (i = 0; i<20; i++) {
+        _tcscpy(privilegesStrings[i].privilege, EMPTY_STRING);
+    }
+    i=0;
+    if ((privileges & GP211_SECURITY_DOMAIN) == GP211_SECURITY_DOMAIN) {
+        _tcscpy(privilegesStrings[i++].privilege, lcSd);
+    }
+    if ((privileges & GP211_DAP_VERIFICATION) == GP211_DAP_VERIFICATION) {
+        _tcscpy(privilegesStrings[i++].privilege, lcDapVerfification);
+    }
+    if ((privileges & GP211_DELEGATED_MANAGEMENT) == GP211_DELEGATED_MANAGEMENT) {
+        _tcscpy(privilegesStrings[i++].privilege, lcDelegatedManagement);
+    }
+    if ((privileges & GP211_CARD_MANAGER_LOCK_PRIVILEGE) == GP211_CARD_MANAGER_LOCK_PRIVILEGE) {
+        _tcscpy(privilegesStrings[i++].privilege, lcCardLock);
+    }
+    if ((privileges & GP211_CARD_MANAGER_TERMINATE_PRIVILEGE) == GP211_CARD_MANAGER_TERMINATE_PRIVILEGE) {
+        _tcscpy(privilegesStrings[i++].privilege, lcCardTerminate);
+    }
+    if ((privileges & GP211_DEFAULT_SELECTED_CARD_RESET_PRIVILEGE) == GP211_DEFAULT_SELECTED_CARD_RESET_PRIVILEGE) {
+        _tcscpy(privilegesStrings[i++].privilege, lcCardReset);
+    }
+    if ((privileges & GP211_PIN_CHANGE_PRIVILEGE) == GP211_PIN_CHANGE_PRIVILEGE) {
+        _tcscpy(privilegesStrings[i++].privilege, lcCVMManagement);
+    }
+    if ((privileges & GP211_MANDATED_DAP_VERIFICATION) == GP211_MANDATED_DAP_VERIFICATION) {
+        _tcscpy(privilegesStrings[i++].privilege, lcMandatedDapVerification);
+    }
+    if ((privileges & GP211_TRUSTED_PATH) == GP211_TRUSTED_PATH) {
+        _tcscpy(privilegesStrings[i++].privilege, lcTrustedPath);
+    }
+    if ((privileges & GP211_AUTHORIZED_MANAGEMENT) == GP211_AUTHORIZED_MANAGEMENT) {
+        _tcscpy(privilegesStrings[i++].privilege, lcAuthManagement);
+    }
+    if ((privileges & GP211_TOKEN_VERIFICATION) == GP211_TOKEN_VERIFICATION) {
+        _tcscpy(privilegesStrings[i++].privilege, lcTokenManagement);
+    }
+    if ((privileges & GP211_GLOBAL_DELETE) == GP211_GLOBAL_DELETE) {
+        _tcscpy(privilegesStrings[i++].privilege, lcGlobalDelete);
+    }
+    if ((privileges & GP211_GLOBAL_LOCK) == GP211_GLOBAL_LOCK) {
+        _tcscpy(privilegesStrings[i++].privilege, lcGlobalLock);
+    }
+    if ((privileges & GP211_GLOBAL_REGISTRY) == GP211_GLOBAL_REGISTRY) {
+        _tcscpy(privilegesStrings[i++].privilege, lcGlobalRegistry);
+    }
+    if ((privileges & GP211_GLOBAL_SERVICE) == GP211_GLOBAL_SERVICE) {
+        _tcscpy(privilegesStrings[i++].privilege, lcGlobalService);
+    }
+    if ((privileges & GP211_FINAL_APPLICATION) == GP211_FINAL_APPLICATION) {
+        _tcscpy(privilegesStrings[i++].privilege, lcFinalApplication);
+    }
+    if ((privileges & GP211_RECEIPT_GENERATION) == GP211_RECEIPT_GENERATION) {
+        _tcscpy(privilegesStrings[i++].privilege, lcReceiptGeneration);
+    }
+    if ((privileges & GP211_CIPHERED_LOAD_FILE_DATA_BLOCK) == GP211_CIPHERED_LOAD_FILE_DATA_BLOCK) {
+        _tcscpy(privilegesStrings[i++].privilege, lcCipheredLoadFileDataBlock);
+    }
+    if ((privileges & GP211_CONTACTLESS_ACTIVATION) == GP211_CONTACTLESS_ACTIVATION) {
+        _tcscpy(privilegesStrings[i++].privilege, lcContactlessActivation);
+    }
+    if ((privileges & GP211_CONTACTLESS_SELF_ACTIVATION) == GP211_CONTACTLESS_SELF_ACTIVATION) {
+        _tcscpy(privilegesStrings[i++].privilege, lcContactlessSelfActivation);
+    }
 }
 
 static void displayLoadFilesAndModulesGp211(GP211_EXECUTABLE_MODULES_DATA *executables, int count) {
-	LPCTSTR format;
-	TCHAR aidStr[33];
-	TCHAR moduleAidStr[33];
-	TCHAR sdAidStr[33];
-	TCHAR versionStr[5];
-	LPTSTR lifeCycleState;
-	int i,j;
-	format = _T("%-32s | %-12s | %-7s | %-32s | %-32s\n");
-	_tprintf(format, _T("Load File AID"), _T("State"), _T("Version"), _T("Module AID"), _T("Linked Security Domain"));
-	for (i=0; i<count; i++) {
-		_tprintf(format, _T("--"), _T("--"), _T("--"), _T("--"), _T("--"));
-		convertByteArrayToString(executables[i].aid.AID, executables[i].aid.AIDLength, sizeof(aidStr)/sizeof(TCHAR), aidStr);
-		convertByteArrayToString(executables[i].associatedSecurityDomainAID.AID, executables[i].associatedSecurityDomainAID.AIDLength, sizeof(sdAidStr) / sizeof(TCHAR), sdAidStr);
-		convertByteArrayToString(executables[i].versionNumber, sizeof(executables[i].versionNumber), sizeof(versionStr) / sizeof(TCHAR), versionStr);
-		lifeCycleState = lifeCycleToString(executables[i].lifeCycleState, GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES);
-		_tprintf(format, aidStr, lifeCycleState, versionStr, EMPTY_STRING, sdAidStr);
-		_tprintf(format, aidStr, lifeCycleState, versionStr, EMPTY_STRING, EMPTY_STRING);
-		for (j=0; j<executables[i].numExecutableModules; j++) {
-			convertByteArrayToString(executables[i].executableModules[j].AID, executables[i].executableModules[j].AIDLength, sizeof(moduleAidStr) / sizeof(TCHAR), moduleAidStr);
-			_tprintf(format, EMPTY_STRING, EMPTY_STRING, EMPTY_STRING, moduleAidStr, EMPTY_STRING);
-		}
-	}
+    LPCTSTR format;
+    TCHAR aidStr[33];
+    TCHAR moduleAidStr[33];
+    TCHAR sdAidStr[33];
+    TCHAR versionStr[5];
+    LPTSTR lifeCycleState;
+    int i,j;
+    format = _T("%-32s | %-12s | %-7s | %-32s | %-32s\n");
+    _tprintf(format, _T("Load File AID"), _T("State"), _T("Version"), _T("Module AID"), _T("Linked Security Domain"));
+    for (i=0; i<count; i++) {
+        _tprintf(format, _T("--"), _T("--"), _T("--"), _T("--"), _T("--"));
+        convertByteArrayToString(executables[i].aid.AID, executables[i].aid.AIDLength, sizeof(aidStr)/sizeof(TCHAR), aidStr);
+        convertByteArrayToString(executables[i].associatedSecurityDomainAID.AID, executables[i].associatedSecurityDomainAID.AIDLength, sizeof(sdAidStr) / sizeof(TCHAR), sdAidStr);
+        convertByteArrayToString(executables[i].versionNumber, sizeof(executables[i].versionNumber), sizeof(versionStr) / sizeof(TCHAR), versionStr);
+        lifeCycleState = lifeCycleToString(executables[i].lifeCycleState, GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES);
+        _tprintf(format, aidStr, lifeCycleState, versionStr, EMPTY_STRING, sdAidStr);
+        _tprintf(format, aidStr, lifeCycleState, versionStr, EMPTY_STRING, EMPTY_STRING);
+        for (j=0; j<executables[i].numExecutableModules; j++) {
+            convertByteArrayToString(executables[i].executableModules[j].AID, executables[i].executableModules[j].AIDLength, sizeof(moduleAidStr) / sizeof(TCHAR), moduleAidStr);
+            _tprintf(format, EMPTY_STRING, EMPTY_STRING, EMPTY_STRING, moduleAidStr, EMPTY_STRING);
+        }
+    }
 }
 
 static void displayLoadApplicationsGp211(GP211_APPLICATION_DATA *applications, int count, BYTE element) {
-	LPCTSTR format;
-	TCHAR aidStr[33];
-	TCHAR sdAidStr[33];
-	TCHAR versionStr[5];
-	LPTSTR lifeCycleState;
-	PRIVILEGES_STRING privileges[20];
-	int i,j;
-	format = _T("%-32s | %-12s | %-30s | %-7s | %-32s\n");
-	_tprintf(format, _T("AID"), _T("State"), _T("Privileges"), _T("Version"), _T("Linked Security Domain"));
-	for (i=0; i<count; i++) {
-		_tprintf(format, _T("--"), _T("--"), _T("--"), _T("--"), _T("--"));
-		convertByteArrayToString(applications[i].aid.AID, applications[i].aid.AIDLength, sizeof(aidStr) / sizeof(TCHAR), aidStr);
-		convertByteArrayToString(applications[i].associatedSecurityDomainAID.AID, applications[i].associatedSecurityDomainAID.AIDLength, sizeof(sdAidStr) / sizeof(TCHAR), sdAidStr);
-		convertByteArrayToString(applications[i].versionNumber, sizeof(applications[i].versionNumber), sizeof(versionStr) / sizeof(TCHAR), versionStr);
-		lifeCycleState = lifeCycleToString(applications[i].lifeCycleState, element);
-		_tprintf(format, aidStr, lifeCycleState, EMPTY_STRING, versionStr, sdAidStr);
-		privilegesToString(applications[i].privileges, privileges);
-		for (j=0; j<20; j++) {
-			if (_tcslen(privileges[j].privilege) > 0) {
-				_tprintf(format, EMPTY_STRING, EMPTY_STRING, privileges[j].privilege, EMPTY_STRING, EMPTY_STRING);
-			}
-		}
-	}
+    LPCTSTR format;
+    TCHAR aidStr[33];
+    TCHAR sdAidStr[33];
+    TCHAR versionStr[5];
+    LPTSTR lifeCycleState;
+    PRIVILEGES_STRING privileges[20];
+    int i,j;
+    format = _T("%-32s | %-12s | %-30s | %-7s | %-32s\n");
+    _tprintf(format, _T("AID"), _T("State"), _T("Privileges"), _T("Version"), _T("Linked Security Domain"));
+    for (i=0; i<count; i++) {
+        _tprintf(format, _T("--"), _T("--"), _T("--"), _T("--"), _T("--"));
+        convertByteArrayToString(applications[i].aid.AID, applications[i].aid.AIDLength, sizeof(aidStr) / sizeof(TCHAR), aidStr);
+        convertByteArrayToString(applications[i].associatedSecurityDomainAID.AID, applications[i].associatedSecurityDomainAID.AIDLength, sizeof(sdAidStr) / sizeof(TCHAR), sdAidStr);
+        convertByteArrayToString(applications[i].versionNumber, sizeof(applications[i].versionNumber), sizeof(versionStr) / sizeof(TCHAR), versionStr);
+        lifeCycleState = lifeCycleToString(applications[i].lifeCycleState, element);
+        _tprintf(format, aidStr, lifeCycleState, EMPTY_STRING, versionStr, sdAidStr);
+        privilegesToString(applications[i].privileges, privileges);
+        for (j=0; j<20; j++) {
+            if (_tcslen(privileges[j].privilege) > 0) {
+                _tprintf(format, EMPTY_STRING, EMPTY_STRING, privileges[j].privilege, EMPTY_STRING, EMPTY_STRING);
+            }
+        }
+    }
 }
 
 static void displayApplicationsOp201(OP201_APPLICATION_DATA *applications, int count, BYTE element) {
-	LPCTSTR format;
-	TCHAR aidStr[33];
-	LPTSTR lifeCycleState;
-	PRIVILEGES_STRING privileges[20];
-	int i,j;
-	format = _T("%-32s | %-12s | %-30s\n");
-	_tprintf(format, _T("AID"), _T("State"), _T("Privileges"));
-	for (i=0; i<count; i++) {
-		_tprintf(format, _T("--"), _T("--"), _T("--"));
-		convertByteArrayToString(applications[i].aid.AID, applications[i].aid.AIDLength, sizeof(aidStr) / sizeof(TCHAR), aidStr);
-		lifeCycleState = lifeCycleToString(applications[i].lifeCycleState, element);
-		_tprintf(format, aidStr, lifeCycleState, EMPTY_STRING);
-		privilegesToString(applications[i].privileges << 16, privileges);
-		for (j=0; j<20; j++) {
-			if (_tcslen(privileges[j].privilege) > 0) {
-				_tprintf(format, EMPTY_STRING, EMPTY_STRING, privileges[j].privilege, EMPTY_STRING, EMPTY_STRING);
-			}
-		}
-	}
+    LPCTSTR format;
+    TCHAR aidStr[33];
+    LPTSTR lifeCycleState;
+    PRIVILEGES_STRING privileges[20];
+    int i,j;
+    format = _T("%-32s | %-12s | %-30s\n");
+    _tprintf(format, _T("AID"), _T("State"), _T("Privileges"));
+    for (i=0; i<count; i++) {
+        _tprintf(format, _T("--"), _T("--"), _T("--"));
+        convertByteArrayToString(applications[i].aid.AID, applications[i].aid.AIDLength, sizeof(aidStr) / sizeof(TCHAR), aidStr);
+        lifeCycleState = lifeCycleToString(applications[i].lifeCycleState, element);
+        _tprintf(format, aidStr, lifeCycleState, EMPTY_STRING);
+        privilegesToString(applications[i].privileges << 16, privileges);
+        for (j=0; j<20; j++) {
+            if (_tcslen(privileges[j].privilege) > 0) {
+                _tprintf(format, EMPTY_STRING, EMPTY_STRING, privileges[j].privilege, EMPTY_STRING, EMPTY_STRING);
+            }
+        }
+    }
 }
 
 static void displayExtCardResorcesInfo(OPGP_EXTENDED_CARD_RESOURCE_INFORMATION extCardResorcesInfo) {
-	LPCTSTR format1, format2;
-	format1 = _T("%-16s | %-21s | %-17s \n");
-	_tprintf(format1, _T("Num Applications"), _T("Free non volatile mem"), _T("Free volatile mem"));
-	format2 = _T("%-16d | %-21d | %-17d \n");
-	_tprintf(format1, _T("--"), _T("--"), _T("--"));
-	_tprintf(format2, extCardResorcesInfo.numInstalledApplications, extCardResorcesInfo.freeNonVolatileMemory,
-			extCardResorcesInfo.freeVolatileMemory);
+    LPCTSTR format1, format2;
+    format1 = _T("%-16s | %-21s | %-17s \n");
+    _tprintf(format1, _T("Num Applications"), _T("Free non volatile mem"), _T("Free volatile mem"));
+    format2 = _T("%-16d | %-21d | %-17d \n");
+    _tprintf(format1, _T("--"), _T("--"), _T("--"));
+    _tprintf(format2, extCardResorcesInfo.numInstalledApplications, extCardResorcesInfo.freeNonVolatileMemory,
+            extCardResorcesInfo.freeVolatileMemory);
 }
 
 static void displayGpKeyInformation(GP211_KEY_INFORMATION *keyInformation, int count) {
-	LPCTSTR format1, format2;
-	int i;
-	format1 = _T("%-3s | %-7s | %-6s | %-6s | %-5s | %-6s \n");
-	_tprintf(format1, _T("ID"), _T("Version"), _T("Type"), _T("Length"), _T("Usage"), _T("Access"));
-	format2 = _T("%-3d | %-7d | %-6.2x | %-6d | %-5.2x | %-6.2x \n");
-	for (i=0; i<count; i++) {
-		_tprintf(format1, _T("--"), _T("--"), _T("--"), _T("--"), _T("--"), _T("--"));
-		_tprintf(format2, keyInformation[i].keyIndex, keyInformation[i].keySetVersion,
-				keyInformation[i].keyType, keyInformation[i].keyLength,
-				keyInformation[i].keyUsage, keyInformation[i].keyAccess);
-	}
+    LPCTSTR format1, format2;
+    int i;
+    format1 = _T("%-3s | %-7s | %-6s | %-6s | %-5s | %-6s \n");
+    _tprintf(format1, _T("ID"), _T("Version"), _T("Type"), _T("Length"), _T("Usage"), _T("Access"));
+    format2 = _T("%-3d | %-7d | %-6.2x | %-6d | %-5.2x | %-6.2x \n");
+    for (i=0; i<count; i++) {
+        _tprintf(format1, _T("--"), _T("--"), _T("--"), _T("--"), _T("--"), _T("--"));
+        _tprintf(format2, keyInformation[i].keyIndex, keyInformation[i].keySetVersion,
+                keyInformation[i].keyType, keyInformation[i].keyLength,
+                keyInformation[i].keyUsage, keyInformation[i].keyAccess);
+    }
 }
 
 static void displayOpKeyInformation(OP201_KEY_INFORMATION *keyInformation, int count) {
-	LPCTSTR format;
-	int i;
-	format = _T("%-3d | %-7d | %-4.2x | %-6%d \n");
-	_tprintf(format, _T("ID"), _T("Version"), _T("Type"), _T("Length"));
-	for (i=0; i<count; i++) {
-		_tprintf(format, _T("--"), _T("--"), _T("--"), _T("--"));
-		_tprintf(format, keyInformation[i].keyIndex, keyInformation[i].keySetVersion, keyInformation[i].keyType, keyInformation[i].keyLength);
-	}
+    LPCTSTR format;
+    int i;
+    format = _T("%-3d | %-7d | %-4.2x | %-6%d \n");
+    _tprintf(format, _T("ID"), _T("Version"), _T("Type"), _T("Length"));
+    for (i=0; i<count; i++) {
+        _tprintf(format, _T("--"), _T("--"), _T("--"), _T("--"));
+        _tprintf(format, keyInformation[i].keyIndex, keyInformation[i].keySetVersion, keyInformation[i].keyType, keyInformation[i].keyLength);
+    }
 }
 
 static int handleOptions(OptionStr *pOptionStr)
@@ -639,18 +640,18 @@ static int handleOptions(OptionStr *pOptionStr)
     pOptionStr->privilege = 0;
     pOptionStr->scp = scp;
     pOptionStr->scpImpl = scpImpl;
-	pOptionStr->identifier[0] = 0;
-	pOptionStr->identifier[1] = 0;
-	pOptionStr->keyDerivation = OPGP_DERIVATION_METHOD_NONE;
-	pOptionStr->keyTemplate = 0;
-	pOptionStr->dataFormat = 2;
-	pOptionStr->dataLen = 0;
-	pOptionStr->data[0] = '\0';
-	pOptionStr->dataEncryption = 0;
-	pOptionStr->responseDataExpected = 0;
-	pOptionStr->noStop = 0;
-	// use by default 3DES / AES-128 keys
-	pOptionStr->keyLength = 16;
+    pOptionStr->identifier[0] = 0;
+    pOptionStr->identifier[1] = 0;
+    pOptionStr->keyDerivation = OPGP_DERIVATION_METHOD_NONE;
+    pOptionStr->keyTemplate = 0;
+    pOptionStr->dataFormat = 2;
+    pOptionStr->dataLen = 0;
+    pOptionStr->data[0] = '\0';
+    pOptionStr->dataEncryption = 0;
+    pOptionStr->responseDataExpected = 0;
+    pOptionStr->noStop = 0;
+    // use by default 3DES / AES-128 keys
+    pOptionStr->keyLength = 16;
 
     token = parseToken(NULL);
 
@@ -658,77 +659,77 @@ static int handleOptions(OptionStr *pOptionStr)
     {
         if (_tcscmp(token, _T("-identifier")) == 0)
         {
-        	CHECK_TOKEN(token, _T("-identifier"));
-			BYTE temp;
-			convertStringToByteArray(token, 2, pOptionStr->identifier);
-			if (_tcslen(token) == 2) {
-				temp = pOptionStr->identifier[0];
-				pOptionStr->identifier[0] = pOptionStr->identifier[1];
-				pOptionStr->identifier[1] = temp;
-			}
+            CHECK_TOKEN(token, _T("-identifier"));
+            BYTE temp;
+            convertStringToByteArray(token, 2, pOptionStr->identifier);
+            if (_tcslen(token) == 2) {
+                temp = pOptionStr->identifier[0];
+                pOptionStr->identifier[0] = pOptionStr->identifier[1];
+                pOptionStr->identifier[1] = temp;
+            }
         }
         else if (_tcscmp(token, _T("-keyTemplate")) == 0)
-		{
-			CHECK_TOKEN(token, _T("-keyTemplate"));
-			pOptionStr->keyTemplate = _tstoi(token);
-		}
+        {
+            CHECK_TOKEN(token, _T("-keyTemplate"));
+            pOptionStr->keyTemplate = _tstoi(token);
+        }
         else if (_tcscmp(token, _T("-noStop")) == 0)
-		{
-			pOptionStr->noStop = 1;
-		}
+        {
+            pOptionStr->noStop = 1;
+        }
         else if (_tcscmp(token, _T("-keyind")) == 0)
         {
-        	CHECK_TOKEN(token, _T("-keyind"));
+            CHECK_TOKEN(token, _T("-keyind"));
             pOptionStr->keyIndex = _tstoi(token);
         }
         else if (_tcscmp(token, _T("-keyver")) == 0)
         {
-        	CHECK_TOKEN(token, _T("-keyver"));
+            CHECK_TOKEN(token, _T("-keyver"));
             pOptionStr->keySetVersion = _tstoi(token);
         }
         else if (_tcscmp(token, _T("-newkeyver")) == 0)
         {
-        	CHECK_TOKEN(token, _T("-newkeyver"));
+            CHECK_TOKEN(token, _T("-newkeyver"));
             pOptionStr->newKeySetVersion = _tstoi(token);
         }
         else if (_tcscmp(token, _T("-sc")) == 0)
         {
-        	int sc;
-        	CHECK_TOKEN(token, _T("-sc"));
-        	sc = _tstoi(token);
-			if (sc == 0) {
-				pOptionStr->secureChannel = 0;
-			}
-			else if (sc == 1) {
-				pOptionStr->secureChannel = 1;
-			}
-			else
-			{
-				_tprintf(_T("Error: option -sc not followed 0 (secure channel off) or 1 (secure channel on)\n"));
-				rv = EXIT_FAILURE;
-				goto end;
-			}
+            int sc;
+            CHECK_TOKEN(token, _T("-sc"));
+            sc = _tstoi(token);
+            if (sc == 0) {
+                pOptionStr->secureChannel = 0;
+            }
+            else if (sc == 1) {
+                pOptionStr->secureChannel = 1;
+            }
+            else
+            {
+                _tprintf(_T("Error: option -sc not followed 0 (secure channel off) or 1 (secure channel on)\n"));
+                rv = EXIT_FAILURE;
+                goto end;
+            }
         }
         else if (_tcscmp(token, _T("-security")) == 0)
         {
-        	CHECK_TOKEN(token, _T("-security"));
-        	pOptionStr->securityLevel = _tstoi(token);
+            CHECK_TOKEN(token, _T("-security"));
+            pOptionStr->securityLevel = _tstoi(token);
         }
         else if (_tcscmp(token, _T("-readerNumber")) == 0)
         {
-        	CHECK_TOKEN(token, _T("-readerNumber"));
-        	int readerNumber = _tstoi(token)-1;
-			if (readerNumber < 0)
-			{
-				_tprintf(_T("Error: option -readerNumber must be followed by number > 0\n"));
-				rv = EXIT_FAILURE;
-				goto end;
-			}
-			pOptionStr->readerNumber = readerNumber;
+            CHECK_TOKEN(token, _T("-readerNumber"));
+            int readerNumber = _tstoi(token)-1;
+            if (readerNumber < 0)
+            {
+                _tprintf(_T("Error: option -readerNumber must be followed by number > 0\n"));
+                rv = EXIT_FAILURE;
+                goto end;
+            }
+            pOptionStr->readerNumber = readerNumber;
         }
         else if (_tcscmp(token, _T("-reader")) == 0)
         {
-        	CHECK_TOKEN(token, _T("-reader"));
+            CHECK_TOKEN(token, _T("-reader"));
             _tcsncpy(pOptionStr->reader, token, READERNAMELEN);
 #ifdef DEBUG
             _tprintf ( _T("reader name %s\n"), pOptionStr->reader);
@@ -736,7 +737,7 @@ static int handleOptions(OptionStr *pOptionStr)
         }
         else if (_tcscmp(token, _T("-file")) == 0)
         {
-        	CHECK_TOKEN(token, _T("-file"));
+            CHECK_TOKEN(token, _T("-file"));
             _tcsncpy(pOptionStr->file, token, FILENAMELEN);
 #ifdef DEBUG
             _tprintf ( _T("file name %s\n"), pOptionStr->file);
@@ -744,93 +745,93 @@ static int handleOptions(OptionStr *pOptionStr)
         }
         else if (_tcscmp(token, _T("-pass")) == 0)
         {
-        	CHECK_TOKEN(token, _T("-pass"));
+            CHECK_TOKEN(token, _T("-pass"));
             convertTCharToChar(pOptionStr->passPhrase, token);
             pOptionStr->passPhrase[PASSPHRASELEN] = '\0';
         }
         else if (_tcscmp(token, _T("-key")) == 0)
         {
-        	CHECK_TOKEN(token, _T("-key"));
-        	pOptionStr->keyLength = convertStringToByteArray(token, KEY_LEN, pOptionStr->key);
+            CHECK_TOKEN(token, _T("-key"));
+            pOptionStr->keyLength = convertStringToByteArray(token, KEY_LEN, pOptionStr->key);
         }
         else if (_tcscmp(token, _T("-mac_key")) == 0)
         {
-        	CHECK_TOKEN(token, _T("-mac_key"));
-        	pOptionStr->keyLength = convertStringToByteArray(token, KEY_LEN, pOptionStr->mac_key);
+            CHECK_TOKEN(token, _T("-mac_key"));
+            pOptionStr->keyLength = convertStringToByteArray(token, KEY_LEN, pOptionStr->mac_key);
         }
         else if (_tcscmp(token, _T("-enc_key")) == 0)
         {
-        	CHECK_TOKEN(token, _T("-enc_key"));
-        	pOptionStr->keyLength = convertStringToByteArray(token, KEY_LEN, pOptionStr->enc_key);
+            CHECK_TOKEN(token, _T("-enc_key"));
+            pOptionStr->keyLength = convertStringToByteArray(token, KEY_LEN, pOptionStr->enc_key);
         }
         else if (_tcscmp(token, _T("-kek_key")) == 0)
         {
-        	CHECK_TOKEN(token, _T("-kek_key"));
-        	pOptionStr->keyLength = convertStringToByteArray(token, KEY_LEN, pOptionStr->kek_key);
+            CHECK_TOKEN(token, _T("-kek_key"));
+            pOptionStr->keyLength = convertStringToByteArray(token, KEY_LEN, pOptionStr->kek_key);
         }
         else if (_tcscmp(token, _T("-AID")) == 0)
         {
-        	CHECK_TOKEN(token, _T("-AID"));
+            CHECK_TOKEN(token, _T("-AID"));
             pOptionStr->AIDLen = convertStringToByteArray(token, AIDLEN, pOptionStr->AID);
         }
         else if (_tcscmp(token, _T("-sdAID")) == 0)
         {
-        	CHECK_TOKEN(token, _T("-sdAID"));
+            CHECK_TOKEN(token, _T("-sdAID"));
             pOptionStr->sdAIDLen = convertStringToByteArray(token, AIDLEN, pOptionStr->sdAID);
         }
         else if (_tcscmp(token, _T("-pkgAID")) == 0)
         {
-        	CHECK_TOKEN(token, _T("-pkgAID"));
+            CHECK_TOKEN(token, _T("-pkgAID"));
             pOptionStr->pkgAIDLen = convertStringToByteArray(token, AIDLEN, pOptionStr->pkgAID);
         }
         else if (_tcscmp(token, _T("-instAID")) == 0)
         {
-        	CHECK_TOKEN(token, _T("-instAID"));
+            CHECK_TOKEN(token, _T("-instAID"));
             pOptionStr->instAIDLen = convertStringToByteArray(token, AIDLEN, pOptionStr->instAID);
         }
         else if (_tcscmp(token, _T("-APDU")) == 0)
         {
-        	CHECK_TOKEN(token, _T("-APDU"));
+            CHECK_TOKEN(token, _T("-APDU"));
             pOptionStr->APDULen = convertStringToByteArray(token, APDU_COMMAND_LEN, pOptionStr->APDU);
         }
         else if (_tcscmp(token, _T("-protocol")) == 0)
         {
-        	DWORD protocol;
-        	CHECK_TOKEN(token, _T("-protocol"));
-        	protocol = _tstoi(token);
-			if (protocol == 0)
-			{
-				pOptionStr->protocol = OPGP_CARD_PROTOCOL_T0;
-			}
-			else if (protocol == 1)
-			{
-				pOptionStr->protocol = OPGP_CARD_PROTOCOL_T1;
-			}
-			else
-			{
-				_tprintf(_T("Unknown protocol type %s\n"), token);
-				rv = EXIT_FAILURE;
-				goto end;
-			}
+            DWORD protocol;
+            CHECK_TOKEN(token, _T("-protocol"));
+            protocol = _tstoi(token);
+            if (protocol == 0)
+            {
+                pOptionStr->protocol = OPGP_CARD_PROTOCOL_T0;
+            }
+            else if (protocol == 1)
+            {
+                pOptionStr->protocol = OPGP_CARD_PROTOCOL_T1;
+            }
+            else
+            {
+                _tprintf(_T("Unknown protocol type %s\n"), token);
+                rv = EXIT_FAILURE;
+                goto end;
+            }
         }
         else if (_tcscmp(token, _T("-nvCodeLimit")) == 0)
         {
-        	CHECK_TOKEN(token, _T("-nvCodeLimit"));
+            CHECK_TOKEN(token, _T("-nvCodeLimit"));
             pOptionStr->nvCodeLimit = _tstoi(token);
         }
         else if (_tcscmp(token, _T("-nvDataLimit")) == 0)
         {
-        	CHECK_TOKEN(token, _T("-nvDataLimit"));
+            CHECK_TOKEN(token, _T("-nvDataLimit"));
             pOptionStr->nvDataLimit = _tstoi(token);
         }
         else if (_tcscmp(token, _T("-vDataLimit")) == 0)
         {
-        	CHECK_TOKEN(token, _T("-vDataLimit"));
+            CHECK_TOKEN(token, _T("-vDataLimit"));
             pOptionStr->vDataLimit = _tstoi(token);
         }
         else if (_tcscmp(token, _T("-instParam")) == 0)
         {
-        	CHECK_TOKEN(token, _T("-instParam"));
+            CHECK_TOKEN(token, _T("-instParam"));
             pOptionStr->instParamLen = convertStringToByteArray(token, INSTPARAMLEN, pOptionStr->instParam);
         }
         else if (_tcscmp(token, _T("-element")) == 0)
@@ -847,73 +848,73 @@ static int handleOptions(OptionStr *pOptionStr)
             pOptionStr->element = element;
         }
         else if (_tcscmp(token, _T("-format")) == 0)
-		{
-        	int format;
-        	CHECK_TOKEN(token, _T("-format"));
-        	format = _tstoi(token);
-        	if (format != 0 && format != 2)
-			{
-				_tprintf(_T("Error: option -format followed by an unsupported format %s\n"), token);
-				rv = EXIT_FAILURE;
-				goto end;
-			}
-			pOptionStr->format = format;
-		}
-		else if (_tcscmp(token, _T("-dataFormat")) == 0)
-		{
-			int dataFormat;
-			CHECK_TOKEN(token, _T("-dataFormat"));
-			dataFormat = (int)_tcstol(token, NULL, 0);
-			pOptionStr->dataFormat = dataFormat;
-		}
-		else if (_tcscmp(token, _T("-dataEncryption")) == 0)
-		{
-			int dataEncryption;
-			CHECK_TOKEN(token, _T("-dataEncryption"));
-			dataEncryption = (int)_tcstol(token, NULL, 0);
-			pOptionStr->dataEncryption = dataEncryption;
-		}
-		else if (_tcscmp(token, _T("-responseDataExpected")) == 0)
-		{
-			int responseDataExpected;
-			CHECK_TOKEN(token, _T("-responseDataExpected"));
-			responseDataExpected = _tstoi(token);
-			pOptionStr->responseDataExpected = responseDataExpected;
-		}
-		else if (_tcscmp(token, _T("-data")) == 0)
-		{
-			CHECK_TOKEN(token, _T("-data"));
-			pOptionStr->dataLen = convertStringToByteArray(token, DATALEN, pOptionStr->data);
-		}
+        {
+            int format;
+            CHECK_TOKEN(token, _T("-format"));
+            format = _tstoi(token);
+            if (format != 0 && format != 2)
+            {
+                _tprintf(_T("Error: option -format followed by an unsupported format %s\n"), token);
+                rv = EXIT_FAILURE;
+                goto end;
+            }
+            pOptionStr->format = format;
+        }
+        else if (_tcscmp(token, _T("-dataFormat")) == 0)
+        {
+            int dataFormat;
+            CHECK_TOKEN(token, _T("-dataFormat"));
+            dataFormat = (int)_tcstol(token, NULL, 0);
+            pOptionStr->dataFormat = dataFormat;
+        }
+        else if (_tcscmp(token, _T("-dataEncryption")) == 0)
+        {
+            int dataEncryption;
+            CHECK_TOKEN(token, _T("-dataEncryption"));
+            dataEncryption = (int)_tcstol(token, NULL, 0);
+            pOptionStr->dataEncryption = dataEncryption;
+        }
+        else if (_tcscmp(token, _T("-responseDataExpected")) == 0)
+        {
+            int responseDataExpected;
+            CHECK_TOKEN(token, _T("-responseDataExpected"));
+            responseDataExpected = _tstoi(token);
+            pOptionStr->responseDataExpected = responseDataExpected;
+        }
+        else if (_tcscmp(token, _T("-data")) == 0)
+        {
+            CHECK_TOKEN(token, _T("-data"));
+            pOptionStr->dataLen = convertStringToByteArray(token, DATALEN, pOptionStr->data);
+        }
         else if (_tcscmp(token, _T("-priv")) == 0)
         {
-        	CHECK_TOKEN(token, _T("-priv"));
+            CHECK_TOKEN(token, _T("-priv"));
             pOptionStr->privilege = _tstoi(token);
         }
         else if (_tcscmp(token, _T("-scp")) == 0)
         {
-        	CHECK_TOKEN(token, _T("-scp"));
+            CHECK_TOKEN(token, _T("-scp"));
             pOptionStr->scp = (int)_tcstol(token, NULL, 0);
         }
         else if (_tcscmp(token, _T("-scpimpl")) == 0)
         {
-        	CHECK_TOKEN(token, _T("-scpimpl"));
+            CHECK_TOKEN(token, _T("-scpimpl"));
             pOptionStr->scpImpl = (int)_tcstol(token, NULL, 0);
         }
         else if (_tcscmp(token, _T("-keyDerivation")) == 0)
         {
-        	CHECK_TOKEN(token, _T("-keyDerivation"));
+            CHECK_TOKEN(token, _T("-keyDerivation"));
             if (_tcscmp(token, _T("none")) == 0) {
-            	pOptionStr->keyDerivation = OPGP_DERIVATION_METHOD_NONE;
+                pOptionStr->keyDerivation = OPGP_DERIVATION_METHOD_NONE;
             }
             else if (_tcscmp(token, _T("visa2")) == 0) {
-            	pOptionStr->keyDerivation = OPGP_DERIVATION_METHOD_VISA2;
+                pOptionStr->keyDerivation = OPGP_DERIVATION_METHOD_VISA2;
             }
-			else if (_tcscmp(token, _T("visa1")) == 0) {
-            	pOptionStr->keyDerivation = OPGP_DERIVATION_METHOD_VISA1;
+            else if (_tcscmp(token, _T("visa1")) == 0) {
+                pOptionStr->keyDerivation = OPGP_DERIVATION_METHOD_VISA1;
             }
             else if (_tcscmp(token, _T("emvcps11")) == 0) {
-            	pOptionStr->keyDerivation = OPGP_DERIVATION_METHOD_EMV_CPS11;
+                pOptionStr->keyDerivation = OPGP_DERIVATION_METHOD_EMV_CPS11;
             }
             else
             {
@@ -946,12 +947,12 @@ static int handleCommands(FILE *fd)
     OptionStr optionStr;
     OPGP_ERROR_CREATE_NO_ERROR(status);
 
-	memset(&optionStr, 0, sizeof(optionStr));
-	nostop:
+    memset(&optionStr, 0, sizeof(optionStr));
+    nostop:
     while (_fgetts (buf, BUFLEN, fd) != NULL)
     {
-		// prevent endless loop
-		optionStr.noStop = 0;
+        // prevent endless loop
+        optionStr.noStop = 0;
 
         // copy command line for printing it out later
         _tcsncpy (commandLine, buf, BUFLEN);
@@ -968,8 +969,10 @@ static int handleCommands(FILE *fd)
                 it = GetTime();
             }
 
-            // print command line
-            _tprintf(_T("%s"), commandLine);
+            if (strncmp("print", commandLine, strlen("print")) != 0) {
+                // print command line
+                _tprintf(_T("%s"), commandLine);
+            }
 
             if (_tcscmp(token, _T("establish_context")) == 0)
             {
@@ -1029,7 +1032,7 @@ static int handleCommands(FILE *fd)
                         _tcsncpy(optionStr.reader, buf+j, READERNAMELEN);
 
 #ifdef DEBUG
-						_tprintf ( _T("* reader name %s\n"), optionStr.reader);
+                        _tprintf ( _T("* reader name %s\n"), optionStr.reader);
 #endif
                         // if auto reader, connect now
                         if (optionStr.readerNumber == AUTOREADER)
@@ -1043,9 +1046,9 @@ static int handleCommands(FILE *fd)
                         }
                         else if (k == optionStr.readerNumber)
                         {
-                        	// connect the this reader number
-                        	status = OPGP_card_connect (cardContext, optionStr.reader, &cardInfo, optionStr.protocol);
-                        	readerFound = 1;
+                            // connect the this reader number
+                            status = OPGP_card_connect (cardContext, optionStr.reader, &cardInfo, optionStr.protocol);
+                            readerFound = 1;
                             break;
                         }
 
@@ -1053,9 +1056,9 @@ static int handleCommands(FILE *fd)
                         j+=(int)_tcslen(buf+j)+1;
                     }
                     if (!readerFound) {
-                    	_tprintf (_T("Could not connect to reader number %d\n"), (int)(optionStr.readerNumber+1));
-						rv = EXIT_FAILURE;
-						goto end;
+                        _tprintf (_T("Could not connect to reader number %d\n"), (int)(optionStr.readerNumber+1));
+                        rv = EXIT_FAILURE;
+                        goto end;
                     }
 
                 }
@@ -1066,35 +1069,35 @@ static int handleCommands(FILE *fd)
                 if (OPGP_ERROR_CHECK(status))
                 {
                     _tprintf (_T("card_connect() returns 0x%08X (%s)\n"), (unsigned int)status.errorCode, status.errorMessage);
-					rv = EXIT_FAILURE;
+                    rv = EXIT_FAILURE;
                     goto end;
                 }
                 // set mode for internal use of library
                 cardInfo.specVersion = platform_mode;
                 goto timer;
             }
-			else if (_tcscmp(token, _T("get_secure_channel_protocol_details")) == 0)
-			{
-				// select instance
-				rv = handleOptions(&optionStr);
-				if (rv != EXIT_SUCCESS)
-				{
-					goto end;
-				}
-				status = GP211_get_secure_channel_protocol_details(cardContext, cardInfo,
-					&scp,
-					&scpImpl);
-				if (OPGP_ERROR_CHECK(status))
-				{
-					_tprintf(_T("get_secure_channel_protocol_details() returns 0x%08X (%s)\n"),
-						(unsigned int)status.errorCode, status.errorMessage);
-					rv = EXIT_FAILURE;
-					goto end;
-				}
-				_tprintf(_T("SCP: 0x%02x\n"), scp);
-				_tprintf(_T("SCP Impl: 0x%02x\n"), scpImpl);
-				goto timer;
-			}
+            else if (_tcscmp(token, _T("get_secure_channel_protocol_details")) == 0)
+            {
+                // select instance
+                rv = handleOptions(&optionStr);
+                if (rv != EXIT_SUCCESS)
+                {
+                    goto end;
+                }
+                status = GP211_get_secure_channel_protocol_details(cardContext, cardInfo,
+                    &scp,
+                    &scpImpl);
+                if (OPGP_ERROR_CHECK(status))
+                {
+                    _tprintf(_T("get_secure_channel_protocol_details() returns 0x%08X (%s)\n"),
+                        (unsigned int)status.errorCode, status.errorMessage);
+                    rv = EXIT_FAILURE;
+                    goto end;
+                }
+                _tprintf(_T("SCP: 0x%02x\n"), scp);
+                _tprintf(_T("SCP Impl: 0x%02x\n"), scpImpl);
+                goto timer;
+            }
             else if (_tcscmp(token, _T("open_sc")) == 0)
             {
                 // open secure channel
@@ -1135,15 +1138,15 @@ static int handleCommands(FILE *fd)
                         }
                     }
                     if (selectedAIDLength > 0) {
-                    	memcpy(securityInfo211.invokingAid, selectedAID, selectedAIDLength);
-                    	securityInfo211.invokingAidLength = selectedAIDLength;
+                        memcpy(securityInfo211.invokingAid, selectedAID, selectedAIDLength);
+                        securityInfo211.invokingAidLength = selectedAIDLength;
                     }
                     status = GP211_mutual_authentication(cardContext, cardInfo,
                                                      optionStr.key,
                                                      optionStr.enc_key,
                                                      optionStr.mac_key,
                                                      optionStr.kek_key,
-													 optionStr.keyLength,
+                                                     optionStr.keyLength,
                                                      optionStr.keySetVersion,
                                                      optionStr.keyIndex,
                                                      optionStr.scp,
@@ -1162,61 +1165,61 @@ static int handleCommands(FILE *fd)
                 }
                 goto timer;
             }
-			else if (_tcscmp(token, _T("install_for_personalization")) == 0)
-			{
-				rv = handleOptions(&optionStr);
-				if (rv != EXIT_SUCCESS)
-				{
-					goto end;
-				}
-				// only supported in GP211+
-				if (platform_mode == PLATFORM_MODE_GP_211)
-				{
-					status = GP211_install_for_personalization(cardContext, cardInfo,
-						&securityInfo211,
-						optionStr.AID, optionStr.AIDLen);
-				}
-				if (OPGP_ERROR_CHECK(status))
-				{
-					_tprintf(_T("install_for_personalization() returns 0x%08X (%s)\n"),
-						(unsigned int)status.errorCode, status.errorMessage);
-					rv = EXIT_FAILURE;
-					goto end;
-				}
-				goto timer;
-			}
-			else if (_tcscmp(token, _T("store_data")) == 0)
-			{
-				rv = handleOptions(&optionStr);
-				if (rv != EXIT_SUCCESS)
-				{
-					goto end;
-				}
-				// only supported in GP211+
-				if (platform_mode == PLATFORM_MODE_GP_211)
-				{
-					status = GP211_store_data(cardContext, cardInfo,
-						&securityInfo211,
-						optionStr.dataEncryption,
-						optionStr.dataFormat,
-						optionStr.responseDataExpected,
-						optionStr.data, optionStr.dataLen);
-				}
-				if (OPGP_ERROR_CHECK(status))
-				{
-					_tprintf(_T("store_data() returns 0x%08X (%s)\n"),
-						(unsigned int)status.errorCode, status.errorMessage);
-					rv = EXIT_FAILURE;
-					goto end;
-				}
-				goto timer;
-			}
+            else if (_tcscmp(token, _T("install_for_personalization")) == 0)
+            {
+                rv = handleOptions(&optionStr);
+                if (rv != EXIT_SUCCESS)
+                {
+                    goto end;
+                }
+                // only supported in GP211+
+                if (platform_mode == PLATFORM_MODE_GP_211)
+                {
+                    status = GP211_install_for_personalization(cardContext, cardInfo,
+                        &securityInfo211,
+                        optionStr.AID, optionStr.AIDLen);
+                }
+                if (OPGP_ERROR_CHECK(status))
+                {
+                    _tprintf(_T("install_for_personalization() returns 0x%08X (%s)\n"),
+                        (unsigned int)status.errorCode, status.errorMessage);
+                    rv = EXIT_FAILURE;
+                    goto end;
+                }
+                goto timer;
+            }
+            else if (_tcscmp(token, _T("store_data")) == 0)
+            {
+                rv = handleOptions(&optionStr);
+                if (rv != EXIT_SUCCESS)
+                {
+                    goto end;
+                }
+                // only supported in GP211+
+                if (platform_mode == PLATFORM_MODE_GP_211)
+                {
+                    status = GP211_store_data(cardContext, cardInfo,
+                        &securityInfo211,
+                        optionStr.dataEncryption,
+                        optionStr.dataFormat,
+                        optionStr.responseDataExpected,
+                        optionStr.data, optionStr.dataLen);
+                }
+                if (OPGP_ERROR_CHECK(status))
+                {
+                    _tprintf(_T("store_data() returns 0x%08X (%s)\n"),
+                        (unsigned int)status.errorCode, status.errorMessage);
+                    rv = EXIT_FAILURE;
+                    goto end;
+                }
+                goto timer;
+            }
             else if (_tcscmp(token, _T("get_key_information_templates")) == 0)
             {
-            	GP211_KEY_INFORMATION gpKeyInformation[64];
-            	OP201_KEY_INFORMATION opKeyInformation[64];
-            	DWORD keyInformationLength = 64;
-            	rv = handleOptions(&optionStr);
+                GP211_KEY_INFORMATION gpKeyInformation[64];
+                OP201_KEY_INFORMATION opKeyInformation[64];
+                DWORD keyInformationLength = 64;
+                rv = handleOptions(&optionStr);
                 if (rv != EXIT_SUCCESS)
                 {
                     goto end;
@@ -1225,15 +1228,15 @@ static int handleCommands(FILE *fd)
                 {
                     status = OP201_get_key_information_templates(cardContext, cardInfo,
                                                      &securityInfo201,
-													 optionStr.keyTemplate,
-													 opKeyInformation, &keyInformationLength);
+                                                     optionStr.keyTemplate,
+                                                     opKeyInformation, &keyInformationLength);
                 }
                 else if (platform_mode == PLATFORM_MODE_GP_211)
                 {
                     status = GP211_get_key_information_templates(cardContext, cardInfo,
-                    		&securityInfo211,
-							optionStr.keyTemplate,
-							gpKeyInformation, &keyInformationLength);
+                            &securityInfo211,
+                            optionStr.keyTemplate,
+                            gpKeyInformation, &keyInformationLength);
                 }
                 if (OPGP_ERROR_CHECK(status))
                 {
@@ -1243,32 +1246,32 @@ static int handleCommands(FILE *fd)
                     goto end;
                 }
                 if (platform_mode == PLATFORM_MODE_OP_201) {
-                	displayOpKeyInformation(opKeyInformation, keyInformationLength);
+                    displayOpKeyInformation(opKeyInformation, keyInformationLength);
                 }
                 else {
-                	displayGpKeyInformation(gpKeyInformation, keyInformationLength);
+                    displayGpKeyInformation(gpKeyInformation, keyInformationLength);
                 }
                 goto timer;
             }
             else if (_tcscmp(token, _T("get_extended_card_resources_information")) == 0)
-			  {
-				OPGP_EXTENDED_CARD_RESOURCE_INFORMATION extendedCardResourcesInfo;
-				rv = handleOptions(&optionStr);
-				  if (rv != EXIT_SUCCESS)
-				  {
-					  goto end;
-				  }
-				  status = OPGP_get_extended_card_resources_information(cardContext, cardInfo, &securityInfo211, &extendedCardResourcesInfo);
-				  if (OPGP_ERROR_CHECK(status))
-				  {
-					  _tprintf (_T("get_extended_card_resources_information() returns 0x%08X (%s)\n"),
-								(unsigned int)status.errorCode, status.errorMessage);
-					  rv = EXIT_FAILURE;
-					  goto end;
-				  }
-				  displayExtCardResorcesInfo(extendedCardResourcesInfo);
-				  goto timer;
-			  }
+              {
+                OPGP_EXTENDED_CARD_RESOURCE_INFORMATION extendedCardResourcesInfo;
+                rv = handleOptions(&optionStr);
+                  if (rv != EXIT_SUCCESS)
+                  {
+                      goto end;
+                  }
+                  status = OPGP_get_extended_card_resources_information(cardContext, cardInfo, &securityInfo211, &extendedCardResourcesInfo);
+                  if (OPGP_ERROR_CHECK(status))
+                  {
+                      _tprintf (_T("get_extended_card_resources_information() returns 0x%08X (%s)\n"),
+                                (unsigned int)status.errorCode, status.errorMessage);
+                      rv = EXIT_FAILURE;
+                      goto end;
+                  }
+                  displayExtCardResorcesInfo(extendedCardResourcesInfo);
+                  goto timer;
+              }
             else if (_tcscmp(token, _T("select")) == 0)
             {
                 // select instance
@@ -1327,10 +1330,10 @@ static int handleCommands(FILE *fd)
                     rv = EXIT_FAILURE;
                     goto end;
                 }
-				for (i=0; i<dataLen; i++) {
-					_tprintf (_T("%02X"), data[i]);
-				}
-				_tprintf (_T("\n"));
+                for (i=0; i<dataLen; i++) {
+                    _tprintf (_T("%02X"), data[i]);
+                }
+                _tprintf (_T("\n"));
                 goto timer;
             }
             else if (_tcscmp(token, _T("load")) == 0)
@@ -1408,8 +1411,8 @@ static int handleCommands(FILE *fd)
             /* Augusto: added delete_key command support */
             else if (_tcscmp(token, _T("delete_key")) == 0)
             {
-            	// 0xFF means that all key index for a key set version are deleted
-            	optionStr.keyIndex = 0xFF;
+                // 0xFF means that all key index for a key set version are deleted
+                optionStr.keyIndex = 0xFF;
                 rv = handleOptions(&optionStr);
                 if (rv != EXIT_SUCCESS)
                 {
@@ -1549,109 +1552,109 @@ static int handleCommands(FILE *fd)
 
                 if (platform_mode == PLATFORM_MODE_OP_201)
                 {
-					int i;
+                    int i;
                     OP201_RECEIPT_DATA receipt;
 
-					if (optionStr.AIDLen || optionStr.instAIDLen)
-					{
-						if (optionStr.AIDLen == 0)
-						{
-							optionStr.AIDLen = loadFileParams.appletAIDs[0].AIDLength;
-							memcpy(optionStr.AID, loadFileParams.appletAIDs[0].AID, optionStr.AIDLen);
-						}
-						if (optionStr.instAIDLen == 0)
-						{
-							optionStr.instAIDLen = optionStr.AIDLen;
-							memcpy(optionStr.instAID, optionStr.AID, optionStr.instAIDLen);
-						}
-						status = OP201_install_for_install_and_make_selectable(
-							cardContext, cardInfo, &securityInfo201,
-							(PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
-							(PBYTE)optionStr.AID, optionStr.AIDLen,
-							(PBYTE)optionStr.instAID, optionStr.instAIDLen,
-							optionStr.privilege,
-							optionStr.vDataLimit,
-							optionStr.nvDataLimit,
-							(PBYTE)optionStr.instParam,
-							optionStr.instParamLen,
-							NULL, // No install token
-							&receipt,
-							&receiptDataAvailable);
-					}
-					else
-					{
-						for (i = 0; loadFileParams.appletAIDs[i].AIDLength; i++)
-						{
-							status = OP201_install_for_install_and_make_selectable(
-								cardContext, cardInfo, &securityInfo201,
-								(PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
-								(PBYTE)loadFileParams.appletAIDs[i].AID,
-								loadFileParams.appletAIDs[i].AIDLength,
-								(PBYTE)loadFileParams.appletAIDs[i].AID,
-								loadFileParams.appletAIDs[i].AIDLength,
-								optionStr.privilege,
-								optionStr.vDataLimit,
-								optionStr.nvDataLimit,
-								(PBYTE)optionStr.instParam,
-								optionStr.instParamLen,
-								NULL, // No install token
-								&receipt,
-								&receiptDataAvailable);
-						}
-					}
+                    if (optionStr.AIDLen || optionStr.instAIDLen)
+                    {
+                        if (optionStr.AIDLen == 0)
+                        {
+                            optionStr.AIDLen = loadFileParams.appletAIDs[0].AIDLength;
+                            memcpy(optionStr.AID, loadFileParams.appletAIDs[0].AID, optionStr.AIDLen);
+                        }
+                        if (optionStr.instAIDLen == 0)
+                        {
+                            optionStr.instAIDLen = optionStr.AIDLen;
+                            memcpy(optionStr.instAID, optionStr.AID, optionStr.instAIDLen);
+                        }
+                        status = OP201_install_for_install_and_make_selectable(
+                            cardContext, cardInfo, &securityInfo201,
+                            (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
+                            (PBYTE)optionStr.AID, optionStr.AIDLen,
+                            (PBYTE)optionStr.instAID, optionStr.instAIDLen,
+                            optionStr.privilege,
+                            optionStr.vDataLimit,
+                            optionStr.nvDataLimit,
+                            (PBYTE)optionStr.instParam,
+                            optionStr.instParamLen,
+                            NULL, // No install token
+                            &receipt,
+                            &receiptDataAvailable);
+                    }
+                    else
+                    {
+                        for (i = 0; loadFileParams.appletAIDs[i].AIDLength; i++)
+                        {
+                            status = OP201_install_for_install_and_make_selectable(
+                                cardContext, cardInfo, &securityInfo201,
+                                (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
+                                (PBYTE)loadFileParams.appletAIDs[i].AID,
+                                loadFileParams.appletAIDs[i].AIDLength,
+                                (PBYTE)loadFileParams.appletAIDs[i].AID,
+                                loadFileParams.appletAIDs[i].AIDLength,
+                                optionStr.privilege,
+                                optionStr.vDataLimit,
+                                optionStr.nvDataLimit,
+                                (PBYTE)optionStr.instParam,
+                                optionStr.instParamLen,
+                                NULL, // No install token
+                                &receipt,
+                                &receiptDataAvailable);
+                        }
+                    }
                 }
                 else if (platform_mode == PLATFORM_MODE_GP_211)
                 {
-					int i;
+                    int i;
                     GP211_RECEIPT_DATA receipt;
 
-					if (optionStr.AIDLen || optionStr.instAIDLen)
-					{
-						if (optionStr.AIDLen == 0)
-						{
-							optionStr.AIDLen = loadFileParams.appletAIDs[0].AIDLength;
-							memcpy(optionStr.AID, loadFileParams.appletAIDs[0].AID, optionStr.AIDLen);
-						}
-						if (optionStr.instAIDLen == 0)
-						{
-							optionStr.instAIDLen = optionStr.AIDLen;
-							memcpy(optionStr.instAID, optionStr.AID, optionStr.instAIDLen);
-						}
-						status = GP211_install_for_install_and_make_selectable(
-							cardContext, cardInfo, &securityInfo211,
-							(PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
-							(PBYTE)optionStr.AID, optionStr.AIDLen,
-							(PBYTE)optionStr.instAID, optionStr.instAIDLen,
-							optionStr.privilege,
-							optionStr.vDataLimit,
-							optionStr.nvDataLimit,
-							(PBYTE)optionStr.instParam,
-							optionStr.instParamLen,
-							NULL, // No install token
-							&receipt,
-							&receiptDataAvailable);
-					}
-					else
-					{
-						for (i = 0; loadFileParams.appletAIDs[i].AIDLength; i++)
-						{
-							status = GP211_install_for_install_and_make_selectable(
-								cardContext, cardInfo, &securityInfo211,
-								(PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
-								(PBYTE)loadFileParams.appletAIDs[i].AID,
-								loadFileParams.appletAIDs[i].AIDLength,
-								(PBYTE)loadFileParams.appletAIDs[i].AID,
-								loadFileParams.appletAIDs[i].AIDLength,
-								optionStr.privilege,
-								optionStr.vDataLimit,
-								optionStr.nvDataLimit,
-								(PBYTE)optionStr.instParam,
-								optionStr.instParamLen,
-								NULL, // No install token
-								&receipt,
-								&receiptDataAvailable);
-						}
-					}
+                    if (optionStr.AIDLen || optionStr.instAIDLen)
+                    {
+                        if (optionStr.AIDLen == 0)
+                        {
+                            optionStr.AIDLen = loadFileParams.appletAIDs[0].AIDLength;
+                            memcpy(optionStr.AID, loadFileParams.appletAIDs[0].AID, optionStr.AIDLen);
+                        }
+                        if (optionStr.instAIDLen == 0)
+                        {
+                            optionStr.instAIDLen = optionStr.AIDLen;
+                            memcpy(optionStr.instAID, optionStr.AID, optionStr.instAIDLen);
+                        }
+                        status = GP211_install_for_install_and_make_selectable(
+                            cardContext, cardInfo, &securityInfo211,
+                            (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
+                            (PBYTE)optionStr.AID, optionStr.AIDLen,
+                            (PBYTE)optionStr.instAID, optionStr.instAIDLen,
+                            optionStr.privilege,
+                            optionStr.vDataLimit,
+                            optionStr.nvDataLimit,
+                            (PBYTE)optionStr.instParam,
+                            optionStr.instParamLen,
+                            NULL, // No install token
+                            &receipt,
+                            &receiptDataAvailable);
+                    }
+                    else
+                    {
+                        for (i = 0; loadFileParams.appletAIDs[i].AIDLength; i++)
+                        {
+                            status = GP211_install_for_install_and_make_selectable(
+                                cardContext, cardInfo, &securityInfo211,
+                                (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
+                                (PBYTE)loadFileParams.appletAIDs[i].AID,
+                                loadFileParams.appletAIDs[i].AIDLength,
+                                (PBYTE)loadFileParams.appletAIDs[i].AID,
+                                loadFileParams.appletAIDs[i].AIDLength,
+                                optionStr.privilege,
+                                optionStr.vDataLimit,
+                                optionStr.nvDataLimit,
+                                (PBYTE)optionStr.instParam,
+                                optionStr.instParamLen,
+                                NULL, // No install token
+                                &receipt,
+                                &receiptDataAvailable);
+                        }
+                    }
                 }
 
                 if (OPGP_ERROR_CHECK(status))
@@ -1814,34 +1817,34 @@ static int handleCommands(FILE *fd)
                         }
                     }
                     else if (optionStr.keyDerivation == OPGP_DERIVATION_METHOD_VISA2) {
-						optionStr.APDULen = APDU_COMMAND_LEN;
-						OP201_get_data(cardContext, cardInfo, &securityInfo201, (PBYTE)OP201_GET_DATA_CARD_MANAGER_AID, optionStr.APDU, &(optionStr.APDULen));
-						if (OPGP_ERROR_CHECK(status))
-						{
-							_tprintf (_T("VISA2_derive_keys() returns 0x%08X (%s)\n"),
-										(unsigned int)status.errorCode, status.errorMessage);
-							rv = EXIT_FAILURE;
-							goto end;
-						}
-						// offset should be 3 where the Card Manager AID starts
-						status = OP201_VISA2_derive_keys(cardContext, cardInfo, &securityInfo201, optionStr.APDU+3, optionStr.APDULen-3, optionStr.key, optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
-						if (OPGP_ERROR_CHECK(status))
-						{
-							_tprintf (_T("VISA2_derive_keys() returns 0x%08X (%s)\n"),
-										(unsigned int)status.errorCode, status.errorMessage);
-							rv = EXIT_FAILURE;
-							goto end;
-						}
+                        optionStr.APDULen = APDU_COMMAND_LEN;
+                        OP201_get_data(cardContext, cardInfo, &securityInfo201, (PBYTE)OP201_GET_DATA_CARD_MANAGER_AID, optionStr.APDU, &(optionStr.APDULen));
+                        if (OPGP_ERROR_CHECK(status))
+                        {
+                            _tprintf (_T("VISA2_derive_keys() returns 0x%08X (%s)\n"),
+                                        (unsigned int)status.errorCode, status.errorMessage);
+                            rv = EXIT_FAILURE;
+                            goto end;
+                        }
+                        // offset should be 3 where the Card Manager AID starts
+                        status = OP201_VISA2_derive_keys(cardContext, cardInfo, &securityInfo201, optionStr.APDU+3, optionStr.APDULen-3, optionStr.key, optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
+                        if (OPGP_ERROR_CHECK(status))
+                        {
+                            _tprintf (_T("VISA2_derive_keys() returns 0x%08X (%s)\n"),
+                                        (unsigned int)status.errorCode, status.errorMessage);
+                            rv = EXIT_FAILURE;
+                            goto end;
+                        }
                     }
-					else if (optionStr.keyDerivation == OPGP_DERIVATION_METHOD_VISA1) {
-						status = OP201_VISA1_derive_keys(cardContext, cardInfo, &securityInfo201, optionStr.key, optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
-						if (OPGP_ERROR_CHECK(status))
-						{
-							_tprintf (_T("VISA1_derive_keys() returns 0x%08X (%s)\n"),
-										(unsigned int)status.errorCode, status.errorMessage);
-							rv = EXIT_FAILURE;
-							goto end;
-						}
+                    else if (optionStr.keyDerivation == OPGP_DERIVATION_METHOD_VISA1) {
+                        status = OP201_VISA1_derive_keys(cardContext, cardInfo, &securityInfo201, optionStr.key, optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
+                        if (OPGP_ERROR_CHECK(status))
+                        {
+                            _tprintf (_T("VISA1_derive_keys() returns 0x%08X (%s)\n"),
+                                        (unsigned int)status.errorCode, status.errorMessage);
+                            rv = EXIT_FAILURE;
+                            goto end;
+                        }
                     }
                     status = OP201_put_secure_channel_keys(cardContext, cardInfo, &securityInfo201,
                                                        optionStr.keySetVersion,
@@ -1882,7 +1885,7 @@ static int handleCommands(FILE *fd)
                             goto end;
                         }
                     }
-					else if (optionStr.keyDerivation == OPGP_DERIVATION_METHOD_VISA1) {
+                    else if (optionStr.keyDerivation == OPGP_DERIVATION_METHOD_VISA1) {
                         status = GP211_VISA1_derive_keys(cardContext, cardInfo, &securityInfo211, optionStr.key, optionStr.enc_key, optionStr.mac_key, optionStr.kek_key);
                         if (OPGP_ERROR_CHECK(status))
                         {
@@ -1900,7 +1903,7 @@ static int handleCommands(FILE *fd)
                                                        optionStr.enc_key,
                                                        optionStr.mac_key,
                                                        optionStr.kek_key,
-													   optionStr.keyLength);
+                                                       optionStr.keyLength);
                 }
 
                 if (OPGP_ERROR_CHECK(status))
@@ -1937,7 +1940,7 @@ static int handleCommands(FILE *fd)
                             optionStr.file,
                             optionStr.passPhrase,
                             optionStr.key,
-							optionStr.keyLength);
+                            optionStr.keyLength);
                 }
 
                 if (OPGP_ERROR_CHECK(status))
@@ -1950,24 +1953,24 @@ static int handleCommands(FILE *fd)
                 goto timer;
             }
             else if (_tcscmp(token, _T("get_card_recognition_data")) == 0)
-			{
-            	GP211_CARD_RECOGNITION_DATA cardData;
-				rv = handleOptions(&optionStr);
-				if (rv != EXIT_SUCCESS)
-				{
-					goto end;
-				}
-				status = GP211_get_card_recognition_data(cardContext, cardInfo, &cardData);
+            {
+                GP211_CARD_RECOGNITION_DATA cardData;
+                rv = handleOptions(&optionStr);
+                if (rv != EXIT_SUCCESS)
+                {
+                    goto end;
+                }
+                status = GP211_get_card_recognition_data(cardContext, cardInfo, &cardData);
 
-				if (OPGP_ERROR_CHECK(status))
-				{
-					_tprintf (_T("get_card_recognition_data() returns 0x%08X (%s)\n"),
-							  (unsigned int)status.errorCode, status.errorMessage);
-					rv = EXIT_FAILURE;
-					goto end;
-				}
-				displayCardRecognitionData(cardData);
-			}
+                if (OPGP_ERROR_CHECK(status))
+                {
+                    _tprintf (_T("get_card_recognition_data() returns 0x%08X (%s)\n"),
+                              (unsigned int)status.errorCode, status.errorMessage);
+                    rv = EXIT_FAILURE;
+                    goto end;
+                }
+                displayCardRecognitionData(cardData);
+            }
             else if (_tcscmp(token, _T("get_status")) == 0)
             {
 #define NUM_APPLICATIONS 64
@@ -2001,7 +2004,7 @@ static int handleCommands(FILE *fd)
                     GP211_EXECUTABLE_MODULES_DATA execData[NUM_APPLICATIONS];
                     status = GP211_get_status(cardContext, cardInfo, &securityInfo211,
                                           optionStr.element,
-										  optionStr.format,
+                                          optionStr.format,
                                           appData,
                                           execData,
                                           &numData);
@@ -2016,11 +2019,11 @@ static int handleCommands(FILE *fd)
 
                     if (optionStr.element == GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES)
                     {
-                    	displayLoadFilesAndModulesGp211(execData, numData);
+                        displayLoadFilesAndModulesGp211(execData, numData);
                     }
                     else
                     {
-                    	displayLoadApplicationsGp211(appData, numData, optionStr.element);
+                        displayLoadApplicationsGp211(appData, numData, optionStr.element);
                     }
                 }
                 goto timer;
@@ -2050,8 +2053,8 @@ static int handleCommands(FILE *fd)
                                          (PBYTE)(optionStr.APDU), optionStr.APDULen,
                                          recvAPDU, &recvAPDULen);
                 }
-				_tprintf (_T("send_APDU() returns 0x%08X (%s)\n"),
-						  (unsigned int)status.errorCode, status.errorMessage);
+                _tprintf (_T("send_APDU() returns 0x%08X (%s)\n"),
+                          (unsigned int)status.errorCode, status.errorMessage);
                 if (OPGP_ERROR_CHECK(status))
                 {
 
@@ -2079,23 +2082,23 @@ static int handleCommands(FILE *fd)
                 OPGP_enable_trace_mode(OPGP_TRACE_MODE_ENABLE, NULL);
                 break;
             }
-			// for backward combatibility
-			else if (_tcscmp(token, _T("gemXpressoPro")) == 0)
-			{
-				gemXpressoPro = 1;
-				break;
-			}
+            // for backward combatibility
+            else if (_tcscmp(token, _T("gemXpressoPro")) == 0)
+            {
+                gemXpressoPro = 1;
+                break;
+            }
             else if (_tcscmp(token, _T("enable_timer")) == 0)
             {
                 timer = 1;
                 break;
             }
-			else if (_tcscmp(token, _T("exit")) == 0)
+            else if (_tcscmp(token, _T("exit")) == 0)
             {
                 rv = EXIT_SUCCESS;
                 goto end;
             }
-			else if (_tcscmp(token, _T("list_readers")) == 0)
+            else if (_tcscmp(token, _T("list_readers")) == 0)
             {
                 DWORD readerStrLen = BUFLEN;
                 int j=0;
@@ -2116,11 +2119,25 @@ static int handleCommands(FILE *fd)
                     if (buf[j] == _T('\0'))
                         break;
                     _tcsncpy(optionStr.reader, buf+j, READERNAMELEN);
-					_tprintf ( _T("* reader name %s\n"), optionStr.reader);
+                    _tprintf ( _T("* reader name %s\n"), optionStr.reader);
                     k++;
                     j+=(int)_tcslen(buf+j)+1;
                 }
                 break;
+            }
+            else if (_tcscmp(token, _T("print")) == 0) 
+            {
+                int contentStart = strlen("print");
+                while (commandLine[contentStart] != '\0' &&
+                       isspace(commandLine[contentStart])) {
+                    contentStart++;
+                }
+
+                if (commandLine[contentStart] == '\0') {
+                    _tprintf("\n");
+                } else {
+                    _tprintf("# %s\n", &commandLine[contentStart]);
+                }
             }
             else
             {
@@ -2128,19 +2145,19 @@ static int handleCommands(FILE *fd)
                 break;
             }
 timer:
-			// get the final time and calculate the total time of the command
-			if (timer)
-			{
-				ft = GetTime();
-				_tprintf(_T("command time: %u ms\n"), (ft - it));
-			}
-			break;
+            // get the final time and calculate the total time of the command
+            if (timer)
+            {
+                ft = GetTime();
+                _tprintf(_T("command time: %u ms\n"), (ft - it));
+            }
+            break;
         }
     }
 end:
-	if (optionStr.noStop) {
-		goto nostop;
-	}
+    if (optionStr.noStop) {
+        goto nostop;
+    }
     return rv;
 }
 
@@ -2158,12 +2175,12 @@ int _tmain(int argc, TCHAR* argv[])
     else if (argc == 2)
     {
         // read input from script file
-    	// fix for MAC eclipse bug using single quotes: https://bugs.eclipse.org/bugs/show_bug.cgi?id=516027
+        // fix for MAC eclipse bug using single quotes: https://bugs.eclipse.org/bugs/show_bug.cgi?id=516027
         if (argv[1][0] == _T('\'')) {
-        	argv[1]++;
-        	argv[1][_tcslen(argv[1])-1] = _T('\0');
+            argv[1]++;
+            argv[1][_tcslen(argv[1])-1] = _T('\0');
         }
-    	fd = _tfopen(argv[1], _T("r"));
+        fd = _tfopen(argv[1], _T("r"));
         // error
         if (fd == NULL)
         {
