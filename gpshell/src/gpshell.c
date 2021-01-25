@@ -30,6 +30,7 @@
 #endif
 
 #include <globalplatform/globalplatform.h>
+#include <ctype.h>
 
 #ifndef WIN32
 #define _snprintf snprintf
@@ -968,8 +969,10 @@ static int handleCommands(FILE *fd)
                 it = GetTime();
             }
 
-            // print command line
-            _tprintf(_T("%s"), commandLine);
+			if (strncmp("print", commandLine, strlen("print")) != 0) {
+                // print command line
+                _tprintf(_T("%s"), commandLine);
+            }
 
             if (_tcscmp(token, _T("establish_context")) == 0)
             {
@@ -2121,6 +2124,19 @@ static int handleCommands(FILE *fd)
                     j+=(int)_tcslen(buf+j)+1;
                 }
                 break;
+            }
+			else if (_tcscmp(token, _T("print")) == 0) {
+                int contentStart = strlen("print");
+                while (commandLine[contentStart] != '\0' &&
+                       isspace(commandLine[contentStart])) {
+                    contentStart++;
+                }
+
+                if (commandLine[contentStart] == '\0') {
+                    _tprintf("\n");
+                } else {
+                    _tprintf("# %s\n", &commandLine[contentStart]);
+                }
             }
             else
             {
