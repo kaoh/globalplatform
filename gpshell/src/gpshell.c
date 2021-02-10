@@ -59,6 +59,7 @@
 #define PLATFORM_MODE_GP_211 GP_211
 #define PASSPHRASELEN 64
 #define AUTOREADER -1
+#define MAX_RECV_BUFFER_LEN 65536
 
 #define CHECK_TOKEN(token, option) token = parseToken(NULL);\
 if (token == NULL)\
@@ -1302,8 +1303,8 @@ static int handleCommands(FILE *fd)
             else if (_tcscmp(token, _T("get_data")) == 0)
             {
                 // Get Data
-                BYTE data[256];
-                DWORD dataLen = 256;
+                BYTE data[MAX_RECV_BUFFER_LEN];
+                DWORD dataLen = MAX_RECV_BUFFER_LEN;
                 DWORD i=0;
                 rv = handleOptions(&optionStr);
                 if (rv != EXIT_SUCCESS)
@@ -2030,8 +2031,8 @@ static int handleCommands(FILE *fd)
             }
             else if (_tcscmp(token, _T("send_apdu")) == 0 || _tcscmp(token, _T("send_apdu_nostop")) == 0)
             {
-                BYTE recvAPDU[258];
-                DWORD recvAPDULen = 258;
+                BYTE recvAPDU[MAX_RECV_BUFFER_LEN];
+                DWORD recvAPDULen = MAX_RECV_BUFFER_LEN;
                 // Install for Load
                 rv = handleOptions(&optionStr);
                 if (rv != EXIT_SUCCESS)
