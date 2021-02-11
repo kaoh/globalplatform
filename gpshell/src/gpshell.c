@@ -2030,8 +2030,8 @@ static int handleCommands(FILE *fd)
             }
             else if (_tcscmp(token, _T("send_apdu")) == 0 || _tcscmp(token, _T("send_apdu_nostop")) == 0)
             {
-                BYTE recvAPDU[258];
-                DWORD recvAPDULen = 258;
+                DWORD recvAPDULen = 65536;
+                BYTE recvAPDU[recvAPDULen];
                 // Install for Load
                 rv = handleOptions(&optionStr);
                 if (rv != EXIT_SUCCESS)
