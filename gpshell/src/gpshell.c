@@ -1742,7 +1742,7 @@ static int handleCommands(FILE *fd)
                 if (platform_mode == PLATFORM_MODE_OP_201)
                 {
                     OP201_RECEIPT_DATA receipt;
-                    status = OP201_install_for_install_and_make_selectable(
+                    status = OP201_install_for_install(
                              cardContext, cardInfo, &securityInfo201,
                              (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
                              (PBYTE)optionStr.AID, optionStr.AIDLen,
@@ -1760,7 +1760,7 @@ static int handleCommands(FILE *fd)
                 {
                     GP211_RECEIPT_DATA receipt;
 
-                    status = GP211_install_for_install_and_make_selectable(
+                    status = GP211_install_for_install(
                              cardContext, cardInfo, &securityInfo211,
                              (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
                              (PBYTE)optionStr.AID, optionStr.AIDLen,
@@ -1777,7 +1777,7 @@ static int handleCommands(FILE *fd)
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("install_for_install_and_make_selectable() returns 0x%08X (%s)\n"),
+                    _tprintf (_T("install_for_install() returns 0x%08X (%s)\n"),
                               (unsigned int)status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;
