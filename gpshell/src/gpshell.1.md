@@ -107,6 +107,13 @@ __install_for_install__ -priv *privilege* -AID *AIDInPkg* -pkgAID *pkgAID* -inst
 
 This command may be needed if the combined install command does not work. Or you want to install a pre-installed Security Domain.
 
+__install_for_make_selectable__ -priv *privilege* -instAID *instanceAID*
+
+:     Makes an installed applet instance selectable
+
+This command may be needed if the combined install command does not work. Typically this is used after an *install_for_install* 
+followed by personalization.
+
 __card_disconnect__
 
 :    Disconnect card

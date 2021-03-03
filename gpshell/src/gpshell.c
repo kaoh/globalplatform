@@ -2139,6 +2139,48 @@ static int handleCommands(FILE *fd)
                     _tprintf("# %s\n", &commandLine[contentStart]);
                 }
             }
+            else if (_tcscmp(token, _T("install_for_make_selectable")) == 0)
+            {
+              DWORD receiptDataAvailable = 0;
+              // Install for Install
+              rv = handleOptions(&optionStr);
+              if (rv != EXIT_SUCCESS)
+              {
+                goto end;
+              }
+              if (platform_mode == PLATFORM_MODE_OP_201)
+              {
+                OP201_RECEIPT_DATA receipt;
+                status = OP201_install_for_make_selectable(
+                    cardContext, cardInfo, &securityInfo201,
+                    (PBYTE)optionStr.instAID, optionStr.instAIDLen,
+                    optionStr.privilege,
+                    NULL, // No install token
+                    &receipt,
+                    &receiptDataAvailable);
+              }
+              else if (platform_mode == PLATFORM_MODE_GP_211)
+              {
+                GP211_RECEIPT_DATA receipt;
+                status = GP211_install_for_make_selectable(
+                    cardContext, cardInfo, &securityInfo211,
+                    (PBYTE)optionStr.instAID, optionStr.instAIDLen,
+                    optionStr.privilege,
+                    NULL, // No install token
+                    &receipt,
+                    &receiptDataAvailable);
+              }
+
+              if (OPGP_ERROR_CHECK(status))
+              {
+                _tprintf (_T("install_for_make_selectable() returns 0x%08X (%s)\n"),
+                          (unsigned int)status.errorCode, status.errorMessage);
+                rv = EXIT_FAILURE;
+                goto end;
+              }
+              goto timer;
+
+            }
             else
             {
                 _tprintf(_T("Unknown command %s\n"), token);
