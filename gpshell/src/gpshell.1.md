@@ -17,8 +17,10 @@ Additional key management commands are provided.
 
 The most common way to use gpshell is a script file. But it is also possible to read the commands from stdin if no script file is provided.
 
-Reading the commands from stdin allows to feed in the commands dynamically and use conditionals when using the [Expect](https://en.wikipedia.org/wiki/Expect) pattern. Tools 
-are available for a variety of script languages, shells and programming languages. Example are to support environment variables and handle results and output conditionally. 
+Within a script environment variables can be accessed with the syntax `${ENV_VAR_NAME}`.
+
+Reading the commands from stdin allows to feed in the commands dynamically and use conditionals when using the [Expect](https://en.wikipedia.org/wiki/Expect) pattern. Tools
+are available for a variety of script languages, shells and programming languages. Example are to support environment variables and handle results and output conditionally.
 
 There are several `txt` example scripts provided which gets installed into `usr/local/share/docs` or `/home/linuxbrew/.linuxbrew/opt/globalplatform/share/doc/gpshell1/` or can be found [online](https://github.com/kaoh/globalplatform/tree/master/gpshell).
 
@@ -62,7 +64,7 @@ __card_connect__ -readerNumber *x* -protocol *protocol*
 
 :    Connect to card in the *x* th reader in the system. By default protocol is 0 = T0.
 
-__open_sc__ -keyind *x* -keyver *x* -key *key* -mac_key *mac-key* -enc_key *enc-key* -kek_key *kek-key* -security *securityLevel* -scp *protocol* -scpimpl *impl* -keyDerivation *derivation* 
+__open_sc__ -keyind *x* -keyver *x* -key *key* -mac_key *mac-key* -enc_key *enc-key* -kek_key *kek-key* -security *securityLevel* -scp *protocol* -scpimpl *impl* -keyDerivation *derivation*
 
 :    Open a secure channel
 
@@ -111,7 +113,7 @@ __install_for_make_selectable__ -priv *privilege* -instAID *instanceAID*
 
 :     Makes an installed applet instance selectable
 
-This command may be needed if the combined install command does not work. Typically this is used after an *install_for_install* 
+This command may be needed if the combined install command does not work. Typically this is used after an *install_for_install*
 followed by personalization.
 
 __card_disconnect__
@@ -186,7 +188,7 @@ __install_for_personalization__ -aid *AID*
 
 __store_data__ -dataFormat *format* -dataEncryption *encryption* -data *data*
 
-:     Executes a STORE DATA command passing the *data* to the selected applet. 
+:     Executes a STORE DATA command passing the *data* to the selected applet.
 
 __get_card_recognition_data__
 
@@ -194,7 +196,7 @@ __get_card_recognition_data__
 
 __delete_key__ -keyver *keyver* -keyind *keyind*
 
-:     Deletes a key set version with a DELETE command. 
+:     Deletes a key set version with a DELETE command.
 If only the keyver is passed the complete key set version is deleted.
 By default keyind is 0xFF to delete the complete key set version. If keyver is 0 all key set with the passed keyind are deleted.
 
