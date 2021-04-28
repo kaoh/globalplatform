@@ -1,9 +1,9 @@
 History
 =======
 
-SCP03 supported
-getting key information templates
-getting extended card resources information
+04/28/2021      2.1.0   Karsten Ohme, Dave Mercer
+                        print command added
+                        support for environment variables
 
 09/26/2020	2.0.0	Karsten Ohme
                         CMake Build System

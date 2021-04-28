@@ -139,6 +139,7 @@ end:
  * The next chainingValue are the full 16 Bytes of mac. Save this value for the next command MAC calculation.
  *
  * \param sMacKey [in] The S-MAC key (session MAC key) to use for MAC generation.
+ * \param keyLength [in] The AES key length in bytes (16, 24, or 32).
  * \param message [in] The message to generate the MAC for.
  * \param messageLength [in] The length of the message.
  * \param chainingValue [in] The chaining value to use for the MAC generation. This is

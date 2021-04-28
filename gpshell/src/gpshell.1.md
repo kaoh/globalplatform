@@ -1,4 +1,4 @@
-% GPSHELL(1) 2.0.0 | GPShell Documentation
+% GPSHELL(1) 2.1.0 | GPShell Documentation
 
 # NAME
 
