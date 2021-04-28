@@ -1,6 +1,9 @@
 History
 =======
 
+1.2.4 - Wed, Apr 28, 2021, Karsten Ohme
+  Initialize function variables
+
 1.2.3 - Mon, May 28, 2012, Karsten Ohme
   CMake Build System
   

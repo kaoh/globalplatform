@@ -1,0 +1,10 @@
+establish_context
+enable_trace
+enable_timer
+card_connect
+send_apdu -sc 0 -APDU 00A4040409A00000015141434C00
+send_apdu -sc 0 -APDU 80CAFF4000
+send_apdu -sc 0 -APDU 80CAFF6000
+send_apdu -sc 0 -noStop -APDU 80CAFF6000
+card_disconnect
+release_context
