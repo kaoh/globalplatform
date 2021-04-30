@@ -1,7 +1,7 @@
 PROJECT(globalplatform C)
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.5.2)
 
-cmake_policy(VERSION 2.8)
+cmake_policy(VERSION 3.5.2)
 
 # MacOS support for CMake 3+
 set(CMAKE_MACOSX_RPATH 1)
