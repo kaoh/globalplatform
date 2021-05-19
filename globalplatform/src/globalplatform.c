@@ -1740,29 +1740,34 @@ end:
 OPGP_ERROR_STATUS GP211_get_secure_channel_protocol_details(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
 										 BYTE *secureChannelProtocol, BYTE *secureChannelProtocolImpl) {
 	OPGP_ERROR_STATUS status;
-	DWORD i=0;
+	BOOL found = 0;
 	GP211_CARD_RECOGNITION_DATA cardData;
 
 	OPGP_LOG_START(_T("GP211_get_secure_channel_protocol_details"));
 
 	status = GP211_get_card_recognition_data(cardContext, cardInfo, &cardData);
-	if (OPGP_ERROR_CHECK(status)) {
-		goto end;
-	}
-	while (i < cardData.scpLength) {
-		// only supporting SCP01 - SCP03
-		if (cardData.scp[i] == GP211_SCP01 || cardData.scp[i] == GP211_SCP02 || cardData.scp[i] == GP211_SCP03) {
-			*secureChannelProtocol = cardData.scp[i];
-			*secureChannelProtocolImpl = cardData.scpImpl[i++];
-			OPGP_log_Msg(_T("Using Secure Channel Protocol 0x%02x with Secure Channel Protocol Impl: 0x%02x\n"), *secureChannelProtocol, *secureChannelProtocolImpl);
-			goto found;
+	if (!OPGP_ERROR_CHECK(status)) {
+		for (int i = 0; i < cardData.scpLength; i++) {
+			// only supporting SCP01 - SCP03
+			if (cardData.scp[i] == GP211_SCP01 || cardData.scp[i] == GP211_SCP02 || cardData.scp[i] == GP211_SCP03) {
+				*secureChannelProtocol = cardData.scp[i];
+				*secureChannelProtocolImpl = cardData.scpImpl[i];
+				OPGP_log_Msg(_T("Using Secure Channel Protocol 0x%02x with Secure Channel Protocol Impl: 0x%02x\n"),
+					*secureChannelProtocol,
+					*secureChannelProtocolImpl);
+				found = 1;
+				break;
+			}
+		}
+
+		if (!found) {
+			OPGP_ERROR_CREATE_ERROR(status,
+				OPGP_ERROR_NO_SUPPORTED_SCP_FOUND,
+				OPGP_stringify_error(OPGP_ERROR_NO_SUPPORTED_SCP_FOUND));
+		} else {
+			OPGP_ERROR_CREATE_NO_ERROR(status);
 		}
 	}
-	OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_NO_SUPPORTED_SCP_FOUND, OPGP_stringify_error(OPGP_ERROR_NO_SUPPORTED_SCP_FOUND));
-	goto end;
-found:
-	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
-end:
 	OPGP_LOG_END(_T("GP211_get_secure_channel_protocol_details"), status);
 	return status;
 }
