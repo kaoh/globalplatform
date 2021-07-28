@@ -1148,7 +1148,7 @@ end:
 
 /**
  * Calculates a message authentication code using the left half key of a two key 3DES key
- * and the the full key for the final operation.
+ * and the full key for the final operation.
  * Pads the message always with 0x80 and additional 0x00 until message length is a multiple of 8.
  * \param _3des_key [in] A 3DES key used to sign.
  * \param *message [in] The message to authenticate.

@@ -196,7 +196,7 @@ OPGP_ERROR_STATUS OPGP_card_disconnect(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_
  * \param capdu [in] The command APDU.
  * \param capduLength [in] The length of the command APDU.
  * \param rapdu [out] The response APDU.
- * \param rapduLength [in, out] The length of the the response APDU.
+ * \param rapduLength [in, out] The length of the response APDU.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OPGP_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBYTE capdu, DWORD capduLength, PBYTE rapdu, PDWORD rapduLength) {
