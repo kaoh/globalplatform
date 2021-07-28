@@ -541,7 +541,7 @@ extern zipFile ZEXPORT zipOpen2 (pathname, append, globalcomment, pzlib_filefunc
 
         uLong number_disk;          /* number of the current dist, used for
                                     spaning ZIP, unsupported, always 0*/
-        uLong number_disk_with_CD;  /* number the the disk with central dir, used
+        uLong number_disk_with_CD;  /* number the disk with central dir, used
                                     for spaning ZIP, unsupported, always 0*/
         uLong number_entry;
         uLong number_entry_CD;      /* total number of entries in

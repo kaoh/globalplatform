@@ -635,7 +635,7 @@ DWORD fillReceipt(PBYTE buf, GP211_RECEIPT_DATA *receiptData) {
  * \param capdu [in] The command APDU.
  * \param capduLength [in] The length of the command APDU.
  * \param rapdu [out] The response APDU.
- * \param rapduLength [in, out] The length of the the response APDU.
+ * \param rapduLength [in, out] The length of the response APDU.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBYTE capdu, DWORD capduLength, PBYTE rapdu, PDWORD rapduLength) {
@@ -4568,21 +4568,21 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
         memcpy(secInfo->lastC_MAC, mac, 16);
     }
 	else {
-	// not GP211_SCP03: Calculated MAC is 8 byte.
-    	if (secInfo->secureChannelProtocol == GP211_SCP02) {
-			status = calculate_MAC_des_3des(secInfo->C_MACSessionKey, sendBuffer, sendBufferLength-8, (PBYTE)ICV, mac);
+		// not GP211_SCP03: Calculated MAC is 8 byte.
+		if (secInfo->secureChannelProtocol == GP211_SCP02) {
+			status = calculate_MAC_des_3des(secInfo->C_MACSessionKey, sendBuffer, sendBufferLength - 8, (PBYTE) ICV,
+											mac);
+			if (OPGP_ERROR_CHECK(status)) {
+				goto end;
+			}
+		} else {
+			calculate_MAC(secInfo->C_MACSessionKey, sendBuffer, sendBufferLength - 8, (PBYTE) ICV, mac);
 			if (OPGP_ERROR_CHECK(status)) {
 				goto end;
 			}
 		}
-		else {
-			calculate_MAC(secInfo->C_MACSessionKey, sendBuffer, sendBufferLength-8, (PBYTE)ICV, mac);
-			if (OPGP_ERROR_CHECK(status)) {
-				goto end;
-			}
-        }
-       	memcpy(secInfo->lastC_MAC, mac, 8);
-       	memcpy(secInfo->lastR_MAC, mac, 8);
+		memcpy(secInfo->lastC_MAC, mac, 8);
+		memcpy(secInfo->lastR_MAC, mac, 8);
 	}
     // Philip Wendland: Moved secInfo update to if clause above as other lengths are used for SCP03.
 	memcpy(sendBuffer+i, mac, 8);
@@ -4973,7 +4973,7 @@ end:
  * \param capdu [in] The command APDU.
  * \param capduLength [in] The length of the command APDU.
  * \param rapdu [out] The response APDU.
- * \param rapduLength [in, out] The length of the the response APDU.
+ * \param rapduLength [in, out] The length of the response APDU.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
