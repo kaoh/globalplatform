@@ -25,10 +25,18 @@ Use a suitable packet manager for your OS or install the programs and libraries 
 
 ## Unix
 
-Install the dependencies with `brew` or your distribution's package system:
+Install the dependencies with [`brew`](https://docs.brew.sh/Homebrew-on-Linux) or your distribution's package system.
 
+brew:
+
+~~~shell
+brew install openssl doxygen cmake cmocka zlib graphviz pcsc-lite pkg-config
 ~~~
-brew install openssl doxygen cmake cmocka zlib graphviz pcsc-lite
+
+Ubuntu:
+
+~~~shell
+apt-get install libssl-dev doxygen cmake libcmocka0 zlib1g-dev graphviz pcscd libpcsclite-dev pkg-config
 ~~~
 
 ### Compile
@@ -305,7 +313,7 @@ the `CMakeCache.txt` file and also the CMake specific directories like `CMakeFil
 E.g. under Linux:
 
 ```
-rm -f CMakeCache.txt && rm -f cmake_install.cmake && rm -rf CMakeFiles && rm -rf _CPack_Packages && rm -f CPack* && rm -rf src/CMakeFiles && cmake -DTESTING=ON -DDEBUG=ON .
+rm -f CMakeCache.txt && rm -f cmake_install.cmake && rm -rf CMakeFiles && rm -rf _CPack_Packages && rm -f CPack* && rm -rf src/CMakeFiles
 ```
 
 The file `cleanCMake.sh` in the parent folder can be used which is cleaning all projects.

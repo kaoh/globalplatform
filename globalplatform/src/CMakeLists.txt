@@ -4,9 +4,8 @@ INCLUDE(FindPCSC)
 INCLUDE(FindOpenSSL)
 INCLUDE(FindZLIB)
 
-SET(SOURCES connection.c stringify.c crypto.c loadfile.c util.c debug.c globalplatform.c)
+SET(SOURCES connection.c stringify.c crypto.c loadfile.c util.c debug.c init.c globalplatform.c)
 
-# TODO: if "Release" is set, package_ubuntu does only honor INSTALL(TARGETS globalplatform LIBRARY DESTINATION lib${LIB_SUFFIX})
 
 INCLUDE(CheckCCompilerFlag)
 INCLUDE(CMakePushCheckState)
