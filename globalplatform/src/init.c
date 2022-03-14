@@ -26,6 +26,13 @@
 OSSL_PROVIDER *legacy;
 OSSL_PROVIDER *deflt;
 
+#ifdef WIN32
+#include <io.h>
+#define F_OK 0
+#define access _access
+#define LEGACY_DLL "legacy.dll"
+#define OSSL_WIN32_DIR "C:\\Program Files (x86)\\OpenSSL-Win32\\bin\\"
+#endif
 #endif
 
 /**
@@ -33,6 +40,15 @@ OSSL_PROVIDER *deflt;
  */
 CONSTRUCTOR void init(void) {
 #ifdef OPENSSL3
+#ifdef WIN32
+	if (access(".\\" LEGACY_DLL, F_OK) == 0) {
+		OSSL_PROVIDER_set_default_search_path(NULL, ".\\");
+	} else if (access(OSSL_WIN32_DIR LEGACY_DLL, F_OK) == 0) {
+		OSSL_PROVIDER_set_default_search_path(NULL, OSSL_WIN32_DIR);
+	} else {
+		printf("Could not find '%s' in current or '%s' directory.", LEGACY_DLL, OSSL_WIN32_DIR);
+	}
+#endif
 	legacy = OSSL_PROVIDER_load(NULL, "legacy");
 	if (legacy == NULL) {
 		printf("Failed to load OpenSSL legacy provider\n");

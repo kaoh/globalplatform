@@ -17,6 +17,7 @@ cp $dirNamegpshell/lib/gppcscconnectionplugin.dll $dirNamegpshell/bin
 
 cp /c/Program\ Files\ \(x86\)/OpenSSL-Win32/libcrypto*.dll $dirNamegpshell/bin
 cp /c/Program\ Files\ \(x86\)/OpenSSL-Win32/libssl*.dll $dirNamegpshell/bin
+cp /c/Program\ Files\ \(x86\)/OpenSSL-Win32/bin/legacy*.dll $dirNamegpshell/bin
 cp /c/Program\ Files\ \(x86\)/OpenSSL-Win32/libeay*.dll $dirNamegpshell/bin
 cp $dirName/zlib-1.2.8/zlibwapi.dll $dirNamegpshell/bin
 
