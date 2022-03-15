@@ -80,12 +80,6 @@
 
 #else
 
-/* SUN C compiler does not use __attribute__ but #pragma init (function)
- * We can't use a # inside a #define so it is not possible to use
- * #define CONSTRUCTOR_DECLARATION(x) #pragma init (x)
- * The #pragma is used directly where needed */
-
-/* any other */
 #define CONSTRUCTOR
 #define DESTRUCTOR
 

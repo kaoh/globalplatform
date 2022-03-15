@@ -4,9 +4,8 @@ INCLUDE(FindPCSC)
 INCLUDE(FindOpenSSL)
 INCLUDE(FindZLIB)
 
-SET(SOURCES connection.c stringify.c crypto.c loadfile.c util.c debug.c globalplatform.c)
+SET(SOURCES connection.c stringify.c crypto.c loadfile.c util.c debug.c init.c globalplatform.c)
 
-# TODO: if "Release" is set, package_ubuntu does only honor INSTALL(TARGETS globalplatform LIBRARY DESTINATION lib${LIB_SUFFIX})
 
 INCLUDE(CheckCCompilerFlag)
 INCLUDE(CMakePushCheckState)
@@ -72,7 +71,7 @@ ENDIF(UNIX)
 
 # Handle Windows build
 IF(WIN32)
-    SET(SOURCES ${SOURCES} dyn_win32.c unzip/unzip.c unzip/iowin32.c unzip/ioapi.c version.rc)
+    SET(SOURCES ${SOURCES} DLLMain.c dyn_win32.c unzip/unzip.c unzip/iowin32.c unzip/ioapi.c version.rc)
     ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS -DOPGP_EXPORTS -DZLIB_WINAPI)
     ADD_DEFINITIONS(-DUNICODE)
 ENDIF(WIN32)
