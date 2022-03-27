@@ -157,6 +157,11 @@ IF(TESTING)
         SOURCES scp01Test.c testUtil.c ${SOURCES}
         MOCKS RAND_bytes
         LINK_LIBRARIES ${LIBRARIES})
+
+      add_mocked_test(cryptoTest
+        SOURCES cryptoTest.c testUtil.c ${SOURCES}
+        MOCKS RAND_bytes
+        LINK_LIBRARIES ${LIBRARIES})
     ELSE()
 	  MESSAGE("--wrap linker flag not supported, not executing tests.")
     ENDIF()

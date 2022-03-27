@@ -62,6 +62,19 @@
 #define EVP_CIPHER_CTX_create EVP_CIPHER_CTX_new()
 #endif
 
+#if defined OPENSSL_VERSION_MAJOR && (OPENSSL_VERSION_MAJOR >= 3)
+#define OPENSSL3
+#endif
+
+#ifndef OPENSSL3
+#define EVP_MAC_update CMAC_update
+#define EVP_MAC_final(ctx, out, outl, outsize) CMAC_final(ctx, out, outl)
+#define EVP_MAC_CTX CMAC_CTX
+#define EVP_MAC_CTX_new(mac) CMAC_CTX_new()
+#define EVP_MAC_CTX_free CMAC_CTX_free
+#define EVP_MAC_init(ctx, key, keyLength, params) CMAC_init(ctx, key, keyLength, params, NULL)
+#endif
+
 static const BYTE PADDING[8] = {(char) 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; //!< Applied padding pattern for SCP02.
 static const BYTE AES_PADDING[16] = {(char)0x80,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00}; //!< Padding pattern applied for SCP03.
 
@@ -148,15 +161,26 @@ end:
  * \param mac [out] The full 16 Byte MAC. Append the first 8 Bytes to the
  *                  message. Save the full 16 Bytes for further MAC generation if needed.
  */
-OPGP_ERROR_STATUS calculate_CMAC_aes(BYTE sMacKey[32], DWORD keyLength, BYTE *message, DWORD messageLength, BYTE chainingValue[16], BYTE mac[16]) {
+OPGP_ERROR_STATUS calculate_CMAC_aes(BYTE sMacKey[32], DWORD keyLength, BYTE *message, DWORD messageLength,
+		BYTE chainingValue[16], BYTE mac[16]) {
 	LONG result;
 	OPGP_ERROR_STATUS status;
 	size_t outl;
-	CMAC_CTX *ctx = CMAC_CTX_new();
-	OPGP_LOG_START(_T("calculate_CMAC_aes"));
+	EVP_MAC_CTX *ctx;
+#ifdef OPENSSL3
+	EVP_MAC *_mac = EVP_MAC_fetch(NULL, "cmac", NULL);
+	OSSL_PARAM params[2];
+    params[0] = OSSL_PARAM_construct_utf8_string("cipher", keyLength == 16 ? "aes-128-cbc" : (keyLength == 24 ?
+ 			"aes-192-cbc" : "aes-256-cbc"), 0);
+	params[1] = OSSL_PARAM_construct_end();
+#else
+	void *_mac;
+	EVP_CIPHER *params = keyLength == 16 ? EVP_aes_128_cbc() : (keyLength == 24 ? EVP_aes_192_cbc() : EVP_aes_256_cbc());
+#endif
 
-	result = CMAC_Init(ctx, sMacKey, keyLength, keyLength == 16 ? EVP_aes_128_cbc() :
-			(keyLength == 24 ? EVP_aes_192_cbc() : EVP_aes_256_cbc()), NULL);
+	OPGP_LOG_START(_T("calculate_CMAC_aes"));
+	ctx = EVP_MAC_CTX_new(_mac);
+	result = EVP_MAC_init(ctx, sMacKey, keyLength, params);
 	if (result != 1) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 	}
@@ -165,28 +189,44 @@ OPGP_ERROR_STATUS calculate_CMAC_aes(BYTE sMacKey[32], DWORD keyLength, BYTE *me
 		 * The input for CMAC is: chainingValue|message.
 		 * The chaining value is 16 bytes long.
 		*/
-		result = CMAC_Update(ctx, chainingValue, 16);
+		result = EVP_MAC_update(ctx, chainingValue, 16);
 		if (result != 1) {
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 		}
 	}
-	result = CMAC_Update(ctx, message, messageLength);
+	result = EVP_MAC_update(ctx, message, messageLength);
 	if (result != 1) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 	}
 
 	// Write the final block to the mac
-	result = CMAC_Final(ctx, mac, &outl);
+	result = EVP_MAC_final(ctx, mac, &outl, 16);
 	if (result != 1) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 	}
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
-	CMAC_CTX_free(ctx);
+	EVP_MAC_CTX_free(ctx);
 
 	OPGP_LOG_END(_T("calculate_CMAC_aes"), status);
 	return status;
+}
 
+/**
+ * Calculates a message authentication code, using AES-128 in CBC mode. This is the algorithm specified in NIST 800-38B.
+ * \param key [in] The AES key to use.
+ * \param keyLength [in] The AES key length in bytes (16, 24, or 32).
+ * \param *message [in] The message to calculate the MAC for.
+ * \param messageLength [in] The message length.
+ * \param mac [out] The calculated MAC.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS calculate_MAC_aes(BYTE key[32], DWORD keyLength, BYTE *message, DWORD messageLength, BYTE mac[16]) {
+	OPGP_ERROR_STATUS status;
+	OPGP_LOG_START(_T("calculate_MAC_aes"));
+	status = calculate_CMAC_aes(key, keyLength, message, messageLength, NULL, mac);
+	OPGP_LOG_END(_T("calculate_MAC_aes"), status);
+	return status;
 }
 
 OPGP_ERROR_STATUS calculate_enc_ecb_SCP03(BYTE key[32], DWORD keyLength, BYTE *message, DWORD messageLength,
@@ -980,46 +1020,6 @@ end:
     EVP_CIPHER_CTX_free(ctx);
 
 	OPGP_LOG_END(_T("calculate_MAC"), status);
-	return status;
-}
-
-/**
- * Calculates a message authentication code, using AES-128 in CBC mode. This is the algorithm specified in NIST 800-38B.
- * \param key [in] The AES key to use.
- * \param keyLength [in] The AES key length in bytes (16, 24, or 32).
- * \param *message [in] The message to calculate the MAC for.
- * \param messageLength [in] The message length.
- * \param mac [out] The calculated MAC.
- * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
- */
-OPGP_ERROR_STATUS calculate_MAC_aes(BYTE key[32], DWORD keyLength, BYTE *message, DWORD messageLength, BYTE mac[16]) {
-	LONG result;
-	OPGP_ERROR_STATUS status;
-	size_t outl;
-	CMAC_CTX *ctx = CMAC_CTX_new();
-	OPGP_LOG_START(_T("calculate_MAC_aes"));
-
-	result = CMAC_Init(ctx, key, keyLength,
-			keyLength == 16 ? EVP_aes_128_cbc() :
-					(keyLength == 24 ? EVP_aes_192_cbc() : EVP_aes_256_cbc()), NULL);
-	if (result != 1) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
-	}
-	result = CMAC_Update(ctx, message, messageLength);
-	if (result != 1) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
-	}
-
-	// Write the final block to the mac
-	result = CMAC_Final(ctx, mac, &outl);
-	if (result != 1) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
-	}
-	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
-end:
-	CMAC_CTX_free(ctx);
-
-	OPGP_LOG_END(_T("calculate_MAC_aes"), status);
 	return status;
 }
 
@@ -2016,10 +2016,15 @@ OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhra
 	EVP_PKEY *key = NULL;
 	FILE *PEMKeyFile = NULL;
 	RSA* rsa = NULL;
-	const BIGNUM *n;
-    const BIGNUM *e;
+	BIGNUM *n;
+    BIGNUM *e;
     BYTE eLength;
     BYTE nLength;
+#ifdef OPENSSL3
+    OSSL_PARAM *params;
+    OSSL_PARAM *_n;
+	OSSL_PARAM *_e;
+#endif
 	OPGP_LOG_START(_T("read_public_rsa_key"));
 	if (passPhrase == NULL)
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_PASSWORD, OPGP_stringify_error(OPGP_ERROR_INVALID_PASSWORD)); goto end; }
@@ -2033,6 +2038,7 @@ OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhra
 	if (!PEM_read_PUBKEY(PEMKeyFile, &key, NULL, passPhrase)) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 	};
+#ifndef OPENSSL3
 	rsa = EVP_PKEY_get1_RSA(key);
 	if (rsa == NULL) {
         { OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
@@ -2044,7 +2050,22 @@ OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhra
 	memcpy(rsaModulus, rsa->n->d, sizeof(unsigned long)*rsa->n->top);
 	#else
 	RSA_get0_key(rsa, &n, &e, NULL);
-    #endif
+	#endif
+#else
+	if (!EVP_PKEY_todata(key, EVP_PKEY_PUBLIC_KEY, &params)) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	_n = OSSL_PARAM_locate(params, "n");
+	if (_n == NULL) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	_e = OSSL_PARAM_locate(params, "e");
+	if (_e == NULL) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	OSSL_PARAM_get_BN(_n, &n);
+	OSSL_PARAM_get_BN(_e, &e);
+#endif
     // only 3 and 65337 are supported
     eLength = BN_num_bytes(e);
     BN_bn2bin(e, ((unsigned char *)rsaExponent)+sizeof(LONG)-eLength);
@@ -2061,6 +2082,11 @@ end:
     if (PEMKeyFile != NULL) {
         fclose(PEMKeyFile);
     }
+#ifdef OPNESSL3
+    if (params != NULL) {
+    	OSSL_PARAM_free(params);
+    }
+#endif
 	OPGP_LOG_END(_T("read_public_rsa_key"), status);
 	return status;
 }

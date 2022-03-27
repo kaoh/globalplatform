@@ -16,7 +16,7 @@ Use a suitable packet manager for your OS or install the programs and libraries 
   * MacOS: Xcode
   * Windows: Visual Studio and SDK
 * [CMake 3.5.0](http://www.cmake.org/) or higher is needed
-* [PC/SC Lite](https://pcsclite.apdu.fr) (only for UNIXes, Windows and MacOS is already including this)
+* [PC/SC Lite](https://pcsclite.apdu.fr) (only for UNIXes, Windows and MacOS are already including this)
 * [Doxygen](www.doxygen.org/) for generating the documentation
 * [Graphviz](https://graphviz.org) for generating graphics in the documentation
 * [OpenSSL](http://www.openssl.org/) (MacOS is already providing this as LibreSSL)
