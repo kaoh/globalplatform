@@ -67,12 +67,12 @@
 #endif
 
 #ifndef OPENSSL3
-#define EVP_MAC_update CMAC_update
-#define EVP_MAC_final(ctx, out, outl, outsize) CMAC_final(ctx, out, outl)
+#define EVP_MAC_update CMAC_Update
+#define EVP_MAC_final(ctx, out, outl, outsize) CMAC_Final(ctx, out, outl)
 #define EVP_MAC_CTX CMAC_CTX
 #define EVP_MAC_CTX_new(mac) CMAC_CTX_new()
 #define EVP_MAC_CTX_free CMAC_CTX_free
-#define EVP_MAC_init(ctx, key, keyLength, params) CMAC_init(ctx, key, keyLength, params, NULL)
+#define EVP_MAC_init(ctx, key, keyLength, params) CMAC_Init(ctx, key, keyLength, params, NULL)
 #endif
 
 static const BYTE PADDING[8] = {(char) 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; //!< Applied padding pattern for SCP02.
@@ -174,8 +174,7 @@ OPGP_ERROR_STATUS calculate_CMAC_aes(BYTE sMacKey[32], DWORD keyLength, BYTE *me
  			"aes-192-cbc" : "aes-256-cbc"), 0);
 	params[1] = OSSL_PARAM_construct_end();
 #else
-	void *_mac;
-	EVP_CIPHER *params = keyLength == 16 ? EVP_aes_128_cbc() : (keyLength == 24 ? EVP_aes_192_cbc() : EVP_aes_256_cbc());
+	const EVP_CIPHER *params = keyLength == 16 ? EVP_aes_128_cbc() : (keyLength == 24 ? EVP_aes_192_cbc() : EVP_aes_256_cbc());
 #endif
 
 	OPGP_LOG_START(_T("calculate_CMAC_aes"));
@@ -2051,7 +2050,7 @@ OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhra
 	*rsaExponent = (LONG)rsa->e->d[0];
 	memcpy(rsaModulus, rsa->n->d, sizeof(unsigned long)*rsa->n->top);
 	#else
-	RSA_get0_key(rsa, &n, &e, NULL);
+	RSA_get0_key(rsa, (const BIGNUM **)&n, (const BIGNUM **)&e, NULL);
 	#endif
 #else
 	if (!EVP_PKEY_todata(key, EVP_PKEY_PUBLIC_KEY, &params)) {
