@@ -207,7 +207,9 @@ OPGP_ERROR_STATUS calculate_CMAC_aes(BYTE sMacKey[32], DWORD keyLength, BYTE *me
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
 	EVP_MAC_CTX_free(ctx);
-
+#ifdef OPENSSL3
+	EVP_MAC_free(_mac);
+#endif
 	OPGP_LOG_END(_T("calculate_CMAC_aes"), status);
 	return status;
 }

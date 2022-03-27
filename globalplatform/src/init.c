@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <openssl/provider.h>
+#include <openssl/crypto.h>
 
 OSSL_PROVIDER *legacy;
 OSSL_PROVIDER *deflt;
@@ -40,6 +41,7 @@ OSSL_PROVIDER *deflt;
  */
 CONSTRUCTOR void init(void) {
 #ifdef OPENSSL3
+	OPENSSL_init_crypto(OPENSSL_INIT_NO_ATEXIT, NULL);
 #ifdef WIN32
 	if (access(".\\" LEGACY_DLL, F_OK) == 0) {
 		OSSL_PROVIDER_set_default_search_path(NULL, ".\\");
@@ -51,12 +53,12 @@ CONSTRUCTOR void init(void) {
 #endif
 	legacy = OSSL_PROVIDER_load(NULL, "legacy");
 	if (legacy == NULL) {
-		printf("Failed to load OpenSSL legacy provider\n");
+		printf("Failed to load OpenSSL legacy provider.\n");
 		exit(EXIT_FAILURE);
 	}
 	deflt = OSSL_PROVIDER_load(NULL, "default");
 	if (deflt == NULL) {
-		printf("Failed to load OpenSSL default provider\n");
+		printf("Failed to load OpenSSL default provider.\n");
 		OSSL_PROVIDER_unload(legacy);
 		exit(EXIT_FAILURE);
 	}
@@ -68,8 +70,13 @@ CONSTRUCTOR void init(void) {
  */
 DESTRUCTOR void fini(void) {
 #ifdef OPENSSL3
-	OSSL_PROVIDER_unload(legacy);
-	OSSL_PROVIDER_unload(deflt);
+	if (legacy != NULL) {
+		OSSL_PROVIDER_unload(legacy);
+	}
+	if (deflt != NULL) {
+		OSSL_PROVIDER_unload(deflt);
+	}
+	OPENSSL_cleanup();
 #endif
 }
 
