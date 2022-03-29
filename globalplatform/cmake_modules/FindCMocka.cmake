@@ -7,8 +7,9 @@
 #  CMOCKA_FOUND          - True if cmocka found.
 #
 PKG_CHECK_MODULES(CMOCKA cmocka>=1.1)
+
 IF (NOT CMOCKA_FOUND)
-  
+    
 set(_CMOCKA_SEARCHES)
 
 if(CMOCKA_ROOT)
