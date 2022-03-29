@@ -107,7 +107,8 @@ __NOTE:__ OpenSSL must be installed manually. Chocolatey is using the systems ar
 
 ### Compile
 
-Launch Visual Studio Command Prompt / Developer Command Prompt.
+Launch Visual Studio Command Prompt / Developer Command Prompt / Developer PowerShell.
+
 It will be necessary to set the `ZLIB_ROOT`. Use the pre-built `zlib` version of the project for convenience.
 
 ```

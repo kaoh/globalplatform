@@ -65,7 +65,7 @@ make install
 
 ## Windows
 
-Launch Visual Studio Command Prompt / Developer Command Prompt:
+Launch Visual Studio Command Prompt / Developer Command Prompt / Developer PowerShell:
 
 ```
 cd \path\to\globalplatform

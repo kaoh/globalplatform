@@ -37,19 +37,27 @@ function(add_mocked_test name)
   cmake_parse_arguments(ADD_MOCKED_TEST "${options}" "${oneValueArgs}"
     "${multiValueArgs}" ${ARGN} )
 
-  # create link flags for mocks
-  set(link_flags "")
-  foreach (mock ${ADD_MOCKED_TEST_MOCKS})
-    set(link_flags "${link_flags} -Wl,--wrap=${mock}")
-  endforeach(mock)
-
+  # check if --wrap flag is supported in linker    
+  CMAKE_PUSH_CHECK_STATE()
+  SET(CMAKE_REQUIRED_FLAGS "-Wl,--wrap=malloc")
+  CHECK_C_COMPILER_FLAG("" WRAP_SUPPORTED)
+  IF(WRAP_SUPPORTED)
+    # create link flags for mocks
+    set(link_flags "")
+    foreach (mock ${ADD_MOCKED_TEST_MOCKS})
+      set(link_flags "${link_flags} -Wl,--wrap=${mock}")
+    endforeach(mock)
+  ELSE()
+	MESSAGE("--wrap linker flag not supported, not adding mock linker flags.")
+  ENDIF()
+  CMAKE_POP_CHECK_STATE()
+	
   # define test
   add_cmocka_test(${name}
                   SOURCES ${name}.c ${ADD_MOCKED_TEST_SOURCES}
                   COMPILE_OPTIONS ${DEFAULT_C_COMPILE_FLAGS}
                                   ${ADD_MOCKED_TEST_COMPILE_OPTIONS}
-                  LINK_LIBRARIES ${CMOCKA_LIBRARIES}
-                                 ${ADD_MOCKED_TEST_LINK_LIBRARIES}
+                  LINK_LIBRARIES ${ADD_MOCKED_TEST_LINK_LIBRARIES}
                   LINK_OPTIONS ${link_flags} ${ADD_MOCKED_TEST_LINK_OPTIONS})
 
   # allow using includes from src/ directory

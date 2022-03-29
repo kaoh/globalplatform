@@ -14,6 +14,14 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with GlobalPlatform.  If not, see <http://www.gnu.org/licenses/>.
  */
+// MSVC does not the linker wrap flag to mock functions, it must be done in the code by using #pragma comment(linker, "/alternatename:real_foo=foo")
+// https://stackoverflow.com/questions/33790425/visual-studio-c-linker-wrap-option
+#if _MSC_VER
+#define RAND_bytes real_RAND_bytes
+#undef RAND_bytes
+#pragma comment(linker, "/alternatename:real_RAND_bytes=RAND_bytes")
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -24,6 +32,15 @@
 
 #define MIN(a,b) a < b ? a : b
 
+int __wrap_RAND_bytes(unsigned char *buf, int num) {
+	BYTE *__random = (BYTE *) mock();
+	check_expected(num);
+	memcpy(buf, __random,  num);
+	return 1;
+}
+
+#define RAND_bytes __wrap_RAND_bytes
+	  
 void hex_to_byte_array(OPGP_CSTRING hexString, PBYTE buffer, PDWORD bufferLength) {
 	OPGP_CSTRING pos = hexString;
     DWORD count;
@@ -36,12 +53,7 @@ void hex_to_byte_array(OPGP_CSTRING hexString, PBYTE buffer, PDWORD bufferLength
     *bufferLength = count;
 }
 
-int __wrap_RAND_bytes(unsigned char *buf, int num) {
-	BYTE *__random = (BYTE *) mock();
-	check_expected(num);
-	memcpy(buf, __random,  num);
-	return 1;
-}
+
 
 OPGP_ERROR_STATUS send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, PBYTE capdu, DWORD capduLength, PBYTE rapdu, PDWORD rapduLength) {
 	OPGP_ERROR_STATUS status;

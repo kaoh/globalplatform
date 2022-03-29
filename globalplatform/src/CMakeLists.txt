@@ -123,8 +123,7 @@ ENDIF(WIN32)
 
 # Testing
 IF(TESTING)
-#  PKG_CHECK_MODULES(CHECK check>=0.9.2)
-  PKG_CHECK_MODULES(CMOCKA cmocka>=1.1)
+	INCLUDE(FindCMocka)
 
     # gives /usr/bin/ld: /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/libcheck_pic.a(check_pack.o): undefined reference to symbol '__pthread_unregister_cancel@@GLIBC_2.3.3'
     #INCLUDE_DIRECTORIES(${CHECK_INCLUDE_DIRS})
@@ -133,40 +132,30 @@ IF(TESTING)
     #ADD_TEST(globalplatformTest ${EXECUTABLE_OUTPUT_PATH}/globalplatformTest)
     #SET_TESTS_PROPERTIES(globalplatformTest PROPERTIES PASS_REGULAR_EXPRESSION "Failures: 0")
 
-  IF(CMOCKA_FOUND)
+  IF(CMOCKA_FOUND) 
+    INCLUDE(AddCMockaTest)
+    include(AddMockedTest)
+    add_mocked_test(scp03Test
+      SOURCES scp03Test.c testUtil.c ${SOURCES}
+      COMPILE_OPTIONS -I${PCSC_INCLUDE_DIRS}
+      MOCKS RAND_bytes
+      LINK_LIBRARIES ${LIBRARIES})
 
-    # check if --wrap flag is supported in linker    
-	CMAKE_PUSH_CHECK_STATE()
-    SET(CMAKE_REQUIRED_FLAGS "-Wl,--wrap=malloc")
-    CHECK_C_COMPILER_FLAG("" WRAP_SUPPORTED)
-    IF(WRAP_SUPPORTED)
-      INCLUDE(AddCMockaTest)
-      include(AddMockedTest)
-      add_mocked_test(scp03Test
-        SOURCES scp03Test.c testUtil.c ${SOURCES}
-        COMPILE_OPTIONS -I${PCSC_INCLUDE_DIRS}
-        MOCKS RAND_bytes
-        LINK_LIBRARIES ${LIBRARIES})
+    add_mocked_test(scp02Test
+      SOURCES scp02Test.c testUtil.c ${SOURCES}
+      MOCKS RAND_bytes
+      LINK_LIBRARIES ${LIBRARIES})
 
-      add_mocked_test(scp02Test
-        SOURCES scp02Test.c testUtil.c ${SOURCES}
-        MOCKS RAND_bytes
-        LINK_LIBRARIES ${LIBRARIES})
+    add_mocked_test(scp01Test
+      SOURCES scp01Test.c testUtil.c ${SOURCES}
+      MOCKS RAND_bytes
+      LINK_LIBRARIES ${LIBRARIES})
 
-      add_mocked_test(scp01Test
-        SOURCES scp01Test.c testUtil.c ${SOURCES}
-        MOCKS RAND_bytes
-        LINK_LIBRARIES ${LIBRARIES})
-
-      add_mocked_test(cryptoTest
-        SOURCES cryptoTest.c testUtil.c ${SOURCES}
-        MOCKS RAND_bytes
-        LINK_LIBRARIES ${LIBRARIES})
-    ELSE()
-	  MESSAGE("--wrap linker flag not supported, not executing tests.")
-    ENDIF()
-    CMAKE_POP_CHECK_STATE()
-
+    add_cmocka_test(cryptoTest
+      SOURCES cryptoTest.c testUtil.c ${SOURCES}
+      LINK_LIBRARIES ${LIBRARIES})
+  ELSE()
+    MESSAGE("cmocka not found - skipping tests.")
   ENDIF()
 ENDIF(TESTING)
 

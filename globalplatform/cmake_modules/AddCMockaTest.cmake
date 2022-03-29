@@ -94,15 +94,19 @@ function(ADD_CMOCKA_TEST _TARGET_NAME)
 
     add_executable(${_TARGET_NAME} ${_add_cmocka_test_SOURCES})
 
+	target_compile_options(${_TARGET_NAME} PRIVATE -I${CMOCKA_INCLUDE_DIRS})
+	
     if (DEFINED _add_cmocka_test_COMPILE_OPTIONS)
         target_compile_options(${_TARGET_NAME}
             PRIVATE ${_add_cmocka_test_COMPILE_OPTIONS}
         )
     endif()
 
+	target_link_libraries(${_TARGET_NAME} PRIVATE ${CMOCKA_LIBRARY})
+	
     if (DEFINED _add_cmocka_test_LINK_LIBRARIES)
         target_link_libraries(${_TARGET_NAME}
-            PRIVATE ${_add_cmocka_test_LINK_LIBRARIES}
+            PRIVATE ${_add_cmocka_test_LINK_LIBRARIES} ${CMOCKA_LIBRARY}
         )
     endif()
 

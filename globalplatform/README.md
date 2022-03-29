@@ -82,7 +82,7 @@ brew install openssl doxygen cmocka pandoc cmake graphviz
 
 It can be necessary to set the `OPENSSL_ROOT_DIR`. In case of the usage of Homebrew this works:
 
-```
+```shell
 cd \path\to\globalplatform
 cmake . -DOPENSSL_ROOT_DIR=$(brew --prefix openssl)
 make
@@ -95,20 +95,21 @@ In case the system is using a different package manager other settings will be n
 
 Install the dependencies with [Chocolatey](https://chocolatey.org) in an administrator's PowerShell or install the dependencies manually:
 
-~~~
-choco install cmake doxygen.install openssl graphviz
+~~~shell
+choco install cmake doxygen.install graphviz
 ~~~
 
-__NOTE:__ `zlib` must be installed manually. Copy the zlibwapi.dll to `C:\Windows\System32` from the upper module's `zlib-1.2.8/zlib-1.2.8.zip`.
-
-__NOTE:__ OpenSSL must be installed manually. Chocolatey is using the systems architecture, which is nowadays 64 bit, but the compilation needs the 32 bit version. Download [OpenSSL](https://slproweb.com/products/Win32OpenSSL.html) and choose the Win32 bit version and no light version.
+* Install [`cmocka`](https://cmocka.org/files/1.1/).
+*`zlib` must be installed manually. Copy the zlibwapi.dll to `C:\Windows\System32` from the upper module's `zlib-1.2.8/zlib-1.2.8.zip`.
+* OpenSSL must be installed manually. Chocolatey is using the systems architecture, which is nowadays 64 bit, but the compilation needs the 32 bit version. Download [OpenSSL](https://slproweb.com/products/Win32OpenSSL.html) and choose the Win32 bit version and no light version.
 
 ### Compile
 
-Launch Visual Studio Command Prompt / Developer Command Prompt:
+Launch Visual Studio Command Prompt / Developer Command Prompt / Developer PowerShell:
+
 It will be necessary to set the `ZLIB_ROOT`. Use the pre-built `zlib` version of the project for convenience.
 
-```
+```shell
 cd \path\to\globalplatform
 cmake -G "NMake Makefiles" -DZLIB_ROOT="C:\Users\john\Desktop\globalplatform\zlib-1.2.8\win32-build"
 nmake
@@ -117,7 +118,7 @@ nmake
 __NOTE:__ CMake might fail if different compilers are on the path, e.g. MingW. CMake will pick the wrong linker.
 A way to set the linker explicitly is (replace the linker path with the correct one for your version):
 
-~~~
+~~~shell
 cmake -G "NMake Makefiles" -DCMAKE_LINKER="C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\link.exe" -DCMAKE_C_LINK_EXECUTABLE=link.exe -DTESTING=ON -DDEBUG=ON
 ~~~
 
@@ -172,8 +173,6 @@ make
 make test
 ```
 
-__NOTE:__ This is not supported under Windows.
-
 ## Debug Output
 
 If you experience problems a DEBUG output is helpful.
@@ -184,25 +183,18 @@ Under Unix systems if syslog is available it will be used by default.
 
 ## Special Notes for Windows
 
-Tested with:
-
-* Visual Studio 2013 Community Edition
-* VISUAL C++ 2010 EXPRESS
-* Visual Studio 2015
-* Visual Studio 2017
+The build was tested against Visual Studio 2022, but should also work for earlier versions.
 
 ### Prerequisites
 
 #### SDK
 
+Visual Studio 2022 already bundles the SDK.
+
+When using lower VS versions it might be necessary to download the SDK in addition:
+
+* [Windows 10/11](https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/)
 * [Windows 7 (Microsoft Windows SDK for Windows 7 and .NET Framework 4)](http://msdn.microsoft.com/en-us/windows/bb980924)
-* [Windows 10](https://dev.windows.com/en-us/downloads/windows-10-sdk)
-
-##### VS 2010 Specific
-
-If the setup fails look at http://blogs.msdn.com/b/windowssdk/archive/2009/09/16/windows-7-sdk-setup-common-installation-issues-and-fixes.aspx
-and http://support.microsoft.com/kb/2717426. You have to install VC 2010 first to have the document explorer.
-It might be necessary to remove the newer Microsoft Visual C++ 2010 x86 Redistributable and Microsoft Visual C++ 2010 x64 Redistributable  of VC 2010 because they are conflicting with the SDK.
 
 #### Windows Driver Kit (WDK)
 
@@ -219,7 +211,6 @@ See http://kobyk.wordpress.com/2007/07/20/dynamically-linking-with-msvcrtdll-usi
 [Win32 OpenSSL](http://www.slproweb.com/products/Win32OpenSSL.html)
 
 * Win32 OpenSSL v1.0.1c or higher, not a "light" version
-* Visual C++ 2008 Redistributables might be necessary
 * Let it install the DLLs to the Windows system directory
 
 #### zLib
