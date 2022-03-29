@@ -29,7 +29,7 @@ Use a suitable packet manager for your OS or install the programs and libraries 
   * Linux: Termed `build-essential` in Debian based distributions (gcc, make)
   * MacOS: Xcode
   * Windows: Visual Studio and SDK
-* [CMake 3.5.0](http://www.cmake.org/) or higher is needed
+* [CMake 3.5.1](http://www.cmake.org/) or higher is needed
 * [PC/SC Lite](https://pcsclite.apdu.fr) (only for UNIXes, Windows and MacOS are already including this)
 * [Doxygen](www.doxygen.org/) for generating the documentation
 * [Graphviz](https://graphviz.org) for generating graphics in the documentation
@@ -86,7 +86,7 @@ brew install openssl doxygen cmocka pandoc cmake graphviz
 
 It can be necessary to set the `OPENSSL_ROOT_DIR`. In case of the usage of Homebrew this works:
 
-```
+```shell
 cd \path\to\globalplatform
 cmake . -DOPENSSL_ROOT_DIR=$(brew --prefix openssl)
 make
@@ -97,13 +97,13 @@ make install
 
 Install the dependencies with [Chocolatey](https://chocolatey.org) in an administrator's PowerShell or install the dependencies manually:
 
-~~~
+~~~shell
 choco install cmake doxygen.install graphviz
 ~~~
 
-__NOTE:__ `zlib` must be installed manually. Copy the zlibwapi.dll to `C:\Windows\System32` from the upper module's `zlib-1.2.8/zlib-1.2.8.zip`.
-
-__NOTE:__ OpenSSL must be installed manually. Chocolatey is using the systems architecture, which is nowadays 64 bit, but the compilation needs the 32 bit version. Download [OpenSSL](https://slproweb.com/products/Win32OpenSSL.html) and choose the Win32 bit version and no light version.
+* For CMocka a pre-built version is used from the `cmock-cmocka-1.1.5` directory.
+* For `zlib` a pre-built version is used the `zlib-1.2.8` directory.
+* OpenSSL must be installed manually. Chocolatey is using the systems architecture, which is nowadays 64 bit, but the compilation needs the 32 bit version. Download [OpenSSL](https://slproweb.com/products/Win32OpenSSL.html) and choose the Win32 bit version and no light version.
 
 ### Compile
 
@@ -111,7 +111,7 @@ Launch Visual Studio Command Prompt / Developer Command Prompt / Developer Power
 
 It will be necessary to set the `ZLIB_ROOT`. Use the pre-built `zlib` version of the project for convenience.
 
-```
+```shell
 cd \path\to\globalplatform
 cmake -G "NMake Makefiles" -DZLIB_ROOT="C:\Users\john\Desktop\globalplatform\zlib-1.2.8\win32-build"
 nmake
@@ -153,6 +153,8 @@ cmake . -DTESTING=ON -DDEBUG=ON
 make
 make test
 ```
+
+__NOTE:__ See the detailed instructions in the `globalplatform` subproject for running the tests under Windows.
 
 ## Debug Output
 

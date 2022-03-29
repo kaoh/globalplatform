@@ -15,7 +15,7 @@ Use a suitable packet manager for your OS or install the programs and libraries 
   * Linux: Termed `build-essential` in Debian based distributions (gcc, make)
   * MacOS: Xcode
   * Windows: Visual Studio and SDK
-* [CMake 3.5.0](http://www.cmake.org/) or higher is needed
+* [CMake 3.5.1](http://www.cmake.org/) or higher is needed
 * [PC/SC Lite](https://pcsclite.apdu.fr) (only for UNIXes, Windows and MacOS are already including this)
 * [Doxygen](www.doxygen.org/) for generating the documentation
 * [Graphviz](https://graphviz.org) for generating graphics in the documentation
@@ -99,8 +99,8 @@ Install the dependencies with [Chocolatey](https://chocolatey.org) in an adminis
 choco install cmake doxygen.install graphviz
 ~~~
 
-* Install [`cmocka`](https://cmocka.org/files/1.1/).
-*`zlib` must be installed manually. Copy the zlibwapi.dll to `C:\Windows\System32` from the upper module's `zlib-1.2.8/zlib-1.2.8.zip`.
+* For CMocka a pre-built version is used from the `cmock-cmocka-1.1.5` directory.
+* For `zlib` a pre-built version is used the `zlib-1.2.8` directory.
 * OpenSSL must be installed manually. Chocolatey is using the systems architecture, which is nowadays 64 bit, but the compilation needs the 32 bit version. Download [OpenSSL](https://slproweb.com/products/Win32OpenSSL.html) and choose the Win32 bit version and no light version.
 
 ### Compile
@@ -173,6 +173,8 @@ make
 make test
 ```
 
+__NOTE:__ See the detailed instructions for running the tests under Windows in section "Special Notes for Windows -> CMocka".
+
 ## Debug Output
 
 If you experience problems a DEBUG output is helpful.
@@ -196,16 +198,6 @@ When using lower VS versions it might be necessary to download the SDK in additi
 * [Windows 10/11](https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/)
 * [Windows 7 (Microsoft Windows SDK for Windows 7 and .NET Framework 4)](http://msdn.microsoft.com/en-us/windows/bb980924)
 
-#### Windows Driver Kit (WDK)
-
-__NOTE:__ Only needed for platform independent builds
-
-The WDK is needed to build a Windows platform independent version without getting into conflict with different
-Windows `msvcrt` DLL versions.
-http://www.microsoft.com/downloads/details.aspx?displaylang=en&FamilyID=36a2630f-5d56-43b5-b996-7633f2ec14ff
-
-See http://kobyk.wordpress.com/2007/07/20/dynamically-linking-with-msvcrtdll-using-visual-c-2005/
-
 #### OpenSSL
 
 [Win32 OpenSSL](http://www.slproweb.com/products/Win32OpenSSL.html)
@@ -220,27 +212,58 @@ needed for the compilation under Windows. So it does not work. See for details h
 
 __NOTE:__ This project contains a bundled pre-build version of zLib 1.2.8 in the upper module's `zlib-1.2.8/zlib-1.2.8.zip`
 
+Copy the `zlibwapi.dll` to `C:\Windows\System32` to be able to find the dll during the test execution.
+
 If not using this version you will get errors like:
 
-```
-    unzip.c.obj : error LNK2019: unresolved external symbol "_inflate@8" in function "_unzReadCurrentFile@12".
-```
+> unzip.c.obj : error LNK2019: unresolved external symbol "_inflate@8" in function "_unzReadCurrentFile@12".
 
-  * Copy the zlibwapi.dll to `C:\Windows\System32` (dll32 version)
+#### CMocka
+
+The available binary version of CMocka is linked against an older debug version of `msvcr120d.dll` which is not available as download.
+Do not use this version and install it, CMake will detect it first and the tests would not run.
+A pre-built version for VS 2022 is available in the top level directory `cmock-cmocka-1.1.5/build-w32`.
+
+Copy the `cmocka.dll` to `C:\Windows\System32` to be able to find the dll during the test execution.
+
+If CMocka has to be rebuilt for a different VS version the steps should be:
+
+~~~shell
+mkdir build_w32
+cmake .. -G "NMake Makefiles"
+~~~
+
+The compiled dll and lib have to be placed in the `build-w32` directory matching the directory structure existing.
+
+It will be necessary to set the `CMOCKA_ROOT`. Use the pre-built `zlib` version of the project for convenience.
+
+```shell
+cd \path\to\globalplatform
+cmake -G "NMake Makefiles" -DZLIB_ROOT="C:\Users\john\Desktop\globalplatform\zlib-1.2.8\win32-build" -DCMOCKA_ROOT="C:\Users\john\Desktop\globalplatform\cmocka-cmocka-1.1.5\build-w32" -DTESTING=ON -DDEBUG=on
+nmake
+```
 
 #### Windows Backward Compatible Build
+
+The WDK is needed to build a Windows platform independent version without getting into conflict with different
+Windows `msvcrt` DLL versions.
+http://www.microsoft.com/downloads/details.aspx?displaylang=en&FamilyID=36a2630f-5d56-43b5-b996-7633f2ec14ff
+
+See http://kobyk.wordpress.com/2007/07/20/dynamically-linking-with-msvcrtdll-using-visual-c-2005/
 
 * To build it backwards compatible for lower Windows versions you have to use a different set of common runtime libraries contained in the Windows Driver Development Kit. It is necessary to specify with `-DWINDDK_DIR` the path to the DDK.  
 * Complete example:
 
-```
+```shell
 cmake -G "NMake Makefiles" -DWINDDK_DIR=C:\WinDDK\7600.16385.1 -DCMAKE_BUILD_TYPE=Release
 nmake     
 ```
 
-* If you want to have Visual Studio project files run
+* If you want to have Visual Studio project files run:
+
   `cmake -G "Visual Studio 15 2017"` - Replace with your VS version
-  You must have to remove the `CMakeCache.txt` before when using a different generator.    
+
+__NOTE:__ You must have to remove the `CMakeCache.txt` and related file before when using a different generator. See section "Clean CMake Files".
 
 #### Compile Errors
 
