@@ -135,6 +135,7 @@ IF(TESTING)
   IF(CMOCKA_FOUND) 
     INCLUDE(AddCMockaTest)
     include(AddMockedTest)
+
     add_mocked_test(scp03Test
       SOURCES scp03Test.c testUtil.c ${SOURCES}
       COMPILE_OPTIONS -I${PCSC_INCLUDE_DIRS}

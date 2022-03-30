@@ -14,6 +14,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with GlobalPlatform.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "testUtil.h"
 #include <stdlib.h>
 #include <setjmp.h>
 #include "globalplatform/globalplatform.h"
@@ -21,7 +22,6 @@
 #include <string.h>
 #include <cmocka.h>
 #include "crypto.h"
-#include "testUtil.h"
 
 /**
  * Global card context for the test.

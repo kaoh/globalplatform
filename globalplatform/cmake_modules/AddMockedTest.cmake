@@ -48,7 +48,7 @@ function(add_mocked_test name)
       set(link_flags "${link_flags} -Wl,--wrap=${mock}")
     endforeach(mock)
   ELSE()
-	MESSAGE("--wrap linker flag not supported, not adding mock linker flags.")
+	MESSAGE(WARNING "--wrap linker flag not supported, mocked test not supported.")
   ENDIF()
   CMAKE_POP_CHECK_STATE()
 	

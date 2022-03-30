@@ -14,13 +14,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with GlobalPlatform.  If not, see <http://www.gnu.org/licenses/>.
  */
-// MSVC does not the linker wrap flag to mock functions, it must be done in the code by using #pragma comment(linker, "/alternatename:real_foo=foo")
-// https://stackoverflow.com/questions/33790425/visual-studio-c-linker-wrap-option
-#if _MSC_VER
-#define RAND_bytes real_RAND_bytes
-#undef RAND_bytes
-#pragma comment(linker, "/alternatename:real_RAND_bytes=RAND_bytes")
-#endif
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -38,8 +31,6 @@ int __wrap_RAND_bytes(unsigned char *buf, int num) {
 	memcpy(buf, __random,  num);
 	return 1;
 }
-
-#define RAND_bytes __wrap_RAND_bytes
 	  
 void hex_to_byte_array(OPGP_CSTRING hexString, PBYTE buffer, PDWORD bufferLength) {
 	OPGP_CSTRING pos = hexString;

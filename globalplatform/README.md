@@ -107,11 +107,11 @@ choco install cmake doxygen.install graphviz
 
 Launch Visual Studio Command Prompt / Developer Command Prompt / Developer PowerShell:
 
-It will be necessary to set the `ZLIB_ROOT`. Use the pre-built `zlib` version of the project for convenience.
+It will be necessary to set the `ZLIB_ROOT` and `CMOCKA_ROOT`. Use the pre-built versions of the project for convenience.
 
 ```shell
 cd \path\to\globalplatform
-cmake -G "NMake Makefiles" -DZLIB_ROOT="C:\Users\john\Desktop\globalplatform\zlib-1.2.8\win32-build"
+cmake -G "NMake Makefiles" -DZLIB_ROOT="C:\Users\john\Desktop\globalplatform\zlib-1.2.8\win32-build" -DCMOCKA_ROOT="C:\Users\john\Desktop\globalplatform\cmocka-cmocka-1.1.5\build-w32"
 nmake
 ```
 
@@ -167,13 +167,13 @@ To be able to debug the library enable the debug symbols:
 
 To generate the tests execute:
 
-```
+```shell
 cmake . -DTESTING=ON -DDEBUG=ON
 make
 make test
 ```
 
-__NOTE:__ See the detailed instructions for running the tests under Windows in section "Special Notes for Windows -> CMocka".
+__NOTE:__ On Windows: When using the Visual Studio command line the neccessary mock functions are not supported by the linker and tests cannot be executed. See also the detailed instructions for running the tests under Windows in section "Special Notes for Windows".
 
 ## Debug Output
 
@@ -185,25 +185,14 @@ Under Unix systems if syslog is available it will be used by default.
 
 ## Special Notes for Windows
 
-The build was tested against Visual Studio 2022, but should also work for earlier versions.
-
 ### Prerequisites
-
-#### SDK
-
-Visual Studio 2022 already bundles the SDK.
-
-When using lower VS versions it might be necessary to download the SDK in addition:
-
-* [Windows 10/11](https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/)
-* [Windows 7 (Microsoft Windows SDK for Windows 7 and .NET Framework 4)](http://msdn.microsoft.com/en-us/windows/bb980924)
 
 #### OpenSSL
 
 [Win32 OpenSSL](http://www.slproweb.com/products/Win32OpenSSL.html)
 
 * Win32 OpenSSL v1.0.1c or higher, not a "light" version
-* Let it install the DLLs to the Windows system directory
+* Let it install the DLLs to the Windows directory
 
 #### zLib
 
@@ -212,7 +201,7 @@ needed for the compilation under Windows. So it does not work. See for details h
 
 __NOTE:__ This project contains a bundled pre-build version of zLib 1.2.8 in the upper module's `zlib-1.2.8/zlib-1.2.8.zip`
 
-Copy the `zlibwapi.dll` to `C:\Windows\System32` to be able to find the dll during the test execution.
+Copy the `zlibwapi.dll` to the Windows directory `C:\Windows` to be able to find the dll during the test execution.
 
 If not using this version you will get errors like:
 
@@ -224,26 +213,39 @@ The available binary version of CMocka is linked against an older debug version 
 Do not use this version and install it, CMake will detect it first and the tests would not run.
 A pre-built version for VS 2022 is available in the top level directory `cmock-cmocka-1.1.5/build-w32`.
 
-Copy the `cmocka.dll` to `C:\Windows\System32` to be able to find the dll during the test execution.
+Copy the `cmocka.dll` to the Windows directory `C:\Windows` to be able to find the dll during the test execution.
 
 If CMocka has to be rebuilt for a different VS version the steps should be:
 
 ~~~shell
 mkdir build_w32
 cmake .. -G "NMake Makefiles"
+nmake
 ~~~
 
 The compiled dll and lib have to be placed in the `build-w32` directory matching the directory structure existing.
 
-It will be necessary to set the `CMOCKA_ROOT`. Use the pre-built `zlib` version of the project for convenience.
+### Visual Studio
 
-```shell
-cd \path\to\globalplatform
-cmake -G "NMake Makefiles" -DZLIB_ROOT="C:\Users\john\Desktop\globalplatform\zlib-1.2.8\win32-build" -DCMOCKA_ROOT="C:\Users\john\Desktop\globalplatform\cmocka-cmocka-1.1.5\build-w32" -DTESTING=ON -DDEBUG=on
-nmake
-```
+The build was tested against Visual Studio 2022, but should also work for earlier versions.
 
-#### Windows Backward Compatible Build
+#### SDK
+
+Visual Studio 2022 already bundles the SDK.
+
+When using lower VS versions it might be necessary to download the SDK in addition:
+
+* [Windows 10/11](https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/)
+* [Windows 7 (Microsoft Windows SDK for Windows 7 and .NET Framework 4)](http://msdn.microsoft.com/en-us/windows/bb980924)
+
+
+#### Visual Studio Project Files
+
+  `cmake -G "Visual Studio 15 2017"` - Replace with your VS version
+
+__NOTE:__ You must have to remove the `CMakeCache.txt` and related file before when using a different generator. See section "Clean CMake Files".
+
+#### Windows Backward Compatible Visual Studio Build
 
 The WDK is needed to build a Windows platform independent version without getting into conflict with different
 Windows `msvcrt` DLL versions.
@@ -258,12 +260,6 @@ See http://kobyk.wordpress.com/2007/07/20/dynamically-linking-with-msvcrtdll-usi
 cmake -G "NMake Makefiles" -DWINDDK_DIR=C:\WinDDK\7600.16385.1 -DCMAKE_BUILD_TYPE=Release
 nmake     
 ```
-
-* If you want to have Visual Studio project files run:
-
-  `cmake -G "Visual Studio 15 2017"` - Replace with your VS version
-
-__NOTE:__ You must have to remove the `CMakeCache.txt` and related file before when using a different generator. See section "Clean CMake Files".
 
 #### Compile Errors
 

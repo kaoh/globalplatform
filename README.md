@@ -109,11 +109,11 @@ choco install cmake doxygen.install graphviz
 
 Launch Visual Studio Command Prompt / Developer Command Prompt / Developer PowerShell.
 
-It will be necessary to set the `ZLIB_ROOT`. Use the pre-built `zlib` version of the project for convenience.
+It will be necessary to set the `ZLIB_ROOT` and `CMOCKA_ROOT`. Use the pre-built versions of the project for convenience.
 
 ```shell
 cd \path\to\globalplatform
-cmake -G "NMake Makefiles" -DZLIB_ROOT="C:\Users\john\Desktop\globalplatform\zlib-1.2.8\win32-build"
+cmake -G "NMake Makefiles" -DZLIB_ROOT="C:\Users\john\Desktop\globalplatform\zlib-1.2.8\win32-build" -DCMOCKA_ROOT="C:\Users\john\Desktop\globalplatform\cmocka-cmocka-1.1.5\build-w32"
 nmake
 ```
 
@@ -148,13 +148,13 @@ cmake . -DDEBUG=ON
 
 To generate the tests execute:
 
-```
+```shell
 cmake . -DTESTING=ON -DDEBUG=ON
 make
 make test
 ```
 
-__NOTE:__ See the detailed instructions in the `globalplatform` subproject for running the tests under Windows.
+__NOTE:__ On Windows: When using the Visual Studio command line the neccessary mock functions are not supported by the linker and tests cannot be executed.
 
 ## Debug Output
 
