@@ -154,6 +154,20 @@ The variable `GLOBALPLATFORM_DEBUG=1` in the environment must be set. The logfil
 
 The GitHub documentation is located under the `docs` folder and is using [Jekyll](https://jekyllrb.com).
 
+Installation:
+
+~~~shell
+cd docs
+gem uninstall jekyll
+# select all
+gem install jekyll -v 3.9.0
+gem uninstall bundler
+gem install bundler
+bundle
+bundle update github-pages
+~~~
+
+
 Useful commands inside the `docs` folder:
 
 * Cleaning local generated site: `bundle exec jekyll clean`
