@@ -19,7 +19,7 @@ Use a suitable packet manager for your OS or install the programs and libraries 
 * [PC/SC Lite](https://pcsclite.apdu.fr) (only for UNIXes, Windows and MacOS are already including this)
 * [Doxygen](www.doxygen.org/) for generating the documentation
 * [Graphviz](https://graphviz.org) for generating graphics in the documentation
-* [OpenSSL](http://www.openssl.org/) (MacOS is already providing this as LibreSSL)
+* [OpenSSL](http://www.openssl.org/) (On MacOS use OpenSSL 3)
 * [zlib](http://www.zlib.net/) (MacOS should already bundle this, for Windows a pre-built version is included)
 * [cmocka](https://cmocka.org/) for running the tests
 
@@ -75,19 +75,21 @@ The compilation was executed on a system with [Homebrew](https://brew.sh) as pac
 Install the dependencies with `brew`:
 
 ~~~
-brew install openssl doxygen cmocka pandoc cmake graphviz
+brew install openssl@3 doxygen cmocka pandoc cmake graphviz
 ~~~
 
 ### Compile
 
-It can be necessary to set the `OPENSSL_ROOT_DIR`. In case of the usage of Homebrew this works:
+It is necessary to set the `OPENSSL_ROOT_DIR`. In case of the usage of Homebrew this works:
 
 ```shell
 cd \path\to\globalplatform
-cmake . -DOPENSSL_ROOT_DIR=$(brew --prefix openssl)
+cmake . -DOPENSSL_ROOT_DIR=$(brew --prefix openssl@3)
 make
 make install
 ```
+
+__NOTE:__ The included LibreSSL is causing this [issue]https://stackoverflow.com/questions/58446253/xcode-11-ld-error-your-binary-is-not-an-allowed-client-of-usr-lib-libcrypto-dy).
 
 In case the system is using a different package manager other settings will be necessary.
 

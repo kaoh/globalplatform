@@ -8,8 +8,6 @@ There are Homebrew package for [Linux and MacOS](https://github.com/kaoh/homebre
 
 Windows binaries can be downloaded from the [GitHub release page](https://github.com/kaoh/globalplatform/releases) or from [SourceForge](https://sourceforge.net/projects/globalplatform/files/GPShell/).
 
-__NOTE:__ The [Microsoft Visual C++ 2015 Redistributable](https://www.microsoft.com/en-us/download/confirmation.aspx?id=52685) must be also installed.
-
 Please read also the [manual of GPShell]( https://github.com/kaoh/globalplatform/blob/master/gpshell/src/gpshell.1.md) if you are interested in the command line
 or use the installed man page with `man gpshell` under Unix like systems.
 There are several script examples available. See the [.txt files](https://github.com/kaoh/globalplatform/tree/master/gpshell) or look into the local file systems
@@ -33,7 +31,7 @@ Use a suitable packet manager for your OS or install the programs and libraries 
 * [PC/SC Lite](https://pcsclite.apdu.fr) (only for UNIXes, Windows and MacOS are already including this)
 * [Doxygen](www.doxygen.org/) for generating the documentation
 * [Graphviz](https://graphviz.org) for generating graphics in the documentation
-* [OpenSSL](http://www.openssl.org/) (MacOS is already providing this as LibreSSL)
+* [OpenSSL](http://www.openssl.org/) (On MacOS use OpenSSL 3)
 * [zlib](http://www.zlib.net/) (MacOS should already bundle this, for Windows a pre-built version is included)
 * [cmocka](https://cmocka.org/) for running the tests
 * [Pandoc](https://pandoc.org/installing.html) for generating the man page the tests
@@ -79,16 +77,17 @@ The compilation was executed on a system with [Homebrew](https://brew.sh) as pac
 Install the dependencies with `brew`:
 
 ~~~
-brew install openssl doxygen cmocka pandoc cmake graphviz
+brew install openssl@3 doxygen cmocka pandoc cmake graphviz
 ~~~
+
 
 ### Compile
 
-It can be necessary to set the `OPENSSL_ROOT_DIR`. In case of the usage of Homebrew this works:
+It is necessary to set the `OPENSSL_ROOT_DIR`. In case of the usage of Homebrew this works:
 
 ```shell
 cd \path\to\globalplatform
-cmake . -DOPENSSL_ROOT_DIR=$(brew --prefix openssl)
+cmake . -DOPENSSL_ROOT_DIR=$(brew --prefix openssl@3)
 make
 make install
 ```
