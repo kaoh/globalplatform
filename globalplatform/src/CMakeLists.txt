@@ -123,7 +123,7 @@ ENDIF(WIN32)
 
 # Testing
 IF(TESTING)
-	INCLUDE(FindCMocka)
+    INCLUDE(FindCMocka)
 
     # gives /usr/bin/ld: /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/libcheck_pic.a(check_pack.o): undefined reference to symbol '__pthread_unregister_cancel@@GLIBC_2.3.3'
     #INCLUDE_DIRECTORIES(${CHECK_INCLUDE_DIRS})
