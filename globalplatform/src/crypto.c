@@ -2016,7 +2016,9 @@ OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhra
 	OPGP_ERROR_STATUS status;
 	EVP_PKEY *key = NULL;
 	FILE *PEMKeyFile = NULL;
+#ifndef OPENSSL3
 	RSA* rsa = NULL;
+#endif
 	BIGNUM *n;
     BIGNUM *e;
     BYTE eLength;
@@ -2025,6 +2027,7 @@ OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhra
     OSSL_PARAM *params;
     OSSL_PARAM *_n;
 	OSSL_PARAM *_e;
+	int i;
 #endif
 	OPGP_LOG_START(_T("read_public_rsa_key"));
 	if (passPhrase == NULL)
@@ -2065,8 +2068,14 @@ OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhra
 	if (_e == NULL) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 	}
-	OSSL_PARAM_get_BN(_n, &n);
-	OSSL_PARAM_get_BN(_e, &e);
+	n = BN_new();
+	if (n == NULL || !OSSL_PARAM_get_BN(_n, &n)) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	e = BN_new();
+	if (e == NULL || !OSSL_PARAM_get_BN(_e, &e)) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
 #endif
     // only 3 and 65337 are supported
     eLength = BN_num_bytes(e);
@@ -2074,29 +2083,39 @@ OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhra
     	{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
     }
     BN_bn2bin(e, ((unsigned char *)rsaExponent));
-    printf("internal e: %ld", rsaExponent);
     nLength = BN_num_bytes(n);
     if (nLength != 128) {
         { OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
     }
     BN_bn2bin(n, rsaModulus);
+#ifndef OPENSSL3
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 exit:
+#endif
+#endif
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
+#ifndef OPENSSL3
     if (rsa != NULL) {
     	RSA_free(rsa);
     }
+#else
+    if (params != NULL) {
+        OSSL_PARAM_free(params);
+    }
+    if (e != NULL) {
+        BN_free(e);
+    }
+    if (n != NULL) {
+        BN_free(n);
+    }
+#endif
     if (key != NULL) {
         EVP_PKEY_free(key);
     }
     if (PEMKeyFile != NULL) {
         fclose(PEMKeyFile);
     }
-#ifdef OPENSSL3
-    if (params != NULL) {
-    	OSSL_PARAM_free(params);
-    }
-#endif
 	OPGP_LOG_END(_T("read_public_rsa_key"), status);
 	return status;
 }
