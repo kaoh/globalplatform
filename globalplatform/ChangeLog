@@ -1,6 +1,9 @@
 History
 =======
 
+7.2.0 - Sat Apr 09 2022, Karsten Ohme
+	OpenSSL 3 support
+	
 7.1.0 - Wed Apr 28 2021, Karsten Ohme
 	SCP03 AES-192 and AES-256 keys supported
 

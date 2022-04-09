@@ -2020,7 +2020,7 @@ OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhra
 	BIGNUM *n;
     BIGNUM *e;
     BYTE eLength;
-    BYTE nLength;
+    int nLength;
 #ifdef OPENSSL3
     OSSL_PARAM *params;
     OSSL_PARAM *_n;
@@ -2049,6 +2049,7 @@ OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhra
 	e = rsa->e;
 	*rsaExponent = (LONG)rsa->e->d[0];
 	memcpy(rsaModulus, rsa->n->d, sizeof(unsigned long)*rsa->n->top);
+	goto exit;
 	#else
 	RSA_get0_key(rsa, (const BIGNUM **)&n, (const BIGNUM **)&e, NULL);
 	#endif
@@ -2069,9 +2070,16 @@ OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhra
 #endif
     // only 3 and 65337 are supported
     eLength = BN_num_bytes(e);
-    BN_bn2bin(e, ((unsigned char *)rsaExponent)+sizeof(LONG)-eLength);
+    if (eLength > sizeof(LONG)) {
+    	{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+    }
+    BN_bn2bin(e, ((unsigned char *)rsaExponent));
     nLength = BN_num_bytes(n);
-    BN_bn2bin(n, rsaModulus+128-nLength);
+    if (nLength != 128) {
+        { OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+    }
+    BN_bn2bin(n, rsaModulus);
+exit:
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
     if (key != NULL) {
@@ -2083,7 +2091,7 @@ end:
     if (PEMKeyFile != NULL) {
         fclose(PEMKeyFile);
     }
-#ifdef OPNESSL3
+#ifdef OPENSSL3
     if (params != NULL) {
     	OSSL_PARAM_free(params);
     }
