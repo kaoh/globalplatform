@@ -2074,6 +2074,7 @@ OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhra
     	{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
     }
     BN_bn2bin(e, ((unsigned char *)rsaExponent));
+    printf("internal e: %ld", rsaExponent);
     nLength = BN_num_bytes(n);
     if (nLength != 128) {
         { OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
@@ -2082,11 +2083,11 @@ OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhra
 exit:
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
+    if (rsa != NULL) {
+    	RSA_free(rsa);
+    }
     if (key != NULL) {
         EVP_PKEY_free(key);
-    }
-    if (rsa != NULL) {
-        OPENSSL_free(rsa);
     }
     if (PEMKeyFile != NULL) {
         fclose(PEMKeyFile);
