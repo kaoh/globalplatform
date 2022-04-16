@@ -49,3 +49,5 @@ Win32
 *.manifest
 *.dylib
 
+cryptoTest
+utilTest

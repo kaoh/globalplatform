@@ -1,0 +1,9 @@
+mode_211
+enable_trace
+establish_context
+card_connect
+select -AID a0000000030000
+get_card_recognition_data
+get_key_information_templates
+card_disconnect
+release_context
