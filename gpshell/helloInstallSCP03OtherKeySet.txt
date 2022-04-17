@@ -1,0 +1,12 @@
+mode_211
+enable_trace
+enable_timer
+establish_context
+card_connect
+select -AID A000000151000000
+open_sc -security 3 -keyind 0 -keyver 0 -mac_key DE2A3629CBC24E8D8869E82C8B4C0D874D88166B6F8A1C12 -enc_key DE2A3629CBC24E8D8869E82C8B4C0D874D88166B6F8A1C12 -kek_key DE2A3629CBC24E8D8869E82C8B4C0D874D88166B6F8A1C12
+delete -AID D0D1D2D3D4D50101
+delete -AID D0D1D2D3D4D501
+install -file helloworld.cap -nvDataLimit 2000 -instParam 00 -priv 2
+card_disconnect
+release_context
