@@ -101,7 +101,7 @@ choco install cmake doxygen.install graphviz
 ~~~
 
 * For CMocka a pre-built version is used from the `cmock-cmocka-1.1.5` directory.
-* For `zlib` a pre-built version is used the `zlib-1.2.8` directory.
+* For `zlib` a pre-built version is used the `zlib-1.2.12` directory.
 * OpenSSL must be installed manually. Chocolatey is using the systems architecture, which is nowadays 64 bit, but the compilation needs the 32 bit version. Download [OpenSSL](https://slproweb.com/products/Win32OpenSSL.html) and choose the Win32 bit version and no light version.
 
 ### Compile
@@ -112,7 +112,7 @@ It will be necessary to set the `ZLIB_ROOT` and `CMOCKA_ROOT`. Use the pre-built
 
 ```shell
 cd \path\to\globalplatform
-cmake -G "NMake Makefiles" -DZLIB_ROOT="C:\Users\john\Desktop\globalplatform\zlib-1.2.8\win32-build" -DCMOCKA_ROOT="C:\Users\john\Desktop\globalplatform\cmocka-cmocka-1.1.5\build-w32"
+cmake -G "NMake Makefiles" -DZLIB_ROOT="C:\Users\john\Desktop\globalplatform\zlib-1.2.12\win32-build" -DCMOCKA_ROOT="C:\Users\john\Desktop\globalplatform\cmocka-cmocka-1.1.5\build-w32"
 nmake
 ```
 

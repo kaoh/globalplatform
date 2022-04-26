@@ -102,7 +102,7 @@ choco install cmake doxygen.install graphviz
 ~~~
 
 * For CMocka a pre-built version is used from the `cmock-cmocka-1.1.5` directory.
-* For `zlib` a pre-built version is used the `zlib-1.2.8` directory.
+* For `zlib` a pre-built version is used the `zlib-1.2.12` directory.
 * OpenSSL must be installed manually. Chocolatey is using the systems architecture, which is nowadays 64 bit, but the compilation needs the 32 bit version. Download [OpenSSL](https://slproweb.com/products/Win32OpenSSL.html) and choose the Win32 bit version and no light version.
 
 ### Compile
@@ -113,7 +113,7 @@ It will be necessary to set the `ZLIB_ROOT` and `CMOCKA_ROOT`. Use the pre-built
 
 ```shell
 cd \path\to\globalplatform
-cmake -G "NMake Makefiles" -DZLIB_ROOT="C:\Users\john\Desktop\globalplatform\zlib-1.2.8\win32-build" -DCMOCKA_ROOT="C:\Users\john\Desktop\globalplatform\cmocka-cmocka-1.1.5\build-w32"
+cmake -G "NMake Makefiles" -DZLIB_ROOT="C:\Users\john\Desktop\globalplatform\zlib-1.2.12\win32-build" -DCMOCKA_ROOT="C:\Users\john\Desktop\globalplatform\cmocka-cmocka-1.1.5\build-w32"
 nmake
 ```
 
@@ -201,13 +201,18 @@ Under Unix systems if syslog is available it will be used by default.
 The standard zLib from http://www.zlib.net/ is using the CDECL calling convention, but STDCALL is
 needed for the compilation under Windows. So it does not work. See for details http://www.tannerhelland.com/5076/compile-zlib-winapi-wapi-stdcall/
 
-__NOTE:__ This project contains a bundled pre-build version of zLib 1.2.8 in the upper module's `zlib-1.2.8/zlib-1.2.8.zip`
+__NOTE:__ This project contains a bundled pre-build version of zLib 1.2.12 in the upper module's `zlib-1.2.12` directory
 
 Copy the `zlibwapi.dll` to the Windows directory `C:\Windows` to be able to find the dll during the test execution.
 
 If not using this version you will get errors like:
 
 > unzip.c.obj : error LNK2019: unresolved external symbol "_inflate@8" in function "_unzReadCurrentFile@12".
+
+To compile this version a [patched zlib version providing a VS 22 solutions file](https://github.com/kaoh/zlib) has to be used.
+
+* Generate the `zconf.h` file by runningg `cmake .`
+* Open the solutions file under `contrib/vstudio/vc17` solution and build it
 
 #### CMocka
 
