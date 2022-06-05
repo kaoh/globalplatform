@@ -53,6 +53,7 @@
 #define AIDLEN 16
 #define DATALEN 4096
 #define INSTPARAMLEN 128
+#define UICCSYSTEMSPECPARAMLEN 128
 #define DELIMITER _T(" \t\r\n,")
 #define KEY_LEN 32
 #define PLATFORM_MODE_OP_201 OP_201
@@ -102,6 +103,8 @@ typedef struct _OptionStr
     char passPhrase[PASSPHRASELEN+1];
     BYTE instParam[INSTPARAMLEN+1];
     DWORD instParamLen;
+    BYTE uiccSystemSpecParam[UICCSYSTEMSPECPARAMLEN+1];
+    DWORD uiccSystemSpecParamLen;
     BYTE element; //!< GET STATUS element (application, security domains, executable load files) to get
     BYTE format; //!< GET STATUS format
     BYTE dataFormat; //!< data format of STORE DATA
@@ -636,6 +639,8 @@ static int handleOptions(OptionStr *pOptionStr)
     pOptionStr->vDataLimit = 0;
     pOptionStr->instParam[0] = '\0';
     pOptionStr->instParamLen = 0;
+    pOptionStr->uiccSystemSpecParam[0] = '\0';
+    pOptionStr->uiccSystemSpecParamLen = 0;
     pOptionStr->element = 0;
     pOptionStr->format = 2;
     pOptionStr->privilege = 0;
@@ -834,6 +839,11 @@ static int handleOptions(OptionStr *pOptionStr)
         {
             CHECK_TOKEN(token, _T("-instParam"));
             pOptionStr->instParamLen = convertStringToByteArray(token, INSTPARAMLEN, pOptionStr->instParam);
+        }
+        else if (_tcscmp(token, _T("-uiccSystemSpecParam")) == 0)
+        {
+            CHECK_TOKEN(token, _T("-uiccSystemSpecParam"));
+            pOptionStr->uiccSystemSpecParamLen = convertStringToByteArray(token, UICCSYSTEMSPECPARAMLEN, pOptionStr->uiccSystemSpecParam);
         }
         else if (_tcscmp(token, _T("-element")) == 0)
         {
@@ -1578,6 +1588,8 @@ static int handleCommands(FILE *fd)
                             optionStr.nvDataLimit,
                             (PBYTE)optionStr.instParam,
                             optionStr.instParamLen,
+                            (PBYTE)optionStr.uiccSystemSpecParam,
+							optionStr.uiccSystemSpecParamLen,
                             NULL, // No install token
                             &receipt,
                             &receiptDataAvailable);
@@ -1598,6 +1610,8 @@ static int handleCommands(FILE *fd)
                                 optionStr.nvDataLimit,
                                 (PBYTE)optionStr.instParam,
                                 optionStr.instParamLen,
+                                (PBYTE)optionStr.uiccSystemSpecParam,
+                                optionStr.uiccSystemSpecParamLen,
                                 NULL, // No install token
                                 &receipt,
                                 &receiptDataAvailable);
@@ -1631,6 +1645,8 @@ static int handleCommands(FILE *fd)
                             optionStr.nvDataLimit,
                             (PBYTE)optionStr.instParam,
                             optionStr.instParamLen,
+                            (PBYTE)optionStr.uiccSystemSpecParam,
+                            optionStr.uiccSystemSpecParamLen,
                             NULL, // No install token
                             &receipt,
                             &receiptDataAvailable);
@@ -1651,6 +1667,8 @@ static int handleCommands(FILE *fd)
                                 optionStr.nvDataLimit,
                                 (PBYTE)optionStr.instParam,
                                 optionStr.instParamLen,
+                                (PBYTE)optionStr.uiccSystemSpecParam,
+                                optionStr.uiccSystemSpecParamLen,
                                 NULL, // No install token
                                 &receipt,
                                 &receiptDataAvailable);
@@ -1753,6 +1771,8 @@ static int handleCommands(FILE *fd)
                              optionStr.nvDataLimit,
                              (PBYTE)optionStr.instParam,
                              optionStr.instParamLen,
+                             (PBYTE)optionStr.uiccSystemSpecParam,
+                             optionStr.uiccSystemSpecParamLen,
                              NULL, // No install token
                              &receipt,
                              &receiptDataAvailable);
@@ -1771,6 +1791,8 @@ static int handleCommands(FILE *fd)
                              optionStr.nvDataLimit,
                              (PBYTE)optionStr.instParam,
                              optionStr.instParamLen,
+                             (PBYTE)optionStr.uiccSystemSpecParam,
+                             optionStr.uiccSystemSpecParamLen,
                              NULL, // No install token
                              &receipt,
                              &receiptDataAvailable);
