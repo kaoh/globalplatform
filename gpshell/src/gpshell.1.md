@@ -81,7 +81,7 @@ __select__ -AID *AID*
 
 :    Select AID instance
 
-__install__ -file *appletFile* -priv *privilege* -sdAID *sdAID* -AID *AIDInPkg* -pkgAID *packageAID* -instAID *instanceAID* -nvCodeLimit *x* -nvDataLimit *y* -instParam *installationParams* -uiccSystemSpecParam *uiccSystemSpecParams*
+__install__ -file *appletFile* -priv *privilege* -sdAID *sdAID* -AID *AIDInPkg* -pkgAID *packageAID* -instAID *instanceAID* -nvCodeLimit *x* -nvDataLimit *y* -instParam *installationParams* -uiccSystemSpecParam *uiccSystemSpecParams* -simSpecParam *simSpecParams*
 
 :    Load and installs an applet in one step
 
@@ -90,7 +90,9 @@ The parameters -AID -instAID -pkgAID -nvCodeLimit can be detected automatically 
 For the *sdAID* the AID selected with the select command is chosen if not given. Otherwise the default Card Manager / Security Issuer Domain AID is chosen. Usually you do not have to pass it.
 
 -instParam specifies applet installation parameters for the install() method
--uiccSystemSpecParam specifies parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2. to use the Card Application Toolkit (CAT) functionality or to access the UICC file system. The parameters have to be already encoded without the outer tag 'EA'.
+-uiccSystemSpecParam specifies parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2 to use the Card Application Toolkit (CAT) functionality or to 
+access the UICC file system. The parameters have to be already encoded without the outer tag 'EA'.
+-simSpecParam specifies parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.1 to use the SIM Application Toolkit (STK) functionality or to access the SIM file system. The parameters have to be already encoded without the outer tag 'CA'.
 
 __install_for_load__ -pkgAID *packageAID* -sdAID *sdAID* -nvCodeLimit *y*
 
@@ -106,7 +108,7 @@ __load__ -file *appletFile*
 
 This command may be needed if the combined install command does not work.
 
-__install_for_install__ -priv *privilege* -AID *AIDInPkg* -pkgAID *pkgAID* -instAID *instanceAID* -nvDataLimit *x* -instParam *installationParams* -uiccSystemSpecParam *uiccSystemSpecParams*
+__install_for_install__ -priv *privilege* -AID *AIDInPkg* -pkgAID *pkgAID* -instAID *instanceAID* -nvDataLimit *x* -instParam *installationParams* -uiccSystemSpecParam *uiccSystemSpecParams* -simSpecParam *simSpecParams*
 
 :     Instantiate applet
 
@@ -287,6 +289,10 @@ __-instParam__ *param*
 __-uiccSystemSpecParam__ *param*
 
 :    UICC System Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2.
+
+__-simSpecParam__ *param*
+
+:    SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.1.
 
 __-element__ *x*
 

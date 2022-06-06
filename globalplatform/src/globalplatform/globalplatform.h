@@ -564,6 +564,7 @@ OPGP_ERROR_STATUS GP211_get_install_token_signature_data(BYTE P1, PBYTE executab
 									  DWORD nonVolatileDataSpaceLimit,
 									  PBYTE installParameters, DWORD installParametersLength,
 									  PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
+									  PBYTE simSpecParams, DWORD simSpecParamsLength,
 									  PBYTE installTokenSignatureData, PDWORD installTokenSignatureDataLength);
 
 //! \brief GlobalPlatform2.1.1: Calculates a Load Token using PKCS#1.
@@ -584,6 +585,7 @@ OPGP_ERROR_STATUS GP211_calculate_install_token(BYTE P1, PBYTE executableLoadFil
 							 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 							 PBYTE installParameters, DWORD installParametersLength,
 							 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
+							 PBYTE simSpecParams, DWORD simSpecParamsLength,
 							 BYTE installToken[128], OPGP_STRING PEMKeyFileName, char *passPhrase);
 
 //! \brief GlobalPlatform2.1.1: Calculates a Load File Data Block Hash.
@@ -612,6 +614,7 @@ OPGP_ERROR_STATUS GP211_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_
 						 BYTE applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE installParameters, DWORD installParametersLength,
 						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
+						 PBYTE simSpecParams, DWORD simSpecParamsLength,
 						 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
 
 //! \brief GlobalPlatform2.1.1: Makes an installed application selectable.
@@ -630,6 +633,7 @@ OPGP_ERROR_STATUS GP211_install_for_install_and_make_selectable(OPGP_CARD_CONTEX
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE installParameters, DWORD installParametersLength,
 						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
+						 PBYTE simSpecParams, DWORD simSpecParamsLength,
 						 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
 
 //! \brief GlobalPlatform2.1.1: Informs a Security Domain that a associated application will retrieve personalization data.
@@ -819,6 +823,7 @@ OPGP_ERROR_STATUS OP201_get_install_token_signature_data(BYTE P1, PBYTE executab
 									  DWORD nonVolatileDataSpaceLimit,
 									  PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
 									  PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
+									  PBYTE simSpecParams, DWORD simSpecParamsLength,
 									  PBYTE installTokenSignatureData, PDWORD installTokenSignatureDataLength);
 
 //! \brief Open Platform: Calculates a Load Token using PKCS#1.
@@ -837,6 +842,7 @@ OPGP_ERROR_STATUS OP201_calculate_install_token(BYTE P1, PBYTE executableLoadFil
 							 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 							 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
 							 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
+							 PBYTE simSpecParams, DWORD simSpecParamsLength,
 							 BYTE installToken[128], OPGP_STRING PEMKeyFileName, char *passPhrase);
 
 //! \brief Open Platform: Calculates a Load File DAP.
@@ -865,6 +871,7 @@ OPGP_ERROR_STATUS OP201_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_
 						 BYTE applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
 						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
+						 PBYTE simSpecParams, DWORD simSpecParamsLength,
 						 BYTE installToken[128], OP201_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
 
 //! \brief Open Platform: Makes an installed application selectable.
@@ -882,6 +889,7 @@ OPGP_ERROR_STATUS OP201_install_for_install_and_make_selectable(OPGP_CARD_CONTEX
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
 						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
+						 PBYTE simSpecParams, DWORD simSpecParamsLength,
 						 BYTE installToken[128], OP201_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
 
 //! \brief Open Platform: Adds a key set for Delegated Management.
