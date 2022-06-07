@@ -258,7 +258,7 @@ static void install(void **state) {
 		loadFileParams.loadFileAID.AID, loadFileParams.loadFileAID.AIDLength,
 		loadFileParams.appletAIDs[0].AID, loadFileParams.appletAIDs[0].AIDLength,
 		loadFileParams.appletAIDs[0].AID, loadFileParams.appletAIDs[0].AIDLength,
-		2, 0, 0, NULL, 0, NULL, &receiptData, &receiptDataAvailable);
+		2, 0, 0, NULL, 0, NULL, 0, NULL, 0, NULL, &receiptData, &receiptDataAvailable);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 }
 
