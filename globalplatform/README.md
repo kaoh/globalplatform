@@ -84,10 +84,12 @@ It is necessary to set the `OPENSSL_ROOT_DIR`. In case of the usage of Homebrew 
 
 ```shell
 cd \path\to\globalplatform
-cmake . -DOPENSSL_ROOT_DIR=$(brew --prefix openssl@3)
+cmake . -DCMAKE_C_COMPILER=/usr/bin/gcc -DOPENSSL_ROOT_DIR=$(brew --prefix openssl@3)
 make
 make install
 ```
+
+__NOTE:__ `CMAKE_C_COMPILER` is required if Xcode is installed. CMake would favor the Xcode compiler leading to potential runtime errors.
 
 __NOTE:__ The included LibreSSL is causing this [issue]https://stackoverflow.com/questions/58446253/xcode-11-ld-error-your-binary-is-not-an-allowed-client-of-usr-lib-libcrypto-dy).
 
