@@ -136,21 +136,23 @@ IF(TESTING)
     INCLUDE(AddCMockaTest)
     include(AddMockedTest)
 
-    add_mocked_test(scp03Test
-      SOURCES scp03Test.c testUtil.c ${SOURCES}
-      COMPILE_OPTIONS -I${PCSC_INCLUDE_DIRS}
-      MOCKS RAND_bytes
-      LINK_LIBRARIES ${LIBRARIES})
+    IF(UNIX AND NOT APPLE)
+      add_mocked_test(scp03Test
+        SOURCES scp03Test.c testUtil.c ${SOURCES}
+        COMPILE_OPTIONS -I${PCSC_INCLUDE_DIRS}
+        MOCKS RAND_bytes
+        LINK_LIBRARIES ${LIBRARIES})
 
-    add_mocked_test(scp02Test
-      SOURCES scp02Test.c testUtil.c ${SOURCES}
-      MOCKS RAND_bytes
-      LINK_LIBRARIES ${LIBRARIES})
+      add_mocked_test(scp02Test
+        SOURCES scp02Test.c testUtil.c ${SOURCES}
+        MOCKS RAND_bytes
+        LINK_LIBRARIES ${LIBRARIES})
 
-    add_mocked_test(scp01Test
-      SOURCES scp01Test.c testUtil.c ${SOURCES}
-      MOCKS RAND_bytes
-      LINK_LIBRARIES ${LIBRARIES})
+      add_mocked_test(scp01Test
+        SOURCES scp01Test.c testUtil.c ${SOURCES}
+        MOCKS RAND_bytes
+        LINK_LIBRARIES ${LIBRARIES})
+    ENDIF(UNIX AND NOT APPLE)
 
     add_cmocka_test(cryptoTest
       SOURCES cryptoTest.c testUtil.c ${SOURCES}
