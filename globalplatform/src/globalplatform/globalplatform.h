@@ -561,9 +561,22 @@ OPGP_ERROR_STATUS GP211_get_install_token_signature_data(BYTE P1, PBYTE executab
 									  PBYTE executableModuleAID, DWORD executableModuleAIDLength,
 									  PBYTE applicationAID, DWORD applicationAIDLength,
 									  BYTE applicationPrivileges, DWORD volatileDataSpaceLimit,
-									  DWORD nonVolatileDataSpaceLimit, PBYTE installParameters,
-									  DWORD installParametersLength, PBYTE installTokenSignatureData,
-									  PDWORD installTokenSignatureDataLength);
+									  DWORD nonVolatileDataSpaceLimit,
+									  PBYTE installParameters, DWORD installParametersLength,
+									  PBYTE installTokenSignatureData, PDWORD installTokenSignatureDataLength);
+
+//! \brief GlobalPlatform2.1.1: Function to retrieve the data to sign by the Card Issuer in an Install Token including UICC parameters.
+OPGP_API
+OPGP_ERROR_STATUS GP211_get_install_token_signature_data_uicc(BYTE P1, PBYTE executableLoadFileAID,
+									  DWORD executableLoadFileAIDLength,
+									  PBYTE executableModuleAID, DWORD executableModuleAIDLength,
+									  PBYTE applicationAID, DWORD applicationAIDLength,
+									  BYTE applicationPrivileges, DWORD volatileDataSpaceLimit,
+									  DWORD nonVolatileDataSpaceLimit,
+									  PBYTE installParameters, DWORD installParametersLength,
+									  PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
+									  PBYTE simSpecParams, DWORD simSpecParamsLength,
+									  PBYTE installTokenSignatureData, PDWORD installTokenSignatureDataLength);
 
 //! \brief GlobalPlatform2.1.1: Calculates a Load Token using PKCS#1.
 OPGP_API
@@ -582,6 +595,18 @@ OPGP_ERROR_STATUS GP211_calculate_install_token(BYTE P1, PBYTE executableLoadFil
 							 DWORD applicationAIDLength, BYTE applicationPrivileges,
 							 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 							 PBYTE installParameters, DWORD installParametersLength,
+							 BYTE installToken[128], OPGP_STRING PEMKeyFileName, char *passPhrase);
+
+//! \brief GlobalPlatform2.1.1: Calculates an Install Token using PKCS#1 including UICC parameters.
+OPGP_API
+OPGP_ERROR_STATUS GP211_calculate_install_token_uicc(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
+							 PBYTE executableModuleAID,
+							 DWORD executableModuleAIDLength, PBYTE applicationAID,
+							 DWORD applicationAIDLength, BYTE applicationPrivileges,
+							 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
+							 PBYTE installParameters, DWORD installParametersLength,
+							 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
+							 PBYTE simSpecParams, DWORD simSpecParamsLength,
 							 BYTE installToken[128], OPGP_STRING PEMKeyFileName, char *passPhrase);
 
 //! \brief GlobalPlatform2.1.1: Calculates a Load File Data Block Hash.
@@ -611,6 +636,17 @@ OPGP_ERROR_STATUS GP211_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_
 						 PBYTE installParameters, DWORD installParametersLength,
 						 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
 
+//! \brief GlobalPlatform2.1.1: Installs an application on the card including UICC parameters.
+OPGP_API
+OPGP_ERROR_STATUS GP211_install_for_install_uicc(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+						 PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE executableModuleAID,
+						 DWORD executableModuleAIDLength, PBYTE applicationAID, DWORD applicationAIDLength,
+						 BYTE applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
+						 PBYTE installParameters, DWORD installParametersLength,
+						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
+						 PBYTE simSpecParams, DWORD simSpecParamsLength,
+						 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
+
 //! \brief GlobalPlatform2.1.1: Makes an installed application selectable.
 OPGP_API
 OPGP_ERROR_STATUS GP211_install_for_make_selectable(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -626,6 +662,18 @@ OPGP_ERROR_STATUS GP211_install_for_install_and_make_selectable(OPGP_CARD_CONTEX
 						 DWORD applicationAIDLength, BYTE applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE installParameters, DWORD installParametersLength,
+						 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
+
+//! \brief GlobalPlatform2.1.1: Installs and makes an installed application selectable including UICC parameters.
+OPGP_API
+OPGP_ERROR_STATUS GP211_install_for_install_and_make_selectable_uicc(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+						 PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE executableModuleAID,
+						 DWORD executableModuleAIDLength, PBYTE applicationAID,
+						 DWORD applicationAIDLength, BYTE applicationPrivileges,
+						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
+						 PBYTE installParameters, DWORD installParametersLength,
+						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
+						 PBYTE simSpecParams, DWORD simSpecParamsLength,
 						 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
 
 //! \brief GlobalPlatform2.1.1: Informs a Security Domain that a associated application will retrieve personalization data.
@@ -812,9 +860,21 @@ OPGP_ERROR_STATUS OP201_get_install_token_signature_data(BYTE P1, PBYTE executab
 									  PBYTE AIDWithinLoadFileAID, DWORD AIDWithinLoadFileAIDLength,
 									  PBYTE applicationInstanceAID, DWORD applicationInstanceAIDLength,
 									  BYTE applicationPrivileges, DWORD volatileDataSpaceLimit,
-									  DWORD nonVolatileDataSpaceLimit, PBYTE applicationInstallParameters,
-									  DWORD applicationInstallParametersLength, PBYTE installTokenSignatureData,
-									  PDWORD installTokenSignatureDataLength);
+									  DWORD nonVolatileDataSpaceLimit,
+									  PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
+									  PBYTE installTokenSignatureData, PDWORD installTokenSignatureDataLength);
+
+//! \brief Open Platform: Function to retrieve the data to sign by the Card Issuer in an Install Token including UICC parameters.
+OPGP_API
+OPGP_ERROR_STATUS OP201_get_install_token_signature_data_uicc(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
+									  PBYTE AIDWithinLoadFileAID, DWORD AIDWithinLoadFileAIDLength,
+									  PBYTE applicationInstanceAID, DWORD applicationInstanceAIDLength,
+									  BYTE applicationPrivileges, DWORD volatileDataSpaceLimit,
+									  DWORD nonVolatileDataSpaceLimit,
+									  PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
+									  PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
+									  PBYTE simSpecParams, DWORD simSpecParamsLength,
+									  PBYTE installTokenSignatureData, PDWORD installTokenSignatureDataLength);
 
 //! \brief Open Platform: Calculates a Load Token using PKCS#1.
 OPGP_API
@@ -831,6 +891,17 @@ OPGP_ERROR_STATUS OP201_calculate_install_token(BYTE P1, PBYTE executableLoadFil
 							 DWORD applicationInstanceAIDLength, BYTE applicationPrivileges,
 							 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 							 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
+							 BYTE installToken[128], OPGP_STRING PEMKeyFileName, char *passPhrase);
+
+//! \brief Open Platform: Calculates an Install Token using PKCS#1 including UICC parameters.
+OPGP_API
+OPGP_ERROR_STATUS OP201_calculate_install_token_uicc(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE AIDWithinLoadFileAID,
+							 DWORD AIDWithinLoadFileAIDLength, PBYTE applicationInstanceAID,
+							 DWORD applicationInstanceAIDLength, BYTE applicationPrivileges,
+							 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
+							 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
+							 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
+							 PBYTE simSpecParams, DWORD simSpecParamsLength,
 							 BYTE installToken[128], OPGP_STRING PEMKeyFileName, char *passPhrase);
 
 //! \brief Open Platform: Calculates a Load File DAP.
@@ -860,6 +931,17 @@ OPGP_ERROR_STATUS OP201_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_
 						 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
 						 BYTE installToken[128], OP201_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
 
+//! \brief Open Platform: Installs an application on the card including UICC parameters.
+OPGP_API
+OPGP_ERROR_STATUS OP201_install_for_install_uicc(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
+						 PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE AIDWithinLoadFileAID,
+						 DWORD AIDWithinLoadFileAIDLength, PBYTE applicationInstanceAID, DWORD applicationInstanceAIDLength,
+						 BYTE applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
+						 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
+						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
+						 PBYTE simSpecParams, DWORD simSpecParamsLength,
+						 BYTE installToken[128], OP201_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
+
 //! \brief Open Platform: Makes an installed application selectable.
 OPGP_API
 OPGP_ERROR_STATUS OP201_install_for_make_selectable(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
@@ -874,6 +956,17 @@ OPGP_ERROR_STATUS OP201_install_for_install_and_make_selectable(OPGP_CARD_CONTEX
 						 DWORD applicationInstanceAIDLength, BYTE applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
+						 BYTE installToken[128], OP201_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
+
+//! \brief Open Platform: Installs and makes an installed application selectable including UICC parameters.
+OPGP_API
+OPGP_ERROR_STATUS OP201_install_for_install_and_make_selectable_uicc(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, 						 PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE AIDWithinLoadFileAID,
+						 DWORD AIDWithinLoadFileAIDLength, PBYTE applicationInstanceAID,
+						 DWORD applicationInstanceAIDLength, BYTE applicationPrivileges,
+						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
+						 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
+						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
+						 PBYTE simSpecParams, DWORD simSpecParamsLength,
 						 BYTE installToken[128], OP201_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
 
 //! \brief Open Platform: Adds a key set for Delegated Management.

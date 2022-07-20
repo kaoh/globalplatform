@@ -10,10 +10,11 @@
 #
 
 FIND_PACKAGE (PkgConfig)
-IF(PKG_CONFIG_FOUND)
+# Always prefer globalpaltform sources to get no outdated headers and libraries
+IF(NOT EXISTS ${CMAKE_SOURCE_DIR}/globalplatform AND PKG_CONFIG_FOUND)
     # Will find GlobalPlatform library on Linux/BSDs using PkgConfig
     PKG_CHECK_MODULES(GLOBALPLATFORM globalplatform)
-ENDIF(PKG_CONFIG_FOUND)
+ENDIF()
 
 IF(NOT GLOBALPLATFORM_FOUND)
    # Will find GlobalPlatform headers both on Mac and Windows

@@ -53,6 +53,8 @@
 #define AIDLEN 16
 #define DATALEN 4096
 #define INSTPARAMLEN 128
+#define UICCSYSTEMSPECPARAMLEN 128
+#define SIMSPECPARAMLEN 128
 #define DELIMITER _T(" \t\r\n,")
 #define KEY_LEN 32
 #define PLATFORM_MODE_OP_201 OP_201
@@ -102,6 +104,10 @@ typedef struct _OptionStr
     char passPhrase[PASSPHRASELEN+1];
     BYTE instParam[INSTPARAMLEN+1];
     DWORD instParamLen;
+    BYTE uiccSystemSpecParam[UICCSYSTEMSPECPARAMLEN+1];
+    DWORD uiccSystemSpecParamLen;
+    BYTE simSpecParam[SIMSPECPARAMLEN+1];
+    DWORD simSpecParamLen;
     BYTE element; //!< GET STATUS element (application, security domains, executable load files) to get
     BYTE format; //!< GET STATUS format
     BYTE dataFormat; //!< data format of STORE DATA
@@ -636,6 +642,10 @@ static int handleOptions(OptionStr *pOptionStr)
     pOptionStr->vDataLimit = 0;
     pOptionStr->instParam[0] = '\0';
     pOptionStr->instParamLen = 0;
+    pOptionStr->uiccSystemSpecParam[0] = '\0';
+    pOptionStr->uiccSystemSpecParamLen = 0;
+    pOptionStr->simSpecParam[0] = '\0';
+    pOptionStr->simSpecParamLen = 0;
     pOptionStr->element = 0;
     pOptionStr->format = 2;
     pOptionStr->privilege = 0;
@@ -834,6 +844,16 @@ static int handleOptions(OptionStr *pOptionStr)
         {
             CHECK_TOKEN(token, _T("-instParam"));
             pOptionStr->instParamLen = convertStringToByteArray(token, INSTPARAMLEN, pOptionStr->instParam);
+        }
+        else if (_tcscmp(token, _T("-uiccSystemSpecParam")) == 0)
+        {
+            CHECK_TOKEN(token, _T("-uiccSystemSpecParam"));
+            pOptionStr->uiccSystemSpecParamLen = convertStringToByteArray(token, UICCSYSTEMSPECPARAMLEN, pOptionStr->uiccSystemSpecParam);
+        }
+        else if (_tcscmp(token, _T("-simSpecParam")) == 0)
+        {
+            CHECK_TOKEN(token, _T("-simSpecParam"));
+            pOptionStr->simSpecParamLen = convertStringToByteArray(token, UICCSYSTEMSPECPARAMLEN, pOptionStr->simSpecParam);
         }
         else if (_tcscmp(token, _T("-element")) == 0)
         {
@@ -1568,7 +1588,7 @@ static int handleCommands(FILE *fd)
                             optionStr.instAIDLen = optionStr.AIDLen;
                             memcpy(optionStr.instAID, optionStr.AID, optionStr.instAIDLen);
                         }
-                        status = OP201_install_for_install_and_make_selectable(
+                        status = OP201_install_for_install_and_make_selectable_uicc(
                             cardContext, cardInfo, &securityInfo201,
                             (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
                             (PBYTE)optionStr.AID, optionStr.AIDLen,
@@ -1578,6 +1598,10 @@ static int handleCommands(FILE *fd)
                             optionStr.nvDataLimit,
                             (PBYTE)optionStr.instParam,
                             optionStr.instParamLen,
+                            (PBYTE)optionStr.uiccSystemSpecParam,
+							optionStr.uiccSystemSpecParamLen,
+							(PBYTE)optionStr.simSpecParam,
+							optionStr.simSpecParamLen,
                             NULL, // No install token
                             &receipt,
                             &receiptDataAvailable);
@@ -1586,7 +1610,7 @@ static int handleCommands(FILE *fd)
                     {
                         for (i = 0; loadFileParams.appletAIDs[i].AIDLength; i++)
                         {
-                            status = OP201_install_for_install_and_make_selectable(
+                            status = OP201_install_for_install_and_make_selectable_uicc(
                                 cardContext, cardInfo, &securityInfo201,
                                 (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
                                 (PBYTE)loadFileParams.appletAIDs[i].AID,
@@ -1598,6 +1622,10 @@ static int handleCommands(FILE *fd)
                                 optionStr.nvDataLimit,
                                 (PBYTE)optionStr.instParam,
                                 optionStr.instParamLen,
+                                (PBYTE)optionStr.uiccSystemSpecParam,
+                                optionStr.uiccSystemSpecParamLen,
+								(PBYTE)optionStr.simSpecParam,
+								optionStr.simSpecParamLen,
                                 NULL, // No install token
                                 &receipt,
                                 &receiptDataAvailable);
@@ -1621,7 +1649,7 @@ static int handleCommands(FILE *fd)
                             optionStr.instAIDLen = optionStr.AIDLen;
                             memcpy(optionStr.instAID, optionStr.AID, optionStr.instAIDLen);
                         }
-                        status = GP211_install_for_install_and_make_selectable(
+                        status = GP211_install_for_install_and_make_selectable_uicc(
                             cardContext, cardInfo, &securityInfo211,
                             (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
                             (PBYTE)optionStr.AID, optionStr.AIDLen,
@@ -1631,6 +1659,10 @@ static int handleCommands(FILE *fd)
                             optionStr.nvDataLimit,
                             (PBYTE)optionStr.instParam,
                             optionStr.instParamLen,
+                            (PBYTE)optionStr.uiccSystemSpecParam,
+                            optionStr.uiccSystemSpecParamLen,
+							(PBYTE)optionStr.simSpecParam,
+							optionStr.simSpecParamLen,
                             NULL, // No install token
                             &receipt,
                             &receiptDataAvailable);
@@ -1639,7 +1671,7 @@ static int handleCommands(FILE *fd)
                     {
                         for (i = 0; loadFileParams.appletAIDs[i].AIDLength; i++)
                         {
-                            status = GP211_install_for_install_and_make_selectable(
+                            status = GP211_install_for_install_and_make_selectable_uicc(
                                 cardContext, cardInfo, &securityInfo211,
                                 (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
                                 (PBYTE)loadFileParams.appletAIDs[i].AID,
@@ -1651,6 +1683,10 @@ static int handleCommands(FILE *fd)
                                 optionStr.nvDataLimit,
                                 (PBYTE)optionStr.instParam,
                                 optionStr.instParamLen,
+                                (PBYTE)optionStr.uiccSystemSpecParam,
+                                optionStr.uiccSystemSpecParamLen,
+								(PBYTE)optionStr.simSpecParam,
+								optionStr.simSpecParamLen,
                                 NULL, // No install token
                                 &receipt,
                                 &receiptDataAvailable);
@@ -1743,7 +1779,7 @@ static int handleCommands(FILE *fd)
                 if (platform_mode == PLATFORM_MODE_OP_201)
                 {
                     OP201_RECEIPT_DATA receipt;
-                    status = OP201_install_for_install(
+                    status = OP201_install_for_install_uicc(
                              cardContext, cardInfo, &securityInfo201,
                              (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
                              (PBYTE)optionStr.AID, optionStr.AIDLen,
@@ -1753,6 +1789,10 @@ static int handleCommands(FILE *fd)
                              optionStr.nvDataLimit,
                              (PBYTE)optionStr.instParam,
                              optionStr.instParamLen,
+                             (PBYTE)optionStr.uiccSystemSpecParam,
+                             optionStr.uiccSystemSpecParamLen,
+							 (PBYTE)optionStr.simSpecParam,
+							 optionStr.simSpecParamLen,
                              NULL, // No install token
                              &receipt,
                              &receiptDataAvailable);
@@ -1761,7 +1801,7 @@ static int handleCommands(FILE *fd)
                 {
                     GP211_RECEIPT_DATA receipt;
 
-                    status = GP211_install_for_install(
+                    status = GP211_install_for_install_uicc(
                              cardContext, cardInfo, &securityInfo211,
                              (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
                              (PBYTE)optionStr.AID, optionStr.AIDLen,
@@ -1771,6 +1811,10 @@ static int handleCommands(FILE *fd)
                              optionStr.nvDataLimit,
                              (PBYTE)optionStr.instParam,
                              optionStr.instParamLen,
+                             (PBYTE)optionStr.uiccSystemSpecParam,
+                             optionStr.uiccSystemSpecParamLen,
+							 (PBYTE)optionStr.simSpecParam,
+							 optionStr.simSpecParamLen,
                              NULL, // No install token
                              &receipt,
                              &receiptDataAvailable);
