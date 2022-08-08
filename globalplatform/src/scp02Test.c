@@ -200,7 +200,7 @@ static void install_mac_enc(void **state) {
 		loadFileParams.loadFileAID.AID, loadFileParams.loadFileAID.AIDLength,
 		loadFileParams.appletAIDs[0].AID, loadFileParams.appletAIDs[0].AIDLength,
 		loadFileParams.appletAIDs[0].AID, loadFileParams.appletAIDs[0].AIDLength,
-		2, 0, 2000, installParam, 1, NULL, 0, NULL, 0, NULL, &receiptData, &receiptDataAvailable);
+		2, 0, 2000, installParam, 1, NULL, &receiptData, &receiptDataAvailable);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 }
 
