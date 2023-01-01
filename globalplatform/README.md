@@ -44,7 +44,7 @@ apt-get install libssl-dev doxygen cmake libcmocka0 zlib1g-dev graphviz pcscd li
 __NOTE:__ If using Homebrew in parallel and having not used Homebrew for installing the dependencies but the distribution's package manager then several tools and libraries can be hidden by Homebrew or are not installed in Homebrew (`pkgconfig`, `PC/SC Lite`, `cmocka`, ...). One option is to install these tools and libraries with `brew` or remove the Homebrew path from the `PATH` variable temporarily
 (which should be `./home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin`).
 
-```
+```shell
 cd \path\to\globalplatform
 cmake .
 make
@@ -54,7 +54,7 @@ make install
 
 __NOTE:__ The Homebrew version of pcsc-lite is not a fully functional version. It is missing the USB drivers and is also not started as a system service. The distribution's version of pcscd should be installed. Under Linux the Homebrew version of pcsc-lite must be unlinked:
 
-~~~
+~~~shell
 brew remove --ignore-dependencies pcsc-lite
 ~~~
 
@@ -74,7 +74,7 @@ The compilation was executed on a system with [Homebrew](https://brew.sh) as pac
 
 Install the dependencies with `brew`:
 
-~~~
+~~~shell
 brew install openssl@3 doxygen cmocka pandoc cmake graphviz
 ~~~
 

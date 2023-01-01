@@ -2023,7 +2023,11 @@ OPGP_ERROR_STATUS GP211_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 	BYTE sendBuffer[8];
 	DWORD j=0, i=0;
 	DWORD apduErrorCode;
+	PBYTE wholeData = NULL;
+	DWORD wholeDataSize = 2000;
+	DWORD totalRead = 0;
 	OPGP_LOG_START(_T("get_status"));
+	wholeData = malloc(wholeDataSize);
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xF2;
 	sendBuffer[i++] = cardElement;
@@ -2043,32 +2047,42 @@ OPGP_ERROR_STATUS GP211_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 			CHECK_SW_9000(recvBuffer, recvBufferLength, status);
 		}
 		apduErrorCode = status.errorCode;
-		for (j=0; j<recvBufferLength-2; ) {
-			DWORD dataRead;
-			if (*dataLength <= i ) {
-				{ OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_MORE_APPLICATION_DATA, OPGP_stringify_error(GP211_ERROR_MORE_APPLICATION_DATA)); goto end; }
-			}
-			if (cardElement == GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES) {
-				status = parse_executable_load_file_data(recvBuffer+j, recvBufferLength-2-j, format, &executableData[i], &dataRead);
-				if ( OPGP_ERROR_CHECK(status)) {
-					goto end;
-				}
-			}
-			else {
-				status = parse_application_data(recvBuffer+j, recvBufferLength-2-j, cardElement, format, &applData[i], &dataRead);
-				if ( OPGP_ERROR_CHECK(status)) {
-					goto end;
-				}
-			}
-			j += dataRead;
-			i++;
+		if (wholeDataSize < totalRead+recvBufferLength-2) {
+			wholeDataSize *= 2;
+			wholeData = realloc(wholeData, wholeDataSize);
 		}
+		memcpy(wholeData+totalRead, recvBuffer, recvBufferLength-2);
+		totalRead += recvBufferLength-2;
 		sendBuffer[3] |= 0x01;
 	} while (apduErrorCode == OPGP_ISO7816_ERROR_MORE_DATA_AVAILABLE);
+
+	for (j=0; j<totalRead; ) {
+		DWORD dataRead;
+		if (*dataLength <= i ) {
+			{ OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_MORE_APPLICATION_DATA, OPGP_stringify_error(GP211_ERROR_MORE_APPLICATION_DATA)); goto end; }
+		}
+		if (cardElement == GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES) {
+			status = parse_executable_load_file_data(wholeData+j, totalRead-j, format, &executableData[i], &dataRead);
+			if ( OPGP_ERROR_CHECK(status)) {
+				goto end;
+			}
+		}
+		else {
+			status = parse_application_data(wholeData+j, totalRead-j, cardElement, format, &applData[i], &dataRead);
+			if ( OPGP_ERROR_CHECK(status)) {
+				goto end;
+			}
+		}
+		j += dataRead;
+		i++;
+	}
 
 	*dataLength = i;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
+	if (wholeData != NULL) {
+		free(wholeData);
+	}
 	OPGP_LOG_END(_T("get_status"), status);
 	return status;
 }
