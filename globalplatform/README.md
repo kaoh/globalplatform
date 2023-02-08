@@ -111,11 +111,11 @@ choco install cmake doxygen.install graphviz
 
 Launch Visual Studio Command Prompt / Developer Command Prompt / Developer PowerShell:
 
-It will be necessary to set the `ZLIB_ROOT` and `CMOCKA_ROOT`. Use the pre-built versions of the project for convenience.
+It will be necessary to set the `ZLIB_ROOT` and `CMOCKA_ROOT` and `OPENSSL_ROOT_DIR`. Use the pre-built versions of the project for convenience.
 
 ```shell
 cd \path\to\globalplatform
-cmake -G "NMake Makefiles" -DZLIB_ROOT="C:\Users\john\Desktop\globalplatform\zlib-1.2.8\win32-build" -DCMOCKA_ROOT="C:\Users\john\Desktop\globalplatform\cmocka-cmocka-1.1.5\build-w32"
+cmake -G "NMake Makefiles" -DOPENSSL_ROOT_DIR="C:\Program Files (x86)\OpenSSL-Win32" -DZLIB_ROOT="C:\Users\john\Desktop\globalplatform\zlib-1.2.8\win32-build" -DCMOCKA_ROOT="C:\Users\john\Desktop\globalplatform\cmocka-cmocka-1.1.5\build-w32"
 nmake
 ```
 
@@ -248,6 +248,8 @@ When using lower VS versions it might be necessary to download the SDK in additi
   `cmake -G "Visual Studio 15 2017"` - Replace with your VS version
 
 __NOTE:__ You must have to remove the `CMakeCache.txt` and related file before when using a different generator. See section "Clean CMake Files".
+
+__NOTE:__ VS 2022 is supporting CMake and is using Ninja for the build files. The CMake files have to be cleaned and the CMake variables configured in the IDE.
 
 #### Windows Backward Compatible Visual Studio Build
 

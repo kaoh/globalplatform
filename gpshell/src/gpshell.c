@@ -223,7 +223,7 @@ TCHAR * strReplace(TCHAR *orig, TCHAR *rep, TCHAR *with) {
         ins = tmp + len_rep;
     }
 
-    tmp = result = malloc(_tcslen(orig) + (len_with - len_rep) * count + 1);
+    tmp = result = malloc(sizeof(TCHAR) * (_tcslen(orig) + (len_with - len_rep) * count + 1));
 
     if (!result) {
         return NULL;
@@ -300,26 +300,26 @@ static TCHAR *parseToken(TCHAR *buf)
         if ((envVarEnd = _tcschr(envVarStart, _T('}'))) != NULL) {
             TCHAR * envString = NULL;
             TCHAR * envVar = NULL;
-            // minus }
-            int endPosVar = (int)((envVarEnd - envVarStart + 1)/sizeof(TCHAR));
+            // + 1 for including }
+            int endPosVar = (int)(envVarEnd - envVarStart + 1);
             // get env string + null terminator
-            envString = malloc(sizeof(TCHAR)* endPosVar - 3 + 1);
+            envString = malloc(sizeof(TCHAR) * (endPosVar - 3 + 1));
             _tcsncpy(envString, envVarStart+2, endPosVar - 3);
             envString[endPosVar - 3] = _T('\0');
             // replace var
             if ((envVar = _tgetenv(envString)) != NULL) {
                 TCHAR * newToken = NULL;
-                replace = malloc(endPosVar + 1);
+                replace = malloc(sizeof(TCHAR) * (endPosVar + 1));
                 replace[endPosVar] = _T('\0');
                 _tcsncpy(replace, envVarStart, endPosVar);
                 newToken = strReplace(token, replace, envVar);
+                free(replace);
                 if (newToken) {
                     _tcsncpy(dummy, newToken, BUFLEN);
                     dummy[BUFLEN-1] = _T('\0');
                     free(newToken);
                     token = dummy;
                 }
-                free(replace);
             }
             free(envString);
         }
