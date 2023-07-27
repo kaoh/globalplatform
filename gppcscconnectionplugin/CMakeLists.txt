@@ -1,5 +1,5 @@
-PROJECT(gppcscconnectionplugin C)
 CMAKE_MINIMUM_REQUIRED(VERSION 3.5.1)
+PROJECT(gppcscconnectionplugin C)
 
 cmake_policy(VERSION 3.5.1)
 

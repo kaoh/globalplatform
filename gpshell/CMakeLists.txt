@@ -1,5 +1,5 @@
-PROJECT(gpshell C)
 CMAKE_MINIMUM_REQUIRED(VERSION 3.5.1)
+PROJECT(gpshell C)
 
 cmake_policy(VERSION 3.5.1)
 

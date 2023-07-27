@@ -526,8 +526,7 @@ OPGP_ERROR_STATUS parse_executable_load_file_data(PBYTE data, DWORD dataLength,
 			goto end;
 		}
 		modulesData->numExecutableModules = data[offset++];
-		for (int k=0; k<modulesData->numExecutableModules && (offset<dataLength) &&
-		k < (sizeof(modulesData->executableModules) / sizeof(OPGP_AID)); k++) {
+		for (int k=0; k<modulesData->numExecutableModules && (offset<dataLength) && k < (sizeof(modulesData->executableModules) / sizeof(OPGP_AID)); k++) {
 			/* Length of Executable Module AID */
 			modulesData->executableModules[k].AIDLength = data[offset++];
 			// check also buffer overrun for AID

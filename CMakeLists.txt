@@ -1,5 +1,5 @@
-PROJECT(globalplatform C)
 CMAKE_MINIMUM_REQUIRED(VERSION 3.5.1)
+PROJECT(globalplatform C)
 
 cmake_policy(VERSION 3.5.1)
 
