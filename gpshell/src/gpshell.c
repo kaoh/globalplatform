@@ -122,6 +122,7 @@ typedef struct _OptionStr
     BYTE data[DATALEN+1];
     DWORD dataLen;
     BYTE noStop; //!< Does not stop in case of an error.
+    BYTE keyType; //!< Key type
 } OptionStr;
 
 /* Global Variables */
@@ -663,6 +664,7 @@ static int handleOptions(OptionStr *pOptionStr)
     pOptionStr->noStop = 0;
     // use by default 3DES / AES-128 keys
     pOptionStr->keyLength = 16;
+    pOptionStr->keyType = 0;
 
     token = parseToken(NULL);
 
@@ -692,6 +694,19 @@ static int handleOptions(OptionStr *pOptionStr)
         {
             CHECK_TOKEN(token, _T("-keyind"));
             pOptionStr->keyIndex = _tstoi(token);
+        }
+        else if (_tcscmp(token, _T("-keyType")) == 0)
+        {
+            unsigned int keyType;
+            CHECK_TOKEN(token, _T("-keyType"));
+            if (_stscanf (token, _T("%02x"), &keyType) <= 0)
+            {
+                _tprintf(_T("Error: option -keyType followed by an illegal string %s\n"),
+                        token);
+                rv = EXIT_FAILURE;
+                goto end;
+            }
+            pOptionStr->keyType = keyType;
         }
         else if (_tcscmp(token, _T("-keyver")) == 0)
         {
@@ -1940,7 +1955,7 @@ static int handleCommands(FILE *fd)
                             goto end;
                         }
                     }
-                    status = GP211_put_secure_channel_keys(cardContext, cardInfo,
+                    status = GP211_put_secure_channel_keys_with_key_type(cardContext, cardInfo,
                                                        &securityInfo211,
                                                        optionStr.keySetVersion,
                                                        optionStr.newKeySetVersion,
@@ -1948,7 +1963,8 @@ static int handleCommands(FILE *fd)
                                                        optionStr.enc_key,
                                                        optionStr.mac_key,
                                                        optionStr.kek_key,
-                                                       optionStr.keyLength);
+                                                       optionStr.keyLength,
+                                                       optionStr.keyType);
                 }
 
                 if (OPGP_ERROR_CHECK(status))

@@ -116,7 +116,7 @@ OPGP_ERROR_STATUS put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CA
 							 BYTE newKeySetVersion,
 							 BYTE newBaseKey[32],
 							 BYTE newS_ENC[32],
-							 BYTE newS_MAC[32], BYTE newDEK[32], DWORD keyLength);
+							 BYTE newS_MAC[32], BYTE newDEK[32], DWORD keyLength, BYTE keyType);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS delete_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE keySetVersion, BYTE keyIndex);
@@ -1046,14 +1046,52 @@ OPGP_ERROR_STATUS GP211_put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, O
 	return put_secure_channel_keys(cardContext, cardInfo, secInfo,
 							 keySetVersion,
 							 newKeySetVersion, newBaseKey, newS_ENC,
-							 newS_MAC, newDEK, keyLength);
+							 newS_MAC, newDEK, keyLength, 0);
+}
+
+/**
+ * A keySetVersion value of 0x00 adds a new secure channel key set.
+ * Any other value between 0x01 and 0x7f must match an existing key set version.
+ * The new key set version defines the key set version the new secure channel keys belongs to.
+ * This can be the same key version or a new not existing key set version.
+ * It depends on the supported protocol implementation by the card what keys must be passed as parameters.
+ * baseKey must be NULL if the protocol uses 3 Secure Channel Keys
+ * (Secure Channel Encryption Key, Secure Channel Message Authentication Code Key and
+ * Data Encryption Key) and vice versa.
+ * Details about the supported Secure Channel Protocol and its implementation can be
+ * obtained by a call to the function GP211_get_secure_channel_protocol_details().
+ * Sometimes a key derivation of the put keys might be necessary so it is necessary to call
+ * GP211_EMV_CPS11_derive_keys() or any other derivation function. If this is the newBaseKey
+ * must be NULL and the derived keys are passed as the 3 Secure Channel Keys.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param keySetVersion [in] An existing key set version.
+ * \param newKeySetVersion [in] The new key set version.
+ * \param newBaseKey [in] The new Secure Channel base key.
+ * \param newS_ENC [in] The new S-ENC key.
+ * \param newS_MAC [in] The new S-MAC key.
+ * \param newDEK [in] The new DEK.
+ * \param keyLength [in] The key length. 16, 24 or 32 bytes.
+ * \param keyType [in] The key type or 0 for implicit selection based on the SCP.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS GP211_put_secure_channel_keys_with_key_type(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+							 BYTE keySetVersion,
+							 BYTE newKeySetVersion, BYTE newBaseKey[32],
+							 BYTE newS_ENC[32],
+							 BYTE newS_MAC[32], BYTE newDEK[32], DWORD keyLength, BYTE keyType) {
+	return put_secure_channel_keys(cardContext, cardInfo, secInfo,
+							 keySetVersion,
+							 newKeySetVersion, newBaseKey, newS_ENC,
+							 newS_MAC, newDEK, keyLength, keyType);
 }
 
 OPGP_ERROR_STATUS put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 							 BYTE keySetVersion,
 							 BYTE newKeySetVersion, BYTE newBaseKey[32],
 							 BYTE newS_ENC[32],
-							 BYTE newS_MAC[32], BYTE newDEK[32], DWORD keyLength) {
+							 BYTE newS_MAC[32], BYTE newDEK[32], DWORD keyLength, BYTE keyType) {
 	OPGP_ERROR_STATUS status;
 	BYTE sendBuffer[255];
 	DWORD sendBufferLength = 255;
@@ -1065,7 +1103,6 @@ OPGP_ERROR_STATUS put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CA
 	BYTE keyCheckValue2[3];
 	BYTE keyCheckValue3[3];
 	DWORD i=0;
-	BYTE keyType;
 	OPGP_LOG_START(_T("put_secure_channel_keys"));
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xD8;
@@ -1075,14 +1112,16 @@ OPGP_ERROR_STATUS put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CA
 	i++;
 
 	sendBuffer[i++] = newKeySetVersion;
-	if (cardInfo.specVersion == OP_201) {
-		keyType = OP201_KEY_TYPE_DES_ECB;
-	}
-	else {
-		keyType = GP211_KEY_TYPE_DES;
-	}
-	if (secInfo->secureChannelProtocol == GP211_SCP03) {
-		keyType = GP211_KEY_TYPE_AES;
+	if (keyType == 0) {
+		if (cardInfo.specVersion == OP_201) {
+			keyType = OP201_KEY_TYPE_DES_ECB;
+		}
+		else {
+			keyType = GP211_KEY_TYPE_DES;
+		}
+		if (secInfo->secureChannelProtocol == GP211_SCP03) {
+			keyType = GP211_KEY_TYPE_AES;
+		}
 	}
 	/* only Secure Channel base key */
 	if (newBaseKey != NULL && secInfo->secureChannelProtocol == GP211_SCP02 &&
@@ -5327,7 +5366,7 @@ OPGP_ERROR_STATUS OP201_put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, O
 	GP211_SECURITY_INFO gp211secInfo;
 	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
 	status = put_secure_channel_keys(cardContext, cardInfo, &gp211secInfo, keySetVersion, newKeySetVersion,
-		NULL, new_encKey, new_macKey, new_KEK, 16);
+		NULL, new_encKey, new_macKey, new_KEK, 16, 0);
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 	return status;
 }

@@ -385,6 +385,10 @@ __-noStop__
 
 :    Does not stop in case of an error
 
+__-keyType__ *keyType*
+
+:    Type of the key for the put_sc_key command. Must be in hex format, e.g. 88.
+
 ## Format of CPLC data
 
 You see the command trace of a GET DATA command and the interpreted result.
