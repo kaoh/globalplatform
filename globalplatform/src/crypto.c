@@ -1404,7 +1404,7 @@ OPGP_ERROR_STATUS get_key_data_field(GP211_SECURITY_INFO *secInfo,
 	memset(keyCheckTest, 0, 16);
 	// key type + length + key data + length + key check value
 	sizeNeeded = 1 + 1 + keyDataLength + 1;
-	if (secInfo->secureChannelProtocol == GP211_SCP03) {
+	if (secInfo->secureChannelProtocol == GP211_SCP03 || keyType == GP211_KEY_TYPE_AES) {
 		// the length of the key component is always included
 		sizeNeeded++;
 	}
