@@ -770,6 +770,10 @@ OPGP_ERROR_STATUS OPGP_select_channel(OPGP_CARD_INFO *cardInfo, BYTE channelNumb
 OPGP_ERROR_STATUS OPGP_calculate_key_check_value(GP211_SECURITY_INFO *secInfo,
 	PBYTE keyData, DWORD keyDataLength, BYTE keyCheckValue[3]);
 
+//! \brief Calculates the key check value of a key.
+OPGP_ERROR_STATUS OPGP_calculate_key_check_value_with_key_type(GP211_SECURITY_INFO *secInfo,
+	BYTE keyType, PBYTE keyData, DWORD keyDataLength, BYTE keyCheckValue[3]);
+
 //! \brief Encrypts sensitive data like keys or other data which is used in STORE DATA.
 OPGP_ERROR_STATUS OPGP_encrypt_sensitive_data(GP211_SECURITY_INFO *secInfo,
 	PBYTE data, DWORD dataLength,

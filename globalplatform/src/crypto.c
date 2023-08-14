@@ -1361,6 +1361,7 @@ end:
   * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS calculate_key_check_value(GP211_SECURITY_INFO *secInfo,
+	BYTE keyType,
 	PBYTE keyData,
 	DWORD keyDataLength,
 	BYTE keyCheckValue[3]) {
@@ -1370,7 +1371,7 @@ OPGP_ERROR_STATUS calculate_key_check_value(GP211_SECURITY_INFO *secInfo,
 	BYTE keyCheckTest[16];
 	OPGP_LOG_START(_T("calculate_key_check_value"));
 	memset(keyCheckTest, 0, 16);
-	if (secInfo->secureChannelProtocol == GP211_SCP03) {
+	if (secInfo->secureChannelProtocol == GP211_SCP03 || keyType == GP211_KEY_TYPE_AES) {
 		memset(keyCheckTest, 0x01, sizeof(keyCheckTest));
 		status = calculate_enc_ecb_SCP03(keyData, keyDataLength, keyCheckTest, 16, dummy, &dummyLength);
 	}
@@ -1443,7 +1444,7 @@ OPGP_ERROR_STATUS get_key_data_field(GP211_SECURITY_INFO *secInfo,
 	}
 	// we always use key check values
 	keyDataField[i++] = 0x03; // length of key check value
-	status = calculate_key_check_value(secInfo, keyData, keyDataLength, keyCheckValue);
+	status = calculate_key_check_value(secInfo, keyType, keyData, keyDataLength, keyCheckValue);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -2027,7 +2028,6 @@ OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhra
     OSSL_PARAM *params;
     OSSL_PARAM *_n;
 	OSSL_PARAM *_e;
-	int i;
 #endif
 	OPGP_LOG_START(_T("read_public_rsa_key"));
 	if (passPhrase == NULL)

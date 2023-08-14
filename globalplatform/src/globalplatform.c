@@ -6777,9 +6777,24 @@ OPGP_ERROR_STATUS OPGP_calculate_key_check_value(GP211_SECURITY_INFO *secInfo,
 	PBYTE keyData,
 	DWORD keyDataLength,
 	BYTE keyCheckValue[3]) {
+	return OPGP_calculate_key_check_value_with_key_type(secInfo, 0, keyData, keyDataLength, keyCheckValue);
+}
+
+/**
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param keyData [in] The key data.
+ * \param keyDataLength [in] The key data length.
+ * \param keyCheckValue [out] The key check value.
+  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS OPGP_calculate_key_check_value_with_key_type(GP211_SECURITY_INFO *secInfo,
+	BYTE keyType,
+	PBYTE keyData,
+	DWORD keyDataLength,
+	BYTE keyCheckValue[3]) {
 	OPGP_ERROR_STATUS status;
 	OPGP_LOG_START(_T("OPGP_calculate_key_check_value"));
-	status = calculate_key_check_value(secInfo, keyData, keyDataLength, keyCheckValue);
+	status = calculate_key_check_value(secInfo, keyType, keyData, keyDataLength, keyCheckValue);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
