@@ -15,7 +15,7 @@ under `(/usr/ | /home/linuxbrew/.linuxbrew/) share/doc/gpshell1/`.
 
 # Compilation
 
-Cor lone the project from GitHub or download the zip file (also available under the Clone tab).
+Clone the project from GitHub or download the zip file (also available under the Clone tab).
 
 Consult the individual sub projects for further instructions and prerequisites. It is also possible to compile the sub projects individually.
 
