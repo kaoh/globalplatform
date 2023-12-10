@@ -1320,10 +1320,10 @@ OPGP_ERROR_STATUS delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_IN
 				   OPGP_AID *AIDs, DWORD AIDsLength, GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataLength, DWORD mode) {
 	OPGP_ERROR_STATUS status;
 	DWORD count=0;
-	BYTE sendBuffer[APDU_COMMAND_LEN];
+	BYTE sendBuffer[APDU_COMMAND_LEN] = {0};
 	DWORD sendBufferLength = 0;
 	DWORD recvBufferLength = APDU_RESPONSE_LEN;
-	BYTE recvBuffer[APDU_RESPONSE_LEN];
+	BYTE recvBuffer[APDU_RESPONSE_LEN] = {0};
 	DWORD j,i=0;
 	OPGP_LOG_START(_T("delete_application"));
 	sendBuffer[i++] = 0x80;
@@ -2912,7 +2912,7 @@ OPGP_ERROR_STATUS install_for_install_and_make_selectable(OPGP_CARD_CONTEXT card
 	*receiptDataAvailable = 0;
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xE6;
-	status = get_install_data(0x0C, executableLoadFileAID, executableLoadFileAIDLength, executableModuleAID,
+  	status = get_install_data(0x0C, executableLoadFileAID, executableLoadFileAIDLength, executableModuleAID,
 		executableModuleAIDLength, applicationAID, applicationAIDLength, applicationPrivileges,
 		volatileDataSpaceLimit,	nonVolatileDataSpaceLimit, installParameters,
 		installParametersLength, uiccSystemSpecParams, uiccSystemSpecParamsLength,
@@ -2939,7 +2939,7 @@ OPGP_ERROR_STATUS install_for_install_and_make_selectable(OPGP_CARD_CONTEXT card
 	}
 	sendBufferLength = i;
 
-	status = OPGP_send_APDU(cardContext, cardInfo, secInfo,sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
+ 	status = OPGP_send_APDU(cardContext, cardInfo, secInfo,sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -3316,8 +3316,8 @@ OPGP_ERROR_STATUS get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD e
     buf[i-1] = (BYTE)installParametersLength;
     memcpy(buf+i, installParameters, installParametersLength);
     i+=installParametersLength;
-
-	if (nonVolatileDataSpaceLimit > 0 || volatileDataSpaceLimit > 0 || simSpecParamsLength > 0) {
+ 
+ 	if (nonVolatileDataSpaceLimit > 0 || volatileDataSpaceLimit > 0 || simSpecParamsLength > 0) {
 		buf[i++] = 0xEF;
 		buf[i++] = (simSpecParamsLength > 0 ? simSpecParamsLength + 2 : 0) + (volatileDataSpaceLimit > 0 ? 4 : 0) + (nonVolatileDataSpaceLimit > 0 ? 4 : 0);
 		if (volatileDataSpaceLimit != 0) {
@@ -3344,13 +3344,13 @@ OPGP_ERROR_STATUS get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD e
 		}
 	}
 
-	if (uiccSystemSpecParamsLength > 0) {
+  	if (uiccSystemSpecParamsLength > 0) {
 		buf[i++] = 0xEA;
 		buf[i++] = uiccSystemSpecParamsLength;
 		memcpy(buf+i, uiccSystemSpecParams, uiccSystemSpecParamsLength);
 		i+=uiccSystemSpecParamsLength;
 	}
-	buf[2] = (BYTE)i-3; // Lc
+ 	buf[2] = (BYTE)i-3; // Lc
 	if (i > *installDataLength) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
 	}
@@ -5934,7 +5934,7 @@ OPGP_ERROR_STATUS OP201_install_for_install_and_make_selectable(OPGP_CARD_CONTEX
 		NULL, 0,
 		installToken,
 		&gp211receiptData, receiptDataAvailable);
-	if (*receiptDataAvailable) {
+ 	if (*receiptDataAvailable) {
 		mapGP211ToOP201ReceiptData(gp211receiptData, receiptData);
 	}
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);

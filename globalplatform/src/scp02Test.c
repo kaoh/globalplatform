@@ -66,7 +66,7 @@ static void get_status_mac_only(void **state) {
 	hex_to_byte_array(_T("d0d1d2d3d4d501"), refAid, &refAidLen);
 	hex_to_byte_array(_T("D5AD539A60CA5E72"), hostChallenge, &hostChallengeLen);
 
-	GP211_APPLICATION_DATA applicationData[10];
+	GP211_APPLICATION_DATA applicationData[10] = {0};
 	GP211_EXECUTABLE_MODULES_DATA executablesData[10];
 	DWORD dataLength = 10;
 

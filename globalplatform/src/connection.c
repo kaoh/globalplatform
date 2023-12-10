@@ -202,7 +202,7 @@ OPGP_ERROR_STATUS OPGP_card_disconnect(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_
 OPGP_ERROR_STATUS OPGP_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBYTE capdu, DWORD capduLength, PBYTE rapdu, PDWORD rapduLength) {
 	OPGP_ERROR_STATUS errorStatus;
 	OPGP_ERROR_STATUS(*plugin_sendAPDUFunction) (OPGP_CARD_CONTEXT, OPGP_CARD_INFO, PBYTE, DWORD, PBYTE, PDWORD);
-	BYTE apduCommand[APDU_COMMAND_LEN];
+	BYTE apduCommand[APDU_COMMAND_LEN] = {0};
 	DWORD apduCommandLength = APDU_COMMAND_LEN;
 	DWORD errorCode;
 	int i=0;

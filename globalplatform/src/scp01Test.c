@@ -170,9 +170,9 @@ static void install(void **state) {
 	BYTE extAuthResponse[] = {0x90, 0x00};
 	DWORD extAuthResponseLen = sizeof(extAuthResponse);
 
-	OP201_RECEIPT_DATA receiptData;
-	DWORD receiptDataLength = 1;
-	OPGP_AID aid;
+	OP201_RECEIPT_DATA receiptData = {0};
+	DWORD receiptDataLength = 0;
+	OPGP_AID aid = {0};
 
 	OPGP_CSTRING commands[] = {
 				_T("84E4000018D1505A4FAA00491BFF5B83C169209CC82896216BDD2CB1B600"),
@@ -222,6 +222,7 @@ static void install(void **state) {
 	aidLength = sizeof(aid.AID);
 	hex_to_byte_array(_T("D0D1D2D3D4D50101"), aid.AID, &aidLength);
 	aid.AIDLength = aidLength;
+	receiptDataLength = 1;
 	status = OP201_delete_application(cardContext, cardInfo, &securityInfo211, &aid, 1, &receiptData, &receiptDataLength);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_FAILURE);
 
@@ -235,6 +236,7 @@ static void install(void **state) {
 	aidLength = sizeof(aid.AID);
 	hex_to_byte_array(_T("D0D1D2D3D4D50101"), aid.AID, &aidLength);
 	aid.AIDLength = aidLength;
+	receiptDataLength = 1;
 	status = OP201_delete_application(cardContext, cardInfo, &securityInfo211, &aid, 1, &receiptData, &receiptDataLength);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_FAILURE);
 
@@ -245,14 +247,16 @@ static void install(void **state) {
 	aidLength = sizeof(aid.AID);
 	hex_to_byte_array(_T("a000000003000000"), aid.AID, &aidLength);
 	aid.AIDLength = aidLength;
-	status = OP201_install_for_load(cardContext, cardInfo, &securityInfo211,
+ 	status = OP201_install_for_load(cardContext, cardInfo, &securityInfo211,
 								loadFileParams.loadFileAID.AID, loadFileParams.loadFileAID.AIDLength,
 								aid.AID, aidLength, NULL, NULL,
 								loadFileParams.loadFileSize, 0, 0);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
-	status = OP201_load(cardContext, cardInfo, &securityInfo211, NULL, 0, "helloworld.cap", NULL, &receiptDataAvailable, NULL);
+	receiptDataAvailable = 0;
+ 	status = OP201_load(cardContext, cardInfo, &securityInfo211, NULL, 0, "helloworld.cap", NULL, &receiptDataAvailable, NULL);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
-	receiptDataAvailable = 1;
+  	receiptDataAvailable = 1;
+	memset(&receiptData, 0, sizeof(OP201_RECEIPT_DATA));
 	status = OP201_install_for_install_and_make_selectable(
 		cardContext, cardInfo, &securityInfo211,
 		loadFileParams.loadFileAID.AID, loadFileParams.loadFileAID.AIDLength,
