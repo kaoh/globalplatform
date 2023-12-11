@@ -12,7 +12,7 @@
  *  GNU Lesser General Public License for more details.
  *
  *  You should have received a copy of the GNU Lesser General Public License
- *  along with GlobalPlatform.  If not, see <http, 0x//www.gnu.org/licenses/>.
+ *  along with GlobalPlatform.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stdlib.h>
 #include <setjmp.h>
