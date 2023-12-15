@@ -2082,7 +2082,13 @@ OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhra
     if (eLength > sizeof(LONG)) {
     	{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
     }
-    BN_bn2bin(e, ((unsigned char *)rsaExponent));
+    {
+      unsigned char rsaTmp[sizeof(LONG)];
+      if (BN_bn2bin(e, rsaTmp) != eLength) {
+	{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+      }
+      *rsaExponent = get_number(rsaTmp, 0, eLength);
+    }
     nLength = BN_num_bytes(n);
     if (nLength != 128) {
         { OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
