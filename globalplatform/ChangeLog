@@ -1,6 +1,10 @@
 History
 =======
 
+7.4.0 - Mon, Dec 18 2023, Karsten Ohme
+	RSA exponent conversion fix for S360
+	Support for key types for putting keys
+
 7.3.0 - Wed, July 20 2022, Karsten Ohme
 	Support for CAT/STK ETSI TS 102 226 installation parameters
 

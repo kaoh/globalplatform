@@ -1,6 +1,9 @@
 History
 =======
 
+12/18/2023     2.4.0    Karsten Ohme
+                        Support for key types for putting keys
+
 07/20/2022     2.3.0    Karsten Ohme
                         Support for CAT/STK ETSI TS 102 226 installation parameters
 
