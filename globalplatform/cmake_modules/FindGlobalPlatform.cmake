@@ -8,12 +8,13 @@
 # Author: Karsten Ohme <k_o_@users.sourceforge.net>
 # Version: 20130121
 #
-
-FIND_PACKAGE (PkgConfig)
-# Always prefer globalpaltform sources to get no outdated headers and libraries
-IF(NOT EXISTS ${CMAKE_SOURCE_DIR}/globalplatform AND PKG_CONFIG_FOUND)
-    # Will find GlobalPlatform library on Linux/BSDs using PkgConfig
-    PKG_CHECK_MODULES(GLOBALPLATFORM globalplatform)
+IF(UNIX)
+  FIND_PACKAGE (PkgConfig)
+  # Always prefer globalplatform sources to get no outdated headers and libraries
+  IF(NOT EXISTS ${CMAKE_SOURCE_DIR}/globalplatform AND PKG_CONFIG_FOUND)
+      # Will find GlobalPlatform library on Linux/BSDs using PkgConfig
+      PKG_CHECK_MODULES(GLOBALPLATFORM globalplatform)
+  ENDIF()
 ENDIF()
 
 IF(NOT GLOBALPLATFORM_FOUND)
