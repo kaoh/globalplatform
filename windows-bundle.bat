@@ -37,4 +37,4 @@ rmdir /s /Q %dirNamegpshell%\lib
 del /F /S /Q %dirName%\zlib-1.2.8 > NUL
 rmdir /s /Q %dirName%\zlib-1.2.8
 
-archive create -o %dirName%\%gpshellZip% %dirNamegpshell%
+tar -a -c -C %dirNamegpshell% -f %dirName%\%gpshellZip% *
