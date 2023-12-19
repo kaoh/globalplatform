@@ -9,11 +9,13 @@
 # Version: 20101019
 #
 
-FIND_PACKAGE (PkgConfig)
-IF(PKG_CONFIG_FOUND)
-    # Will find PC/SC library on Linux/BSDs using PkgConfig
-    PKG_CHECK_MODULES(PCSC libpcsclite)
-ENDIF(PKG_CONFIG_FOUND)
+IF(UNIX)
+  FIND_PACKAGE (PkgConfig)
+  IF(PKG_CONFIG_FOUND)
+      # Will find PC/SC library on Linux/BSDs using PkgConfig
+      PKG_CHECK_MODULES(PCSC libpcsclite)
+  ENDIF(PKG_CONFIG_FOUND)
+ENDIF()
 
 IF(NOT PCSC_FOUND)
    # Will find PC/SC headers both on Mac and Windows
