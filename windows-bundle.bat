@@ -19,7 +19,7 @@ copy "C:\Program Files (x86)\OpenSSL-Win32\libcrypto*.dll" "%dirNamegpshell%\bin
 copy "C:\Program Files (x86)\OpenSSL-Win32\libssl*.dll" "%dirNamegpshell%\bin"
 copy "C:\Program Files (x86)\OpenSSL-Win32\libeay*.dll" "%dirNamegpshell%\bin"
 copy "C:\Program Files (x86)\OpenSSL-Win32\bin\legacy*.dll" "%dirNamegpshell%\bin"
-copy %dirName%\zlib-1.2.8\zlibwapi.dll "%dirNamegpshell%\bin"
+copy %dirName%\zlib-1.2.8\win32-build\zlibwapi.dll "%dirNamegpshell%\bin"
 rem copy redistributable runtime files
 set curDir=%CD%
 pushd "%VCToolsRedistDir%%VSCMD_ARG_TGT_ARCH%"
