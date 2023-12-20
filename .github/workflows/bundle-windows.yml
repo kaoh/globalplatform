@@ -1,5 +1,6 @@
 name: bundle windows
 on:
+  workflow_dispatch:
   push:
     # Pattern matched against refs/tags
     tags:        
