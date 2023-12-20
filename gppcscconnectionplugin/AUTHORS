@@ -1,2 +1,3 @@
 Karsten Ohme <k_o_@users.sourceforge.net>
 Antonio Antonio <totopr73@gmail.com> memory leak fix for librarySpecific in OPGP_PL_card_connect
+Simon Josefsson <simon@josefsson.org> Debian-related fixes

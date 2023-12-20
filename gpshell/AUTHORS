@@ -12,3 +12,4 @@ Chen Gang <gang.chen@sunrus.com.cn> installing multiple executable modules in on
 Dave Mercer <dmercer@google.com> install_for_make_selectable, print command, increased APDU buffer size
 Steve Paik <spaik@alum.mit.edu> compilation fix Windows VS APDU buffer size
 yp25 <yudhipra25@gmail.com> support for individual key types and AES keys in SCP02 in put_sc_key
+Simon Josefsson <simon@josefsson.org> Debian-related fixes

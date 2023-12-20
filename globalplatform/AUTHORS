@@ -10,3 +10,4 @@ Philip Wendland <philip.wendland@tu-ilmenau.de> For SCP03 mutual authentication 
 Klas Lindfors <klas@yubico.com> SCP03 CMAC and encryption fixes
 Dave Mercer <dmercer@google.com> fix for parsing SCP impl from card data
 yp25 <yudhipra25@gmail.com> support for individual key types and AES keys in SCP02 in put_sc_key
+Simon Josefsson <simon@josefsson.org> Debian-related fixes
