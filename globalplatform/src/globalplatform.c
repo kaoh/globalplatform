@@ -3269,6 +3269,7 @@ OPGP_ERROR_STATUS get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD e
 	BYTE buf[256];
 	DWORD i=0;
 	DWORD hiByte, loByte;
+	DWORD installParametersLengthSize;
 	OPGP_ERROR_STATUS status;
 
 	OPGP_LOG_START(_T("get_install_data"));
@@ -3311,9 +3312,34 @@ OPGP_ERROR_STATUS get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD e
 	}
 
 	buf[i++] = 0xC9; // application install parameters
-	buf[i++] = 0;
-
-    buf[i-1] = (BYTE)installParametersLength;
+	if (installParametersLength < 128L) {
+		installParametersLengthSize=1;
+	}
+	else if (installParametersLength < 256L) {
+		installParametersLengthSize=2;
+	}
+	else if (installParametersLength < 65536L) {
+		installParametersLengthSize=3;
+	}
+	else {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE)); goto end; }
+	}
+	switch (installParametersLengthSize) {
+		case 1: {
+			buf[i++] = (BYTE)installParametersLength;
+			break;
+			}
+		case 2: {
+			buf[i++] = 0x81;
+			buf[i++] = (BYTE)installParametersLength;
+			break;
+			}
+		case 3: {
+			buf[i++] = 0x82;
+			buf[i++] = (BYTE)(installParametersLength >> 8);
+			buf[i++] = (BYTE)(installParametersLength - (buf[i-1] << 8));
+			}
+	}
     memcpy(buf+i, installParameters, installParametersLength);
     i+=installParametersLength;
  
