@@ -14,12 +14,12 @@ jobs:
       - name: Download OpenSSL
         run: |
           $client = new-object System.Net.WebClient
-          $client.DownloadFile("https://slproweb.com/download/Win32OpenSSL-3_2_0.msi","C:\Temp\Win32OpenSSL-3_2_0.msi")      
+          $client.DownloadFile("https://slproweb.com/download/Win32OpenSSL-3_2_1.msi","C:\Temp\Win32OpenSSL-3_2_1.msi")      
       - name: Install dependencies
         shell: cmd
         run: |
           choco install -y doxygen.install graphviz
-          C:\Temp\Win32OpenSSL-3_2_0.msi /quiet
+          C:\Temp\Win32OpenSSL-3_2_1.msi /quiet
           copy "C:\Program Files (x86)\OpenSSL-Win32\lib\VC\x86\MD\*" "C:\Program Files (x86)\OpenSSL-Win32\lib\VC"
       - name: Build gpshell
         shell: cmd
