@@ -6,7 +6,7 @@ mkdir %dirName%
 for /f %%f in ('dir /a /b gpshell-binary-*.zip') do set gpshellZip=%%f
 
 tar -xf %gpshellZip% -C %dirName%
-tar -xf zlib-1.2.8/zlib-1.2.8.zip -C %dirName%
+tar -xf zlib-1.3.1/zlib-1.3.1.zip -C %dirName%
 
 rem get gpshell directory 
 set dirNamegpshell=""
@@ -19,9 +19,9 @@ copy "C:\Program Files (x86)\OpenSSL-Win32\libcrypto*.dll" "%dirNamegpshell%\bin
 copy "C:\Program Files (x86)\OpenSSL-Win32\libssl*.dll" "%dirNamegpshell%\bin"
 copy "C:\Program Files (x86)\OpenSSL-Win32\libeay*.dll" "%dirNamegpshell%\bin"
 copy "C:\Program Files (x86)\OpenSSL-Win32\bin\legacy*.dll" "%dirNamegpshell%\bin"
-copy zlib-1.2.8\win32-build\zlibwapi.dll "%dirNamegpshell%\bin"
+copy zlib-1.3.1\win32-build\zlib.dll "%dirNamegpshell%\bin"
 rem when build directory is used
-copy ..\zlib-1.2.8\win32-build\zlibwapi.dll "%dirNamegpshell%\bin"
+copy ..\zlib-1.3.1\win32-build\zlib.dll "%dirNamegpshell%\bin"
 rem copy redistributable runtime files
 set curDir=%CD%
 pushd "%VCToolsRedistDir%%VSCMD_ARG_TGT_ARCH%"
@@ -36,7 +36,7 @@ del /F /S /Q %dirNamegpshell%\include > NUL
 rmdir /s /Q %dirNamegpshell%\include
 del /F /S /Q %dirNamegpshell%\lib > NUL
 rmdir /s /Q %dirNamegpshell%\lib
-del /F /S /Q %dirName%\zlib-1.2.8 > NUL
-rmdir /s /Q %dirName%\zlib-1.2.8
+del /F /S /Q %dirName%\zlib-1.3.1 > NUL
+rmdir /s /Q %dirName%\zlib-1.3.1
 
 tar -a -c -C %dirNamegpshell% -f %dirName%\%gpshellZip% *
