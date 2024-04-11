@@ -60,7 +60,7 @@
 #endif
 
 /* Constants */
-#define BUFLEN 1024
+#define BUFLEN 8192
 #define FILENAMELEN 256
 #define READERNAMELEN 256
 #define AIDLEN 16
