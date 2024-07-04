@@ -139,17 +139,19 @@ IF(TESTING)
     IF(UNIX AND NOT APPLE)
       add_mocked_test(scp03Test
         SOURCES scp03Test.c testUtil.c ${SOURCES}
-        COMPILE_OPTIONS -I${PCSC_INCLUDE_DIRS}
+        COMPILE_OPTIONS -I${PCSC_INCLUDE_DIRS} "-fno-lto"
         MOCKS RAND_bytes
         LINK_LIBRARIES ${LIBRARIES})
 
       add_mocked_test(scp02Test
         SOURCES scp02Test.c testUtil.c ${SOURCES}
+        COMPILE_OPTIONS -I${PCSC_INCLUDE_DIRS} "-fno-lto"
         MOCKS RAND_bytes
         LINK_LIBRARIES ${LIBRARIES})
 
       add_mocked_test(scp01Test
         SOURCES scp01Test.c testUtil.c ${SOURCES}
+        COMPILE_OPTIONS -I${PCSC_INCLUDE_DIRS} "-fno-lto"
         MOCKS RAND_bytes
         LINK_LIBRARIES ${LIBRARIES})
     ENDIF(UNIX AND NOT APPLE)
