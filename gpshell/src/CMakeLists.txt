@@ -81,7 +81,7 @@ IF(NOT(WIN32))
 	
 	add_custom_command(
 	    OUTPUT gpshell.1
-	    COMMAND ${PANDOC_EXECUTABLE} --standalone --to man -o gpshell.1 gpshell.1.md
+	    COMMAND ${PANDOC_EXECUTABLE} --standalone --to man -o gpshell.1 ${CMAKE_CURRENT_SOURCE_DIR}/gpshell.1.md
 	    COMMENT "Creating man page ..."
 	    )
 	
@@ -93,5 +93,5 @@ get_directory_property(make_clean_files ADDITIONAL_MAKE_CLEAN_FILES)
 set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${make_clean_files};${native_filepath}")
 
 IF(UNIX)
-  INSTALL(FILES gpshell.1 DESTINATION ${MANPAGE_DIRECTORY}/man1)
+  INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/gpshell.1 DESTINATION ${MANPAGE_DIRECTORY}/man1)
 ENDIF(UNIX)
