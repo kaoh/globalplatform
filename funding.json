@@ -74,7 +74,7 @@
                 "currency": "USD",
                 "frequency": "monthly",
                 "channels": ["paypal"]
-            },
+            }
         ]
     }
 }
