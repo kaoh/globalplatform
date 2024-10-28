@@ -5,7 +5,7 @@
 
 # Overview
 
-The GlobalPlatform card specification is a standard for the management of the contents on a smart card. Mainly this comprises the installation and the removal of applications. Practically these applications are always [JavaCard](http://www.oracle.com/technetwork/java/javacard/overview/index.html)
+The GlobalPlatform card specification is a standard for the management of the contents on a smart card. Mainly this comprises the installation and the removal of applications. Practically these applications are always [JavaCard applets](http://www.oracle.com/technetwork/java/javacard/overview/index.html).
 
 [This project](https://github.com/kaoh/globalplatform) offers a C library and a command line shell.
 
