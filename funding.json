@@ -1,80 +1,107 @@
 {
-    "version": "v1.0.0",
-    "entity": {
-        "type": "individual",
-        "role": "owner",
-        "name": "Karsten Ohme",
-        "email": "k_o_@users.sourceforge.net",
-        "phone": "",
-        "description": "I'm a developer specialized in security related projects and created the first open source projects for the GlobalPlatform standard for the installation of smart card applications. I also contributed to BouncyCastle, noteable here I wrote major parts of the current PKI certification path validation logic used in TLS. This is used in Java Enterprise products and was also used as the standard crypto provider in Android until version 8.",
-        "webpageUrl": {
-            "url": "https://github.com/kaoh",
-            "wellKnown": ""
-        }
-    },
-    "projects": [{
-        "guid": "globalplatform",
-        "name": "globalplatform",
-        "description": "The GlobalPlatform card specification is a standard for the management of the contents on a smart card. Mainly this comprises the installation and the removal of applications. Practically these applications are always JavaCard applets. This project offers a C library and a command line shell GPShell.",
-        "webpageUrl": {
-            "url": "https://kaoh.github.io/globalplatform/"
-        },
-        "repositoryUrl": {
-            "url": "https://github.com/kaoh/globalplatform"
-        },
-        "licenses": ["spdx:LGPL-3.0"],
-        "tags": ["smart-card", "globalpatform", "secure-channel"]
-    }],
-    "funding": {
-        "channels": [
-            {
-                "guid": "paypal",
-                "type": "payment-provider",
-                "address": "wider.stand@gmx.de",
-                "description": "You can fund us via PayPal with your debit card, credit card or PayPal account"
-            }
-        ],
-        "plans": [
-            {
-                "guid": "developer-time",
-                "status": "active",
-                "name": "Developer compensation",
-                "description": "This will cover the cost of one developer working part-time on the projects.",
-                "amount": 1000,
-                "currency": "USD",
-                "frequency": "monthly",
-                "channels": ["paypal"]
-            },
-            {
-                "guid": "angel-plan",
-                "status": "active",
-                "name": "Goodwill plan",
-                "description": "Pay anything you wish to show your goodwill for the project.",
-                "amount": 0,
-                "currency": "USD",
-                "frequency": "one-time",
-                "channels": ["paypal"]
-            },
-            {
-                "guid": "sponsor",
-                "status": "active",
-                "name": "Larger contribution for individuals",
-                "description": "Funds 1 hour of developer work per month.",
-                "amount": 10,
-                "currency": "USD",
-                "frequency": "monthly",
-                "channels": ["paypal"]
-            },
-            {
-                "guid": "backer",
-                "status": "active",
-                "name": "Small contribution for individuals",
-                "description": "Funds 30 minutes of developer work per month.",
-                "amount": 5,
-                "currency": "USD",
-                "frequency": "monthly",
-                "channels": ["paypal"]
-            }
-        ]
+  "id": 0,
+  "guid": "",
+  "version": "",
+  "url": "",
+  "meta": {},
+  "status": "",
+  "status_message": null,
+  "crawl_errors": 0,
+  "crawl_message": null,
+  "created_at": "0001-01-01T00:00:00Z",
+  "updated_at": "0001-01-01T00:00:00Z",
+  "entity": {
+    "type": "individual",
+    "role": "owner",
+    "name": "Karsten Ohme",
+    "email": "k_o_@users.sourceforge.net",
+    "phone": "",
+    "description": "I'm a developer specialized in security related projects and created the first open source projects for the GlobalPlatform standard for the installation of smart card applications. I also contributed to BouncyCastle, noteable here I wrote major parts of the current PKI certification path validation logic used in TLS. This is used in Java Enterprise products and was also used as the standard crypto provider in Android until version 8.",
+    "webpageUrl": {
+      "url": "https://github.com/kaoh"
     }
+  },
+  "projects": [
+    {
+      "guid": "globalplatform",
+      "name": "globalplatform",
+      "description": "The GlobalPlatform card specification is a standard for the management of the contents on a smart card. Mainly this comprises the installation and the removal of applications. Practically these applications are always JavaCard applets. This project offers a C library and a command line shell GPShell.",
+      "webpageUrl": {
+        "url": "https://kaoh.github.io/globalplatform",
+        "wellKnown": "https://kaoh.github.io/globalplatform/.well-known/funding-manifest-urls"
+      },
+      "repositoryUrl": {
+        "url": "https://github.com/kaoh/globalplatform"
+      },
+      "licenses": [
+        "spdx:LGPL-3.0"
+      ],
+      "tags": [
+        "smart-card",
+        "globalpatform",
+        "secure-channel"
+      ]
+    }
+  ],
+  "funding": {
+    "channels": [
+      {
+        "guid": "paypal",
+        "type": "payment-provider",
+        "address": "wider.stand@gmx.de",
+        "description": "You can fund us via PayPal with your debit card, credit card or PayPal account"
+      }
+    ],
+    "plans": [
+      {
+        "guid": "developer-time",
+        "status": "active",
+        "name": "Developer compensation",
+        "description": "This will cover the cost of one developer working part-time on the projects.",
+        "amount": 1000,
+        "currency": "USD",
+        "frequency": "monthly",
+        "channels": [
+          "paypal"
+        ]
+      },
+      {
+        "guid": "angel-plan",
+        "status": "active",
+        "name": "Goodwill plan",
+        "description": "Pay anything you wish to show your goodwill for the project.",
+        "amount": 0,
+        "currency": "USD",
+        "frequency": "one-time",
+        "channels": [
+          "paypal"
+        ]
+      },
+      {
+        "guid": "sponsor",
+        "status": "active",
+        "name": "Larger contribution for individuals",
+        "description": "Funds 1 hour of developer work per month.",
+        "amount": 10,
+        "currency": "USD",
+        "frequency": "monthly",
+        "channels": [
+          "paypal"
+        ]
+      },
+      {
+        "guid": "backer",
+        "status": "active",
+        "name": "Small contribution for individuals",
+        "description": "Funds 30 minutes of developer work per month.",
+        "amount": 5,
+        "currency": "USD",
+        "frequency": "monthly",
+        "channels": [
+          "paypal"
+        ]
+      }
+    ],
+    "history": null
+  }
 }
