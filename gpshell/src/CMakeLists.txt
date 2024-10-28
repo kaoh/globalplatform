@@ -79,9 +79,16 @@ IF(NOT(WIN32))
 	    endif()
 	endif()
 	
+	# Inject version number
+	configure_file(
+		${CMAKE_CURRENT_SOURCE_DIR}/gpshell.1.md
+		${CMAKE_CURRENT_BINARY_DIR}/gpshell.1.md
+		@ONLY
+		)
+
 	add_custom_command(
 	    OUTPUT gpshell.1
-	    COMMAND ${PANDOC_EXECUTABLE} --standalone --to man -o gpshell.1 ${CMAKE_CURRENT_SOURCE_DIR}/gpshell.1.md
+	    COMMAND ${PANDOC_EXECUTABLE} --standalone --to man -o gpshell.1 ${CMAKE_CURRENT_BINARY_DIR}/gpshell.1.md
 	    COMMENT "Creating man page ..."
 	    )
 	
