@@ -5,7 +5,7 @@
     "role": "owner",
     "name": "Karsten Ohme",
     "email": "k_o_@users.sourceforge.net",
-    "description": "I'm a developer specialized in security related projects and created the first open source projects for the GlobalPlatform standard for the installation of smart card applications. I also contributed to BouncyCastle, noteable here I wrote major parts of the current PKI certification path validation logic used in TLS. This is used in Java Enterprise products and was also used as the standard crypto provider in Android until version 8.",
+    "description": "I'm a developer specialized in security related projects. I created the first open source project for the GlobalPlatform standard for the installation of smart card applications. I also contributed to BouncyCastle, noteable here I wrote major parts of the current PKI certification path validation logic used in TLS. This is used in Java Enterprise products and was also used as the standard crypto provider in Android until version 8.",
     "webpageUrl": {
       "url": "https://github.com/kaoh"
     }
