@@ -1,4 +1,4 @@
-% GPSHELL(1) 2.4.0 | GPShell Documentation
+% GPSHELL(1) @GPSHELL_VERSION@ | GPShell Documentation
 
 # NAME
 
