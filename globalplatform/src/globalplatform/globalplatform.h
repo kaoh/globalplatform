@@ -450,7 +450,7 @@ OPGP_ERROR_STATUS GP211_init_implicit_secure_channel(PBYTE AID, DWORD AIDLength,
 
 //! \brief GlobalPlatform2.1.1: Closes a Secure Channel implicitly.
 OPGP_API
-OPGP_ERROR_STATUS close_implicit_secure_channel(GP211_SECURITY_INFO *secInfo);
+OPGP_ERROR_STATUS GP211_close_implicit_secure_channel(GP211_SECURITY_INFO *secInfo);
 
 //! \brief GlobalPlatform2.1.1: Retrieve card data.
 OPGP_API
