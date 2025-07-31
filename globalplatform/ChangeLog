@@ -3,7 +3,7 @@ History
 
 7.4.1 - Thu, July 31 2025, Karsten Ohme
 	Support for large STORE DATA commands
-	Support for install parameters > 128 bytes
+	Support for install parameters field length > 128 bytes
 
 7.4.0 - Mon, Dec 18 2023, Karsten Ohme
 	RSA exponent conversion fix for S360

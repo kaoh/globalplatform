@@ -3325,22 +3325,24 @@ OPGP_ERROR_STATUS get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD e
 	}
 	switch (installParameterFieldLengthSize) {
 		case 1: {
-			buf[i++] = (BYTE)installParametersLength;
+			buf[i++] = (BYTE)installParameterFieldLength;
 			break;
 			}
 		case 2: {
 			buf[i++] = 0x81;
-			buf[i++] = (BYTE)installParametersLength;
+			buf[i++] = (BYTE)installParameterFieldLength;
 			break;
 			}
 		case 3: {
 			buf[i++] = 0x82;
-			buf[i++] = (BYTE)(installParametersLength >> 8);
-			buf[i++] = (BYTE)(installParametersLength - (buf[i-1] << 8));
+			buf[i++] = (BYTE)(installParameterFieldLength >> 8);
+			buf[i++] = (BYTE)(installParameterFieldLength - (buf[i-1] << 8));
+			break;
 			}
 	}
 	buf[i++] = 0xC9; // application install parameters
-    memcpy(buf+i, installParameters, installParametersLength);
+ 	buf[i++] = (BYTE)installParametersLength;
+	memcpy(buf+i, installParameters, installParametersLength);
     i+=installParametersLength;
  
  	if (nonVolatileDataSpaceLimit > 0 || volatileDataSpaceLimit > 0 || simSpecParamsLength > 0) {
