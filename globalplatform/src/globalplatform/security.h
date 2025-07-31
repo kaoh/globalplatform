@@ -279,7 +279,7 @@ typedef struct {
  */
 typedef struct {
 	BYTE receiptLength; //!< The length of the receipt DAP.
-	BYTE receipt[8]; //!< The receipt DAP.
+	BYTE receipt[16]; //!< The receipt DAP.
 	BYTE confirmationCounterLength; //!< Length of the confirmation counter buffer.
 	BYTE confirmationCounter[2]; //!< The confirmation counter buffer.
 	BYTE cardUniqueDataLength; //!< The length of the card unique data buffer.
