@@ -19,11 +19,13 @@ package net.sourceforge.globalplatform.jc.helloworld;
 import javacard.framework.APDU;
 import javacard.framework.Applet;
 import javacard.framework.Util;
+import javacard.framework.MultiSelectable;
+
 
 /**
  * Hello World Applet.
  */
-public class HelloWorldApplet extends Applet {
+public class HelloWorldApplet extends Applet implements MultiSelectable {
 
     private final static byte[] HELLO_WORLD = new byte[]{'H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd', '!'};
 
@@ -45,6 +47,14 @@ public class HelloWorldApplet extends Applet {
         new HelloWorldApplet();
     }
 
+    public void deselect(boolean appInstStillSelected) { 
+ 
+    } 
+
+    public boolean select(boolean appInstAlreadySelected) { 
+        return true;
+    } 
+    
     /**
      * Processes an incoming APDU.
      *
@@ -52,6 +62,10 @@ public class HelloWorldApplet extends Applet {
      *            the APDU.
      */
     public void process(APDU apdu) {
+        // When a SELECT command is received (on any channel), simply return.
+        if (selectingApplet()) {
+            return;
+        }
         byte buffer[] = apdu.getBuffer();
         apdu.setIncomingAndReceive();
         Util.arrayCopyNonAtomic(HELLO_WORLD, (short) 0, buffer, (short) 0, (short) HELLO_WORLD.length);

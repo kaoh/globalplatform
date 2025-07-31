@@ -136,15 +136,14 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding> 
-        <jc.home>${env.JC212_HOME}</jc.home>
         <javacard.package.name>net.sourceforge.globalplatform.jc.helloworld</javacard.package.name>
         <javacard.package.aid>0xD0:0xD1:0xD2:0xD3:0xD4:0xD5:0x01</javacard.package.aid>
         <javacard.applet.aid>0xD0:0xD1:0xD2:0xD3:0xD4:0xD5:0x01:0x01</javacard.applet.aid>
         <javacard.major.version>1</javacard.major.version>
         <javacard.minor.version>0</javacard.minor.version>
-        <jc.version>2.1.2</jc.version>
-        <jc.home>${env.JC212_HOME}</jc.home>
-        <jc.classifier>21</jc.classifier>
+        <jc.version>2.2.1</jc.version>
+        <jc.home>${env.JC221_HOME}</jc.home>
+        <jc.classifier></jc.classifier>
     </properties>
 	
     <dependencies>
@@ -194,7 +193,7 @@
                             <arg value="${javacard.major.version}.${javacard.minor.version}" />
                             <arg value="-nowarn" />
                             <classpath>
-                                <pathelement location="${jc.home}/api21_export_files" />
+                                <pathelement location="${jc.home}/api${jc.classifier}_export_files" />
                                 <pathelement location="${jc.home}/lib/apduio.jar" />
                                 <pathelement location="${jc.home}/lib/apdutool.jar" />
                                 <pathelement location="${jc.home}/lib/jcwde.jar" />

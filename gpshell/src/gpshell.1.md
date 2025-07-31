@@ -26,6 +26,14 @@ There are several `txt` example scripts provided which gets installed into `usr/
 
 # COMMANDS
 
+__#__
+
+:    Start a line with a comment.
+
+__//__
+
+:    Starts a line with a comment.
+
 __mode_201__
 
 :    Set protocol mode to OpenPlatform 2.0.1. This is the default.
@@ -55,6 +63,10 @@ __enable_timer__
 __establish_context__
 
 :    Establish context. This must always be executed before connecting to a card.
+
+__list_readers__
+
+:    List the card readers.
 
 __card_connect__ -reader *readerName* -protocol *protocol*
 
@@ -167,6 +179,12 @@ __send_apdu__ -sc 0 -APDU *apdu*
 
 The APDU is given as hex without spaces and without leading 0x.
 
+__send_apdu_nostop__ -sc 0 -APDU *apdu*
+
+:    Same as __send_apdu__ but not stopping in case of connection or GlobalPlatform errors.
+
+The APDU is given as hex without spaces and without leading 0x.
+
 __get_data__ -identifier *identifier*
 
 :    A GET DATA command returning the data for the given identifier. See the identifier options for details.
@@ -199,11 +217,23 @@ __get_card_recognition_data__
 
 :     A GET DATA command returning the card recognition data. __NOTE:__ The security domain must be selected.
 
+__delete__ -AID *aid*
+
+:     Deletes an applet or package with the specified AID.
+
 __delete_key__ -keyver *keyver* -keyind *keyind*
 
 :     Deletes a key set version with a DELETE command.
 If only the keyver is passed the complete key set version is deleted.
-By default keyind is 0xFF to delete the complete key set version. If keyver is 0 all key set with the passed keyind are deleted.
+By default keyind is 0xFF to delete the complelist_readerste key set version. If keyver is 0 all key set with the passed keyind are deleted.
+
+__gemXpressoPro__ 
+
+:     Enables support for GemXPresso card which enables the visa2 key derivation mode.
+
+__exit__
+
+:     Exit the shell. Useful in interactive mode.
 
 # OPTIONS
 
@@ -212,7 +242,8 @@ __-keyind__ *x*
 :    Key index *x*
 
 __-keyver__ *x*
-Key set version x
+
+:    Key set version x
 
 __-newkeyver__ *x*
 
@@ -423,12 +454,14 @@ Dates are stored as 2 bytes, the first specifying the year in the decade and the
 
 __-keyDerivation__ *derivation method*
 
-:    Possible values are *none*, *visa2* or *emvcps11*
+:    Possible values are *none*, *visa1*, *visa2* or *emvcps11*
 
 Choose *visa2* if you have a card which uses the VISA key derivation scheme for the key calculation, like GemXpresso Pro or some JCOP cards you must set this.
 
 Choose *emvcps11* If you have a card which uses the EMV CPS 1.1 key derivation scheme for the key calculation, like a Sm@rtCafe Expert 3.0 and later you must set this.
 Also for put_sc_key this is necessary for Sm@rtcafe 5.0 (and earlier(?)) cards
+
+*visa1* is an old VISA key derivation scheme and is only needed for older cards.
 
 # ENVIRONMENT
 
