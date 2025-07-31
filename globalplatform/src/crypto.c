@@ -1355,6 +1355,7 @@ end:
 
 /**
  * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param keyType [in] The key type. See GP211_KEY_TYPE_AES.
  * \param keyData [in] The key data.
  * \param keyDataLength [in] The key data length.
  * \param keyCheckValue [out] The key check value.

@@ -1,11 +1,11 @@
 <map id="security.h" name="security.h">
-<area shape="rect" id="node1" title=" " alt="" coords="151,5,229,32"/>
-<area shape="rect" id="node2" href="$connection_8h.html" title=" " alt="" coords="142,80,238,107"/>
-<area shape="rect" id="node3" href="$globalplatform_8h.html" title=" " alt="" coords="5,155,119,181"/>
-<area shape="rect" id="node8" href="$crypto_8h.html" title=" " alt="" coords="277,80,346,107"/>
-<area shape="rect" id="node7" href="$connectionplugin_8h.html" title=" " alt="" coords="143,155,274,181"/>
-<area shape="rect" id="node4" href="$globalplatform_8c.html" title="This implements all Open&#45; and GlobalPlatform functions." alt="" coords="43,304,156,331"/>
-<area shape="rect" id="node5" href="$loadfile_8h.html" title=" " alt="" coords="63,229,136,256"/>
-<area shape="rect" id="node6" href="$testUtil_8h_source.html" title=" " alt="" coords="161,229,235,256"/>
-<area shape="rect" id="node9" href="$crypto_8c.html" title="This implements all crypto functions." alt="" coords="349,155,418,181"/>
+<area shape="rect" id="node1" title=" " alt="" coords="223,5,307,32"/>
+<area shape="rect" id="node2" href="$crypto_8h.html" title=" " alt="" coords="80,80,155,107"/>
+<area shape="rect" id="node5" href="$connection_8h.html" title=" " alt="" coords="213,80,318,107"/>
+<area shape="rect" id="node7" href="$globalplatform_8h.html" title=" " alt="" coords="325,155,456,181"/>
+<area shape="rect" id="node3" href="$crypto_8c.html" title="This implements all crypto functions." alt="" coords="5,155,80,181"/>
+<area shape="rect" id="node4" href="$globalplatform_8c.html" title="This implements all Open&#45; and GlobalPlatform functions." alt="" coords="194,304,323,331"/>
+<area shape="rect" id="node6" href="$connectionplugin_8h.html" title=" " alt="" coords="155,155,301,181"/>
+<area shape="rect" id="node8" href="$loadfile_8h.html" title=" " alt="" coords="296,229,379,256"/>
+<area shape="rect" id="node9" href="$testUtil_8h_source.html" title=" " alt="" coords="403,229,485,256"/>
 </map>

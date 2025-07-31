@@ -1,15 +1,16 @@
 <map id="library.h" name="library.h">
-<area shape="rect" id="node1" title=" " alt="" coords="253,5,321,32"/>
-<area shape="rect" id="node2" href="$connection_8h.html" title=" " alt="" coords="64,80,160,107"/>
-<area shape="rect" id="node3" href="$globalplatform_8h.html" title=" " alt="" coords="197,155,310,181"/>
-<area shape="rect" id="node5" href="$loadfile_8h.html" title=" " alt="" coords="128,229,201,256"/>
-<area shape="rect" id="node7" href="$connectionplugin_8h.html" title=" " alt="" coords="31,155,162,181"/>
-<area shape="rect" id="node8" href="$dyn__generic_8h.html" title="This abstracts dynamic library loading functions." alt="" coords="236,80,338,107"/>
-<area shape="rect" id="node9" href="$stringify_8h.html" title=" " alt="" coords="362,80,441,107"/>
-<area shape="rect" id="node11" href="$debug_8h.html" title=" " alt="" coords="465,80,533,107"/>
-<area shape="rect" id="node12" href="$crypto_8h.html" title=" " alt="" coords="558,80,627,107"/>
-<area shape="rect" id="node13" href="$util_8h.html" title=" " alt="" coords="651,80,702,107"/>
-<area shape="rect" id="node4" href="$globalplatform_8c.html" title="This implements all Open&#45; and GlobalPlatform functions." alt="" coords="392,304,505,331"/>
-<area shape="rect" id="node6" href="$testUtil_8h_source.html" title=" " alt="" coords="226,229,300,256"/>
-<area shape="rect" id="node10" href="$crypto_8c.html" title="This implements all crypto functions." alt="" coords="486,155,555,181"/>
+<area shape="rect" id="node1" title=" " alt="" coords="415,5,489,32"/>
+<area shape="rect" id="node2" href="$crypto_8h.html" title=" " alt="" coords="5,80,80,107"/>
+<area shape="rect" id="node5" href="$dyn__generic_8h.html" title="This abstracts dynamic library loading functions." alt="" coords="677,80,790,107"/>
+<area shape="rect" id="node6" href="$connection_8h.html" title=" " alt="" coords="445,80,550,107"/>
+<area shape="rect" id="node7" href="$connectionplugin_8h.html" title=" " alt="" coords="455,155,601,181"/>
+<area shape="rect" id="node8" href="$globalplatform_8h.html" title=" " alt="" coords="300,155,431,181"/>
+<area shape="rect" id="node9" href="$loadfile_8h.html" title=" " alt="" coords="437,229,520,256"/>
+<area shape="rect" id="node11" href="$debug_8h.html" title=" " alt="" coords="104,80,179,107"/>
+<area shape="rect" id="node12" href="$stringify_8h.html" title=" " alt="" coords="282,80,369,107"/>
+<area shape="rect" id="node13" href="$init_8h.html" title=" " alt="" coords="814,80,869,107"/>
+<area shape="rect" id="node14" href="$util_8h.html" title=" " alt="" coords="203,80,258,107"/>
+<area shape="rect" id="node3" href="$crypto_8c.html" title="This implements all crypto functions." alt="" coords="131,155,205,181"/>
+<area shape="rect" id="node4" href="$globalplatform_8c.html" title="This implements all Open&#45; and GlobalPlatform functions." alt="" coords="178,304,307,331"/>
+<area shape="rect" id="node10" href="$testUtil_8h_source.html" title=" " alt="" coords="331,229,413,256"/>
 </map>

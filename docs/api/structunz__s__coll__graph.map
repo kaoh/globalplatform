@@ -1,9 +1,9 @@
 <map id="unz_s" name="unz_s">
-<area shape="rect" id="node1" title=" " alt="" coords="564,121,621,148"/>
-<area shape="rect" id="node2" href="$structfile__in__zip__read__info__s.html" title=" " alt="" coords="241,71,393,97"/>
-<area shape="rect" id="node3" href="$structzlib__filefunc__def__s.html" title=" " alt="" coords="5,27,132,53"/>
-<area shape="rect" id="node4" href="$structunz__file__info__internal__s.html" title=" " alt="" coords="239,121,395,148"/>
-<area shape="rect" id="node5" href="$structunz__global__info__s.html" title=" " alt="" coords="254,172,379,199"/>
-<area shape="rect" id="node6" href="$structunz__file__info__s.html" title=" " alt="" coords="263,223,370,249"/>
-<area shape="rect" id="node7" href="$structtm__unz__s.html" title=" " alt="" coords="29,223,108,249"/>
+<area shape="rect" id="node1" title=" " alt="" coords="629,107,688,133"/>
+<area shape="rect" id="node2" href="$structfile__in__zip__read__info__s.html" title=" " alt="" coords="267,56,437,83"/>
+<area shape="rect" id="node3" href="$structzlib__filefunc__def__s.html" title=" " alt="" coords="5,25,148,52"/>
+<area shape="rect" id="node4" href="$structunz__file__info__internal__s.html" title=" " alt="" coords="264,107,440,133"/>
+<area shape="rect" id="node5" href="$structunz__global__info__s.html" title=" " alt="" coords="283,157,421,184"/>
+<area shape="rect" id="node6" href="$structunz__file__info__s.html" title=" " alt="" coords="293,208,411,235"/>
+<area shape="rect" id="node7" href="$structtm__unz__s.html" title=" " alt="" coords="35,208,119,235"/>
 </map>

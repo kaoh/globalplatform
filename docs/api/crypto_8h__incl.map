@@ -1,9 +1,9 @@
 <map id="crypto.h" name="crypto.h">
-<area shape="rect" id="node1" title=" " alt="" coords="246,5,316,32"/>
-<area shape="rect" id="node2" href="$types_8h.html" title=" " alt="" coords="28,155,177,181"/>
-<area shape="rect" id="node4" href="$library_8h.html" title=" " alt="" coords="24,80,176,107"/>
-<area shape="rect" id="node5" href="$unicode_8h.html" title=" " alt="" coords="373,155,536,181"/>
-<area shape="rect" id="node6" href="$error_8h.html" title=" " alt="" coords="438,80,580,107"/>
-<area shape="rect" id="node7" href="$security_8h.html" title=" " alt="" coords="200,80,362,107"/>
-<area shape="rect" id="node3" href="$wintypes_8h.html" title="This keeps a list of Windows(R) types." alt="" coords="60,229,144,256"/>
+<area shape="rect" id="node1" title=" " alt="" coords="280,5,355,32"/>
+<area shape="rect" id="node2" href="$types_8h.html" title=" " alt="" coords="91,155,262,181"/>
+<area shape="rect" id="node4" href="$library_8h.html" title=" " alt="" coords="26,80,201,107"/>
+<area shape="rect" id="node5" href="$unicode_8h.html" title=" " alt="" coords="414,155,600,181"/>
+<area shape="rect" id="node6" href="$error_8h.html" title=" " alt="" coords="484,80,650,107"/>
+<area shape="rect" id="node7" href="$security_8h.html" title=" " alt="" coords="226,80,410,107"/>
+<area shape="rect" id="node3" href="$wintypes_8h.html" title="This keeps a list of Windows(R) types." alt="" coords="130,229,223,256"/>
 </map>

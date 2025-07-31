@@ -1,9 +1,9 @@
 <map id="winscard.h" name="winscard.h">
-<area shape="rect" id="node1" title="This handles smartcard reader communications." alt="" coords="131,5,215,32"/>
-<area shape="rect" id="node2" href="$connection_8h.html" title=" " alt="" coords="125,80,221,107"/>
-<area shape="rect" id="node3" href="$globalplatform_8h.html" title=" " alt="" coords="43,155,156,181"/>
-<area shape="rect" id="node7" href="$connectionplugin_8h.html" title=" " alt="" coords="181,155,311,181"/>
-<area shape="rect" id="node4" href="$globalplatform_8c.html" title="This implements all Open&#45; and GlobalPlatform functions." alt="" coords="5,304,119,331"/>
-<area shape="rect" id="node5" href="$loadfile_8h.html" title=" " alt="" coords="63,229,136,256"/>
-<area shape="rect" id="node6" href="$testUtil_8h_source.html" title=" " alt="" coords="161,229,235,256"/>
+<area shape="rect" id="node1" title="This handles smartcard reader communications." alt="" coords="113,5,205,32"/>
+<area shape="rect" id="node2" href="$connection_8h.html" title=" " alt="" coords="107,80,212,107"/>
+<area shape="rect" id="node3" href="$connectionplugin_8h.html" title=" " alt="" coords="5,155,151,181"/>
+<area shape="rect" id="node4" href="$globalplatform_8h.html" title=" " alt="" coords="175,155,306,181"/>
+<area shape="rect" id="node5" href="$globalplatform_8c.html" title="This implements all Open&#45; and GlobalPlatform functions." alt="" coords="136,304,265,331"/>
+<area shape="rect" id="node6" href="$loadfile_8h.html" title=" " alt="" coords="199,229,282,256"/>
+<area shape="rect" id="node7" href="$testUtil_8h_source.html" title=" " alt="" coords="306,229,389,256"/>
 </map>
