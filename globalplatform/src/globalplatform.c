@@ -3269,6 +3269,8 @@ OPGP_ERROR_STATUS get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD e
 	BYTE buf[256];
 	DWORD i=0;
 	DWORD hiByte, loByte;
+	DWORD installParameterFieldLengthSize;
+	DWORD installParameterFieldLength;
 	OPGP_ERROR_STATUS status;
 
 	OPGP_LOG_START(_T("get_install_data"));
@@ -3288,32 +3290,56 @@ OPGP_ERROR_STATUS get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD e
 	buf[i++] = 0x01;
 	buf[i++] = applicationPrivileges; // application privileges
 
-	buf[i++] = 0x02; // install parameter field length
+	installParameterFieldLength = 0x02; // install parameter field length tag C9 + length byte (C9LL)
 	if (installParametersLength > 0) {
-		buf[i-1] += (BYTE)installParametersLength;
+		installParameterFieldLength += (BYTE)installParametersLength;
 	}
 	if (uiccSystemSpecParamsLength > 0) {
-		buf[i-1] += 2;
-		buf[i-1] += (BYTE)uiccSystemSpecParamsLength;
+		installParameterFieldLength += 2;
+		installParameterFieldLength += (BYTE)uiccSystemSpecParamsLength;
 	}
 
 	if (nonVolatileDataSpaceLimit > 0 || volatileDataSpaceLimit > 0 || simSpecParamsLength > 0) {
-		buf[i-1] += 2; // 0xEF LL
+		installParameterFieldLength += 2; // 0xEF LL
 	}
 	if (nonVolatileDataSpaceLimit > 0) {
-		buf[i-1] += 4;
+		installParameterFieldLength += 4;
 	}
 	if (volatileDataSpaceLimit > 0) {
-		buf[i-1] += 4;
+		installParameterFieldLength += 4;
 	}
 	if (simSpecParamsLength > 0) {
-		buf[i-1] += (BYTE)simSpecParamsLength + 2;
+		installParameterFieldLength += (BYTE)simSpecParamsLength + 2;
 	}
-
+	if (installParameterFieldLength < 128L) {
+		installParameterFieldLengthSize=1;
+	}
+	else if (installParameterFieldLength < 256L) {
+		installParameterFieldLengthSize=2;
+	}
+	else if (installParameterFieldLength < 65536L) {
+		installParameterFieldLengthSize=3;
+	}
+	else {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE)); goto end; }
+	}
+	switch (installParameterFieldLengthSize) {
+		case 1: {
+			buf[i++] = (BYTE)installParametersLength;
+			break;
+			}
+		case 2: {
+			buf[i++] = 0x81;
+			buf[i++] = (BYTE)installParametersLength;
+			break;
+			}
+		case 3: {
+			buf[i++] = 0x82;
+			buf[i++] = (BYTE)(installParametersLength >> 8);
+			buf[i++] = (BYTE)(installParametersLength - (buf[i-1] << 8));
+			}
+	}
 	buf[i++] = 0xC9; // application install parameters
-	buf[i++] = 0;
-
-    buf[i-1] = (BYTE)installParametersLength;
     memcpy(buf+i, installParameters, installParametersLength);
     i+=installParametersLength;
  
