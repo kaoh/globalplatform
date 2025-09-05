@@ -118,6 +118,8 @@ cmake -G "NMake Makefiles" -DOPENSSL_ROOT_DIR="C:\Program Files (x86)\OpenSSL-Wi
 nmake
 ```
 
+__NOTE:__ Read also the Windows specific part in the [GlobalPlatform sub project](./globalplatform/README.md#sdk).
+
 ## Documentation
 
 Execute:
