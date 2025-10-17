@@ -1,5 +1,11 @@
+# Prefer static libraries for OpenSSL and zlib when available (affects only this directory)
+set(OPENSSL_USE_STATIC_LIBS TRUE)
+set(ZLIB_USE_STATIC_LIBS TRUE)
+
 INCLUDE(FindPCSC)
 INCLUDE(FindGlobalPlatform)
+find_package(OpenSSL REQUIRED)
+find_package(ZLIB REQUIRED)
 SET(SOURCES gpshell.c)
 
 INCLUDE(CheckCCompilerFlag)
@@ -57,6 +63,47 @@ ENDIF()
 
 ADD_EXECUTABLE(gpshell ${SOURCES})
 TARGET_LINK_LIBRARIES(gpshell ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES})
+
+# Optional static gpshell that embeds GlobalPlatform and PC/SC plugin
+option(GPSHELL_BUILD_STATIC "Build a statically linked gpshell with built-in PC/SC plugin" ON)
+if(GPSHELL_BUILD_STATIC)
+  add_executable(gpshellStatic ${SOURCES})
+  # Ensure we include in-tree GlobalPlatform headers
+  target_include_directories(gpshellStatic PRIVATE ${PCSC_INCLUDE_DIRS} ${GLOBALPLATFORM_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/globalplatform/src)
+
+  # Prefer static libcrypto and libz explicitly (do not force static libc)
+  set(_orig_suffixes ${CMAKE_FIND_LIBRARY_SUFFIXES})
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+  find_library(ZLIB_STATIC NAMES z zlib)
+  find_library(CRYPTO_STATIC NAMES crypto libcrypto)
+  set(CMAKE_FIND_LIBRARY_SUFFIXES "${_orig_suffixes}")
+
+  # Link against static globalplatform and static plugin and their dependencies
+  # Use the static variants of libcrypto and libz if found; otherwise fall back to the ones from find_package
+  if(CRYPTO_STATIC)
+    set(_CRYPTO_LIB ${CRYPTO_STATIC})
+  else()
+    set(_CRYPTO_LIB ${OPENSSL_LIBRARIES})
+  endif()
+  if(ZLIB_STATIC)
+    set(_Z_LIB ${ZLIB_STATIC})
+  else()
+    set(_Z_LIB ${ZLIB_LIBRARIES})
+  endif()
+
+  target_link_libraries(gpshellStatic globalplatformStatic gppcscconnectionpluginStatic ${PCSC_LIBRARIES} ${_CRYPTO_LIB} ${_Z_LIB})
+  # Define to make the core use statically linked plugin
+  target_compile_definitions(gpshellStatic PRIVATE OPGP_STATIC_PCSC)
+  if(UNIX)
+    # dyn_unix uses dlfcn for shared; not needed for static path but harmless
+    target_link_libraries(gpshellStatic dl)
+  endif()
+  if(WINDDK_DIR)
+    TARGET_LINK_LIBRARIES(gpshellStatic optimized ${WINDDK_DIR}/lib/win7/i386/msvcrt_win2000.obj optimized ${WINDDK_DIR}/lib/Crt/i386/msvcrt.lib)
+  endif()
+  # Install static gpshell as separate binary
+  INSTALL(TARGETS gpshellStatic DESTINATION bin)
+endif()
 
 IF(WINDDK_DIR)
   TARGET_LINK_LIBRARIES(gpshell ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES} optimized ${WINDDK_DIR}/lib/win7/i386/msvcrt_win2000.obj optimized ${WINDDK_DIR}/lib/Crt/i386/msvcrt.lib)

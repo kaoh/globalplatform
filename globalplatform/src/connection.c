@@ -53,10 +53,38 @@ OPGP_ERROR_STATUS OPGP_establish_context(OPGP_CARD_CONTEXT *cardContext) {
 	// plugin function pointer
 	OPGP_ERROR_STATUS(*plugin_establishContextFunction) (OPGP_CARD_CONTEXT *);
 
-	OPGP_LOG_START(_T("OPGP_establish_context"));
+ OPGP_LOG_START(_T("OPGP_establish_context"));
 
 	// unload library
 	OPGP_release_context(cardContext);
+
+#ifdef OPGP_STATIC_PCSC
+	/* If statically linked PC/SC plugin is requested, wire symbols directly */
+	if (_tcscmp(cardContext->libraryName, _T("gppcscconnectionplugin")) == 0) {
+		/* Avoid dynamic loading; set function pointers to linked-in plugin */
+		/* Include header locally to get prototypes */
+		/* Declarations to avoid additional includes */
+		OPGP_ERROR_STATUS OPGP_PL_establish_context(OPGP_CARD_CONTEXT *);
+		OPGP_ERROR_STATUS OPGP_PL_release_context(OPGP_CARD_CONTEXT *);
+		OPGP_ERROR_STATUS OPGP_PL_card_connect(OPGP_CARD_CONTEXT, OPGP_CSTRING, OPGP_CARD_INFO *, DWORD);
+		OPGP_ERROR_STATUS OPGP_PL_card_disconnect(OPGP_CARD_CONTEXT, OPGP_CARD_INFO *);
+		OPGP_ERROR_STATUS OPGP_PL_list_readers(OPGP_CARD_CONTEXT, OPGP_STRING, PDWORD);
+		OPGP_ERROR_STATUS OPGP_PL_send_APDU(OPGP_CARD_CONTEXT, OPGP_CARD_INFO, PBYTE, DWORD, PBYTE, PDWORD);
+
+		cardContext->libraryHandle = NULL; /* No dlopen handle when static */
+		cardContext->connectionFunctions.cardConnect = (PVOID)OPGP_PL_card_connect;
+		cardContext->connectionFunctions.cardDisconnect = (PVOID)OPGP_PL_card_disconnect;
+		cardContext->connectionFunctions.establishContext = (PVOID)OPGP_PL_establish_context;
+		cardContext->connectionFunctions.listReaders = (PVOID)OPGP_PL_list_readers;
+		cardContext->connectionFunctions.releaseContext = (PVOID)OPGP_PL_release_context;
+		cardContext->connectionFunctions.sendAPDU = (PVOID)OPGP_PL_send_APDU;
+
+		/* call the establish function */
+		plugin_establishContextFunction = (OPGP_ERROR_STATUS(*)(OPGP_CARD_CONTEXT*)) cardContext->connectionFunctions.establishContext;
+		errorStatus = (*plugin_establishContextFunction) (cardContext);
+		goto end;
+	}
+#endif
 
 	errorStatus = DYN_LoadLibrary(&cardContext->libraryHandle, (LPCTSTR)cardContext->libraryName, (LPCTSTR)cardContext->libraryVersion);
 	if (OPGP_ERROR_CHECK(errorStatus)) {

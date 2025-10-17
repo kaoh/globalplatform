@@ -55,11 +55,21 @@ IF(UNIX)
   link_directories(${PCSC_LIBDIR})
 ENDIF()
 
+# Build shared and static variants
 ADD_LIBRARY(gppcscconnectionplugin SHARED ${SOURCES})
+ADD_LIBRARY(gppcscconnectionpluginStatic STATIC ${SOURCES})
+
 TARGET_LINK_LIBRARIES(gppcscconnectionplugin ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES})
+TARGET_LINK_LIBRARIES(gppcscconnectionpluginStatic ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES})
+
+# Under Unix shared and static libraries can have the same base name
+IF(UNIX)
+  SET_TARGET_PROPERTIES(gppcscconnectionpluginStatic PROPERTIES OUTPUT_NAME gppcscconnectionplugin)
+ENDIF()
 
 IF(WINDDK_DIR)
   TARGET_LINK_LIBRARIES(gppcscconnectionplugin ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES} optimized ${WINDDK_DIR}/lib/win7/i386/msvcrt_win2000.obj optimized ${WINDDK_DIR}/lib/Crt/i386/msvcrt.lib)
+  TARGET_LINK_LIBRARIES(gppcscconnectionpluginStatic ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES} optimized ${WINDDK_DIR}/lib/win7/i386/msvcrt_win2000.obj optimized ${WINDDK_DIR}/lib/Crt/i386/msvcrt.lib)
 ENDIF(WINDDK_DIR)
 
 IF(UNIX)
@@ -68,14 +78,17 @@ ENDIF(UNIX)
 
 IF(WIN32)
   SET_TARGET_PROPERTIES(gppcscconnectionplugin PROPERTIES DEFINE_SYMBOL OPGP_PL_EXPORTS)
+  SET_TARGET_PROPERTIES(gppcscconnectionpluginStatic PROPERTIES DEFINE_SYMBOL OPGP_PL_EXPORTS)
 ENDIF(WIN32)
 
 # Install
 IF(WIN32)
  INSTALL(TARGETS gppcscconnectionplugin RUNTIME DESTINATION lib${LIB_SUFFIX})
  INSTALL(TARGETS gppcscconnectionplugin ARCHIVE DESTINATION lib${LIB_SUFFIX})
+ INSTALL(TARGETS gppcscconnectionpluginStatic ARCHIVE DESTINATION lib${LIB_SUFFIX})
 ELSE(WIN32)
  INSTALL(TARGETS gppcscconnectionplugin LIBRARY DESTINATION lib${LIB_SUFFIX})
+ INSTALL(TARGETS gppcscconnectionpluginStatic ARCHIVE DESTINATION lib${LIB_SUFFIX})
 ENDIF(WIN32)
 
 # Testing

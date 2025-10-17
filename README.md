@@ -58,7 +58,8 @@ __NOTE:__ If using Homebrew in parallel and having not used Homebrew for install
 
 ```
 cd \path\to\globalplatform
-cmake .
+cmake -B build .
+cd build
 make
 make doc
 make install

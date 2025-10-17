@@ -15,6 +15,9 @@ ADD_SUBDIRECTORY(gpshell)
 
 ADD_DEPENDENCIES(gppcscconnectionplugin globalplatform)
 ADD_DEPENDENCIES(gpshell globalplatform gppcscconnectionplugin)
+if(TARGET gpshellStatic)
+  ADD_DEPENDENCIES(gpshellStatic globalplatformStatic gppcscconnectionpluginStatic)
+endif()
 
 IF(TESTING)
     ENABLE_TESTING()
