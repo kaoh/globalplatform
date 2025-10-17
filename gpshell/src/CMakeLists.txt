@@ -47,7 +47,8 @@ IF(WIN32)
     ADD_DEFINITIONS(-DUNICODE)
 ENDIF(WIN32)
 
-INCLUDE_DIRECTORIES(${PCSC_INCLUDE_DIRS} ${GLOBALPLATFORM_INCLUDE_DIRS})
+# Ensure we include in-tree GlobalPlatform headers to avoid picking up system-installed ones
+INCLUDE_DIRECTORIES(${PCSC_INCLUDE_DIRS} ${GLOBALPLATFORM_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/globalplatform/src)
 
 # without this the compilation in the homebrew docker image does not work
 IF(UNIX)

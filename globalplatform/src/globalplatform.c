@@ -4219,7 +4219,7 @@ end:
   * \param DEK [out] The static Key Encryption Key.
   * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
   */
-OPGP_ERROR_STATUS VISA1_derive_keys(BYTE cardSerialNumber[8], BYTE masterKey[16],
+OPGP_ERROR_STATUS VISA1_derive_keys(BYTE cardSerialNumber[8], PBYTE masterKey,
 							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]) {
 	OPGP_ERROR_STATUS status;
 	DWORD outl;

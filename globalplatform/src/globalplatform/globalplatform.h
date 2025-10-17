@@ -1080,17 +1080,17 @@ OPGP_ERROR_STATUS OP201_VISA1_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CA
 
 //! \brief Derives the static keys from a master key according the VISA 2 key derivation scheme.
 OPGP_API
-OPGP_ERROR_STATUS VISA2_derive_keys(BYTE baseKeyDiversificationData[10], BYTE masterKey[16],
+OPGP_ERROR_STATUS VISA2_derive_keys(BYTE baseKeyDiversificationData[10], PBYTE masterKey,
 							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
 
 //! \brief Derives the static keys from a master key according the VISA 1 key derivation scheme.
 OPGP_API
-OPGP_ERROR_STATUS VISA1_derive_keys(BYTE cardSerialNumber[8], BYTE masterKey[16],
+OPGP_ERROR_STATUS VISA1_derive_keys(BYTE cardSerialNumber[8], PBYTE masterKey,
 							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
 
 //! \brief Derives the static keys from a master key according the EMV CPS11 derivation scheme.
 OPGP_API
-OPGP_ERROR_STATUS EMV_CPS11_derive_keys(BYTE baseKeyDiversificationData[10], BYTE masterKey[16],
+OPGP_ERROR_STATUS EMV_CPS11_derive_keys(BYTE baseKeyDiversificationData[10], PBYTE masterKey,
 							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
 
 #ifdef __cplusplus

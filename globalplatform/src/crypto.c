@@ -577,10 +577,10 @@ end:
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS calculate_card_cryptogram_SCP02(BYTE S_ENCSessionKey[16],
-											BYTE sequenceCounter[2],
-											BYTE cardChallenge[6],
-											BYTE hostChallenge[8],
-											BYTE cardCryptogram[8]) {
+							BYTE sequenceCounter[2],
+							PBYTE cardChallenge,
+							BYTE hostChallenge[8],
+							BYTE cardCryptogram[8]) {
 	OPGP_ERROR_STATUS status;
 	BYTE message[16];
 	OPGP_LOG_START(_T("calculate_card_cryptogram_SCP02"));
@@ -696,10 +696,10 @@ end:
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS calculate_host_cryptogram_SCP02(BYTE S_ENCSessionKey[16],
-											BYTE sequenceCounter[2],
-											BYTE cardChallenge[6],
-											BYTE hostChallenge[8],
-											BYTE hostCryptogram[8]) {
+							BYTE sequenceCounter[2],
+							PBYTE cardChallenge,
+							BYTE hostChallenge[8],
+							BYTE hostCryptogram[8]) {
 	OPGP_ERROR_STATUS status;
 	BYTE message[16];
 	OPGP_LOG_START(_T("calculate_host_cryptogram_SCP02"));
@@ -756,7 +756,7 @@ end:
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS create_session_key_SCP01(BYTE key[16], BYTE cardChallenge[8],
-							   BYTE hostChallenge[8], BYTE sessionKey[16]) {
+						   BYTE hostChallenge[8], PBYTE sessionKey) {
 	OPGP_ERROR_STATUS status;
 	BYTE derivation_data[16];
 	DWORD outl;
@@ -788,7 +788,7 @@ end:
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS create_session_key_SCP02(BYTE key[16], BYTE constant[2],
-									BYTE sequenceCounter[2], BYTE sessionKey[16]) {
+									BYTE sequenceCounter[2], PBYTE sessionKey) {
 	OPGP_ERROR_STATUS status;
 	BYTE derivation_data[16];
 	DWORD outl;
@@ -824,7 +824,7 @@ end:
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS create_session_key_SCP03(BYTE key[32], DWORD keyLength, BYTE derivationConstant, BYTE cardChallenge[8],
-							   BYTE hostChallenge[8], BYTE sessionKey[32]) {
+						   BYTE hostChallenge[8], PBYTE sessionKey) {
 	OPGP_ERROR_STATUS status;
 	BYTE _sessionKey[32];
 	OPGP_LOG_START(_T("create_session_key_SCP03"));
@@ -1242,7 +1242,7 @@ end:
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS validate_receipt(PBYTE validationData, DWORD validationDataLength,
-							 BYTE receipt[16], BYTE receiptKey[32], DWORD keyLength, BYTE secureChannelProtocol)
+							 BYTE receipt[16], PBYTE receiptKey, DWORD keyLength, BYTE secureChannelProtocol)
 {
 	OPGP_ERROR_STATUS status;
 	BYTE mac[16];
@@ -1274,9 +1274,9 @@ end:
 }
 
 OPGP_ERROR_STATUS validate_delete_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
-							 DWORD cardUniqueDataLength,
-						   BYTE receiptKey[32], DWORD keyLength, GP211_RECEIPT_DATA receiptData,
-						   PBYTE AID, DWORD AIDLength, BYTE secureChannelProtocol)
+						 DWORD cardUniqueDataLength,
+					   PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+					   PBYTE AID, DWORD AIDLength, BYTE secureChannelProtocol)
 {
 	OPGP_ERROR_STATUS status;
 	DWORD i=0;
@@ -1721,10 +1721,10 @@ end:
 }
 
 OPGP_ERROR_STATUS validate_install_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
-							  DWORD cardUniqueDataLength,
-						   BYTE receiptKey[32], DWORD keyLength, GP211_RECEIPT_DATA receiptData,
-						   PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
-						   PBYTE applicationAID, DWORD applicationAIDLength, BYTE secureChannelProtocol)
+						  DWORD cardUniqueDataLength,
+					   PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+					   PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
+					   PBYTE applicationAID, DWORD applicationAIDLength, BYTE secureChannelProtocol)
 {
 	OPGP_ERROR_STATUS status;
 	DWORD i=0;
@@ -1766,7 +1766,7 @@ end:
 
 OPGP_ERROR_STATUS validate_load_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
 						   DWORD cardUniqueDataLength,
-						   BYTE receiptKey[32], DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+						   PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
 						   PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 						   PBYTE securityDomainAID, DWORD securityDomainAIDLength, BYTE secureChannelProtocol)
 {
