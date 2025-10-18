@@ -15,22 +15,19 @@
  */
 
 #ifndef _WIN32
-#define _GNU_SOURCE
+#include <unistd.h>
 #endif
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <errno.h>
 #include <sys/stat.h>
 
 #include <globalplatform/globalplatform.h>
 
 #ifndef _WIN32
-#include <unistd.h>
 #include <sys/types.h>
-#include <sys/wait.h>
 #endif
 
 #define MAX_READERS_BUF 4096
