@@ -20,13 +20,19 @@ ENDIF()
 IF(NOT GLOBALPLATFORM_FOUND)
    # Will find GlobalPlatform headers both on Mac and Windows
    FIND_PATH(GLOBALPLATFORM_INCLUDE_DIRS NAMES globalplatform/globalplatform.h PATHS ${CMAKE_SOURCE_DIR}/globalplatform/src)
-   # if all build from checked out source assume that the library will be there once globalplatform is built
-   if(WIN32)
-     set(GLOBALPLATFORM_LIBRARIES ${CMAKE_BINARY_DIR}/globalplatform/src/globalplatform.lib)
-   elseif(APPLE)
-     set(GLOBALPLATFORM_LIBRARIES ${CMAKE_BINARY_DIR}/globalplatform/src/libglobalplatform.dylib)
+   # If building in-tree, link against the CMake target to ensure correct build ordering in parallel builds
+   if(EXISTS ${CMAKE_SOURCE_DIR}/globalplatform)
+     # Use the target name; CMake will add the proper dependency on the library target
+     set(GLOBALPLATFORM_LIBRARIES globalplatform)
    else()
-     set(GLOBALPLATFORM_LIBRARIES ${CMAKE_BINARY_DIR}/globalplatform/src/libglobalplatform.so)
+     # Fall back to platform-specific library file when not building the project in-tree
+     if(WIN32)
+       set(GLOBALPLATFORM_LIBRARIES ${CMAKE_BINARY_DIR}/globalplatform/src/globalplatform.lib)
+     elseif(APPLE)
+       set(GLOBALPLATFORM_LIBRARIES ${CMAKE_BINARY_DIR}/globalplatform/src/libglobalplatform.dylib)
+     else()
+       set(GLOBALPLATFORM_LIBRARIES ${CMAKE_BINARY_DIR}/globalplatform/src/libglobalplatform.so)
+     endif()
    endif()
 ENDIF(NOT GLOBALPLATFORM_FOUND)
 
