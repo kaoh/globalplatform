@@ -376,7 +376,7 @@ end:
 
 /**
  * Calculates the decryption of a message in CBC mode for SCP03 using AES.
- * Pads the message with 0x80 and additional 0x00 until message length is a multiple of 16.
+ * Also take ISO7816-4 padding into account (0x80 and additional 0x00).
  * \param key [in] An AES key used to decrypt.
  * \param keyLength [in] The key length. 16, 24 or 32 bytes.
  * \param *message [in] The message to decrypt.
@@ -398,28 +398,45 @@ OPGP_ERROR_STATUS calculate_dec_cbc_SCP03(BYTE key[32], DWORD keyLength, BYTE *m
 	EVP_CIPHER_CTX_init(ctx);
 	*decryptionLength = 0;
 
+	// initialize AES-CBC, deactivate padding
 	result = EVP_DecryptInit_ex(ctx, keyLength == 16 ? EVP_aes_128_cbc() :
 			(keyLength == 24 ? EVP_aes_192_cbc() : EVP_aes_256_cbc()), NULL, key, icv);
 	if (result != 1) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 	}
 	EVP_CIPHER_CTX_set_padding(ctx, 0);
+
+	// decrypt ciphertext (which may include padded bytes)
 	result = EVP_DecryptUpdate(ctx, decryption, &outl, message, messageLength);
 	if (result != 1) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 	}
 	*decryptionLength += outl;
-	result = EVP_DecryptUpdate(ctx, decryption + *decryptionLength, &outl, AES_PADDING, (keyLength - messageLength % keyLength));
+
+	result = EVP_DecryptFinal_ex(ctx, decryption + *decryptionLength, &outl);
 	if (result != 1) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 	}
 	*decryptionLength += outl;
-	result = EVP_DecryptFinal_ex(ctx, decryption+*decryptionLength,
-		&outl);
-	if (result != 1) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+
+	// remove ISO7816-4 padding (0x80 followed by 0x00...) from plaintext
+	if (*decryptionLength > 0) {
+		DWORD len = *decryptionLength;
+		int idx = (int)len - 1;
+
+		// skip trailing 0x00 ... 0x00
+		while (idx >= 0 && decryption[idx] == 0x00) {
+			idx--;
+		}
+
+		// check 0x80 padding marker
+		if (idx >= 0 && decryption[idx] == 0x80) {
+			len = (DWORD)idx;  // everything before is real plaintext
+		}
+
+		*decryptionLength = len;
 	}
-	*decryptionLength+=outl;
+
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
     EVP_CIPHER_CTX_free(ctx);
@@ -459,7 +476,7 @@ OPGP_ERROR_STATUS calculate_enc_icv_SCP03(BYTE key[32], DWORD keyLength, LONG se
 	encryptionCounter[16-2] = (int)((sessionEncryptionCounter >> 8) & 0XFF);
 	encryptionCounter[16-1] = (int)((sessionEncryptionCounter & 0XFF));
 	if (forResponse) {
-		encryptionCounter[16-4] |= 0x80;
+		encryptionCounter[0] |= 0x80;
 	}
 
 	result = EVP_EncryptUpdate(ctx, icv, &outl, encryptionCounter, 16);
@@ -1915,26 +1932,57 @@ OPGP_ERROR_STATUS unwrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBY
 			//warning status words (i.e. '62xx' and '63xx') shall be interpreted as error status words.
 			&& (sw == 0x9000 || (sw >> 8) == 0x62 || (sw >> 8) == 0x63)
 	) {
-		status = calculate_enc_icv_SCP03(secInfo->encryptionSessionKey, secInfo->keyLength, secInfo->sessionEncryptionCounter, ENC_ICV, 1);
-		if (OPGP_ERROR_CHECK(status)) {
-			goto end;
-		}
+
+        // After GP211_check_R_MAC:
+        //   unwrappedResponseApdu = [ciphertext][SW1][SW2]
+        //   *unwrappedResponseApduLength = cipherLen + 2
+        if (*unwrappedResponseApduLength < 2) {
+            OPGP_ERROR_CREATE_ERROR(status,
+                OPGP_ERROR_INSUFFICIENT_BUFFER,
+                OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+            goto end;
+        }
+
+        DWORD cipherLen = *unwrappedResponseApduLength - 2;
+
+        // calculate ICV for R-ENC
+		status = calculate_enc_icv_SCP03(secInfo->encryptionSessionKey, secInfo->keyLength, secInfo->sessionEncryptionCounter - 1, ENC_ICV, 1);
+
+        if (OPGP_ERROR_CHECK(status)) {
+            goto end;
+        }
+
+        // decrypt just ciphertext (without SW)
 		status = calculate_dec_cbc_SCP03(secInfo->encryptionSessionKey, secInfo->keyLength, unwrappedResponseApdu,
-				*unwrappedResponseApduLength, ENC_ICV, decryption, &decryptionLength);
-		if (OPGP_ERROR_CHECK(status)) {
-			goto end;
-		}
-		if (*unwrappedResponseApduLength < responseApduLength)
-			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
-		memcpy(unwrappedResponseApdu, decryption, decryptionLength);
-		*unwrappedResponseApduLength = decryptionLength + 2;
-		// append SW
-		memmove(unwrappedResponseApdu, responseApdu + responseApduLength - 2, 2);
-	}
-	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+				cipherLen, ENC_ICV, decryption, &decryptionLength);
+
+        if (OPGP_ERROR_CHECK(status)) {
+            goto end;
+        }
+
+        // buffer overflow check (plaintext + SW)
+        if (*unwrappedResponseApduLength < decryptionLength + 2) {
+            OPGP_ERROR_CREATE_ERROR(status,
+                OPGP_ERROR_INSUFFICIENT_BUFFER,
+                OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+            goto end;
+        }
+
+        // copy plaintext
+        memcpy(unwrappedResponseApdu, decryption, decryptionLength);
+
+        // attach SW at the end of plaintext (from original response)  and set correct length
+        unwrappedResponseApdu[decryptionLength]     = (BYTE)(sw >> 8);
+        unwrappedResponseApdu[decryptionLength + 1] = (BYTE)(sw & 0xFF);
+
+        *unwrappedResponseApduLength = decryptionLength + 2;
+
+    }
+
+    { OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
-	OPGP_LOG_END(_T("unwrap_command"), status);
-	return status;
+    OPGP_LOG_END(_T("unwrap_command"), status);
+    return status;
 }
 
 /**
