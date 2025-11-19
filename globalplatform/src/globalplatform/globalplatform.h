@@ -435,11 +435,11 @@ OPGP_ERROR_STATUS GP211_set_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 //! \brief GlobalPlatform2.1.1: Mutual authentication.
 OPGP_API
 OPGP_ERROR_STATUS GP211_mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
-						   BYTE baseKey[32], BYTE S_ENC[32], BYTE S_MAC[32],
-						   BYTE DEK[32], DWORD keyLength, BYTE keySetVersion,
-						   BYTE keyIndex, BYTE secureChannelProtocol,
-						   BYTE secureChannelProtocolImpl,
-						   BYTE securityLevel, BYTE derivationMethod, GP211_SECURITY_INFO *secInfo);
+                           PBYTE baseKey, PBYTE S_ENC, PBYTE S_MAC,
+                           PBYTE DEK, DWORD keyLength, BYTE keySetVersion,
+                           BYTE keyIndex, BYTE secureChannelProtocol,
+                           BYTE secureChannelProtocolImpl,
+                           BYTE securityLevel, BYTE derivationMethod, GP211_SECURITY_INFO *secInfo);
 
 //! \brief GlobalPlatform2.1.1: Inits a Secure Channel implicitly.
 OPGP_API

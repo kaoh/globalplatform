@@ -161,8 +161,8 @@ end:
  * \param mac [out] The full 16 Byte MAC. Append the first 8 Bytes to the
  *                  message. Save the full 16 Bytes for further MAC generation if needed.
  */
-OPGP_ERROR_STATUS calculate_CMAC_aes(BYTE sMacKey[32], DWORD keyLength, BYTE *message, DWORD messageLength,
-		BYTE chainingValue[16], BYTE mac[16]) {
+OPGP_ERROR_STATUS calculate_CMAC_aes(PBYTE sMacKey, DWORD keyLength, BYTE *message, DWORD messageLength,
+		PBYTE chainingValue, PBYTE mac) {
 	LONG result;
 	OPGP_ERROR_STATUS status;
 	size_t outl;
@@ -386,9 +386,9 @@ end:
  * \param *decryptionLength [out] The length of the encryption.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
-OPGP_ERROR_STATUS calculate_dec_cbc_SCP03(BYTE key[32], DWORD keyLength, BYTE *message, DWORD messageLength,
-							  BYTE icv[32],
-							  BYTE *decryption, DWORD *decryptionLength) {
+OPGP_ERROR_STATUS calculate_dec_cbc_SCP03(PBYTE key, DWORD keyLength, BYTE *message, DWORD messageLength,
+						  PBYTE icv,
+						  BYTE *decryption, DWORD *decryptionLength) {
 	OPGP_ERROR_STATUS status;
 	int result;
 	int outl;
@@ -454,7 +454,7 @@ end:
  * \param forResponse 1 if the calculation is performed for the response.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
-OPGP_ERROR_STATUS calculate_enc_icv_SCP03(BYTE key[32], DWORD keyLength, LONG sessionEncryptionCounter, BYTE icv[16], BOOL forResponse) {
+OPGP_ERROR_STATUS calculate_enc_icv_SCP03(PBYTE key, DWORD keyLength, LONG sessionEncryptionCounter, PBYTE icv, BOOL forResponse) {
 	OPGP_ERROR_STATUS status;
 	int result;
 	int outl;

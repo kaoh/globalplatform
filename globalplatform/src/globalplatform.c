@@ -4472,15 +4472,15 @@ end:
  * \param *secInfo [out] The returned GP211_SECURITY_INFO structure.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
-OPGP_ERROR_STATUS GP211_mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE baseKey[32],
-						   BYTE S_ENC[32], BYTE S_MAC[32],
-						   BYTE DEK[32],
-						   DWORD keyLength,
-						   BYTE keySetVersion,
-						   BYTE keyIndex, BYTE secureChannelProtocol,
-						   BYTE secureChannelProtocolImpl, BYTE securityLevel,
-						   BYTE derivationMethod,
-						   GP211_SECURITY_INFO *secInfo) {
+OPGP_ERROR_STATUS GP211_mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, PBYTE baseKey,
+                           PBYTE S_ENC, PBYTE S_MAC,
+                           PBYTE DEK,
+                           DWORD keyLength,
+                           BYTE keySetVersion,
+                           BYTE keyIndex, BYTE secureChannelProtocol,
+                           BYTE secureChannelProtocolImpl, BYTE securityLevel,
+                           BYTE derivationMethod,
+                           GP211_SECURITY_INFO *secInfo) {
 	return mutual_authentication(cardContext, cardInfo, baseKey,
 						   S_ENC, S_MAC,
 						   DEK, keyLength,
@@ -4491,15 +4491,15 @@ OPGP_ERROR_STATUS GP211_mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPG
 						   secInfo);
 }
 
-OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE baseKey[32],
-						   BYTE S_ENC[32], BYTE S_MAC[32],
-						   BYTE DEK[32],
-						   DWORD keyLength,
-						   BYTE keySetVersion,
-						   BYTE keyIndex, BYTE secureChannelProtocol,
-						   BYTE secureChannelProtocolImpl, BYTE securityLevel,
-						   BYTE derivationMethod,
-						   GP211_SECURITY_INFO *secInfo) {
+OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, PBYTE baseKey,
+                           PBYTE S_ENC, PBYTE S_MAC,
+                           PBYTE DEK,
+                           DWORD keyLength,
+                           BYTE keySetVersion,
+                           BYTE keyIndex, BYTE secureChannelProtocol,
+                           BYTE secureChannelProtocolImpl, BYTE securityLevel,
+                           BYTE derivationMethod,
+                           GP211_SECURITY_INFO *secInfo) {
 	OPGP_ERROR_STATUS status;
 	DWORD i=0;
 

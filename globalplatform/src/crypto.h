@@ -54,9 +54,9 @@ static const BYTE ICV[8] = {0}; //!< Initial chaining vector.
 static const BYTE SCP03_ICV[32] = {0}; //!< Initial chaining vector for SCP03.
 
 OPGP_NO_API
-OPGP_ERROR_STATUS calculate_CMAC_aes(BYTE sMacKey[32], DWORD keyLength, BYTE *message,
-		DWORD messageLength, BYTE chainingValue[16],
-								BYTE mac[16]);
+OPGP_ERROR_STATUS calculate_CMAC_aes(PBYTE sMacKey, DWORD keyLength, BYTE *message,
+		DWORD messageLength, PBYTE chainingValue,
+							PBYTE mac);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS calculate_key_check_value(GP211_SECURITY_INFO *secInfo,
