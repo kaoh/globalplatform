@@ -142,7 +142,7 @@ static OPGP_ERROR_STATUS internal_list_readers() {
 	TCHAR buf[BUFLEN + 1];
 	int j,k=0;
 	DWORD readerStrLen = BUFLEN;
-	status = OPGP_list_readers(cardContext, buf, &readerStrLen);
+ status = OPGP_list_readers(cardContext, buf, &readerStrLen, 0);
 	if (OPGP_ERROR_CHECK(status)) {
 		return status;
 	}

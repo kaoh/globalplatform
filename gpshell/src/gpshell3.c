@@ -152,8 +152,11 @@ static int connect_pcsc(OPGP_CARD_CONTEXT *pctx, OPGP_CARD_INFO *pinfo, const ch
     if (trace) { OPGP_enable_trace_mode(OPGP_TRACE_MODE_ENABLE, stderr); }
     char readers[MAX_READERS_BUF]; DWORD rlen = sizeof(readers);
     if (!reader) {
-        s = OPGP_list_readers(*pctx, readers, &rlen);
-        if (!status_ok(s) || rlen == 0) { fprintf(stderr, "No PC/SC readers found\n"); return -1; }
+        s = OPGP_list_readers(*pctx, readers, &rlen, 1);
+        if (!status_ok(s) || rlen <= 1 || readers[0] == '\0') {
+            fprintf(stderr, "No PC/SC readers with a smart card inserted found\n");
+            return -1;
+        }
         reader = readers; // first reader
     }
     DWORD proto = SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1;
@@ -192,31 +195,50 @@ static int mutual_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     return status_ok(s2) ? 0 : -1;
 }
 
-static int cmd_list(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
-    GP211_APPLICATION_DATA apps[256]; GP211_EXECUTABLE_MODULES_DATA mods[128]; DWORD len;
-    len = sizeof(apps)/sizeof(apps[0]);
-    {
-        OPGP_ERROR_STATUS s = GP211_get_status(ctx, info, sec, GP211_STATUS_APPLICATIONS|GP211_STATUS_ISSUER_SECURITY_DOMAIN, GP211_STATUS_FORMAT_NEW, apps, NULL, &len);
-        if (status_ok(s)) {
-            for (DWORD i=0;i<len;i++) {
-                printf("AID="); print_aid(&apps[i].aid);
-                printf(" lc=%02X", apps[i].lifeCycleState);
-                if (apps[i].privileges) printf(" priv=%08X", (unsigned)apps[i].privileges);
-                if (apps[i].versionNumber[0] || apps[i].versionNumber[1]) printf(" ver=%u.%u", apps[i].versionNumber[0], apps[i].versionNumber[1]);
-                if (apps[i].associatedSecurityDomainAID.AIDLength) { printf(" sd="); print_aid(&apps[i].associatedSecurityDomainAID); }
-                printf("\n");
-            }
-        } else {
-            fprintf(stderr, "GET STATUS (applications) failed\n");
+// Helper to reduce repetition in cmd_list: lists app-like elements for a given GET STATUS element
+static void list_app_like_elements(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec,
+                                   BYTE element, const char *label)
+{
+    GP211_APPLICATION_DATA apps[256];
+    DWORD len = sizeof(apps)/sizeof(apps[0]);
+    OPGP_ERROR_STATUS s = GP211_get_status(ctx, info, sec, element, GP211_STATUS_FORMAT_NEW, apps, NULL, &len);
+    if (status_ok(s)) {
+        printf("== %s ==\n", label);
+        for (DWORD i=0; i<len; i++) {
+            printf("AID="); print_aid(&apps[i].aid);
+            printf(" lc=%02X", apps[i].lifeCycleState);
+            if (apps[i].privileges) printf(" priv=%08X", (unsigned)apps[i].privileges);
+            if (apps[i].versionNumber[0] || apps[i].versionNumber[1]) printf(" ver=%u.%u", apps[i].versionNumber[0], apps[i].versionNumber[1]);
+            if (apps[i].associatedSecurityDomainAID.AIDLength) { printf(" sd="); print_aid(&apps[i].associatedSecurityDomainAID); }
+            printf("\n");
         }
+    } else {
+        fprintf(stderr, "GET STATUS (%s) failed\n", label);
     }
+}
+
+static int cmd_list(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
+    GP211_EXECUTABLE_MODULES_DATA mods[128];
+    // Applications
+    list_app_like_elements(ctx, info, sec, GP211_STATUS_APPLICATIONS, "applications");
+    // Issuer Security Domain(s)
+    list_app_like_elements(ctx, info, sec, GP211_STATUS_ISSUER_SECURITY_DOMAIN, "issuer security domain");
+    // Load Files (without module details)
+    list_app_like_elements(ctx, info, sec, GP211_STATUS_LOAD_FILES, "load files");
+
     DWORD mlen = sizeof(mods)/sizeof(mods[0]);
     {
         OPGP_ERROR_STATUS s = GP211_get_status(ctx, info, sec, GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES, GP211_STATUS_FORMAT_NEW, NULL, mods, &mlen);
         if (status_ok(s)) {
+            printf("== load files and executable modules ==\n");
             for (DWORD i=0;i<mlen;i++) {
                 printf("LOADFILE="); print_aid(&mods[i].aid);
                 printf(" lc=%02X ver=%u.%u modules=%u\n", mods[i].lifeCycleState, mods[i].versionNumber[0], mods[i].versionNumber[1], mods[i].numExecutableModules);
+                for (DWORD j=0; j<mods[i].numExecutableModules && j < (DWORD)(sizeof(mods[i].executableModules)/sizeof(mods[i].executableModules[0])); j++) {
+                    printf("  MODULE=");
+                    print_aid(&mods[i].executableModules[j]);
+                    printf("\n");
+                }
             }
         }
     }
@@ -462,6 +484,10 @@ int main(int argc, char **argv) {
     const char *cmd = argv[i++];
 
     OPGP_CARD_CONTEXT ctx; OPGP_CARD_INFO info; GP211_SECURITY_INFO sec; memset(&ctx,0,sizeof(ctx)); memset(&info,0,sizeof(info)); memset(&sec,0,sizeof(sec));
+    _tcsncpy(ctx.libraryName, _T("gppcscconnectionplugin"),
+         _tcslen(_T("gppcscconnectionplugin"))+1);
+    _tcsncpy(ctx.libraryVersion, _T("1"),
+             _tcslen(_T("1"))+1);
     if (connect_pcsc(&ctx, &info, reader, protocol, trace) != 0) return 3;
     if (select_isd(ctx, info, isd_hex) != 0) { fprintf(stderr, "Failed to select ISD\n"); OPGP_card_disconnect(ctx, &info); OPGP_release_context(&ctx); return 4; }
     if (mutual_auth(ctx, info, &sec, keyset_ver, key_index, derivation, sec_level_opt, verbose) != 0) { fprintf(stderr, "Mutual authentication failed\n"); OPGP_card_disconnect(ctx, &info); OPGP_release_context(&ctx); return 5; }

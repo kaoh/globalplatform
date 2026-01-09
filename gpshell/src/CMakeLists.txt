@@ -12,13 +12,19 @@ SET(SOURCES3 gpshell3.c)
 INCLUDE(CheckCCompilerFlag)
 INCLUDE(CMakePushCheckState)
 
-IF(DEBUG)
-  SET(CMAKE_BUILD_TYPE "Debug")
-  IF(MSVC_VERSION)
-    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -W4")
-  ELSE()
-    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -Wall")
+# Synchronize CMAKE_BUILD_TYPE and the legacy DEBUG switch
+IF(CMAKE_BUILD_TYPE STREQUAL "Debug" OR DEBUG)
+  SET(DEBUG ON)
+  IF(NOT CMAKE_BUILD_TYPE)
+    SET(CMAKE_BUILD_TYPE "Debug")
   ENDIF()
+
+      # Only add flags NOT handled by CMAKE_BUILD_TYPE=Debug
+      IF(MSVC_VERSION)
+        SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -W4")
+      ELSE()
+        SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g -O0")
+      ENDIF()
 
   # check for fsanitize support
   CMAKE_PUSH_CHECK_STATE()
@@ -39,13 +45,17 @@ IF(DEBUG)
   MESSAGE("pedantic supported")
   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wpedantic")
   ENDIF()
-  
-ELSE(DEBUG)
-  SET(CMAKE_BUILD_TYPE "Release")
-ENDIF(DEBUG)
+
+ELSE()
+  IF(NOT CMAKE_BUILD_TYPE)
+    SET(CMAKE_BUILD_TYPE "Release")
+  ENDIF()
+ENDIF()
 
 # Enable debugging output
-ADD_DEFINITIONS(-DDEBUG)
+IF(DEBUG)
+    ADD_DEFINITIONS(-DDEBUG)
+ENDIF()
 
 # Handle Windows build
 IF(WIN32)
@@ -74,6 +84,16 @@ option(GPSHELL_BUILD_STATIC "Build a statically linked gpshell with built-in PC/
 if(GPSHELL_BUILD_STATIC)
   add_executable(gpshellStatic ${SOURCES})
   add_executable(gpshell3Static ${SOURCES3})
+  
+  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_options(gpshell3Static PRIVATE -g -O0)
+    # Ensure the linker doesn't strip symbols from the static executable
+    IF(NOT MSVC)
+        target_link_options(gpshell3Static PRIVATE -no-pie)
+    ENDIF()
+  endif()
+
+  # Ensure we include in-tree GlobalPlatform headers
   # Ensure we include in-tree GlobalPlatform headers
   target_include_directories(gpshellStatic PRIVATE ${PCSC_INCLUDE_DIRS} ${GLOBALPLATFORM_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/globalplatform/src)
   target_include_directories(gpshell3Static PRIVATE ${PCSC_INCLUDE_DIRS} ${GLOBALPLATFORM_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/globalplatform/src)

@@ -5,12 +5,18 @@ SET(SOURCES gppcscconnectionplugin.c "${PROJECT_SOURCE_DIR}/../globalplatform/sr
 INCLUDE(CheckCCompilerFlag)
 INCLUDE(CMakePushCheckState)
 
-IF(DEBUG)
-  SET(CMAKE_BUILD_TYPE "Debug")
+# Synchronize CMAKE_BUILD_TYPE and the legacy DEBUG switch
+IF(CMAKE_BUILD_TYPE STREQUAL "Debug" OR DEBUG)
+  SET(DEBUG ON)
+  IF(NOT CMAKE_BUILD_TYPE)
+    SET(CMAKE_BUILD_TYPE "Debug")
+  ENDIF()
+
+  # Only add flags NOT handled by CMAKE_BUILD_TYPE=Debug
   IF(MSVC_VERSION)
     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -W4")
   ELSE()
-    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -Wall")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g -O0")
   ENDIF()
 
   # check for fsanitize support
@@ -32,10 +38,12 @@ IF(DEBUG)
   MESSAGE("pedantic supported")
   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wpedantic")
   ENDIF()
-  
-ELSE(DEBUG)
-  SET(CMAKE_BUILD_TYPE "Release")
-ENDIF(DEBUG)
+
+ELSE()
+  IF(NOT CMAKE_BUILD_TYPE)
+    SET(CMAKE_BUILD_TYPE "Release")
+  ENDIF()
+ENDIF()
 
 # Enable debugging output
 ADD_DEFINITIONS(-DOPGP_DEBUG)
@@ -104,4 +112,3 @@ IF(TESTING)
 #    SET_TESTS_PROPERTIES(gppcscconnectionpluginTest PROPERTIES PASS_REGULAR_EXPRESSION "Failures: 0")
 #  ENDIF(CHECK_FOUND)
 ENDIF(TESTING)
-

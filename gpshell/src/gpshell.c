@@ -1067,7 +1067,7 @@ static int handleCommands(FILE *fd)
                     int k=0;
 
                     // get all readers
-                    status = OPGP_list_readers (cardContext, buf, &readerStrLen);
+                    status = OPGP_list_readers (cardContext, buf, &readerStrLen, 0);
                     if (OPGP_ERROR_CHECK(status))
                     {
                         _tprintf(_T("list_readers failed with error 0x%08X (%s)\n"), (unsigned int)status.errorCode, status.errorMessage);
@@ -2181,7 +2181,7 @@ static int handleCommands(FILE *fd)
                 int k=0;
 
                 // get all readers
-                status = OPGP_list_readers (cardContext, buf, &readerStrLen);
+                status = OPGP_list_readers (cardContext, buf, &readerStrLen, 0);
                 if (OPGP_ERROR_CHECK(status))
                 {
                     _tprintf(_T("list_readers failed with error 0x%08X (%s)\n"), (unsigned int)status.errorCode, status.errorMessage);

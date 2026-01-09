@@ -129,55 +129,154 @@ end:
 *  readerNamesLength, writes the length of the multi-string that would have been returned if this parameter
 *  had not been NULL to readerNamesLength.
 * \param readerNamesLength [in, out] The length of the multi-string including all trailing null characters.
+* \param presentOnly If non-zero, only readers with a smart card inserted are returned.
 * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
 */
-OPGP_ERROR_STATUS OPGP_PL_list_readers(OPGP_CARD_CONTEXT cardContext, OPGP_STRING readerNames, PDWORD readerNamesLength) {
-	OPGP_ERROR_STATUS status;
-	memset(&status, 0, sizeof(OPGP_ERROR_STATUS));
-	LONG result = SCARD_S_SUCCESS;
-	DWORD readersSize = 0;
-	OPGP_STRING readers = NULL;
-	OPGP_LOG_START(_T("OPGP_PL_list_readers"));
-	CHECK_CARD_CONTEXT_INITIALIZATION(cardContext, status)
-		result = SCardListReaders(GET_SCARDCONTEXT(cardContext), NULL, NULL, &readersSize );
-	if ( SCARD_S_SUCCESS != result ) {
-		goto end;
-	}
+OPGP_ERROR_STATUS OPGP_PL_list_readers(OPGP_CARD_CONTEXT cardContext, OPGP_STRING readerNames, PDWORD readerNamesLength, DWORD presentOnly) {
+    OPGP_ERROR_STATUS status;
+    memset(&status, 0, sizeof(OPGP_ERROR_STATUS));
+    LONG result = SCARD_S_SUCCESS;
+    DWORD readersSize = 0;
+    OPGP_STRING readers = NULL;
+    OPGP_STRING filtered = NULL;
+    OPGP_LOG_START(_T("OPGP_PL_list_readers"));
+    CHECK_CARD_CONTEXT_INITIALIZATION(cardContext, status)
+        result = SCardListReaders(GET_SCARDCONTEXT(cardContext), NULL, NULL, &readersSize );
+    if ( SCARD_S_SUCCESS != result ) {
+        goto end;
+    }
 #ifdef DEBUG
-	OPGP_log_Msg(_T("OPGP_PL_list_readers: readerSize: %d"), readersSize);
+    OPGP_log_Msg(_T("OPGP_PL_list_readers: readerSize: %d"), readersSize);
 #endif
-	if (readerNames == NULL) {
-		*readerNamesLength = readersSize;
-		result = SCARD_S_SUCCESS;
-		goto end;
-	}
-	readers = (OPGP_STRING)malloc(sizeof(TCHAR)*readersSize);
-	if (readers == NULL) {
-		result = ENOMEM;
-		goto end;
-	}
+    if (readerNames == NULL && !presentOnly) {
+        *readerNamesLength = readersSize;
+        result = SCARD_S_SUCCESS;
+        goto end;
+    }
+    readers = (OPGP_STRING)malloc(sizeof(TCHAR)*readersSize);
+    if (readers == NULL) {
+        result = ENOMEM;
+        goto end;
+    }
 
-	result = SCardListReaders(GET_SCARDCONTEXT(cardContext), NULL, readers, &readersSize);
-	if ( SCARD_S_SUCCESS != result ) {
-		goto end;
-	}
-	if (*readerNamesLength < readersSize) {
-		_tcsncpy(readerNames, readers, (*readerNamesLength)-2);
-		*(readerNames+(*readerNamesLength)-2) = _T('\0');
-		*(readerNames+(*readerNamesLength)-1) = _T('\0');
-		*readerNamesLength = readersSize;
-	}
-	else {
-		memcpy(readerNames, readers, sizeof(TCHAR)*readersSize);
-		*readerNamesLength = readersSize;
-	}
+    result = SCardListReaders(GET_SCARDCONTEXT(cardContext), NULL, readers, &readersSize);
+    if ( SCARD_S_SUCCESS != result ) {
+        goto end;
+    }
+    if (!presentOnly) {
+        if (readerNames == NULL) {
+            *readerNamesLength = readersSize;
+            result = SCARD_S_SUCCESS;
+            goto end;
+        }
+        if (*readerNamesLength < readersSize) {
+            _tcsncpy(readerNames, readers, (*readerNamesLength)-2);
+            *(readerNames+(*readerNamesLength)-2) = _T('\0');
+            *(readerNames+(*readerNamesLength)-1) = _T('\0');
+            *readerNamesLength = readersSize;
+        }
+        else {
+            memcpy(readerNames, readers, sizeof(TCHAR)*readersSize);
+            *readerNamesLength = readersSize;
+        }
+    } else {
+        // Build list of only readers with a card present using SCardGetStatusChange
+        // Count readers and create state array
+        DWORD count = 0;
+        for (DWORD j = 0; j < readersSize;) {
+            if (readers[j] == _T('\0')) break;
+            size_t len = _tcslen(&readers[j]);
+            if (len == 0) break;
+            count++;
+            j += (DWORD)len + 1;
+        }
+        if (count == 0) {
+            // No readers at all
+            if (readerNames == NULL) {
+                *readerNamesLength = 1; // single terminating null
+            } else {
+                if (*readerNamesLength > 0) {
+                    readerNames[0] = _T('\0');
+                }
+                *readerNamesLength = 1;
+            }
+            result = SCARD_S_SUCCESS;
+            goto end;
+        }
+        SCARD_READERSTATE *states = (SCARD_READERSTATE*)calloc(count, sizeof(SCARD_READERSTATE));
+        if (!states) { result = ENOMEM; goto end; }
+        DWORD idx = 0;
+        for (DWORD j = 0; j < readersSize && idx < count;) {
+            if (readers[j] == _T('\0')) break;
+            size_t len = _tcslen(&readers[j]);
+            if (len == 0) break;
+            states[idx].szReader = &readers[j];
+            states[idx].dwCurrentState = SCARD_STATE_UNAWARE;
+            idx++;
+            j += (DWORD)len + 1;
+        }
+        result = SCardGetStatusChange(GET_SCARDCONTEXT(cardContext), 0, states, count);
+        if (SCARD_S_SUCCESS != result) {
+            free(states);
+            goto end;
+        }
+        // Calculate filtered size (in TCHARs)
+        DWORD filteredSize = 0;
+        for (DWORD i = 0; i < count; ++i) {
+            if (states[i].dwEventState & SCARD_STATE_PRESENT) {
+                filteredSize += (DWORD)_tcslen((LPCTSTR)states[i].szReader) + 1;
+            }
+        }
+        if (filteredSize == 0) {
+            filteredSize = 2; // double-null for empty multi-string
+        } else {
+            filteredSize += 1; // add final null to make double-null
+        }
+        if (readerNames == NULL) {
+            *readerNamesLength = filteredSize;
+            free(states);
+            result = SCARD_S_SUCCESS;
+            goto end;
+        }
+        filtered = (OPGP_STRING)malloc(sizeof(TCHAR) * filteredSize);
+        if (!filtered) { free(states); result = ENOMEM; goto end; }
+        DWORD outPos = 0;
+        for (DWORD i = 0; i < count; ++i) {
+            if (states[i].dwEventState & SCARD_STATE_PRESENT) {
+                LPCTSTR name = (LPCTSTR)states[i].szReader;
+                size_t nlen = _tcslen(name);
+                _tcsncpy(&filtered[outPos], name, nlen);
+                outPos += (DWORD)nlen;
+                filtered[outPos++] = _T('\0');
+            }
+        }
+        // Ensure final double-null terminator
+        filtered[outPos++] = _T('\0');
+        if (outPos < filteredSize) {
+            filtered[outPos++] = _T('\0');
+        }
+        // Copy to output with possible truncation following previous semantics
+        if (*readerNamesLength < filteredSize) {
+            _tcsncpy(readerNames, filtered, (*readerNamesLength) - 2);
+            *(readerNames + (*readerNamesLength) - 2) = _T('\0');
+            *(readerNames + (*readerNamesLength) - 1) = _T('\0');
+            *readerNamesLength = filteredSize;
+        } else {
+            memcpy(readerNames, filtered, sizeof(TCHAR) * filteredSize);
+            *readerNamesLength = filteredSize;
+        }
+        free(states);
+    }
 end:
-	if (readers) {
-		free(readers);
-	}
-	HANDLE_STATUS(status, result);
-	OPGP_LOG_END(_T("OPGP_PL_list_readers"), status);
-	return status;
+    if (readers) {
+        free(readers);
+    }
+    if (filtered) {
+        free(filtered);
+    }
+    HANDLE_STATUS(status, result);
+    OPGP_LOG_END(_T("OPGP_PL_list_readers"), status);
+    return status;
 }
 
 /**

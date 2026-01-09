@@ -101,7 +101,7 @@ OPGP_ERROR_STATUS OPGP_release_context(OPGP_CARD_CONTEXT *cardContext);
 
 //! \brief This function returns a list of currently available readers.
 OPGP_API
-OPGP_ERROR_STATUS OPGP_list_readers(OPGP_CARD_CONTEXT cardContext, OPGP_STRING readerNames, PDWORD readerNamesLength);
+OPGP_ERROR_STATUS OPGP_list_readers(OPGP_CARD_CONTEXT cardContext, OPGP_STRING readerNames, PDWORD readerNamesLength, DWORD presentOnly);
 
 //! \brief This function connects to a reader.
 OPGP_API
