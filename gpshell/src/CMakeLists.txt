@@ -7,6 +7,7 @@ INCLUDE(FindGlobalPlatform)
 find_package(OpenSSL REQUIRED)
 find_package(ZLIB REQUIRED)
 SET(SOURCES gpshell.c)
+SET(SOURCES3 gpshell3.c)
 
 INCLUDE(CheckCCompilerFlag)
 INCLUDE(CMakePushCheckState)
@@ -64,12 +65,18 @@ ENDIF()
 ADD_EXECUTABLE(gpshell ${SOURCES})
 TARGET_LINK_LIBRARIES(gpshell ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES})
 
+# New simplified CLI
+ADD_EXECUTABLE(gpshell3 ${SOURCES3})
+TARGET_LINK_LIBRARIES(gpshell3 ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES})
+
 # Optional static gpshell that embeds GlobalPlatform and PC/SC plugin
 option(GPSHELL_BUILD_STATIC "Build a statically linked gpshell with built-in PC/SC plugin" ON)
 if(GPSHELL_BUILD_STATIC)
   add_executable(gpshellStatic ${SOURCES})
+  add_executable(gpshell3Static ${SOURCES3})
   # Ensure we include in-tree GlobalPlatform headers
   target_include_directories(gpshellStatic PRIVATE ${PCSC_INCLUDE_DIRS} ${GLOBALPLATFORM_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/globalplatform/src)
+  target_include_directories(gpshell3Static PRIVATE ${PCSC_INCLUDE_DIRS} ${GLOBALPLATFORM_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/globalplatform/src)
 
   # Prefer static libcrypto and libz explicitly (do not force static libc)
   set(_orig_suffixes ${CMAKE_FIND_LIBRARY_SUFFIXES})
@@ -92,11 +99,14 @@ if(GPSHELL_BUILD_STATIC)
   endif()
 
   target_link_libraries(gpshellStatic globalplatformStatic gppcscconnectionpluginStatic ${PCSC_LIBRARIES} ${_CRYPTO_LIB} ${_Z_LIB})
+  target_link_libraries(gpshell3Static globalplatformStatic gppcscconnectionpluginStatic ${PCSC_LIBRARIES} ${_CRYPTO_LIB} ${_Z_LIB})
   # Define to make the core use statically linked plugin
   target_compile_definitions(gpshellStatic PRIVATE OPGP_STATIC_PCSC)
+  target_compile_definitions(gpshell3Static PRIVATE OPGP_STATIC_PCSC)
   if(UNIX)
     # dyn_unix uses dlfcn for shared; not needed for static path but harmless
     target_link_libraries(gpshellStatic dl)
+    target_link_libraries(gpshell3Static dl)
   endif()
   if(WINDDK_DIR)
     TARGET_LINK_LIBRARIES(gpshellStatic optimized ${WINDDK_DIR}/lib/win7/i386/msvcrt_win2000.obj optimized ${WINDDK_DIR}/lib/Crt/i386/msvcrt.lib)
@@ -111,6 +121,7 @@ ENDIF(WINDDK_DIR)
 
 # Install
 INSTALL(TARGETS gpshell DESTINATION bin)
+INSTALL(TARGETS gpshell3 DESTINATION bin)
 
 IF(NOT(WIN32))
 	# pandoc man page generation
