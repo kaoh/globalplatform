@@ -195,6 +195,65 @@ static int mutual_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     return status_ok(s2) ? 0 : -1;
 }
 
+static const char* lc_to_string(BYTE lifeCycle, BYTE element) {
+    const char *lcLoaded = "Loaded";
+    const char *lcInstalled = "Installed";
+    const char *lcSelectable = "Selectable";
+    const char *lcLocked = "Locked";
+    const char *lcPersonalized = "Personalized";
+    const char *lcOpReady = "OP Ready";
+    const char *lcInitialized = "Initialized";
+    const char *lcSecured = "Secured";
+    const char *lcCardLocked = "Card Locked";
+    const char *lcTerminated = "Terminated";
+
+    const char *lifeCycleState = "Unknown";
+
+    switch (element) {
+        case GP211_STATUS_LOAD_FILES:
+        case GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES:
+            if ((lifeCycle & GP211_LIFE_CYCLE_LOAD_FILE_LOADED) == GP211_LIFE_CYCLE_LOAD_FILE_LOADED) {
+                lifeCycleState = lcLoaded;
+            }
+            break;
+        case GP211_STATUS_APPLICATIONS:
+            if ((lifeCycle & GP211_LIFE_CYCLE_APPLICATION_INSTALLED) == GP211_LIFE_CYCLE_APPLICATION_INSTALLED) {
+                lifeCycleState = lcInstalled;
+            }
+            if ((lifeCycle & GP211_LIFE_CYCLE_APPLICATION_SELECTABLE) == GP211_LIFE_CYCLE_APPLICATION_SELECTABLE) {
+                lifeCycleState = lcSelectable;
+            }
+            if ((lifeCycle & GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED)  == GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED) {
+                lifeCycleState = lcPersonalized;
+            }
+            if ((lifeCycle & GP211_LIFE_CYCLE_APPLICATION_LOCKED) == GP211_LIFE_CYCLE_APPLICATION_LOCKED) {
+                lifeCycleState = lcLocked;
+            }
+            break;
+        case GP211_STATUS_ISSUER_SECURITY_DOMAIN:
+            if ((lifeCycle & GP211_LIFE_CYCLE_CARD_OP_READY) == GP211_LIFE_CYCLE_CARD_OP_READY) {
+                lifeCycleState = lcOpReady;
+            }
+            if ((lifeCycle & GP211_LIFE_CYCLE_CARD_INITIALIZED) == GP211_LIFE_CYCLE_CARD_INITIALIZED) {
+                lifeCycleState = lcInitialized;
+            }
+            if ((lifeCycle & GP211_LIFE_CYCLE_CARD_SECURED)  == GP211_LIFE_CYCLE_CARD_SECURED) {
+                lifeCycleState = lcSecured;
+            }
+            if ((lifeCycle & GP211_LIFE_CYCLE_CARD_LOCKED) == GP211_LIFE_CYCLE_CARD_LOCKED) {
+                lifeCycleState = lcCardLocked;
+            }
+            if ((lifeCycle & GP211_LIFE_CYCLE_CARD_TERMINATED) == GP211_LIFE_CYCLE_CARD_TERMINATED) {
+                lifeCycleState = lcTerminated;
+            }
+            break;
+        default:
+            break;
+    }
+
+    return lifeCycleState;
+}
+
 // Helper to reduce repetition in cmd_list: lists app-like elements for a given GET STATUS element
 static void list_app_like_elements(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec,
                                    BYTE element, const char *label)
@@ -206,7 +265,7 @@ static void list_app_like_elements(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, G
         printf("== %s ==\n", label);
         for (DWORD i=0; i<len; i++) {
             printf("AID="); print_aid(&apps[i].aid);
-            printf(" lc=%02X", apps[i].lifeCycleState);
+            printf(" lc=%s", lc_to_string(apps[i].lifeCycleState, element));
             if (apps[i].privileges) printf(" priv=%08X", (unsigned)apps[i].privileges);
             if (apps[i].versionNumber[0] || apps[i].versionNumber[1]) printf(" ver=%u.%u", apps[i].versionNumber[0], apps[i].versionNumber[1]);
             if (apps[i].associatedSecurityDomainAID.AIDLength) { printf(" sd="); print_aid(&apps[i].associatedSecurityDomainAID); }
@@ -233,7 +292,7 @@ static int cmd_list(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
             printf("== load files and executable modules ==\n");
             for (DWORD i=0;i<mlen;i++) {
                 printf("LOADFILE="); print_aid(&mods[i].aid);
-                printf(" lc=%02X ver=%u.%u modules=%u\n", mods[i].lifeCycleState, mods[i].versionNumber[0], mods[i].versionNumber[1], mods[i].numExecutableModules);
+                printf(" lc=%s ver=%u.%u modules=%u\n", lc_to_string(mods[i].lifeCycleState, GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES), mods[i].versionNumber[0], mods[i].versionNumber[1], mods[i].numExecutableModules);
                 for (DWORD j=0; j<mods[i].numExecutableModules && j < (DWORD)(sizeof(mods[i].executableModules)/sizeof(mods[i].executableModules[0])); j++) {
                     printf("  MODULE=");
                     print_aid(&mods[i].executableModules[j]);
