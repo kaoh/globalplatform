@@ -45,11 +45,13 @@ static void print_usage(const char *prog) {
         "  --derive <none|visa2|emv|visa1>  Key derivation (default: none)\n"
         "  --sec-level <mac|mac+enc|mac+enc+rmac> Channel security level (default: mac+enc)\n"
         "  --isd <aidhex>            ISD AID hex; default tries A0000001510000 then A000000151000000 then A000000003000000\n"
+        "  --list-readers            List PC/SC readers and exit\n"
         "  -v, --verbose             Verbose output\n"
         "  -t, --trace               Enable APDU trace\n"
         "  -h, --help                Show this help\n\n"
         "Commands:\n"
         "  list\n"
+        "  list-readers\n"
         "  keys\n"
         "  install [--load-only] [--dap-aes <hexkey>|--dap-rsa <pem>[:pass]] \\\n"
         "          [--applet <AIDhex>] [--module <AIDhex>] [--priv <p1,p2,...>] <cap-file>\n"
@@ -58,7 +60,10 @@ static void print_usage(const char *prog) {
         "          (--key <hex>|--pem <file>[:pass])\n"
         "  put-sc-key --set <ver> [--new-set <ver>] [--base <hex> | --senc <hex> --smac <hex> --dek <hex>]\n"
         "  del-key --set <ver> [--index <idx>]\n"
-        "  apdu <hex>\n"
+        "  apdu [--auth] [--nostop|--ignore-errors] <APDU> [<APDU> ...]\n"
+        "      APDU format: hex bytes either concatenated (e.g. 00A40400) or space-separated (e.g. 00 A4 04 00).\n"
+        "      Multiple APDUs can be provided as separate args or separated by ';' or ',' in one arg.\n"
+        "      By default, apdu does NOT select ISD or perform mutual authentication; use --auth to enable it.\n"
         "  dap aes <cap-file> <sd-aidhex> <hexkey>\n"
         "  dap rsa <cap-file> <sd-aidhex> <pem>[:pass]\n\n"
         "Privilege short names for --priv: sd,dap-verif,delegated-mgmt,cm-lock,cm-terminate,default-selected,pin-change,mandated-dap\n\n"
@@ -145,7 +150,7 @@ static int select_isd(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, const char *is
     return -1;
 }
 
-static int connect_pcsc(OPGP_CARD_CONTEXT *pctx, OPGP_CARD_INFO *pinfo, const char *reader, const char *protocol, int trace) {
+static int connect_pcsc(OPGP_CARD_CONTEXT *pctx, OPGP_CARD_INFO *pinfo, const char *reader, const char *protocol, int trace, int verbose) {
     OPGP_ERROR_STATUS s;
     s = OPGP_establish_context(pctx);
     if (!status_ok(s)) { fprintf(stderr, "Failed to establish PC/SC context\n"); return -1; }
@@ -155,17 +160,25 @@ static int connect_pcsc(OPGP_CARD_CONTEXT *pctx, OPGP_CARD_INFO *pinfo, const ch
         s = OPGP_list_readers(*pctx, readers, &rlen, 1);
         if (!status_ok(s) || rlen <= 1 || readers[0] == '\0') {
             fprintf(stderr, "No PC/SC readers with a smart card inserted found\n");
+            // release context on error path to avoid leaks
+            OPGP_release_context(pctx);
             return -1;
         }
         reader = readers; // first reader
     }
+    if (verbose) { fprintf(stderr, "Selected reader: %s\n", reader); }
     DWORD proto = SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1;
     if (protocol) {
         if (strcmp(protocol, "t0") == 0) proto = SCARD_PROTOCOL_T0;
         else if (strcmp(protocol, "t1") == 0) proto = SCARD_PROTOCOL_T1;
     }
     s = OPGP_card_connect(*pctx, reader, pinfo, proto);
-    if (!status_ok(s)) { fprintf(stderr, "Failed to connect to reader '%s'\n", reader); return -1; }
+    if (!status_ok(s)) {
+        fprintf(stderr, "Failed to connect to reader '%s'\n", reader);
+        // release context on error path to avoid leaks
+        OPGP_release_context(pctx);
+        return -1;
+    }
     return 0;
 }
 
@@ -196,18 +209,18 @@ static int mutual_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
 }
 
 static const char* lc_to_string(BYTE lifeCycle, BYTE element) {
-    const char *lcLoaded = "Loaded";
-    const char *lcInstalled = "Installed";
-    const char *lcSelectable = "Selectable";
-    const char *lcLocked = "Locked";
-    const char *lcPersonalized = "Personalized";
-    const char *lcOpReady = "OP Ready";
-    const char *lcInitialized = "Initialized";
-    const char *lcSecured = "Secured";
-    const char *lcCardLocked = "Card Locked";
-    const char *lcTerminated = "Terminated";
+    const char *lcLoaded = "loaded";
+    const char *lcInstalled = "installed";
+    const char *lcSelectable = "selectable";
+    const char *lcLocked = "locked";
+    const char *lcPersonalized = "personalized";
+    const char *lcOpReady = "op-ready";
+    const char *lcInitialized = "initialized";
+    const char *lcSecured = "secured";
+    const char *lcCardLocked = "card-locked";
+    const char *lcTerminated = "terminated";
 
-    const char *lifeCycleState = "Unknown";
+    const char *lifeCycleState = "unknown";
 
     switch (element) {
         case GP211_STATUS_LOAD_FILES:
@@ -254,6 +267,57 @@ static const char* lc_to_string(BYTE lifeCycle, BYTE element) {
     return lifeCycleState;
 }
 
+// Stringify privilege bitfield similar to gpshell.c:privilegesToString
+static void privileges_to_string(DWORD privileges, char *out, size_t outlen) {
+    struct { DWORD bit; const char *name; } map[] = {
+        { GP211_SECURITY_DOMAIN, "sd" },
+        { GP211_DAP_VERIFICATION, "dap-verif" },
+        { GP211_DELEGATED_MANAGEMENT, "delegated-mgmt" },
+        { GP211_CARD_MANAGER_LOCK_PRIVILEGE, "cm-lock" },
+        { GP211_CARD_MANAGER_TERMINATE_PRIVILEGE, "cm-terminate" },
+        { GP211_DEFAULT_SELECTED_CARD_RESET_PRIVILEGE, "default-selected" },
+        { GP211_PIN_CHANGE_PRIVILEGE, "pin-change" },
+        { GP211_MANDATED_DAP_VERIFICATION, "mandated-dap" },
+        { GP211_TRUSTED_PATH, "trusted-path" },
+        { GP211_AUTHORIZED_MANAGEMENT, "authorized-mgmt" },
+        { GP211_TOKEN_VERIFICATION, "token-mgmt" },
+        { GP211_GLOBAL_DELETE, "global-delete" },
+        { GP211_GLOBAL_LOCK, "global-lock" },
+        { GP211_GLOBAL_REGISTRY, "global-registry" },
+        { GP211_FINAL_APPLICATION, "final-application" },
+        { GP211_GLOBAL_SERVICE, "global-service" },
+        { GP211_RECEIPT_GENERATION, "receipt-generation" },
+        { GP211_CIPHERED_LOAD_FILE_DATA_BLOCK, "ciphered-load-file-data-block" },
+        { GP211_CONTACTLESS_ACTIVATION, "contactless-activation" },
+        { GP211_CONTACTLESS_SELF_ACTIVATION, "contactless-self-activation" },
+    };
+
+    if (!out || outlen == 0) return;
+    out[0] = '\0';
+    size_t used = 0;
+    int first = 1;
+    for (size_t i = 0; i < sizeof(map)/sizeof(map[0]); ++i) {
+        if ((privileges & map[i].bit) == map[i].bit) {
+            const char *name = map[i].name;
+            size_t nlen = strlen(name);
+            // add separator if not first
+            if (!first) {
+                if (used + 2 < outlen) { out[used++] = ','; out[used++] = ' '; }
+            }
+            first = 0;
+            // copy name
+            for (size_t j = 0; j < nlen && used + 1 < outlen; ++j) {
+                out[used++] = name[j];
+            }
+            if (used < outlen) out[used] = '\0';
+        }
+    }
+    if (first) {
+        // no bits matched
+        snprintf(out, outlen, "none");
+    }
+}
+
 // Helper to reduce repetition in cmd_list: lists app-like elements for a given GET STATUS element
 static void list_app_like_elements(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec,
                                    BYTE element, const char *label)
@@ -266,7 +330,11 @@ static void list_app_like_elements(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, G
         for (DWORD i=0; i<len; i++) {
             printf("AID="); print_aid(&apps[i].aid);
             printf(" lc=%s", lc_to_string(apps[i].lifeCycleState, element));
-            if (apps[i].privileges) printf(" priv=%08X", (unsigned)apps[i].privileges);
+            if (apps[i].privileges) {
+                char pbuf[512];
+                privileges_to_string(apps[i].privileges, pbuf, sizeof(pbuf));
+                printf(" priv=%08X [%s]", (unsigned)apps[i].privileges, pbuf);
+            }
             if (apps[i].versionNumber[0] || apps[i].versionNumber[1]) printf(" ver=%u.%u", apps[i].versionNumber[0], apps[i].versionNumber[1]);
             if (apps[i].associatedSecurityDomainAID.AIDLength) { printf(" sd="); print_aid(&apps[i].associatedSecurityDomainAID); }
             printf("\n");
@@ -475,12 +543,92 @@ static int cmd_del_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     return 0;
 }
 
-static int cmd_apdu(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, const char *hex) {
-    if (!hex) { fprintf(stderr, "apdu: missing <hex>\n"); return -1; }
-    unsigned char capdu[APDU_COMMAND_LEN]; size_t clen=sizeof(capdu); if (hex_to_bytes(hex, capdu, &clen)!=0) { fprintf(stderr, "Invalid hex\n"); return -1; }
-    unsigned char rapdu[APDU_RESPONSE_LEN]; DWORD rlen=sizeof(rapdu);
-    if (!status_ok(GP211_send_APDU(ctx, info, sec, capdu, (DWORD)clen, rapdu, &rlen))) { fprintf(stderr, "APDU send failed\n"); return -1; }
-    print_hex(rapdu, rlen); printf("\n"); return 0;
+static int compact_hex(const char *in, char *out, size_t outsz) {
+    // Copy only hex digits, ignore spaces and tabs; fail on other chars
+    size_t j=0;
+    for (const char *p=in; *p; ++p) {
+        unsigned char c = (unsigned char)*p;
+        if (c==' ' || c=='\t') continue;
+        if (!isxdigit(c)) {
+            if (c==';' || c==',') break; // caller should split before calling
+            return -1;
+        }
+        if (j+1 >= outsz) return -2;
+        out[j++] = (char)toupper(c);
+    }
+    out[j] = '\0';
+    if (j % 2 != 0) return -3;
+    return 0;
+}
+
+static int is_hex_byte_token(const char *s) {
+    size_t n = strlen(s);
+    if (n == 0 || n > 2) return 0;
+    for (size_t i=0;i<n;i++) if (!isxdigit((unsigned char)s[i])) return 0;
+    return 1;
+}
+
+static int cmd_apdu(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
+    if (argc < 1) { fprintf(stderr, "apdu: missing arguments\n"); return -1; }
+    int nostop = 0;
+    const int MAX_APDUS = 256;
+    char *apdus[MAX_APDUS]; int napdus=0;
+    for (int i=0;i<argc;i++) {
+        const char *a = argv[i];
+        if (strcmp(a, "--nostop")==0 || strcmp(a, "--ignore-errors")==0) { nostop=1; continue; }
+        if (strcmp(a, "--auth")==0 || strcmp(a, "--secure")==0) { /* handled in main; skip here */ continue; }
+        // Case 1: sequence of hex byte tokens across argv -> one APDU
+        if (is_hex_byte_token(a)) {
+            char buf[4096]; buf[0]='\0'; size_t bl=0;
+            while (i<argc && is_hex_byte_token(argv[i])) {
+                const char *b = argv[i];
+                size_t bn = strlen(b);
+                if (bl + bn >= sizeof(buf)-1) { fprintf(stderr, "APDU too long\n"); return -1; }
+                for (size_t t=0;t<bn;t++) buf[bl++] = (char)toupper((unsigned char)b[t]);
+                i++;
+            }
+            i--; // compensate last increment in while
+            buf[bl]='\0';
+            if (napdus < MAX_APDUS) apdus[napdus++] = strdup(buf);
+            continue;
+        }
+        // Case 2: split by ';' or ',' within the same argument
+        char *dup = strdup(a);
+        if (!dup) { fprintf(stderr, "oom\n"); return -1; }
+        char *save=NULL; char *tok = strtok_r(dup, ";,", &save);
+        while (tok) {
+            if (napdus < MAX_APDUS) {
+                apdus[napdus++] = strdup(tok);
+            }
+            tok = strtok_r(NULL, ";,", &save);
+        }
+        free(dup);
+        if (napdus >= MAX_APDUS) break;
+    }
+    if (napdus == 0) { fprintf(stderr, "apdu: no APDUs provided\n"); return -1; }
+
+    int rc = 0;
+    for (int k=0;k<napdus;k++) {
+        char hexbuf[4096];
+        if (compact_hex(apdus[k], hexbuf, sizeof(hexbuf)) != 0) {
+            fprintf(stderr, "Invalid hex in APDU %d\n", k+1);
+            rc = -1; if (!nostop) { break; } else { continue; }
+        }
+        unsigned char capdu[APDU_COMMAND_LEN]; size_t clen=sizeof(capdu);
+        if (hex_to_bytes(hexbuf, capdu, &clen)!=0) {
+            fprintf(stderr, "Invalid hex length in APDU %d\n", k+1);
+            rc = -1; if (!nostop) { break; } else { continue; }
+        }
+        unsigned char rapdu[APDU_RESPONSE_LEN]; DWORD rlen=sizeof(rapdu);
+        OPGP_ERROR_STATUS s = GP211_send_APDU(ctx, info, sec, capdu, (DWORD)clen, rapdu, &rlen);
+        if (!status_ok(s)) {
+            fprintf(stderr, "APDU %d send failed: 0x%08X (%s)\n", k+1, (unsigned int)s.errorCode, s.errorMessage);
+            rc = -1; if (!nostop) { break; } else { continue; }
+        }
+        print_hex(rapdu, rlen); printf("\n");
+    }
+    for (int k=0;k<napdus;k++) free(apdus[k]);
+    return rc;
 }
 
 static int cmd_dap(int is_rsa, OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
@@ -510,6 +658,30 @@ static int cmd_dap(int is_rsa, OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
     }
 }
 
+static int cmd_list_readers(void) {
+    // Establish a temporary PC/SC context and enumerate all readers (like gpshell.c:list_readers)
+    OPGP_CARD_CONTEXT ctx; memset(&ctx, 0, sizeof(ctx));
+    _tcsncpy(ctx.libraryName, _T("gppcscconnectionplugin"), _tcslen(_T("gppcscconnectionplugin"))+1);
+    _tcsncpy(ctx.libraryVersion, _T("1"), _tcslen(_T("1"))+1);
+    OPGP_ERROR_STATUS s = OPGP_establish_context(&ctx);
+    if (!status_ok(s)) { fprintf(stderr, "list-readers: failed to establish PC/SC context\n"); return -1; }
+
+    char buf[MAX_READERS_BUF]; DWORD len = sizeof(buf);
+    s = OPGP_list_readers(ctx, buf, &len, 0);
+    if (!status_ok(s)) {
+        fprintf(stderr, "list-readers failed with error 0x%08X (%s)\n", (unsigned int)s.errorCode, s.errorMessage);
+        OPGP_release_context(&ctx);
+        return -1;
+    }
+    for (DWORD j = 0; j < len; ) {
+        if (buf[j] == '\0') break; // end of multi-string
+        printf("* reader name %s\n", &buf[j]);
+        j += (DWORD)strlen(&buf[j]) + 1;
+    }
+    OPGP_release_context(&ctx);
+    return 0;
+}
+
 int main(int argc, char **argv) {
     const char *prog = argv[0];
     if (argc < 2 || (argc >= 2 && argv[1][0] != '-' && is_file_exists(argv[1]))) {
@@ -530,6 +702,7 @@ int main(int argc, char **argv) {
         if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) { print_usage(prog); return 0; }
         else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--verbose")) { verbose=1; }
         else if (!strcmp(argv[i], "-t") || !strcmp(argv[i], "--trace")) { trace=1; }
+        else if (!strcmp(argv[i], "--list-readers")) { int rc = cmd_list_readers(); return rc==0?0:10; }
         else if (!strcmp(argv[i], "--reader") && i+1<argc) { reader=argv[++i]; }
         else if (!strcmp(argv[i], "--protocol") && i+1<argc) { protocol=argv[++i]; }
         else if (!strcmp(argv[i], "--keyset-version") && i+1<argc) { keyset_ver=(BYTE)atoi(argv[++i]); }
@@ -542,14 +715,34 @@ int main(int argc, char **argv) {
     if (i>=argc) { print_usage(prog); return 1; }
     const char *cmd = argv[i++];
 
+    // Commands that do not require a card connection
+    if (!strcmp(cmd, "list-readers")) {
+        int rc = cmd_list_readers();
+        return rc==0 ? 0 : 10;
+    }
+
     OPGP_CARD_CONTEXT ctx; OPGP_CARD_INFO info; GP211_SECURITY_INFO sec; memset(&ctx,0,sizeof(ctx)); memset(&info,0,sizeof(info)); memset(&sec,0,sizeof(sec));
     _tcsncpy(ctx.libraryName, _T("gppcscconnectionplugin"),
          _tcslen(_T("gppcscconnectionplugin"))+1);
     _tcsncpy(ctx.libraryVersion, _T("1"),
              _tcslen(_T("1"))+1);
-    if (connect_pcsc(&ctx, &info, reader, protocol, trace) != 0) return 3;
-    if (select_isd(ctx, info, isd_hex) != 0) { fprintf(stderr, "Failed to select ISD\n"); OPGP_card_disconnect(ctx, &info); OPGP_release_context(&ctx); return 4; }
-    if (mutual_auth(ctx, info, &sec, keyset_ver, key_index, derivation, sec_level_opt, verbose) != 0) { fprintf(stderr, "Mutual authentication failed\n"); OPGP_card_disconnect(ctx, &info); OPGP_release_context(&ctx); return 5; }
+    if (connect_pcsc(&ctx, &info, reader, protocol, trace, verbose) != 0) return 3;
+
+    // Determine authentication need: for 'apdu' command default is no auth unless --auth/--secure is present
+    int need_auth = 1; // default for non-apdu commands
+    if (!strcmp(cmd, "apdu")) {
+        need_auth = 0;
+        for (int j=i; j<argc; ++j) {
+            if (!strcmp(argv[j], "--auth") || !strcmp(argv[j], "--secure")) { need_auth = 1; break; }
+        }
+    }
+    GP211_SECURITY_INFO *sec_ptr = &sec;
+    if (need_auth) {
+        if (select_isd(ctx, info, isd_hex) != 0) { fprintf(stderr, "Failed to select ISD\n"); OPGP_card_disconnect(ctx, &info); OPGP_release_context(&ctx); return 4; }
+        if (mutual_auth(ctx, info, &sec, keyset_ver, key_index, derivation, sec_level_opt, verbose) != 0) { fprintf(stderr, "Mutual authentication failed\n"); OPGP_card_disconnect(ctx, &info); OPGP_release_context(&ctx); return 5; }
+    } else {
+        sec_ptr = NULL; // no secure channel for raw APDU by default
+    }
 
     int rc = 0;
     if (!strcmp(cmd, "list")) rc = cmd_list(ctx, info, &sec);
@@ -559,7 +752,7 @@ int main(int argc, char **argv) {
     else if (!strcmp(cmd, "put-key")) rc = cmd_put_key(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "put-sc-key")) rc = cmd_put_sc_key(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "del-key")) rc = cmd_del_key(ctx, info, &sec, argc - i, &argv[i]);
-    else if (!strcmp(cmd, "apdu")) rc = cmd_apdu(ctx, info, &sec, (i<argc)?argv[i]:NULL);
+    else if (!strcmp(cmd, "apdu")) rc = cmd_apdu(ctx, info, sec_ptr, argc - i, &argv[i]);
     else if (!strcmp(cmd, "dap")) {
         if (i>=argc) { fprintf(stderr, "dap: missing type aes|rsa\n"); rc=-1; }
         else if (!strcmp(argv[i], "rsa")) rc = cmd_dap(1, ctx, info, &sec, argc - (i+1), &argv[i+1]);
