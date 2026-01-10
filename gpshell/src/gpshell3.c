@@ -59,7 +59,8 @@ static void print_usage(const char *prog) {
         "  list-readers\n"
         "  keys\n"
         "  install [--load-only] [--dap-aes <hexkey>|--dap-rsa <pem>[:pass]] \\\n"
-        "          [--applet <AIDhex>] [--v-data-limit <size>] [--nv-data-limit <size>] [--module <AIDhex>] [--priv <p1,p2,...>] <cap-file>\n"
+        "          [--applet <AIDhex>] [--v-data-limit <size>] [--nv-data-limit <size>] \\\n"
+        "          [--inst-param <hex>] [--module <AIDhex>] [--priv <p1,p2,...>] <cap-file>\n"
         "  delete <AIDhex>\n"
         "  put-key [--type <3des|aes|rsa>] --set <ver> --index <idx> [--new-set <ver>] \\\n"
         "          (--key <hex>|--pem <file>[:pass])\n"
@@ -402,7 +403,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
                        int argc, char **argv) {
     int load_only = 0;
     DWORD v_data_limit = 0, nv_data_limit = 0;
-    const char *dap_aes = NULL; const char *dap_rsa = NULL; const char *applet_aid_hex=NULL; const char *module_aid_hex=NULL; const char *priv_list=NULL;
+    const char *dap_aes = NULL; const char *dap_rsa = NULL; const char *applet_aid_hex=NULL; const char *module_aid_hex=NULL; const char *priv_list=NULL; const char *inst_param_hex=NULL;
     int ai = 0;
     for (; ai < argc; ++ai) {
         if (strcmp(argv[ai], "--load-only") == 0) load_only = 1;
@@ -413,6 +414,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         else if (strcmp(argv[ai], "--priv") == 0 && ai+1 < argc) { priv_list = argv[++ai]; }
         else if (strcmp(argv[ai], "--v-data-limit") == 0 && ai+1 < argc) { v_data_limit = (DWORD)atoi(argv[++ai]); }
         else if (strcmp(argv[ai], "--nv-data-limit") == 0 && ai+1 < argc) { nv_data_limit = (DWORD)atoi(argv[++ai]); }
+        else if (strcmp(argv[ai], "--inst-param") == 0 && ai+1 < argc) { inst_param_hex = argv[++ai]; }
         else break;
     }
     if (ai >= argc) { fprintf(stderr, "install: missing <cap-file>\n"); return -1; }
@@ -474,11 +476,8 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     unsigned char module_aid[16]; size_t module_len=0;
     if (module_aid_hex) { module_len = sizeof(module_aid); if (hex_to_bytes(module_aid_hex, module_aid, &module_len)!=0) { fprintf(stderr, "Invalid --module AID\n"); return -1; } }
 
-    // lfp was already read above; reuse it to derive defaults for module/applet AIDs
-    if (lfp.numAppletAIDs>0) {
-        if (module_len==0) { module_len = lfp.appletAIDs[0].AIDLength; memcpy(module_aid, lfp.appletAIDs[0].AID, module_len); }
-        if (applet_len==0) { applet_len = lfp.appletAIDs[0].AIDLength; memcpy(applet_aid, lfp.appletAIDs[0].AID, applet_len); }
-    }
+    unsigned char inst_param[256]; size_t inst_param_len=0;
+    if (inst_param_hex) { inst_param_len = sizeof(inst_param); if (hex_to_bytes(inst_param_hex, inst_param, &inst_param_len)!=0) { fprintf(stderr, "Invalid --inst-param hex\n"); return -1; } }
 
     BYTE installToken[128]; memset(installToken,0,sizeof(installToken));
     GP211_RECEIPT_DATA rec2; DWORD rec2Avail=0; memset(&rec2,0,sizeof(rec2));
@@ -486,12 +485,50 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     if (priv_list) {
         if (parse_privs_byte(priv_list, &privileges) != 0) { return -1; }
     }
-    if (!status_ok(GP211_install_for_install_and_make_selectable(ctx, info, sec,
-            lfp.loadFileAID.AID, lfp.loadFileAID.AIDLength,
-            (module_len?module_aid:NULL), (DWORD)module_len,
-            applet_aid, (DWORD)applet_len,
-            privileges, 0, 0, NULL, 0, installToken, &rec2, &rec2Avail))) {
-        fprintf(stderr, "INSTALL [install+make_selectable] failed\n"); return -1;
+
+    if (applet_len || module_len) {
+        if (applet_len == 0 && module_len > 0) {
+            // Use module AID also as applet instance AID
+            memcpy(applet_aid, module_aid, module_len);
+            applet_len = module_len;
+        } else if (module_len == 0 && applet_len > 0) {
+            // Use applet AID also as module/class AID
+            memcpy(module_aid, applet_aid, applet_len);
+            module_len = applet_len;
+        }
+
+        if (!status_ok(GP211_install_for_install_and_make_selectable(ctx, info, sec,
+                lfp.loadFileAID.AID, lfp.loadFileAID.AIDLength,
+                module_aid, (DWORD)module_len,
+                applet_aid, (DWORD)applet_len,
+                privileges, v_data_limit, nv_data_limit,
+                inst_param_len ? inst_param : NULL, (DWORD)inst_param_len,
+                installToken, &rec2, &rec2Avail))) {
+            fprintf(stderr, "INSTALL [install+make_selectable] failed\n"); return -1;
+        }
+    } else {
+        // Neither provided: iterate over all applets from CAP
+        int i = 0; int did_any = 0;
+        while (lfp.appletAIDs[i].AIDLength) {
+            did_any = 1;
+            PBYTE aid = (PBYTE)lfp.appletAIDs[i].AID;
+            DWORD aidLen = lfp.appletAIDs[i].AIDLength;
+            if (!status_ok(GP211_install_for_install_and_make_selectable(ctx, info, sec,
+                    lfp.loadFileAID.AID, lfp.loadFileAID.AIDLength,
+                    aid, aidLen,
+                    aid, aidLen,
+                    privileges, v_data_limit, nv_data_limit,
+                    inst_param_len ? inst_param : NULL, (DWORD)inst_param_len,
+                    installToken, &rec2, &rec2Avail))) {
+                fprintf(stderr, "INSTALL [install+make_selectable] failed for applet index %d\n", i);
+                return -1;
+            }
+            i++;
+        }
+        if (!did_any) {
+            fprintf(stderr, "INSTALL: No applets found in CAP to install\n");
+            return -1;
+        }
     }
     return 0;
 }
