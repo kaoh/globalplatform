@@ -34,6 +34,11 @@
 
 static int status_ok(OPGP_ERROR_STATUS s) { return s.errorStatus == OPGP_ERROR_STATUS_SUCCESS; }
 
+// Remember the ISD AID that was actually selected during connection/authentication
+// so subsequent operations (e.g., install) can reuse it without probing via GET DATA.
+static unsigned char g_selected_isd[16];
+static DWORD g_selected_isd_len = 0;
+
 static void print_usage(const char *prog) {
     fprintf(stderr,
         "Usage: %s [global-options] <command> [command-args]\n\n"
@@ -54,7 +59,7 @@ static void print_usage(const char *prog) {
         "  list-readers\n"
         "  keys\n"
         "  install [--load-only] [--dap-aes <hexkey>|--dap-rsa <pem>[:pass]] \\\n"
-        "          [--applet <AIDhex>] [--module <AIDhex>] [--priv <p1,p2,...>] <cap-file>\n"
+        "          [--applet <AIDhex>] [--v-data-limit <size>] [--nv-data-limit <size>] [--module <AIDhex>] [--priv <p1,p2,...>] <cap-file>\n"
         "  delete <AIDhex>\n"
         "  put-key [--type <3des|aes|rsa>] --set <ver> --index <idx> [--new-set <ver>] \\\n"
         "          (--key <hex>|--pem <file>[:pass])\n"
@@ -139,14 +144,24 @@ static int select_isd(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, const char *is
         unsigned char aidbuf[16]; size_t aidlen = sizeof(aidbuf);
         if (hex_to_bytes(isd_hex_opt, aidbuf, &aidlen) != 0) return -1;
         s = OPGP_select_application(ctx, info, aidbuf, (DWORD)aidlen);
-        if (status_ok(s)) return 0;
+        if (status_ok(s)) {
+            if (aidlen <= sizeof(g_selected_isd)) { memcpy(g_selected_isd, aidbuf, aidlen); g_selected_isd_len = (DWORD)aidlen; }
+            return 0;
+        }
     }
-    s = OPGP_select_application(ctx, info, (PBYTE)GP211_CARD_MANAGER_AID, 7);
-    if (status_ok(s)) return 0;
     s = OPGP_select_application(ctx, info, (PBYTE)GP231_ISD_AID, 8);
-    if (status_ok(s)) return 0;
+    if (status_ok(s)) {
+        memcpy(g_selected_isd, GP231_ISD_AID, 8); g_selected_isd_len = 8; return 0;
+    }
+    // has on 00 less but would still work on GP2.3.1 cards
+    s = OPGP_select_application(ctx, info, (PBYTE)GP211_CARD_MANAGER_AID, 7);
+    if (status_ok(s)) {
+        memcpy(g_selected_isd, GP211_CARD_MANAGER_AID, 7); g_selected_isd_len = 7; return 0;
+    }
     s = OPGP_select_application(ctx, info, (PBYTE)GP211_CARD_MANAGER_AID_ALT1, 8);
-    if (status_ok(s)) return 0;
+    if (status_ok(s)) {
+        memcpy(g_selected_isd, GP211_CARD_MANAGER_AID_ALT1, 8); g_selected_isd_len = 8; return 0;
+    }
     return -1;
 }
 
@@ -386,6 +401,7 @@ static int cmd_keys(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
 static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec,
                        int argc, char **argv) {
     int load_only = 0;
+    DWORD v_data_limit = 0, nv_data_limit = 0;
     const char *dap_aes = NULL; const char *dap_rsa = NULL; const char *applet_aid_hex=NULL; const char *module_aid_hex=NULL; const char *priv_list=NULL;
     int ai = 0;
     for (; ai < argc; ++ai) {
@@ -395,21 +411,26 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         else if (strcmp(argv[ai], "--applet") == 0 && ai+1 < argc) { applet_aid_hex = argv[++ai]; }
         else if (strcmp(argv[ai], "--module") == 0 && ai+1 < argc) { module_aid_hex = argv[++ai]; }
         else if (strcmp(argv[ai], "--priv") == 0 && ai+1 < argc) { priv_list = argv[++ai]; }
+        else if (strcmp(argv[ai], "--v-data-limit") == 0 && ai+1 < argc) { v_data_limit = (DWORD)atoi(argv[++ai]); }
+        else if (strcmp(argv[ai], "--nv-data-limit") == 0 && ai+1 < argc) { nv_data_limit = (DWORD)atoi(argv[++ai]); }
         else break;
     }
     if (ai >= argc) { fprintf(stderr, "install: missing <cap-file>\n"); return -1; }
     const char *capfile = argv[ai++];
 
     GP211_DAP_BLOCK dapBlocks[1]; DWORD dapCount = 0;
+    // Use the ISD AID that was selected during connection/authentication, without probing via GET DATA.
+    unsigned char sdAid[16]; DWORD sdAidLen = 0;
+    if (g_selected_isd_len > 0 && g_selected_isd_len <= sizeof(sdAid)) {
+        memcpy(sdAid, g_selected_isd, g_selected_isd_len);
+        sdAidLen = g_selected_isd_len;
+    } else {
+        memcpy(sdAid, GP231_ISD_AID, 7);
+        sdAidLen = 7;
+    }
+
     if (dap_aes) {
         unsigned char key[32]; size_t klen = sizeof(key); if (hex_to_bytes(dap_aes, key, &klen) != 0) { fprintf(stderr, "Invalid AES key hex\n"); return -1; }
-        unsigned char sdAid[16]; DWORD sdAidLen = sizeof(sdAid);
-        {
-            BYTE recv[32]; DWORD rlen = sizeof(recv);
-            OPGP_ERROR_STATUS s = GP211_get_data(ctx, info, sec, (BYTE*)GP211_GET_DATA_SECURITY_DOMAIN_AID, recv, &rlen);
-            if (status_ok(s) && rlen>0 && rlen<=16) { memcpy(sdAid, recv, rlen); sdAidLen = rlen; }
-            else { memcpy(sdAid, GP211_CARD_MANAGER_AID, 7); sdAidLen = 7; }
-        }
         BYTE hash[64]; DWORD hlen;
         hlen = (sec->secureChannelProtocol == GP211_SCP03) ? 64 : 20;
         if (!status_ok(GP211_calculate_load_file_data_block_hash((char*)capfile, hash, hlen, sec->secureChannelProtocol))) {
@@ -427,6 +448,21 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         dapCount = 1;
     }
 
+    // Read CAP load file parameters to obtain the package AID
+    OPGP_LOAD_FILE_PARAMETERS lfp; memset(&lfp,0,sizeof(lfp));
+    if (!status_ok(OPGP_read_executable_load_file_parameters((char*)capfile, &lfp))) {
+        fprintf(stderr, "Failed to read CAP load file parameters\n"); return -1;
+    }
+
+    {
+        OPGP_ERROR_STATUS s = GP211_install_for_load(ctx, info, sec,
+            lfp.loadFileAID.AID, lfp.loadFileAID.AIDLength,
+            sdAid, sdAidLen,
+            NULL, NULL,
+            lfp.loadFileSize, v_data_limit, nv_data_limit);
+        if (!status_ok(s)) { fprintf(stderr, "INSTALL [install_for_load] failed\n"); return -1; }
+    }
+
     GP211_RECEIPT_DATA receipt; DWORD receiptAvail=0; memset(&receipt, 0, sizeof(receipt));
     if (!status_ok(GP211_load(ctx, info, sec, dapCount?dapBlocks:NULL, dapCount, (char*)capfile, &receipt, &receiptAvail, NULL))) {
         fprintf(stderr, "LOAD failed\n"); return -1;
@@ -438,10 +474,10 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     unsigned char module_aid[16]; size_t module_len=0;
     if (module_aid_hex) { module_len = sizeof(module_aid); if (hex_to_bytes(module_aid_hex, module_aid, &module_len)!=0) { fprintf(stderr, "Invalid --module AID\n"); return -1; } }
 
-    OPGP_LOAD_FILE_PARAMETERS lfp; memset(&lfp,0,sizeof(lfp));
-    if (status_ok(OPGP_read_executable_load_file_parameters((char*)capfile, &lfp))) {
-        if (module_len==0 && lfp.numAppletAIDs>0) { module_len = lfp.appletAIDs[0].AIDLength; memcpy(module_aid, lfp.appletAIDs[0].AID, module_len); }
-        if (applet_len==0 && lfp.numAppletAIDs>0) { applet_len = lfp.appletAIDs[0].AIDLength; memcpy(applet_aid, lfp.appletAIDs[0].AID, applet_len); }
+    // lfp was already read above; reuse it to derive defaults for module/applet AIDs
+    if (lfp.numAppletAIDs>0) {
+        if (module_len==0) { module_len = lfp.appletAIDs[0].AIDLength; memcpy(module_aid, lfp.appletAIDs[0].AID, module_len); }
+        if (applet_len==0) { applet_len = lfp.appletAIDs[0].AIDLength; memcpy(applet_aid, lfp.appletAIDs[0].AID, applet_len); }
     }
 
     BYTE installToken[128]; memset(installToken,0,sizeof(installToken));
