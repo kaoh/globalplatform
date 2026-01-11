@@ -32,12 +32,35 @@
 
 #define MAX_READERS_BUF 4096
 
-static int status_ok(OPGP_ERROR_STATUS s) { return s.errorStatus == OPGP_ERROR_STATUS_SUCCESS; }
+static int status_ok(OPGP_ERROR_STATUS s) {
+    if (s.errorStatus != OPGP_ERROR_STATUS_SUCCESS) {
+        fprintf(stderr, "Error 0x%08X: %s\n", (unsigned int)s.errorCode, s.errorMessage);
+        return 0;
+    }
+    return 1;
+}
 
 // Remember the ISD AID that was actually selected during connection/authentication
 // so subsequent operations (e.g., install) can reuse it without probing via GET DATA.
 static unsigned char g_selected_isd[16];
 static DWORD g_selected_isd_len = 0;
+
+// Cleanup state tracking
+static OPGP_CARD_CONTEXT *g_cleanup_ctx = NULL;
+static OPGP_CARD_INFO *g_cleanup_info = NULL;
+static int g_cleanup_card_connected = 0;
+
+static void cleanup_and_exit(int exit_code) {
+    if (g_cleanup_card_connected && g_cleanup_ctx && g_cleanup_info) {
+        OPGP_card_disconnect(*g_cleanup_ctx, g_cleanup_info);
+        g_cleanup_card_connected = 0;
+    }
+    if (g_cleanup_ctx) {
+        OPGP_release_context(g_cleanup_ctx);
+        g_cleanup_ctx = NULL;
+    }
+    exit(exit_code);
+}
 
 static void print_usage(const char *prog) {
     fprintf(stderr,
@@ -398,7 +421,9 @@ static int cmd_list(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
 static int cmd_keys(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
     GP211_KEY_INFORMATION infos[64]; DWORD ilen = sizeof(infos)/sizeof(infos[0]);
     OPGP_ERROR_STATUS s = GP211_get_key_information_templates(ctx, info, sec, 0xE0, infos, &ilen);
-    if (!status_ok(s)) { fprintf(stderr, "Failed to get key information templates\n"); return -1; }
+    if (!status_ok(s)) {
+        cleanup_and_exit(10);
+    }
     for (DWORD i=0;i<ilen;i++) {
         printf("set=%u index=%u type=0x%02X len=%u usage=0x%02X access=0x%02X\n",
                infos[i].keySetVersion, infos[i].keyIndex, infos[i].keyType, infos[i].keyLength, infos[i].keyUsage, infos[i].keyAccess);
@@ -427,7 +452,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         else if (strcmp(argv[ai], "--inst-param") == 0 && ai+1 < argc) { inst_param_hex = argv[++ai]; }
         else break;
     }
-    if (ai >= argc) { fprintf(stderr, "install: missing <cap-file>\n"); return -1; }
+    if (ai >= argc) { fprintf(stderr, "install: missing <cap-file>\n"); cleanup_and_exit(10); }
     const char *capfile = argv[ai++];
 
     GP211_DAP_BLOCK dapBlocks[1]; DWORD dapCount = 0;
@@ -449,13 +474,13 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         if (dap_hex[0] == '@') {
             const char *filepath = dap_hex + 1;
             FILE *f = fopen(filepath, "rb");
-            if (!f) { fprintf(stderr, "Failed to open DAP signature file: %s\n", filepath); return -1; }
+            if (!f) { fprintf(stderr, "Failed to open DAP signature file: %s\n", filepath); cleanup_and_exit(10); }
             sig_len = fread(sig_buf, 1, sizeof(sig_buf), f);
             fclose(f);
-            if (sig_len == 0) { fprintf(stderr, "Empty DAP signature file\n"); return -1; }
+            if (sig_len == 0) { fprintf(stderr, "Empty DAP signature file\n"); cleanup_and_exit(10); }
         } else {
             // Parse as hex string
-            if (hex_to_bytes(dap_hex, sig_buf, &sig_len) != 0) { fprintf(stderr, "Invalid DAP signature hex\n"); return -1; }
+            if (hex_to_bytes(dap_hex, sig_buf, &sig_len) != 0) { fprintf(stderr, "Invalid DAP signature hex\n"); cleanup_and_exit(10); }
         }
 
         // Fill in DAP block with signature and SD AID
@@ -469,7 +494,8 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     // Read CAP load file parameters to obtain the package AID
     OPGP_LOAD_FILE_PARAMETERS lfp; memset(&lfp,0,sizeof(lfp));
     if (!status_ok(OPGP_read_executable_load_file_parameters((char*)capfile, &lfp))) {
-        fprintf(stderr, "Failed to read CAP load file parameters\n"); return -1;
+        fprintf(stderr, "Failed to read CAP load file parameters\n");
+        cleanup_and_exit(10);
     }
 
     // Parse optional load file hash
@@ -478,7 +504,8 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     if (load_file_hash_hex) {
         size_t hash_len = sizeof(loadFileHash);
         if (hex_to_bytes(load_file_hash_hex, loadFileHash, &hash_len) != 0) {
-            fprintf(stderr, "Invalid load file hash hex\n"); return -1;
+            fprintf(stderr, "Invalid load file hash hex\n");
+            cleanup_and_exit(10);
         }
         // Only first 20 bytes are used by GP211_install_for_load
         loadFileHashPtr = loadFileHash;
@@ -490,7 +517,8 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     if (load_token_hex) {
         size_t token_len = sizeof(loadToken);
         if (hex_to_bytes(load_token_hex, loadToken, &token_len) != 0 || token_len != 128) {
-            fprintf(stderr, "Invalid load token hex (must be 128 bytes)\n"); return -1;
+            fprintf(stderr, "Invalid load token hex (must be 128 bytes)\n");
+            cleanup_and_exit(10);
         }
         loadTokenPtr = loadToken;
     }
@@ -501,22 +529,42 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
             sdAid, sdAidLen,
             loadFileHashPtr, loadTokenPtr,
             lfp.loadFileSize, v_data_limit, nv_data_limit);
-        if (!status_ok(s)) { fprintf(stderr, "INSTALL [install_for_load] failed\n"); return -1; }
+        if (!status_ok(s)) {
+            cleanup_and_exit(10);
+        }
     }
 
     GP211_RECEIPT_DATA receipt; DWORD receiptAvail=0; memset(&receipt, 0, sizeof(receipt));
     if (!status_ok(GP211_load(ctx, info, sec, dapCount?dapBlocks:NULL, dapCount, (char*)capfile, &receipt, &receiptAvail, NULL))) {
-        fprintf(stderr, "LOAD failed\n"); return -1;
+        cleanup_and_exit(10);
     }
     if (load_only) { return 0; }
 
     unsigned char applet_aid[16]; size_t applet_len=0;
-    if (applet_aid_hex) { applet_len = sizeof(applet_aid); if (hex_to_bytes(applet_aid_hex, applet_aid, &applet_len)!=0) { fprintf(stderr, "Invalid --applet AID\n"); return -1; } }
+    if (applet_aid_hex) {
+        applet_len = sizeof(applet_aid);
+        if (hex_to_bytes(applet_aid_hex, applet_aid, &applet_len)!=0) {
+            fprintf(stderr, "Invalid --applet AID\n");
+            cleanup_and_exit(10);
+        }
+    }
     unsigned char module_aid[16]; size_t module_len=0;
-    if (module_aid_hex) { module_len = sizeof(module_aid); if (hex_to_bytes(module_aid_hex, module_aid, &module_len)!=0) { fprintf(stderr, "Invalid --module AID\n"); return -1; } }
+    if (module_aid_hex) {
+        module_len = sizeof(module_aid);
+        if (hex_to_bytes(module_aid_hex, module_aid, &module_len)!=0) {
+            fprintf(stderr, "Invalid --module AID\n");
+            cleanup_and_exit(10);
+        }
+    }
 
     unsigned char inst_param[256]; size_t inst_param_len=0;
-    if (inst_param_hex) { inst_param_len = sizeof(inst_param); if (hex_to_bytes(inst_param_hex, inst_param, &inst_param_len)!=0) { fprintf(stderr, "Invalid --inst-param hex\n"); return -1; } }
+    if (inst_param_hex) {
+        inst_param_len = sizeof(inst_param);
+        if (hex_to_bytes(inst_param_hex, inst_param, &inst_param_len)!=0) {
+            fprintf(stderr, "Invalid --inst-param hex\n");
+            cleanup_and_exit(10);
+        }
+    }
 
     // Parse optional install token
     BYTE installToken[128]; memset(installToken,0,sizeof(installToken));
@@ -524,7 +572,8 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     if (install_token_hex) {
         size_t token_len = sizeof(installToken);
         if (hex_to_bytes(install_token_hex, installToken, &token_len) != 0 || token_len != 128) {
-            fprintf(stderr, "Invalid install token hex (must be 128 bytes)\n"); return -1;
+            fprintf(stderr, "Invalid install token hex (must be 128 bytes)\n");
+            cleanup_and_exit(10);
         }
         installTokenPtr = installToken;
     }
@@ -532,7 +581,9 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     GP211_RECEIPT_DATA rec2; DWORD rec2Avail=0; memset(&rec2,0,sizeof(rec2));
     BYTE privileges = 0x00; // first 8 bits only as per requirement
     if (priv_list) {
-        if (parse_privs_byte(priv_list, &privileges) != 0) { return -1; }
+        if (parse_privs_byte(priv_list, &privileges) != 0) {
+            cleanup_and_exit(10);
+        }
     }
 
     if (applet_len || module_len) {
@@ -553,7 +604,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
                 privileges, v_data_limit, nv_data_limit,
                 inst_param_len ? inst_param : NULL, (DWORD)inst_param_len,
                 installTokenPtr, &rec2, &rec2Avail))) {
-            fprintf(stderr, "INSTALL [install+make_selectable] failed\n"); return -1;
+            cleanup_and_exit(10);
         }
     } else {
         // Neither provided: iterate over all applets from CAP
@@ -569,25 +620,28 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
                     privileges, v_data_limit, nv_data_limit,
                     inst_param_len ? inst_param : NULL, (DWORD)inst_param_len,
                     installTokenPtr, &rec2, &rec2Avail))) {
-                fprintf(stderr, "INSTALL [install+make_selectable] failed for applet index %d\n", i);
-                return -1;
+                fprintf(stderr, "Failed for applet index %d\n", i);
+                cleanup_and_exit(10);
             }
             i++;
         }
         if (!did_any) {
             fprintf(stderr, "INSTALL: No applets found in CAP to install\n");
-            return -1;
+            cleanup_and_exit(10);
         }
     }
     return 0;
 }
 
 static int cmd_delete(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, const char *aid_hex) {
-    if (!aid_hex) { fprintf(stderr, "delete: missing <AIDhex>\n"); return -1; }
-    unsigned char aidb[16]; size_t alen=sizeof(aidb); if (hex_to_bytes(aid_hex, aidb, &alen)!=0) { fprintf(stderr, "Invalid AID hex\n"); return -1; }
+    if (!aid_hex) { fprintf(stderr, "delete: missing <AIDhex>\n"); cleanup_and_exit(10); }
+    unsigned char aidb[16]; size_t alen=sizeof(aidb);
+    if (hex_to_bytes(aid_hex, aidb, &alen)!=0) { fprintf(stderr, "Invalid AID hex\n"); cleanup_and_exit(10); }
     OPGP_AID a; memset(&a,0,sizeof(a)); a.AIDLength=(BYTE)alen; memcpy(a.AID, aidb, alen);
     GP211_RECEIPT_DATA rec; DWORD recLen=0; memset(&rec,0,sizeof(rec));
-    if (!status_ok(GP211_delete_application(ctx, info, sec, &a, 1, &rec, &recLen))) { fprintf(stderr, "DELETE failed\n"); return -1; }
+    if (!status_ok(GP211_delete_application(ctx, info, sec, &a, 1, &rec, &recLen))) {
+        cleanup_and_exit(10);
+    }
     return 0;
 }
 
@@ -602,22 +656,36 @@ static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         else if (strcmp(argv[i], "--pem")==0 && i+1<argc) { pem=argv[++i]; char *c=strchr((char*)pem, ':'); if (c){ *c='\0'; pass=c+1; } }
     }
     if (strcmp(type, "rsa")==0) {
-        if (!pem) { fprintf(stderr, "put-key rsa: --pem <file>[:pass] required\n"); return -1; }
-        if (!status_ok(GP211_put_rsa_key(ctx, info, sec, setVer, idx, newSetVer, (char*)pem, pass))) { fprintf(stderr, "put rsa key failed\n"); return -1; }
+        if (!pem) { fprintf(stderr, "put-key rsa: --pem <file>[:pass] required\n"); cleanup_and_exit(10); }
+        if (!status_ok(GP211_put_rsa_key(ctx, info, sec, setVer, idx, newSetVer, (char*)pem, pass))) {
+            cleanup_and_exit(10);
+        }
         return 0;
     } else if (strcmp(type, "aes")==0) {
-        if (!hexkey) { fprintf(stderr, "put-key aes: --key <hex> required\n"); return -1; }
-        unsigned char k[32]; size_t klen=sizeof(k); if (hex_to_bytes(hexkey, k, &klen)!=0 || (klen!=16 && klen!=24 && klen!=32)) { fprintf(stderr, "Invalid AES key len\n"); return -1; }
-        if (!status_ok(GP211_put_aes_key(ctx, info, sec, setVer, idx, newSetVer, k, (DWORD)klen))) { fprintf(stderr, "put aes key failed\n"); return -1; }
+        if (!hexkey) { fprintf(stderr, "put-key aes: --key <hex> required\n"); cleanup_and_exit(10); }
+        unsigned char k[32]; size_t klen=sizeof(k);
+        if (hex_to_bytes(hexkey, k, &klen)!=0 || (klen!=16 && klen!=24 && klen!=32)) {
+            fprintf(stderr, "Invalid AES key len\n");
+            cleanup_and_exit(10);
+        }
+        if (!status_ok(GP211_put_aes_key(ctx, info, sec, setVer, idx, newSetVer, k, (DWORD)klen))) {
+            cleanup_and_exit(10);
+        }
         return 0;
     } else if (strcmp(type, "3des")==0) {
-        if (!hexkey) { fprintf(stderr, "put-key 3des: --key <hex> required\n"); return -1; }
-        unsigned char k[16]; size_t klen=sizeof(k); if (hex_to_bytes(hexkey, k, &klen)!=0 || klen!=16) { fprintf(stderr, "3DES key must be 16 hex bytes\n"); return -1; }
-        if (!status_ok(GP211_put_3des_key(ctx, info, sec, setVer, idx, newSetVer, k))) { fprintf(stderr, "put 3des key failed\n"); return -1; }
+        if (!hexkey) { fprintf(stderr, "put-key 3des: --key <hex> required\n"); cleanup_and_exit(10); }
+        unsigned char k[16]; size_t klen=sizeof(k);
+        if (hex_to_bytes(hexkey, k, &klen)!=0 || klen!=16) {
+            fprintf(stderr, "3DES key must be 16 hex bytes\n");
+            cleanup_and_exit(10);
+        }
+        if (!status_ok(GP211_put_3des_key(ctx, info, sec, setVer, idx, newSetVer, k))) {
+            cleanup_and_exit(10);
+        }
         return 0;
     } else {
         fprintf(stderr, "put-key: unsupported --type '%s' (use 3des|aes|rsa). For Secure Channel keys use put-sc-key.\n", type);
-        return -1;
+        cleanup_and_exit(10);
     }
 }
 
@@ -635,22 +703,38 @@ static int cmd_put_sc_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECU
         // allow zero, but typically setVer is 0 for default
     }
     if (base && (senc || smac || dek)) {
-        fprintf(stderr, "put-sc-key: use either --base OR all of --senc/--smac/--dek\n"); return -1;
+        fprintf(stderr, "put-sc-key: use either --base OR all of --senc/--smac/--dek\n");
+        cleanup_and_exit(10);
     }
     if (!base && !(senc && smac && dek)) {
-        fprintf(stderr, "put-sc-key: specify either --base <hex> or --senc/--smac/--dek <hex>\n"); return -1;
+        fprintf(stderr, "put-sc-key: specify either --base <hex> or --senc/--smac/--dek <hex>\n");
+        cleanup_and_exit(10);
     }
     if (base) {
-        unsigned char b[32]; size_t blen=sizeof(b); if (hex_to_bytes(base, b, &blen)!=0 || (blen!=16 && blen!=24 && blen!=32)) { fprintf(stderr, "Invalid base key length\n"); return -1; }
+        unsigned char b[32]; size_t blen=sizeof(b);
+        if (hex_to_bytes(base, b, &blen)!=0 || (blen!=16 && blen!=24 && blen!=32)) {
+            fprintf(stderr, "Invalid base key length\n");
+            cleanup_and_exit(10);
+        }
         OPGP_ERROR_STATUS s = GP211_put_secure_channel_keys(ctx, info, sec, setVer, newSetVer, b, NULL, NULL, NULL, (DWORD)blen);
-        if (!status_ok(s)) { fprintf(stderr, "put-sc-key (base) failed\n"); return -1; }
+        if (!status_ok(s)) {
+            cleanup_and_exit(10);
+        }
         return 0;
     } else {
         unsigned char se[32], sm[32], dk[32]; size_t el=sizeof(se), ml=sizeof(sm), dl=sizeof(dk);
-        if (hex_to_bytes(senc, se, &el)!=0 || hex_to_bytes(smac, sm, &ml)!=0 || hex_to_bytes(dek, dk, &dl)!=0) { fprintf(stderr, "Invalid hex for S-ENC/S-MAC/DEK\n"); return -1; }
-        if (!((el==ml && ml==dl) && (el==16 || el==24 || el==32))) { fprintf(stderr, "Keys must have equal length of 16/24/32 bytes\n"); return -1; }
+        if (hex_to_bytes(senc, se, &el)!=0 || hex_to_bytes(smac, sm, &ml)!=0 || hex_to_bytes(dek, dk, &dl)!=0) {
+            fprintf(stderr, "Invalid hex for S-ENC/S-MAC/DEK\n");
+            cleanup_and_exit(10);
+        }
+        if (!((el==ml && ml==dl) && (el==16 || el==24 || el==32))) {
+            fprintf(stderr, "Keys must have equal length of 16/24/32 bytes\n");
+            cleanup_and_exit(10);
+        }
         OPGP_ERROR_STATUS s = GP211_put_secure_channel_keys(ctx, info, sec, setVer, newSetVer, NULL, se, sm, dk, (DWORD)el);
-        if (!status_ok(s)) { fprintf(stderr, "put-sc-key (triple) failed\n"); return -1; }
+        if (!status_ok(s)) {
+            cleanup_and_exit(10);
+        }
         return 0;
     }
 }
@@ -661,7 +745,9 @@ static int cmd_del_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         if (strcmp(argv[i], "--set")==0 && i+1<argc) setVer=(BYTE)atoi(argv[++i]);
         else if (strcmp(argv[i], "--index")==0 && i+1<argc) idx=(BYTE)atoi(argv[++i]);
     }
-    if (!status_ok(GP211_delete_key(ctx, info, sec, setVer, idx))) { fprintf(stderr, "delete key failed\n"); return -1; }
+    if (!status_ok(GP211_delete_key(ctx, info, sec, setVer, idx))) {
+        cleanup_and_exit(10);
+    }
     return 0;
 }
 
@@ -902,7 +988,15 @@ int main(int argc, char **argv) {
          _tcslen(_T("gppcscconnectionplugin"))+1);
     _tcsncpy(ctx.libraryVersion, _T("1"),
              _tcslen(_T("1"))+1);
-    if (connect_pcsc(&ctx, &info, reader, protocol, trace, verbose) != 0) return 3;
+
+    // Set up cleanup handlers
+    g_cleanup_ctx = &ctx;
+    g_cleanup_info = &info;
+
+    if (connect_pcsc(&ctx, &info, reader, protocol, trace, verbose) != 0) {
+        cleanup_and_exit(3);
+    }
+    g_cleanup_card_connected = 1;
 
     // Determine authentication need: for 'apdu' command default is no auth unless --auth/--secure is present
     int need_auth = 1; // default for non-apdu commands
@@ -914,8 +1008,14 @@ int main(int argc, char **argv) {
     }
     GP211_SECURITY_INFO *sec_ptr = &sec;
     if (need_auth) {
-        if (select_isd(ctx, info, isd_hex) != 0) { fprintf(stderr, "Failed to select ISD\n"); OPGP_card_disconnect(ctx, &info); OPGP_release_context(&ctx); return 4; }
-        if (mutual_auth(ctx, info, &sec, keyset_ver, key_index, derivation, sec_level_opt, verbose) != 0) { fprintf(stderr, "Mutual authentication failed\n"); OPGP_card_disconnect(ctx, &info); OPGP_release_context(&ctx); return 5; }
+        if (select_isd(ctx, info, isd_hex) != 0) {
+            fprintf(stderr, "Failed to select ISD\n");
+            cleanup_and_exit(4);
+        }
+        if (mutual_auth(ctx, info, &sec, keyset_ver, key_index, derivation, sec_level_opt, verbose) != 0) {
+            fprintf(stderr, "Mutual authentication failed\n");
+            cleanup_and_exit(5);
+        }
     } else {
         sec_ptr = NULL; // no secure channel for raw APDU by default
     }
