@@ -3678,6 +3678,7 @@ OPGP_ERROR_STATUS GP211_calculate_load_token(PBYTE executableLoadFileAID, DWORD 
 	OPGP_ERROR_STATUS status;
 	BYTE loadTokenSignatureData[256];
 	DWORD loadTokenSignatureDataLength = 256;
+	DWORD loadTokenLength = 128;
 	OPGP_LOG_START(_T("GP211_calculate_load_token"));
 	status = GP211_get_load_token_signature_data(executableLoadFileAID, executableLoadFileAIDLength, securityDomainAID, securityDomainAIDLength,
 		loadFileDataBlockHash, nonVolatileCodeSpaceLimit, volatileDataSpaceLimit, nonVolatileDataSpaceLimit, loadTokenSignatureData, &loadTokenSignatureDataLength);
@@ -3685,7 +3686,7 @@ OPGP_ERROR_STATUS GP211_calculate_load_token(PBYTE executableLoadFileAID, DWORD 
 		goto end;
 	}
 	status = calculate_rsa_signature(loadTokenSignatureData, loadTokenSignatureDataLength, PEMKeyFileName,
-									passPhrase, loadToken);
+									passPhrase, loadToken, &loadTokenLength);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -3799,17 +3800,58 @@ OPGP_ERROR_STATUS GP211_calculate_rsa_DAP(BYTE loadFileDataBlockHash[20], PBYTE 
 					   GP211_DAP_BLOCK *loadFileDataBlockSignature)
 {
 	OPGP_ERROR_STATUS status;
+	DWORD signatureLength = 128;
 	OPGP_LOG_START(_T("GP211_calculate_rsa_DAP"));
 
-	calculate_rsa_signature(loadFileDataBlockHash, 20, PEMKeyFileName, passPhrase,
-		loadFileDataBlockSignature->signature);
-	loadFileDataBlockSignature->signatureLength = 128;
+	status = calculate_rsa_signature(loadFileDataBlockHash, 20, PEMKeyFileName, passPhrase,
+		loadFileDataBlockSignature->signature, &signatureLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	loadFileDataBlockSignature->signatureLength = signatureLength;
 	memcpy(loadFileDataBlockSignature->securityDomainAID, securityDomainAID, securityDomainAIDLength);
 	loadFileDataBlockSignature->securityDomainAIDLength = (BYTE)securityDomainAIDLength;
 
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
 	OPGP_LOG_END(_T("GP211_calculate_rsa_DAP"), status);
+	return status;
+}
+
+/**
+ * Calculates a Load File Data Block Signature according to the GlobalPlatform specification 2.1.1.
+ * This function supports RSA keys larger than 1024 bits using RSA-PSS (Scheme 2).
+ * Uses SHA-256 for RSA keys <= 2048 bits and SHA-512 for RSA keys > 2048 bits.
+ * \param loadFileDataBlockHash [in] The Load File Data Block Hash to sign.
+ * \param loadFileDataBlockHashLength [in] The length of the Load File Data Block Hash.
+ * \param securityDomainAID [in] A buffer containing the Security Domain AID.
+ * \param securityDomainAIDLength [in] The length of the Security Domain AID.
+ * \param PEMKeyFileName [in] A PEM file name with the private RSA key.
+ * \param *passPhrase [in] The passphrase. Must be an ASCII string.
+ * \param *loadFileDataBlockSignature [out] A pointer to the returned GP211_DAP_BLOCK structure.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS GP211_calculate_rsa_schemeX_DAP(PBYTE loadFileDataBlockHash, DWORD loadFileDataBlockHashLength,
+					   PBYTE securityDomainAID, DWORD securityDomainAIDLength,
+					   OPGP_STRING PEMKeyFileName, char *passPhrase,
+					   GP211_DAP_BLOCK *loadFileDataBlockSignature)
+{
+	OPGP_ERROR_STATUS status;
+	DWORD signatureLength = 128;
+	OPGP_LOG_START(_T("GP211_calculate_rsa_schemeX_DAP"));
+
+	status = calculate_rsa_signature(loadFileDataBlockHash, loadFileDataBlockHashLength, PEMKeyFileName, passPhrase,
+		loadFileDataBlockSignature->signature, &signatureLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	loadFileDataBlockSignature->signatureLength = (BYTE)signatureLength;
+	memcpy(loadFileDataBlockSignature->securityDomainAID, securityDomainAID, securityDomainAIDLength);
+	loadFileDataBlockSignature->securityDomainAIDLength = (BYTE)securityDomainAIDLength;
+
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	OPGP_LOG_END(_T("GP211_calculate_rsa_schemeX_DAP"), status);
 	return status;
 }
 
@@ -6396,8 +6438,9 @@ OPGP_ERROR_STATUS OP201_calculate_load_token(PBYTE executableLoadFileAID, DWORD 
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
+	DWORD loadTokenLen = 128;
 	status = calculate_rsa_signature(loadTokenSignatureData, loadTokenSignatureDataLength, PEMKeyFileName,
-									passPhrase, loadToken);
+									passPhrase, loadToken, &loadTokenLen);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -6610,12 +6653,13 @@ OPGP_ERROR_STATUS OP201_calculate_rsa_DAP(PBYTE securityDomainAID, DWORD securit
 		goto end;
 	}
 
-	status = calculate_rsa_signature(loadFileBuf, loadFileBufSize, PEMKeyFileName, passPhrase, dapBlock->signature);
+	DWORD sigLen = 128;
+	status = calculate_rsa_signature(loadFileBuf, loadFileBufSize, PEMKeyFileName, passPhrase, dapBlock->signature, &sigLen);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
 
-	dapBlock->signatureLength = 128;
+	dapBlock->signatureLength = (BYTE)sigLen;
 	memcpy(dapBlock->securityDomainAID, securityDomainAID, securityDomainAIDLength);
 	dapBlock->securityDomainAIDLength = (BYTE)securityDomainAIDLength;
 
@@ -6782,8 +6826,9 @@ OPGP_ERROR_STATUS calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, 
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
+	DWORD installTokenLen = 128;
 	status = calculate_rsa_signature(installTokenSignatureData, installTokenSignatureDataLength, PEMKeyFileName,
-									passPhrase, installToken);
+									passPhrase, installToken, &installTokenLen);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}

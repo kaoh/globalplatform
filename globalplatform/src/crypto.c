@@ -1105,28 +1105,36 @@ end:
 }
 
 /**
- * Calculates a RSA signature using SHA-1 and PKCS#1.
- * \param message [in] The message to generate the signature for.
- * \param messageLength [in] The length of the message buffer.
+ * Calculates a RSA signature using SHA-1 and PKCS#1 v1.5 or SHA-256/SHA-512 and RSA-PSS.
+ * For RSA keys <= 1024 bits: Uses PKCS#1 v1.5 with SHA-1 (legacy scheme)
+ * For RSA keys > 1024 bits and <= 2048 bits: Uses RSA-PSS with SHA-256
+ * For RSA keys > 2048 bits: Uses RSA-PSS with SHA-512
+ * \param message [in] The hash to sign.
+ * \param messageLength [in] The length of the hash buffer.
  * \param PEMKeyFileName [in] A PEM file name with the private RSA key.
  * \param *passPhrase [in] The passphrase. Must be an ASCII string.
- * \param signature The calculated signature.
+ * \param signature [out] The calculated signature buffer.
+ * \param signatureLength [in,out] On input: the length of the signature buffer. On output: the actual signature length.
  */
 OPGP_ERROR_STATUS calculate_rsa_signature(PBYTE message, DWORD messageLength, OPGP_STRING PEMKeyFileName,
-									char *passPhrase, BYTE signature[128]) {
+									char *passPhrase, PBYTE signature, PDWORD signatureLength) {
 	LONG result;
 	OPGP_ERROR_STATUS status;
 	EVP_PKEY *key = NULL;
 	FILE *PEMKeyFile = NULL;
-	EVP_MD_CTX *mdctx;
-	unsigned int signatureLength=0;
+	EVP_MD_CTX *mdctx = NULL;
+	EVP_PKEY_CTX *pctx = NULL;
+	const EVP_MD *md = NULL;
+	unsigned int actualSignatureLength = 0;
+	int keySize = 0;
+	int rsaBits = 0;
 	OPGP_LOG_START(_T("calculate_rsa_signature"));
-	mdctx = EVP_MD_CTX_create();
-	EVP_MD_CTX_init(mdctx);
+
 	if (passPhrase == NULL)
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_PASSWORD, OPGP_stringify_error(OPGP_ERROR_INVALID_PASSWORD)); goto end; }
 	if ((PEMKeyFileName == NULL) || (_tcslen(PEMKeyFileName) == 0))
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_FILENAME, OPGP_stringify_error(OPGP_ERROR_INVALID_FILENAME)); goto end; }
+
 	PEMKeyFile = _tfopen(PEMKeyFileName, _T("rb"));
 	if (PEMKeyFile == NULL) {
 		{ OPGP_ERROR_CREATE_ERROR(status, errno, OPGP_stringify_error(errno)); goto end; }
@@ -1134,26 +1142,90 @@ OPGP_ERROR_STATUS calculate_rsa_signature(PBYTE message, DWORD messageLength, OP
 	key = EVP_PKEY_new();
 	if (!PEM_read_PrivateKey(PEMKeyFile, &key, NULL, passPhrase)) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
-	};
-	result = EVP_SignInit_ex(mdctx, EVP_sha1(), NULL);
+	}
+
+	keySize = EVP_PKEY_size(key);
+
+	result = EVP_PKEY_get_int_param(key, "bits", &rsaBits);
 	if (result != 1) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 	}
-	result = EVP_SignUpdate(mdctx, message, messageLength);
-	if (result != 1) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
-	}
-	if (EVP_PKEY_size(key) > 128) {
+
+	// Check if signature buffer is large enough
+	if (*signatureLength < (DWORD)keySize) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
 	}
-	result = EVP_SignFinal(mdctx, signature, &signatureLength, key);
-	if (result != 1) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+
+	// Determine signature scheme based on RSA key size
+	if (rsaBits <= 1024) {
+		// RSA keys <= 1024 bits: Use legacy PKCS#1 v1.5 with SHA-1
+		mdctx = EVP_MD_CTX_create();
+		EVP_MD_CTX_init(mdctx);
+		result = EVP_SignInit_ex(mdctx, EVP_sha1(), NULL);
+		if (result != 1) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+		result = EVP_SignUpdate(mdctx, message, messageLength);
+		if (result != 1) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+		result = EVP_SignFinal(mdctx, signature, &actualSignatureLength, key);
+		if (result != 1) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+	} else {
+		// RSA keys > 1024 bits: Use RSA-PSS
+		// Select hash algorithm based on key size
+		if (rsaBits <= 2048) {
+			md = EVP_sha256(); // SHA-256 for keys <= 2048 bits
+		} else {
+			md = EVP_sha512(); // SHA-512 for keys > 2048 bits
+		}
+
+		mdctx = EVP_MD_CTX_create();
+		if (mdctx == NULL) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+
+		result = EVP_DigestSignInit(mdctx, &pctx, md, NULL, key);
+		if (result != 1) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+
+		// Configure RSA-PSS parameters
+		result = EVP_PKEY_CTX_set_rsa_padding(pctx, RSA_PKCS1_PSS_PADDING);
+		if (result != 1) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+
+		// Set salt length to hash length (PKCS#1 default)
+		// SHA-256 = 32 bytes, SHA-512 = 64 bytes
+		int saltLen = (rsaBits <= 2048) ? 32 : 64;
+		result = EVP_PKEY_CTX_set_rsa_pss_saltlen(pctx, saltLen);
+		if (result != 1) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+
+		// Set MGF1 hash to match main hash
+		result = EVP_PKEY_CTX_set_rsa_mgf1_md(pctx, md);
+		if (result != 1) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+
+		// Sign the pre-computed hash
+		size_t sigLen = (size_t)keySize;
+		result = EVP_DigestSign(mdctx, signature, &sigLen, message, messageLength);
+		if (result != 1) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+		actualSignatureLength = (unsigned int)sigLen;
 	}
+	*signatureLength = actualSignatureLength;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
-	EVP_MD_CTX_destroy(mdctx);
-
+	if (mdctx) {
+		EVP_MD_CTX_destroy(mdctx);
+	}
 	if (PEMKeyFile) {
 		fclose(PEMKeyFile);
 	}

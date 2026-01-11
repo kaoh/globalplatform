@@ -792,11 +792,11 @@ static int cmd_dap(int is_rsa, OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
     if (is_rsa) {
         if (argc - ai < 3) { fprintf(stderr, "dap rsa [--output <file>] <hash-hex> <sd-aidhex> <pem>[:pass]\n"); return -1; }
         const char *hash_hex = argv[ai++]; const char *sd_hex = argv[ai++]; const char *pem = argv[ai++];
-        unsigned char hash20[20]; size_t hashlen=sizeof(hash20);
-        if (hex_to_bytes(hash_hex, hash20, &hashlen)!=0 || hashlen != 20) { fprintf(stderr, "Invalid hash hex (must be 20 bytes for RSA)\n"); return -1; }
+        unsigned char hash[64]; size_t hashlen=sizeof(hash);
+        if (hex_to_bytes(hash_hex, hash, &hashlen)!=0) { fprintf(stderr, "Invalid hash hex\n"); return -1; }
         unsigned char sd[16]; size_t sdlen=sizeof(sd); if (hex_to_bytes(sd_hex, sd, &sdlen)!=0) { fprintf(stderr, "Invalid sd-aid\n"); return -1; }
         char pemcopy[512]; strncpy(pemcopy, pem, sizeof(pemcopy)-1); pemcopy[sizeof(pemcopy)-1]='\0'; char *pass=NULL; char *c=strchr(pemcopy,':'); if (c){*c='\0'; pass=c+1;}
-        GP211_DAP_BLOCK dap; if (!status_ok(GP211_calculate_rsa_DAP(hash20, sd, (DWORD)sdlen, pemcopy, pass, &dap))) { fprintf(stderr, "calc rsa DAP failed\n"); return -1; }
+        GP211_DAP_BLOCK dap; if (!status_ok(GP211_calculate_rsa_schemeX_DAP(hash, (DWORD)hashlen, sd, (DWORD)sdlen, pemcopy, pass, &dap))) { fprintf(stderr, "calc rsa DAP failed\n"); return -1; }
 
         if (output_file) {
             FILE *f = fopen(output_file, "wb");

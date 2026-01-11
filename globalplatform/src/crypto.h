@@ -92,7 +92,7 @@ OPGP_ERROR_STATUS create_session_key_SCP02(BYTE key[16], BYTE constant[2],
 
 OPGP_NO_API
 OPGP_ERROR_STATUS calculate_rsa_signature(PBYTE message, DWORD messageLength, OPGP_STRING PEMKeyFileName,
-									char *passPhrase, BYTE signature[128]);
+									char *passPhrase, PBYTE signature, PDWORD signatureLength);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS calculate_MAC(BYTE sessionKey[16], BYTE *message, DWORD messageLength,

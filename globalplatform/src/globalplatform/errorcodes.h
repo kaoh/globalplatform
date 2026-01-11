@@ -46,6 +46,7 @@
 // Philip Wendland: added this because security level 3 of SCP03 is not supported yet.
 #define OPGP_ERROR_SCP03_SECURITY_R_ENCRYPTION_R_MAC_NOT_SUPPORTED ((DWORD)0x8030F00EL) //!< SCP03 with R-Encryption and R-MAC is not supported.
 #define OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE ((DWORD)0x8030F012L) //!< The install parameters are too large.
+#define OPGP_ERROR_WRONG_HASH_SIZE ((DWORD)0x8030F013L) //!< The hash size does not match the RSA key size.
 
 /* Open Platform 2.0.1' specific errors */
 

@@ -724,6 +724,13 @@ OPGP_ERROR_STATUS GP211_calculate_rsa_DAP(BYTE loadFileDataBlockHash[20], PBYTE 
 					   DWORD securityDomainAIDLength, OPGP_STRING PEMKeyFileName,
 					   char *passPhrase, GP211_DAP_BLOCK *loadFileDataBlockSignature);
 
+//! \brief GlobalPlatform2.1.1: Calculates a Load File Data Block Signature using SHA-256/SHA-512 and RSA-PSS (Scheme 2).
+OPGP_API
+OPGP_ERROR_STATUS GP211_calculate_rsa_schemeX_DAP(PBYTE loadFileDataBlockHash, DWORD loadFileDataBlockHashLength,
+				   PBYTE securityDomainAID, DWORD securityDomainAIDLength,
+				   OPGP_STRING PEMKeyFileName, char *passPhrase,
+				   GP211_DAP_BLOCK *loadFileDataBlockSignature);
+
 //! \brief GlobalPlatform2.1.1: Validates a Load Receipt.
 OPGP_API
 OPGP_ERROR_STATUS GP211_validate_delete_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,

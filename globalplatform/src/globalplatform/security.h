@@ -269,8 +269,8 @@ typedef struct {
 typedef struct {
 	BYTE securityDomainAIDLength; //!< The length of the Security Domain.
 	BYTE securityDomainAID[16]; //!< The AID of the Security Domain.
-	BYTE signatureLength; //!< The length of the signature. Can be 8 for a 3DES signature or 128 for a RSA signature.
-	BYTE signature[128]; //!< The signature.
+	DWORD signatureLength; //!< The length of the signature. Can be 8 for a 3DES signature or <= 512 for a RSA signature.
+	BYTE signature[512]; //!< The signature.
 } GP211_DAP_BLOCK, GP211_RSA_DAP_BLOCK, GP211_3DES_DAP_BLOCK;
 
 

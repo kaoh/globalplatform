@@ -116,7 +116,9 @@ OPGP_STRING OPGP_stringify_error(DWORD errorCode) {
 	if (errorCode == GP211_ERROR_MORE_APPLICATION_DATA)
 		return _T("More Issuer Security Domain, Executable Load File, Executable Load Files and Executable Modules or application data is available.");
 	if (errorCode == OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE)
-		return _T("The install parameters are too large.");	
+		return _T("The install parameters are too large.");
+	if (errorCode == OPGP_ERROR_WRONG_HASH_SIZE)
+		return _T("The hash size does not match the RSA key size.");
 	if (errorCode == OPGP_ERROR_WRONG_TRY_LIMIT)
 		return _T("Wrong maximum try limit.");
 	if (errorCode == OPGP_ERROR_WRONG_PIN_LENGTH)
