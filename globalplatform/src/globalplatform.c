@@ -3727,7 +3727,7 @@ OPGP_ERROR_STATUS GP211_calculate_load_file_data_block_hash(OPGP_STRING executab
 	if (secureChannelProtocol == GP211_SCP02) {
 		status = calculate_sha1_hash(loadFileBuf, loadFileBufSize, hash);
 	}
-	if (secureChannelProtocol == GP211_SCP03) {
+	else if (secureChannelProtocol == GP211_SCP03) {
 		status = calculate_sha2_hash(loadFileBuf, loadFileBufSize, hash, hashLength);
 	}
 	else {
