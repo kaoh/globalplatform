@@ -66,12 +66,12 @@ static void print_usage(const char *prog) {
     fprintf(stderr,
         "Usage: %s [global-options] <command> [command-args]\n\n"
         "Global options:\n"
-        "  --reader <name>           PC/SC reader name (default: auto first present)\n"
+        "  -r, --reader <name>       PC/SC reader name (default: auto first present)\n"
         "  --protocol <auto|t0|t1>   Transport protocol (default: auto)\n"
-        "  --keyset-version <n>      Key set version for mutual auth (default: 0)\n"
-        "  --key-index <n>           Key index within key set (default: 0)\n"
+        "  --kv <n>                  Key set version for mutual auth (default: 0)\n"
+        "  --idx <n>                 Key index within key set (default: 0)\n"
         "  --derive <none|visa2|emv>  Key derivation (default: none)\n"
-        "  --sec-level <mac|mac+enc|mac+enc+rmac> Channel security level (default: mac+enc)\n"
+        "  --sec <mac|mac+enc|mac+enc+rmac> Channel security level (default: mac+enc)\n"
         "  --isd <aidhex>            ISD AID hex; default tries A000000151000000 then A0000001510000 then A000000003000000\n"
         "  --key <hex>               Base key for mutual auth (default: A0..AF)\n"
         "  --enc <hex>               ENC key for mutual auth (default: A0..AF)\n"
@@ -86,14 +86,14 @@ static void print_usage(const char *prog) {
         "  list-keys\n"
         "  install [--load-only] [--dap <hex>|@<file>] [--load-token <hex>] [--install-token <hex>] \\\n"
         "          [--load-file-hash <hex>] [--applet <AIDhex>] [--v-data-limit <size>] \\\n"
-        "          [--nv-data-limit <size>] [--inst-param <hex>] [--module <AIDhex>] \\\n"
+        "          [--nv-data-limit <size>] [--params <hex>] [--module <AIDhex>] \\\n"
         "          [--priv <p1,p2,...>] <cap-file>\n"
         "      --dap: DAP signature as hex or @file for binary signature (SD AID taken from --isd)\n"
         "  delete <AIDhex>\n"
-        "  key-put [--type <3des|aes|rsa>] --set <ver> --index <idx> [--new-set <ver>] \\\n"
+        "  key-put [--type <3des|aes|rsa>] --kv <ver> --idx <idx> [--new-kv <ver>] \\\n"
         "          (--key <hex>|--pem <file>[:pass])\n"
-        "  put-auth --set <ver> [--new-set <ver>] [--key <hex> | --enc <hex> --mac <hex> --dek <hex>]\n"
-        "  key-del --set <ver> [--index <idx>]\n"
+        "  put-auth --kv <ver> [--new-kv <ver>] [--key <hex> | --enc <hex> --mac <hex> --dek <hex>]\n"
+        "  key-del --kv <ver> [--idx <idx>]\n"
         "  apdu [--auth] [--nostop|--ignore-errors] <APDU> [<APDU> ...]\n"
         "      APDU format: hex bytes either concatenated (e.g. 00A40400) or space-separated (e.g. 00 A4 04 00).\n"
         "      Multiple APDUs can be provided as separate args or separated by ';' or ',' in one arg.\n"
@@ -460,7 +460,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
                        int argc, char **argv) {
     int load_only = 0;
     DWORD v_data_limit = 0, nv_data_limit = 0;
-    const char *dap_hex = NULL; const char *applet_aid_hex=NULL; const char *module_aid_hex=NULL; const char *priv_list=NULL; const char *inst_param_hex=NULL;
+    const char *dap_hex = NULL; const char *applet_aid_hex=NULL; const char *module_aid_hex=NULL; const char *priv_list=NULL; const char *params_hex=NULL;
     const char *load_token_hex = NULL; const char *install_token_hex = NULL; const char *load_file_hash_hex = NULL;
     int ai = 0;
     for (; ai < argc; ++ai) {
@@ -474,7 +474,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         else if (strcmp(argv[ai], "--priv") == 0 && ai+1 < argc) { priv_list = argv[++ai]; }
         else if (strcmp(argv[ai], "--v-data-limit") == 0 && ai+1 < argc) { v_data_limit = (DWORD)atoi(argv[++ai]); }
         else if (strcmp(argv[ai], "--nv-data-limit") == 0 && ai+1 < argc) { nv_data_limit = (DWORD)atoi(argv[++ai]); }
-        else if (strcmp(argv[ai], "--inst-param") == 0 && ai+1 < argc) { inst_param_hex = argv[++ai]; }
+        else if (strcmp(argv[ai], "--params") == 0 && ai+1 < argc) { params_hex = argv[++ai]; }
         else break;
     }
     if (ai >= argc) { fprintf(stderr, "install: missing <cap-file>\n"); cleanup_and_exit(10); }
@@ -583,10 +583,10 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     }
 
     unsigned char inst_param[256]; size_t inst_param_len=0;
-    if (inst_param_hex) {
+    if (params_hex) {
         inst_param_len = sizeof(inst_param);
-        if (hex_to_bytes(inst_param_hex, inst_param, &inst_param_len)!=0) {
-            fprintf(stderr, "Invalid --inst-param hex\n");
+        if (hex_to_bytes(params_hex, inst_param, &inst_param_len)!=0) {
+            fprintf(stderr, "Invalid --params hex\n");
             cleanup_and_exit(10);
         }
     }
@@ -673,9 +673,9 @@ static int cmd_delete(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY
 static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
     BYTE setVer=0, idx=0, newSetVer=0; const char *type="aes"; const char *hexkey=NULL; const char *pem=NULL; char *pass=NULL;
     for (int i=0;i<argc;i++) {
-        if (strcmp(argv[i], "--set")==0 && i+1<argc) setVer=(BYTE)atoi(argv[++i]);
-        else if (strcmp(argv[i], "--index")==0 && i+1<argc) idx=(BYTE)atoi(argv[++i]);
-        else if (strcmp(argv[i], "--new-set")==0 && i+1<argc) newSetVer=(BYTE)atoi(argv[++i]);
+        if (strcmp(argv[i], "--kv")==0 && i+1<argc) setVer=(BYTE)atoi(argv[++i]);
+        else if (strcmp(argv[i], "--idx")==0 && i+1<argc) idx=(BYTE)atoi(argv[++i]);
+        else if (strcmp(argv[i], "--new-kv")==0 && i+1<argc) newSetVer=(BYTE)atoi(argv[++i]);
         else if (strcmp(argv[i], "--type")==0 && i+1<argc) type=argv[++i];
         else if (strcmp(argv[i], "--key")==0 && i+1<argc) hexkey=argv[++i];
         else if (strcmp(argv[i], "--pem")==0 && i+1<argc) { pem=argv[++i]; char *c=strchr((char*)pem, ':'); if (c){ *c='\0'; pass=c+1; } }
@@ -717,8 +717,8 @@ static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
 static int cmd_put_sc_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
     BYTE setVer=0, newSetVer=0; const char *base=NULL, *enc=NULL, *mac=NULL, *dek=NULL;
     for (int i=0;i<argc;i++) {
-        if (strcmp(argv[i], "--set")==0 && i+1<argc) setVer=(BYTE)atoi(argv[++i]);
-        else if (strcmp(argv[i], "--new-set")==0 && i+1<argc) newSetVer=(BYTE)atoi(argv[++i]);
+        if (strcmp(argv[i], "--kv")==0 && i+1<argc) setVer=(BYTE)atoi(argv[++i]);
+        else if (strcmp(argv[i], "--new-kv")==0 && i+1<argc) newSetVer=(BYTE)atoi(argv[++i]);
         else if (strcmp(argv[i], "--base")==0 && i+1<argc) base=argv[++i];
         else if (strcmp(argv[i], "--key")==0 && i+1<argc) base=argv[++i];
         else if (strcmp(argv[i], "--enc")==0 && i+1<argc) enc=argv[++i];
@@ -768,8 +768,8 @@ static int cmd_put_sc_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECU
 static int cmd_del_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
     BYTE setVer=0; BYTE idx=0xFF; // 0xFF => delete all keys in set
     for (int i=0;i<argc;i++) {
-        if (strcmp(argv[i], "--set")==0 && i+1<argc) setVer=(BYTE)atoi(argv[++i]);
-        else if (strcmp(argv[i], "--index")==0 && i+1<argc) idx=(BYTE)atoi(argv[++i]);
+        if (strcmp(argv[i], "--kv")==0 && i+1<argc) setVer=(BYTE)atoi(argv[++i]);
+        else if (strcmp(argv[i], "--idx")==0 && i+1<argc) idx=(BYTE)atoi(argv[++i]);
     }
     if (!status_ok(GP211_delete_key(ctx, info, sec, setVer, idx))) {
         cleanup_and_exit(10);
@@ -989,12 +989,12 @@ int main(int argc, char **argv) {
         if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) { print_usage(prog); return 0; }
         else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--verbose")) { verbose=1; }
         else if (!strcmp(argv[i], "-t") || !strcmp(argv[i], "--trace")) { trace=1; }
-        else if (!strcmp(argv[i], "--reader") && i+1<argc) { reader=argv[++i]; }
+        else if (!strcmp(argv[i], "-r") || !strcmp(argv[i], "--reader")) { if(i+1<argc) reader=argv[++i]; }
         else if (!strcmp(argv[i], "--protocol") && i+1<argc) { protocol=argv[++i]; }
-        else if (!strcmp(argv[i], "--keyset-version") && i+1<argc) { keyset_ver=(BYTE)atoi(argv[++i]); }
-        else if (!strcmp(argv[i], "--key-index") && i+1<argc) { key_index=(BYTE)atoi(argv[++i]); }
+        else if (!strcmp(argv[i], "--kv") && i+1<argc) { keyset_ver=(BYTE)atoi(argv[++i]); }
+        else if (!strcmp(argv[i], "--idx") && i+1<argc) { key_index=(BYTE)atoi(argv[++i]); }
         else if (!strcmp(argv[i], "--derive") && i+1<argc) { const char *d=argv[++i]; if (!strcmp(d,"visa2")) derivation=1; else if (!strcmp(d,"emv")) derivation=2; else derivation=0; }
-        else if (!strcmp(argv[i], "--sec-level") && i+1<argc) { sec_level_opt=argv[++i]; }
+        else if (!strcmp(argv[i], "--sec") && i+1<argc) { sec_level_opt=argv[++i]; }
         else if (!strcmp(argv[i], "--isd") && i+1<argc) { isd_hex=argv[++i]; }
         else if (!strcmp(argv[i], "--key") && i+1<argc) { key_hex=argv[++i]; }
         else if (!strcmp(argv[i], "--enc") && i+1<argc) { enc_hex=argv[++i]; }
