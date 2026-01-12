@@ -10,7 +10,7 @@
  * - GP 2.1.1+ only, SCP02/SCP03 autodetected
  * - Default key set version 0, default derivation none
  * - Default security level MAC+ENC
- * - Commands: list, keys, install, delete, put-key, del-key, apdu, dap (aes|rsa)
+ * - Commands: list-apps, list-keys, install, delete, put-auth, key-del, apdu, sign-dap (aes|rsa)
  * - No URL download support (local CAP file only)
  */
 
@@ -77,33 +77,32 @@ static void print_usage(const char *prog) {
         "  --enc <hex>               ENC key for mutual auth (default: A0..AF)\n"
         "  --mac <hex>               MAC key for mutual auth (default: A0..AF)\n"
         "  --dek <hex>               DEK key for mutual auth (default: A0..AF)\n"
-        "  --list-readers            List PC/SC readers and exit\n"
         "  -v, --verbose             Verbose output\n"
         "  -t, --trace               Enable APDU trace\n"
         "  -h, --help                Show this help\n\n"
         "Commands:\n"
-        "  list\n"
+        "  list-apps\n"
         "  list-readers\n"
-        "  keys\n"
+        "  list-keys\n"
         "  install [--load-only] [--dap <hex>|@<file>] [--load-token <hex>] [--install-token <hex>] \\\n"
         "          [--load-file-hash <hex>] [--applet <AIDhex>] [--v-data-limit <size>] \\\n"
         "          [--nv-data-limit <size>] [--inst-param <hex>] [--module <AIDhex>] \\\n"
         "          [--priv <p1,p2,...>] <cap-file>\n"
         "      --dap: DAP signature as hex or @file for binary signature (SD AID taken from --isd)\n"
         "  delete <AIDhex>\n"
-        "  put-key [--type <3des|aes|rsa>] --set <ver> --index <idx> [--new-set <ver>] \\\n"
+        "  key-put [--type <3des|aes|rsa>] --set <ver> --index <idx> [--new-set <ver>] \\\n"
         "          (--key <hex>|--pem <file>[:pass])\n"
-        "  put-sc-key --set <ver> [--new-set <ver>] [--key <hex> | --enc <hex> --mac <hex> --dek <hex>]\n"
-        "  del-key --set <ver> [--index <idx>]\n"
+        "  put-auth --set <ver> [--new-set <ver>] [--key <hex> | --enc <hex> --mac <hex> --dek <hex>]\n"
+        "  key-del --set <ver> [--index <idx>]\n"
         "  apdu [--auth] [--nostop|--ignore-errors] <APDU> [<APDU> ...]\n"
         "      APDU format: hex bytes either concatenated (e.g. 00A40400) or space-separated (e.g. 00 A4 04 00).\n"
         "      Multiple APDUs can be provided as separate args or separated by ';' or ',' in one arg.\n"
         "      By default, apdu does NOT select ISD or perform mutual authentication; use --auth to enable it.\n"
-        "  load-file-hash <cap-file> [--sha1|--sha256|--sha384|--sha512]\n"
+        "  hash <cap-file> [--sha1|--sha256|--sha384|--sha512]\n"
         "      Compute the load file data block hash of a CAP file. Default is SHA-1.\n"
-        "  dap aes [--output <file>] <hash-hex> <sd-aidhex> <hexkey>\n"
-        "  dap rsa [--output <file>] <hash-hex> <sd-aidhex> <pem>[:pass]\n"
-        "      Generate DAP signature from precomputed hash. Use 'load-file-hash' command to compute hash first.\n"
+        "  sign-dap aes [--output <file>] <hash-hex> <sd-aidhex> <hexkey>\n"
+        "  sign-dap rsa [--output <file>] <hash-hex> <sd-aidhex> <pem>[:pass]\n"
+        "      Generate DAP signature from precomputed hash. Use 'hash' command to compute hash first.\n"
         "      Output is signature only (for use with 'install --dap <hex>' or '--dap @file').\n"
         "      --output: Write signature to binary file\n\n"
         "Privilege short names for --priv: sd,dap-verif,delegated-mgmt,cm-lock,cm-terminate,default-selected,pin-change,mandated-dap\n\n"
@@ -710,7 +709,7 @@ static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         }
         return 0;
     } else {
-        fprintf(stderr, "put-key: unsupported --type '%s' (use 3des|aes|rsa). For Secure Channel keys use put-sc-key.\n", type);
+        fprintf(stderr, "put-key: unsupported --type '%s' (use 3des|aes|rsa). For Secure Channel keys use put-sc-keys.\n", type);
         cleanup_and_exit(10);
     }
 }
@@ -730,11 +729,11 @@ static int cmd_put_sc_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECU
         // allow zero, but typically setVer is 0 for default
     }
     if (base && (enc || mac || dek)) {
-        fprintf(stderr, "put-sc-key: use either --base/--key OR all of --enc/--mac/--dek\n");
+        fprintf(stderr, "put-auth: use either --base/--key OR all of --enc/--mac/--dek\n");
         cleanup_and_exit(10);
     }
     if (!base && !(enc && mac && dek)) {
-        fprintf(stderr, "put-sc-key: specify either --base/--key <hex> or --enc/--mac/--dek <hex>\n");
+        fprintf(stderr, "put-auth: specify either --base/--key <hex> or --enc/--mac/--dek <hex>\n");
         cleanup_and_exit(10);
     }
     if (base) {
@@ -867,7 +866,7 @@ static int cmd_apdu(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
 }
 
 static int cmd_hash(int argc, char **argv) {
-    if (argc < 1) { fprintf(stderr, "load-file-hash: missing <cap-file>\n"); return -1; }
+    if (argc < 1) { fprintf(stderr, "hash: missing <cap-file>\n"); return -1; }
     const char *cap = argv[0];
     const char *hash_alg = "sha256"; // default
     int ai = 1;
@@ -876,7 +875,7 @@ static int cmd_hash(int argc, char **argv) {
         else if (strcmp(argv[ai], "--sha256") == 0 || strcmp(argv[ai], "--sha2-256") == 0) { hash_alg = "sha256"; }
         else if (strcmp(argv[ai], "--sha384") == 0 || strcmp(argv[ai], "--sha2-384") == 0) { hash_alg = "sha384"; }
         else if (strcmp(argv[ai], "--sha512") == 0 || strcmp(argv[ai], "--sha2-512") == 0) { hash_alg = "sha512"; }
-        else { fprintf(stderr, "load-file-hash: unknown option '%s'\n", argv[ai]); return -1; }
+        else { fprintf(stderr, "hash: unknown option '%s'\n", argv[ai]); return -1; }
     }
     BYTE scp = GP211_SCP03;
     DWORD hash_len = 32;
@@ -903,7 +902,7 @@ static int cmd_dap(int is_rsa, OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
     }
 
     if (is_rsa) {
-        if (argc - ai < 3) { fprintf(stderr, "dap rsa [--output <file>] <hash-hex> <sd-aidhex> <pem>[:pass]\n"); return -1; }
+        if (argc - ai < 3) { fprintf(stderr, "sign-dap rsa [--output <file>] <hash-hex> <sd-aidhex> <pem>[:pass]\n"); return -1; }
         const char *hash_hex = argv[ai++]; const char *sd_hex = argv[ai++]; const char *pem = argv[ai++];
         unsigned char hash[64]; size_t hashlen=sizeof(hash);
         if (hex_to_bytes(hash_hex, hash, &hashlen)!=0) { fprintf(stderr, "Invalid hash hex\n"); return -1; }
@@ -921,7 +920,7 @@ static int cmd_dap(int is_rsa, OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
         }
         return 0;
     } else {
-        if (argc - ai < 3) { fprintf(stderr, "dap aes [--output <file>] <hash-hex> <sd-aidhex> <hexkey>\n"); return -1; }
+        if (argc - ai < 3) { fprintf(stderr, "sign-dap aes [--output <file>] <hash-hex> <sd-aidhex> <hexkey>\n"); return -1; }
         const char *hash_hex = argv[ai++]; const char *sd_hex = argv[ai++]; const char *hexkey = argv[ai++];
         unsigned char hash[64]; size_t hashlen=sizeof(hash);
         if (hex_to_bytes(hash_hex, hash, &hashlen)!=0) { fprintf(stderr, "Invalid hash hex\n"); return -1; }
@@ -990,7 +989,6 @@ int main(int argc, char **argv) {
         if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) { print_usage(prog); return 0; }
         else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--verbose")) { verbose=1; }
         else if (!strcmp(argv[i], "-t") || !strcmp(argv[i], "--trace")) { trace=1; }
-        else if (!strcmp(argv[i], "--list-readers")) { int rc = cmd_list_readers(); return rc==0?0:10; }
         else if (!strcmp(argv[i], "--reader") && i+1<argc) { reader=argv[++i]; }
         else if (!strcmp(argv[i], "--protocol") && i+1<argc) { protocol=argv[++i]; }
         else if (!strcmp(argv[i], "--keyset-version") && i+1<argc) { keyset_ver=(BYTE)atoi(argv[++i]); }
@@ -1012,7 +1010,7 @@ int main(int argc, char **argv) {
         int rc = cmd_list_readers();
         return rc==0 ? 0 : 10;
     }
-    if (!strcmp(cmd, "load-file-hash")) {
+    if (!strcmp(cmd, "hash")) {
         int rc = cmd_hash(argc - i, &argv[i]);
         return rc==0 ? 0 : 10;
     }
@@ -1091,19 +1089,19 @@ int main(int argc, char **argv) {
     }
 
     int rc = 0;
-    if (!strcmp(cmd, "list")) rc = cmd_list(ctx, info, &sec);
-    else if (!strcmp(cmd, "keys")) rc = cmd_keys(ctx, info, &sec);
+    if (!strcmp(cmd, "list-apps")) rc = cmd_list(ctx, info, &sec);
+    else if (!strcmp(cmd, "list-keys")) rc = cmd_keys(ctx, info, &sec);
     else if (!strcmp(cmd, "install")) rc = cmd_install(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "delete")) rc = cmd_delete(ctx, info, &sec, (i<argc)?argv[i]:NULL);
-    else if (!strcmp(cmd, "put-key")) rc = cmd_put_key(ctx, info, &sec, argc - i, &argv[i]);
-    else if (!strcmp(cmd, "put-sc-key")) rc = cmd_put_sc_key(ctx, info, &sec, argc - i, &argv[i]);
-    else if (!strcmp(cmd, "del-key")) rc = cmd_del_key(ctx, info, &sec, argc - i, &argv[i]);
+    else if (!strcmp(cmd, "key-put")) rc = cmd_put_key(ctx, info, &sec, argc - i, &argv[i]);
+    else if (!strcmp(cmd, "put-auth")) rc = cmd_put_sc_key(ctx, info, &sec, argc - i, &argv[i]);
+    else if (!strcmp(cmd, "key-del")) rc = cmd_del_key(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "apdu")) rc = cmd_apdu(ctx, info, sec_ptr, argc - i, &argv[i]);
-    else if (!strcmp(cmd, "dap")) {
-        if (i>=argc) { fprintf(stderr, "dap: missing type aes|rsa\n"); rc=-1; }
+    else if (!strcmp(cmd, "sign-dap")) {
+        if (i>=argc) { fprintf(stderr, "sign-dap: missing type aes|rsa\n"); rc=-1; }
         else if (!strcmp(argv[i], "rsa")) rc = cmd_dap(1, ctx, info, &sec, argc - (i+1), &argv[i+1]);
         else if (!strcmp(argv[i], "aes")) rc = cmd_dap(0, ctx, info, &sec, argc - (i+1), &argv[i+1]);
-        else { fprintf(stderr, "dap: unknown type\n"); rc=-1; }
+        else { fprintf(stderr, "sign-dap: unknown type\n"); rc=-1; }
     } else { fprintf(stderr, "Unknown command: %s\n", cmd); rc=-1; }
 
     OPGP_card_disconnect(ctx, &info);
