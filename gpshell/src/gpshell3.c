@@ -1,17 +1,5 @@
 /*
  * gpshell3: Simplified CLI for GlobalPlatform 2.1.1+
- *
- * Separate binary that provides a subcommand UX while keeping the legacy
- * gpshell intact. If invoked without a subcommand or with a script filename,
- * this executable falls back to exec the legacy gpshell.
- *
- * Scope:
- * - PC/SC only, protocol auto (T=0/T=1) by default
- * - GP 2.1.1+ only, SCP02/SCP03 autodetected
- * - Default key set version 0, default derivation none
- * - Default security level MAC+ENC
- * - Commands: list-apps, list-keys, install, delete, put-auth, key-del, apdu, sign-dap (aes|rsa)
- * - No URL download support (local CAP file only)
  */
 
 #ifndef _WIN32
@@ -66,52 +54,65 @@ static void print_usage(const char *prog) {
     fprintf(stderr,
         "Usage: %s [global-options] <command> [command-args]\n\n"
         "Global options:\n"
-        "  -r, --reader <name>       PC/SC reader name (default: auto first present)\n"
-        "  --protocol <auto|t0|t1>   Transport protocol (default: auto)\n"
-        "  --kv <n>                  Key set version for mutual auth (default: 0)\n"
-        "  --idx <n>                 Key index within key set (default: 0)\n"
+        "  -r, --reader <name>        PC/SC reader name (default: auto first present)\n"
+        "  --protocol <auto|t0|t1>    Transport protocol (default: auto)\n"
+        "  --isd <aidhex>             ISD AID hex; default tries A000000151000000 then A0000001510000 then A000000003000000\n"
+        "  --sec <mac|mac+enc|mac+enc+rmac>\n"
+        "                            Secure channel security level (default: mac+enc)\n"
+        "  --kv <n>                   Key set version for mutual auth (default: 0)\n"
+        "  --idx <n>                  Key index within key set for mutual auth (default: 0)\n"
         "  --derive <none|visa2|emv>  Key derivation (default: none)\n"
-        "  --sec <mac|mac+enc|mac+enc+rmac> Channel security level (default: mac+enc)\n"
-        "  --isd <aidhex>            ISD AID hex; default tries A000000151000000 then A0000001510000 then A000000003000000\n"
-        "  --key <hex>               Base key for mutual auth (default: A0..AF)\n"
-        "  --enc <hex>               ENC key for mutual auth (default: A0..AF)\n"
-        "  --mac <hex>               MAC key for mutual auth (default: A0..AF)\n"
-        "  --dek <hex>               DEK key for mutual auth (default: A0..AF)\n"
-        "  -v, --verbose             Verbose output\n"
-        "  -t, --trace               Enable APDU trace\n"
-        "  -h, --help                Show this help\n\n"
+        "  --key <hex>                Base key for mutual auth (default: A0..AF)\n"
+        "  --enc <hex>                ENC key for mutual auth (default: A0..AF)\n"
+        "  --mac <hex>                MAC key for mutual auth (default: A0..AF)\n"
+        "  --dek <hex>                DEK key for mutual auth (default: A0..AF)\n"
+        "  -v, --verbose              Verbose output\n"
+        "  -t, --trace                Enable APDU trace\n"
+        "  -h, --help                 Show this help\n\n"
         "Commands:\n"
         "  list-apps\n"
-        "  list-readers\n"
+        "      List security domains, applications, load files and load-file modules.\n"
+        "      Privileges are printed in short-name form like: priv=[sd,cm-lock,...]\n"
         "  list-keys\n"
+        "      List key information grouped by key set version (kv).\n"
+        "  list-readers\n"
+        "      List available PC/SC readers.\n\n"
         "  install [--load-only] [--dap <hex>|@<file>] [--load-token <hex>] [--install-token <hex>] \\\n"
-        "          [--hash <hex>] [--applet <AIDhex>] [--v-data-limit <size>] \\\n"
-        "          [--nv-data-limit <size>] [--params <hex>] [--module <AIDhex>] \\\n"
-        "          [--priv <p1,p2,...>] <cap-file>\n"
-        "      --dap: DAP signature as hex or @file for binary signature (SD AID taken from --isd)\n"
+        "          [--hash <hex>] [--applet <AIDhex>] [--module <AIDhex>] [--params <hex>] \\\n"
+        "          [--v-data-limit <size>] [--nv-data-limit <size>] [--priv <p1,p2,...>] <cap-file>\n"
+        "      Load a CAP file, and optionally install/make selectable applet instance(s).\n"
+        "      --load-only: only perform INSTALL [for load] + LOAD, skip install/make-selectable.\n"
+        "      --dap: DAP signature as hex or @file for binary signature (SD AID taken from --isd).\n"
+        "      --hash: precomputed load-file data block hash (hex).\n"
+        "      --applet/--module: select which applet/module AID to install; if omitted installs all applets in the CAP.\n"
+        "      --params: installation parameters (hex).\n"
+        "      --priv: comma-separated privilege short names (see 'Privileges' below).\n\n"
         "  delete <AIDhex>\n"
-        "  key-put [--type <3des|aes|rsa>] --kv <ver> --idx <idx> [--new-kv <ver>] \\\n"
+        "      Delete an application instance or load file by AID.\n\n"
+        "  put-key [--type <3des|aes|rsa>] --kv <ver> --idx <idx> [--new-kv <ver>] \\\n"
         "          (--key <hex>|--pem <file>[:pass])\n"
+        "      Put (add/replace) a key in a key set.\n"
+        "      --type aes|3des uses --key (hex). --type rsa uses --pem (optionally :pass).\n\n"
         "  put-auth --kv <ver> [--new-kv <ver>] [--key <hex> | --enc <hex> --mac <hex> --dek <hex>]\n"
-        "  key-del --kv <ver> [--idx <idx>]\n"
+        "      Put secure channel keys (S-ENC/S-MAC/DEK) for a key set.\n"
+        "      Use either --key (single base key) OR all of --enc/--mac/--dek.\n\n"
+        "  del-key --kv <ver> [--idx <idx>]\n"
+        "      Delete a key. If --idx is omitted, deletes all keys in the given key set.\n\n"
         "  apdu [--auth] [--nostop|--ignore-errors] <APDU> [<APDU> ...]\n"
+        "      Send raw APDUs.\n"
         "      APDU format: hex bytes either concatenated (e.g. 00A40400) or space-separated (e.g. 00 A4 04 00).\n"
         "      Multiple APDUs can be provided as separate args or separated by ';' or ',' in one arg.\n"
-        "      By default, apdu does NOT select ISD or perform mutual authentication; use --auth to enable it.\n"
+        "      By default, apdu does NOT select ISD or perform mutual authentication; use --auth to enable it.\n\n"
         "  hash <cap-file> [--sha1|--sha256|--sha384|--sha512]\n"
-        "      Compute the load file data block hash of a CAP file. Default is SHA-1.\n"
+        "      Compute the load-file data block hash of a CAP file. Default is sha256.\n\n"
         "  sign-dap aes [--output <file>] <hash-hex> <sd-aidhex> <hexkey>\n"
         "  sign-dap rsa [--output <file>] <hash-hex> <sd-aidhex> <pem>[:pass]\n"
-        "      Generate DAP signature from precomputed hash. Use 'hash' command to compute hash first.\n"
+        "      Generate a DAP signature from a precomputed hash.\n"
         "      Output is signature only (for use with 'install --dap <hex>' or '--dap @file').\n"
-        "      --output: Write signature to binary file\n\n"
-        "Privilege short names for --priv: sd,dap-verif,delegated-mgmt,cm-lock,cm-terminate,default-selected,pin-change,mandated-dap\n\n"
-        "Fallback: If invoked without command or with a script filename, legacy gpshell is executed.\n",
+        "      --output: write signature to a binary file.\n\n"
+        "Privileges (used by install --priv and shown by list-apps as priv=[...]):\n"
+        "  sd,dap-verif,delegated-mgmt,cm-lock,cm-terminate,default-selected,pin-change,mandated-dap\n",
         prog);
-}
-
-static int is_file_exists(const char *path) {
-    struct stat st; return stat(path, &st) == 0 && S_ISREG(st.st_mode);
 }
 
 static int hex_to_bytes(const char *hex, unsigned char *out, size_t *outlen) {
@@ -373,7 +374,7 @@ static void privileges_to_string(DWORD privileges, char *out, size_t outlen) {
             size_t nlen = strlen(name);
             // add separator if not first
             if (!first) {
-                if (used + 2 < outlen) { out[used++] = ','; out[used++] = ' '; }
+                if (used + 1 < outlen) { out[used++] = ','; }
             }
             first = 0;
             // copy name
@@ -389,70 +390,334 @@ static void privileges_to_string(DWORD privileges, char *out, size_t outlen) {
     }
 }
 
-// Helper to reduce repetition in cmd_list: lists app-like elements for a given GET STATUS element
-static void list_app_like_elements(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec,
-                                   BYTE element, const char *label)
-{
+static int aid_equal(const OPGP_AID *a, const OPGP_AID *b) {
+    if (a->AIDLength != b->AIDLength) return 0;
+    return memcmp(a->AID, b->AID, a->AIDLength) == 0;
+}
+
+static void aid_to_hex_str(const OPGP_AID *a, char *out, size_t outlen) {
+    if (!out || outlen == 0) return;
+    size_t need = (size_t)a->AIDLength * 2 + 1;
+    if (outlen < need) { out[0] = '\0'; return; }
+    size_t pos = 0;
+    for (size_t i = 0; i < (size_t)a->AIDLength; ++i) {
+        snprintf(out + pos, outlen - pos, "%02X", a->AID[i]);
+        pos += 2;
+    }
+    out[pos] = '\0';
+}
+
+static int cmd_list_apps(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
     GP211_APPLICATION_DATA apps[256];
-    DWORD len = sizeof(apps)/sizeof(apps[0]);
-    OPGP_ERROR_STATUS s = GP211_get_status(ctx, info, sec, element, GP211_STATUS_FORMAT_NEW, apps, NULL, &len);
-    if (status_ok(s)) {
-        printf("== %s ==\n", label);
-        for (DWORD i=0; i<len; i++) {
-            printf("AID="); print_aid(&apps[i].aid);
-            printf(" lc=%s", lc_to_string(apps[i].lifeCycleState, element));
+    GP211_APPLICATION_DATA isds[64];
+    GP211_APPLICATION_DATA lfs[256];
+    GP211_EXECUTABLE_MODULES_DATA mods[128];
+
+    DWORD apps_len = sizeof(apps)/sizeof(apps[0]);
+    DWORD isds_len = sizeof(isds)/sizeof(isds[0]);
+    DWORD lfs_len  = sizeof(lfs)/sizeof(lfs[0]);
+    DWORD mods_len = sizeof(mods)/sizeof(mods[0]);
+
+    OPGP_ERROR_STATUS s;
+
+    s = GP211_get_status(ctx, info, sec, GP211_STATUS_APPLICATIONS, GP211_STATUS_FORMAT_NEW, apps, NULL, &apps_len);
+    if (!status_ok(s)) { fprintf(stderr, "GET STATUS (applications) failed\n"); return -1; }
+
+    s = GP211_get_status(ctx, info, sec, GP211_STATUS_ISSUER_SECURITY_DOMAIN, GP211_STATUS_FORMAT_NEW, isds, NULL, &isds_len);
+    if (!status_ok(s)) { fprintf(stderr, "GET STATUS (issuer security domain) failed\n"); return -1; }
+
+    s = GP211_get_status(ctx, info, sec, GP211_STATUS_LOAD_FILES, GP211_STATUS_FORMAT_NEW, lfs, NULL, &lfs_len);
+    if (!status_ok(s)) { fprintf(stderr, "GET STATUS (load files) failed\n"); return -1; }
+
+    s = GP211_get_status(ctx, info, sec, GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES, GP211_STATUS_FORMAT_NEW, NULL, mods, &mods_len);
+    if (!status_ok(s)) { fprintf(stderr, "GET STATUS (load files and executable modules) failed\n"); return -1; }
+
+    // Collect distinct Security Domains (by associatedSecurityDomainAID) from all results.
+    OPGP_AID sds[256];
+    DWORD sd_count = 0;
+
+    #define ADD_SD_IF_PRESENT(_aid) do { \
+        if ((_aid).AIDLength) { \
+            int found = 0; \
+            for (DWORD _k = 0; _k < sd_count; ++_k) { \
+                if (aid_equal(&sds[_k], &(_aid))) { found = 1; break; } \
+            } \
+            if (!found && sd_count < (DWORD)(sizeof(sds)/sizeof(sds[0]))) { \
+                sds[sd_count++] = (_aid); \
+            } \
+        } \
+    } while(0)
+
+    for (DWORD i = 0; i < apps_len; ++i) ADD_SD_IF_PRESENT(apps[i].associatedSecurityDomainAID);
+    for (DWORD i = 0; i < isds_len; ++i) ADD_SD_IF_PRESENT(isds[i].associatedSecurityDomainAID);
+    for (DWORD i = 0; i < lfs_len;  ++i) ADD_SD_IF_PRESENT(lfs[i].associatedSecurityDomainAID);
+    for (DWORD i = 0; i < mods_len; ++i) ADD_SD_IF_PRESENT(mods[i].associatedSecurityDomainAID);
+
+    #undef ADD_SD_IF_PRESENT
+
+    printf("== security domains ==\n");
+    if (sd_count == 0) {
+        printf("(none)\n");
+        return 0;
+    }
+
+    for (DWORD sd_i = 0; sd_i < sd_count; ++sd_i) {
+        char sd_hex[64];
+        aid_to_hex_str(&sds[sd_i], sd_hex, sizeof(sd_hex));
+
+        // Print SD header line; prefer info from ISD listing when matching.
+        const GP211_APPLICATION_DATA *sd_info = NULL;
+        for (DWORD i = 0; i < isds_len; ++i) {
+            if (aid_equal(&isds[i].aid, &sds[sd_i]) || aid_equal(&isds[i].associatedSecurityDomainAID, &sds[sd_i])) {
+                sd_info = &isds[i];
+                break;
+            }
+        }
+
+        if (sd_info) {
+            printf("SD %s lc=%s", sd_hex, lc_to_string(sd_info->lifeCycleState, GP211_STATUS_ISSUER_SECURITY_DOMAIN));
+            if (sd_info->privileges) {
+                char pbuf[512];
+                privileges_to_string(sd_info->privileges, pbuf, sizeof(pbuf));
+                printf(" priv=[%s]", pbuf);
+            }
+            printf("\n");
+        } else {
+            printf("SD %s\n", sd_hex);
+        }
+
+        // Applications under this SD
+        int any_apps = 0;
+        for (DWORD i = 0; i < apps_len; ++i) {
+            if (!aid_equal(&apps[i].associatedSecurityDomainAID, &sds[sd_i])) continue;
+            if (!any_apps) { printf("  Applications:\n"); any_apps = 1; }
+            printf("    ");
+            print_aid(&apps[i].aid);
+            printf(" lc=%s", lc_to_string(apps[i].lifeCycleState, GP211_STATUS_APPLICATIONS));
             if (apps[i].privileges) {
                 char pbuf[512];
                 privileges_to_string(apps[i].privileges, pbuf, sizeof(pbuf));
-                printf(" priv=%08X [%s]", (unsigned)apps[i].privileges, pbuf);
+                printf(" priv=[%s]", pbuf);
             }
-            if (apps[i].versionNumber[0] || apps[i].versionNumber[1]) printf(" ver=%u.%u", apps[i].versionNumber[0], apps[i].versionNumber[1]);
-            if (apps[i].associatedSecurityDomainAID.AIDLength) { printf(" sd="); print_aid(&apps[i].associatedSecurityDomainAID); }
+            if (apps[i].versionNumber[0] || apps[i].versionNumber[1]) {
+                printf(" ver=%u.%u", apps[i].versionNumber[0], apps[i].versionNumber[1]);
+            }
             printf("\n");
         }
-    } else {
-        fprintf(stderr, "GET STATUS (%s) failed\n", label);
-    }
-}
 
-static int cmd_list(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
-    GP211_EXECUTABLE_MODULES_DATA mods[128];
-    // Applications
-    list_app_like_elements(ctx, info, sec, GP211_STATUS_APPLICATIONS, "applications");
-    // Issuer Security Domain(s)
-    list_app_like_elements(ctx, info, sec, GP211_STATUS_ISSUER_SECURITY_DOMAIN, "issuer security domain");
-    // Load Files (without module details)
-    list_app_like_elements(ctx, info, sec, GP211_STATUS_LOAD_FILES, "load files");
+        // Load files under this SD (with modules)
+        int any_lf = 0;
+        for (DWORD i = 0; i < lfs_len; ++i) {
+            if (!aid_equal(&lfs[i].associatedSecurityDomainAID, &sds[sd_i])) continue;
+            if (!any_lf) { printf("  Load files:\n"); any_lf = 1; }
 
-    DWORD mlen = sizeof(mods)/sizeof(mods[0]);
-    {
-        OPGP_ERROR_STATUS s = GP211_get_status(ctx, info, sec, GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES, GP211_STATUS_FORMAT_NEW, NULL, mods, &mlen);
-        if (status_ok(s)) {
-            printf("== load files and executable modules ==\n");
-            for (DWORD i=0;i<mlen;i++) {
-                printf("LOADFILE="); print_aid(&mods[i].aid);
-                printf(" lc=%s ver=%u.%u modules=%u\n", lc_to_string(mods[i].lifeCycleState, GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES), mods[i].versionNumber[0], mods[i].versionNumber[1], mods[i].numExecutableModules);
-                for (DWORD j=0; j<mods[i].numExecutableModules && j < (DWORD)(sizeof(mods[i].executableModules)/sizeof(mods[i].executableModules[0])); j++) {
-                    printf("  MODULE=");
-                    print_aid(&mods[i].executableModules[j]);
-                    printf("\n");
+            printf("    ");
+            print_aid(&lfs[i].aid);
+            printf(" lc=%s", lc_to_string(lfs[i].lifeCycleState, GP211_STATUS_LOAD_FILES));
+            if (lfs[i].versionNumber[0] || lfs[i].versionNumber[1]) {
+                printf(" ver=%u.%u", lfs[i].versionNumber[0], lfs[i].versionNumber[1]);
+            }
+            printf("\n");
+
+            // modules for this load file (from GET STATUS 0x10)
+            for (DWORD m = 0; m < mods_len; ++m) {
+                if (!aid_equal(&mods[m].aid, &lfs[i].aid)) continue;
+                if (mods[m].numExecutableModules > 0) {
+                    printf("      Modules:\n");
+                    for (DWORD j = 0;
+                         j < mods[m].numExecutableModules &&
+                         j < (DWORD)(sizeof(mods[m].executableModules)/sizeof(mods[m].executableModules[0]));
+                         ++j) {
+                        printf("        ");
+                        print_aid(&mods[m].executableModules[j]);
+                        printf("\n");
+                    }
                 }
+                break;
             }
         }
+
+        if (!any_apps && !any_lf) {
+            printf("  (no applications or load files)\n");
+        }
     }
+
     return 0;
 }
 
-static int cmd_keys(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
-    GP211_KEY_INFORMATION infos[64]; DWORD ilen = sizeof(infos)/sizeof(infos[0]);
-    OPGP_ERROR_STATUS s = GP211_get_key_information_templates(ctx, info, sec, 0xE0, infos, &ilen);
-    if (!status_ok(s)) {
-        cleanup_and_exit(10);
+static const char* key_type_to_string(BYTE type) {
+    switch (type) {
+        case 0x80: return "DES";
+        case 0x85: return "Pre-Shared Key TLS";
+        case 0x88: return "AES";
+        case 0x89: return "SM4";
+        case 0xA0: return "RSA Public Key - e";
+        case 0xA1: return "RSA Public Key - N";
+        case 0xA2: return "RSA Private Key - N";
+        case 0xA3: return "RSA Private Key - d";
+        case 0xA4: return "RSA Private Key - CR P";
+        case 0xA5: return "RSA Private Key - CR Q";
+        case 0xA6: return "RSA Private Key - CR PQ";
+        case 0xA7: return "RSA Private Key - CR DP1";
+        case 0xA8: return "RSA Private Key - CR DQ1";
+        default: return NULL;
     }
-    for (DWORD i=0;i<ilen;i++) {
-        printf("set=%u index=%u type=0x%02X len=%u usage=0x%02X access=0x%02X\n",
-               infos[i].keySetVersion, infos[i].keyIndex, infos[i].keyType, infos[i].keyLength, infos[i].keyUsage, infos[i].keyAccess);
+}
+
+static const char* key_access_to_string(BYTE access) {
+    switch (access) {
+        case 0x00: return "Security Domain and Application";
+        case 0x01: return "Security Domain";
+        case 0x02: return "Application";
+        default: return NULL;
     }
+}
+
+static void key_usage_to_string(unsigned short usage, char *out, size_t outlen) {
+    if (!out || outlen == 0) return;
+    out[0] = '\0';
+    size_t used = 0;
+    int found = 0;
+
+    BYTE firstByte = (BYTE)((usage >> 8) & 0xFF);
+    BYTE secondByte = (BYTE)(usage & 0xFF);
+
+    // Map first byte (leftmost)
+    const char *firstByteStr = NULL;
+    switch (firstByte) {
+        case 0x14: firstByteStr = "C-MAC"; break;
+        case 0x24: firstByteStr = "R-MAC"; break;
+        case 0x34: firstByteStr = "C-MAC + R-MAC"; break;
+        case 0x18: firstByteStr = "C-ENC"; break;
+        case 0x28: firstByteStr = "R-ENC"; break;
+        case 0x38: firstByteStr = "C-ENC + R-ENC"; break;
+        case 0x48: firstByteStr = "C-DEK"; break;
+        case 0x88: firstByteStr = "R-DEK"; break;
+        case 0xC8: firstByteStr = "C-DEK + R-DEK"; break;
+        case 0x82: firstByteStr = "PK.SD.AUT"; break;
+        case 0x42: firstByteStr = "SK.SD.AUT"; break;
+        case 0x81: firstByteStr = "Token"; break;
+        case 0x44: firstByteStr = "Receipt"; break;
+        case 0x84: firstByteStr = "DAP"; break;
+    }
+
+    if (firstByteStr) {
+        size_t len = strlen(firstByteStr);
+        if (used + len < outlen) {
+            strcpy(out + used, firstByteStr);
+            used += len;
+            found = 1;
+        }
+    }
+
+    // Map second byte (rightmost) - only 0x80 is defined
+    if (secondByte == 0x80) {
+        const char *secondByteStr = "Key Agreement (KAT)";
+        size_t len = strlen(secondByteStr);
+        if (found && used + 2 < outlen) {
+            strcpy(out + used, ", ");
+            used += 2;
+        }
+        if (used + len < outlen) {
+            strcpy(out + used, secondByteStr);
+            used += len;
+            found = 1;
+        }
+    }
+
+    if (!found) {
+        snprintf(out, outlen, "0x%04X", usage);
+    }
+}
+
+// Sort by (kv, idx)
+static int key_info_cmp(const void *pa, const void *pb) {
+    const GP211_KEY_INFORMATION *a = pa;
+    const GP211_KEY_INFORMATION *b = pb;
+    if (a->keySetVersion != b->keySetVersion) return (int)a->keySetVersion - (int)b->keySetVersion;
+    return (int)a->keyIndex - (int)b->keyIndex;
+}
+
+static int cmd_list_keys(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
+    GP211_KEY_INFORMATION infos[64]; DWORD ilen;
+    BYTE keyIndex = 0;
+    OPGP_ERROR_STATUS s;
+
+    // Collect all keys first so we can sort & group nicely
+    GP211_KEY_INFORMATION all[512];
+    DWORD all_len = 0;
+
+    // Loop until OPGP_ISO7816_ERROR_DATA_NOT_FOUND is returned
+    while (1) {
+        ilen = sizeof(infos)/sizeof(infos[0]);
+        memset(infos, 0, sizeof(infos));
+        s = GP211_get_key_information_templates(ctx, info, sec, keyIndex, infos, &ilen);
+
+        // Check specifically for DATA_NOT_FOUND - this ends the loop normally
+        if (s.errorCode == OPGP_ISO7816_ERROR_DATA_NOT_FOUND) {
+            break;
+        }
+
+        // All other errors should be checked with status_ok
+        if (!status_ok(s)) {
+            cleanup_and_exit(10);
+        }
+
+        // Append key information
+        for (DWORD i = 0; i < ilen; i++) {
+            if (all_len < (DWORD)(sizeof(all) / sizeof(all[0]))) {
+                all[all_len++] = infos[i];
+            }
+        }
+
+        // Move to next key index for the next iteration
+        keyIndex++;
+    }
+
+    printf("== keys ==\n");
+    if (all_len == 0) {
+        printf("(none)\n");
+        return 0;
+    }
+
+
+    qsort(all, all_len, sizeof(all[0]), key_info_cmp);
+
+    // Print grouped by KV
+    int current_kv = -1;
+    for (DWORD i = 0; i < all_len; i++) {
+        if (current_kv != (int)all[i].keySetVersion) {
+            current_kv = (int)all[i].keySetVersion;
+            printf("kv=%d:\n", current_kv);
+        }
+
+        printf("  idx=%u ", all[i].keyIndex);
+
+        const char *typeStr = key_type_to_string(all[i].keyType);
+        if (typeStr) {
+            printf("type=%s ", typeStr);
+        } else {
+            printf("type=0x%02X ", all[i].keyType);
+        }
+
+        printf("len=%u", all[i].keyLength);
+
+        if (all[i].extended) {
+            char usageBuf[256];
+            key_usage_to_string(all[i].keyUsage, usageBuf, sizeof(usageBuf));
+            printf(" usage=%s", usageBuf);
+
+            const char *accessStr = key_access_to_string(all[i].keyAccess);
+            if (accessStr) {
+                printf(" access=%s", accessStr);
+            } else {
+                printf(" access=0x%02X", all[i].keyAccess);
+            }
+        }
+
+        printf("\n");
+    }
+
     return 0;
 }
 
@@ -548,15 +813,12 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         loadTokenPtr = loadToken;
     }
 
-    {
-        OPGP_ERROR_STATUS s = GP211_install_for_load(ctx, info, sec,
+    if (!status_ok(GP211_install_for_load(ctx, info, sec,
             lfp.loadFileAID.AID, lfp.loadFileAID.AIDLength,
             sdAid, sdAidLen,
             loadFileHashPtr, loadTokenPtr,
-            lfp.loadFileSize, v_data_limit, nv_data_limit);
-        if (!status_ok(s)) {
-            cleanup_and_exit(10);
-        }
+            lfp.loadFileSize, v_data_limit, nv_data_limit))) {
+        cleanup_and_exit(10);
     }
 
     GP211_RECEIPT_DATA receipt; DWORD receiptAvail=0; memset(&receipt, 0, sizeof(receipt));
@@ -686,7 +948,8 @@ static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
             cleanup_and_exit(10);
         }
         return 0;
-    } else if (strcmp(type, "aes")==0) {
+    }
+    if (strcmp(type, "aes")==0) {
         if (!hexkey) { fprintf(stderr, "put-key aes: --key <hex> required\n"); cleanup_and_exit(10); }
         unsigned char k[32]; size_t klen=sizeof(k);
         if (hex_to_bytes(hexkey, k, &klen)!=0 || (klen!=16 && klen!=24 && klen!=32)) {
@@ -697,7 +960,8 @@ static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
             cleanup_and_exit(10);
         }
         return 0;
-    } else if (strcmp(type, "3des")==0) {
+    }
+    if (strcmp(type, "3des")==0) {
         if (!hexkey) { fprintf(stderr, "put-key 3des: --key <hex> required\n"); cleanup_and_exit(10); }
         unsigned char k[16]; size_t klen=sizeof(k);
         if (hex_to_bytes(hexkey, k, &klen)!=0 || klen!=16) {
@@ -708,13 +972,13 @@ static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
             cleanup_and_exit(10);
         }
         return 0;
-    } else {
-        fprintf(stderr, "put-key: unsupported --type '%s' (use 3des|aes|rsa). For Secure Channel keys use put-sc-keys.\n", type);
-        cleanup_and_exit(10);
     }
+    fprintf(stderr, "put-key: unsupported --type '%s' (use 3des|aes|rsa). For Secure Channel keys use put-sc-keys.\n", type);
+    cleanup_and_exit(10);
+    return 0;
 }
 
-static int cmd_put_sc_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
+static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
     BYTE setVer=0, newSetVer=0; const char *base=NULL, *enc=NULL, *mac=NULL, *dek=NULL;
     for (int i=0;i<argc;i++) {
         if (strcmp(argv[i], "--kv")==0 && i+1<argc) setVer=(BYTE)atoi(argv[++i]);
@@ -747,22 +1011,21 @@ static int cmd_put_sc_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECU
             cleanup_and_exit(10);
         }
         return 0;
-    } else {
-        unsigned char se[32], sm[32], dk[32]; size_t el=sizeof(se), ml=sizeof(sm), dl=sizeof(dk);
-        if (hex_to_bytes(enc, se, &el)!=0 || hex_to_bytes(mac, sm, &ml)!=0 || hex_to_bytes(dek, dk, &dl)!=0) {
-            fprintf(stderr, "Invalid hex for ENC/MAC/DEK\n");
-            cleanup_and_exit(10);
-        }
-        if (!((el==ml && ml==dl) && (el==16 || el==24 || el==32))) {
-            fprintf(stderr, "Keys must have equal length of 16/24/32 bytes\n");
-            cleanup_and_exit(10);
-        }
-        OPGP_ERROR_STATUS s = GP211_put_secure_channel_keys(ctx, info, sec, setVer, newSetVer, NULL, se, sm, dk, (DWORD)el);
-        if (!status_ok(s)) {
-            cleanup_and_exit(10);
-        }
-        return 0;
     }
+    unsigned char se[32], sm[32], dk[32]; size_t el=sizeof(se), ml=sizeof(sm), dl=sizeof(dk);
+    if (hex_to_bytes(enc, se, &el)!=0 || hex_to_bytes(mac, sm, &ml)!=0 || hex_to_bytes(dek, dk, &dl)!=0) {
+        fprintf(stderr, "Invalid hex for ENC/MAC/DEK\n");
+        cleanup_and_exit(10);
+    }
+    if (!((el==ml && ml==dl) && (el==16 || el==24 || el==32))) {
+        fprintf(stderr, "Keys must have equal length of 16/24/32 bytes\n");
+        cleanup_and_exit(10);
+    }
+    OPGP_ERROR_STATUS s = GP211_put_secure_channel_keys(ctx, info, sec, setVer, newSetVer, NULL, se, sm, dk, (DWORD)el);
+    if (!status_ok(s)) {
+        cleanup_and_exit(10);
+    }
+    return 0;
 }
 
 static int cmd_del_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
@@ -968,18 +1231,6 @@ static int cmd_list_readers(void) {
 
 int main(int argc, char **argv) {
     const char *prog = argv[0];
-    if (argc < 2 || (argc >= 2 && argv[1][0] != '-' && is_file_exists(argv[1]))) {
-#ifndef _WIN32
-        argv[0] = (char*)"gpshell";
-        execvp("gpshell", argv);
-        perror("execvp gpshell");
-        return 127;
-#else
-        fprintf(stderr, "Legacy fallback not supported on Windows in gpshell3. Use gpshell.\n");
-        return 2;
-#endif
-    }
-
     const char *reader=NULL, *protocol="auto", *isd_hex=NULL, *sec_level_opt="mac+enc";
     const char *key_hex=NULL, *enc_hex=NULL, *mac_hex=NULL, *dek_hex=NULL;
     int verbose=0, trace=0; BYTE keyset_ver=0, key_index=0; int derivation=0;
@@ -987,7 +1238,8 @@ int main(int argc, char **argv) {
     BYTE keyLength=0;
     int i=1; for (; i<argc; ++i) {
         if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) { print_usage(prog); return 0; }
-        else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--verbose")) { verbose=1; }
+
+        if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--verbose")) { verbose=1; }
         else if (!strcmp(argv[i], "-t") || !strcmp(argv[i], "--trace")) { trace=1; }
         else if (!strcmp(argv[i], "-r") || !strcmp(argv[i], "--reader")) { if(i+1<argc) reader=argv[++i]; }
         else if (!strcmp(argv[i], "--protocol") && i+1<argc) { protocol=argv[++i]; }
@@ -1089,13 +1341,13 @@ int main(int argc, char **argv) {
     }
 
     int rc = 0;
-    if (!strcmp(cmd, "list-apps")) rc = cmd_list(ctx, info, &sec);
-    else if (!strcmp(cmd, "list-keys")) rc = cmd_keys(ctx, info, &sec);
+    if (!strcmp(cmd, "list-apps")) rc = cmd_list_apps(ctx, info, &sec);
+    else if (!strcmp(cmd, "list-keys")) rc = cmd_list_keys(ctx, info, &sec);
     else if (!strcmp(cmd, "install")) rc = cmd_install(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "delete")) rc = cmd_delete(ctx, info, &sec, (i<argc)?argv[i]:NULL);
-    else if (!strcmp(cmd, "key-put")) rc = cmd_put_key(ctx, info, &sec, argc - i, &argv[i]);
-    else if (!strcmp(cmd, "put-auth")) rc = cmd_put_sc_key(ctx, info, &sec, argc - i, &argv[i]);
-    else if (!strcmp(cmd, "key-del")) rc = cmd_del_key(ctx, info, &sec, argc - i, &argv[i]);
+    else if (!strcmp(cmd, "put-key")) rc = cmd_put_key(ctx, info, &sec, argc - i, &argv[i]);
+    else if (!strcmp(cmd, "put-auth")) rc = cmd_put_auth(ctx, info, &sec, argc - i, &argv[i]);
+    else if (!strcmp(cmd, "del-key")) rc = cmd_del_key(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "apdu")) rc = cmd_apdu(ctx, info, sec_ptr, argc - i, &argv[i]);
     else if (!strcmp(cmd, "sign-dap")) {
         if (i>=argc) { fprintf(stderr, "sign-dap: missing type aes|rsa\n"); rc=-1; }

@@ -1891,6 +1891,7 @@ OPGP_ERROR_STATUS get_key_information_templates(OPGP_CARD_CONTEXT cardContext, O
 			extended = 1;
 		}
 		if (extended) {
+			keyInformation[i].extended = 1;
 			while (tlv2.value[j] == 0xFF) {
 				// skip 0xFF
 				j++;
@@ -1900,13 +1901,19 @@ OPGP_ERROR_STATUS get_key_information_templates(OPGP_CARD_CONTEXT cardContext, O
 			}
 			// extended has key usage and key access at the end
 			if (tlv2.value[j++]) {
-				keyInformation[i].keyUsage = tlv2.value[j++];
+				if (tlv2.value[j - 1] == 1) {
+					keyInformation[i].keyUsage = tlv2.value[j++] << 8;
+				} else {
+					keyInformation[i].keyUsage = tlv2.value[j++] << 8;
+					keyInformation[i].keyUsage |= tlv2.value[j++];
+				}
 			}
 			if (tlv2.value[j++]) {
 				keyInformation[i].keyAccess = tlv2.value[j++];
 			}
 		}
 		else {
+			keyInformation[i].extended = 0;
 			keyInformation[i].keyType = tlv2.value[j++];
 			keyInformation[i].keyLength = tlv2.value[j++];
 		}

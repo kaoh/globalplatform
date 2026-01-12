@@ -295,8 +295,9 @@ typedef struct {
 	BYTE keyIndex; //!< The key index.
 	BYTE keyType; //!< The key type.
 	USHORT keyLength; //!< The key length.
-	BYTE keyUsage; //!< Key usage used in extended format.
+	USHORT keyUsage; //!< Key usage used in extended format.
 	BYTE keyAccess; //!< Key access used in extended format.
+	BOOL extended; //!< Extended key information is returned.
 } GP211_KEY_INFORMATION;
 
 
