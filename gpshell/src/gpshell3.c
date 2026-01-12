@@ -85,7 +85,7 @@ static void print_usage(const char *prog) {
         "  list-readers\n"
         "  list-keys\n"
         "  install [--load-only] [--dap <hex>|@<file>] [--load-token <hex>] [--install-token <hex>] \\\n"
-        "          [--load-file-hash <hex>] [--applet <AIDhex>] [--v-data-limit <size>] \\\n"
+        "          [--hash <hex>] [--applet <AIDhex>] [--v-data-limit <size>] \\\n"
         "          [--nv-data-limit <size>] [--params <hex>] [--module <AIDhex>] \\\n"
         "          [--priv <p1,p2,...>] <cap-file>\n"
         "      --dap: DAP signature as hex or @file for binary signature (SD AID taken from --isd)\n"
@@ -159,13 +159,13 @@ static int parse_privs_byte(const char *list, BYTE *out)
         // normalize
         for (char *c=tok; *c; ++c) *c = (char)tolower((unsigned char)*c);
         if (!strcmp(tok, "sd") || !strcmp(tok, "security-domain")) p |= 0x80; // SECURITY_DOMAIN
-        else if (!strcmp(tok, "dap-verif") || !strcmp(tok, "dap") || !strcmp(tok, "dapverification")) p |= 0xC0; // DAP_VERIFICATION
-        else if (!strcmp(tok, "delegated-mgmt") || !strcmp(tok, "delegated-management")) p |= 0xA0; // DELEGATED_MANAGEMENT
-        else if (!strcmp(tok, "cm-lock") || !strcmp(tok, "card-manager-lock")) p |= 0x10; // CARD_MANAGER_LOCK
-        else if (!strcmp(tok, "cm-terminate") || !strcmp(tok, "card-manager-terminate")) p |= 0x08; // CARD_MANAGER_TERMINATE
+        else if (!strcmp(tok, "dap-verif") || !strcmp(tok, "dap")) p |= 0xC0; // DAP_VERIFICATION
+        else if (!strcmp(tok, "delegated-mgmt")) p |= 0xA0; // DELEGATED_MANAGEMENT
+        else if (!strcmp(tok, "cm-lock")) p |= 0x10; // CARD_MANAGER_LOCK
+        else if (!strcmp(tok, "cm-terminate")) p |= 0x08; // CARD_MANAGER_TERMINATE
         else if (!strcmp(tok, "default-selected") || !strcmp(tok, "default")) p |= 0x04; // DEFAULT_SELECTED (do not refer to card reset)
         else if (!strcmp(tok, "pin-change") || !strcmp(tok, "pin")) p |= 0x02; // PIN_CHANGE
-        else if (!strcmp(tok, "mandated-dap") || !strcmp(tok, "mandated-dap-verif") || !strcmp(tok, "mandated")) p |= 0xD0; // MANDATED_DAP_VERIFICATION
+        else if (!strcmp(tok, "mandated-dap") || !strcmp(tok, "mandated-dap-verif")) p |= 0xD0; // MANDATED_DAP_VERIFICATION
         else { fprintf(stderr, "Unknown privilege '%s'\n", tok); return -1; }
         tok = strtok_r(NULL, ",", &save);
     }
@@ -468,7 +468,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         else if (strcmp(argv[ai], "--dap") == 0 && ai+1 < argc) { dap_hex = argv[++ai]; }
         else if (strcmp(argv[ai], "--load-token") == 0 && ai+1 < argc) { load_token_hex = argv[++ai]; }
         else if (strcmp(argv[ai], "--install-token") == 0 && ai+1 < argc) { install_token_hex = argv[++ai]; }
-        else if (strcmp(argv[ai], "--load-file-hash") == 0 && ai+1 < argc) { load_file_hash_hex = argv[++ai]; }
+        else if (strcmp(argv[ai], "--hash") == 0 && ai+1 < argc) { load_file_hash_hex = argv[++ai]; }
         else if (strcmp(argv[ai], "--applet") == 0 && ai+1 < argc) { applet_aid_hex = argv[++ai]; }
         else if (strcmp(argv[ai], "--module") == 0 && ai+1 < argc) { module_aid_hex = argv[++ai]; }
         else if (strcmp(argv[ai], "--priv") == 0 && ai+1 < argc) { priv_list = argv[++ai]; }
