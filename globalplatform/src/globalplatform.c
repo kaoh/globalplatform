@@ -142,7 +142,7 @@ OPGP_ERROR_STATUS get_extended_card_resources_information(OPGP_CARD_CONTEXT card
 		OPGP_EXTENDED_CARD_RESOURCE_INFORMATION *extendedCardResourceInformation);
 
 OPGP_NO_API
-OPGP_ERROR_STATUS set_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE cardElement, PBYTE AID, DWORD AIDLength, BYTE lifeCycleState);
+OPGP_ERROR_STATUS set_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE statusType, PBYTE AID, DWORD AIDLength, BYTE lifeCycleState);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS load(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -2005,17 +2005,17 @@ end:
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
  * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param cardElement [in] Identifier for Load Files, Applications or the Card Manager.
+ * \param statusType [in] Status type. See GP211_STATUS_TYPE_APPLICATIONS.
  * \param AID [in] The AID.
  * \param AIDLength [in] The length of the AID.
  * \param lifeCycleState [in] The new life cycle state.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
-OPGP_ERROR_STATUS GP211_set_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE cardElement, PBYTE AID, DWORD AIDLength, BYTE lifeCycleState) {
-	return set_status(cardContext, cardInfo, secInfo, cardElement, AID, AIDLength, lifeCycleState);
+OPGP_ERROR_STATUS GP211_set_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE statusType, PBYTE AID, DWORD AIDLength, BYTE lifeCycleState) {
+	return set_status(cardContext, cardInfo, secInfo, statusType, AID, AIDLength, lifeCycleState);
 }
 
-OPGP_ERROR_STATUS set_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE cardElement, PBYTE AID, DWORD AIDLength, BYTE lifeCycleState) {
+OPGP_ERROR_STATUS set_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE statusType, PBYTE AID, DWORD AIDLength, BYTE lifeCycleState) {
 	OPGP_ERROR_STATUS status;
 	DWORD sendBufferLength=5+AIDLength;
 	DWORD recvBufferLength=2;
@@ -2025,7 +2025,7 @@ OPGP_ERROR_STATUS set_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardI
 	OPGP_LOG_START(_T("set_status"));
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xF0;
-	sendBuffer[i++] = cardElement;
+	sendBuffer[i++] = statusType;
 	sendBuffer[i++] = lifeCycleState;
 	sendBuffer[i++] = (BYTE)AIDLength;
 	memcpy(sendBuffer+i, AID, AIDLength);
@@ -5641,17 +5641,17 @@ end:
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param cardInfo [in] The OPGP_CARD_INFO cardInfo, structure returned by OPGP_card_connect().
  * \param *secInfo [in, out] The pointer to the OP201_SECURITY_INFO structure returned by OP201_mutual_authentication().
- * \param cardElement [in] Identifier for Load Files, Applications or the Card Manager.
+ * \param statusType [in] Identifier for Load Files, Applications or the Card Manager.
  * \param AID [in] The AID.
  * \param AIDLength [in] The length of the AID.
  * \param lifeCycleState [in] The new life cycle state.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
-OPGP_ERROR_STATUS OP201_set_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, BYTE cardElement, PBYTE AID, DWORD AIDLength, BYTE lifeCycleState) {
+OPGP_ERROR_STATUS OP201_set_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, BYTE statusType, PBYTE AID, DWORD AIDLength, BYTE lifeCycleState) {
 	OPGP_ERROR_STATUS status;
 	GP211_SECURITY_INFO gp211secInfo;
 	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
-	status = set_status(cardContext, cardInfo, &gp211secInfo, cardElement, AID, AIDLength, lifeCycleState);
+	status = set_status(cardContext, cardInfo, &gp211secInfo, statusType, AID, AIDLength, lifeCycleState);
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 	return status;
 }

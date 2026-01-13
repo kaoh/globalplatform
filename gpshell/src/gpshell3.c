@@ -98,6 +98,14 @@ static void print_usage(const char *prog) {
         "      Use either --key (single base key) OR all of --enc/--mac/--dek.\n\n"
         "  del-key --kv <ver> [--idx <idx>]\n"
         "      Delete a key. If --idx is omitted, deletes all keys in the given key set.\n\n"
+        "  status <isd|sd|app|sd-app> [--lc <state>] <AIDhex>\n"
+        "      Set the lifecycle state of a card element.\n"
+        "      Element types:\n"
+        "        isd:    Issuer Security Domain; --lc: locked, terminated\n"
+        "        sd:     Security Domain; --lc: personalized, locked\n"
+        "        app:    Application; --lc: locked, selectable\n"
+        "        sd-app: Security Domain and Application; --lc: locked\n"
+        "      WARNING: 'terminated' for ISD cannot be undone - the card will be permanently terminated!\n\n"
         "  apdu [--auth] [--nostop|--ignore-errors] <APDU> [<APDU> ...]\n"
         "      Send raw APDUs.\n"
         "      APDU format: hex bytes either concatenated (e.g. 00A40400) or space-separated (e.g. 00 A4 04 00).\n"
@@ -1129,17 +1137,18 @@ static int cmd_apdu(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
 }
 
 static int cmd_hash(int argc, char **argv) {
-    if (argc < 1) { fprintf(stderr, "hash: missing <cap-file>\n"); return -1; }
-    const char *cap = argv[0];
     const char *hash_alg = "sha256"; // default
-    int ai = 1;
+    int ai = 0;
     for (; ai < argc; ++ai) {
         if (strcmp(argv[ai], "--sha1") == 0) { hash_alg = "sha1"; }
         else if (strcmp(argv[ai], "--sha256") == 0 || strcmp(argv[ai], "--sha2-256") == 0) { hash_alg = "sha256"; }
         else if (strcmp(argv[ai], "--sha384") == 0 || strcmp(argv[ai], "--sha2-384") == 0) { hash_alg = "sha384"; }
         else if (strcmp(argv[ai], "--sha512") == 0 || strcmp(argv[ai], "--sha2-512") == 0) { hash_alg = "sha512"; }
-        else { fprintf(stderr, "hash: unknown option '%s'\n", argv[ai]); return -1; }
+        else break;
     }
+    if (ai >= argc) { fprintf(stderr, "hash: missing <cap-file>\n"); cleanup_and_exit(10); }
+    const char *cap = argv[ai++];
+
     BYTE scp = GP211_SCP03;
     DWORD hash_len = 32;
     if (strcmp(hash_alg, "sha1") == 0) { scp = GP211_SCP02; hash_len = 20; }
@@ -1203,6 +1212,141 @@ static int cmd_dap(int is_rsa, OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
         }
         return 0;
     }
+}
+
+static int cmd_status(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
+    if (argc < 1) { fprintf(stderr, "status: missing element type (isd|sd|app|sd-app)\n"); cleanup_and_exit(10); }
+
+    const char *element_type = argv[0];
+    const char *lc_state = NULL;
+    const char *aid_hex = NULL;
+
+    int ai = 1;
+    for (; ai < argc; ++ai) {
+        if (strcmp(argv[ai], "--lc") == 0 && ai+1 < argc) {
+            lc_state = argv[++ai];
+        } else {
+            aid_hex = argv[ai];
+            break;
+        }
+    }
+
+    if (!aid_hex) { fprintf(stderr, "status: missing <AIDhex>\n"); cleanup_and_exit(10); }
+
+    // Parse AID
+    unsigned char aid[16]; size_t aidlen = sizeof(aid);
+    if (hex_to_bytes(aid_hex, aid, &aidlen) != 0) {
+        fprintf(stderr, "Invalid AID hex\n");
+        cleanup_and_exit(10);
+    }
+
+    // Determine status type and lifecycle state
+    BYTE statusType = 0;
+    BYTE lifeCycleState = 0;
+
+    if (strcmp(element_type, "isd") == 0) {
+        statusType = GP211_STATUS_TYPE_ISSUER_SECURITY_DOMAIN;
+
+        if (!lc_state) {
+            fprintf(stderr, "status isd: --lc <state> required (locked|terminated)\n");
+            cleanup_and_exit(10);
+        }
+
+        if (strcmp(lc_state, "locked") == 0) {
+            lifeCycleState = GP211_LIFE_CYCLE_CARD_LOCKED;
+        } else if (strcmp(lc_state, "terminated") == 0) {
+            lifeCycleState = GP211_LIFE_CYCLE_CARD_TERMINATED;
+
+            // Display prominent warning for terminated state
+            fprintf(stderr, "\n");
+            fprintf(stderr, "================================================================================\n");
+            fprintf(stderr, "                              *** WARNING ***\n");
+            fprintf(stderr, "================================================================================\n");
+            fprintf(stderr, "You are about to TERMINATE the Issuer Security Domain!\n");
+            fprintf(stderr, "\n");
+            fprintf(stderr, "THIS ACTION CANNOT BE UNDONE!\n");
+            fprintf(stderr, "The card will be PERMANENTLY TERMINATED and UNUSABLE after this operation.\n");
+            fprintf(stderr, "\n");
+            fprintf(stderr, "To confirm, please enter the AID again: ");
+            fprintf(stderr, "\n> ");
+
+            char confirm[64];
+            if (fgets(confirm, sizeof(confirm), stdin)) {
+                // Remove trailing newline
+                size_t len = strlen(confirm);
+                if (len > 0 && confirm[len-1] == '\n') confirm[len-1] = '\0';
+
+                if (strcmp(confirm, aid_hex) != 0) {
+                    fprintf(stderr, "AID does not match. Operation cancelled.\n");
+                    cleanup_and_exit(0);
+                }
+            } else {
+                fprintf(stderr, "Failed to read confirmation. Operation cancelled.\n");
+                cleanup_and_exit(0);
+            }
+            fprintf(stderr, "================================================================================\n");
+            fprintf(stderr, "\n");
+        } else {
+            fprintf(stderr, "status isd: invalid lifecycle state '%s' (use: locked|terminated)\n", lc_state);
+            cleanup_and_exit(10);
+        }
+    } else if (strcmp(element_type, "sd") == 0) {
+        statusType = GP211_STATUS_TYPE_APPLICATIONS;
+
+        if (!lc_state) {
+            fprintf(stderr, "status sd: --lc <state> required (personalized|locked)\n");
+            cleanup_and_exit(10);
+        }
+
+        if (strcmp(lc_state, "personalized") == 0) {
+            lifeCycleState = GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED;
+        } else if (strcmp(lc_state, "locked") == 0) {
+            lifeCycleState = GP211_LIFE_CYCLE_SECURITY_DOMAIN_LOCKED;
+        } else {
+            fprintf(stderr, "status sd: invalid lifecycle state '%s' (use: personalized|locked)\n", lc_state);
+            cleanup_and_exit(10);
+        }
+    } else if (strcmp(element_type, "app") == 0) {
+        statusType = GP211_STATUS_TYPE_APPLICATIONS;
+
+        if (!lc_state) {
+            fprintf(stderr, "status app: --lc <state> required (locked|selectable)\n");
+            cleanup_and_exit(10);
+        }
+
+        if (strcmp(lc_state, "locked") == 0) {
+            lifeCycleState = GP211_LIFE_CYCLE_APPLICATION_LOCKED;
+        } else if (strcmp(lc_state, "selectable") == 0) {
+            lifeCycleState = GP211_LIFE_CYCLE_APPLICATION_SELECTABLE;
+        } else {
+            fprintf(stderr, "status app: invalid lifecycle state '%s' (use: locked|selectable)\n", lc_state);
+            cleanup_and_exit(10);
+        }
+    } else if (strcmp(element_type, "sd-app") == 0) {
+        statusType = GP211_STATUS_TYPE_SECURITY_DOMAIN_AND_APPLICATIONS;
+
+        if (!lc_state) {
+            fprintf(stderr, "status sd-app: --lc <state> required (locked)\n");
+            cleanup_and_exit(10);
+        }
+
+        if (strcmp(lc_state, "locked") == 0) {
+            lifeCycleState = GP211_LIFE_CYCLE_SECURITY_DOMAIN_LOCKED;
+        } else {
+            fprintf(stderr, "status sd-app: only lifecycle state 'locked' is supported\n");
+            cleanup_and_exit(10);
+        }
+    } else {
+        fprintf(stderr, "status: invalid element type '%s' (use: isd|sd|app|sd-app)\n", element_type);
+        cleanup_and_exit(10);
+    }
+
+    // Call GP211_set_status
+    if (!status_ok(GP211_set_status(ctx, info, sec, statusType, aid, (DWORD)aidlen, lifeCycleState))) {
+        cleanup_and_exit(10);
+    }
+
+    return 0;
 }
 
 static int cmd_list_readers(void) {
@@ -1349,6 +1493,7 @@ int main(int argc, char **argv) {
     else if (!strcmp(cmd, "put-auth")) rc = cmd_put_auth(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "del-key")) rc = cmd_del_key(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "apdu")) rc = cmd_apdu(ctx, info, sec_ptr, argc - i, &argv[i]);
+    else if (!strcmp(cmd, "status")) rc = cmd_status(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "sign-dap")) {
         if (i>=argc) { fprintf(stderr, "sign-dap: missing type aes|rsa\n"); rc=-1; }
         else if (!strcmp(argv[i], "rsa")) rc = cmd_dap(1, ctx, info, &sec, argc - (i+1), &argv[i+1]);
