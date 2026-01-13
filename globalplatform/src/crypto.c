@@ -2253,7 +2253,7 @@ end:
  * \param hash [out] The calculated hash.
  * \param md [in] The message digest to use.
  */
-OPGP_ERROR_STATUS calculate_hash(PBYTE message, DWORD messageLength, BYTE hash[32], const EVP_MD *md) {
+OPGP_ERROR_STATUS calculate_hash(PBYTE message, DWORD messageLength, BYTE hash[64], const EVP_MD *md) {
 	int result;
 	OPGP_ERROR_STATUS status;
 	EVP_MD_CTX *mdctx;
@@ -2300,6 +2300,15 @@ OPGP_ERROR_STATUS calculate_sha2_hash(PBYTE message, DWORD messageLength, BYTE h
  */
 OPGP_ERROR_STATUS calculate_sha1_hash(PBYTE message, DWORD messageLength, BYTE hash[20]) {
 	return calculate_hash(message, messageLength, hash, EVP_sha1());
+}
+
+/**
+ * \param message [in] The message to generate the hash for.
+ * \param messageLength [in] The length of the message buffer.
+ * \param hash [out] The calculated hash (32 bytes for SM3).
+ */
+OPGP_ERROR_STATUS calculate_sm3_hash(PBYTE message, DWORD messageLength, BYTE hash[32]) {
+	return calculate_hash(message, messageLength, hash, EVP_sm3());
 }
 
 /**

@@ -211,6 +211,10 @@ OPGP_ERROR_STATUS calculate_sha2_hash(PBYTE message, DWORD messageLength, BYTE h
 OPGP_NO_API
 OPGP_ERROR_STATUS calculate_sha1_hash(PBYTE message, DWORD messageLength, BYTE hash[20]);
 
+//! \brief Calculates a SM3 hash.
+OPGP_NO_API
+OPGP_ERROR_STATUS calculate_sm3_hash(PBYTE message, DWORD messageLength, BYTE hash[32]);
+
 //! \brief Calculates a MAC using first DES and 3DES for the final round when the padding is applied.
 OPGP_NO_API
 OPGP_ERROR_STATUS calculate_MAC_right_des_3des(BYTE key[16], BYTE *message, DWORD messageLength, BYTE mac[8]);

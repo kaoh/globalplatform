@@ -3704,15 +3704,15 @@ end:
 }
 
 /**
- * This is a hash of the Load File Data Block with SHA-1 for SCP02 or SHA-256, SHA-384, SHA-512 for SCP03.
+ * This is a hash of the Load File Data Block with SHA-1 for SCP02 or SHA-256, SHA-384, SHA-512 or SM3 for SCP03.
  * \param executableLoadFileName [in] The name of the Executable Load File to hash.
  * \param hash [out] The hash value.
- * \param hashLength [in] The hash length for SCP03: 32 for AES-128, 48 for AES-192, 64 for AES-256.
- * \param secureChannelProtocol [in] The Secure Channel Protocol.
+ * \param hashLength [in] The hash length for SCP03: 32 for AES-128, 48 for AES-192, 64 for AES-256, 32 for SM3.
+ * \param hashType [in] The hash type. See GP211_HASH_SHA256.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_calculate_load_file_data_block_hash(OPGP_STRING executableLoadFileName,
-							 BYTE hash[64], DWORD hashLength, BYTE secureChannelProtocol) {
+                                                            BYTE hash[64], DWORD hashLength, BYTE hashType) {
 	OPGP_ERROR_STATUS status;
 	PBYTE loadFileBuf = NULL;
 	DWORD loadFileBufSize;
@@ -3732,15 +3732,21 @@ OPGP_ERROR_STATUS GP211_calculate_load_file_data_block_hash(OPGP_STRING executab
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	if (secureChannelProtocol == GP211_SCP02) {
-		status = calculate_sha1_hash(loadFileBuf, loadFileBufSize, hash);
-	}
-	else if (secureChannelProtocol == GP211_SCP03) {
-		status = calculate_sha2_hash(loadFileBuf, loadFileBufSize, hash, hashLength);
-	}
-	else {
-		OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_INVALID_SCP, OPGP_stringify_error(GP211_ERROR_INVALID_SCP));
-		goto end;
+	switch (hashType) {
+		case GP211_HASH_SHA1:
+			status = calculate_sha1_hash(loadFileBuf, loadFileBufSize, hash);
+			break;
+		case GP211_HASH_SHA256:
+		case GP211_HASH_SHA384:
+		case GP211_HASH_SHA512:
+			status = calculate_sha2_hash(loadFileBuf, loadFileBufSize, hash, hashLength);
+			break;
+		case GP211_HASH_SM3:
+			status = calculate_sm3_hash(loadFileBuf, loadFileBufSize, hash);
+			break;
+		default:
+			OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_INVALID_SCP, OPGP_stringify_error(GP211_ERROR_INVALID_SCP));
+			goto end;
 	}
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;

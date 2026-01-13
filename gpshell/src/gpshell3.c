@@ -111,7 +111,7 @@ static void print_usage(const char *prog) {
         "      APDU format: hex bytes either concatenated (e.g. 00A40400) or space-separated (e.g. 00 A4 04 00).\n"
         "      Multiple APDUs can be provided as separate args or separated by ';' or ',' in one arg.\n"
         "      By default, apdu does NOT select ISD or perform mutual authentication; use --auth to enable it.\n\n"
-        "  hash <cap-file> [--sha1|--sha256|--sha384|--sha512]\n"
+        "  hash <cap-file> [--sha1|--sha256|--sha384|--sha512|--sm3]\n"
         "      Compute the load-file data block hash of a CAP file. Default is sha256.\n\n"
         "  sign-dap aes [--output <file>] <hash-hex> <sd-aidhex> <hexkey>\n"
         "  sign-dap rsa [--output <file>] <hash-hex> <sd-aidhex> <pem>[:pass]\n"
@@ -1144,20 +1144,22 @@ static int cmd_hash(int argc, char **argv) {
         else if (strcmp(argv[ai], "--sha256") == 0 || strcmp(argv[ai], "--sha2-256") == 0) { hash_alg = "sha256"; }
         else if (strcmp(argv[ai], "--sha384") == 0 || strcmp(argv[ai], "--sha2-384") == 0) { hash_alg = "sha384"; }
         else if (strcmp(argv[ai], "--sha512") == 0 || strcmp(argv[ai], "--sha2-512") == 0) { hash_alg = "sha512"; }
+        else if (strcmp(argv[ai], "--sm3") == 0) { hash_alg = "sm3"; }
         else break;
     }
     if (ai >= argc) { fprintf(stderr, "hash: missing <cap-file>\n"); cleanup_and_exit(10); }
     const char *cap = argv[ai++];
 
-    BYTE scp = GP211_SCP03;
+    BYTE hashType = GP211_HASH_SHA256;
     DWORD hash_len = 32;
-    if (strcmp(hash_alg, "sha1") == 0) { scp = GP211_SCP02; hash_len = 20; }
-    else if (strcmp(hash_alg, "sha256") == 0) { scp = GP211_SCP03; hash_len = 32; }
-    else if (strcmp(hash_alg, "sha384") == 0) { scp = GP211_SCP03; hash_len = 48; }
-    else if (strcmp(hash_alg, "sha512") == 0) { scp = GP211_SCP03; hash_len = 64; }
+    if (strcmp(hash_alg, "sha1") == 0) { hashType = GP211_HASH_SHA1; hash_len = 20; }
+    else if (strcmp(hash_alg, "sha256") == 0) { hashType = GP211_HASH_SHA256; hash_len = 32; }
+    else if (strcmp(hash_alg, "sha384") == 0) { hashType = GP211_HASH_SHA384; hash_len = 48; }
+    else if (strcmp(hash_alg, "sha512") == 0) { hashType = GP211_HASH_SHA512; hash_len = 64; }
+    else if (strcmp(hash_alg, "sm3") == 0) { hashType = GP211_HASH_SM3; hash_len = 32; }
 
     BYTE hash[64]; memset(hash, 0, sizeof(hash));
-    if (!status_ok(GP211_calculate_load_file_data_block_hash((char*)cap, hash, hash_len, scp))) {
+    if (!status_ok(GP211_calculate_load_file_data_block_hash((char*)cap, hash, hash_len, hashType))) {
         fprintf(stderr, "hash failed\n"); return -1;
     }
     print_hex(hash, hash_len); printf("\n");

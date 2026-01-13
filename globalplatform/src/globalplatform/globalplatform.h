@@ -309,6 +309,12 @@ static const BYTE OP201_GET_DATA_WHOLE_EF_PROD[2] = {0xDF, 0x7F}; //!< Whole EF<
 #define OPGP_DERIVATION_METHOD_EMV_CPS11 2 //!< The EMV CPS 11 derivation is used during mutual authentication.
 #define OPGP_DERIVATION_METHOD_VISA1 3 //!< The VISA1 key derivation is used during mutual authentication.
 
+#define GP211_HASH_SHA1 1 //!< SHA-1
+#define GP211_HASH_SHA256 2 //!< SHA2-256
+#define GP211_HASH_SHA384 3 //!< SHA2-384
+#define GP211_HASH_SHA512 4 //!< SHA2-512
+#define GP211_HASH_SM3 5 //!< SM3
+
 #define OPGP_WORK_UNKNOWN -1 //!< The amount of work is not known.
 #define OPGP_TASK_FINISHED 1 //!< The task is finished.
 
@@ -622,7 +628,7 @@ OPGP_ERROR_STATUS GP211_calculate_install_token_uicc(BYTE P1, PBYTE executableLo
 //! \brief GlobalPlatform2.1.1: Calculates a Load File Data Block Hash.
 OPGP_API
 OPGP_ERROR_STATUS GP211_calculate_load_file_data_block_hash(OPGP_STRING executableLoadFileName,
-							 BYTE hash[64], DWORD hashLength, BYTE secureChannelProtocol);
+                                                            BYTE hash[64], DWORD hashLength, BYTE hashType);
 
 //! \brief GlobalPlatform2.1.1: Loads a Executable Load File (containing an application) to the card.
 OPGP_API
