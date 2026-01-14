@@ -55,7 +55,7 @@ static void print_usage(const char *prog) {
 
     fputs(
         "Global options:\n"
-        "  -r, --reader <name>        PC/SC reader name (default: auto first present)\n"
+        "  -r, --reader <name|num>    PC/SC reader name or number (1-based) (default: auto first present)\n"
         "  --protocol <auto|t0|t1>    Transport protocol (default: auto)\n"
         "  --sd <aidhex>             ISD AID hex; default tries A000000151000000 then A0000001510000 then A000000003000000\n"
         "  --sec <mac|mac+enc|mac+enc+rmac>\n"
@@ -235,6 +235,35 @@ static int connect_pcsc(OPGP_CARD_CONTEXT *pctx, OPGP_CARD_INFO *pinfo, const ch
             return -1;
         }
         reader = readers; // first reader
+    } else {
+        // Check if reader is a numeric index (1-based)
+        char *endptr;
+        long reader_num = strtol(reader, &endptr, 10);
+        if (*endptr == '\0' && reader_num > 0) {
+            // It's a number - list all readers and select by index
+            s = OPGP_list_readers(*pctx, readers, &rlen, 0);
+            if (!status_ok(s) || rlen <= 1) {
+                fprintf(stderr, "No PC/SC readers found\n");
+                OPGP_release_context(pctx);
+                return -1;
+            }
+            // Parse reader list (null-separated strings)
+            const char *current = readers;
+            int count = 0;
+            while (*current && current < readers + rlen) {
+                count++;
+                if (count == reader_num) {
+                    reader = current;
+                    break;
+                }
+                current += strlen(current) + 1;
+            }
+            if (count < reader_num) {
+                fprintf(stderr, "Reader number %ld not found (only %d readers available)\n", reader_num, count);
+                OPGP_release_context(pctx);
+                return -1;
+            }
+        }
     }
     if (verbose) { fprintf(stderr, "Selected reader: %s\n", reader); }
     DWORD proto = SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1;
