@@ -57,9 +57,11 @@ static void print_usage(const char *prog) {
         "Global options:\n"
         "  -r, --reader <name>        PC/SC reader name (default: auto first present)\n"
         "  --protocol <auto|t0|t1>    Transport protocol (default: auto)\n"
-        "  --isd <aidhex>             ISD AID hex; default tries A000000151000000 then A0000001510000 then A000000003000000\n"
+        "  --sd <aidhex>             ISD AID hex; default tries A000000151000000 then A0000001510000 then A000000003000000\n"
         "  --sec <mac|mac+enc|mac+enc+rmac>\n"
         "                            Secure channel security level (default: mac+enc)\n"
+        "  --scp <protocol>           SCP protocol as digit (e.g., 1, 2, 3)\n"
+        "  --scp-impl <impl>          SCP implementation as hex (e.g., 15, 55)\n"
         "  --kv <n>                   Key set version for mutual auth (default: 0)\n"
         "  --idx <n>                  Key index within key set for mutual auth (default: 0)\n"
         "  --derive <none|visa2|emv>  Key derivation (default: none)\n"
@@ -86,7 +88,7 @@ static void print_usage(const char *prog) {
         "          [--v-data-limit <size>] [--nv-data-limit <size>] [--priv <p1,p2,...>] <cap-file>\n"
         "      Load a CAP file, and optionally install/make selectable applet instance(s).\n"
         "      --load-only: only perform INSTALL [for load] + LOAD, skip install/make-selectable.\n"
-        "      --dap: DAP signature as hex or @file for binary signature (SD AID taken from --isd).\n"
+        "      --dap: DAP signature as hex or @file for binary signature (SD AID taken from --sd).\n"
         "      --hash: precomputed load-file data block hash (hex).\n"
         "      --applet/--module: select which applet/module AID to install; if omitted installs all applets in the CAP.\n"
         "      --params: installation parameters (hex).\n"
@@ -97,9 +99,12 @@ static void print_usage(const char *prog) {
         "          (--key <hex>|--pem <file>[:pass])\n"
         "      Put (add/replace) a key in a key set.\n"
         "      --type aes|3des uses --key (hex). --type rsa uses --pem (optionally :pass).\n\n"
-        "  put-auth --kv <ver> [--new-kv <ver>] [--key <hex> | --enc <hex> --mac <hex> --dek <hex>]\n"
+        "  put-auth [--type <aes|3des>] [--derive <none|emv|visa2>] --kv <ver> [--new-kv <ver>] \\\n"
+        "           [--key <hex> | --enc <hex> --mac <hex> --dek <hex>]\n"
         "      Put secure channel keys (S-ENC/S-MAC/DEK) for a key set.\n"
-        "      Use either --key (single base key) OR all of --enc/--mac/--dek.\n\n"
+        "      Use either --key (single base key) OR all of --enc/--mac/--dek.\n"
+        "      --type: Key type (default: aes).\n"
+        "      --derive: Key derivation method for single base key (default: none).\n\n"
         "  del-key --kv <ver> [--idx <idx>]\n"
         "      Delete a key. If --idx is omitted, deletes all keys in the given key set.\n\n",
         stderr);
@@ -249,9 +254,29 @@ static int connect_pcsc(OPGP_CARD_CONTEXT *pctx, OPGP_CARD_INFO *pinfo, const ch
 
 static int mutual_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec,
                        BYTE keyset_ver, BYTE key_index, int derivation, const char *sec_level_opt, int verbose,
-                       const BYTE *baseKey_in, const BYTE *enc_in, const BYTE *mac_in, const BYTE *dek_in, BYTE keyLength_in) {
+                       const BYTE *baseKey_in, const BYTE *enc_in, const BYTE *mac_in, const BYTE *dek_in, BYTE keyLength_in,
+                       const char *scp_protocol, const char *scp_impl) {
     BYTE scp = 0, scpImpl = 0;
-    {
+
+    // Parse SCP protocol if provided
+    if (scp_protocol) {
+        scp = (BYTE)atoi(scp_protocol);
+        if (scp == 1) scp = GP211_SCP01;
+        else if (scp == 2) scp = GP211_SCP02;
+        else if (scp == 3) scp = GP211_SCP03;
+    }
+
+    // Parse SCP implementation if provided
+    if (scp_impl) {
+        size_t impl_len = sizeof(scpImpl);
+        if (hex_to_bytes(scp_impl, &scpImpl, &impl_len) != 0 || impl_len != 1) {
+            fprintf(stderr, "Invalid --scp-impl hex (must be 1 byte)\n");
+            return -1;
+        }
+    }
+
+    // Only fetch from card if both are not provided
+    if (!scp_protocol || !scp_impl) {
         OPGP_ERROR_STATUS s = GP211_get_secure_channel_protocol_details(ctx, info, &scp, &scpImpl);
         if (!status_ok(s)) {
             if (verbose) fprintf(stderr, "Failed to get SCP details, defaulting to SCP02 i15\n");
@@ -994,6 +1019,7 @@ static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
 
 static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
     BYTE setVer=0, newSetVer=0; const char *base=NULL, *enc=NULL, *mac=NULL, *dek=NULL;
+    const char *type="aes", *derive="none";
     for (int i=0;i<argc;i++) {
         if (strcmp(argv[i], "--kv")==0 && i+1<argc) setVer=(BYTE)atoi(argv[++i]);
         else if (strcmp(argv[i], "--new-kv")==0 && i+1<argc) newSetVer=(BYTE)atoi(argv[++i]);
@@ -1002,9 +1028,8 @@ static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURI
         else if (strcmp(argv[i], "--enc")==0 && i+1<argc) enc=argv[++i];
         else if (strcmp(argv[i], "--mac")==0 && i+1<argc) mac=argv[++i];
         else if (strcmp(argv[i], "--dek")==0 && i+1<argc) dek=argv[++i];
-    }
-    if (!setVer && !newSetVer) {
-        // allow zero, but typically setVer is 0 for default
+        else if (strcmp(argv[i], "--type")==0 && i+1<argc) type=argv[++i];
+        else if (strcmp(argv[i], "--derive")==0 && i+1<argc) derive=argv[++i];
     }
     if (base && (enc || mac || dek)) {
         fprintf(stderr, "put-auth: use either --base/--key OR all of --enc/--mac/--dek\n");
@@ -1014,13 +1039,56 @@ static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURI
         fprintf(stderr, "put-auth: specify either --base/--key <hex> or --enc/--mac/--dek <hex>\n");
         return -1;
     }
+
+    // Determine key type
+    BYTE keyType = GP211_KEY_TYPE_AES;
+    if (strcmp(type, "3des")==0) {
+        keyType = GP211_KEY_TYPE_DES;
+    } else if (strcmp(type, "aes")==0) {
+        keyType = GP211_KEY_TYPE_AES;
+    } else {
+        fprintf(stderr, "put-auth: unsupported --type '%s' (use aes|3des)\n", type);
+        return -1;
+    }
+
+    // Determine derivation method
+    BYTE derivation = OPGP_DERIVATION_METHOD_NONE;
+    if (strcmp(derive, "emv")==0) {
+        derivation = OPGP_DERIVATION_METHOD_EMV_CPS11;
+    } else if (strcmp(derive, "visa2")==0) {
+        derivation = OPGP_DERIVATION_METHOD_VISA2;
+    } else if (strcmp(derive, "none")!=0) {
+        fprintf(stderr, "put-auth: unsupported --derive '%s' (use none|emv|visa2)\n", derive);
+        return -1;
+    }
+
     if (base) {
         unsigned char b[32]; size_t blen=sizeof(b);
         if (hex_to_bytes(base, b, &blen)!=0 || (blen!=16 && blen!=24 && blen!=32)) {
             fprintf(stderr, "Invalid base key length\n");
             return -1;
         }
-        OPGP_ERROR_STATUS s = GP211_put_secure_channel_keys(ctx, info, sec, setVer, newSetVer, b, NULL, NULL, NULL, (DWORD)blen);
+
+        // Apply key derivation if requested
+        if (derivation == OPGP_DERIVATION_METHOD_EMV_CPS11) {
+            OPGP_ERROR_STATUS s = GP211_EMV_CPS11_derive_keys(ctx, info, sec, b, b, b, b);
+            if (!status_ok(s)) {
+                fprintf(stderr, "EMV CPS11 key derivation failed\n");
+                return -1;
+            }
+        } else if (derivation == OPGP_DERIVATION_METHOD_VISA2) {
+            if (g_selected_isd_len == 0) {
+                fprintf(stderr, "VISA2 derivation requires a selected ISD AID\n");
+                return -1;
+            }
+            OPGP_ERROR_STATUS s = GP211_VISA2_derive_keys(ctx, info, sec, g_selected_isd, g_selected_isd_len, b, b, b, b);
+            if (!status_ok(s)) {
+                fprintf(stderr, "VISA2 key derivation failed\n");
+                return -1;
+            }
+        }
+
+        OPGP_ERROR_STATUS s = GP211_put_secure_channel_keys_with_key_type(ctx, info, sec, setVer, newSetVer, b, NULL, NULL, NULL, (DWORD)blen, keyType);
         if (!status_ok(s)) {
             return -1;
         }
@@ -1035,7 +1103,27 @@ static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURI
         fprintf(stderr, "Keys must have equal length of 16/24/32 bytes\n");
         return -1;
     }
-    OPGP_ERROR_STATUS s = GP211_put_secure_channel_keys(ctx, info, sec, setVer, newSetVer, NULL, se, sm, dk, (DWORD)el);
+
+    // Apply key derivation if requested
+    if (derivation == OPGP_DERIVATION_METHOD_EMV_CPS11) {
+        OPGP_ERROR_STATUS s = GP211_EMV_CPS11_derive_keys(ctx, info, sec, se, se, sm, dk);
+        if (!status_ok(s)) {
+            fprintf(stderr, "EMV CPS11 key derivation failed\n");
+            return -1;
+        }
+    } else if (derivation == OPGP_DERIVATION_METHOD_VISA2) {
+        if (g_selected_isd_len == 0) {
+            fprintf(stderr, "VISA2 derivation requires a selected ISD AID\n");
+            return -1;
+        }
+        OPGP_ERROR_STATUS s = GP211_VISA2_derive_keys(ctx, info, sec, g_selected_isd, g_selected_isd_len, se, se, sm, dk);
+        if (!status_ok(s)) {
+            fprintf(stderr, "VISA2 key derivation failed\n");
+            return -1;
+        }
+    }
+
+    OPGP_ERROR_STATUS s = GP211_put_secure_channel_keys_with_key_type(ctx, info, sec, setVer, newSetVer, NULL, se, sm, dk, (DWORD)el, keyType);
     if (!status_ok(s)) {
         return -1;
     }
@@ -1334,14 +1422,16 @@ static int cmd_status(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY
         statusType = GP211_STATUS_TYPE_SECURITY_DOMAIN_AND_APPLICATIONS;
 
         if (!lc_state) {
-            fprintf(stderr, "status sd-app: --lc <state> required (locked)\n");
+            fprintf(stderr, "status sd-app: --lc <state> required (locked|unlocked)\n");
             return -1;
         }
 
         if (strcmp(lc_state, "locked") == 0) {
             lifeCycleState = GP211_LIFE_CYCLE_SECURITY_DOMAIN_LOCKED;
+        } else if (strcmp(lc_state, "unlocked") == 0) {
+            lifeCycleState = 0;
         } else {
-            fprintf(stderr, "status sd-app: only lifecycle state 'locked' is supported\n");
+            fprintf(stderr, "status app: invalid lifecycle state '%s' (use: locked|unlocked)\n", lc_state);
             return -1;
         }
     } else {
@@ -1383,11 +1473,12 @@ static int cmd_list_readers(void) {
 
 int main(int argc, char **argv) {
     const char *prog = argv[0];
-    const char *reader=NULL, *protocol="auto", *isd_hex=NULL, *sec_level_opt="mac+enc";
+    const char *reader=NULL, *protocol="auto", *sd_hex=NULL, *sec_level_opt="mac+enc";
     const char *key_hex=NULL, *enc_hex=NULL, *mac_hex=NULL, *dek_hex=NULL;
     int verbose=0, trace=0; BYTE keyset_ver=0, key_index=0; int derivation=0;
     BYTE baseKey[32]={0}, enc_key[32]={0}, mac_key[32]={0}, dek_key[32]={0};
     BYTE keyLength=0;
+    const char *scp_protocol=NULL, *scp_impl=NULL;
     int i=1; for (; i<argc; ++i) {
         if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) { print_usage(prog); return 0; }
 
@@ -1395,11 +1486,13 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "-t") || !strcmp(argv[i], "--trace")) { trace=1; }
         else if (!strcmp(argv[i], "-r") || !strcmp(argv[i], "--reader")) { if(i+1<argc) reader=argv[++i]; }
         else if (!strcmp(argv[i], "--protocol") && i+1<argc) { protocol=argv[++i]; }
+        else if (!strcmp(argv[i], "--scp") && i+1<argc) { scp_protocol=argv[++i]; }
+        else if (!strcmp(argv[i], "--scp-impl") && i+1<argc) { scp_impl=argv[++i]; }
         else if (!strcmp(argv[i], "--kv") && i+1<argc) { keyset_ver=(BYTE)atoi(argv[++i]); }
         else if (!strcmp(argv[i], "--idx") && i+1<argc) { key_index=(BYTE)atoi(argv[++i]); }
         else if (!strcmp(argv[i], "--derive") && i+1<argc) { const char *d=argv[++i]; if (!strcmp(d,"visa2")) derivation=1; else if (!strcmp(d,"emv")) derivation=2; else derivation=0; }
         else if (!strcmp(argv[i], "--sec") && i+1<argc) { sec_level_opt=argv[++i]; }
-        else if (!strcmp(argv[i], "--isd") && i+1<argc) { isd_hex=argv[++i]; }
+        else if (!strcmp(argv[i], "--sd") && i+1<argc) { sd_hex=argv[++i]; }
         else if (!strcmp(argv[i], "--key") && i+1<argc) { key_hex=argv[++i]; }
         else if (!strcmp(argv[i], "--enc") && i+1<argc) { enc_hex=argv[++i]; }
         else if (!strcmp(argv[i], "--mac") && i+1<argc) { mac_hex=argv[++i]; }
@@ -1479,12 +1572,13 @@ int main(int argc, char **argv) {
 
     GP211_SECURITY_INFO *sec_ptr = &sec;
     if (need_auth) {
-        if (select_isd(ctx, info, isd_hex) != 0) {
+        if (select_isd(ctx, info, sd_hex) != 0) {
             fprintf(stderr, "Failed to select ISD\n");
             cleanup_and_exit(4);
         }
         if (mutual_auth(ctx, info, &sec, keyset_ver, key_index, derivation, sec_level_opt, verbose,
-                        baseKeyPtr, encKeyPtr, macKeyPtr, dekKeyPtr, keyLength) != 0) {
+                        baseKeyPtr, encKeyPtr, macKeyPtr, dekKeyPtr, keyLength,
+                        scp_protocol, scp_impl) != 0) {
             fprintf(stderr, "Mutual authentication failed\n");
             cleanup_and_exit(5);
         }

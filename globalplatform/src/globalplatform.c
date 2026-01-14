@@ -1073,7 +1073,7 @@ OPGP_ERROR_STATUS GP211_put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, O
  * \param newS_MAC [in] The new S-MAC key.
  * \param newDEK [in] The new DEK.
  * \param keyLength [in] The key length. 16, 24 or 32 bytes.
- * \param keyType [in] The key type or 0 for implicit selection based on the SCP.
+ * \param keyType [in] The key type or 0 for implicit selection based on the SCP. See GP211_KEY_TYPE_AES.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_put_secure_channel_keys_with_key_type(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
