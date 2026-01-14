@@ -5210,8 +5210,8 @@ end:
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
  * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param encryptionFlags [in] Flag defining the encryption settings. See NO_INFORMATION.
- * \param formatFlags [in] Flag defining the format settings. See STORE_DATA_DGI.
+ * \param encryptionFlags [in] Flag defining the encryption settings. See STORE_DATA_ENCRYPTION_NO_INFORMATION.
+ * \param formatFlags [in] Flag defining the format settings. See STORE_DATA_FORMAT_DGI.
  * \param responseDataExpected [in] TRUE if response data is expected. In this case a case 4 APDU is used. FALSE to use a case 3 APDU.
  * \param *data [in] Data to send to application or Security Domain.
  * \param dataLength [in] The length of the data buffer.

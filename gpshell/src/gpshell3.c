@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdbool.h>
 #include <sys/stat.h>
 
 #include <globalplatform/globalplatform.h>
@@ -130,6 +131,19 @@ static void print_usage(const char *prog) {
         "      Generate a DAP signature from a precomputed hash.\n"
         "      Output is signature only (for use with 'install --dap <hex>' or '--dap @file').\n"
         "      --output: write signature to a binary file.\n\n"
+        "  store [--encryption <noinfo|app|enc>] [--format <noinfo|dgi|ber>] \\\n"
+        "        [--response <true|false>] <AIDhex> <datahex>\n"
+        "      Personalize an application by combining INSTALL [for personalization] and STORE DATA.\n"
+        "      --encryption: data encryption mode (default: noinfo)\n"
+        "        noinfo: no encryption information\n"
+        "        app:    application-dependent encryption\n"
+        "        enc:    encrypted with data encryption key\n"
+        "      --format: data structure format (default: noinfo)\n"
+        "        noinfo: no structure information\n"
+        "        dgi:    DGI format\n"
+        "        ber:    BER-TLV format\n"
+        "      --response: expect response data (default: false)\n"
+        "      Data supports flexible hex format (spaces/tabs ignored).\n\n"
         "Privileges (used by install --priv and shown by list-apps as priv=[...]):\n"
         "  sd,dap-verif,delegated-mgmt,cm-lock,cm-terminate,default-selected,pin-change,mandated-dap",
         stderr);
@@ -1476,6 +1490,122 @@ static int cmd_status(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY
     return 0;
 }
 
+static int cmd_store(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
+    if (argc < 2) {
+        fprintf(stderr, "store: requires <aid> <data> arguments\n");
+        return -1;
+    }
+
+    // Parse options
+    BYTE encryptionFlags = STORE_DATA_ENCRYPTION_NO_INFORMATION;
+    BYTE formatFlags = STORE_DATA_FORMAT_NO_INFORMATION;
+    BOOL responseDataExpected = false;
+
+    int i = 0;
+    while (i < argc - 2) {  // Leave at least 2 args for aid and data
+        const char *arg = argv[i];
+        if (strcmp(arg, "--encryption") == 0 || strcmp(arg, "-e") == 0) {
+            if (i + 1 >= argc - 2) {
+                fprintf(stderr, "store: --encryption requires argument\n");
+                return -1;
+            }
+            i++;
+            const char *val = argv[i];
+            if (strcmp(val, "noinfo") == 0) {
+                encryptionFlags = STORE_DATA_ENCRYPTION_NO_INFORMATION;
+            } else if (strcmp(val, "app") == 0) {
+                encryptionFlags = STORE_DATA_ENCRYPTION_APPLICATION_DEPENDENT;
+            } else if (strcmp(val, "enc") == 0) {
+                encryptionFlags = STORE_DATA_ENCRYPTION_ENCRYPTED;
+            } else {
+                fprintf(stderr, "store: unknown encryption value '%s' (use: noinfo, app, enc)\n", val);
+                return -1;
+            }
+        } else if (strcmp(arg, "--format") == 0 || strcmp(arg, "-f") == 0) {
+            if (i + 1 >= argc - 2) {
+                fprintf(stderr, "store: --format requires argument\n");
+                return -1;
+            }
+            i++;
+            const char *val = argv[i];
+            if (strcmp(val, "noinfo") == 0) {
+                formatFlags = STORE_DATA_FORMAT_NO_INFORMATION;
+            } else if (strcmp(val, "dgi") == 0) {
+                formatFlags = STORE_DATA_FORMAT_DGI;
+            } else if (strcmp(val, "ber") == 0) {
+                formatFlags = STORE_DATA_FORMAT_BER_TLV;
+            } else {
+                fprintf(stderr, "store: unknown format value '%s' (use: noinfo, dgi, ber)\n", val);
+                return -1;
+            }
+        } else if (strcmp(arg, "--response") == 0 || strcmp(arg, "-r") == 0) {
+            if (i + 1 >= argc - 2) {
+                fprintf(stderr, "store: --response requires argument\n");
+                return -1;
+            }
+            i++;
+            const char *val = argv[i];
+            if (strcmp(val, "true") == 0 || strcmp(val, "1") == 0) {
+                responseDataExpected = true;
+            } else if (strcmp(val, "false") == 0 || strcmp(val, "0") == 0) {
+                responseDataExpected = false;
+            } else {
+                fprintf(stderr, "store: --response expects true/false or 1/0\n");
+                return -1;
+            }
+        } else {
+            break;  // Not an option, must be aid
+        }
+        i++;
+    }
+
+    if (argc - i < 2) {
+        fprintf(stderr, "store: requires <aid> <data> positional arguments\n");
+        return -1;
+    }
+
+    const char *aid_hex = argv[i];
+    const char *data_str = argv[i + 1];
+
+    // Parse AID
+    unsigned char aid[16];
+    size_t aidlen = sizeof(aid);
+    if (hex_to_bytes(aid_hex, aid, &aidlen) != 0) {
+        fprintf(stderr, "store: invalid AID hex string\n");
+        return -1;
+    }
+
+    // Parse data using compact_hex to support flexible format
+    char compacted[8192];
+    if (compact_hex(data_str, compacted, sizeof(compacted)) != 0) {
+        fprintf(stderr, "store: invalid data hex string\n");
+        return -1;
+    }
+
+    unsigned char data[4096];
+    size_t datalen = sizeof(data);
+    if (hex_to_bytes(compacted, data, &datalen) != 0) {
+        fprintf(stderr, "store: failed to parse data hex\n");
+        return -1;
+    }
+
+    // Step 1: Install for personalization
+    if (!status_ok(GP211_install_for_personalization(ctx, info, sec, aid, (DWORD)aidlen))) {
+        fprintf(stderr, "store: GP211_install_for_personalization failed\n");
+        return -1;
+    }
+
+    // Step 2: Store data
+    if (!status_ok(GP211_store_data(ctx, info, sec, encryptionFlags, formatFlags,
+                                     responseDataExpected, data, (DWORD)datalen))) {
+        fprintf(stderr, "store: GP211_store_data failed\n");
+        return -1;
+    }
+
+    printf("Store data successful\n");
+    return 0;
+}
+
 static int cmd_list_readers(void) {
     // Establish a temporary PC/SC context and enumerate all readers (like gpshell.c:list_readers)
     OPGP_CARD_CONTEXT ctx; memset(&ctx, 0, sizeof(ctx));
@@ -1625,6 +1755,7 @@ int main(int argc, char **argv) {
     else if (!strcmp(cmd, "del-key")) rc = cmd_del_key(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "apdu")) rc = cmd_apdu(ctx, info, sec_ptr, argc - i, &argv[i]);
     else if (!strcmp(cmd, "status")) rc = cmd_status(ctx, info, &sec, argc - i, &argv[i]);
+    else if (!strcmp(cmd, "store")) rc = cmd_store(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "sign-dap")) {
         if (i>=argc) { fprintf(stderr, "sign-dap: missing type aes|rsa\n"); rc=-1; }
         else if (!strcmp(argv[i], "rsa")) rc = cmd_dap(1, ctx, info, &sec, argc - (i+1), &argv[i+1]);
