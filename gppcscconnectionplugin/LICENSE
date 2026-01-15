@@ -15,21 +15,3 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with GlobalPlatform.  If not, see <https://www.gnu.org/licenses/>.
  */
-
-#include "stdafx.h"
-
-BOOL APIENTRY DllMain( HANDLE hModule,
-                       DWORD  ul_reason_for_call,
-                       LPVOID lpReserved
-					 )
-{
-    switch (ul_reason_for_call)
-	{
-		case DLL_PROCESS_ATTACH:
-		case DLL_THREAD_ATTACH:
-		case DLL_THREAD_DETACH:
-		case DLL_PROCESS_DETACH:
-			break;
-    }
-    return TRUE;
-}
