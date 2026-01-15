@@ -998,7 +998,6 @@ OPGP_ERROR_STATUS put_delegated_management_keys(OPGP_CARD_CONTEXT cardContext, O
                                                 BYTE tokenKeyType, BYTE receiptKey[32], DWORD keyLength, BYTE receiptKeyType) {
 	OPGP_ERROR_STATUS status;
 	BYTE sendBuffer[APDU_COMMAND_LEN];
-	DWORD sendBufferLength = 0;
 	DWORD recvBufferLength=APDU_RESPONSE_LEN;
 	BYTE recvBuffer[APDU_RESPONSE_LEN];
 	BYTE keyCheckValue[8];
@@ -1075,7 +1074,6 @@ OPGP_ERROR_STATUS put_delegated_management_keys(OPGP_CARD_CONTEXT cardContext, O
 	sendBuffer[4] = (BYTE)i - 5;
 
 	sendBuffer[i++] = 0x00; // Le
-	sendBufferLength = i;
 
 	status = send_data_in_chunks(cardContext, cardInfo, secInfo, sendBuffer, i,
 							  keyDataField, keyDataFieldOffet, recvBuffer, &recvBufferLength);

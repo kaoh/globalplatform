@@ -172,7 +172,7 @@ extern "C"
 #define GP211_KEY_TYPE_DES_CBC 0x84 //!<'84' DES in CBC mode.
 #define GP211_KEY_TYPE_PSK_TLS 0x85 //!<'85' Pre-Shared Key for Transport Layer Security
 #define GP211_KEY_TYPE_AES 0x88 //!<'88' AES (16, 24, or 32 long keys)
-#define GP211_KEY_TYPE_SM4 0x89 //!<'89' SM6 (16 bytes)
+#define GP211_KEY_TYPE_SM4 0x89 //!<'89' SM4 (16 bytes)
 
 #define OP201_SECURITY_LEVEL_ENC_MAC 0x03 //!< Command messages are signed and encrypted.
 #define OP201_SECURITY_LEVEL_MAC 0x01 //!< Command messages are signed.
