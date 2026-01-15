@@ -1970,7 +1970,7 @@ static int handleCommands(FILE *fd)
                             goto end;
                         }
                     }
-                    status = GP211_put_secure_channel_keys_with_key_type(cardContext, cardInfo,
+                    status = GP211_put_secure_channel_keys(cardContext, cardInfo,
                                                        &securityInfo211,
                                                        optionStr.keySetVersion,
                                                        optionStr.newKeySetVersion,
@@ -2015,8 +2015,10 @@ static int handleCommands(FILE *fd)
                             optionStr.newKeySetVersion,
                             optionStr.file,
                             optionStr.passPhrase,
+                            optionStr.keyType,
                             optionStr.key,
-                            optionStr.keyLength);
+                            optionStr.keyLength,
+                            optionStr.keyType);
                 }
 
                 if (OPGP_ERROR_CHECK(status))

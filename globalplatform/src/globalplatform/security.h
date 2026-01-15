@@ -153,6 +153,7 @@ extern "C"
 #define GP211_SCP03_SECURITY_LEVEL_R_MAC 0x10 //!< Secure Channel Protocol '03': R-MAC. Used only with BEGIN R-MAC.
 #define GP211_SCP03_SECURITY_LEVEL_R_ENC_R_MAC 0x30 //!< Secure Channel Protocol '03': R-Encryption and R-MAC. Used only with BEGIN R-MAC.
 
+#define GP211_KEY_TYPE_RSA 0xF0 //!< 'F0' Internal key type for a RSA.
 #define GP211_KEY_TYPE_RSA_PUB_N 0xA1 //!< 'A1' RSA Public Key - modulus N component (clear text).
 #define GP211_KEY_TYPE_RSA_PUB_E 0xA0 //!< 'A0' RSA Public Key - public exponent e component (clear text)
 #define GP211_KEY_TYPE_RSA_PRIV_N 0xA2 //!< ''A2' RSA Private Key - modulus N component
@@ -171,11 +172,13 @@ extern "C"
 #define GP211_KEY_TYPE_DES_CBC 0x84 //!<'84' DES in CBC mode.
 #define GP211_KEY_TYPE_PSK_TLS 0x85 //!<'85' Pre-Shared Key for Transport Layer Security
 #define GP211_KEY_TYPE_AES 0x88 //!<'88' AES (16, 24, or 32 long keys)
+#define GP211_KEY_TYPE_SM4 0x89 //!<'89' SM6 (16 bytes)
 
 #define OP201_SECURITY_LEVEL_ENC_MAC 0x03 //!< Command messages are signed and encrypted.
 #define OP201_SECURITY_LEVEL_MAC 0x01 //!< Command messages are signed.
 #define OP201_SECURITY_LEVEL_PLAIN 0x00 //!< Command messages are plain text.
 
+#define OP201_KEY_TYPE_RSA 0xF0 //!< 'F0' Internal key type for a RSA.
 #define OP201_KEY_TYPE_RSA_PUP_N 0xA1 //!< 'A1' RSA Public Key - modulus N component (clear text).
 #define OP201_KEY_TYPE_RSA_PUP_E 0xA0 //!< 'A0' RSA Public Key - public exponent e component (clear text)
 #define OP201_KEY_TYPE_DES 0x80 //!< DES (ECB/CBC) key.

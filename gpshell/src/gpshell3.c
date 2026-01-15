@@ -1131,7 +1131,7 @@ static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURI
             }
         }
 
-        OPGP_ERROR_STATUS s = GP211_put_secure_channel_keys_with_key_type(ctx, info, sec, setVer, newSetVer, b, NULL, NULL, NULL, (DWORD)blen, keyType);
+        OPGP_ERROR_STATUS s = GP211_put_secure_channel_keys(ctx, info, sec, setVer, newSetVer, b, NULL, NULL, NULL, (DWORD)blen, keyType);
         if (!status_ok(s)) {
             return -1;
         }
@@ -1166,7 +1166,7 @@ static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURI
         }
     }
 
-    OPGP_ERROR_STATUS s = GP211_put_secure_channel_keys_with_key_type(ctx, info, sec, setVer, newSetVer, NULL, se, sm, dk, (DWORD)el, keyType);
+    OPGP_ERROR_STATUS s = GP211_put_secure_channel_keys(ctx, info, sec, setVer, newSetVer, NULL, se, sm, dk, (DWORD)el, keyType);
     if (!status_ok(s)) {
         return -1;
     }

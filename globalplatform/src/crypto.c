@@ -1461,8 +1461,12 @@ OPGP_ERROR_STATUS calculate_key_check_value(GP211_SECURITY_INFO *secInfo,
 	BYTE keyCheckTest[16];
 	OPGP_LOG_START(_T("calculate_key_check_value"));
 	memset(keyCheckTest, 0, 16);
-	if (secInfo->secureChannelProtocol == GP211_SCP03 || keyType == GP211_KEY_TYPE_AES) {
+	if (keyType == GP211_KEY_TYPE_AES) {
 		memset(keyCheckTest, 0x01, sizeof(keyCheckTest));
+		status = calculate_enc_ecb_SCP03(keyData, keyDataLength, keyCheckTest, 16, dummy, &dummyLength);
+	}
+	else if (keyType == GP211_KEY_TYPE_SM4) {
+		memset(keyCheckTest, 0x02, sizeof(keyCheckTest));
 		status = calculate_enc_ecb_SCP03(keyData, keyDataLength, keyCheckTest, 16, dummy, &dummyLength);
 	}
 	else {
@@ -1479,67 +1483,96 @@ end:
 }
 
 OPGP_ERROR_STATUS get_key_data_field(GP211_SECURITY_INFO *secInfo,
-							 PBYTE keyData,
-							 DWORD keyDataLength,
-							 BYTE keyType,
-							 BYTE isSensitive,
-							 PBYTE keyDataField,
-							 PDWORD keyDataFieldLength,
-							 BYTE keyCheckValue[3]) {
+                                     PBYTE keyData,
+                                     DWORD keyDataLength,
+                                     BYTE keyType,
+                                     PBYTE keyDataField,
+                                     PDWORD keyDataFieldLength,
+                                     BYTE keyCheckValue[3], BOOL includeKeyCheckValue) {
 	OPGP_ERROR_STATUS status;
-	DWORD sizeNeeded=0, i=0;
+	DWORD i=0;
 	BYTE encrypted_key[32];
 	DWORD encrypted_key_length;
-	BYTE keyCheckTest[16];
+	LONG result;
+	BOOL isSensitive;
 	OPGP_LOG_START(_T("get_key_data_field"));
-	memset(keyCheckTest, 0, 16);
-	// key type + length + key data + length + key check value
-	sizeNeeded = 1 + 1 + keyDataLength + 1;
-	if (secInfo->secureChannelProtocol == GP211_SCP03 || keyType == GP211_KEY_TYPE_AES) {
-		// the length of the key component is always included
-		sizeNeeded++;
-	}
-	if (isSensitive) {
-		// 3 byte key check value
-		sizeNeeded+=3;
-	}
-	if (sizeNeeded > *keyDataFieldLength) {
+	isSensitive = (keyType == GP211_KEY_TYPE_AES || keyType == GP211_KEY_TYPE_3DES || keyType == GP211_KEY_TYPE_DES
+		|| keyType == GP211_KEY_TYPE_SM4 || keyType == GP211_KEY_TYPE_3DES_CBC || keyType == GP211_KEY_TYPE_DES_CBC
+		|| keyType == GP211_KEY_TYPE_DES_ECB);
+	// set key type
+	if (i+1 < *keyDataFieldLength) {
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
 		goto end;
 	}
-	// set key type
 	keyDataField[i++] = keyType;
 	if (isSensitive) {
 		status = encrypt_sensitive_data(secInfo, keyData, keyDataLength, encrypted_key, &encrypted_key_length);
 		if (OPGP_ERROR_CHECK(status)) {
 			goto end;
 		}
-		if (encrypted_key_length != keyDataLength || secInfo->secureChannelProtocol == GP211_SCP03 || keyType == GP211_KEY_TYPE_AES) {
+		if (encrypted_key_length != keyDataLength) {
 			// + 1 byte key component length field
-			keyDataField[i++] = encrypted_key_length + 1;
-			keyDataField[i++] = keyDataLength;
+			result = write_TLV_length(keyDataField, i, *keyDataFieldLength - i, (USHORT)(encrypted_key_length+1));
+			if (!result) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+				goto end;
+			}
+			i+=result;
+			result = write_TLV_length(keyDataField, i, *keyDataFieldLength - i, (USHORT)keyDataLength);
+			if (!result) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+				goto end;
+			}
+			i+=result;
 		}
 		else {
 			// not padded and no length must be specified
-			keyDataField[i++] = encrypted_key_length;
+			result = write_TLV_length(keyDataField, i, *keyDataFieldLength - i, (USHORT)encrypted_key_length);
+			if (!result) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+				goto end;
+			}
+			i+=result;
 		}
 		memcpy(keyDataField+i, encrypted_key, encrypted_key_length);
 		i+= encrypted_key_length;
 	}
 	else {
-		keyDataField[i++] = (BYTE)keyDataLength;
+		result = write_TLV_length(keyDataField, i, *keyDataFieldLength - i, (USHORT)keyDataLength);
+		if (!result) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+			goto end;
+		}
+		i+=result;
+		if (i+keyDataLength < *keyDataFieldLength) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+			goto end;
+		}
 		// not sensitive - copy directly, no key component length is needed
 		memcpy(keyDataField+i, keyData, keyDataLength);
 		i+=keyDataLength;
 	}
-	// we always use key check values
-	keyDataField[i++] = 0x03; // length of key check value
-	status = calculate_key_check_value(secInfo, keyType, keyData, keyDataLength, keyCheckValue);
-	if (OPGP_ERROR_CHECK(status)) {
-		goto end;
+	if (includeKeyCheckValue) {
+		if (isSensitive) {
+			if (i+1+3 < *keyDataFieldLength) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+				goto end;
+			}
+			keyDataField[i++] = 0x03; // length of key check value
+			status = calculate_key_check_value(secInfo, keyType, keyData, keyDataLength, keyCheckValue);
+			if (OPGP_ERROR_CHECK(status)) {
+				goto end;
+			}
+			memcpy(keyDataField+i, keyCheckValue, 3);
+			i+=3;
+		} else {
+			if (i+1 < *keyDataFieldLength) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+				goto end;
+			}
+			keyDataField[i++] = 0;
+		}
 	}
-	memcpy(keyDataField+i, keyCheckValue, 3);
-	i+=3;
 	*keyDataFieldLength = i;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
@@ -2132,9 +2165,10 @@ end:
  * \param PEMKeyFileName [in] The key file.
  * \param *passPhrase [in] The passphrase. Must be an ASCII string.
  * \param rsaModulus [out] The RSA modulus.
+ * \param rsaModulusLength [inout]  The RSA modules length passed in and returned.
  * \param rsaExponent [out] The RSA exponent.
  */
-OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhrase, BYTE rsaModulus[128], LONG *rsaExponent) {
+OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhrase, BYTE rsaModulus[512], PDWORD rsaModulusLength, LONG *rsaExponent) {
 	OPGP_ERROR_STATUS status;
 	EVP_PKEY *key = NULL;
 	FILE *PEMKeyFile = NULL;
@@ -2211,9 +2245,10 @@ OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhra
       *rsaExponent = get_number(rsaTmp, 0, eLength);
     }
     nLength = BN_num_bytes(n);
-    if (nLength != 128) {
+    if (nLength > *rsaModulusLength) {
         { OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
     }
+	*rsaModulusLength = nLength;
     BN_bn2bin(n, rsaModulus);
 #ifndef OPENSSL3
 #if OPENSSL_VERSION_NUMBER < 0x10100000L

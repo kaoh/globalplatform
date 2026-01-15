@@ -74,13 +74,12 @@ OPGP_ERROR_STATUS encrypt_sensitive_data(GP211_SECURITY_INFO *secInfo,
 
 OPGP_NO_API
 OPGP_ERROR_STATUS get_key_data_field(GP211_SECURITY_INFO *secInfo,
-								 PBYTE keyData,
-								 DWORD keyDataLength,
-								 BYTE keyType,
-								 BYTE isSensitive,
-								 PBYTE keyDataField,
-								 PDWORD keyDataFieldLength,
-								 BYTE keyCheckValue[3]);
+                                     PBYTE keyData,
+                                     DWORD keyDataLength,
+                                     BYTE keyType,
+                                     PBYTE keyDataField,
+                                     PDWORD keyDataFieldLength,
+                                     BYTE keyCheckValue[3], BOOL includeKeyCheckValue);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS create_session_key_SCP01(BYTE key[16], BYTE cardChallenge[8],
@@ -201,7 +200,7 @@ OPGP_ERROR_STATUS validate_load_receipt(DWORD confirmationCounter, PBYTE cardUni
 
 //! \brief Reads a public RSA key from a file
 OPGP_NO_API
-OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhrase, BYTE rsaModulus[128], LONG *rsaExponent);
+OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhrase, BYTE rsaModulus[128], PDWORD rsaModulusLength, LONG *rsaExponent);
 
 //! \brief Calculates a SHA-256 hash.
 OPGP_NO_API

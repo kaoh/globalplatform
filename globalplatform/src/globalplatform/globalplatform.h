@@ -519,12 +519,6 @@ OPGP_ERROR_STATUS GP211_put_rsa_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 OPGP_API
 OPGP_ERROR_STATUS GP211_put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 							 BYTE keySetVersion, BYTE newKeySetVersion, BYTE baseKey[32],
-							 BYTE newS_ENC[32], BYTE newS_MAC[32], BYTE newDEK[32], DWORD keyLength);
-
-//! \brief GlobalPlatform2.1.1: replaces or adds a secure channel key set consisting of S-ENC, S-MAC and DEK.
-OPGP_API
-OPGP_ERROR_STATUS GP211_put_secure_channel_keys_with_key_type(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-							 BYTE keySetVersion, BYTE newKeySetVersion, BYTE baseKey[32],
 							 BYTE newS_ENC[32], BYTE newS_MAC[32], BYTE newDEK[32], DWORD keyLength, BYTE keyType);
 
 //! \brief GlobalPlatform2.1.1: deletes a key or multiple keys.
@@ -714,7 +708,7 @@ OPGP_ERROR_STATUS GP211_put_delegated_management_keys(OPGP_CARD_CONTEXT cardCont
 								   BYTE keySetVersion,
 								   BYTE newKeySetVersion,
 								   OPGP_STRING PEMKeyFileName, char *passPhrase,
-								   BYTE receiptKey[32], DWORD keyLength);
+								   BYTE tokenKeyType, BYTE receiptKey[32], DWORD keyLength, BYTE receiptKeyType);
 
 //! \brief Sends an application protocol data unit.
 OPGP_API
@@ -785,10 +779,6 @@ OPGP_ERROR_STATUS OPGP_select_channel(OPGP_CARD_INFO *cardInfo, BYTE channelNumb
 
 //! \brief Calculates the key check value of a key.
 OPGP_ERROR_STATUS OPGP_calculate_key_check_value(GP211_SECURITY_INFO *secInfo,
-	PBYTE keyData, DWORD keyDataLength, BYTE keyCheckValue[3]);
-
-//! \brief Calculates the key check value of a key.
-OPGP_ERROR_STATUS OPGP_calculate_key_check_value_with_key_type(GP211_SECURITY_INFO *secInfo,
 	BYTE keyType, PBYTE keyData, DWORD keyDataLength, BYTE keyCheckValue[3]);
 
 //! \brief Encrypts sensitive data like keys or other data which is used in STORE DATA.
