@@ -22,7 +22,7 @@ Within a script environment variables can be accessed with the syntax `${ENV_VAR
 Reading the commands from stdin allows one to feed in the commands dynamically and use conditionals when using the [Expect](https://en.wikipedia.org/wiki/Expect) pattern. Tools
 are available for a variety of script languages, shells and programming languages. Example are to support environment variables and handle results and output conditionally.
 
-There are several `txt` example scripts provided which gets installed into `usr/local/share/docs` or `/home/linuxbrew/.linuxbrew/opt/globalplatform/share/doc/gpshell1/` or can be found [online](https://github.com/kaoh/globalplatform/tree/master/gpshell).
+There are several `txt` example scripts provided which gets installed into `usr/local/share/docs` or `/home/linuxbrew/.linuxbrew/opt/globalplatform/share/doc/gpshell1/` or can be found [online](https://github.com/kaoh/globalplatform/tree/master/gpshell/examples).
 
 # COMMANDS
 
@@ -511,6 +511,8 @@ Known unsupported key derivation schemes are:
 * JCOP3 P40 EMV
 * JCOP3 P40 SecID
 * JCOP2.4.x
+* JCOP 4.5
+* JCOP J3R180
 
 # Misc
 

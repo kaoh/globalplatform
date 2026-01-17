@@ -98,13 +98,16 @@ static void print_usage(const char *prog) {
         stderr);
 
     fputs(
-        "  install [--load-only] [--dap <hex>|@<file>] [--load-token <hex>] [--install-token <hex>] \\\n"
-        "          [--hash <hex>] [--applet <AIDhex>] [--module <AIDhex>] [--params <hex>] \\\n"
+        "  install [--load-only|--install-only] [--dap <hex>|@<file>] [--load-token <hex>] [--install-token <hex>] \\\n"
+        "          [--hash <hex>] [--load-file <AIDhex>] [--applet <AIDhex>] [--module <AIDhex>] [--params <hex>] \\\n"
         "          [--v-data-limit <size>] [--nv-data-limit <size>] [--priv <p1,p2,...>] <cap-file>\n"
         "      Load a CAP file, and optionally install/make selectable applet instance(s).\n"
         "      --load-only: only perform INSTALL [for load] + LOAD, skip install/make-selectable.\n"
+        "      --install-only: only perform INSTALL [for install and make selectable], skip load phase.\n"
+        "                      Requires --load-file, --module, and --applet.\n"
         "      --dap: DAP signature as hex or @file for binary signature (SD AID taken from --sd).\n"
         "      --hash: precomputed load-file data block hash (hex).\n"
+        "      --load-file: AID of the load file (required for --install-only).\n"
         "      --applet/--module: select which applet/module AID to install; if omitted installs all applets in the CAP.\n"
         "      --params: installation parameters (hex).\n"
         "      --priv: comma-separated privilege short names (see 'Privileges' below).\n\n"
@@ -828,16 +831,20 @@ static int cmd_list_keys(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECUR
 static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec,
                        int argc, char **argv) {
     int load_only = 0;
+    int install_only = 0;
     DWORD v_data_limit = 0, nv_data_limit = 0;
     const char *dap_hex = NULL; const char *applet_aid_hex=NULL; const char *module_aid_hex=NULL; const char *priv_list=NULL; const char *params_hex=NULL;
     const char *load_token_hex = NULL; const char *install_token_hex = NULL; const char *load_file_hash_hex = NULL;
+    const char *load_file_aid_hex = NULL;
     int ai = 0;
     for (; ai < argc; ++ai) {
         if (strcmp(argv[ai], "--load-only") == 0) load_only = 1;
+        else if (strcmp(argv[ai], "--install-only") == 0) install_only = 1;
         else if (strcmp(argv[ai], "--dap") == 0 && ai+1 < argc) { dap_hex = argv[++ai]; }
         else if (strcmp(argv[ai], "--load-token") == 0 && ai+1 < argc) { load_token_hex = argv[++ai]; }
         else if (strcmp(argv[ai], "--install-token") == 0 && ai+1 < argc) { install_token_hex = argv[++ai]; }
         else if (strcmp(argv[ai], "--hash") == 0 && ai+1 < argc) { load_file_hash_hex = argv[++ai]; }
+        else if (strcmp(argv[ai], "--load-file") == 0 && ai+1 < argc) { load_file_aid_hex = argv[++ai]; }
         else if (strcmp(argv[ai], "--applet") == 0 && ai+1 < argc) { applet_aid_hex = argv[++ai]; }
         else if (strcmp(argv[ai], "--module") == 0 && ai+1 < argc) { module_aid_hex = argv[++ai]; }
         else if (strcmp(argv[ai], "--priv") == 0 && ai+1 < argc) { priv_list = argv[++ai]; }
@@ -848,6 +855,28 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     }
     if (ai >= argc) { fprintf(stderr, "install: missing <cap-file>\n"); return -1; }
     const char *capfile = argv[ai++];
+
+    // Validate mutually exclusive flags
+    if (load_only && install_only) {
+        fprintf(stderr, "install: --load-only and --install-only are mutually exclusive\n");
+        return -1;
+    }
+
+    // Validate --install-only requirements
+    if (install_only) {
+        if (!load_file_aid_hex) {
+            fprintf(stderr, "install: --install-only requires --load-file <AIDhex>\n");
+            return -1;
+        }
+        if (!module_aid_hex) {
+            fprintf(stderr, "install: --install-only requires --module <AIDhex>\n");
+            return -1;
+        }
+        if (!applet_aid_hex) {
+            fprintf(stderr, "install: --install-only requires --applet <AIDhex>\n");
+            return -1;
+        }
+    }
 
     GP211_DAP_BLOCK dapBlocks[1]; DWORD dapCount = 0;
     // Use the ISD AID that was selected during connection/authentication, without probing via GET DATA.
@@ -885,51 +914,63 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         dapCount = 1;
     }
 
-    // Read CAP load file parameters to obtain the package AID
+    // Read CAP load file parameters to obtain the package AID (unless --install-only)
     OPGP_LOAD_FILE_PARAMETERS lfp; memset(&lfp,0,sizeof(lfp));
-    if (!status_ok(OPGP_read_executable_load_file_parameters((char*)capfile, &lfp))) {
-        fprintf(stderr, "Failed to read CAP load file parameters\n");
-        return -1;
-    }
+    unsigned char load_file_aid[16]; size_t load_file_aid_len = 0;
 
-    // Parse optional load file hash
-    BYTE loadFileHash[64]; memset(loadFileHash, 0, sizeof(loadFileHash));
-    BYTE *loadFileHashPtr = NULL;
-    if (load_file_hash_hex) {
-        size_t hash_len = sizeof(loadFileHash);
-        if (hex_to_bytes(load_file_hash_hex, loadFileHash, &hash_len) != 0) {
-            fprintf(stderr, "Invalid load file hash hex\n");
+    if (install_only) {
+        // Parse load file AID from command line for --install-only mode
+        load_file_aid_len = sizeof(load_file_aid);
+        if (hex_to_bytes(load_file_aid_hex, load_file_aid, &load_file_aid_len) != 0) {
+            fprintf(stderr, "Invalid --load-file AID\n");
             return -1;
         }
-        // Only first 20 bytes are used by GP211_install_for_load
-        loadFileHashPtr = loadFileHash;
-    }
-
-    // Parse optional load token
-    BYTE loadToken[128]; memset(loadToken, 0, sizeof(loadToken));
-    BYTE *loadTokenPtr = NULL;
-    if (load_token_hex) {
-        size_t token_len = sizeof(loadToken);
-        if (hex_to_bytes(load_token_hex, loadToken, &token_len) != 0 || token_len != 128) {
-            fprintf(stderr, "Invalid load token hex (must be 128 bytes)\n");
+    } else {
+        // Read CAP file parameters for normal or --load-only mode
+        if (!status_ok(OPGP_read_executable_load_file_parameters((char*)capfile, &lfp))) {
+            fprintf(stderr, "Failed to read CAP load file parameters\n");
             return -1;
         }
-        loadTokenPtr = loadToken;
-    }
 
-    if (!status_ok(GP211_install_for_load(ctx, info, sec,
-            lfp.loadFileAID.AID, lfp.loadFileAID.AIDLength,
-            sdAid, sdAidLen,
-            loadFileHashPtr, loadTokenPtr,
-            lfp.loadFileSize, v_data_limit, nv_data_limit))) {
-        return -1;
-    }
+        // Parse optional load file hash
+        BYTE loadFileHash[64]; memset(loadFileHash, 0, sizeof(loadFileHash));
+        BYTE *loadFileHashPtr = NULL;
+        if (load_file_hash_hex) {
+            size_t hash_len = sizeof(loadFileHash);
+            if (hex_to_bytes(load_file_hash_hex, loadFileHash, &hash_len) != 0) {
+                fprintf(stderr, "Invalid load file hash hex\n");
+                return -1;
+            }
+            // Only first 20 bytes are used by GP211_install_for_load
+            loadFileHashPtr = loadFileHash;
+        }
 
-    GP211_RECEIPT_DATA receipt; DWORD receiptAvail=0; memset(&receipt, 0, sizeof(receipt));
-    if (!status_ok(GP211_load(ctx, info, sec, dapCount?dapBlocks:NULL, dapCount, (char*)capfile, &receipt, &receiptAvail, NULL))) {
-        return -1;
+        // Parse optional load token
+        BYTE loadToken[128]; memset(loadToken, 0, sizeof(loadToken));
+        BYTE *loadTokenPtr = NULL;
+        if (load_token_hex) {
+            size_t token_len = sizeof(loadToken);
+            if (hex_to_bytes(load_token_hex, loadToken, &token_len) != 0 || token_len != 128) {
+                fprintf(stderr, "Invalid load token hex (must be 128 bytes)\n");
+                return -1;
+            }
+            loadTokenPtr = loadToken;
+        }
+
+        if (!status_ok(GP211_install_for_load(ctx, info, sec,
+                lfp.loadFileAID.AID, lfp.loadFileAID.AIDLength,
+                sdAid, sdAidLen,
+                loadFileHashPtr, loadTokenPtr,
+                lfp.loadFileSize, v_data_limit, nv_data_limit))) {
+            return -1;
+        }
+
+        GP211_RECEIPT_DATA receipt; DWORD receiptAvail=0; memset(&receipt, 0, sizeof(receipt));
+        if (!status_ok(GP211_load(ctx, info, sec, dapCount?dapBlocks:NULL, dapCount, (char*)capfile, &receipt, &receiptAvail, NULL))) {
+            return -1;
+        }
+        if (load_only) { return 0; }
     }
-    if (load_only) { return 0; }
 
     unsigned char applet_aid[16]; size_t applet_len=0;
     if (applet_aid_hex) {
@@ -977,6 +1018,17 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         }
     }
 
+    // Determine which load file AID to use
+    PBYTE effectiveLoadFileAID;
+    DWORD effectiveLoadFileAIDLength;
+    if (install_only) {
+        effectiveLoadFileAID = load_file_aid;
+        effectiveLoadFileAIDLength = (DWORD)load_file_aid_len;
+    } else {
+        effectiveLoadFileAID = lfp.loadFileAID.AID;
+        effectiveLoadFileAIDLength = lfp.loadFileAID.AIDLength;
+    }
+
     if (applet_len || module_len) {
         if (applet_len == 0 && module_len > 0) {
             // Use module AID also as applet instance AID
@@ -989,7 +1041,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         }
 
         if (!status_ok(GP211_install_for_install_and_make_selectable(ctx, info, sec,
-                lfp.loadFileAID.AID, lfp.loadFileAID.AIDLength,
+                effectiveLoadFileAID, effectiveLoadFileAIDLength,
                 module_aid, (DWORD)module_len,
                 applet_aid, (DWORD)applet_len,
                 privileges, v_data_limit, nv_data_limit,
@@ -999,13 +1051,17 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         }
     } else {
         // Neither provided: iterate over all applets from CAP
+        if (install_only) {
+            fprintf(stderr, "INSTALL: --install-only requires explicit --applet and --module\n");
+            return -1;
+        }
         int i = 0; int did_any = 0;
         while (lfp.appletAIDs[i].AIDLength) {
             did_any = 1;
             PBYTE aid = (PBYTE)lfp.appletAIDs[i].AID;
             DWORD aidLen = lfp.appletAIDs[i].AIDLength;
             if (!status_ok(GP211_install_for_install_and_make_selectable(ctx, info, sec,
-                    lfp.loadFileAID.AID, lfp.loadFileAID.AIDLength,
+                    effectiveLoadFileAID, effectiveLoadFileAIDLength,
                     aid, aidLen,
                     aid, aidLen,
                     privileges, v_data_limit, nv_data_limit,
