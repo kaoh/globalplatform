@@ -80,10 +80,10 @@ static void print_usage(const char *prog) {
         "  --kv <n>                   Key set version for mutual auth (default: 0)\n"
         "  --idx <n>                  Key index within key set for mutual auth (default: 0)\n"
         "  --derive <none|visa2|emv>  Key derivation (default: none)\n"
-        "  --key <hex>                Base key for mutual auth (default: A0..AF)\n"
-        "  --enc <hex>                ENC key for mutual auth (default: A0..AF)\n"
-        "  --mac <hex>                MAC key for mutual auth (default: A0..AF)\n"
-        "  --dek <hex>                DEK key for mutual auth (default: A0..AF)\n"
+        "  --key <hex>                Base key for mutual auth (default: 40..4F)\n"
+        "  --enc <hex>                ENC key for mutual auth (default: 40..4F)\n"
+        "  --mac <hex>                MAC key for mutual auth (default: 40..4F)\n"
+        "  --dek <hex>                DEK key for mutual auth (default: 40..4F)\n"
         "  -v, --verbose              Verbose output\n"
         "  -t, --trace                Enable APDU trace\n"
         "  -h, --help                 Show this help\n\n"
@@ -129,8 +129,8 @@ static void print_usage(const char *prog) {
         "  put-auth [--type <aes|3des>] [--derive <none|emv|visa2>] --kv <ver> [--new-kv <ver>] \\\n"
         "           [--key <hex> | --enc <hex> --mac <hex> --dek <hex>]\n"
         "      Put secure channel keys (S-ENC/S-MAC/DEK) for a key set.\n"
-        "      --kv <ver>: Key set version number to put keys into (mandatory).\n"
-        "      --new-kv <ver>: New key set version when replacing keys (optional).\n"
+        "      --kv <ver>: Key set version number to put keys into (default: 1) (optional).\n"
+        "      --new-kv <ver>: New key set version when replacing keys (default: 1) (optional).\n"
         "      Use either --key (single base key) OR all of --enc/--mac/--dek.\n"
         "      --type: Key type (default: aes).\n"
         "      --derive: Key derivation method for single base key (default: none).\n\n"
@@ -1154,7 +1154,7 @@ static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
 }
 
 static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
-    BYTE setVer=0, newSetVer=0; const char *base=NULL, *enc=NULL, *mac=NULL, *dek=NULL;
+    BYTE setVer=1, newSetVer=1; const char *base=NULL, *enc=NULL, *mac=NULL, *dek=NULL;
     const char *type="aes", *derive="none";
     for (int i=0;i<argc;i++) {
         if (strcmp(argv[i], "--kv")==0 && i+1<argc) setVer=(BYTE)atoi(argv[++i]);
@@ -1198,6 +1198,12 @@ static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURI
         return -1;
     }
 
+    // Validate derivation usage
+    if ((enc || mac || dek) && derivation != OPGP_DERIVATION_METHOD_NONE) {
+        fprintf(stderr, "put-auth: --derive cannot be used when --enc/--mac/--dek are provided\n");
+        return -1;
+    }
+
     if (base) {
         unsigned char b[32]; size_t blen=sizeof(b);
         if (hex_to_bytes(base, b, &blen)!=0 || (blen!=16 && blen!=24 && blen!=32)) {
@@ -1238,25 +1244,6 @@ static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURI
     if (!((el==ml && ml==dl) && (el==16 || el==24 || el==32))) {
         fprintf(stderr, "Keys must have equal length of 16/24/32 bytes\n");
         return -1;
-    }
-
-    // Apply key derivation if requested
-    if (derivation == OPGP_DERIVATION_METHOD_EMV_CPS11) {
-        OPGP_ERROR_STATUS s = GP211_EMV_CPS11_derive_keys(ctx, info, sec, se, se, sm, dk);
-        if (!status_ok(s)) {
-            fprintf(stderr, "EMV CPS11 key derivation failed\n");
-            return -1;
-        }
-    } else if (derivation == OPGP_DERIVATION_METHOD_VISA2) {
-        if (g_selected_isd_len == 0) {
-            fprintf(stderr, "VISA2 derivation requires a selected ISD AID\n");
-            return -1;
-        }
-        OPGP_ERROR_STATUS s = GP211_VISA2_derive_keys(ctx, info, sec, g_selected_isd, g_selected_isd_len, se, se, sm, dk);
-        if (!status_ok(s)) {
-            fprintf(stderr, "VISA2 key derivation failed\n");
-            return -1;
-        }
     }
 
     OPGP_ERROR_STATUS s = GP211_put_secure_channel_keys(ctx, info, sec, setVer, newSetVer, NULL, se, sm, dk, (DWORD)el, keyType);

@@ -1488,7 +1488,7 @@ OPGP_ERROR_STATUS get_key_data_field(GP211_SECURITY_INFO *secInfo,
 		|| keyType == GP211_KEY_TYPE_SM4 || keyType == GP211_KEY_TYPE_3DES_CBC || keyType == GP211_KEY_TYPE_DES_CBC
 		|| keyType == GP211_KEY_TYPE_DES_ECB);
 	// set key type
-	if (i+1 < *keyDataFieldLength) {
+	if (i+1 > *keyDataFieldLength) {
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
 		goto end;
 	}
@@ -1532,7 +1532,7 @@ OPGP_ERROR_STATUS get_key_data_field(GP211_SECURITY_INFO *secInfo,
 			goto end;
 		}
 		i+=result;
-		if (i+keyDataLength < *keyDataFieldLength) {
+		if (i+keyDataLength > *keyDataFieldLength) {
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
 			goto end;
 		}
@@ -1542,7 +1542,7 @@ OPGP_ERROR_STATUS get_key_data_field(GP211_SECURITY_INFO *secInfo,
 	}
 	if (includeKeyCheckValue) {
 		if (isSensitive) {
-			if (i+1+3 < *keyDataFieldLength) {
+			if (i+1+3 > *keyDataFieldLength) {
 				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
 				goto end;
 			}
@@ -1554,7 +1554,7 @@ OPGP_ERROR_STATUS get_key_data_field(GP211_SECURITY_INFO *secInfo,
 			memcpy(keyDataField+i, keyCheckValue, 3);
 			i+=3;
 		} else {
-			if (i+1 < *keyDataFieldLength) {
+			if (i+1 > *keyDataFieldLength) {
 				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
 				goto end;
 			}
