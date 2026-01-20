@@ -165,19 +165,35 @@ IF(NOT(WIN32))
 		@ONLY
 		)
 
+	# Configure gpshell3 man page markdown
+	configure_file(
+		${CMAKE_CURRENT_SOURCE_DIR}/gpshell3.1.md
+		${CMAKE_CURRENT_BINARY_DIR}/gpshell3.1.md
+		@ONLY
+		)
+
 	add_custom_command(
 	    OUTPUT gpshell.1
 	    COMMAND ${PANDOC_EXECUTABLE} --standalone --to man -o gpshell.1 ${CMAKE_CURRENT_BINARY_DIR}/gpshell.1.md
 	    COMMENT "Creating man page ..."
 	    )
+
+	add_custom_command(
+	    OUTPUT gpshell3.1
+	    COMMAND ${PANDOC_EXECUTABLE} --standalone --to man -o gpshell3.1 ${CMAKE_CURRENT_BINARY_DIR}/gpshell3.1.md
+	    COMMENT "Creating gpshell3 man page ..."
+	    )
 	
-	add_custom_target(gpshell_manpage ALL DEPENDS gpshell.1)
+	add_custom_target(gpshell_manpage ALL DEPENDS gpshell.1 gpshell3.1)
+	add_custom_target(gpshell3_manpage ALL DEPENDS gpshell3.1)
 endif()
 
 file(TO_NATIVE_PATH ${CMAKE_CURRENT_BINARY_DIR}/gpshell.1 native_filepath)
+file(TO_NATIVE_PATH ${CMAKE_CURRENT_BINARY_DIR}/gpshell3.1 native_filepath3)
 get_directory_property(make_clean_files ADDITIONAL_MAKE_CLEAN_FILES)
-set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${make_clean_files};${native_filepath}")
+set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${make_clean_files};${native_filepath};${native_filepath3}")
 
 IF(UNIX)
   INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/gpshell.1 DESTINATION ${MANPAGE_DIRECTORY}/man1)
+  INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/gpshell3.1 DESTINATION ${MANPAGE_DIRECTORY}/man1)
 ENDIF(UNIX)
