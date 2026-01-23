@@ -1853,13 +1853,15 @@ int main(int argc, char **argv) {
     }
     g_cleanup_card_connected = 1;
 
-    // Determine authentication need: for 'apdu' command default is no auth unless --auth/--secure is present
     int need_auth = 1; // default for non-apdu commands
     if (!strcmp(cmd, "apdu")) {
         need_auth = 0;
         for (int j=i; j<argc; ++j) {
             if (!strcmp(argv[j], "--auth") || !strcmp(argv[j], "--secure")) { need_auth = 1; break; }
         }
+    }
+    if (!strcmp(cmd, "sign-dap") || !strcmp(cmd, "hash")) {
+        need_auth = 0;
     }
     // Parse key options if provided
     BYTE *baseKeyPtr = NULL, *encKeyPtr = NULL, *macKeyPtr = NULL, *dekKeyPtr = NULL;
