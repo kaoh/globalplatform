@@ -57,7 +57,7 @@ See also the example scripts in `gpshell/examples/` in the repository.
    - `emv`: EMV CPS 1.1 derivation.
 
 --key <hex>
-:  Base key (hex) used to derive ENC/MAC/DEK when `--derive` is not `none`. If `--enc/--mac/--dek` are not provided, this base key is also used directly. Default: bytes `40..4F` (16 bytes).
+:  Base key (hex) used to derive ENC/MAC/DEK when `--derive` is not `none`. If `--enc/--mac/--dek` are not provided and no derivation is provided, this base key is also used directly for SCP02. Default: bytes `40..4F` (16 bytes).
 
 --enc <hex>, --mac <hex>, --dek <hex>
 :  Explicit S-ENC, S-MAC and DEK keys (hex) for mutual authentication. If provided together, `--key` is ignored.
@@ -87,7 +87,7 @@ gpshell3 list-apps
 
 ## list-keys
 
-List key information grouped by key set version (`kv`), including key types, usages, and access attributes.
+List key information grouped by key set version (`kv`), including key types and size.
 
 Example:
 ```
@@ -100,7 +100,7 @@ List available PC/SC readers.
 
 ## install
 
-Load a CAP file and optionally install/make selectable applet instances.
+Load a CAP file and install/make selectable applet instances.
 
 Synopsis:
 ```
@@ -174,8 +174,10 @@ Synopsis:
 gpshell3 put-auth [--type <aes|3des>] [--derive <none|emv|visa2>] --kv <ver> [--new-kv <ver>] [--key <hex> | --enc <hex> --mac <hex> --dek <hex>]
 ```
 
-Notes:
+Options:
 - Use either a single `--key` (with optional `--derive`) OR all of `--enc/--mac/--dek`.
+- `--kv <ver>`: Key set version, defaults to 1 (optional).
+- `--new-kv <ver>`: New key set version when replacing keys, defaults to 1 (optional).
 - `--type` defaults to `aes`.
 
 ## put-key
@@ -220,7 +222,9 @@ Synopsis:
 gpshell3 del-key --kv <ver> [--idx <idx>]
 ```
 
-If `--idx` is omitted, the entire key set `kv` is deleted.
+Options:
+- `--kv <ver>`: Key set version (mandatory).
+- `--idx <idx>`: Key index within the set If `--idx` is omitted, the entire key set `kv` is deleted.
 
 ## apdu
 
