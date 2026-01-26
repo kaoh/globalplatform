@@ -119,26 +119,26 @@ static void print_usage(const char *prog) {
         "      --install-token <hex>: Install token for delegated management (optional).\n\n"
         "  delete <AIDhex>\n"
         "      Delete an application instance or load file by AID.\n\n"
-        "  put-key [--type <3des|aes|rsa>] --kv <ver> --idx <idx> [--new-kv <ver>] \\\n"
+        "  put-key [--type <3des|aes|rsa>] --kv <ver> --idx <idx> --new-kv <ver> \\\n"
         "          (--key <hex>|--pem <file>[:pass])\n"
         "      Put (add/replace) a key in a key set.\n"
         "      --kv <ver>: Key set version number to put key into (mandatory).\n"
         "      --idx <idx>: Key index within key set (mandatory).\n"
-        "      --new-kv <ver>: New key set version when replacing keys (optional).\n"
+        "      --new-kv <ver>: New key set version when replacing keys (mandatory).\n"
         "      --type aes|3des uses --key (hex). --type rsa uses --pem (optionally :pass).\n\n"
         "  put-auth [--type <aes|3des>] [--derive <none|emv|visa2>] --kv <ver> [--new-kv <ver>] \\\n"
         "           [--key <hex> | --enc <hex> --mac <hex> --dek <hex>]\n"
         "      Put secure channel keys (S-ENC/S-MAC/DEK) for a key set.\n"
-        "      --kv <ver>: Key set version number to put keys into (default: 1) (optional).\n"
+        "      --kv <ver>: Key set version number to put keys into (default: 1), 0 means that a new key set is created (optional).\n"
         "      --new-kv <ver>: New key set version when replacing keys (default: 1) (optional).\n"
         "      Use either --key (single base key) OR all of --enc/--mac/--dek.\n"
         "      --type: Key type (default: aes).\n"
         "      --derive: Key derivation method for single base key (default: none).\n\n"
-        "  put-dm --kv <ver> [--new-kv <ver>] [--token-type <rsa>] [--receipt-type <aes|des>] \\\n"
+        "  put-dm --kv <ver> --new-kv <ver> [--token-type <rsa>] [--receipt-type <aes|des>] \\\n"
         "         <pem-file>[:pass] <receipt-key-hex>\n"
         "      Put delegated management keys.\n"
-        "      --kv <ver>: Key set version number to put delegated management keys into (mandatory).\n"
-        "      --new-kv <ver>: New key set version when replacing keys (optional).\n"
+        "      --kv <ver>: Key set version number to put delegated management keys into, 0 means that a new key set is created (mandatory).\n"
+        "      --new-kv <ver>: New key set version when replacing keys (mandatory).\n"
         "      <pem-file>[:pass]: PEM file path with optional passphrase after colon.\n"
         "      <receipt-key-hex>: Receipt key as hex (mandatory, last positional parameter).\n"
         "      --token-type: Token key type, 'rsa' (default: rsa).\n"
@@ -1109,15 +1109,19 @@ static int cmd_delete(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY
 }
 
 static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
-    BYTE setVer=0, idx=0, newSetVer=0; const char *type="aes"; const char *hexkey=NULL; const char *pem=NULL; char *pass=NULL;
+    BYTE setVer=0, idx=0, newSetVer=0;
+    int kvSet=0, newKvSet=0;
+    const char *type="aes"; const char *hexkey=NULL; const char *pem=NULL; char *pass=NULL;
     for (int i=0;i<argc;i++) {
-        if (strcmp(argv[i], "--kv")==0 && i+1<argc) setVer=(BYTE)atoi(argv[++i]);
+        if (strcmp(argv[i], "--kv")==0 && i+1<argc) { setVer=(BYTE)atoi(argv[++i]); kvSet=1; }
         else if (strcmp(argv[i], "--idx")==0 && i+1<argc) idx=(BYTE)atoi(argv[++i]);
-        else if (strcmp(argv[i], "--new-kv")==0 && i+1<argc) newSetVer=(BYTE)atoi(argv[++i]);
+        else if (strcmp(argv[i], "--new-kv")==0 && i+1<argc) { newSetVer=(BYTE)atoi(argv[++i]); newKvSet=1; }
         else if (strcmp(argv[i], "--type")==0 && i+1<argc) type=argv[++i];
         else if (strcmp(argv[i], "--key")==0 && i+1<argc) hexkey=argv[++i];
         else if (strcmp(argv[i], "--pem")==0 && i+1<argc) { pem=argv[++i]; char *c=strchr((char*)pem, ':'); if (c){ *c='\0'; pass=c+1; } }
     }
+    if (!kvSet) { fprintf(stderr, "put-key: missing --kv <ver>\n"); return -1; }
+    if (!newKvSet) { fprintf(stderr, "put-key: missing --new-kv <ver>\n"); return -1; }
     if (strcmp(type, "rsa")==0) {
         if (!pem) { fprintf(stderr, "put-key rsa: --pem <file>[:pass] required\n"); return -1; }
         if (!status_ok(GP211_put_rsa_key(ctx, info, sec, setVer, idx, newSetVer, (char*)pem, pass))) {
@@ -1255,6 +1259,7 @@ static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURI
 
 static int cmd_put_dm(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
     BYTE setVer=0, newSetVer=0;
+    int newKvSet=0;
     const char *tokenType="rsa";
     const char *receiptType="aes";
     const char *pem=NULL;
@@ -1270,6 +1275,7 @@ static int cmd_put_dm(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY
         }
         else if (strcmp(argv[i], "--new-kv")==0 && i+1<argc) {
             newSetVer = (BYTE)atoi(argv[++i]);
+            newKvSet = 1;
         }
         else if (strcmp(argv[i], "--token-type")==0 && i+1<argc) {
             tokenType = argv[++i];
@@ -1294,6 +1300,11 @@ static int cmd_put_dm(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY
 
     if (!pem) {
         fprintf(stderr, "put-dm: missing PEM file path (use <pem-file>[:pass] <receipt-key-hex>)\n");
+        return -1;
+    }
+
+    if (!newKvSet) {
+        fprintf(stderr, "put-dm: missing --new-kv <ver>\n");
         return -1;
     }
 

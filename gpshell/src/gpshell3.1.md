@@ -183,7 +183,7 @@ gpshell3 put-auth [--type <aes|3des>] [--derive <none|emv|visa2>] --kv <ver> [--
 Options:
 
 - Use either a single `--key` (with optional `--derive`) OR all of `--enc/--mac/--dek`.
-- `--kv <ver>`: Key set version, defaults to 1 (optional).
+- `--kv <ver>`: Key set version, defaults to 1, 0 means that a new key set is created (optional).
 - `--new-kv <ver>`: New key set version when replacing keys, defaults to 1 (optional).
 - `--type` defaults to `aes`.
 
@@ -193,14 +193,14 @@ Put (add or replace) a key in a key set.
 
 Synopsis:
 ```
-gpshell3 put-key [--type <3des|aes|rsa>] --kv <ver> --idx <idx> [--new-kv <ver>] (--key <hex>|--pem <file>[:pass])
+gpshell3 put-key [--type <3des|aes|rsa>] --kv <ver> --idx <idx> --new-kv <ver> (--key <hex>|--pem <file>[:pass])
 ```
 
 Options:
 
 - `--kv <ver>`: Key set version (mandatory).
 - `--idx <idx>`: Key index within the set (mandatory).
-- `--new-kv <ver>`: New key set version when replacing keys (optional).
+- `--new-kv <ver>`: New key set version when replacing keys (mandatory).
 - For `--type aes|3des`: provide the key via `--key <hex>`.
 - For `--type rsa`: provide an RSA public key in PEM via `--pem <file>[:pass]`.
 
@@ -215,8 +215,8 @@ gpshell3 put-dm --kv <ver> [--new-kv <ver>] [--token-type <rsa>] [--receipt-type
 
 Options:
 
-- `--kv <ver>`: Key set version (mandatory).
-- `--new-kv <ver>`: New key set version when replacing (optional).
+- `--kv <ver>`: Key set version, defaults to 0, 0 means that a new key set is created (optional).
+- `--new-kv <ver>`: New key set version when replacing or creating a new key set (mandatory).
 - `<pem-file>[:pass]`: Token signing key in PEM, optional passphrase after colon.
 - `<receipt-key-hex>`: Receipt key material (last positional parameter).
 - `--token-type`: Token key type, default `rsa`.
