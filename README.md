@@ -13,10 +13,14 @@ Windows binaries can be downloaded from the [GitHub release page](https://github
 There are 2 versions of GPShell. The new GPShell 3+, using a concise, task-oriented command line, 
 and the older GPShell 1+ using script files chaining multiple commands into one session.
 
-Please read also the [manual of GPShell3]( https://github.com/kaoh/globalplatform/blob/master/gpshell/src/gpshell3.1.md) or if used 
-the manual of the [manual of GPShell1]( https://github.com/kaoh/globalplatform/blob/master/gpshell/src/gpshell.1.md).
+Please read also the [manual of GPShell3](./gpshell/src/gpshell3.1.md) or if used 
+the manual of the [manual of GPShell1](./gpshell/src/gpshell.1.md).
 
-For GPShell1+ there are several script examples available. See the [.txt files](https://github.com/kaoh/globalplatform/tree/master/gpshell/examples) or look into the local file systems
+A quick demo video showcasing the most useful features in action:
+
+[![Demo Video](./gpshell/demo/screencast.png)](https://youtu.be/MtZoTkrB41I)
+
+For GPShell1+ there are several script examples available. See the [.txt files](./gpshell/examples) or look into the local file systems
 under `/usr/share/doc/gpshell2` or `/usr/local/share/doc/gpshell2` or `home/linuxbrew/.linuxbrew/share/doc/gpshell2/`.
 
 # Compilation

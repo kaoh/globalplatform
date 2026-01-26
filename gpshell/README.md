@@ -15,7 +15,7 @@ __!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!__
 
 # Pre-build Packages
 
-There are Homebrew package for [Linux and MacOS](https://github.com/kaoh/homebrew-globalplatform)
+There are Homebrew packages for [Linux and macOS](https://github.com/kaoh/homebrew-globalplatform)
 
 Windows binaries can be downloaded from the [GitHub release page](https://github.com/kaoh/globalplatform/releases) or from [SourceForge](https://sourceforge.net/projects/globalplatform/files/GPShell/).
 
@@ -29,6 +29,10 @@ However, it is possible to implement a different communication channel, e.g., tu
 Existing solution like [pcsc-relay](https://frankmorgner.github.io/vsmartcard/pcsc-relay/README.html) might be a quicker solution.
 
 ## GPShell 3+
+
+A quick demo video showcasing the most useful features in action:
+
+[![Demo Video](./demo/screencast.png)](https://youtu.be/MtZoTkrB41I)
 
 ### Command Line Documentation
 
