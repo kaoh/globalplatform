@@ -4,14 +4,20 @@ This is the top level project for the GlobalPlatform library for providing acces
 
 # Pre-build Packages
 
-There are Homebrew package for [Linux and MacOS](https://github.com/kaoh/homebrew-globalplatform)
+There are Homebrew packages for [Linux and MacOS](https://github.com/kaoh/homebrew-globalplatform)
 
 Windows binaries can be downloaded from the [GitHub release page](https://github.com/kaoh/globalplatform/releases) or from [SourceForge](https://sourceforge.net/projects/globalplatform/files/GPShell/).
 
-Please read also the [manual of GPShell]( https://github.com/kaoh/globalplatform/blob/master/gpshell/src/gpshell.1.md) if you are interested in the command line
-or use the installed man page with `man gpshell` under Unix like systems.
-There are several script examples available. See the [.txt files](https://github.com/kaoh/globalplatform/tree/master/gpshell) or look into the local file systems
-under `(/usr/ | /home/linuxbrew/.linuxbrew/) share/doc/gpshell1/`.
+# GPShell Manual
+
+There are 2 versions of GPShell. The new GPShell 3+, using a concise, task-oriented command line, 
+and the older GPShell 1+ using script files chaining multiple commands into one session.
+
+Please read also the [manual of GPShell3]( https://github.com/kaoh/globalplatform/blob/master/gpshell/src/gpshell3.1.md) or if used 
+the manual of the [manual of GPShell1]( https://github.com/kaoh/globalplatform/blob/master/gpshell/src/gpshell.1.md).
+
+For GPShell1+ there are several script examples available. See the [.txt files](https://github.com/kaoh/globalplatform/tree/master/gpshell/examples) or look into the local file systems
+under `/usr/share/doc/gpshell2` or `/usr/local/share/doc/gpshell2` or `home/linuxbrew/.linuxbrew/share/doc/gpshell2/`.
 
 # Compilation
 
@@ -25,14 +31,14 @@ Use a suitable packet manager for your OS or install the programs and libraries 
 
 * Compiler Suite:
   * Linux: Termed `build-essential` in Debian based distributions (gcc, make)
-  * MacOS: Xcode
+  * macOS: Xcode
   * Windows: Visual Studio and SDK
 * [CMake 3.5.1](http://www.cmake.org/) or higher is needed
-* [PC/SC Lite](https://pcsclite.apdu.fr) (only for UNIXes, Windows and MacOS are already including this)
+* [PC/SC Lite](https://pcsclite.apdu.fr) (only for UNIXes, Windows and macOS are already including this)
 * [Doxygen](www.doxygen.org/) for generating the documentation
 * [Graphviz](https://graphviz.org) for generating graphics in the documentation
-* [OpenSSL](http://www.openssl.org/) (On MacOS use OpenSSL 3)
-* [zlib](http://www.zlib.net/) (MacOS should already bundle this, for Windows a pre-built version is included)
+* [OpenSSL](http://www.openssl.org/) (On macOS use OpenSSL 3)
+* [zlib](http://www.zlib.net/) (macOS should already bundle this, for Windows a pre-built version is included)
 * [cmocka](https://cmocka.org/) for running the tests
 * [Pandoc](https://pandoc.org/installing.html) for generating the man page the tests
 
@@ -71,9 +77,9 @@ __NOTE:__ The Homebrew version of pcsc-lite is not a fully functional version. I
 brew remove --ignore-dependencies pcsc-lite
 ~~~
 
-## MacOS
+## macOS
 
-The compilation was executed on a system with [Homebrew](https://brew.sh) as package manager.
+The compilation was executed on a system with [Homebrew](https://brew.sh) as a package manager.
 
 Install the dependencies with `brew`:
 

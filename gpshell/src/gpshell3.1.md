@@ -1,4 +1,4 @@
-% GPSHELL3(1) | GPShell3 Documentation
+% GPSHELL3(1) 3.0.0 | GPShell3 Documentation
 
 # NAME
 
@@ -15,6 +15,7 @@ gpshell3 is a modern, simplified CLI for GlobalPlatform card management. It prov
 Unlike the legacy `gpshell` (script-driven), `gpshell3` is argument-driven and aims to be easy to use interactively, in shell scripts, or on CI systems. All commands work against PC/SC readers and use the in-tree GlobalPlatform library.
 
 Unless otherwise specified, `gpshell3` will:
+
 - connect to the first available PC/SC reader;
 - select a suitable Issuer Security Domain (ISD) AID automatically (`A000000151000000`, `A0000001510000`, or `A000000003000000`);
 - open a Secure Channel using defaults listed below when a command requires security (e.g., install, delete, key management).
@@ -31,6 +32,7 @@ See also the example scripts in `gpshell/examples/` in the repository.
 
 --sd <aidhex>
 :  ISD AID to select explicitly (hex). By default `gpshell3` will try, in order:
+
    - `A000000151000000` (GP 2.3.1 ISD)
    - `A0000001510000`   (GP 2.1.1 CM)
    - `A000000003000000` (OP 2.0.1 CM)
@@ -52,6 +54,7 @@ See also the example scripts in `gpshell/examples/` in the repository.
 
 --derive <none|visa2|emv>
 :  Key derivation method when authenticating with a single base key.
+
    - `none` (default): use keys as provided.
    - `visa2`: VISA2 derivation (a.k.a. VISA key derivation).
    - `emv`: EMV CPS 1.1 derivation.
@@ -76,6 +79,7 @@ See also the example scripts in `gpshell/examples/` in the repository.
 ## list-apps
 
 List Issuer Security Domains, Security Domains, Applications, Load Files and Executable Modules. Output includes:
+
 - AIDs and life cycle states;
 - associated Security Domain AIDs;
 - privileges in short-name form like `priv=[sd,cm-lock,...]`.
@@ -112,6 +116,7 @@ gpshell3 install [--load-only|--install-only]
 ```
 
 Options:
+
 - `--applet <AIDhex>`: Applet AID to install (optional). If omitted together with `--module`, installs all applets from the CAP.
 - `--module <AIDhex>`: Module AID (often same as applet) to install (optional).
 - `--params <hex>`: Installation parameters (hex) passed to the applet `install()` method (optional).
@@ -160,6 +165,7 @@ gpshell3 status <isd|sd|app|sd-app> --lc <state> <AIDhex>
 ```
 
 Element types and allowed states:
+
 - `isd`: `locked`, `terminated`  (WARNING: `terminated` is permanent.)
 - `sd`:  `personalized`, `locked`
 - `app`: `locked`, `selectable`
@@ -175,6 +181,7 @@ gpshell3 put-auth [--type <aes|3des>] [--derive <none|emv|visa2>] --kv <ver> [--
 ```
 
 Options:
+
 - Use either a single `--key` (with optional `--derive`) OR all of `--enc/--mac/--dek`.
 - `--kv <ver>`: Key set version, defaults to 1 (optional).
 - `--new-kv <ver>`: New key set version when replacing keys, defaults to 1 (optional).
@@ -190,6 +197,7 @@ gpshell3 put-key [--type <3des|aes|rsa>] --kv <ver> --idx <idx> [--new-kv <ver>]
 ```
 
 Options:
+
 - `--kv <ver>`: Key set version (mandatory).
 - `--idx <idx>`: Key index within the set (mandatory).
 - `--new-kv <ver>`: New key set version when replacing keys (optional).
@@ -206,6 +214,7 @@ gpshell3 put-dm --kv <ver> [--new-kv <ver>] [--token-type <rsa>] [--receipt-type
 ```
 
 Options:
+
 - `--kv <ver>`: Key set version (mandatory).
 - `--new-kv <ver>`: New key set version when replacing (optional).
 - `<pem-file>[:pass]`: Token signing key in PEM, optional passphrase after colon.
@@ -223,6 +232,7 @@ gpshell3 del-key --kv <ver> [--idx <idx>]
 ```
 
 Options:
+
 - `--kv <ver>`: Key set version (mandatory).
 - `--idx <idx>`: Key index within the set If `--idx` is omitted, the entire key set `kv` is deleted.
 
@@ -236,6 +246,7 @@ gpshell3 apdu [--auth] [--nostop|--ignore-errors] <APDU> [<APDU> ...]
 ```
 
 Options:
+
 - `--auth`: Perform default ISD selection and mutual authentication before sending APDUs.
 - `--nostop` / `--ignore-errors`: Continue even if an APDU returns an error status (non-`9000`).
 
@@ -272,6 +283,7 @@ gpshell3 store [--encryption <noinfo|app|enc>] [--format <noinfo|dgi|ber>] [--re
 ```
 
 Options:
+
 - `--encryption` (default `noinfo`):
   - `noinfo`: no encryption information;
   - `app`: application-dependent encryption;
@@ -287,6 +299,7 @@ Options:
 Privileges are reported by `list-apps` as `priv=[...]`. A subset can be supplied to `install --priv` as a comma-separated list of short names.
 
 Accepted by `install --priv`:
+
 - `sd` — Security Domain
 - `dap-verif` — DAP Verification
 - `delegated-mgmt` — Delegated Management
@@ -297,6 +310,7 @@ Accepted by `install --priv`:
 - `mandated-dap` — Mandated DAP Verification
 
 Additional privilege names that may appear in `list-apps` output:
+
 - `authorized-mgmt` — Authorized Management
 - `token-mgmt` — Token Verification
 - `global-delete` — Global Delete
