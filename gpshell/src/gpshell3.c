@@ -28,6 +28,7 @@
 #include <sys/stat.h>
 
 #include <globalplatform/globalplatform.h>
+#include "util.h"
 
 #ifndef _WIN32
 #include <sys/types.h>
@@ -93,6 +94,8 @@ static void print_usage(const char *prog) {
         "      Privileges are printed in short-name form like: priv=[sd,cm-lock,...]\n"
         "  list-keys\n"
         "      List key information grouped by key set version (kv).\n"
+        "  clpc\n"
+        "      Read and decode the Card Production Life Cycle (CPLC) data.\n"
         "  list-readers\n"
         "      List available PC/SC readers.\n\n",
         stderr);
@@ -210,6 +213,50 @@ static void print_hex(const unsigned char *buf, size_t len) {
 }
 
 static void print_aid(const OPGP_AID *aid) { print_hex(aid->AID, aid->AIDLength); }
+
+static int cplc_date_to_dmy(const BYTE *data, int *day, int *month, int *year) {
+    int y = (data[0] >> 4) & 0x0F;
+    int d1 = data[0] & 0x0F;
+    int d2 = (data[1] >> 4) & 0x0F;
+    int d3 = data[1] & 0x0F;
+    if (data[0] == 0x00 && data[1] == 0x00) return 0;
+    if (y > 9 || d1 > 9 || d2 > 9 || d3 > 9) return 0;
+    {
+        int day_of_year = d1 * 100 + d2 * 10 + d3;
+        int y_full = 2020 + y;
+        int leap = (y_full % 4 == 0 && (y_full % 100 != 0 || y_full % 400 == 0));
+        int days_in_month[12] = {31, 28 + leap, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+        int max_days = leap ? 366 : 365;
+        int m = 0;
+        if (day_of_year <= 0 || day_of_year > max_days) return 0;
+        while (m < 12 && day_of_year > days_in_month[m]) {
+            day_of_year -= days_in_month[m];
+            m++;
+        }
+        if (m >= 12) return 0;
+        *day = day_of_year;
+        *month = m + 1;
+        *year = y_full;
+        return 1;
+    }
+}
+
+static void print_cplc_hex_field(const char *label, const BYTE *data, size_t len) {
+    printf("%s : ", label);
+    for (size_t i = 0; i < len; i++) {
+        printf("%02X", data[i]);
+    }
+    printf("\n");
+}
+
+static void print_cplc_date_field(const char *label, const BYTE *data) {
+    int day = 0, month = 0, year = 0;
+    printf("%s : %02X%02X", label, data[0], data[1]);
+    if (cplc_date_to_dmy(data, &day, &month, &year)) {
+        printf(" (%d.%d.%d)", day, month, year);
+    }
+    printf("\n");
+}
 
 static BYTE sec_level_from_option(BYTE proto, const char *opt) {
     if (!opt || strcmp(opt, "mac+enc") == 0) {
@@ -1808,6 +1855,55 @@ static int cmd_list_readers(void) {
     return 0;
 }
 
+static int cmd_cplc(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
+    BYTE data[256];
+    DWORD dataLen = sizeof(data);
+    TLV tlv;
+    LONG tlv_len;
+    const BYTE *cplc = NULL;
+    DWORD cplc_len = 0;
+
+    memset(&tlv, 0, sizeof(tlv));
+    if (!status_ok(GP211_get_data(ctx, info, sec, (BYTE *)GP211_GET_DATA_CPLC_WHOLE_CPLC, data, &dataLen))) {
+        fprintf(stderr, "clpc: GP211_get_data failed\n");
+        return -1;
+    }
+
+    tlv_len = read_TLV(data, dataLen, &tlv);
+    if (tlv_len > 0 && tlv.tag == 0x9F7F) {
+        cplc = tlv.value;
+        cplc_len = tlv.length;
+    } else {
+        cplc = data;
+        cplc_len = dataLen;
+    }
+
+    if (cplc_len < 42) {
+        fprintf(stderr, "clpc: unexpected CPLC length %u\n", (unsigned int)cplc_len);
+        return -1;
+    }
+
+    print_cplc_hex_field("IC Fabricator", cplc + 0, 2);
+    print_cplc_hex_field("IC Type", cplc + 2, 2);
+    print_cplc_hex_field("Operating System ID", cplc + 4, 2);
+    print_cplc_date_field("Operating System release date", cplc + 6);
+    print_cplc_hex_field("Operating System release level", cplc + 8, 2);
+    print_cplc_date_field("IC Fabrication Date", cplc + 10);
+    print_cplc_hex_field("IC Serial Number", cplc + 12, 4);
+    print_cplc_hex_field("IC Batch Identifier", cplc + 16, 2);
+    print_cplc_hex_field("IC Module Fabricator", cplc + 18, 2);
+    print_cplc_date_field("IC Module Packaging Date", cplc + 20);
+    print_cplc_hex_field("ICC Manufacturer", cplc + 22, 2);
+    print_cplc_date_field("IC Embedding Date", cplc + 24);
+    print_cplc_hex_field("IC Pre-Personalizer", cplc + 26, 2);
+    print_cplc_date_field("IC Pre-Perso. Equipment Date", cplc + 28);
+    print_cplc_hex_field("IC Pre-Perso. Equipment ID", cplc + 30, 4);
+    print_cplc_hex_field("IC Personalizer", cplc + 34, 2);
+    print_cplc_date_field("IC Personalization Date", cplc + 36);
+    print_cplc_hex_field("IC Perso. Equipment ID", cplc + 38, 4);
+    return 0;
+}
+
 int main(int argc, char **argv) {
     const char *prog = argv[0];
     const char *reader=NULL, *protocol="auto", *sd_hex=NULL, *sec_level_opt="mac+enc";
@@ -1928,6 +2024,7 @@ int main(int argc, char **argv) {
     int rc = 0;
     if (!strcmp(cmd, "list-apps")) rc = cmd_list_apps(ctx, info, &sec);
     else if (!strcmp(cmd, "list-keys")) rc = cmd_list_keys(ctx, info, &sec);
+    else if (!strcmp(cmd, "cplc")) rc = cmd_cplc(ctx, info, &sec);
     else if (!strcmp(cmd, "install")) rc = cmd_install(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "delete")) rc = cmd_delete(ctx, info, &sec, (i<argc)?argv[i]:NULL);
     else if (!strcmp(cmd, "put-key")) rc = cmd_put_key(ctx, info, &sec, argc - i, &argv[i]);
