@@ -249,11 +249,16 @@ static void print_cplc_hex_field(const char *label, const BYTE *data, size_t len
     printf("\n");
 }
 
-static void print_cplc_date_field(const char *label, const BYTE *data) {
+static void print_cplc_date_field(const char *label, const BYTE *data, bool show_hex) {
     int day = 0, month = 0, year = 0;
-    printf("%s : %02X%02X", label, data[0], data[1]);
+    if (show_hex) {
+        printf("%s : %02X%02X", label, data[0], data[1]);
+    } else {
+        printf("%s : ", label);
+    }
     if (cplc_date_to_dmy(data, &day, &month, &year)) {
-        printf(" (%d.%d.%d)", day, month, year);
+        if (show_hex) printf(" ");
+        printf("(%d.%d.%d)", day, month, year);
     }
     printf("\n");
 }
@@ -1855,6 +1860,43 @@ static int cmd_list_readers(void) {
     return 0;
 }
 
+static void print_cplc_ascii_hex_field(const char *label, const BYTE *data, size_t len) {
+    printf("%s : ", label);
+    for (size_t i = 0; i < len; i++) {
+        if (isprint(data[i])) {
+            printf("%c", data[i]);
+        } else {
+            printf("\\x%02X", data[i]);
+        }
+    }
+    printf("\n");
+}
+
+static const char* get_ic_fab_name(USHORT id) {
+    switch (id) {
+        case 0x4790: return "NXP Semiconductors";
+        case 0x4090: return "Infineon Technologies";
+        case 0x4250: return "Samsung";
+        case 0x3060: return "Renesas";
+        case 0x4180: return "Atmel";
+        case 0x1671: return "Giesecke+Devrient (G+D)";
+        default: return "Unknown";
+    }
+}
+
+static const char* get_os_id_name(USHORT id) {
+    switch (id) {
+        case 0x4700:
+        case 0x4791: return "NXP JCOP";
+        case 0x4051: return "IBM";
+        case 0x1671: return "G+D Sm@rtCafe";
+        case 0xA005: return "Oberthur";
+        case 0001: return "G+D"; // ID is D001, but in hex it should be 0xD001
+        case 0xD001: return "G+D";
+        default: return "Unknown";
+    }
+}
+
 static int cmd_cplc(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
     BYTE data[256];
     DWORD dataLen = sizeof(data);
@@ -1883,23 +1925,37 @@ static int cmd_cplc(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
         return -1;
     }
 
-    print_cplc_hex_field("IC Fabricator", cplc + 0, 2);
-    print_cplc_hex_field("IC Type", cplc + 2, 2);
-    print_cplc_hex_field("Operating System ID", cplc + 4, 2);
-    print_cplc_date_field("Operating System release date", cplc + 6);
+    {
+        USHORT ic_fab = (cplc[0] << 8) | cplc[1];
+        printf("IC Fabricator : %04X (%s)\n", ic_fab, get_ic_fab_name(ic_fab));
+    }
+    {
+        USHORT ic_type = (cplc[2] << 8) | cplc[3];
+        const char *ic_type_name = (ic_type == 0xD321) ? "SmartMX-Serie" : "Unknown";
+        printf("IC Type : %04X (%s)\n", ic_type, ic_type_name);
+    }
+    {
+        USHORT os_id = (cplc[4] << 8) | cplc[5];
+        printf("Operating System ID : %04X (%s)\n", os_id, get_os_id_name(os_id));
+    }
+
+    print_cplc_date_field("Operating System release date", cplc + 6, true);
     print_cplc_hex_field("Operating System release level", cplc + 8, 2);
-    print_cplc_date_field("IC Fabrication Date", cplc + 10);
-    print_cplc_hex_field("IC Serial Number", cplc + 12, 4);
+    print_cplc_date_field("IC Fabrication Date", cplc + 10, true);
+    {
+        DWORD serial = (cplc[12] << 24) | (cplc[13] << 16) | (cplc[14] << 8) | cplc[15];
+        printf("IC Serial Number : %u\n", (unsigned int)serial);
+    }
     print_cplc_hex_field("IC Batch Identifier", cplc + 16, 2);
     print_cplc_hex_field("IC Module Fabricator", cplc + 18, 2);
-    print_cplc_date_field("IC Module Packaging Date", cplc + 20);
+    print_cplc_date_field("IC Module Packaging Date", cplc + 20, true);
     print_cplc_hex_field("ICC Manufacturer", cplc + 22, 2);
-    print_cplc_date_field("IC Embedding Date", cplc + 24);
+    print_cplc_date_field("IC Embedding Date", cplc + 24, true);
     print_cplc_hex_field("IC Pre-Personalizer", cplc + 26, 2);
-    print_cplc_date_field("IC Pre-Perso. Equipment Date", cplc + 28);
-    print_cplc_hex_field("IC Pre-Perso. Equipment ID", cplc + 30, 4);
+    print_cplc_date_field("IC Pre-Perso. Equipment Date", cplc + 28, true);
+    print_cplc_ascii_hex_field("IC Pre-Perso. Equipment ID", cplc + 30, 4);
     print_cplc_hex_field("IC Personalizer", cplc + 34, 2);
-    print_cplc_date_field("IC Personalization Date", cplc + 36);
+    print_cplc_date_field("IC Personalization Date", cplc + 36, true);
     print_cplc_hex_field("IC Perso. Equipment ID", cplc + 38, 4);
     return 0;
 }
