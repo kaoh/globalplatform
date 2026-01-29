@@ -73,7 +73,7 @@ static void print_usage(const char *prog) {
         "Global options:\n"
         "  -r, --reader <name|num>    PC/SC reader name or number (1-based) (default: auto first present)\n"
         "  --protocol <auto|t0|t1>    Transport protocol (default: auto)\n"
-        "  --sd <aidhex>             ISD AID hex; default tries A000000151000000 then A0000001510000 then A000000003000000\n"
+        "  --sd <aidhex>             ISD AID hex; default tries A000000151000000 then A0000001510000 then A000000003000000 then A0000000030000\n"
         "  --sec <mac|mac+enc|mac+enc+rmac>\n"
         "                            Secure channel security level (default: mac+enc)\n"
         "  --scp <protocol>           SCP protocol as digit (e.g., 1, 2, 3)\n"
@@ -94,7 +94,7 @@ static void print_usage(const char *prog) {
         "      Privileges are printed in short-name form like: priv=[sd,cm-lock,...]\n"
         "  list-keys\n"
         "      List key information grouped by key set version (kv).\n"
-        "  clpc\n"
+        "  cplc\n"
         "      Read and decode the Card Production Life Cycle (CPLC) data.\n"
         "  list-readers\n"
         "      List available PC/SC readers.\n\n",
@@ -323,6 +323,10 @@ static int select_isd(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, const char *is
     if (status_ok(s)) {
         memcpy(g_selected_isd, GP211_CARD_MANAGER_AID_ALT1, 8); g_selected_isd_len = 8; return 0;
     }
+    s = OPGP_select_application(ctx, info, (PBYTE)GP211_CARD_MANAGER_AID_ALT2, 7);
+    if (status_ok(s)) {
+        memcpy(g_selected_isd, GP211_CARD_MANAGER_AID_ALT2, 7); g_selected_isd_len = 7; return 0;
+    }
     return -1;
 }
 
@@ -396,7 +400,10 @@ static int mutual_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     // Parse SCP protocol if provided
     if (scp_protocol) {
         scp = (BYTE)atoi(scp_protocol);
-        if (scp == 1) scp = GP211_SCP01;
+        if (scp == 1) {
+            scp = GP211_SCP01;
+            scpImpl = GP211_SCP01_IMPL_i05;
+        }
         else if (scp == 2) scp = GP211_SCP02;
         else if (scp == 3) scp = GP211_SCP03;
     }
@@ -411,7 +418,7 @@ static int mutual_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     }
 
     // Only fetch from card if both are not provided
-    if (!scp_protocol || !scp_impl) {
+    if ((!scp_protocol || !scp_impl) && (scp != GP211_SCP01)) {
         OPGP_ERROR_STATUS s = GP211_get_secure_channel_protocol_details(ctx, info, &scp, &scpImpl);
         if (!status_ok(s)) {
             if (verbose) fprintf(stderr, "Failed to get SCP details, defaulting to SCP02 i15\n");
@@ -1860,40 +1867,56 @@ static int cmd_list_readers(void) {
     return 0;
 }
 
-static void print_cplc_ascii_hex_field(const char *label, const BYTE *data, size_t len) {
-    printf("%s : ", label);
-    for (size_t i = 0; i < len; i++) {
-        if (isprint(data[i])) {
-            printf("%c", data[i]);
-        } else {
-            printf("\\x%02X", data[i]);
-        }
-    }
-    printf("\n");
-}
 
 static const char* get_ic_fab_name(USHORT id) {
     switch (id) {
         case 0x4790: return "NXP Semiconductors";
         case 0x4090: return "Infineon Technologies";
+        case 0x4070: return "Infineon (Legacy)";
         case 0x4250: return "Samsung";
         case 0x3060: return "Renesas";
         case 0x4180: return "Atmel";
         case 0x1671: return "Giesecke+Devrient (G+D)";
-        default: return "Unknown";
+        case 0x2050: return "STMicroelectronics";
+        default: return "Unknown Fabricator";
+    }
+}
+
+static const char* get_ic_type_name(USHORT id) {
+    switch (id) {
+        // NXP SmartMX3 (P71 Family)
+        case 0xD321: return "NXP SmartMX3 P71D321";
+        case 0xD600: return "NXP SmartMX3 P71D600";
+
+            // NXP SmartMX2 (P60 Family)
+        case 0x5183: return "NXP SmartMX2 (P60-Series)";
+
+            // NXP Legacy
+        case 0x5205: return "NXP P5205 (Legacy)";
+
+            // Infineon
+        case 0x1915: return "Infineon SLE78 (Solid Flash)";
+        case 0x0062: return "Infineon SLE66 (Cyberflex Era)";
+        case 0x5072: return "Infineon SLE66-Series";
+
+            // STMicroelectronics
+        case 0x5000: return "STMicroelectronics ST23-Series";
+
+        default: return "Unknown IC Type";
     }
 }
 
 static const char* get_os_id_name(USHORT id) {
     switch (id) {
         case 0x4700:
-        case 0x4791: return "NXP JCOP";
-        case 0x4051: return "IBM";
+        case 0x4791: return "NXP JCOP (Native)";
+        case 0x4051: return "IBM JCOP";
+        case 0x4041: return "Oberthur / IDEMIA OS";
+        case 0xA005: return "Oberthur AuthentIC";
         case 0x1671: return "G+D Sm@rtCafe";
-        case 0xA005: return "Oberthur";
-        case 0001: return "G+D"; // ID is D001, but in hex it should be 0xD001
-        case 0xD001: return "G+D";
-        default: return "Unknown";
+        case 0xD001: return "G+D OS";
+        case 0x0011: return "Cyberflex OS";
+        default: return "Unknown OS";
     }
 }
 
@@ -1931,12 +1954,11 @@ static int cmd_cplc(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
     }
     {
         USHORT ic_type = (cplc[2] << 8) | cplc[3];
-        const char *ic_type_name = (ic_type == 0xD321) ? "SmartMX-Serie" : "Unknown";
-        printf("IC Type : %04X (%s)\n", ic_type, ic_type_name);
+        printf("IC Type       : %04X (%s)\n", ic_type, get_ic_type_name(ic_type));
     }
     {
         USHORT os_id = (cplc[4] << 8) | cplc[5];
-        printf("Operating System ID : %04X (%s)\n", os_id, get_os_id_name(os_id));
+        printf("OS ID         : %04X (%s)\n", os_id, get_os_id_name(os_id));
     }
 
     print_cplc_date_field("Operating System release date", cplc + 6, true);
@@ -1953,7 +1975,18 @@ static int cmd_cplc(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
     print_cplc_date_field("IC Embedding Date", cplc + 24, true);
     print_cplc_hex_field("IC Pre-Personalizer", cplc + 26, 2);
     print_cplc_date_field("IC Pre-Perso. Equipment Date", cplc + 28, true);
-    print_cplc_ascii_hex_field("IC Pre-Perso. Equipment ID", cplc + 30, 4);
+    {
+        printf("IC Pre-Perso. Equipment ID : %02X%02X%02X%02X", cplc[30], cplc[31], cplc[32], cplc[33]);
+        if (cplc[30] != 0 || cplc[31] != 0 || cplc[32] != 0 || cplc[33] != 0) {
+            printf(" (");
+            for (int j = 0; j < 4; j++) {
+                if (isprint(cplc[30 + j])) printf("%c", cplc[30 + j]);
+                else printf("\\x%02X", cplc[30 + j]);
+            }
+            printf(")");
+        }
+        printf("\n");
+    }
     print_cplc_hex_field("IC Personalizer", cplc + 34, 2);
     print_cplc_date_field("IC Personalization Date", cplc + 36, true);
     print_cplc_hex_field("IC Perso. Equipment ID", cplc + 38, 4);
