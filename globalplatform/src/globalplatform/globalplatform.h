@@ -410,16 +410,24 @@ typedef struct {
  * The Card Recognition Data returned for tag 0x66 with GET DATA.
  */
 typedef struct {
-	DWORD version; //!< The GlobalPlatform version.
+	char version[16]; //!< The GlobalPlatform version string (e.g. "2.1.1").
 	BYTE scp[16]; //!< The secure channel protocols.
 	BYTE scpImpl[16]; //!< The secure channel protocol implementations.
 	DWORD scpLength; //!< The length of the SCP.
+	char cardConfigurationDetailsOid[128]; //!< Card configuration details OID as numeric string.
+	DWORD cardConfigurationDetailsOidLength; //!< Card configuration details OID length.
 	BYTE cardConfigurationDetails[64]; //!< Card configuration details.
 	DWORD cardConfigurationDetailsLength; //!< Card configuration details length.
+	char cardChipDetailsOid[128]; //!< Card / chip details OID as numeric string.
+	DWORD cardChipDetailsOidLength; //!< Card / chip details OID length.
 	BYTE cardChipDetails[64]; //!< Card configuration details.
 	DWORD cardChipDetailsLength; //!< Card configuration details length.
+	char issuerSecurityDomainsTrustPointCertificateInformationOid[128]; //!< Issuer Security Domain’s Trust Point certificate information OID as numeric string.
+	DWORD issuerSecurityDomainsTrustPointCertificateInformationOidLength; //!< Issuer Security Domain’s Trust Point certificate information OID length.
 	BYTE issuerSecurityDomainsTrustPointCertificateInformation[64]; //!< Issuer Security Domain’s Trust Point certificate information.
 	DWORD issuerSecurityDomainsTrustPointCertificateInformationLength; //!< Issuer Security Domain’s Trust Point certificate information length.
+	char issuerSecurityDomainCertificateInformationOid[128]; //!< Issuer Security Domain certificate information OID as numeric string.
+	DWORD issuerSecurityDomainCertificateInformationOidLength; //!< Issuer Security Domain certificate information OID length.
 	BYTE issuerSecurityDomainCertificateInformation[64]; //!< Issuer Security Domain certificate information.
 	DWORD issuerSecurityDomainCertificateInformationLength; //!< Issuer Security Domain certificate information length.
 } GP211_CARD_RECOGNITION_DATA;

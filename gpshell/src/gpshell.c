@@ -168,6 +168,22 @@ static void convertTCharToChar(char* pszDest, const TCHAR* pszSrc)
     pszDest[_tcslen(pszSrc)] = '\0';
 }
 
+static void convertCharToTChar(const char* src, TCHAR* dest, size_t destLength)
+{
+    size_t i;
+    if (destLength == 0) {
+        return;
+    }
+    if (src == NULL) {
+        dest[0] = _T('\0');
+        return;
+    }
+    for (i = 0; i + 1 < destLength && src[i] != '\0'; i++) {
+        dest[i] = (TCHAR)src[i];
+    }
+    dest[i] = _T('\0');
+}
+
 static int convertStringToByteArray(TCHAR *src, int destLength, BYTE *dest)
 {
     TCHAR *dummy;
@@ -339,28 +355,46 @@ static TCHAR *parseToken(TCHAR *buf)
 static void displayCardRecognitionData(GP211_CARD_RECOGNITION_DATA cardData) {
     DWORD i=0;
     TCHAR temp[128];
-    if (cardData.version > 0) {
-        _tprintf(_T("Version: %04x\n"), (unsigned int)cardData.version);
+    TCHAR oidTemp[128];
+    if (cardData.version[0] != '\0') {
+        convertCharToTChar(cardData.version, temp, sizeof(temp)/sizeof(TCHAR));
+        _tprintf(_T("Version: %s\n"), temp);
     }
     for (i=0; i<cardData.scpLength; i++) {
         _tprintf(_T("SCP: %d SCP Impl: %02x\n"), cardData.scp[i], cardData.scpImpl[i]);
     }
-    if (cardData.cardChipDetailsLength > 0) {
-        convertByteArrayToString(cardData.cardChipDetails, cardData.cardChipDetailsLength, sizeof(temp)/sizeof(TCHAR), temp);
-        _tprintf(_T("Card Chip Details: %s\n"), temp);
+    if (cardData.cardConfigurationDetailsOidLength > 0) {
+        convertCharToTChar(cardData.cardConfigurationDetailsOid, oidTemp, sizeof(oidTemp)/sizeof(TCHAR));
+        _tprintf(_T("Card Configuration Details OID: %s\n"), oidTemp);
     }
     if (cardData.cardConfigurationDetailsLength > 0) {
         convertByteArrayToString(cardData.cardConfigurationDetails, cardData.cardConfigurationDetailsLength, sizeof(temp)/sizeof(TCHAR), temp);
-        _tprintf(_T("Card Configuration Details: %s\n"), temp);
+        _tprintf(_T("Card Configuration Details Data: %s\n"), temp);
+    }
+    if (cardData.cardChipDetailsOidLength > 0) {
+        convertCharToTChar(cardData.cardChipDetailsOid, oidTemp, sizeof(oidTemp)/sizeof(TCHAR));
+        _tprintf(_T("Card/Chip Details OID: %s\n"), oidTemp);
+    }
+    if (cardData.cardChipDetailsLength > 0) {
+        convertByteArrayToString(cardData.cardChipDetails, cardData.cardChipDetailsLength, sizeof(temp)/sizeof(TCHAR), temp);
+        _tprintf(_T("Card/Chip Details Data: %s\n"), temp);
+    }
+    if (cardData.issuerSecurityDomainsTrustPointCertificateInformationOidLength > 0) {
+        convertCharToTChar(cardData.issuerSecurityDomainsTrustPointCertificateInformationOid, oidTemp, sizeof(oidTemp)/sizeof(TCHAR));
+        _tprintf(_T("Issuer Security Domains Trust Point Certificate Information OID: %s\n"), oidTemp);
     }
     if (cardData.issuerSecurityDomainsTrustPointCertificateInformationLength > 0) {
         convertByteArrayToString(cardData.issuerSecurityDomainsTrustPointCertificateInformation,
                 cardData.issuerSecurityDomainsTrustPointCertificateInformationLength, sizeof(temp)/sizeof(TCHAR), temp);
-        _tprintf(_T("Issuer Security Domains Trust Point Certificate Information: %s\n"), temp);
+        _tprintf(_T("Issuer Security Domains Trust Point Certificate Information Data: %s\n"), temp);
+    }
+    if (cardData.issuerSecurityDomainCertificateInformationOidLength > 0) {
+        convertCharToTChar(cardData.issuerSecurityDomainCertificateInformationOid, oidTemp, sizeof(oidTemp)/sizeof(TCHAR));
+        _tprintf(_T("Issuer Security Domain Certificate Information OID: %s\n"), oidTemp);
     }
     if (cardData.issuerSecurityDomainCertificateInformationLength > 0) {
         convertByteArrayToString(cardData.issuerSecurityDomainCertificateInformation, cardData.issuerSecurityDomainCertificateInformationLength, sizeof(temp)/sizeof(TCHAR), temp);
-        _tprintf(_T("Issuer Security Domain Certificate Information: %s\n"), temp);
+        _tprintf(_T("Issuer Security Domain Certificate Information Data: %s\n"), temp);
     }
 }
 
@@ -586,12 +620,13 @@ static void displayApplicationsOp201(OP201_APPLICATION_DATA *applications, int c
 
 static void displayExtCardResorcesInfo(OPGP_EXTENDED_CARD_RESOURCE_INFORMATION extCardResorcesInfo) {
     LPCTSTR format1, format2;
-    format1 = _T("%-16s | %-21s | %-17s \n");
-    _tprintf(format1, _T("Num Applications"), _T("Free non volatile mem"), _T("Free volatile mem"));
-    format2 = _T("%-16d | %-21d | %-17d \n");
+    format1 = _T("%-16s | %-26s | %-22s \n");
+    _tprintf(format1, _T("Num Applications"), _T("Free non-volatile mem (B)"), _T("Free volatile mem (B)"));
+    format2 = _T("%-16lu | %-26lu | %-22lu \n");
     _tprintf(format1, _T("--"), _T("--"), _T("--"));
-    _tprintf(format2, extCardResorcesInfo.numInstalledApplications, extCardResorcesInfo.freeNonVolatileMemory,
-            extCardResorcesInfo.freeVolatileMemory);
+    _tprintf(format2, (unsigned long)extCardResorcesInfo.numInstalledApplications,
+            (unsigned long)extCardResorcesInfo.freeNonVolatileMemory,
+            (unsigned long)extCardResorcesInfo.freeVolatileMemory);
 }
 
 static void displayGpKeyInformation(GP211_KEY_INFORMATION *keyInformation, int count) {
@@ -1301,7 +1336,7 @@ static int handleCommands(FILE *fd)
                   {
                       goto end;
                   }
-                  status = OPGP_get_extended_card_resources_information(cardContext, cardInfo, &securityInfo211, &extendedCardResourcesInfo);
+                  status = OPGP_get_extended_card_resources_information(cardContext, cardInfo, NULL, &extendedCardResourcesInfo);
                   if (OPGP_ERROR_CHECK(status))
                   {
                       _tprintf (_T("get_extended_card_resources_information() returns 0x%08X (%s)\n"),

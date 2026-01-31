@@ -96,6 +96,8 @@ static void print_usage(const char *prog) {
         "      List key information grouped by key set version (kv).\n"
         "  cplc\n"
         "      Read and decode the Card Production Life Cycle (CPLC) data.\n"
+        "  cardData\n"
+        "      Read and decode the GlobalPlatform Card Recognition Data.\n"
         "  list-readers\n"
         "      List available PC/SC readers.\n\n",
         stderr);
@@ -259,6 +261,27 @@ static void print_cplc_date_field(const char *label, const BYTE *data, bool show
     if (cplc_date_to_dmy(data, &day, &month, &year)) {
         if (show_hex) printf(" ");
         printf("(%d.%d.%d)", day, month, year);
+    }
+    printf("\n");
+}
+
+static void print_card_data_hex_field(const char *label, const BYTE *data, size_t len) {
+    printf("%s : ", label);
+    for (size_t i = 0; i < len; i++) {
+        printf("%02X", data[i]);
+    }
+    if (len == 0) {
+        printf("(none)");
+    }
+    printf("\n");
+}
+
+static void print_card_data_oid_field(const char *label, const char *oid, DWORD oid_len) {
+    printf("%s OID : ", label);
+    if (oid_len > 0 && oid != NULL && oid[0] != '\0') {
+        printf("%s", oid);
+    } else {
+        printf("(none)");
     }
     printf("\n");
 }
@@ -1993,6 +2016,71 @@ static int cmd_cplc(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
     return 0;
 }
 
+static int cmd_card_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info) {
+    GP211_CARD_RECOGNITION_DATA data;
+    if (!status_ok(GP211_get_card_recognition_data(ctx, info, &data))) {
+        fprintf(stderr, "card-data: GP211_get_card_recognition_data failed\n");
+        return -1;
+    }
+
+    if (data.version[0] != '\0') {
+        printf("GlobalPlatform Version : %s\n", data.version);
+    }
+
+    if (data.scpLength == 0) {
+        printf("SCP List : (none)\n");
+    } else {
+        for (DWORD i = 0; i < data.scpLength; i++) {
+            if (data.scpLength == 1) {
+                printf("SCP : 0x%02X (impl 0x%02X)\n", data.scp[i], data.scpImpl[i]);
+            } else {
+                printf("SCP #%u : 0x%02X (impl 0x%02X)\n", (unsigned int)i, data.scp[i], data.scpImpl[i]);
+            }
+        }
+    }
+
+    if (data.cardConfigurationDetailsOidLength > 0) {
+        print_card_data_oid_field("Card Configuration Details", data.cardConfigurationDetailsOid,
+                                  data.cardConfigurationDetailsOidLength);
+    }
+    if (data.cardConfigurationDetailsLength > 0) {
+        print_card_data_hex_field("Card Configuration Details Data", data.cardConfigurationDetails,
+                                  data.cardConfigurationDetailsLength);
+    }
+
+    if (data.cardChipDetailsOidLength > 0) {
+        print_card_data_oid_field("Card/Chip Details", data.cardChipDetailsOid,
+                                  data.cardChipDetailsOidLength);
+    }
+    if (data.cardChipDetailsLength > 0) {
+        print_card_data_hex_field("Card/Chip Details Data", data.cardChipDetails,
+                                  data.cardChipDetailsLength);
+    }
+
+    if (data.issuerSecurityDomainsTrustPointCertificateInformationOidLength > 0) {
+        print_card_data_oid_field("ISD Trust Point Cert Info",
+                                  data.issuerSecurityDomainsTrustPointCertificateInformationOid,
+                                  data.issuerSecurityDomainsTrustPointCertificateInformationOidLength);
+    }
+    if (data.issuerSecurityDomainsTrustPointCertificateInformationLength > 0) {
+        print_card_data_hex_field("ISD Trust Point Cert Info Data",
+                                  data.issuerSecurityDomainsTrustPointCertificateInformation,
+                                  data.issuerSecurityDomainsTrustPointCertificateInformationLength);
+    }
+
+    if (data.issuerSecurityDomainCertificateInformationOidLength > 0) {
+        print_card_data_oid_field("ISD Certificate Info", data.issuerSecurityDomainCertificateInformationOid,
+                                  data.issuerSecurityDomainCertificateInformationOidLength);
+    }
+    if (data.issuerSecurityDomainCertificateInformationLength > 0) {
+        print_card_data_hex_field("ISD Certificate Info Data",
+                                  data.issuerSecurityDomainCertificateInformation,
+                                  data.issuerSecurityDomainCertificateInformationLength);
+    }
+
+    return 0;
+}
+
 int main(int argc, char **argv) {
     const char *prog = argv[0];
     const char *reader=NULL, *protocol="auto", *sd_hex=NULL, *sec_level_opt="mac+enc";
@@ -2056,7 +2144,7 @@ int main(int argc, char **argv) {
             if (!strcmp(argv[j], "--auth") || !strcmp(argv[j], "--secure")) { need_auth = 1; break; }
         }
     }
-    if (!strcmp(cmd, "sign-dap") || !strcmp(cmd, "hash")) {
+    if (!strcmp(cmd, "sign-dap") || !strcmp(cmd, "hash") || !strcmp(cmd, "card-data")) {
         need_auth = 0;
     }
     // Parse key options if provided
@@ -2108,12 +2196,19 @@ int main(int argc, char **argv) {
         }
     } else {
         sec_ptr = NULL; // no secure channel for raw APDU by default
+        if (!strcmp(cmd, "card-data")) {
+            if (select_isd(ctx, info, sd_hex) != 0) {
+                fprintf(stderr, "Failed to select ISD\n");
+                cleanup_and_exit(4);
+            }
+        }
     }
 
     int rc = 0;
     if (!strcmp(cmd, "list-apps")) rc = cmd_list_apps(ctx, info, &sec);
     else if (!strcmp(cmd, "list-keys")) rc = cmd_list_keys(ctx, info, &sec);
     else if (!strcmp(cmd, "cplc")) rc = cmd_cplc(ctx, info, &sec);
+    else if (!strcmp(cmd, "card-data")) rc = cmd_card_data(ctx, info);
     else if (!strcmp(cmd, "install")) rc = cmd_install(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "delete")) rc = cmd_delete(ctx, info, &sec, (i<argc)?argv[i]:NULL);
     else if (!strcmp(cmd, "put-key")) rc = cmd_put_key(ctx, info, &sec, argc - i, &argv[i]);

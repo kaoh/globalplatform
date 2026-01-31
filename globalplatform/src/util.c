@@ -17,6 +17,8 @@
  */
 
 #include "util.h"
+#include <limits.h>
+#include <stdio.h>
 #include <string.h>
 
 /**
@@ -200,4 +202,50 @@ LONG write_TLV_length(PBYTE buffer, DWORD offset, DWORD lengthLeft, USHORT lengt
 		buffer[offset + 2] = (BYTE)(length & 0xFF);
 		return 3;
 	}
+}
+
+LONG parse_OID_numeric_string(PBYTE oid, DWORD oidLength, char *out, DWORD outLength) {
+	DWORD i;
+	unsigned long long value;
+	DWORD offset = 0;
+	int written;
+
+	if (oid == NULL || out == NULL || oidLength == 0 || outLength == 0) {
+		return -1;
+	}
+
+	if (oid[0] < 40) {
+		written = snprintf(out, outLength, "%u.%u", 0u, (unsigned int)oid[0]);
+	} else if (oid[0] < 80) {
+		written = snprintf(out, outLength, "%u.%u", 1u, (unsigned int)(oid[0] - 40));
+	} else {
+		written = snprintf(out, outLength, "%u.%u", 2u, (unsigned int)(oid[0] - 80));
+	}
+	if (written < 0 || (DWORD)written >= outLength) {
+		return -1;
+	}
+	offset = (DWORD)written;
+
+	for (i = 1; i < oidLength; i++) {
+		value = 0;
+		for (; i < oidLength; i++) {
+			if (value > (ULLONG_MAX >> 7)) {
+				return -1;
+			}
+			value = (value << 7) | (oid[i] & 0x7F);
+			if ((oid[i] & 0x80) == 0) {
+				break;
+			}
+		}
+		if (i >= oidLength || (oid[i] & 0x80) != 0) {
+			return -1;
+		}
+		written = snprintf(out + offset, outLength - offset, ".%llu", value);
+		if (written < 0 || (DWORD)written >= outLength - offset) {
+			return -1;
+		}
+		offset += (DWORD)written;
+	}
+
+	return (LONG)offset;
 }
