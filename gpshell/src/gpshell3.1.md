@@ -282,6 +282,33 @@ Synopsis:
 gpshell3 store [--encryption <noinfo|app|enc>] [--format <noinfo|dgi|ber>] [--response <true|false>] <AIDhex> <datahex>
 ```
 
+## cplc
+
+Read and decode the Card Production Life Cycle (CPLC) data. This command does not require authentication.
+
+Example:
+```
+gpshell3 cplc
+```
+
+## card-data
+
+Read and decode GlobalPlatform Card Recognition Data (Card Data tag `0x66`). This command does not require authentication.
+
+Example:
+```
+gpshell3 card-data
+```
+
+## card-resources
+
+Read extended card resource information (number of installed applications and free memory). This command does not require authentication.
+
+Example:
+```
+gpshell3 card-resources
+```
+
 Options:
 
 - `--encryption` (default `noinfo`):

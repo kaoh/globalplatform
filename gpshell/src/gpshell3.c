@@ -96,8 +96,10 @@ static void print_usage(const char *prog) {
         "      List key information grouped by key set version (kv).\n"
         "  cplc\n"
         "      Read and decode the Card Production Life Cycle (CPLC) data.\n"
-        "  cardData\n"
+        "  card-data\n"
         "      Read and decode the GlobalPlatform Card Recognition Data.\n"
+        "  card-resources\n"
+        "      Read extended card resource information (applications and free memory).\n"
         "  list-readers\n"
         "      List available PC/SC readers.\n\n",
         stderr);
@@ -2081,6 +2083,19 @@ static int cmd_card_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info) {
     return 0;
 }
 
+static int cmd_card_resources(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info) {
+    OPGP_EXTENDED_CARD_RESOURCE_INFORMATION data;
+    if (!status_ok(OPGP_get_extended_card_resources_information(ctx, info, NULL, &data))) {
+        fprintf(stderr, "card-resources: OPGP_get_extended_card_resources_information failed\n");
+        return -1;
+    }
+
+    printf("Num Applications : %lu\n", (unsigned long)data.numInstalledApplications);
+    printf("Free non-volatile memory (B) : %lu\n", (unsigned long)data.freeNonVolatileMemory);
+    printf("Free volatile memory (B) : %lu\n", (unsigned long)data.freeVolatileMemory);
+    return 0;
+}
+
 int main(int argc, char **argv) {
     const char *prog = argv[0];
     const char *reader=NULL, *protocol="auto", *sd_hex=NULL, *sec_level_opt="mac+enc";
@@ -2144,7 +2159,7 @@ int main(int argc, char **argv) {
             if (!strcmp(argv[j], "--auth") || !strcmp(argv[j], "--secure")) { need_auth = 1; break; }
         }
     }
-    if (!strcmp(cmd, "sign-dap") || !strcmp(cmd, "hash") || !strcmp(cmd, "card-data")) {
+    if (!strcmp(cmd, "sign-dap") || !strcmp(cmd, "hash") || !strcmp(cmd, "card-data") || !strcmp(cmd, "card-resources")) {
         need_auth = 0;
     }
     // Parse key options if provided
@@ -2196,7 +2211,7 @@ int main(int argc, char **argv) {
         }
     } else {
         sec_ptr = NULL; // no secure channel for raw APDU by default
-        if (!strcmp(cmd, "card-data")) {
+        if (!strcmp(cmd, "card-data") || !strcmp(cmd, "card-resources")) {
             if (select_isd(ctx, info, sd_hex) != 0) {
                 fprintf(stderr, "Failed to select ISD\n");
                 cleanup_and_exit(4);
@@ -2209,6 +2224,7 @@ int main(int argc, char **argv) {
     else if (!strcmp(cmd, "list-keys")) rc = cmd_list_keys(ctx, info, &sec);
     else if (!strcmp(cmd, "cplc")) rc = cmd_cplc(ctx, info, &sec);
     else if (!strcmp(cmd, "card-data")) rc = cmd_card_data(ctx, info);
+    else if (!strcmp(cmd, "card-resources")) rc = cmd_card_resources(ctx, info);
     else if (!strcmp(cmd, "install")) rc = cmd_install(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "delete")) rc = cmd_delete(ctx, info, &sec, (i<argc)?argv[i]:NULL);
     else if (!strcmp(cmd, "put-key")) rc = cmd_put_key(ctx, info, &sec, argc - i, &argv[i]);
