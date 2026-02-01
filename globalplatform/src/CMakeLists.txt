@@ -116,6 +116,9 @@ ENDIF(WINDDK_DIR)
 
 IF(UNIX)
   SET_TARGET_PROPERTIES(globalplatform PROPERTIES SOVERSION ${SOVERSION})
+  # Allow in-tree execution to find the PC/SC plugin without installing it
+  set(_globalplatform_plugin_rpath "$ORIGIN/../../gppcscconnectionplugin/src")
+  set_target_properties(globalplatform PROPERTIES BUILD_RPATH "${_globalplatform_plugin_rpath}")
 ENDIF(UNIX)
 
 # Install

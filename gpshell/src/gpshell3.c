@@ -98,6 +98,8 @@ static void print_usage(const char *prog) {
         "      Read and decode the Card Production Life Cycle (CPLC) data.\n"
         "  card-data\n"
         "      Read and decode the GlobalPlatform Card Recognition Data.\n"
+        "  card-capability\n"
+        "      Read and decode the GlobalPlatform Card Capability Information.\n"
         "  card-resources\n"
         "      Read extended card resource information (applications and free memory).\n"
         "  list-readers\n"
@@ -253,16 +255,13 @@ static void print_cplc_hex_field(const char *label, const BYTE *data, size_t len
     printf("\n");
 }
 
-static void print_cplc_date_field(const char *label, const BYTE *data, bool show_hex) {
+static void print_cplc_date_field(const char *label, const BYTE *data) {
     int day = 0, month = 0, year = 0;
-    if (show_hex) {
-        printf("%s : %02X%02X", label, data[0], data[1]);
-    } else {
-        printf("%s : ", label);
-    }
+    printf("%s : ", label);
     if (cplc_date_to_dmy(data, &day, &month, &year)) {
-        if (show_hex) printf(" ");
-        printf("(%d.%d.%d)", day, month, year);
+        printf("%d.%d.%d", day, month, year);
+    } else {
+        printf("unknown");
     }
     printf("\n");
 }
@@ -286,6 +285,191 @@ static void print_card_data_oid_field(const char *label, const char *oid, DWORD 
         printf("(none)");
     }
     printf("\n");
+}
+
+static void print_capability_hex_field(const char *label, const BYTE *data, size_t len) {
+    if (len == 0 || data == NULL) {
+        return;
+    }
+    printf("%s : ", label);
+    for (size_t i = 0; i < len; i++) {
+        printf("%02X", data[i]);
+    }
+    printf("\n");
+}
+
+static void print_capability_hex_bytes_csv(const char *label, const BYTE *data, size_t len) {
+    if (len == 0 || data == NULL) return;
+    printf("%s : ", label);
+    for (size_t i = 0; i < len; i++) {
+        if (i) printf(", ");
+        printf("0x%02X", data[i]);
+    }
+    printf("\n");
+}
+
+static DWORD gp211_privileges_3bytes_to_dword(const BYTE b[3]) {
+    return ((DWORD)b[0] << 16) | ((DWORD)b[1] << 8) | (DWORD)b[2];
+}
+
+static const char *gp211_hash_to_string(BYTE hashId) {
+    switch (hashId) {
+        case GP211_HASH_SHA1: return "sha1";
+        case GP211_HASH_SHA256: return "sha256";
+        case GP211_HASH_SHA384: return "sha384";
+        case GP211_HASH_SHA512: return "sha512";
+        case GP211_HASH_SM3: return "sm3";
+        default: return NULL;
+    }
+}
+
+static void gp211_lfdbh_algorithms_to_string(const BYTE *algs, DWORD algsLen, char *out, size_t outlen) {
+    if (!out || outlen == 0) return;
+    out[0] = '\0';
+    size_t used = 0;
+    int first = 1;
+
+    for (DWORD i = 0; i < algsLen; i++) {
+        const char *name = gp211_hash_to_string(algs[i]);
+        char unknown[16];
+
+        if (!name) {
+            snprintf(unknown, sizeof(unknown), "0x%02X", algs[i]);
+            name = unknown;
+        }
+
+        if (!first) {
+            const char *sep = ", ";
+            for (const char *p = sep; *p && used + 1 < outlen; ++p) out[used++] = *p;
+        }
+        first = 0;
+
+        for (const char *p = name; *p && used + 1 < outlen; ++p) out[used++] = *p;
+        out[used] = '\0';
+    }
+
+    if (first) snprintf(out, outlen, "none");
+}
+
+static void gp211_lfdb_encryption_to_string(BYTE suites, char *out, size_t outlen) {
+    if (!out || outlen == 0) return;
+    out[0] = '\0';
+    size_t used = 0;
+    int first = 1;
+
+    struct { BYTE bit; const char *name; } map[] = {
+        { GP211_LFDB_ENCRYPTION_3DES_16B_KEY, "3des" },
+        { GP211_LFDB_ENCRYPTION_AES_128, "aes128" },
+        { GP211_LFDB_ENCRYPTION_AES_192, "aes192" },
+        { GP211_LFDB_ENCRYPTION_AES_256, "aes256" },
+        { GP211_LFDB_ENCRYPTION_SM4, "sm4" },
+        { GP211_LFDB_ENCRYPTION_ICV_SUPPORTED, "icv" },
+    };
+
+    for (size_t i = 0; i < sizeof(map) / sizeof(map[0]); i++) {
+        if ((suites & map[i].bit) == 0) continue;
+
+        if (!first) {
+            const char *sep = ", ";
+            for (const char *p = sep; *p && used + 1 < outlen; ++p) out[used++] = *p;
+        }
+        first = 0;
+
+        for (const char *p = map[i].name; *p && used + 1 < outlen; ++p) out[used++] = *p;
+        out[used] = '\0';
+    }
+
+    if (first) snprintf(out, outlen, "none");
+}
+
+static const char *gp211_elf_upgrade_to_string(BYTE v) {
+    switch (v) {
+        case GP211_ELF_UPGRADE_SINGLE: return "single";
+        case GP211_ELF_UPGRADE_MULTI: return "multi";
+        default: return NULL;
+    }
+}
+
+static void gp211_scp_supported_key_sizes_to_string(BYTE sizes, char *out, size_t outlen) {
+    if (!out || outlen == 0) return;
+    out[0] = '\0';
+    size_t used = 0;
+    int first = 1;
+
+    struct { BYTE bit; const char *name; } map[] = {
+        { GP211_SCP_SUPPORTED_KEY_SIZE_128, "128" },
+        { GP211_SCP_SUPPORTED_KEY_SIZE_192, "192" },
+        { GP211_SCP_SUPPORTED_KEY_SIZE_256, "256" },
+    };
+
+    for (size_t i = 0; i < sizeof(map) / sizeof(map[0]); i++) {
+        if ((sizes & map[i].bit) == 0) continue;
+
+        if (!first) {
+            const char *sep = ", ";
+            for (const char *p = sep; *p && used + 1 < outlen; ++p) out[used++] = *p;
+        }
+        first = 0;
+
+        for (const char *p = map[i].name; *p && used + 1 < outlen; ++p) out[used++] = *p;
+        out[used] = '\0';
+    }
+
+    if (first) snprintf(out, outlen, "none");
+}
+
+static void gp211_signature_cs_to_string(USHORT suites, char *out, size_t outlen) {
+    if (!out || outlen == 0) return;
+    out[0] = '\0';
+    size_t used = 0;
+    int first = 1;
+
+    struct { USHORT bit; const char *name; } map[] = {
+        { GP211_SIGNATURE_CS_RSA_1024_SHA1, "rsa1024-sha1" },
+        { GP211_SIGNATURE_CS_RSA_PSS_SHA256, "rsa-pss-sha256" },
+        { GP211_SIGNATURE_CS_DES_MAC_16B, "des-mac-16b" },
+        { GP211_SIGNATURE_CS_CMAC_AES_128, "cmac-aes128" },
+        { GP211_SIGNATURE_CS_CMAC_AES_192, "cmac-aes192" },
+        { GP211_SIGNATURE_CS_CMAC_AES_256, "cmac-aes256" },
+        { GP211_SIGNATURE_CS_ECDSA_256_SHA256, "ecdsa256-sha256" },
+        { GP211_SIGNATURE_CS_ECDSA_384_SHA384, "ecdsa384-sha384" },
+
+        { GP211_SIGNATURE_CS_ECDSA_512_SHA512, "ecdsa512-sha512" },
+        { GP211_SIGNATURE_CS_ECDSA_521_SHA512, "ecdsa521-sha512" },
+        { GP211_SIGNATURE_CS_SM2, "sm2" },
+    };
+
+    USHORT remaining = suites;
+
+    for (size_t i = 0; i < sizeof(map) / sizeof(map[0]); i++) {
+        if ((suites & map[i].bit) == 0) continue;
+
+        remaining = (USHORT)(remaining & (USHORT)~map[i].bit);
+
+        if (!first) {
+            const char *sep = ", ";
+            for (const char *p = sep; *p && used + 1 < outlen; ++p) out[used++] = *p;
+        }
+        first = 0;
+
+        for (const char *p = map[i].name; *p && used + 1 < outlen; ++p) out[used++] = *p;
+        out[used] = '\0';
+    }
+
+    if (first) {
+        snprintf(out, outlen, "none");
+        return;
+    }
+
+    if (remaining) {
+        char unk[32];
+        snprintf(unk, sizeof(unk), "0x%04X", (unsigned int)remaining);
+
+        const char *sep = ", ";
+        for (const char *p = sep; *p && used + 1 < outlen; ++p) out[used++] = *p;
+        for (const char *p = unk; *p && used + 1 < outlen; ++p) out[used++] = *p;
+        out[used] = '\0';
+    }
 }
 
 static BYTE sec_level_from_option(BYTE proto, const char *opt) {
@@ -1975,31 +2159,46 @@ static int cmd_cplc(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
 
     {
         USHORT ic_fab = (cplc[0] << 8) | cplc[1];
-        printf("IC Fabricator : %04X (%s)\n", ic_fab, get_ic_fab_name(ic_fab));
+        const char *name = get_ic_fab_name(ic_fab);
+        if (strncmp(name, "Unknown", 7) == 0) {
+            printf("IC Fabricator : %04X\n", ic_fab);
+        } else {
+            printf("IC Fabricator : %s\n", name);
+        }
     }
     {
         USHORT ic_type = (cplc[2] << 8) | cplc[3];
-        printf("IC Type       : %04X (%s)\n", ic_type, get_ic_type_name(ic_type));
+        const char *name = get_ic_type_name(ic_type);
+        if (strncmp(name, "Unknown", 7) == 0) {
+            printf("IC Type       : %04X\n", ic_type);
+        } else {
+            printf("IC Type       : %s\n", name);
+        }
     }
     {
         USHORT os_id = (cplc[4] << 8) | cplc[5];
-        printf("OS ID         : %04X (%s)\n", os_id, get_os_id_name(os_id));
+        const char *name = get_os_id_name(os_id);
+        if (strncmp(name, "Unknown", 7) == 0) {
+            printf("OS ID         : %04X\n", os_id);
+        } else {
+            printf("OS ID         : %s\n", name);
+        }
     }
 
-    print_cplc_date_field("Operating System release date", cplc + 6, true);
+    print_cplc_date_field("Operating System release date", cplc + 6);
     print_cplc_hex_field("Operating System release level", cplc + 8, 2);
-    print_cplc_date_field("IC Fabrication Date", cplc + 10, true);
+    print_cplc_date_field("IC Fabrication Date", cplc + 10);
     {
         DWORD serial = (cplc[12] << 24) | (cplc[13] << 16) | (cplc[14] << 8) | cplc[15];
         printf("IC Serial Number : %u\n", (unsigned int)serial);
     }
     print_cplc_hex_field("IC Batch Identifier", cplc + 16, 2);
     print_cplc_hex_field("IC Module Fabricator", cplc + 18, 2);
-    print_cplc_date_field("IC Module Packaging Date", cplc + 20, true);
+    print_cplc_date_field("IC Module Packaging Date", cplc + 20);
     print_cplc_hex_field("ICC Manufacturer", cplc + 22, 2);
-    print_cplc_date_field("IC Embedding Date", cplc + 24, true);
+    print_cplc_date_field("IC Embedding Date", cplc + 24);
     print_cplc_hex_field("IC Pre-Personalizer", cplc + 26, 2);
-    print_cplc_date_field("IC Pre-Perso. Equipment Date", cplc + 28, true);
+    print_cplc_date_field("IC Pre-Perso. Equipment Date", cplc + 28);
     {
         printf("IC Pre-Perso. Equipment ID : %02X%02X%02X%02X", cplc[30], cplc[31], cplc[32], cplc[33]);
         if (cplc[30] != 0 || cplc[31] != 0 || cplc[32] != 0 || cplc[33] != 0) {
@@ -2013,7 +2212,7 @@ static int cmd_cplc(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
         printf("\n");
     }
     print_cplc_hex_field("IC Personalizer", cplc + 34, 2);
-    print_cplc_date_field("IC Personalization Date", cplc + 36, true);
+    print_cplc_date_field("IC Personalization Date", cplc + 36);
     print_cplc_hex_field("IC Perso. Equipment ID", cplc + 38, 4);
     return 0;
 }
@@ -2078,6 +2277,129 @@ static int cmd_card_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info) {
         print_card_data_hex_field("ISD Certificate Info Data",
                                   data.issuerSecurityDomainCertificateInformation,
                                   data.issuerSecurityDomainCertificateInformationLength);
+    }
+
+    return 0;
+}
+
+static int cmd_card_capability(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info) {
+    GP211_CARD_CAPABILITY_INFORMATION data;
+    if (!status_ok(GP211_get_card_capability_information(ctx, info, &data))) {
+        fprintf(stderr, "card-capability: GP211_get_card_capability_information failed\n");
+        return -1;
+    }
+
+    for (DWORD i = 0; i < data.scpInformationLength; i++) {
+        char label[64];
+        if (data.scpInformationLength == 1) {
+            printf("SCP : 0x%02X\n", data.scpInformation[i].scpIdentifier);
+        } else {
+            printf("SCP #%u : 0x%02X\n", (unsigned int)i, data.scpInformation[i].scpIdentifier);
+        }
+        if (data.scpInformation[i].scpOptionsLength > 0) {
+            if (data.scpInformationLength == 1) snprintf(label, sizeof(label), "SCP Options");
+            else snprintf(label, sizeof(label), "SCP #%u Options", (unsigned int)i);
+            print_capability_hex_bytes_csv(label, data.scpInformation[i].scpOptions, data.scpInformation[i].scpOptionsLength);
+        }
+        if (data.scpInformation[i].scpOptionsMaskLength > 0) {
+            if (data.scpInformationLength == 1) snprintf(label, sizeof(label), "SCP Options Mask");
+            else snprintf(label, sizeof(label), "SCP #%u Options Mask", (unsigned int)i);
+            print_capability_hex_bytes_csv(label, data.scpInformation[i].scpOptionsMask, data.scpInformation[i].scpOptionsMaskLength);
+        }
+        if (data.scpInformation[i].supportedKeySizes != 0) {
+            if (data.scpInformationLength == 1) snprintf(label, sizeof(label), "SCP Supported Key Sizes");
+            else snprintf(label, sizeof(label), "SCP #%u Supported Key Sizes", (unsigned int)i);
+            {
+                char kbuf[64];
+                gp211_scp_supported_key_sizes_to_string(data.scpInformation[i].supportedKeySizes, kbuf, sizeof(kbuf));
+                if (strcmp(kbuf, "none") == 0) {
+                    printf("%s : 0x%02X\n", label, data.scpInformation[i].supportedKeySizes);
+                } else {
+                    printf("%s : %s\n", label, kbuf);
+                }
+            }
+        }
+        if (data.scpInformation[i].tlsCipherSuitesLength > 0) {
+            if (data.scpInformationLength == 1) snprintf(label, sizeof(label), "SCP TLS Cipher Suites");
+            else snprintf(label, sizeof(label), "SCP #%u TLS Cipher Suites", (unsigned int)i);
+            print_capability_hex_field(label, data.scpInformation[i].tlsCipherSuites, data.scpInformation[i].tlsCipherSuitesLength);
+        }
+        if (data.scpInformation[i].maxPskLength != 0) {
+            if (data.scpInformationLength == 1) snprintf(label, sizeof(label), "SCP Max PSK Length");
+            else snprintf(label, sizeof(label), "SCP #%u Max PSK Length", (unsigned int)i);
+            printf("%s : %u\n", label, (unsigned int)data.scpInformation[i].maxPskLength);
+        }
+    }
+
+    if (data.ssdPrivileges[0] || data.ssdPrivileges[1] || data.ssdPrivileges[2]) {
+        DWORD p = gp211_privileges_3bytes_to_dword(data.ssdPrivileges);
+        char pbuf[512];
+        privileges_to_string(p, pbuf, sizeof(pbuf));
+        printf("SSD Privileges : [%s]\n", pbuf);
+    }
+    if (data.appPrivileges[0] || data.appPrivileges[1] || data.appPrivileges[2]) {
+        DWORD p = gp211_privileges_3bytes_to_dword(data.appPrivileges);
+        char pbuf[512];
+        privileges_to_string(p, pbuf, sizeof(pbuf));
+        printf("Application Privileges : [%s]\n", pbuf);
+    }
+    if (data.lfdbhAlgorithmsLength > 0) {
+        char abuf[256];
+        gp211_lfdbh_algorithms_to_string(data.lfdbhAlgorithms, data.lfdbhAlgorithmsLength, abuf, sizeof(abuf));
+        printf("Load-file data block hash Algorithms : %s\n", abuf);
+    }
+    if (data.lfdbencryptionCipherSuites != 0) {
+        char sbuf[256];
+        gp211_lfdb_encryption_to_string(data.lfdbencryptionCipherSuites, sbuf, sizeof(sbuf));
+        if (strcmp(sbuf, "none") == 0) {
+            printf("Load-file data block Encryption Cipher Suites : 0x%02X\n", data.lfdbencryptionCipherSuites);
+        } else {
+            printf("Load-file data block Encryption Cipher Suites : %s\n", sbuf);
+        }
+    }
+    if (data.tokenCipherSuites != 0) {
+        char sbuf[256];
+        gp211_signature_cs_to_string(data.tokenCipherSuites, sbuf, sizeof(sbuf));
+        if (strcmp(sbuf, "none") == 0) {
+            printf("Token Cipher Suites : 0x%04X\n", data.tokenCipherSuites);
+        } else {
+            printf("Token Cipher Suites : %s\n", sbuf);
+        }
+    }
+    if (data.receiptCipherSuites != 0) {
+        char sbuf[256];
+        gp211_signature_cs_to_string(data.receiptCipherSuites, sbuf, sizeof(sbuf));
+        if (strcmp(sbuf, "none") == 0) {
+            printf("Receipt Cipher Suites : 0x%04X\n", data.receiptCipherSuites);
+        } else {
+            printf("Receipt Cipher Suites : %s\n", sbuf);
+        }
+    }
+    if (data.dapCipherSuites != 0) {
+        char sbuf[256];
+        gp211_signature_cs_to_string(data.dapCipherSuites, sbuf, sizeof(sbuf));
+        if (strcmp(sbuf, "none") == 0) {
+            printf("DAP Cipher Suites : 0x%04X\n", data.dapCipherSuites);
+        } else {
+            printf("DAP Cipher Suites : %s\n", sbuf);
+        }
+    }
+    if (data.keyParameterReferenceListLength > 0) {
+        print_capability_hex_field("Key Parameter Reference List", data.keyParameterReferenceList,
+                                   data.keyParameterReferenceListLength);
+    }
+
+    {
+        const char *elf = gp211_elf_upgrade_to_string(data.elfUpgrade);
+        if (elf) printf("ELF Upgrade Options : %s\n", elf);
+        else if (data.elfUpgrade != 0) printf("ELF Upgrade Options : 0x%02X\n", data.elfUpgrade);
+    }
+
+    if (data.tokenIdentifierDenyList) {
+        printf("Token Identifier Deny List : yes\n");
+    }
+    if (data.securityDomainSelfRemoval) {
+        printf("Security Domain Self-Removal : yes\n");
     }
 
     return 0;
@@ -2159,7 +2481,7 @@ int main(int argc, char **argv) {
             if (!strcmp(argv[j], "--auth") || !strcmp(argv[j], "--secure")) { need_auth = 1; break; }
         }
     }
-    if (!strcmp(cmd, "sign-dap") || !strcmp(cmd, "hash") || !strcmp(cmd, "card-data") || !strcmp(cmd, "card-resources")) {
+    if (!strcmp(cmd, "sign-dap") || !strcmp(cmd, "hash") || !strcmp(cmd, "card-data") || !strcmp(cmd, "card-capability") || !strcmp(cmd, "card-resources")) {
         need_auth = 0;
     }
     // Parse key options if provided
@@ -2211,7 +2533,7 @@ int main(int argc, char **argv) {
         }
     } else {
         sec_ptr = NULL; // no secure channel for raw APDU by default
-        if (!strcmp(cmd, "card-data") || !strcmp(cmd, "card-resources")) {
+        if (!strcmp(cmd, "card-data") || !strcmp(cmd, "card-capability") || !strcmp(cmd, "card-resources")) {
             if (select_isd(ctx, info, sd_hex) != 0) {
                 fprintf(stderr, "Failed to select ISD\n");
                 cleanup_and_exit(4);
@@ -2224,6 +2546,7 @@ int main(int argc, char **argv) {
     else if (!strcmp(cmd, "list-keys")) rc = cmd_list_keys(ctx, info, &sec);
     else if (!strcmp(cmd, "cplc")) rc = cmd_cplc(ctx, info, &sec);
     else if (!strcmp(cmd, "card-data")) rc = cmd_card_data(ctx, info);
+    else if (!strcmp(cmd, "card-capability")) rc = cmd_card_capability(ctx, info);
     else if (!strcmp(cmd, "card-resources")) rc = cmd_card_resources(ctx, info);
     else if (!strcmp(cmd, "install")) rc = cmd_install(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "delete")) rc = cmd_delete(ctx, info, &sec, (i<argc)?argv[i]:NULL);

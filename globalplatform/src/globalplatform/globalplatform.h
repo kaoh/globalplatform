@@ -162,6 +162,7 @@ static const BYTE GP211_GET_DATA_EXTENDED_CARD_RESOURCES[2] = {0xFF, 0x21}; //!<
 
 static const BYTE GP211_GET_DATA_CARD_DATA[2] = {0x00, 0x66}; //!< Card Data.
 static const BYTE GP211_GET_DATA_SECURITY_DOMAIN_MANAGEMENT_DATA[2] = {0x00, 0x66}; //!< Security Domain Management Data if Security Domain is selected.
+static const BYTE GP211_GET_DATA_CARD_CAPABILITY_INFORMATION[2] = {0x00, 0x67}; //!< Card Capability Information.
 static const BYTE GP211_GET_DATA_SEQUENCE_COUNTER_DEFAULT_KEY_VERSION[2] = {0x00, 0xC1}; //!< Sequence Counter of the default Key Version Number.
 static const BYTE GP211_GET_DATA_CONFIRMATION_COUNTER[2] = {0x00, 0xC2}; //!< Confirmation Counter for generating receipts.
 static const BYTE GP211_GET_DATA_FREE_EEPROM_MEMORY_SPACE[2] = {0x00, 0xC6}; //!< Free EEPROM memory space.
@@ -432,6 +433,77 @@ typedef struct {
 	DWORD issuerSecurityDomainCertificateInformationLength; //!< Issuer Security Domain certificate information length.
 } GP211_CARD_RECOGNITION_DATA;
 
+#define GP211_MAX_CARD_CAPABILITY_SCP_INFOS 16
+#define GP211_MAX_CARD_CAPABILITY_SCP_OPTIONS 2
+#define GP211_MAX_CARD_CAPABILITY_TLS_CIPHER_SUITES 16
+#define GP211_MAX_CARD_CAPABILITY_LFDBH_ALGORITHMS 8
+#define GP211_MAX_CARD_CAPABILITY_CIPHER_SUITES 32
+#define GP211_MAX_CARD_CAPABILITY_KEY_PARAMETER_REFERENCES 128
+#define GP211_MAX_CARD_CAPABILITY_ELF_UPGRADE 32
+
+#define GP211_SCP_SUPPORTED_KEY_SIZE_128 0x01
+#define GP211_SCP_SUPPORTED_KEY_SIZE_192 0x02
+#define GP211_SCP_SUPPORTED_KEY_SIZE_256 0x04
+
+#define GP211_LFDB_ENCRYPTION_3DES_16B_KEY 0x01
+#define GP211_LFDB_ENCRYPTION_AES_128 0x02
+#define GP211_LFDB_ENCRYPTION_AES_192 0x04
+#define GP211_LFDB_ENCRYPTION_AES_256 0x08
+#define GP211_LFDB_ENCRYPTION_SM4 0x10
+#define GP211_LFDB_ENCRYPTION_ICV_SUPPORTED 0x80
+
+#define GP211_SIGNATURE_CS_RSA_1024_SHA1 0x0100
+#define GP211_SIGNATURE_CS_RSA_PSS_SHA256 0x0200
+#define GP211_SIGNATURE_CS_DES_MAC_16B 0x0400
+#define GP211_SIGNATURE_CS_CMAC_AES_128 0x0800
+#define GP211_SIGNATURE_CS_CMAC_AES_192 0x1000
+#define GP211_SIGNATURE_CS_CMAC_AES_256 0x2000
+#define GP211_SIGNATURE_CS_ECDSA_256_SHA256 0x4000
+#define GP211_SIGNATURE_CS_ECDSA_384_SHA384 0x8000
+
+#define GP211_SIGNATURE_CS_ECDSA_512_SHA512 0x0001
+#define GP211_SIGNATURE_CS_ECDSA_521_SHA512 0x0002
+#define GP211_SIGNATURE_CS_SM2 0x0004
+
+#define GP211_ELF_UPGRADE_SINGLE 0x00
+#define GP211_ELF_UPGRADE_MULTI 0x01
+
+/**
+ * SCP Information inside Card Capability Information (Tag 'A0').
+ */
+typedef struct {
+	BYTE scpIdentifier; //!< SCP Identifier (tag '80').
+	BYTE scpOptions[GP211_MAX_CARD_CAPABILITY_SCP_OPTIONS]; //!< SCP Options list (tag '81').
+	DWORD scpOptionsLength; //!< SCP Options list length.
+	BYTE scpOptionsMask[GP211_MAX_CARD_CAPABILITY_SCP_OPTIONS]; //!< SCP Options mask (tag '91').
+	DWORD scpOptionsMaskLength; //!< SCP Options mask length.
+	BYTE supportedKeySizes; //!< Supported key sizes (tag '82').
+	BYTE tlsCipherSuites[GP211_MAX_CARD_CAPABILITY_TLS_CIPHER_SUITES]; //!< Supported TLS cipher suites (tag '83').
+	DWORD tlsCipherSuitesLength; //!< Supported TLS cipher suites length.
+	BYTE maxPskLength; //!< Max length of PSK in bytes (tag '84').
+} GP211_SCP_INFORMATION;
+
+/**
+ * The Card Capability Information returned for tag 0x67 with GET DATA.
+ */
+typedef struct {
+	GP211_SCP_INFORMATION scpInformation[GP211_MAX_CARD_CAPABILITY_SCP_INFOS]; //!< SCP information entries.
+	DWORD scpInformationLength; //!< Number of SCP information entries.
+	BYTE ssdPrivileges[3]; //!< Privileges assignable to SSDs (tag '81').
+	BYTE appPrivileges[3]; //!< Privileges assignable to applications (tag '82').
+	BYTE lfdbhAlgorithms[GP211_MAX_CARD_CAPABILITY_LFDBH_ALGORITHMS]; //!< Supported LFDBH algorithms (tag '83'). See GP211_HASH_SHA256.
+	DWORD lfdbhAlgorithmsLength; //!< Supported LFDBH algorithms length
+	BYTE lfdbencryptionCipherSuites; //!< LFDB encryption cipher suites (tag '84').
+	USHORT tokenCipherSuites; //!< Cipher suites supported for tokens (tag '85'). See GP211_CIPHER_SUITE_AES_128_CBC.
+	USHORT receiptCipherSuites; //!< Cipher suites supported for receipts (tag '86').
+	USHORT dapCipherSuites; //!< Cipher suites supported for DAPs (tag '87').
+	BYTE keyParameterReferenceList[GP211_MAX_CARD_CAPABILITY_KEY_PARAMETER_REFERENCES]; //!< Key Parameter Reference List (tag '88').
+	DWORD keyParameterReferenceListLength; //!< Key Parameter Reference List length.
+	BYTE elfUpgrade; //!< Supported ELF upgrade process & options (tag '89').
+	BOOL tokenIdentifierDenyList; //!< Support for Token Identifier Deny List (tag '8A').
+	BOOL securityDomainSelfRemoval; //!< Support for Security Domain Self-Removal (tag '8B').
+} GP211_CARD_CAPABILITY_INFORMATION;
+
 //! \brief GlobalPlatform2.1.1: Selects an application on a card by AID.
 OPGP_API
 OPGP_ERROR_STATUS OPGP_select_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, PBYTE AID, DWORD AIDLength);
@@ -486,6 +558,10 @@ OPGP_ERROR_STATUS GP211_get_data_iso7816_4(OPGP_CARD_CONTEXT cardContext, OPGP_C
 //! \brief GlobalPlatform2.1.1: Return the card recognition data.
 OPGP_API
 OPGP_ERROR_STATUS GP211_get_card_recognition_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_CARD_RECOGNITION_DATA *cardData);
+
+//! \brief GlobalPlatform2.3.1: Return the card capability information.
+OPGP_API
+OPGP_ERROR_STATUS GP211_get_card_capability_information(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_CARD_CAPABILITY_INFORMATION *cardCapabilityInfo);
 
 //! \brief GlobalPlatform2.1.1: This returns the Secure Channel Protocol and the Secure Channel Protocol implementation.
 OPGP_API

@@ -300,6 +300,15 @@ Example:
 gpshell3 card-data
 ```
 
+## card-capability
+
+Read and decode GlobalPlatform Card Capability Information (Card Capability Information tag `0x67`). This command does not require authentication.
+
+Example:
+```
+gpshell3 card-capability
+```
+
 ## card-resources
 
 Read extended card resource information (number of installed applications and free memory). This command does not require authentication.
