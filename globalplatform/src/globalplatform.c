@@ -1633,6 +1633,32 @@ OPGP_ERROR_STATUS GP211_get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO c
 				  return get_data(cardContext, cardInfo, secInfo, identifier, recvBuffer, recvBufferLength);
 }
 
+OPGP_ERROR_STATUS GP211_get_diversification_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+			  PBYTE recvBuffer, PDWORD recvBufferLength) {
+	OPGP_ERROR_STATUS status;
+	BYTE tmpBuffer[256];
+	DWORD tmpLen = sizeof(tmpBuffer);
+	TLV tlv;
+	LONG result;
+
+	status = get_data(cardContext, cardInfo, secInfo, (PBYTE)GP211_GET_DATA_DIVERSIFICATION_DATA, tmpBuffer, &tmpLen);
+	if (OPGP_ERROR_CHECK(status)) {
+		return status;
+	}
+	result = read_TLV(tmpBuffer, tmpLen, &tlv);
+	if (result == -1 || tlv.tag != 0xCF) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+	if (tlv.length > *recvBufferLength) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		return status;
+	}
+	memcpy(recvBuffer, tlv.value, tlv.length);
+	*recvBufferLength = tlv.length;
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); return status; }
+}
+
 
 /**
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
@@ -5441,21 +5467,78 @@ end:
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_get_sequence_counter(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
-						  BYTE sequenceCounter[2]) {
+						  GP211_SECURITY_INFO *secInfo, DWORD *sequenceCounter) {
 	OPGP_ERROR_STATUS status;
 	BYTE recvBuffer[256];
 	DWORD recvBufferLength = sizeof(recvBuffer);
+	TLV tlv;
+	LONG result;
+	DWORD counterValue = 0;
 
 	OPGP_LOG_START(_T("get_sequence_counter"));
-	status = GP211_get_data_iso7816_4(cardContext, cardInfo, (PBYTE)GP211_GET_DATA_SEQUENCE_COUNTER_DEFAULT_KEY_VERSION,
+	status = GP211_get_data(cardContext, cardInfo, secInfo, (PBYTE)GP211_GET_DATA_SEQUENCE_COUNTER_DEFAULT_KEY_VERSION,
 		recvBuffer, &recvBufferLength);
 	if ( OPGP_ERROR_CHECK(status) ) {
 		goto end;
 	}
-	memcpy(sequenceCounter, recvBuffer, 2);
+	result = read_TLV(recvBuffer, recvBufferLength, &tlv);
+	if (result == -1) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+	if (tlv.tag != 0xC1 || tlv.length != 3) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+	counterValue = 0;
+	for (DWORD i = 0; i < tlv.length; i++) {
+		counterValue = (counterValue << 8) | tlv.value[i];
+	}
+	*sequenceCounter = counterValue;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
 	OPGP_LOG_END(_T("get_sequence_counter"), status);
+	return status;
+}
+
+/**
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param confirmationCounter [out] The confirmation counter.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS GP211_get_confirmation_counter(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
+						  GP211_SECURITY_INFO *secInfo, DWORD *confirmationCounter) {
+	OPGP_ERROR_STATUS status;
+	BYTE recvBuffer[256];
+	DWORD recvBufferLength = sizeof(recvBuffer);
+	TLV tlv;
+	LONG result;
+	DWORD counterValue = 0;
+
+	OPGP_LOG_START(_T("get_confirmation_counter"));
+	status = GP211_get_data(cardContext, cardInfo, secInfo, (PBYTE)GP211_GET_DATA_CONFIRMATION_COUNTER,
+		recvBuffer, &recvBufferLength);
+	if ( OPGP_ERROR_CHECK(status) ) {
+		goto end;
+	}
+	result = read_TLV(recvBuffer, recvBufferLength, &tlv);
+	if (result == -1) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+	if (tlv.tag != 0xC2 || tlv.length != 2) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+	counterValue = 0;
+	for (DWORD i = 0; i < tlv.length; i++) {
+		counterValue = (counterValue << 8) | tlv.value[i];
+	}
+	*confirmationCounter = counterValue;
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	OPGP_LOG_END(_T("get_confirmation_counter"), status);
 	return status;
 }
 
@@ -6173,7 +6256,7 @@ end:
  * \param executableLoadFileAIDLength [in] The length of the Executable Load File AID.
  * \param securityDomainAID [in] A buffer containing the AID of the intended associated Security Domain.
  * \param securityDomainAIDLength [in] The length of the Security Domain AID.
- * \param loadFileDAP [in] The load file DAP of the Executable Load File to INSTALL [for load].
+ * \param loadFileDataBlockHash [in] The load file DAP of the Executable Load File to INSTALL [for load].
  * \param loadToken [in] The Load Token. This is a 1024 bit (=128 byte) RSA Signature.
  * \param nonVolatileCodeSpaceLimit [in] The minimum amount of space that must be available to store the package.
  * \param volatileDataSpaceLimit [in] The minimum amount of RAM space that must be available.
@@ -6182,7 +6265,7 @@ end:
  */
 OPGP_ERROR_STATUS OP201_install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 					  PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE securityDomainAID,
-					  DWORD securityDomainAIDLength, BYTE loadFileDAP[20], BYTE loadToken[128],
+					  DWORD securityDomainAIDLength, BYTE loadFileDataBlockHash[20], BYTE loadToken[128],
 					  DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
 					  DWORD nonVolatileDataSpaceLimit) {
 	OPGP_ERROR_STATUS status;
@@ -6190,7 +6273,7 @@ OPGP_ERROR_STATUS OP201_install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CAR
 	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
 	status = install_for_load(cardContext, cardInfo, &gp211secInfo, executableLoadFileAID,
 		executableLoadFileAIDLength, securityDomainAID, securityDomainAIDLength,
-		loadFileDAP, loadToken, nonVolatileCodeSpaceLimit,
+		loadFileDataBlockHash, loadToken, nonVolatileCodeSpaceLimit,
 		volatileDataSpaceLimit, nonVolatileDataSpaceLimit);
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 	return status;
@@ -6648,7 +6731,7 @@ OPGP_ERROR_STATUS OP201_calculate_install_token_uicc(BYTE P1, PBYTE executableLo
  * \param executableLoadFileAIDLength [in] The length of the Executable Load File AID.
  * \param securityDomainAID [in] A buffer containing the Security Domain AID.
  * \param securityDomainAIDLength [in] The length of the Security Domain AID.
- * \param loadFileDAP [in] The Load File DAP. The same calculated as in install_for_load().
+ * \param loadFileDataBlockHash [in] The Load File DAP. The same calculated as in install_for_load().
  * \param nonVolatileCodeSpaceLimit [in] The minimum space required to store the application code.
  * \param volatileDataSpaceLimit [in] The minimum amount of RAM space that must be available.
  * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
@@ -6657,7 +6740,7 @@ OPGP_ERROR_STATUS OP201_calculate_install_token_uicc(BYTE P1, PBYTE executableLo
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_get_load_token_signature_data(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE securityDomainAID,
-								   DWORD securityDomainAIDLength, BYTE loadFileDAP[20],
+								   DWORD securityDomainAIDLength, BYTE loadFileDataBlockHash[20],
 								   DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
 								   DWORD nonVolatileDataSpaceLimit, PBYTE loadTokenSignatureData,
 								   PDWORD loadTokenSignatureDataLength) {
@@ -6670,7 +6753,7 @@ OPGP_ERROR_STATUS OP201_get_load_token_signature_data(PBYTE executableLoadFileAI
 	DWORD staticSize;
 	OPGP_ERROR_STATUS status;
 	OPGP_LOG_START(_T("OP201_get_load_token_signature_data"));
-	if (loadFileDAP == NULL) {
+	if (loadFileDataBlockHash == NULL) {
 		OPGP_ERROR_CREATE_ERROR(status, OP201_ERROR_LOAD_FILE_DAP_NULL, OPGP_stringify_error(OP201_ERROR_LOAD_FILE_DAP_NULL));
 		goto end;
 	}
@@ -6730,7 +6813,7 @@ OPGP_ERROR_STATUS OP201_get_load_token_signature_data(PBYTE executableLoadFileAI
 	else buf[i++] = 0x00;
 
 	/* SHA-1 hash */
-	memcpy(buf+i, loadFileDAP, 20);
+	memcpy(buf+i, loadFileDataBlockHash, 20);
 	i+=20;
 
 	/* Lc - including 128 byte RSA signature length, one more byte for signature length field,

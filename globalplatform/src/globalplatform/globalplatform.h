@@ -551,6 +551,11 @@ OPGP_API
 OPGP_ERROR_STATUS GP211_get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 			  BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength);
 
+//! \brief GlobalPlatform2.1.1: Retrieve diversification data (tag 0xCF).
+OPGP_API
+OPGP_ERROR_STATUS GP211_get_diversification_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+			  PBYTE recvBuffer, PDWORD recvBufferLength);
+
 //! \brief Retrieve card data according ISO/IEC 7816-4 command not within a secure channel.
 OPGP_API
 OPGP_ERROR_STATUS GP211_get_data_iso7816_4(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength);
@@ -571,7 +576,12 @@ OPGP_ERROR_STATUS GP211_get_secure_channel_protocol_details(OPGP_CARD_CONTEXT ca
 //! \brief GlobalPlatform2.1.1: This returns the current Sequence Counter.
 OPGP_API
 OPGP_ERROR_STATUS GP211_get_sequence_counter(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
-						  BYTE sequenceCounter[2]);
+						  GP211_SECURITY_INFO *secInfo, DWORD *sequenceCounter);
+
+//! \brief GlobalPlatform2.1.1: This returns the confirmation counter.
+OPGP_API
+OPGP_ERROR_STATUS GP211_get_confirmation_counter(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
+						  GP211_SECURITY_INFO *secInfo, DWORD *confirmationCounter);
 
 //! \brief GlobalPlatform2.1.1: Put card data.
 OPGP_API
@@ -947,7 +957,7 @@ OPGP_ERROR_STATUS OP201_delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_C
 OPGP_API
 OPGP_ERROR_STATUS OP201_install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 					  PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE securityDomainAID,
-					  DWORD securityDomainAIDLength, BYTE loadFileDAP[20], BYTE loadToken[128],
+					  DWORD securityDomainAIDLength, BYTE loadFileDataBlockHash[20], BYTE loadToken[128],
 					  DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
 					  DWORD nonVolatileDataSpaceLimit);
 
@@ -955,7 +965,7 @@ OPGP_ERROR_STATUS OP201_install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CAR
 OPGP_API
 OPGP_ERROR_STATUS OP201_get_load_token_signature_data(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 								   PBYTE securityDomainAID, DWORD securityDomainAIDLength,
-								   BYTE loadFileDAP[20], DWORD nonVolatileCodeSpaceLimit,
+								   BYTE loadFileDataBlockHash[20], DWORD nonVolatileCodeSpaceLimit,
 								   DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 								   PBYTE loadTokenSignatureData, PDWORD loadTokenSignatureDataLength);
 

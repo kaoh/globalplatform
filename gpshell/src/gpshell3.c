@@ -102,6 +102,12 @@ static void print_usage(const char *prog) {
         "      Read and decode the GlobalPlatform Card Capability Information.\n"
         "  card-resources\n"
         "      Read extended card resource information (applications and free memory).\n"
+        "  diversification\n"
+        "      Read diversification data (tag 0xCF).\n"
+        "  seq-counter\n"
+        "      Read the Sequence Counter of the default Secure Channel key set (tag 0xC1).\n"
+        "  confirm-counter\n"
+        "      Read the Confirmation Counter (tag 0xC2).\n"
         "  list-readers\n"
         "      List available PC/SC readers.\n\n",
         stderr);
@@ -2418,6 +2424,38 @@ static int cmd_card_resources(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info) {
     return 0;
 }
 
+static int cmd_diversification(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info) {
+    BYTE data[256];
+    DWORD dataLen = sizeof(data);
+    if (!status_ok(GP211_get_diversification_data(ctx, info, NULL, data, &dataLen))) {
+        fprintf(stderr, "diversification: GP211_get_diversification_data failed\n");
+        return -1;
+    }
+    print_hex(data, dataLen);
+    printf("\n");
+    return 0;
+}
+
+static int cmd_seq_counter(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info) {
+    DWORD counter = 0;
+    if (!status_ok(GP211_get_sequence_counter(ctx, info, NULL, &counter))) {
+        fprintf(stderr, "seq-counter: GP211_get_sequence_counter failed\n");
+        return -1;
+    }
+    printf("Sequence Counter : %lu\n", (unsigned long)counter);
+    return 0;
+}
+
+static int cmd_confirm_counter(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info) {
+    DWORD counter = 0;
+    if (!status_ok(GP211_get_confirmation_counter(ctx, info, NULL, &counter))) {
+        fprintf(stderr, "confirm-counter: GP211_get_confirmation_counter failed\n");
+        return -1;
+    }
+    printf("Confirmation Counter : %lu\n", (unsigned long)counter);
+    return 0;
+}
+
 int main(int argc, char **argv) {
     const char *prog = argv[0];
     const char *reader=NULL, *protocol="auto", *sd_hex=NULL, *sec_level_opt="mac+enc";
@@ -2475,14 +2513,20 @@ int main(int argc, char **argv) {
     g_cleanup_card_connected = 1;
 
     int need_auth = 1; // default for non-apdu commands
+    int need_select = 1; // default for non-apdu commands
     if (!strcmp(cmd, "apdu")) {
         need_auth = 0;
+        need_select = 0;
         for (int j=i; j<argc; ++j) {
-            if (!strcmp(argv[j], "--auth") || !strcmp(argv[j], "--secure")) { need_auth = 1; break; }
+            if (!strcmp(argv[j], "--auth") || !strcmp(argv[j], "--secure")) { need_auth = 1; need_select = 1; break; }
         }
     }
-    if (!strcmp(cmd, "sign-dap") || !strcmp(cmd, "hash") || !strcmp(cmd, "card-data") || !strcmp(cmd, "card-capability") || !strcmp(cmd, "card-resources")) {
+    if (!strcmp(cmd, "sign-dap") || !strcmp(cmd, "hash") || !strcmp(cmd, "card-data") || !strcmp(cmd, "card-capability") || !strcmp(cmd, "card-resources")
+        || !strcmp(cmd, "diversification") || !strcmp(cmd, "seq-counter") || !strcmp(cmd, "confirm-counter")) {
         need_auth = 0;
+    }
+    if (!strcmp(cmd, "sign-dap") || !strcmp(cmd, "hash")) {
+        need_select = 0;
     }
     // Parse key options if provided
     BYTE *baseKeyPtr = NULL, *encKeyPtr = NULL, *macKeyPtr = NULL, *dekKeyPtr = NULL;
@@ -2520,11 +2564,13 @@ int main(int argc, char **argv) {
     }
 
     GP211_SECURITY_INFO *sec_ptr = &sec;
-    if (need_auth) {
+    if (need_select) {
         if (select_isd(ctx, info, sd_hex) != 0) {
             fprintf(stderr, "Failed to select ISD\n");
             cleanup_and_exit(4);
         }
+    }
+    if (need_auth) {
         if (mutual_auth(ctx, info, &sec, keyset_ver, key_index, derivation, sec_level_opt, verbose,
                         baseKeyPtr, encKeyPtr, macKeyPtr, dekKeyPtr, keyLength,
                         scp_protocol, scp_impl) != 0) {
@@ -2533,12 +2579,6 @@ int main(int argc, char **argv) {
         }
     } else {
         sec_ptr = NULL; // no secure channel for raw APDU by default
-        if (!strcmp(cmd, "card-data") || !strcmp(cmd, "card-capability") || !strcmp(cmd, "card-resources")) {
-            if (select_isd(ctx, info, sd_hex) != 0) {
-                fprintf(stderr, "Failed to select ISD\n");
-                cleanup_and_exit(4);
-            }
-        }
     }
 
     int rc = 0;
@@ -2548,6 +2588,9 @@ int main(int argc, char **argv) {
     else if (!strcmp(cmd, "card-data")) rc = cmd_card_data(ctx, info);
     else if (!strcmp(cmd, "card-capability")) rc = cmd_card_capability(ctx, info);
     else if (!strcmp(cmd, "card-resources")) rc = cmd_card_resources(ctx, info);
+    else if (!strcmp(cmd, "diversification")) rc = cmd_diversification(ctx, info);
+    else if (!strcmp(cmd, "seq-counter")) rc = cmd_seq_counter(ctx, info);
+    else if (!strcmp(cmd, "confirm-counter")) rc = cmd_confirm_counter(ctx, info);
     else if (!strcmp(cmd, "install")) rc = cmd_install(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "delete")) rc = cmd_delete(ctx, info, &sec, (i<argc)?argv[i]:NULL);
     else if (!strcmp(cmd, "put-key")) rc = cmd_put_key(ctx, info, &sec, argc - i, &argv[i]);

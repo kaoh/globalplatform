@@ -318,6 +318,33 @@ Example:
 gpshell3 card-resources
 ```
 
+## diversification
+
+Read diversification data (tag `0xCF`). This command does not require authentication.
+
+Example:
+```
+gpshell3 diversification
+```
+
+## seq-counter
+
+Read the Sequence Counter of the default Secure Channel key set (tag `0xC1`). This command does not require authentication.
+
+Example:
+```
+gpshell3 seq-counter
+```
+
+## confirm-counter
+
+Read the Confirmation Counter (tag `0xC2`). This command does not require authentication.
+
+Example:
+```
+gpshell3 confirm-counter
+```
+
 Options:
 
 - `--encryption` (default `noinfo`):
