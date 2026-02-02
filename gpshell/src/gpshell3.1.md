@@ -293,20 +293,38 @@ gpshell3 cplc
 
 ## card-data
 
-Read and decode GlobalPlatform Card Recognition Data (Card Data tag `0x66`). This command does not require authentication.
+Read a bundle of card data objects, in this order:
+
+- CPLC
+- card-info (Card Recognition Data, tag `0x66`)
+- card-cap (Card Capability Information, tag `0x67`)
+- confirm-counter (tag `0xC2`)
+- seq-counter (tag `0xC1`)
+- div-data (Diversification Data, tag `0xCF`)
+
+This command does not require authentication.
 
 Example:
 ```
 gpshell3 card-data
 ```
 
-## card-capability
+## card-info
+
+Read and decode GlobalPlatform Card Recognition Data (Card Data tag `0x66`). This command does not require authentication.
+
+Example:
+```
+gpshell3 card-info
+```
+
+## card-cap
 
 Read and decode GlobalPlatform Card Capability Information (Card Capability Information tag `0x67`). This command does not require authentication.
 
 Example:
 ```
-gpshell3 card-capability
+gpshell3 card-cap
 ```
 
 ## card-resources
@@ -318,13 +336,13 @@ Example:
 gpshell3 card-resources
 ```
 
-## diversification
+## div-data
 
 Read diversification data (tag `0xCF`). This command does not require authentication.
 
 Example:
 ```
-gpshell3 diversification
+gpshell3 div-data
 ```
 
 ## seq-counter

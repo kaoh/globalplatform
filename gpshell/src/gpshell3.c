@@ -94,20 +94,6 @@ static void print_usage(const char *prog) {
         "      Privileges are printed in short-name form like: priv=[sd,cm-lock,...]\n"
         "  list-keys\n"
         "      List key information grouped by key set version (kv).\n"
-        "  cplc\n"
-        "      Read and decode the Card Production Life Cycle (CPLC) data.\n"
-        "  card-data\n"
-        "      Read and decode the GlobalPlatform Card Recognition Data.\n"
-        "  card-capability\n"
-        "      Read and decode the GlobalPlatform Card Capability Information.\n"
-        "  card-resources\n"
-        "      Read extended card resource information (applications and free memory).\n"
-        "  diversification\n"
-        "      Read diversification data (tag 0xCF).\n"
-        "  seq-counter\n"
-        "      Read the Sequence Counter of the default Secure Channel key set (tag 0xC1).\n"
-        "  confirm-counter\n"
-        "      Read the Confirmation Counter (tag 0xC2).\n"
         "  list-readers\n"
         "      List available PC/SC readers.\n\n",
         stderr);
@@ -173,6 +159,22 @@ static void print_usage(const char *prog) {
         "        app:    Application; --lc: locked, selectable\n"
         "        sd-app: Security Domain and Application; --lc: locked\n"
         "      WARNING: 'terminated' for ISD cannot be undone - the card will be permanently terminated!\n\n"
+        "  cplc\n"
+        "      Read and decode the Card Production Life Cycle (CPLC) data.\n"
+        "  card-data\n"
+        "      Read a bundle of card data objects (CPLC, card info, card cap, counters, div data).\n"
+        "  card-info\n"
+        "      Read and decode the GlobalPlatform Card Recognition Data.\n"
+        "  card-cap\n"
+        "      Read and decode the GlobalPlatform Card Capability Information.\n"
+        "  card-resources\n"
+        "      Read extended card resource information (applications and free memory).\n"
+        "  div-data\n"
+        "      Read diversification data.\n"
+        "  seq-counter\n"
+        "      Read the Sequence Counter of the default Secure Channel key set.\n"
+        "  confirm-counter\n"
+        "      Read the Confirmation Counter.\n"
         "  apdu [--auth] [--nostop|--ignore-errors] <APDU> [<APDU> ...]\n"
         "      Send raw APDUs.\n"
         "      --nostop|--ignore-errors: Continue execution even if APDU returns error status.\n"
@@ -2223,10 +2225,10 @@ static int cmd_cplc(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
     return 0;
 }
 
-static int cmd_card_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info) {
+static int cmd_card_info(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info) {
     GP211_CARD_RECOGNITION_DATA data;
     if (!status_ok(GP211_get_card_recognition_data(ctx, info, &data))) {
-        fprintf(stderr, "card-data: GP211_get_card_recognition_data failed\n");
+        fprintf(stderr, "card-info: GP211_get_card_recognition_data failed\n");
         return -1;
     }
 
@@ -2291,7 +2293,7 @@ static int cmd_card_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info) {
 static int cmd_card_capability(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info) {
     GP211_CARD_CAPABILITY_INFORMATION data;
     if (!status_ok(GP211_get_card_capability_information(ctx, info, &data))) {
-        fprintf(stderr, "card-capability: GP211_get_card_capability_information failed\n");
+        fprintf(stderr, "card-cap: GP211_get_card_capability_information failed\n");
         return -1;
     }
 
@@ -2456,6 +2458,34 @@ static int cmd_confirm_counter(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info) {
     return 0;
 }
 
+static int cmd_card_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info) {
+    int rc = 0;
+
+    printf("== cplc ==\n");
+    rc = cmd_cplc(ctx, info, NULL);
+    if (rc != 0) return rc;
+
+    printf("== card-info ==\n");
+    rc = cmd_card_info(ctx, info);
+    if (rc != 0) return rc;
+
+    printf("== card-cap ==\n");
+    rc = cmd_card_capability(ctx, info);
+    if (rc != 0) return rc;
+
+    printf("== confirm-counter ==\n");
+    rc = cmd_confirm_counter(ctx, info);
+    if (rc != 0) return rc;
+
+    printf("== seq-counter ==\n");
+    rc = cmd_seq_counter(ctx, info);
+    if (rc != 0) return rc;
+
+    printf("== div-data ==\n");
+    rc = cmd_diversification(ctx, info);
+    return rc;
+}
+
 int main(int argc, char **argv) {
     const char *prog = argv[0];
     const char *reader=NULL, *protocol="auto", *sd_hex=NULL, *sec_level_opt="mac+enc";
@@ -2521,8 +2551,8 @@ int main(int argc, char **argv) {
             if (!strcmp(argv[j], "--auth") || !strcmp(argv[j], "--secure")) { need_auth = 1; need_select = 1; break; }
         }
     }
-    if (!strcmp(cmd, "sign-dap") || !strcmp(cmd, "hash") || !strcmp(cmd, "card-data") || !strcmp(cmd, "card-capability") || !strcmp(cmd, "card-resources")
-        || !strcmp(cmd, "diversification") || !strcmp(cmd, "seq-counter") || !strcmp(cmd, "confirm-counter")) {
+    if (!strcmp(cmd, "sign-dap") || !strcmp(cmd, "hash") || !strcmp(cmd, "card-data") || !strcmp(cmd, "card-info") || !strcmp(cmd, "card-cap")
+        || !strcmp(cmd, "card-resources") || !strcmp(cmd, "div-data") || !strcmp(cmd, "seq-counter") || !strcmp(cmd, "confirm-counter")) {
         need_auth = 0;
     }
     if (!strcmp(cmd, "sign-dap") || !strcmp(cmd, "hash")) {
@@ -2586,9 +2616,10 @@ int main(int argc, char **argv) {
     else if (!strcmp(cmd, "list-keys")) rc = cmd_list_keys(ctx, info, &sec);
     else if (!strcmp(cmd, "cplc")) rc = cmd_cplc(ctx, info, &sec);
     else if (!strcmp(cmd, "card-data")) rc = cmd_card_data(ctx, info);
-    else if (!strcmp(cmd, "card-capability")) rc = cmd_card_capability(ctx, info);
+    else if (!strcmp(cmd, "card-info")) rc = cmd_card_info(ctx, info);
+    else if (!strcmp(cmd, "card-cap")) rc = cmd_card_capability(ctx, info);
     else if (!strcmp(cmd, "card-resources")) rc = cmd_card_resources(ctx, info);
-    else if (!strcmp(cmd, "diversification")) rc = cmd_diversification(ctx, info);
+    else if (!strcmp(cmd, "div-data")) rc = cmd_diversification(ctx, info);
     else if (!strcmp(cmd, "seq-counter")) rc = cmd_seq_counter(ctx, info);
     else if (!strcmp(cmd, "confirm-counter")) rc = cmd_confirm_counter(ctx, info);
     else if (!strcmp(cmd, "install")) rc = cmd_install(ctx, info, &sec, argc - i, &argv[i]);
