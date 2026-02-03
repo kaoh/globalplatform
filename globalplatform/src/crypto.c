@@ -2163,12 +2163,12 @@ OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhra
 #ifndef OPENSSL3
 	RSA* rsa = NULL;
 #endif
-	BIGNUM *n;
-    BIGNUM *e;
+	BIGNUM *n = NULL;
+    BIGNUM *e = NULL;
     BYTE eLength;
     int nLength;
 #ifdef OPENSSL3
-    OSSL_PARAM *params;
+    OSSL_PARAM *params = NULL;
     OSSL_PARAM *_n;
 	OSSL_PARAM *_e;
 #endif

@@ -32,6 +32,7 @@ IF(CMAKE_BUILD_TYPE STREQUAL "Debug" OR DEBUG)
   IF(FSANITIZE)
   MESSAGE("fsanitize supported")
   SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address")
+  set(GLOBALPLATFORM_USE_ASAN ON CACHE INTERNAL "GlobalPlatform uses ASan")
   ENDIF()
   
   # check for Wpedantic support
@@ -136,14 +137,7 @@ ENDIF(WIN32)
 IF(TESTING)
     INCLUDE(FindCMocka)
 
-    # gives /usr/bin/ld: /usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/libcheck_pic.a(check_pack.o): undefined reference to symbol '__pthread_unregister_cancel@@GLIBC_2.3.3'
-    #INCLUDE_DIRECTORIES(${CHECK_INCLUDE_DIRS})
-    #ADD_EXECUTABLE(globalplatformTest globalplatformTest.c)
-    #TARGET_LINK_LIBRARIES(globalplatformTest globalplatform ${CHECK_LIBRARIES})
-    #ADD_TEST(globalplatformTest ${EXECUTABLE_OUTPUT_PATH}/globalplatformTest)
-    #SET_TESTS_PROPERTIES(globalplatformTest PROPERTIES PASS_REGULAR_EXPRESSION "Failures: 0")
-
-  IF(CMOCKA_FOUND) 
+  IF(CMOCKA_FOUND)
     INCLUDE(AddCMockaTest)
     include(AddMockedTest)
 
@@ -159,6 +153,10 @@ IF(TESTING)
         COMPILE_OPTIONS -I${PCSC_INCLUDE_DIRS} "-fno-lto"
         MOCKS RAND_bytes
         LINK_LIBRARIES ${LIBRARIES})
+      add_custom_command(TARGET scp02Test POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          ${CMAKE_SOURCE_DIR}/gpshell/examples/helloworld.cap
+          $<TARGET_FILE_DIR:scp02Test>/helloworld.cap)
 
       add_mocked_test(scp01Test
         SOURCES scp01Test.c testUtil.c ${SOURCES}
@@ -170,6 +168,10 @@ IF(TESTING)
     add_cmocka_test(cryptoTest
       SOURCES cryptoTest.c testUtil.c ${SOURCES}
       LINK_LIBRARIES ${LIBRARIES})
+    add_custom_command(TARGET cryptoTest POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_CURRENT_SOURCE_DIR}/rsa_pub_key_test.pem
+        $<TARGET_FILE_DIR:cryptoTest>/rsa_pub_key_test.pem)
     
     add_cmocka_test(statusTest
       SOURCES statusTest.c testUtil.c ${SOURCES}
@@ -177,6 +179,28 @@ IF(TESTING)
   ELSE()
     MESSAGE("cmocka not found - skipping tests.")
   ENDIF()
+
+  IF(INTEGRATION_TESTING)
+    find_package(PkgConfig)
+    IF(PKG_CONFIG_FOUND)
+      pkg_check_modules(CHECK check)
+    ENDIF(PKG_CONFIG_FOUND)
+
+    IF(NOT CHECK_FOUND)
+      find_path(CHECK_INCLUDE_DIRS check.h)
+      find_library(CHECK_LIBRARIES check)
+    ENDIF()
+
+    IF(CHECK_INCLUDE_DIRS AND CHECK_LIBRARIES)
+      add_executable(globalplatformIntegrationTest globalplatformTest.c)
+      target_include_directories(globalplatformIntegrationTest PRIVATE ${CHECK_INCLUDE_DIRS} ${PCSC_INCLUDE_DIRS})
+      target_link_libraries(globalplatformIntegrationTest globalplatform ${CHECK_LIBRARIES} ${LIBRARIES})
+      add_test(NAME globalplatformIntegrationTest COMMAND globalplatformIntegrationTest)
+      set_tests_properties(globalplatformIntegrationTest PROPERTIES LABELS "integration")
+    ELSE()
+      MESSAGE("check not found - skipping integration test.")
+    ENDIF()
+  ENDIF(INTEGRATION_TESTING)
 ENDIF(TESTING)
 
 

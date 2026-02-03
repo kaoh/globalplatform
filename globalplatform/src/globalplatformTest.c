@@ -108,7 +108,7 @@ static OPGP_ERROR_STATUS internal_establish_context() {
 	OPGP_ERROR_STATUS status;
 	_tcsncpy(cardContext.libraryName, _T("gppcscconnectionplugin"),
 			sizeof(cardContext.libraryName));
-	_tcsncpy(cardContext.libraryVersion, _T("1.0.1"),
+	_tcsncpy(cardContext.libraryVersion, _T("1"),
 			sizeof(cardContext.libraryVersion));
 	status = OPGP_establish_context(&cardContext);
 	if (OPGP_ERROR_CHECK(status)) {
@@ -129,7 +129,7 @@ static OPGP_ERROR_STATUS internal_mutual_authentication() {
 	}
 	status = GP211_mutual_authentication(cardContext, cardInfo, NULL,
 			(PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE) OPGP_VISA_DEFAULT_KEY,
-			(PBYTE) OPGP_VISA_DEFAULT_KEY, 0, 0, scp, scpImpl,
+			(PBYTE) OPGP_VISA_DEFAULT_KEY, sizeof(OPGP_VISA_DEFAULT_KEY), 0, 0, scp, scpImpl,
 			GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC, OPGP_DERIVATION_METHOD_NONE, &securityInfo211);
 	if (OPGP_ERROR_CHECK(status)) {
 		return status;
@@ -143,7 +143,7 @@ static OPGP_ERROR_STATUS internal_list_readers() {
 	TCHAR buf[BUFLEN + 1];
 	int j,k=0;
 	DWORD readerStrLen = BUFLEN;
- status = OPGP_list_readers(cardContext, buf, &readerStrLen, 0);
+ status = OPGP_list_readers(cardContext, buf, &readerStrLen, 1);
 	if (OPGP_ERROR_CHECK(status)) {
 		return status;
 	}
@@ -180,6 +180,10 @@ static OPGP_ERROR_STATUS internal_connect() {
 		return status;
 	}
 	status = internal_connect_card();
+	if (OPGP_ERROR_CHECK(status)) {
+		return status;
+	}
+	status = OPGP_select_application(cardContext, cardInfo, (PBYTE)GP231_ISD_AID, 8);
 	if (OPGP_ERROR_CHECK(status)) {
 		return status;
 	}
@@ -358,7 +362,7 @@ START_TEST (test_install)
 		status = GP211_install_for_load(cardContext, cardInfo,
 				&securityInfo211, loadFileParams.loadFileAID.AID,
 				loadFileParams.loadFileAID.AIDLength,
-				(PBYTE) GP211_CARD_MANAGER_AID_ALT1, sizeof(GP211_CARD_MANAGER_AID_ALT1),
+				(PBYTE) GP231_ISD_AID, sizeof(GP231_ISD_AID),
 				NULL, NULL, loadFileParams.loadFileSize, 0, 2000);
 
 		if (OPGP_ERROR_CHECK(status)) {
@@ -420,7 +424,6 @@ START_TEST (test_get_status) {
 		GP211_EXECUTABLE_MODULES_DATA modulesData[10];
 		BYTE appAID[7] = {0xa0,0,0,0,4,0x10,0x10};
 		BYTE loadFileAID[7] = {0xa0,0,0,0,3,0x53,0x50};
-		BYTE domainAID[8] = {0xa0,00,00,00,03,00,00,00};
 		DWORD dataLength = 10;
 		status = internal_connect();
 		if (OPGP_ERROR_CHECK(status)) {
@@ -435,20 +438,43 @@ START_TEST (test_get_status) {
 			fail("Could not get status from applications: %s", status.errorMessage);
 		}
 
-		fail_unless(dataLength == 4, "Incorrect application status length");
-		fail_unless(appData[0].lifeCycleState == 7, "Incorrect application status life cycle state");
-		fail_unless(appData[0].privileges == 2, "Incorrect application status privileges");
-		fail_unless(memcmp(appData[0].AID, appAID, sizeof(appAID))==0, "Incorrect application status AID");
+		{
+			int found = 0;
+			DWORD i;
+			for (i = 0; i < dataLength; i++) {
+				if (appData[i].aid.AIDLength == sizeof(appletAID) &&
+						memcmp(appData[i].aid.AID, appletAID, sizeof(appletAID)) == 0) {
+					found = 1;
+					break;
+				}
+			}
+			fail_unless(found, "Applet AID not found in application status");
+			fail_unless(appData[i].lifeCycleState == 7, "Incorrect application status life cycle state");
+			fail_unless(appData[i].privileges == 0, "Incorrect application status privileges");
+		}
 
         dataLength = 10;
 		status = GP211_get_status(cardContext, cardInfo, &securityInfo211, GP211_STATUS_LOAD_FILES, GP211_STATUS_FORMAT_DEPRECATED, appData, modulesData, &dataLength);
 		if (OPGP_ERROR_CHECK(status)) {
 			fail("Could not get status from applications: %s", status.errorMessage);
 		}
+
+		{
+			int found = 0;
+			DWORD i;
+			for (i = 0; i < dataLength; i++) {
+				if (appData[i].aid.AIDLength == sizeof(packageAID) &&
+						memcmp(appData[i].aid.AID, packageAID, sizeof(packageAID)) == 0) {
+					found = 1;
+					break;
+						}
+			}
+			fail_unless(found, "Applet AID not found in application status");
+			fail_unless(appData[i].lifeCycleState == 1, "Incorrect load file status");
+			fail_unless(appData[i].privileges == 0, "Incorrect load file status");
+		}
+
 		fail_unless(dataLength == 5, "Incorrect load file status");
-		fail_unless(appData[0].lifeCycleState == 1, "Incorrect load file status");
-		fail_unless(appData[0].privileges == 0, "Incorrect load file status");
-		fail_unless(memcmp(appData[0].AID, loadFileAID, sizeof(loadFileAID))==0, "Incorrect load file status");
 
         dataLength = 10;
 		status = GP211_get_status(cardContext, cardInfo, &securityInfo211, GP211_STATUS_ISSUER_SECURITY_DOMAIN, GP211_STATUS_FORMAT_DEPRECATED, appData, modulesData, &dataLength);
@@ -456,11 +482,7 @@ START_TEST (test_get_status) {
 			fail("Could not get status from applications: %s", status.errorMessage);
 		}
 		fail_unless(dataLength == 1, "Incorrect issuer security status");
-		fail_unless(appData[0].lifeCycleState == 1, "Incorrect issuer security status");
-		fail_unless(appData[0].privileges == 0x9e, "Incorrect issuer security status");
-
-
-		fail_unless(memcmp(appData[0].AID, domainAID, sizeof(domainAID)) == 0, "Incorrect issuer security status");
+		fail_unless(memcmp(appData[0].aid.AID, GP231_ISD_AID, sizeof(GP231_ISD_AID)) == 0, "Incorrect issuer security status");
 
 		status = internal_disconnect();
 		if (OPGP_ERROR_CHECK(status)) {
@@ -469,7 +491,7 @@ START_TEST (test_get_status) {
 } END_TEST
 
 
-START_TEST (test_put_3des_key) {
+START_TEST (test_put_aes_key) {
 		OPGP_ERROR_STATUS status;
 		BYTE key[16] = {0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5};
 		status = internal_connect();
@@ -480,7 +502,8 @@ START_TEST (test_put_3des_key) {
 		if (OPGP_ERROR_CHECK(status)) {
 			fail("Could not do mutual authentication: %s", status.errorMessage);
 		}
-		status = GP211_put_3des_key(cardContext, cardInfo, &securityInfo211, 0, 1, 5, key);
+		GP211_delete_key(cardContext, cardInfo, &securityInfo211, 5, 0xFF);
+		status = GP211_put_aes_key(cardContext, cardInfo, &securityInfo211, 0, 1, 5, key, sizeof(key));
 		if (OPGP_ERROR_CHECK(status)) {
 			fail("Could not put key: %s", status.errorMessage);
 		}
@@ -490,8 +513,7 @@ START_TEST (test_put_3des_key) {
 		}
 } END_TEST
 
-/*
-Not supported on most cards
+
 START_TEST (test_delete_key) {
 		OPGP_ERROR_STATUS status;
 		status = internal_connect();
@@ -502,7 +524,7 @@ START_TEST (test_delete_key) {
 		if (OPGP_ERROR_CHECK(status)) {
 			fail("Could not do mutual authentication: %s", status.errorMessage);
 		}
-		status = GP211_delete_key(cardContext, cardInfo, &securityInfo211, 5, 1);
+		status = GP211_delete_key(cardContext, cardInfo, &securityInfo211, 5, 0xFF);
 		if (OPGP_ERROR_CHECK(status)) {
 			fail("Could not delete key: %s", status.errorMessage);
 		}
@@ -511,7 +533,6 @@ START_TEST (test_delete_key) {
 			fail("Could not disconnect: %s", status.errorMessage);
 		}
 } END_TEST
-*/
 
 static DWORD totalWork;
 static DWORD currentWork;
@@ -533,10 +554,6 @@ START_TEST (test_install_callback) {
 		OPGP_LOAD_FILE_PARAMETERS loadFileParams;
 		DWORD receiptDataLen = 0;
 		OPGP_PROGRESS_CALLBACK callback;
-
-		char installParam[1];
-		installParam[0] = 0;
-
 		OPGP_ERROR_STATUS status;
 
 		status = internal_connect();
@@ -559,7 +576,7 @@ START_TEST (test_install_callback) {
 		status = GP211_install_for_load(cardContext, cardInfo,
 				&securityInfo211, loadFileParams.loadFileAID.AID,
 				loadFileParams.loadFileAID.AIDLength,
-				(PBYTE) GP211_CARD_MANAGER_AID_ALT1, sizeof(GP211_CARD_MANAGER_AID_ALT1),
+				(PBYTE) GP231_ISD_AID, sizeof(GP231_ISD_AID),
 				NULL, NULL, loadFileParams.loadFileSize, 0, 2000);
 
 		if (OPGP_ERROR_CHECK(status)) {
@@ -594,12 +611,11 @@ Suite * GlobalPlatform_suite(void) {
 	tcase_add_test (tc_core, test_GP211_VISA2_derive_keys);
 	tcase_add_test (tc_core, test_mutual_authentication);
 	tcase_add_test (tc_core, test_install);
-    tcase_add_test (tc_core, test_delete);
     tcase_add_test (tc_core, test_get_status);
+    tcase_add_test (tc_core, test_delete);
     tcase_add_test (tc_core, test_install_callback);
-    tcase_add_test (tc_core, test_put_3des_key);
-    // not working with JCOP
-    //tcase_add_test (tc_core, test_delete_key);
+    tcase_add_test (tc_core, test_put_aes_key);
+    tcase_add_test (tc_core, test_delete_key);
 	suite_add_tcase(s, tc_core);
 
 	return s;
@@ -610,7 +626,7 @@ int main(void) {
 	Suite *s = GlobalPlatform_suite();
 	SRunner *sr = srunner_create(s);
 
-	//srunner_set_fork_status(sr, CK_NOFORK);
+	srunner_set_fork_status(sr, CK_NOFORK);
 	srunner_run_all(sr, CK_NORMAL);
 	number_failed = srunner_ntests_failed(sr);
 	srunner_free(sr);

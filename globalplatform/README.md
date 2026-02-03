@@ -46,7 +46,8 @@ __NOTE:__ If using Homebrew in parallel and having not used Homebrew for install
 
 ```shell
 cd \path\to\globalplatform
-cmake .
+cmake -B build .
+cd build
 make
 make doc
 make install
@@ -84,7 +85,8 @@ It is necessary to set the `OPENSSL_ROOT_DIR`. In case of the usage of Homebrew 
 
 ```shell
 cd \path\to\globalplatform
-cmake . -DCMAKE_C_COMPILER=/usr/bin/gcc -DOPENSSL_ROOT_DIR=$(brew --prefix openssl@3)
+cmake -B build -DCMAKE_C_COMPILER=/usr/bin/gcc -DOPENSSL_ROOT_DIR=$(brew --prefix openssl@3) .
+cd build
 make
 make install
 ```
@@ -172,9 +174,12 @@ To be able to debug the library enable the debug symbols:
 To generate the tests execute:
 
 ```shell
-cmake . -DTESTING=ON -DDEBUG=ON
+cmake -B build -DTESTING=ON -DINTEGRATION_TESTING=ON -DDEBUG=ON .
+cd build
 make
-make test
+make test-unit
+# with a recent JCOP test card with default keys
+make test-integration
 ```
 
 __NOTE:__ On Windows: When using the Visual Studio command line the neccessary mock functions are not supported by the linker and tests cannot be executed. See also the detailed instructions for running the tests under Windows in section "Special Notes for Windows".

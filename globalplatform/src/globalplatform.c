@@ -1101,12 +1101,11 @@ OPGP_ERROR_STATUS GP211_put_symmetric_key(OPGP_CARD_CONTEXT cardContext, OPGP_CA
 				  BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion, BYTE key[32], DWORD keyLength, BYTE keyType) {
 	OPGP_ERROR_STATUS status;
 	BYTE sendBuffer[APDU_COMMAND_LEN];
-	DWORD sendBufferLength = APDU_COMMAND_LEN;
 	DWORD recvBufferLength = APDU_RESPONSE_LEN;
 	BYTE recvBuffer[APDU_RESPONSE_LEN];
 	BYTE keyCheckValue[3];
-	BYTE keyDataField[22];
-	DWORD keyDataFieldLength=22;
+	BYTE keyDataField[64];
+	DWORD keyDataFieldLength=64;
 	DWORD i=0;
 	OPGP_LOG_START(_T("put_symmetric_key"));
 
@@ -1118,7 +1117,7 @@ OPGP_ERROR_STATUS GP211_put_symmetric_key(OPGP_CARD_CONTEXT cardContext, OPGP_CA
 	i++;
 	sendBuffer[i++] = newKeySetVersion;
 
-	status = get_key_data_field(secInfo, key, 16, keyType, keyDataField, &keyDataFieldLength, keyCheckValue, true);
+	status = get_key_data_field(secInfo, key, keyLength, keyType, keyDataField, &keyDataFieldLength, keyCheckValue, true);
 	if ( OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -1127,11 +1126,11 @@ OPGP_ERROR_STATUS GP211_put_symmetric_key(OPGP_CARD_CONTEXT cardContext, OPGP_CA
 	i+=keyDataFieldLength;
 
 	// Lc
-	sendBuffer[i] = i-5;
+	sendBuffer[4] = i-5;
 	i++;
 	sendBuffer[i] = 0x00; // Le
 
-	status = OPGP_send_APDU(cardContext, cardInfo, secInfo, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
+	status = OPGP_send_APDU(cardContext, cardInfo, secInfo, sendBuffer, i, recvBuffer, &recvBufferLength);
 	if ( OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
