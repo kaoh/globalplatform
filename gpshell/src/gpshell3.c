@@ -163,6 +163,10 @@ static void print_usage(const char *prog) {
         "      Read and decode the Card Production Life Cycle (CPLC) data.\n"
         "  card-data\n"
         "      Read a bundle of card data objects (CPLC, card info, card cap, counters, div data).\n"
+        "  iin\n"
+        "      Read the Issuer Identification Number / SD Provider Identification Number (tag 0x42).\n"
+        "  cin\n"
+        "      Read the Card Image Number / SD Image Number (tag 0x45).\n"
         "  card-info\n"
         "      Read and decode the GlobalPlatform Card Recognition Data.\n"
         "  card-cap\n"
@@ -302,6 +306,16 @@ static void print_capability_hex_field(const char *label, const BYTE *data, size
     printf("%s : ", label);
     for (size_t i = 0; i < len; i++) {
         printf("%02X", data[i]);
+    }
+    printf("\n");
+}
+
+static void print_capability_scpi_csv(const char *label, const BYTE *data, size_t len) {
+    if (len == 0 || data == NULL) return;
+    printf("%s : ", label);
+    for (size_t i = 0; i < len; i++) {
+        if (i) printf(", ");
+        printf("i=%02X", data[i]);
     }
     printf("\n");
 }
@@ -543,6 +557,10 @@ static int select_isd(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, const char *is
     s = OPGP_select_application(ctx, info, (PBYTE)GP211_CARD_MANAGER_AID_ALT2, 7);
     if (status_ok(s)) {
         memcpy(g_selected_isd, GP211_CARD_MANAGER_AID_ALT2, 7); g_selected_isd_len = 7; return 0;
+    }
+    s = OPGP_select_application(ctx, info, (PBYTE)GP211_CARD_MANAGER_AID_GEMPLUS, 8);
+    if (status_ok(s)) {
+        memcpy(g_selected_isd, GP211_CARD_MANAGER_AID_GEMPLUS, 8); g_selected_isd_len = 8; return 0;
     }
     return -1;
 }
@@ -2093,7 +2111,9 @@ static const char* get_ic_fab_name(USHORT id) {
         case 0x4250: return "Samsung";
         case 0x3060: return "Renesas";
         case 0x4180: return "Atmel";
+        case 0x4220: return "Thales (Legacy Gemplus/Gemalto)";
         case 0x1671: return "Giesecke+Devrient (G+D)";
+        case 0x4750:
         case 0x2050: return "STMicroelectronics";
         default: return "Unknown Fabricator";
     }
@@ -2107,17 +2127,20 @@ static const char* get_ic_type_name(USHORT id) {
 
             // NXP SmartMX2 (P60 Family)
         case 0x5183: return "NXP SmartMX2 (P60-Series)";
-
             // NXP Legacy
-        case 0x5205: return "NXP P5205 (Legacy)";
-
+        case 0x5205: return "SmartMX (P5C-Series)";
             // Infineon
-        case 0x1915: return "Infineon SLE78 (Solid Flash)";
-        case 0x0062: return "Infineon SLE66 (Cyberflex Era)";
+        case 0x1915: return "Infineon SLC38-Series";
+        case 0x0062:
+        case 0x6642:
         case 0x5072: return "Infineon SLE66-Series";
+        case 0x6128:
+        case 0x6162: return "Infineon SLE66PE-Series";
+        case 0x6514: return "Infineon SLE78-Series";
 
             // STMicroelectronics
         case 0x5000: return "STMicroelectronics ST23-Series";
+        case 0x0061: return "STMicroelectronics ST33-Series";
 
         default: return "Unknown IC Type";
     }
@@ -2125,14 +2148,17 @@ static const char* get_ic_type_name(USHORT id) {
 
 static const char* get_os_id_name(USHORT id) {
     switch (id) {
+        case 0x4090: return "Infineon Technologies";
         case 0x4700:
-        case 0x4791: return "NXP JCOP (Native)";
+        case 0x4791: return "NXP JCOP";
         case 0x4051: return "IBM JCOP";
         case 0x4041: return "Oberthur / IDEMIA OS";
         case 0xA005: return "Oberthur AuthentIC";
         case 0x1671: return "G+D Sm@rtCafe";
         case 0xD001: return "G+D OS";
         case 0x0011: return "Cyberflex OS";
+        case 0x1981: return "Palmera Protect V5";
+        case 0x1291: return "GemXpresso Pro";
         default: return "Unknown OS";
     }
 }
@@ -2241,9 +2267,9 @@ static int cmd_card_info(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info) {
     } else {
         for (DWORD i = 0; i < data.scpLength; i++) {
             if (data.scpLength == 1) {
-                printf("SCP : 0x%02X (impl 0x%02X)\n", data.scp[i], data.scpImpl[i]);
+                printf("SCP : SCP%02X i=%02X\n", data.scp[i], data.scpImpl[i]);
             } else {
-                printf("SCP #%u : 0x%02X (impl 0x%02X)\n", (unsigned int)i, data.scp[i], data.scpImpl[i]);
+                printf("SCP #%u : SCP%02X i=%02X\n", (unsigned int)i, data.scp[i], data.scpImpl[i]);
             }
         }
     }
@@ -2300,14 +2326,14 @@ static int cmd_card_capability(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info) {
     for (DWORD i = 0; i < data.scpInformationLength; i++) {
         char label[64];
         if (data.scpInformationLength == 1) {
-            printf("SCP : 0x%02X\n", data.scpInformation[i].scpIdentifier);
+            printf("SCP : SCP%02X\n", data.scpInformation[i].scpIdentifier);
         } else {
-            printf("SCP #%u : 0x%02X\n", (unsigned int)i, data.scpInformation[i].scpIdentifier);
+            printf("SCP #%u : SCP%02X\n", (unsigned int)i, data.scpInformation[i].scpIdentifier);
         }
         if (data.scpInformation[i].scpOptionsLength > 0) {
             if (data.scpInformationLength == 1) snprintf(label, sizeof(label), "SCP Options");
             else snprintf(label, sizeof(label), "SCP #%u Options", (unsigned int)i);
-            print_capability_hex_bytes_csv(label, data.scpInformation[i].scpOptions, data.scpInformation[i].scpOptionsLength);
+            print_capability_scpi_csv(label, data.scpInformation[i].scpOptions, data.scpInformation[i].scpOptionsLength);
         }
         if (data.scpInformation[i].scpOptionsMaskLength > 0) {
             if (data.scpInformationLength == 1) snprintf(label, sizeof(label), "SCP Options Mask");
@@ -2438,6 +2464,30 @@ static int cmd_diversification(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info) {
     return 0;
 }
 
+static int cmd_iin(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info) {
+    BYTE data[256];
+    DWORD dataLen = sizeof(data);
+    if (!status_ok(GP211_get_data(ctx, info, NULL, (BYTE *)GP211_GET_DATA_ISSUER_IDENTIFICATION_NUMBER, data, &dataLen))) {
+        fprintf(stderr, "iin: GP211_get_data failed\n");
+        return -1;
+    }
+    print_hex(data, dataLen);
+    printf("\n");
+    return 0;
+}
+
+static int cmd_cin(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info) {
+    BYTE data[256];
+    DWORD dataLen = sizeof(data);
+    if (!status_ok(GP211_get_data(ctx, info, NULL, (BYTE *)GP211_GET_DATA_CARD_IMAGE_NUMBER, data, &dataLen))) {
+        fprintf(stderr, "cin: GP211_get_data failed\n");
+        return -1;
+    }
+    print_hex(data, dataLen);
+    printf("\n");
+    return 0;
+}
+
 static int cmd_seq_counter(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info) {
     DWORD counter = 0;
     if (!status_ok(GP211_get_sequence_counter(ctx, info, NULL, &counter))) {
@@ -2461,28 +2511,29 @@ static int cmd_confirm_counter(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info) {
 static int cmd_card_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info) {
     int rc = 0;
 
+    printf("== iin ==\n");
+    rc = cmd_iin(ctx, info);
+
+    printf("== cin ==\n");
+    rc |= cmd_cin(ctx, info);
+
     printf("== cplc ==\n");
-    rc = cmd_cplc(ctx, info, NULL);
-    if (rc != 0) return rc;
+    rc |= cmd_cplc(ctx, info, NULL);
 
     printf("== card-info ==\n");
-    rc = cmd_card_info(ctx, info);
-    if (rc != 0) return rc;
+    rc |= cmd_card_info(ctx, info);
 
     printf("== card-cap ==\n");
-    rc = cmd_card_capability(ctx, info);
-    if (rc != 0) return rc;
+    rc |= cmd_card_capability(ctx, info);
 
     printf("== confirm-counter ==\n");
-    rc = cmd_confirm_counter(ctx, info);
-    if (rc != 0) return rc;
+    rc |= cmd_confirm_counter(ctx, info);
 
     printf("== seq-counter ==\n");
-    rc = cmd_seq_counter(ctx, info);
-    if (rc != 0) return rc;
+    rc |= cmd_seq_counter(ctx, info);
 
     printf("== div-data ==\n");
-    rc = cmd_diversification(ctx, info);
+    rc |= cmd_diversification(ctx, info);
     return rc;
 }
 
@@ -2551,8 +2602,9 @@ int main(int argc, char **argv) {
             if (!strcmp(argv[j], "--auth") || !strcmp(argv[j], "--secure")) { need_auth = 1; need_select = 1; break; }
         }
     }
-    if (!strcmp(cmd, "sign-dap") || !strcmp(cmd, "hash") || !strcmp(cmd, "card-data") || !strcmp(cmd, "card-info") || !strcmp(cmd, "card-cap")
-        || !strcmp(cmd, "card-resources") || !strcmp(cmd, "div-data") || !strcmp(cmd, "seq-counter") || !strcmp(cmd, "confirm-counter")) {
+    if (!strcmp(cmd, "sign-dap") || !strcmp(cmd, "hash") || !strcmp(cmd, "card-data") || !strcmp(cmd, "iin") || !strcmp(cmd, "cin")
+        || !strcmp(cmd, "card-info") || !strcmp(cmd, "card-cap") || !strcmp(cmd, "card-resources") || !strcmp(cmd, "div-data")
+        || !strcmp(cmd, "seq-counter") || !strcmp(cmd, "confirm-counter")) {
         need_auth = 0;
     }
     if (!strcmp(cmd, "sign-dap") || !strcmp(cmd, "hash")) {
@@ -2616,6 +2668,8 @@ int main(int argc, char **argv) {
     else if (!strcmp(cmd, "list-keys")) rc = cmd_list_keys(ctx, info, &sec);
     else if (!strcmp(cmd, "cplc")) rc = cmd_cplc(ctx, info, &sec);
     else if (!strcmp(cmd, "card-data")) rc = cmd_card_data(ctx, info);
+    else if (!strcmp(cmd, "iin")) rc = cmd_iin(ctx, info);
+    else if (!strcmp(cmd, "cin")) rc = cmd_cin(ctx, info);
     else if (!strcmp(cmd, "card-info")) rc = cmd_card_info(ctx, info);
     else if (!strcmp(cmd, "card-cap")) rc = cmd_card_capability(ctx, info);
     else if (!strcmp(cmd, "card-resources")) rc = cmd_card_resources(ctx, info);

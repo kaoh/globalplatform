@@ -282,6 +282,18 @@ Synopsis:
 gpshell3 store [--encryption <noinfo|app|enc>] [--format <noinfo|dgi|ber>] [--response <true|false>] <AIDhex> <datahex>
 ```
 
+Options:
+
+- `--encryption` (default `noinfo`):
+  - `noinfo`: no encryption information;
+  - `app`: application-dependent encryption;
+  - `enc`: encrypted with data encryption key.
+- `--format` (default `noinfo`):
+  - `noinfo`: raw data, no structural information;
+  - `dgi`: DGI structures;
+  - `ber`: BER-TLV structures.
+- `--response <true|false>`: expect response data (default `false`).
+
 ## cplc
 
 Read and decode the Card Production Life Cycle (CPLC) data. This command does not require authentication.
@@ -295,6 +307,8 @@ gpshell3 cplc
 
 Read a bundle of card data objects, in this order:
 
+- iin (Issuer Identification Number / SD Provider Identification Number, tag `0x42`)
+- cin (Card Image Number / SD Image Number, tag `0x45`)
 - CPLC
 - card-info (Card Recognition Data, tag `0x66`)
 - card-cap (Card Capability Information, tag `0x67`)
@@ -307,6 +321,24 @@ This command does not require authentication.
 Example:
 ```
 gpshell3 card-data
+```
+
+## iin
+
+Read Issuer Identification Number / SD Provider Identification Number (tag `0x42`). This command does not require authentication.
+
+Example:
+```
+gpshell3 iin
+```
+
+## cin
+
+Read Card Image Number / SD Image Number (tag `0x45`). This command does not require authentication.
+
+Example:
+```
+gpshell3 cin
 ```
 
 ## card-info
@@ -362,18 +394,6 @@ Example:
 ```
 gpshell3 confirm-counter
 ```
-
-Options:
-
-- `--encryption` (default `noinfo`):
-  - `noinfo`: no encryption information;
-  - `app`: application-dependent encryption;
-  - `enc`: encrypted with data encryption key.
-- `--format` (default `noinfo`):
-  - `noinfo`: raw data, no structural information;
-  - `dgi`: DGI structures;
-  - `ber`: BER-TLV structures.
-- `--response <true|false>`: expect response data (default `false`).
 
 # PRIVILEGES
 

@@ -75,6 +75,8 @@ static const BYTE GP211_CARD_MANAGER_AID_ALT1[8] = { 0xA0, 0x00, 0x00, 0x00,
 static const BYTE GP211_CARD_MANAGER_AID_ALT2[7] = { 0xA0, 0x00, 0x00, 0x00,
 		0x03, 0x00, 0x00 }; //!< This AID is also used for the Issuer Security Domain old older OP2.0.1 cards, e.g., cyberflex cards
 
+	static const BYTE GP211_CARD_MANAGER_AID_GEMPLUS[8] = { 0xA0, 0x00, 0x00, 0x00, 0x18, 0x43, 0x4D, 0x00 }; //!< This AID is uses for Gemplus cards
+
 #define GP211_LIFE_CYCLE_LOAD_FILE_LOADED 0x01 //!< Executable Load File is loaded.
 #define GP211_LIFE_CYCLE_CARD_OP_READY 0x01 //!< Card is OP ready.
 #define GP211_LIFE_CYCLE_CARD_INITIALIZED 0x07 //!< Card is initialized.
@@ -434,7 +436,7 @@ typedef struct {
 } GP211_CARD_RECOGNITION_DATA;
 
 #define GP211_MAX_CARD_CAPABILITY_SCP_INFOS 16
-#define GP211_MAX_CARD_CAPABILITY_SCP_OPTIONS 2
+#define GP211_MAX_CARD_CAPABILITY_SCP_OPTIONS 16
 #define GP211_MAX_CARD_CAPABILITY_TLS_CIPHER_SUITES 16
 #define GP211_MAX_CARD_CAPABILITY_LFDBH_ALGORITHMS 8
 #define GP211_MAX_CARD_CAPABILITY_CIPHER_SUITES 32
