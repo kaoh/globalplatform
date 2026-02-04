@@ -259,18 +259,11 @@ static int cplc_date_to_dmy(const BYTE *data, int *day, int *month, int *year) {
     }
 }
 
-static void print_cplc_hex_field(const char *label, const BYTE *data, size_t len) {
-    printf("%s : ", label);
-    for (size_t i = 0; i < len; i++) {
-        printf("%02X", data[i]);
-    }
-    printf("\n");
-}
-
-static void print_cplc_date_field(const char *label, const BYTE *data) {
+static void print_cplc_date_field_ushort(const char *label, USHORT data) {
     int day = 0, month = 0, year = 0;
+    BYTE date_bytes[2] = { (BYTE)((data >> 8) & 0xFF), (BYTE)(data & 0xFF) };
     printf("%s : ", label);
-    if (cplc_date_to_dmy(data, &day, &month, &year)) {
+    if (cplc_date_to_dmy(date_bytes, &day, &month, &year)) {
         printf("%d.%d.%d", day, month, year);
     } else {
         printf("unknown");
@@ -2164,90 +2157,61 @@ static const char* get_os_id_name(USHORT id) {
 }
 
 static int cmd_cplc(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
-    BYTE data[256];
-    DWORD dataLen = sizeof(data);
-    TLV tlv;
-    LONG tlv_len;
-    const BYTE *cplc = NULL;
-    DWORD cplc_len = 0;
+    OPGP_CPLC cplc_data;
 
-    memset(&tlv, 0, sizeof(tlv));
-    if (!status_ok(GP211_get_data(ctx, info, sec, (BYTE *)GP211_GET_DATA_CPLC_WHOLE_CPLC, data, &dataLen))) {
-        fprintf(stderr, "clpc: GP211_get_data failed\n");
-        return -1;
-    }
-
-    tlv_len = read_TLV(data, dataLen, &tlv);
-    if (tlv_len > 0 && tlv.tag == 0x9F7F) {
-        cplc = tlv.value;
-        cplc_len = tlv.length;
-    } else {
-        cplc = data;
-        cplc_len = dataLen;
-    }
-
-    if (cplc_len < 42) {
-        fprintf(stderr, "clpc: unexpected CPLC length %u\n", (unsigned int)cplc_len);
+    if (!status_ok(OPGP_get_cplc(ctx, info, sec, &cplc_data))) {
+        fprintf(stderr, "clpc: OPGP_get_cplc failed\n");
         return -1;
     }
 
     {
-        USHORT ic_fab = (cplc[0] << 8) | cplc[1];
-        const char *name = get_ic_fab_name(ic_fab);
+        const char *name = get_ic_fab_name(cplc_data.icFabricator);
         if (strncmp(name, "Unknown", 7) == 0) {
-            printf("IC Fabricator : %04X\n", ic_fab);
+            printf("IC Fabricator : %04X\n", cplc_data.icFabricator);
         } else {
             printf("IC Fabricator : %s\n", name);
         }
     }
     {
-        USHORT ic_type = (cplc[2] << 8) | cplc[3];
-        const char *name = get_ic_type_name(ic_type);
+        const char *name = get_ic_type_name(cplc_data.icType);
         if (strncmp(name, "Unknown", 7) == 0) {
-            printf("IC Type       : %04X\n", ic_type);
+            printf("IC Type       : %04X\n", cplc_data.icType);
         } else {
             printf("IC Type       : %s\n", name);
         }
     }
     {
-        USHORT os_id = (cplc[4] << 8) | cplc[5];
-        const char *name = get_os_id_name(os_id);
+        const char *name = get_os_id_name(cplc_data.operatingSystemId);
         if (strncmp(name, "Unknown", 7) == 0) {
-            printf("OS ID         : %04X\n", os_id);
+            printf("OS ID         : %04X\n", cplc_data.operatingSystemId);
         } else {
             printf("OS ID         : %s\n", name);
         }
     }
 
-    print_cplc_date_field("Operating System release date", cplc + 6);
-    print_cplc_hex_field("Operating System release level", cplc + 8, 2);
-    print_cplc_date_field("IC Fabrication Date", cplc + 10);
+    print_cplc_date_field_ushort("Operating System release date", cplc_data.operatingSystemReleaseDate);
+    printf("Operating System release level : %04X\n", cplc_data.operatingSystemReleaseLevel);
+    print_cplc_date_field_ushort("IC Fabrication Date", cplc_data.icFabricationDate);
     {
-        DWORD serial = (cplc[12] << 24) | (cplc[13] << 16) | (cplc[14] << 8) | cplc[15];
+        DWORD serial = ((DWORD)cplc_data.icSerialNumberHigh << 16) | cplc_data.icSerialNumberLow;
         printf("IC Serial Number : %u\n", (unsigned int)serial);
     }
-    print_cplc_hex_field("IC Batch Identifier", cplc + 16, 2);
-    print_cplc_hex_field("IC Module Fabricator", cplc + 18, 2);
-    print_cplc_date_field("IC Module Packaging Date", cplc + 20);
-    print_cplc_hex_field("ICC Manufacturer", cplc + 22, 2);
-    print_cplc_date_field("IC Embedding Date", cplc + 24);
-    print_cplc_hex_field("IC Pre-Personalizer", cplc + 26, 2);
-    print_cplc_date_field("IC Pre-Perso. Equipment Date", cplc + 28);
+    printf("IC Batch Identifier : %04X\n", cplc_data.icBatchIdentifier);
+    printf("IC Module Fabricator : %04X\n", cplc_data.icModuleFabricator);
+    print_cplc_date_field_ushort("IC Module Packaging Date", cplc_data.icModulePackagingDate);
+    printf("ICC Manufacturer : %04X\n", cplc_data.iccManufacturer);
+    print_cplc_date_field_ushort("IC Embedding Date", cplc_data.icEmbeddingDate);
+    printf("IC Pre-Personalizer : %04X\n", cplc_data.icPrePersonalizer);
+    print_cplc_date_field_ushort("IC Pre-Perso. Equipment Date", cplc_data.icPrePersonalizationEquipmentDate);
     {
-        printf("IC Pre-Perso. Equipment ID : %02X%02X%02X%02X", cplc[30], cplc[31], cplc[32], cplc[33]);
-        if (cplc[30] != 0 || cplc[31] != 0 || cplc[32] != 0 || cplc[33] != 0) {
-            printf(" (");
-            for (int j = 0; j < 4; j++) {
-                if (isprint(cplc[30 + j])) printf("%c", cplc[30 + j]);
-                else printf("\\x%02X", cplc[30 + j]);
-            }
-            printf(")");
-        }
+        printf("IC Pre-Perso. Equipment ID : %08X", cplc_data.icPrePersonalizationEquipmentId);
         printf("\n");
     }
-    print_cplc_hex_field("IC Personalizer", cplc + 34, 2);
-    print_cplc_date_field("IC Personalization Date", cplc + 36);
-    print_cplc_hex_field("IC Perso. Equipment ID", cplc + 38, 4);
+    printf("IC Personalizer : %04X\n", cplc_data.icPersonalizer);
+    print_cplc_date_field_ushort("IC Personalization Date", cplc_data.icPersonalizationDate);
+    {
+        printf("IC Perso. Equipment ID : %08X\n", cplc_data.icPersonalizationEquipmentId);
+    }
     return 0;
 }
 
@@ -2514,25 +2478,28 @@ static int cmd_card_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info) {
     printf("== iin ==\n");
     rc = cmd_iin(ctx, info);
 
-    printf("== cin ==\n");
+    printf("\n== cin ==\n");
     rc |= cmd_cin(ctx, info);
 
-    printf("== cplc ==\n");
+    printf("\n== cplc ==\n");
     rc |= cmd_cplc(ctx, info, NULL);
 
-    printf("== card-info ==\n");
+    printf("\n== card-info ==\n");
     rc |= cmd_card_info(ctx, info);
 
-    printf("== card-cap ==\n");
+    printf("\n== card-cap ==\n");
     rc |= cmd_card_capability(ctx, info);
 
-    printf("== confirm-counter ==\n");
+    printf("\n== card-resources ==\n");
+    rc |= cmd_card_resources(ctx, info);
+
+    printf("\n== confirm-counter ==\n");
     rc |= cmd_confirm_counter(ctx, info);
 
-    printf("== seq-counter ==\n");
+    printf("\n== seq-counter ==\n");
     rc |= cmd_seq_counter(ctx, info);
 
-    printf("== div-data ==\n");
+    printf("\n== div-data ==\n");
     rc |= cmd_diversification(ctx, info);
     return rc;
 }

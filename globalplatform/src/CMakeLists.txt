@@ -176,6 +176,10 @@ IF(TESTING)
     add_cmocka_test(statusTest
       SOURCES statusTest.c testUtil.c ${SOURCES}
       LINK_LIBRARIES ${LIBRARIES})
+
+    add_cmocka_test(getDataTest
+      SOURCES getDataTest.c testUtil.c ${SOURCES}
+      LINK_LIBRARIES ${LIBRARIES})
   ELSE()
     MESSAGE("cmocka not found - skipping tests.")
   ENDIF()

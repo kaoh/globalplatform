@@ -410,6 +410,31 @@ typedef struct {
 } OPGP_EXTENDED_CARD_RESOURCE_INFORMATION;
 
 /**
+ * The structure containing the Card Production Life Cycle (CPLC) data (raw values).
+ */
+typedef struct {
+	USHORT icFabricator; //!< IC Fabricator.
+	USHORT icType; //!< IC Type.
+	USHORT operatingSystemId; //!< Operating System ID.
+	USHORT operatingSystemReleaseDate; //!< Operating System release date (raw).
+	USHORT operatingSystemReleaseLevel; //!< Operating System release level.
+	USHORT icFabricationDate; //!< IC fabrication date (raw).
+	USHORT icSerialNumberHigh; //!< IC serial number (high).
+	USHORT icSerialNumberLow; //!< IC serial number (low).
+	USHORT icBatchIdentifier; //!< IC batch identifier.
+	USHORT icModuleFabricator; //!< IC module fabricator.
+	USHORT icModulePackagingDate; //!< IC module packaging date (raw).
+	USHORT iccManufacturer; //!< ICC manufacturer.
+	USHORT icEmbeddingDate; //!< IC embedding date (raw).
+	USHORT icPrePersonalizer; //!< IC pre-personalizer.
+	USHORT icPrePersonalizationEquipmentDate; //!< IC pre-personalization equipment date (raw).
+	DWORD icPrePersonalizationEquipmentId; //!< IC pre-personalization equipment ID.
+	USHORT icPersonalizer; //!< IC personalizer.
+	USHORT icPersonalizationDate; //!< IC personalization date (raw).
+	DWORD icPersonalizationEquipmentId; //!< IC personalization equipment ID.
+} OPGP_CPLC;
+
+/**
  * The Card Recognition Data returned for tag 0x66 with GET DATA.
  */
 typedef struct {
@@ -515,6 +540,20 @@ OPGP_API
 OPGP_ERROR_STATUS OPGP_get_extended_card_resources_information(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 								   OPGP_EXTENDED_CARD_RESOURCE_INFORMATION *extendedCardResourceInformation);
 
+//! \brief Reads and parses the CPLC data.
+OPGP_API
+OPGP_ERROR_STATUS OPGP_get_cplc(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+				OPGP_CPLC *cplc);
+
+//! \brief Parses the CPLC data response.
+OPGP_API
+OPGP_ERROR_STATUS OPGP_parse_cplc(const BYTE *data, DWORD dataLength, OPGP_CPLC *cplc);
+
+//! \brief Parses the extended card resources information response.
+OPGP_API
+OPGP_ERROR_STATUS OPGP_parse_extended_card_resources_information(const BYTE *data, DWORD dataLength,
+								  OPGP_EXTENDED_CARD_RESOURCE_INFORMATION *extendedCardResourceInformation);
+
 /** \brief GlobalPlatform2.1.1: Gets the life cycle status of Applications, the Issuer Security
  * Domains, Security Domains and Executable Load Files and their privileges or information about
  * Executable Modules of the Executable Load Files.
@@ -566,9 +605,18 @@ OPGP_ERROR_STATUS GP211_get_data_iso7816_4(OPGP_CARD_CONTEXT cardContext, OPGP_C
 OPGP_API
 OPGP_ERROR_STATUS GP211_get_card_recognition_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_CARD_RECOGNITION_DATA *cardData);
 
+//! \brief Parses the card recognition data response.
+OPGP_API
+OPGP_ERROR_STATUS GP211_parse_card_recognition_data(const BYTE *data, DWORD dataLength, GP211_CARD_RECOGNITION_DATA *cardData);
+
 //! \brief GlobalPlatform2.3.1: Return the card capability information.
 OPGP_API
 OPGP_ERROR_STATUS GP211_get_card_capability_information(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_CARD_CAPABILITY_INFORMATION *cardCapabilityInfo);
+
+//! \brief Parses the card capability information response.
+OPGP_API
+OPGP_ERROR_STATUS GP211_parse_card_capability_information(const BYTE *data, DWORD dataLength,
+							  GP211_CARD_CAPABILITY_INFORMATION *cardCapabilityInfo);
 
 //! \brief GlobalPlatform2.1.1: This returns the Secure Channel Protocol and the Secure Channel Protocol implementation.
 OPGP_API
