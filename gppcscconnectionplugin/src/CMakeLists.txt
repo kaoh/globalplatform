@@ -63,40 +63,79 @@ IF(UNIX)
   link_directories(${PCSC_LIBDIR})
 ENDIF()
 
-# Build shared and static variants
-ADD_LIBRARY(gppcscconnectionplugin SHARED ${SOURCES})
-ADD_LIBRARY(gppcscconnectionpluginStatic STATIC ${SOURCES})
+set(GPPCSC_BUILD_STATIC OFF)
+set(GPPCSC_BUILD_SHARED OFF)
+if(STATIC)
+  set(GPPCSC_BUILD_STATIC ON)
+else()
+  set(GPPCSC_BUILD_SHARED ON)
+endif()
 
-TARGET_LINK_LIBRARIES(gppcscconnectionplugin ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES})
-TARGET_LINK_LIBRARIES(gppcscconnectionpluginStatic ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES})
+# Build shared and static variants
+if(GPPCSC_BUILD_SHARED)
+  ADD_LIBRARY(gppcscconnectionplugin SHARED ${SOURCES})
+  TARGET_LINK_LIBRARIES(gppcscconnectionplugin PUBLIC ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES})
+endif()
+if(GPPCSC_BUILD_STATIC)
+  ADD_LIBRARY(gppcscconnectionpluginStatic STATIC ${SOURCES})
+  if(TARGET globalplatformStatic)
+    TARGET_LINK_LIBRARIES(gppcscconnectionpluginStatic PUBLIC globalplatformStatic ${PCSC_LIBRARIES})
+  else()
+    TARGET_LINK_LIBRARIES(gppcscconnectionpluginStatic PUBLIC ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES})
+  endif()
+endif()
 
 # Under Unix shared and static libraries can have the same base name
-IF(UNIX)
+IF(UNIX AND GPPCSC_BUILD_STATIC)
   SET_TARGET_PROPERTIES(gppcscconnectionpluginStatic PROPERTIES OUTPUT_NAME gppcscconnectionplugin)
 ENDIF()
 
 IF(WINDDK_DIR)
-  TARGET_LINK_LIBRARIES(gppcscconnectionplugin ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES} optimized ${WINDDK_DIR}/lib/win7/i386/msvcrt_win2000.obj optimized ${WINDDK_DIR}/lib/Crt/i386/msvcrt.lib)
-  TARGET_LINK_LIBRARIES(gppcscconnectionpluginStatic ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES} optimized ${WINDDK_DIR}/lib/win7/i386/msvcrt_win2000.obj optimized ${WINDDK_DIR}/lib/Crt/i386/msvcrt.lib)
+  if(GPPCSC_BUILD_SHARED)
+    TARGET_LINK_LIBRARIES(gppcscconnectionplugin ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES} optimized ${WINDDK_DIR}/lib/win7/i386/msvcrt_win2000.obj optimized ${WINDDK_DIR}/lib/Crt/i386/msvcrt.lib)
+  endif()
+  if(GPPCSC_BUILD_STATIC)
+    TARGET_LINK_LIBRARIES(gppcscconnectionpluginStatic ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES} optimized ${WINDDK_DIR}/lib/win7/i386/msvcrt_win2000.obj optimized ${WINDDK_DIR}/lib/Crt/i386/msvcrt.lib)
+  endif()
 ENDIF(WINDDK_DIR)
 
-IF(UNIX)
+IF(UNIX AND GPPCSC_BUILD_SHARED)
   SET_TARGET_PROPERTIES(gppcscconnectionplugin PROPERTIES SOVERSION ${SOVERSION})
-ENDIF(UNIX)
+ENDIF()
 
 IF(WIN32)
-  SET_TARGET_PROPERTIES(gppcscconnectionplugin PROPERTIES DEFINE_SYMBOL OPGP_PL_EXPORTS)
-  SET_TARGET_PROPERTIES(gppcscconnectionpluginStatic PROPERTIES DEFINE_SYMBOL OPGP_PL_EXPORTS)
+  if(GPPCSC_BUILD_SHARED)
+    SET_TARGET_PROPERTIES(gppcscconnectionplugin PROPERTIES DEFINE_SYMBOL OPGP_PL_EXPORTS)
+  endif()
+  if(GPPCSC_BUILD_STATIC)
+    SET_TARGET_PROPERTIES(gppcscconnectionpluginStatic PROPERTIES DEFINE_SYMBOL OPGP_PL_EXPORTS)
+  endif()
 ENDIF(WIN32)
 
 # Install
 IF(WIN32)
- INSTALL(TARGETS gppcscconnectionplugin RUNTIME DESTINATION lib${LIB_SUFFIX})
- INSTALL(TARGETS gppcscconnectionplugin ARCHIVE DESTINATION lib${LIB_SUFFIX})
- INSTALL(TARGETS gppcscconnectionpluginStatic ARCHIVE DESTINATION lib${LIB_SUFFIX})
+  if(TARGET gppcscconnectionplugin)
+    INSTALL(TARGETS gppcscconnectionplugin
+      EXPORT gppcscconnectionpluginTargets
+      RUNTIME DESTINATION lib${LIB_SUFFIX}
+      ARCHIVE DESTINATION lib${LIB_SUFFIX})
+  endif()
+  if(TARGET gppcscconnectionpluginStatic)
+    INSTALL(TARGETS gppcscconnectionpluginStatic
+      EXPORT gppcscconnectionpluginTargets
+      ARCHIVE DESTINATION lib${LIB_SUFFIX})
+  endif()
 ELSE(WIN32)
- INSTALL(TARGETS gppcscconnectionplugin LIBRARY DESTINATION lib${LIB_SUFFIX})
- INSTALL(TARGETS gppcscconnectionpluginStatic ARCHIVE DESTINATION lib${LIB_SUFFIX})
+  if(TARGET gppcscconnectionplugin)
+    INSTALL(TARGETS gppcscconnectionplugin
+      EXPORT gppcscconnectionpluginTargets
+      LIBRARY DESTINATION lib${LIB_SUFFIX})
+  endif()
+  if(TARGET gppcscconnectionpluginStatic)
+    INSTALL(TARGETS gppcscconnectionpluginStatic
+      EXPORT gppcscconnectionpluginTargets
+      ARCHIVE DESTINATION lib${LIB_SUFFIX})
+  endif()
 ENDIF(WIN32)
 
 # Testing

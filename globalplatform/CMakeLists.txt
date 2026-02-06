@@ -27,7 +27,11 @@ ENDIf(UNIX)
 
 set(DOXYFILE_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
 set(DOXYFILE_LATEX OFF)
+option(GLOBALPLATFORM_BUILD_DOCS "Build Doxygen docs during normal builds" OFF)
 include(UseDoxygen)
+if(GLOBALPLATFORM_BUILD_DOCS AND TARGET doc)
+  add_custom_target(globalplatform-doc ALL DEPENDS doc)
+endif()
 
 set(INSTALL_FILES	${CMAKE_CURRENT_SOURCE_DIR}/AUTHORS ${CMAKE_CURRENT_SOURCE_DIR}/ChangeLog
               ${CMAKE_CURRENT_SOURCE_DIR}/COPYING ${CMAKE_CURRENT_SOURCE_DIR}/COPYING.LESSER
@@ -80,3 +84,30 @@ IF(TESTING)
 ENDIF()
 
 ADD_SUBDIRECTORY(src)
+
+include(CMakePackageConfigHelpers)
+
+configure_package_config_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/globalplatformConfig.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/globalplatformConfig.cmake"
+  INSTALL_DESTINATION "lib${LIB_SUFFIX}/cmake/globalplatform")
+
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/globalplatformConfigVersion.cmake"
+  VERSION "${VERSION}"
+  COMPATIBILITY SameMajorVersion)
+
+install(EXPORT globalplatformTargets
+  NAMESPACE globalplatform::
+  DESTINATION "lib${LIB_SUFFIX}/cmake/globalplatform")
+
+install(FILES
+  "${CMAKE_CURRENT_BINARY_DIR}/globalplatformConfig.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/globalplatformConfigVersion.cmake"
+  DESTINATION "lib${LIB_SUFFIX}/cmake/globalplatform"
+  COMPONENT dev)
+
+install(FILES
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/FindPCSC.cmake"
+  DESTINATION "lib${LIB_SUFFIX}/cmake/globalplatform"
+  COMPONENT dev)

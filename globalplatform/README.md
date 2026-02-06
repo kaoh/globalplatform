@@ -16,11 +16,11 @@ Use a suitable packet manager for your OS or install the programs and libraries 
   * MacOS: Xcode
   * Windows: Visual Studio and SDK
 * [CMake 3.5.1](http://www.cmake.org/) or higher is needed
-* [PC/SC Lite](https://pcsclite.apdu.fr) (only for UNIXes, Windows and MacOS are already including this)
+* [PC/SC Lite](https://pcsclite.apdu.fr) (only for UNIXes, Windows and macOS are already including this)
 * [Doxygen](www.doxygen.org/) for generating the documentation
 * [Graphviz](https://graphviz.org) for generating graphics in the documentation
-* [OpenSSL](http://www.openssl.org/) (On MacOS use OpenSSL 3)
-* [zlib](http://www.zlib.net/) (MacOS should already bundle this, for Windows a pre-built version is included)
+* [OpenSSL](http://www.openssl.org/) (Use OpenSSL 3)
+* [zlib](http://www.zlib.net/) (macOS should already bundle this, for Windows a pre-built version is included)
 * [cmocka](https://cmocka.org/) for running the tests
 
 ## Unix
@@ -41,12 +41,12 @@ apt-get install libssl-dev doxygen cmake libcmocka0 zlib1g-dev graphviz pcscd li
 
 ### Compile
 
-__NOTE:__ If using Homebrew in parallel and having not used Homebrew for installing the dependencies but the distribution's package manager then several tools and libraries can be hidden by Homebrew or are not installed in Homebrew (`pkgconfig`, `PC/SC Lite`, `cmocka`, ...). One option is to install these tools and libraries with `brew` or remove the Homebrew path from the `PATH` variable temporarily
+__NOTE:__ If using Homebrew in parallel and having not used Homebrew for installing the dependencies but the distribution's package manager, then several tools and libraries can be hidden by Homebrew or are not installed in Homebrew (`pkgconfig`, `PC/SC Lite`, `cmocka`, ...). One option is to install these tools and libraries with `brew` or remove the Homebrew path from the `PATH` variable temporarily
 (which should be `./home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin`).
 
 ```shell
 cd \path\to\globalplatform
-cmake -B build .
+cmake -B build -DCMAKE_BUILD_TYPE=Release .
 cd build
 make
 make doc
@@ -61,7 +61,7 @@ brew remove --ignore-dependencies pcsc-lite
 
 ###  Set Library Search Directory
 
-It might be necessary to create a symlink to the correct library search directory, e.g. under Ubuntu 18.04 execute:
+It might be necessary to create a symlink to the correct library search directory, e.g., under Ubuntu 18.04 execute:
 
     sudo ln -s /usr/local/lib/libglobalplatform.so.<version> /usr/lib/x86_64-linux-gnu/libglobalplatform.so.<version>
 
@@ -71,7 +71,7 @@ Or include the `/usr/local/lib ` under `/etc/ld.so.conf.d/` and run `sudo ldconf
 
 ## MacOS
 
-The compilation was executed on a system with [Homebrew](https://brew.sh) as package manager.
+The compilation was executed on a system with [Homebrew](https://brew.sh) as a package manager.
 
 Install the dependencies with `brew`:
 
@@ -81,11 +81,11 @@ brew install openssl@3 doxygen cmocka pandoc cmake graphviz
 
 ### Compile
 
-It is necessary to set the `OPENSSL_ROOT_DIR`. In case of the usage of Homebrew this works:
+It is necessary to set the `OPENSSL_ROOT_DIR`. In the case of the usage of Homebrew, this works:
 
 ```shell
 cd \path\to\globalplatform
-cmake -B build -DCMAKE_C_COMPILER=/usr/bin/gcc -DOPENSSL_ROOT_DIR=$(brew --prefix openssl@3) .
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=/usr/bin/gcc -DOPENSSL_ROOT_DIR=$(brew --prefix openssl@3) .
 cd build
 make
 make install
@@ -117,15 +117,15 @@ It will be necessary to set the `ZLIB_ROOT` and `CMOCKA_ROOT` and `OPENSSL_ROOT_
 
 ```shell
 cd \path\to\globalplatform
-cmake -G "NMake Makefiles" -DOPENSSL_ROOT_DIR="C:\Program Files (x86)\OpenSSL-Win32" -DZLIB_ROOT="C:\Users\john\Desktop\globalplatform\zlib-1.2.8\win32-build" -DCMOCKA_ROOT="C:\Users\john\Desktop\globalplatform\cmocka-cmocka-1.1.5\build-w32"
+cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DOPENSSL_ROOT_DIR="C:\Program Files (x86)\OpenSSL-Win32" -DZLIB_ROOT="C:\Users\john\Desktop\globalplatform\zlib-1.2.8\win32-build" -DCMOCKA_ROOT="C:\Users\john\Desktop\globalplatform\cmocka-cmocka-1.1.5\build-w32"
 nmake
 ```
 
-__NOTE:__ CMake might fail if different compilers are on the path, e.g. MingW. CMake will pick the wrong linker.
+__NOTE:__ CMake might fail if different compilers are on the path, e.g., MingW. CMake will pick the wrong linker.
 A way to set the linker explicitly is (replace the linker path with the correct one for your version):
 
 ~~~shell
-cmake -G "NMake Makefiles" -DCMAKE_LINKER="C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\link.exe" -DCMAKE_C_LINK_EXECUTABLE=link.exe -DTESTING=ON -DDEBUG=ON
+cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_LINKER="C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\link.exe" -DCMAKE_C_LINK_EXECUTABLE=link.exe
 ~~~
 
 ## FreeBSD
@@ -167,14 +167,14 @@ Execute:
 
 To be able to debug the library enable the debug symbols:
 
-    cmake . -DDEBUG=ON
+    cmake -b build .
 
 ## Testing
 
 To generate the tests execute:
 
 ```shell
-cmake -B build -DTESTING=ON -DINTEGRATION_TESTING=ON -DDEBUG=ON .
+cmake -B build -DTESTING=ON -DINTEGRATION_TESTING=ON .
 cd build
 make
 make test-unit

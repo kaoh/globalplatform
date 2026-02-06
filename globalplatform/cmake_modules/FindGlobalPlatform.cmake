@@ -22,9 +22,15 @@ IF(NOT GLOBALPLATFORM_FOUND)
    FIND_PATH(GLOBALPLATFORM_INCLUDE_DIRS NAMES globalplatform/globalplatform.h PATHS ${CMAKE_SOURCE_DIR}/globalplatform/src)
    # If building in-tree, link against the CMake target to ensure correct build ordering in parallel builds
    if(EXISTS ${CMAKE_SOURCE_DIR}/globalplatform)
-     # Use the target name; CMake will add the proper dependency on the library target
-     set(GLOBALPLATFORM_LIBRARIES globalplatform)
-   else()
+     if(TARGET globalplatform)
+       # Use the shared target when available
+       set(GLOBALPLATFORM_LIBRARIES globalplatform)
+     elseif(TARGET globalplatformStatic)
+       # Fall back to static when shared is not built
+       set(GLOBALPLATFORM_LIBRARIES globalplatformStatic)
+     endif()
+   endif()
+   if(NOT GLOBALPLATFORM_LIBRARIES)
      # Fall back to platform-specific library file when not building the project in-tree
      if(WIN32)
        set(GLOBALPLATFORM_LIBRARIES ${CMAKE_BINARY_DIR}/globalplatform/src/globalplatform.lib)

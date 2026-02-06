@@ -49,6 +49,7 @@ ELSE()
   IF(NOT CMAKE_BUILD_TYPE)
     SET(CMAKE_BUILD_TYPE "Release")
   ENDIF()
+  set(GLOBALPLATFORM_USE_ASAN OFF CACHE INTERNAL "GlobalPlatform uses ASan")
 ENDIF()
 
 # Enable debugging output
@@ -95,42 +96,94 @@ IF(UNIX)
   link_directories(${PCSC_LIBDIR})
 ENDIF()
 
-ADD_LIBRARY(globalplatformStatic STATIC ${SOURCES})
-ADD_LIBRARY(globalplatform SHARED ${SOURCES})
+set(GP_BUILD_STATIC OFF)
+set(GP_BUILD_SHARED OFF)
+if(STATIC)
+  set(GP_BUILD_STATIC ON)
+else()
+  set(GP_BUILD_SHARED ON)
+endif()
 
 SET(LIBRARIES ${PCSC_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES})
 
+if(GP_BUILD_STATIC)
+  ADD_LIBRARY(globalplatformStatic STATIC ${SOURCES})
+  target_include_directories(globalplatformStatic
+    PUBLIC
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+      $<INSTALL_INTERFACE:include>)
+endif()
+if(GP_BUILD_SHARED)
+  ADD_LIBRARY(globalplatform SHARED ${SOURCES})
+  target_include_directories(globalplatform
+    PUBLIC
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+      $<INSTALL_INTERFACE:include>)
+endif()
+
 # Under Unix shared and static libraries can have the same name
 IF(UNIX)
-  SET_TARGET_PROPERTIES(globalplatformStatic PROPERTIES OUTPUT_NAME globalplatform)
+  if(GP_BUILD_STATIC)
+    SET_TARGET_PROPERTIES(globalplatformStatic PROPERTIES OUTPUT_NAME globalplatform)
+  endif()
   SET(LIBRARIES ${LIBRARIES} dl)
 ENDIF(UNIX)
 IF(USE_SYSTEM_MINIZIP)
   SET(LIBRARIES ${LIBRARIES} ${MINIZIP_LIBRARIES})
 ENDIF(USE_SYSTEM_MINIZIP)
 
-TARGET_LINK_LIBRARIES(globalplatform globalplatformStatic ${LIBRARIES})
+if(GP_BUILD_SHARED)
+  TARGET_LINK_LIBRARIES(globalplatform PUBLIC ${LIBRARIES})
+endif()
+if(GP_BUILD_STATIC)
+  TARGET_LINK_LIBRARIES(globalplatformStatic PUBLIC ${LIBRARIES})
+endif()
 
 IF(WINDDK_DIR)
-  TARGET_LINK_LIBRARIES(globalplatform globalplatformStatic ${LIBRARIES} optimized ${WINDDK_DIR}/lib/win7/i386/msvcrt_win2000.obj optimized ${WINDDK_DIR}/lib/Crt/i386/msvcrt.lib)
+  if(GP_BUILD_SHARED)
+    TARGET_LINK_LIBRARIES(globalplatform PUBLIC optimized ${WINDDK_DIR}/lib/win7/i386/msvcrt_win2000.obj optimized ${WINDDK_DIR}/lib/Crt/i386/msvcrt.lib)
+  endif()
+  if(GP_BUILD_STATIC)
+    TARGET_LINK_LIBRARIES(globalplatformStatic PUBLIC optimized ${WINDDK_DIR}/lib/win7/i386/msvcrt_win2000.obj optimized ${WINDDK_DIR}/lib/Crt/i386/msvcrt.lib)
+  endif()
 ENDIF(WINDDK_DIR)
 
-IF(UNIX)
+IF(UNIX AND GP_BUILD_SHARED)
   SET_TARGET_PROPERTIES(globalplatform PROPERTIES SOVERSION ${SOVERSION})
   # Allow in-tree execution to find the PC/SC plugin without installing it
   set(_globalplatform_plugin_rpath "$ORIGIN/../../gppcscconnectionplugin/src")
   set_target_properties(globalplatform PROPERTIES BUILD_RPATH "${_globalplatform_plugin_rpath}")
-ENDIF(UNIX)
+ENDIF()
 
 # Install
 IF(WIN32)
- INSTALL(TARGETS globalplatformStatic ARCHIVE DESTINATION lib${LIB_SUFFIX} COMPONENT dev)
- INSTALL(TARGETS globalplatform RUNTIME DESTINATION lib${LIB_SUFFIX})
- INSTALL(TARGETS globalplatform ARCHIVE DESTINATION lib${LIB_SUFFIX} COMPONENT dev)
+  if(TARGET globalplatform)
+    INSTALL(TARGETS globalplatform
+      EXPORT globalplatformTargets
+      RUNTIME DESTINATION lib${LIB_SUFFIX}
+      ARCHIVE DESTINATION lib${LIB_SUFFIX} COMPONENT dev
+      INCLUDES DESTINATION include)
+  endif()
+  if(TARGET globalplatformStatic)
+    INSTALL(TARGETS globalplatformStatic
+      EXPORT globalplatformTargets
+      ARCHIVE DESTINATION lib${LIB_SUFFIX} COMPONENT dev
+      INCLUDES DESTINATION include)
+  endif()
 ELSE(WIN32)
-# Static library must be build first, otherwise under Ubuntu Karmic the static build removes the .so file of the shared library version.
- INSTALL(TARGETS globalplatformStatic ARCHIVE DESTINATION lib${LIB_SUFFIX} COMPONENT dev)
- INSTALL(TARGETS globalplatform LIBRARY DESTINATION lib${LIB_SUFFIX})
+  # Static library must be build first, otherwise under Ubuntu Karmic the static build removes the .so file of the shared library version.
+  if(TARGET globalplatform)
+    INSTALL(TARGETS globalplatform
+      EXPORT globalplatformTargets
+      LIBRARY DESTINATION lib${LIB_SUFFIX}
+      INCLUDES DESTINATION include)
+  endif()
+  if(TARGET globalplatformStatic)
+    INSTALL(TARGETS globalplatformStatic
+      EXPORT globalplatformTargets
+      ARCHIVE DESTINATION lib${LIB_SUFFIX} COMPONENT dev
+      INCLUDES DESTINATION include)
+  endif()
 ENDIF(WIN32)
 
 # Testing

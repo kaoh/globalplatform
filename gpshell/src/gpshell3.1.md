@@ -294,15 +294,6 @@ Options:
   - `ber`: BER-TLV structures.
 - `--response <true|false>`: expect response data (default `false`).
 
-## cplc
-
-Read and decode the Card Production Life Cycle (CPLC) data. This command does not require authentication.
-
-Example:
-```
-gpshell3 cplc
-```
-
 ## card-data
 
 Read a bundle of card data objects, in this order:
@@ -321,6 +312,15 @@ This command does not require authentication.
 Example:
 ```
 gpshell3 card-data
+```
+
+## cplc
+
+Read and decode the Card Production Life Cycle (CPLC) data. This command does not require authentication.
+
+Example:
+```
+gpshell3 cplc
 ```
 
 ## iin

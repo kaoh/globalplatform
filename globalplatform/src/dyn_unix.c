@@ -24,11 +24,15 @@
  * @brief This abstracts dynamic library loading functions.
  */
 
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <string.h>
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
+#include <libgen.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <limits.h>
 
 #include "globalplatform/debug.h"
@@ -43,6 +47,31 @@
 #define LIBRARY_NAME_EXTENSION _T(".so")
 #endif
 #define LIBRARY_NAME_VERSION_SEPARATOR _T(".")
+
+static int try_dlopen_relative_to_self(void **handle, const char *soname)
+{
+	Dl_info info;
+	char path[PATH_MAX];
+	char dirbuf[PATH_MAX];
+
+	if (dladdr((const void *)(uintptr_t)try_dlopen_relative_to_self, &info) == 0 || !info.dli_fname) {
+		return 0; // not tried
+	}
+
+	// Copy because dirname may modify buffer
+	strncpy(dirbuf, info.dli_fname, sizeof(dirbuf));
+	dirbuf[sizeof(dirbuf)-1] = '\0';
+
+	const char *dir = dirname(dirbuf);
+	if (!dir) return 0;
+
+	if (snprintf(path, sizeof(path), "%s/%s", dir, soname) <= 0) {
+		return 0;
+	}
+
+	*handle = dlopen(path, RTLD_LAZY);
+	return (*handle != NULL);
+}
 
 /**
  * \param libraryHandle [out] The returned library handle
@@ -103,6 +132,9 @@ OPGP_ERROR_STATUS DYN_LoadLibrary(PVOID *libraryHandle, LPCTSTR libraryName, LPC
 		if (snprintf(fullpath, sizeof(fullpath), "%s/%s", plugin_path, internalLibraryName) > 0) {
 			*libraryHandle = dlopen(fullpath, RTLD_LAZY);
 		}
+	}
+	if (*libraryHandle == NULL) {
+		try_dlopen_relative_to_self((void**)libraryHandle, internalLibraryName);
 	}
 	if (*libraryHandle == NULL) {
 		*libraryHandle = dlopen(internalLibraryName, RTLD_LAZY);

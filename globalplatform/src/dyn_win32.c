@@ -52,20 +52,55 @@ static void ConvertTToC(char* pszDest, const TCHAR* pszSrc, unsigned int maxSize
  */
 OPGP_ERROR_STATUS DYN_LoadLibrary(PVOID *libraryHandle, LPCTSTR libraryName, LPCTSTR version)
 {
+	(void)version; // unused on Windows in your current design
+
 	OPGP_ERROR_STATUS errorStatus;
+	*libraryHandle = NULL;
 
 	OPGP_LOG_START(_T("DYN_LoadLibrary"));
-	*libraryHandle = LoadLibrary(libraryName);
 
-	if (*libraryHandle == NULL)
+	// Copy name so we can append .dll if needed
+	TCHAR dllName[MAX_LIBRARY_NAME_SIZE];
+	_tcsncpy_s(dllName, MAX_LIBRARY_NAME_SIZE, libraryName, _TRUNCATE);
+	ensure_dll_extension(dllName, MAX_LIBRARY_NAME_SIZE);
+
+	// 1) Try OPGP_PLUGIN_PATH first
 	{
+		const TCHAR *plugin_path = _tgetenv(_T("OPGP_PLUGIN_PATH"));
+		if (plugin_path && plugin_path[0] != _T('\0')) {
+			TCHAR fullpath[PATH_MAX];
+			if (join_path(fullpath, sizeof(fullpath)/sizeof(fullpath[0]), plugin_path, dllName)) {
+				*libraryHandle = (PVOID)LoadLibrary(fullpath);
+			}
+		}
+	}
+
+	// 2) Try relative to this module (globalplatform.dll)
+	if (*libraryHandle == NULL) {
+		TCHAR selfDir[MAX_PATH];
+		if (get_self_module_dir(selfDir, sizeof(selfDir)/sizeof(selfDir[0]))) {
+			TCHAR fullpath[MAX_PATH];
+			if (join_path(fullpath, sizeof(fullpath)/sizeof(fullpath[0]), selfDir, dllName)) {
+				*libraryHandle = (PVOID)LoadLibrary(fullpath);
+			}
+		}
+	}
+
+	// 3) Fallback: default search (note: can be affected by DLL search path rules)
+	if (*libraryHandle == NULL) {
+		*libraryHandle = (PVOID)LoadLibrary(dllName);
+	}
+
+	if (*libraryHandle == NULL) {
 		DWORD errorCode = GetLastError();
 		OPGP_ERROR_CREATE_ERROR(errorStatus, errorCode, OPGP_stringify_error(errorCode));
 		goto end;
 	}
+
 	OPGP_ERROR_CREATE_NO_ERROR(errorStatus);
-end:
-	OPGP_LOG_END(_T("DYN_LoadLibrary"), errorStatus);
+
+	end:
+		OPGP_LOG_END(_T("DYN_LoadLibrary"), errorStatus);
 	return errorStatus;
 }
 

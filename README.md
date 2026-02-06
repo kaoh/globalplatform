@@ -41,7 +41,7 @@ Use a suitable packet manager for your OS or install the programs and libraries 
 * [PC/SC Lite](https://pcsclite.apdu.fr) (only for UNIXes, Windows and macOS are already including this)
 * [Doxygen](www.doxygen.org/) for generating the documentation
 * [Graphviz](https://graphviz.org) for generating graphics in the documentation
-* [OpenSSL](http://www.openssl.org/) (On macOS use OpenSSL 3)
+* [OpenSSL](http://www.openssl.org/) (Use OpenSSL 3)
 * [zlib](http://www.zlib.net/) (macOS should already bundle this, for Windows a pre-built version is included)
 * [cmocka](https://cmocka.org/) for running the tests
 * [Pandoc](https://pandoc.org/installing.html) for generating the man page the tests
@@ -68,7 +68,7 @@ __NOTE:__ If using Homebrew in parallel and having not used Homebrew for install
 
 ```
 cd \path\to\globalplatform
-cmake -B build .
+cmake -B build -DCMAKE_BUILD_TYPE=Release.
 cd build
 make
 make doc
@@ -98,7 +98,7 @@ It is necessary to set the `OPENSSL_ROOT_DIR`. In case of the usage of Homebrew 
 
 ```shell
 cd \path\to\globalplatform
-cmake -B build -DCMAKE_C_COMPILER=/usr/bin/gcc -DOPENSSL_ROOT_DIR=$(brew --prefix openssl@3) .
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=/usr/bin/gcc -DOPENSSL_ROOT_DIR=$(brew --prefix openssl@3) .
 cd build
 make
 make install
@@ -126,7 +126,7 @@ It will be necessary to set the `ZLIB_ROOT` and `CMOCKA_ROOT` and `OPENSSL_ROOT_
 
 ```shell
 cd \path\to\globalplatform
-cmake -G "NMake Makefiles" -DOPENSSL_ROOT_DIR="C:\Program Files (x86)\OpenSSL-Win32" -DZLIB_ROOT="C:\Users\john\Desktop\globalplatform\zlib-1.2.8\win32-build" -DCMOCKA_ROOT="C:\Users\john\Desktop\globalplatform\cmocka-cmocka-1.1.5\build-w32"
+cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DOPENSSL_ROOT_DIR="C:\Program Files (x86)\OpenSSL-Win32" -DZLIB_ROOT="C:\Users\john\Desktop\globalplatform\zlib-1.2.8\win32-build" -DCMOCKA_ROOT="C:\Users\john\Desktop\globalplatform\cmocka-cmocka-1.1.5\build-w32"
 nmake
 ```
 
@@ -155,7 +155,7 @@ Execute:
 To be able to debug the library, enable the debug symbols:
 
 ```
-cmake . -DDEBUG=ON
+cmake -B build .
 ```
 
 ## Testing
@@ -163,7 +163,7 @@ cmake . -DDEBUG=ON
 To generate the tests, execute:
 
 ```shell
-cmake -B build -DTESTING=ON -DINTEGRATION_TESTING=ON -DDEBUG=ON .
+cmake -B build -DTESTING=ON -DINTEGRATION_TESTING=ON .
 cd build
 make
 make test-unit
