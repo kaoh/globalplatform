@@ -10,7 +10,7 @@ set(CMAKE_MACOSX_RPATH 1)
 set(GPSHELL_VERSION 3.0.0)
 
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Debug)
+    set(CMAKE_BUILD_TYPE Release)
 endif()
 
 option(INTEGRATION_TESTING "Enable integration tests requiring a real test card" OFF)

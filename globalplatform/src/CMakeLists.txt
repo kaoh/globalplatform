@@ -10,6 +10,12 @@ SET(SOURCES connection.c stringify.c crypto.c loadfile.c util.c debug.c init.c g
 INCLUDE(CheckCCompilerFlag)
 INCLUDE(CMakePushCheckState)
 
+set(_gp_asan_default OFF)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR DEBUG)
+  set(_gp_asan_default ON)
+endif()
+option(GLOBALPLATFORM_ENABLE_ASAN "Enable AddressSanitizer in Debug builds" ${_gp_asan_default})
+
 # Synchronize CMAKE_BUILD_TYPE and the legacy DEBUG switch
 IF(CMAKE_BUILD_TYPE STREQUAL "Debug" OR DEBUG)
   SET(DEBUG ON)
@@ -24,16 +30,19 @@ IF(CMAKE_BUILD_TYPE STREQUAL "Debug" OR DEBUG)
     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
   ENDIF()
 
-  # check for fsanitize support
-  CMAKE_PUSH_CHECK_STATE()
-  SET(CMAKE_REQUIRED_FLAGS "-fsanitize=address")
-  check_c_compiler_flag("-fsanitize=address" FSANITIZE)
-  CMAKE_POP_CHECK_STATE()
-  IF(FSANITIZE)
-  MESSAGE("fsanitize supported")
-  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address")
-  set(GLOBALPLATFORM_USE_ASAN ON CACHE INTERNAL "GlobalPlatform uses ASan")
-  ENDIF()
+  if(GLOBALPLATFORM_ENABLE_ASAN)
+    # check for fsanitize support
+    CMAKE_PUSH_CHECK_STATE()
+    SET(CMAKE_REQUIRED_FLAGS "-fsanitize=address")
+    check_c_compiler_flag("-fsanitize=address" FSANITIZE)
+    CMAKE_POP_CHECK_STATE()
+    IF(FSANITIZE)
+    MESSAGE("fsanitize supported")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address")
+    set(GLOBALPLATFORM_USE_ASAN ON CACHE INTERNAL "GlobalPlatform uses ASan")
+    set(GLOBALPLATFORM_ASAN_FLAGS "-fsanitize=address" CACHE INTERNAL "GlobalPlatform ASan flags")
+    ENDIF()
+  endif()
   
   # check for Wpedantic support
   CMAKE_PUSH_CHECK_STATE()
@@ -119,6 +128,15 @@ if(GP_BUILD_SHARED)
     PUBLIC
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
       $<INSTALL_INTERFACE:include>)
+endif()
+
+if(GLOBALPLATFORM_USE_ASAN)
+  if(GP_BUILD_STATIC)
+    target_link_libraries(globalplatformStatic PUBLIC "${GLOBALPLATFORM_ASAN_FLAGS}")
+  endif()
+  if(GP_BUILD_SHARED)
+    target_link_libraries(globalplatform PUBLIC "${GLOBALPLATFORM_ASAN_FLAGS}")
+  endif()
 endif()
 
 # Under Unix shared and static libraries can have the same name
