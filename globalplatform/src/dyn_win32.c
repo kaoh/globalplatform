@@ -34,6 +34,98 @@
 #include "globalplatform/debug.h"
 #include "globalplatform/stringify.h"
 
+#ifndef MAX_LIBRARY_NAME_SIZE
+#define MAX_LIBRARY_NAME_SIZE 64
+#endif
+
+#ifndef PATH_MAX
+#define PATH_MAX MAX_PATH
+#endif
+
+static void ensure_dll_extension(TCHAR *name, size_t maxSize)
+{
+	const TCHAR *ext = _T(".dll");
+	size_t nameLen = _tcslen(name);
+	size_t extLen = _tcslen(ext);
+
+	if (nameLen >= extLen) {
+		if (_tcsicmp(name + nameLen - extLen, ext) == 0) {
+			return;
+		}
+	}
+
+	if (nameLen + extLen + 1 > maxSize) {
+		return;
+	}
+
+	_tcsncat_s(name, maxSize, ext, _TRUNCATE);
+}
+
+static int join_path(TCHAR *out, size_t outSize, const TCHAR *dir, const TCHAR *file)
+{
+	size_t dirLen;
+	size_t fileLen;
+	size_t sepLen = 0;
+
+	if (!out || !dir || !file || outSize == 0) {
+		return 0;
+	}
+
+	dirLen = _tcslen(dir);
+	fileLen = _tcslen(file);
+	if (dirLen == 0) {
+		return 0;
+	}
+
+	if (dir[dirLen - 1] != _T('\\') && dir[dirLen - 1] != _T('/')) {
+		sepLen = 1;
+	}
+
+	if (dirLen + sepLen + fileLen + 1 > outSize) {
+		return 0;
+	}
+
+	_tcsncpy_s(out, outSize, dir, _TRUNCATE);
+	if (sepLen) {
+		_tcsncat_s(out, outSize, _T("\\"), _TRUNCATE);
+	}
+	_tcsncat_s(out, outSize, file, _TRUNCATE);
+	return 1;
+}
+
+static int get_self_module_dir(TCHAR *out, size_t outSize)
+{
+	HMODULE module = NULL;
+	DWORD len;
+	TCHAR *lastSep;
+
+	if (!out || outSize == 0) {
+		return 0;
+	}
+
+	if (!GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+			GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+			(LPCTSTR)&get_self_module_dir, &module)) {
+		return 0;
+	}
+
+	len = GetModuleFileName(module, out, (DWORD)outSize);
+	if (len == 0 || len >= outSize) {
+		return 0;
+	}
+
+	lastSep = _tcsrchr(out, _T('\\'));
+	if (lastSep == NULL) {
+		lastSep = _tcsrchr(out, _T('/'));
+	}
+	if (lastSep == NULL) {
+		return 0;
+	}
+
+	*lastSep = _T('\0');
+	return 1;
+}
+
 static void ConvertTToC(char* pszDest, const TCHAR* pszSrc, unsigned int maxSize)
 {
     unsigned int i;
@@ -166,4 +258,3 @@ end:
 }
 
 #endif	/* WIN32 */
-

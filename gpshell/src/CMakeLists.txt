@@ -61,7 +61,7 @@ ENDIF()
 IF(WIN32)
     SET(SOURCES ${SOURCES} version.rc)
     ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
-    ADD_DEFINITIONS(-DUNICODE)
+    ADD_DEFINITIONS(-DUNICODE -D_UNICODE -DWIN32)
 ENDIF(WIN32)
 
 # Ensure we include in-tree GlobalPlatform headers to avoid picking up system-installed ones

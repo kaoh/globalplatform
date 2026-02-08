@@ -52,7 +52,7 @@ ADD_DEFINITIONS(-DOPGP_DEBUG)
 IF(WIN32)
     SET(SOURCES ${SOURCES} version.rc)
     ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
-    ADD_DEFINITIONS(-DUNICODE)
+    ADD_DEFINITIONS(-DUNICODE -D_UNICODE -DWIN32)
 ENDIF(WIN32)
 
 # The last is needed to support a system where the globalplatform headers are already installed, but the util.h must still be found in the sub project of globalplatform

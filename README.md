@@ -94,7 +94,7 @@ brew install openssl@3 doxygen cmocka pandoc cmake graphviz
 
 ### Compile
 
-It is necessary to set the `OPENSSL_ROOT_DIR`. In case of the usage of Homebrew this works:
+It is necessary to set the `OPENSSL_ROOT_DIR`. In the case regarding the usage of Homebrew, this works:
 
 ```shell
 cd \path\to\globalplatform
@@ -104,7 +104,7 @@ make
 make install
 ```
 
-__NOTE:__ `CMAKE_C_COMPILER` is required if Xcode is installed. CMake would favor the Xcode compiler leading to potential runtime errors.
+__NOTE:__ `CMAKE_C_COMPILER` is required if Xcode is installed. CMake would favor the Xcode compiler, leading to potential runtime errors.
 
 ## Windows
 

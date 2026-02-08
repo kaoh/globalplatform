@@ -95,6 +95,10 @@ OPGP_ERROR_STATUS OPGP_PL_establish_context(OPGP_CARD_CONTEXT *cardContext) {
 		NULL,
 		&GET_SCARDCONTEXT_P(cardContext)
 		);
+	if (result != SCARD_S_SUCCESS && cardContext->librarySpecific != NULL) {
+		free(cardContext->librarySpecific);
+		cardContext->librarySpecific = NULL;
+	}
 	HANDLE_STATUS(status, result);
 end:
 	OPGP_LOG_END(_T("OPGP_PL_establish_context"), status);

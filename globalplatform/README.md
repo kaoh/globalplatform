@@ -13,7 +13,7 @@ Use a suitable packet manager for your OS or install the programs and libraries 
 
 * Compiler Suite:
   * Linux: Termed `build-essential` in Debian based distributions (gcc, make)
-  * MacOS: Xcode
+  * macOS: Xcode
   * Windows: Visual Studio and SDK
 * [CMake 3.5.1](http://www.cmake.org/) or higher is needed
 * [PC/SC Lite](https://pcsclite.apdu.fr) (only for UNIXes, Windows and macOS are already including this)
@@ -81,7 +81,7 @@ brew install openssl@3 doxygen cmocka pandoc cmake graphviz
 
 ### Compile
 
-It is necessary to set the `OPENSSL_ROOT_DIR`. In the case of the usage of Homebrew, this works:
+It is necessary to set the `OPENSSL_ROOT_DIR`. In the case regarding the usage of Homebrew, this works:
 
 ```shell
 cd \path\to\globalplatform
@@ -91,11 +91,11 @@ make
 make install
 ```
 
-__NOTE:__ `CMAKE_C_COMPILER` is required if Xcode is installed. CMake would favor the Xcode compiler leading to potential runtime errors.
+__NOTE:__ `CMAKE_C_COMPILER` is required if Xcode is installed. CMake would favor the Xcode compiler, leading to potential runtime errors.
 
 __NOTE:__ The included LibreSSL is causing this [issue]https://stackoverflow.com/questions/58446253/xcode-11-ld-error-your-binary-is-not-an-allowed-client-of-usr-lib-libcrypto-dy).
 
-In case the system is using a different package manager other settings will be necessary.
+In case the system is using a different package manager, other settings will be necessary.
 
 ## Windows
 

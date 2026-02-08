@@ -35,6 +35,7 @@ extern "C"
 #else
 #include <winscard.h>
 #endif
+#include "unicode.h"
 #include "types.h"
 #include "library.h"
 #include "security.h"

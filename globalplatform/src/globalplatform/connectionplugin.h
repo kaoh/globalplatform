@@ -32,10 +32,6 @@ extern "C"
 {
 #endif
 
-#ifdef WIN32
-#include "stdafx.h"
-#endif
-
 #include "connection.h"
 #include "error.h"
 #include "library.h"
