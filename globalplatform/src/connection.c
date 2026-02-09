@@ -56,7 +56,7 @@ OPGP_ERROR_STATUS OPGP_establish_context(OPGP_CARD_CONTEXT *cardContext) {
 
  OPGP_LOG_START(_T("OPGP_establish_context"));
 
-#if defined(OPGP_STATIC_PCSC) && defined(OPGP_STATIC_PCSC_LINKED)
+#if defined(OPGP_STATIC_PCSC)
 	/* If statically linked PC/SC plugin is requested, wire symbols directly */
 	if (_tcscmp(cardContext->libraryName, _T("gppcscconnectionplugin")) == 0) {
 		/* Avoid dynamic loading; set function pointers to linked-in plugin */

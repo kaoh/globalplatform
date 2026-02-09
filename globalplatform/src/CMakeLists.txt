@@ -121,7 +121,7 @@ if(GP_BUILD_STATIC)
     PUBLIC
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
       $<INSTALL_INTERFACE:include>)
-  target_compile_definitions(globalplatformStatic PRIVATE OPGP_STATIC_PCSC_LINKED)
+  target_compile_definitions(globalplatformStatic PRIVATE OPGP_STATIC_PCSC)
 endif()
 if(GP_BUILD_SHARED)
   ADD_LIBRARY(globalplatform SHARED ${SOURCES})
