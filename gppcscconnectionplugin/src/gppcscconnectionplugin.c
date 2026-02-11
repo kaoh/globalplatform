@@ -95,6 +95,16 @@ OPGP_ERROR_STATUS OPGP_PL_establish_context(OPGP_CARD_CONTEXT *cardContext) {
 		NULL,
 		&GET_SCARDCONTEXT_P(cardContext)
 		);
+#ifdef _WIN32
+	if (result == SCARD_E_NO_SERVICE || result == SCARD_E_SERVICE_STOPPED) {
+		OPGP_log_Msg(_T("SCardEstablishContext(SCARD_SCOPE_USER) failed, retrying SCARD_SCOPE_SYSTEM"));
+		result = SCardEstablishContext( SCARD_SCOPE_SYSTEM,
+			NULL,
+			NULL,
+			&GET_SCARDCONTEXT_P(cardContext)
+			);
+	}
+#endif
 	if (result != SCARD_S_SUCCESS && cardContext->librarySpecific != NULL) {
 		free(cardContext->librarySpecific);
 		cardContext->librarySpecific = NULL;
