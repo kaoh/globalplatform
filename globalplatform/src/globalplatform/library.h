@@ -25,20 +25,25 @@
 
 // dynamic library
 #if (defined(WIN32) || defined __CYGWIN__)
-	#ifdef OPGP_EXPORTS
-		#ifdef __GNUC__
-		  #define OPGP_API __attribute__((dllexport))
-		#else
-		  #define OPGP_API __declspec(dllexport)
-		#endif
+	#ifdef OPGP_STATIC
+		#define OPGP_API
+		#define OPGP_NO_API
 	#else
-		#ifdef __GNUC__
-		  #define OPGP_API __attribute__((dllimport))
+		#ifdef OPGP_EXPORTS
+			#ifdef __GNUC__
+			  #define OPGP_API __attribute__((dllexport))
+			#else
+			  #define OPGP_API __declspec(dllexport)
+			#endif
 		#else
-		  #define OPGP_API __declspec(dllimport)
+			#ifdef __GNUC__
+			  #define OPGP_API __attribute__((dllimport))
+			#else
+			  #define OPGP_API __declspec(dllimport)
+			#endif
 		#endif
+		#define OPGP_NO_API
 	#endif
-	#define OPGP_NO_API
 #else
 	#if defined __GNUC__ && (__GNUC__ >= 4)
 		#define OPGP_API __attribute__ ((visibility("default")))
@@ -51,17 +56,21 @@
 
 // for plugin libhraries
 #if (defined(WIN32) || defined __CYGWIN__)
-	#ifdef OPGP_PL_EXPORTS
-		#ifdef __GNUC__
-		  #define OPGP_PL_API __attribute__((dllexport))
-		#else
-		  #define OPGP_PL_API __declspec(dllexport)
-		#endif
+	#ifdef OPGP_STATIC
+		#define OPGP_PL_API
 	#else
-		#ifdef __GNUC__
-		  #define OPGP_PL_API __attribute__((dllimport))
+		#ifdef OPGP_PL_EXPORTS
+			#ifdef __GNUC__
+			  #define OPGP_PL_API __attribute__((dllexport))
+			#else
+			  #define OPGP_PL_API __declspec(dllexport)
+			#endif
 		#else
-		  #define OPGP_PL_API __declspec(dllimport)
+			#ifdef __GNUC__
+			  #define OPGP_PL_API __attribute__((dllimport))
+			#else
+			  #define OPGP_PL_API __declspec(dllimport)
+			#endif
 		#endif
 	#endif
 #else
