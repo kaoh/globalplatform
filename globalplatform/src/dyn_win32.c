@@ -136,6 +136,28 @@ static void ConvertTToC(char* pszDest, const TCHAR* pszSrc, unsigned int maxSize
     pszDest[min(_tcslen(pszSrc), maxSize)] = '\0';
 }
 
+static void log_load_library_failure(const TCHAR *path)
+{
+	DWORD errorCode = GetLastError();
+	TCHAR *message = NULL;
+	DWORD flags = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
+	              FORMAT_MESSAGE_IGNORE_INSERTS;
+	DWORD len = FormatMessage(flags, NULL, errorCode, 0, (LPTSTR)&message, 0, NULL);
+
+	if (len > 0 && message != NULL) {
+		while (len > 0 && (message[len - 1] == _T('\r') || message[len - 1] == _T('\n'))) {
+			message[len - 1] = _T('\0');
+			len--;
+		}
+		OPGP_LOG_MSG(_T("LoadLibrary failed for \"%s\": error code(0x%lX): %s"),
+		             path, errorCode, message);
+		LocalFree(message);
+	} else {
+		OPGP_LOG_MSG(_T("LoadLibrary failed for \"%s\": error code(0x%lX)"),
+		             path, errorCode);
+	}
+}
+
 /**
  * \param libraryHandle [out] The returned library handle
  * \param libraryName [in] The length of the Security Domain AID.
@@ -155,14 +177,19 @@ OPGP_ERROR_STATUS DYN_LoadLibrary(PVOID *libraryHandle, LPCTSTR libraryName, LPC
 	TCHAR dllName[MAX_LIBRARY_NAME_SIZE];
 	_tcsncpy_s(dllName, MAX_LIBRARY_NAME_SIZE, libraryName, _TRUNCATE);
 	ensure_dll_extension(dllName, MAX_LIBRARY_NAME_SIZE);
+	OPGP_LOG_MSG(_T("Loading connection plugin \"%s\""), dllName);
 
 	// 1) Try OPGP_PLUGIN_PATH first
 	{
 		const TCHAR *plugin_path = _tgetenv(_T("OPGP_PLUGIN_PATH"));
 		if (plugin_path && plugin_path[0] != _T('\0')) {
+			OPGP_LOG_MSG(_T("OPGP_PLUGIN_PATH is \"%s\""), plugin_path);
 			TCHAR fullpath[PATH_MAX];
 			if (join_path(fullpath, sizeof(fullpath)/sizeof(fullpath[0]), plugin_path, dllName)) {
 				*libraryHandle = (PVOID)LoadLibrary(fullpath);
+				if (*libraryHandle == NULL) {
+					log_load_library_failure(fullpath);
+				}
 			}
 		}
 	}
@@ -171,9 +198,13 @@ OPGP_ERROR_STATUS DYN_LoadLibrary(PVOID *libraryHandle, LPCTSTR libraryName, LPC
 	if (*libraryHandle == NULL) {
 		TCHAR selfDir[MAX_PATH];
 		if (get_self_module_dir(selfDir, sizeof(selfDir)/sizeof(selfDir[0]))) {
+			OPGP_LOG_MSG(_T("GlobalPlatform module directory is \"%s\""), selfDir);
 			TCHAR fullpath[MAX_PATH];
 			if (join_path(fullpath, sizeof(fullpath)/sizeof(fullpath[0]), selfDir, dllName)) {
 				*libraryHandle = (PVOID)LoadLibrary(fullpath);
+				if (*libraryHandle == NULL) {
+					log_load_library_failure(fullpath);
+				}
 			}
 		}
 	}
@@ -181,6 +212,9 @@ OPGP_ERROR_STATUS DYN_LoadLibrary(PVOID *libraryHandle, LPCTSTR libraryName, LPC
 	// 3) Fallback: default search (note: can be affected by DLL search path rules)
 	if (*libraryHandle == NULL) {
 		*libraryHandle = (PVOID)LoadLibrary(dllName);
+		if (*libraryHandle == NULL) {
+			log_load_library_failure(dllName);
+		}
 	}
 
 	if (*libraryHandle == NULL) {
