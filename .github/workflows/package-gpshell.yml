@@ -157,7 +157,7 @@ jobs:
             build-static/*.msi
 
   build-macos:
-    runs-on: macos-13
+    runs-on: macos-latest
     steps:
       - name: Set up Git repository
         uses: actions/checkout@v4
