@@ -39,30 +39,6 @@ jobs:
                 ;;
             esac
           done
-          rm -f ./*.AppImage
-          cat > gpshell.desktop <<'DESKTOP'
-          [Desktop Entry]
-          Type=Application
-          Name=GPShell
-          Exec=gpshell3
-          Icon=gpshell
-          Terminal=true
-          Categories=Utility;
-          DESKTOP
-          test -f gpshell.png
-          export APPIMAGE_EXTRACT_AND_RUN=1
-          rm -rf AppDir
-          DESTDIR="$PWD/AppDir" cmake --install build-dynamic --prefix /usr
-          ./linuxdeploy \
-            --appdir AppDir \
-            -e AppDir/usr/bin/gpshell \
-            -e AppDir/usr/bin/gpshell3 \
-            -d gpshell.desktop \
-            -i gpshell.png \
-            --output appimage
-          base=$(ls build-dynamic/gpshell-binary-*-dynamic.deb | head -n1 | sed 's/-dynamic\.deb$//')
-          out=$(ls ./*.AppImage | head -n1)
-          mv "$out" "${base}-dynamic.AppImage"
       - name: Build static packages
         run: |
           cmake -S . -B build-static -DCMAKE_BUILD_TYPE=Release -DSTATIC=ON
@@ -79,15 +55,23 @@ jobs:
             esac
           done
           rm -f ./*.AppImage
+          cat > gpshell.desktop <<'DESKTOP'
+          [Desktop Entry]
+          Type=Application
+          Name=GPShell
+          Exec=gpshell3
+          Icon=gpshell
+          Terminal=true
+          Categories=Utility;
+          DESKTOP
+          test -f gpshell.png
           export APPIMAGE_EXTRACT_AND_RUN=1
           rm -rf AppDir
-          DESTDIR="$PWD/AppDir" cmake --install build-static/gpshell --prefix /usr
-          ln -sf gpshellStatic AppDir/usr/bin/gpshell
-          ln -sf gpshell3Static AppDir/usr/bin/gpshell3
+          mkdir -p AppDir/usr/bin
+          install -m 0755 build-static/gpshell/src/gpshell3Static AppDir/usr/bin/gpshell3
           ./linuxdeploy \
             --appdir AppDir \
-            -e AppDir/usr/bin/gpshellStatic \
-            -e AppDir/usr/bin/gpshell3Static \
+            -e AppDir/usr/bin/gpshell3 \
             -d gpshell.desktop \
             -i gpshell.png \
             --output appimage
@@ -101,7 +85,6 @@ jobs:
           path: |
             build-dynamic/*.deb
             build-dynamic/*.rpm
-            build-dynamic/*.AppImage
             build-static/*.deb
             build-static/*.rpm
             build-static/*.AppImage
@@ -114,12 +97,12 @@ jobs:
       - name: Download OpenSSL
         run: |
           $client = new-object System.Net.WebClient
-          $client.DownloadFile("https://slproweb.com/download/Win32OpenSSL-3_5_1.msi","C:\Temp\Win32OpenSSL-3_5_1.msi")
+          $client.DownloadFile("https://slproweb.com/download/Win32OpenSSL-3_6_1.msi","C:\Temp\Win32OpenSSL-3_6_1.msi")
       - name: Install dependencies
         shell: cmd
         run: |
           choco install -y doxygen.install graphviz wixtoolset
-          C:\Temp\Win32OpenSSL-3_5_1.msi /quiet
+          C:\Temp\Win32OpenSSL-3_6_1.msi /quiet
           copy "C:\Program Files (x86)\OpenSSL-Win32\lib\VC\x86\MD\*" "C:\Program Files (x86)\OpenSSL-Win32\lib\VC"
       - name: Build dynamic packages
         shell: cmd
