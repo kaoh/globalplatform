@@ -41,14 +41,14 @@ jobs:
           done
           rm -f ./*.AppImage
           cat > gpshell.desktop <<'DESKTOP'
-[Desktop Entry]
-Type=Application
-Name=GPShell
-Exec=gpshell3
-Icon=gpshell
-Terminal=true
-Categories=Utility;
-DESKTOP
+          [Desktop Entry]
+          Type=Application
+          Name=GPShell
+          Exec=gpshell3
+          Icon=gpshell
+          Terminal=true
+          Categories=Utility;
+          DESKTOP
           test -f gpshell.png
           export APPIMAGE_EXTRACT_AND_RUN=1
           rm -rf AppDir
