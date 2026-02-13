@@ -67,6 +67,12 @@ set(CPACK_WIX_UPGRADE_GUID             "34f48725-0fe9-4d5c-9f12-90314672e332")
 if(STATIC)
   # Only package gpshell artifacts for static builds.
   set(CPACK_INSTALL_CMAKE_PROJECTS "${CMAKE_CURRENT_BINARY_DIR};${PROJECT_NAME};ALL;/")
+elseif(WIN32)
+  # Avoid preinstall target issues on Windows by installing subprojects directly.
+  set(CPACK_INSTALL_CMAKE_PROJECTS
+    "${CMAKE_BINARY_DIR}/globalplatform;globalplatform;ALL;/"
+    "${CMAKE_BINARY_DIR}/gppcscconnectionplugin;gppcscconnectionplugin;ALL;/"
+    "${CMAKE_BINARY_DIR}/gpshell;gpshell;ALL;/")
 endif()
 set(CPACK_SOURCE_IGNORE_FILES "doc;.*~;Debian;debian;\\\\.svn;\\\\.settings;Testing;CMakeFiles;Doxyfile;
 CPack.*;CMakeCache\\\\.txt;cmake_install.*;Makefile;CMakeDoxyfile\\\\.in;
