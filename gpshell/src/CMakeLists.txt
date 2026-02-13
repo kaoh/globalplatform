@@ -163,7 +163,7 @@ if(TARGET gpshell3)
   INSTALL(TARGETS gpshell3 DESTINATION bin)
 endif()
 
-IF(NOT(WIN32) AND NOT STATIC)
+IF(NOT WIN32)
 	# pandoc man page generation
 	
 	if(NOT EXISTS ${PANDOC_EXECUTABLE})
@@ -213,7 +213,7 @@ file(TO_NATIVE_PATH ${CMAKE_CURRENT_BINARY_DIR}/gpshell3.1 native_filepath3)
 get_directory_property(make_clean_files ADDITIONAL_MAKE_CLEAN_FILES)
 set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${make_clean_files};${native_filepath};${native_filepath3}")
 
-IF(UNIX AND NOT STATIC)
+IF(UNIX)
   INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/gpshell.1 DESTINATION ${MANPAGE_DIRECTORY}/man1)
   INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/gpshell3.1 DESTINATION ${MANPAGE_DIRECTORY}/man1)
 ENDIF()

@@ -27,7 +27,7 @@ under `/usr/share/doc/gpshell2` or `/usr/local/share/doc/gpshell2` or `home/linu
 
 Clone the project from GitHub or download the zip file (also available under the Clone tab).
 
-Consult the individual sub projects for further instructions and prerequisites. It is also possible to compile the sub projects individually.
+Consult the individual subprojects for further instructions and prerequisites. It is also possible to compile the sub projects individually.
 
 ## Prerequisites
 
@@ -37,7 +37,7 @@ Use a suitable packet manager for your OS or install the programs and libraries 
   * Linux: Termed `build-essential` in Debian based distributions (gcc, make)
   * macOS: Xcode
   * Windows: Visual Studio and SDK
-* [CMake 3.5.1](http://www.cmake.org/) or higher is needed
+* [CMake 3.10](http://www.cmake.org/) or higher is needed
 * [PC/SC Lite](https://pcsclite.apdu.fr) (only for UNIXes, Windows and macOS are already including this)
 * [Doxygen](www.doxygen.org/) for generating the documentation
 * [Graphviz](https://graphviz.org) for generating graphics in the documentation
@@ -130,7 +130,7 @@ cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DOPENSSL_ROOT_DIR="C:\Pro
 nmake
 ```
 
-__NOTE:__ Read also the Windows-specific part in the [GlobalPlatform sub project](./globalplatform/README.md#sdk).
+__NOTE:__ Read also the Windows-specific part in the [GlobalPlatform subproject](./globalplatform/README.md#sdk).
 
 ## Documentation
 
@@ -176,9 +176,31 @@ __NOTE:__ On Windows: When using the Visual Studio command line, the necessary m
 
 ## Debug Output
 
-The variable `GLOBALPLATFORM_DEBUG=1` in the environment must be set. The logfile can be set with `GLOBALPLATFORM_LOGFILE=<file>`. Under Windows by default `C:\Temp\GlobalPlatform.log` is chosen, under Unix systems if syslog is available it will be used by default. The default log file under Unix systems is `/tmp/GlobalPlatform.log` if syslog is not available.
+The variable `GLOBALPLATFORM_DEBUG=1` in the environment must be set. The logfile can be set with `GLOBALPLATFORM_LOGFILE=<file>`. 
+Under Windows by default `C:\Temp\GlobalPlatform.log` is chosen, under Unix systems if syslog is available it will be used by default. 
+The default log file under Unix systems is `/tmp/GlobalPlatform.log` if syslog is not available.
 
-# GitHub Documentation
+# Packaging
+
+cpack is used for packaging. 
+
+If only GPShell is in focus, a static build is recommended:
+
+~~~shell
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DSTATIC=ON
+~~~
+
+For the packaging process run inside the build directory after the build:
+
+~~~shell
+cpack
+~~~
+
+* On Linux, cpack creates both DEB and RPM. You need dpkg-deb and rpmbuild installed. 
+* Windows MSI (WIX) is generated on Windows with WiX installed. 
+* macOS DragNDrop is generated on macOS.
+
+# Generate GitHub Documentation
 
 The GitHub documentation is located under the `docs` folder and is using [Jekyll](https://jekyllrb.com).
 

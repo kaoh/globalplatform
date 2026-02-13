@@ -15,7 +15,7 @@ Use a suitable packet manager for your OS or install the programs and libraries 
   * Linux: Termed `build-essential` in Debian based distributions (gcc, make)
   * macOS: Xcode
   * Windows: Visual Studio and SDK
-* [CMake 3.5.1](http://www.cmake.org/) or higher is needed
+* [CMake 3.10](http://www.cmake.org/) or higher is needed
 * [PC/SC Lite](https://pcsclite.apdu.fr) (only for UNIXes, Windows and macOS are already including this)
 * [Doxygen](www.doxygen.org/) for generating the documentation
 * [Graphviz](https://graphviz.org) for generating graphics in the documentation
@@ -224,7 +224,7 @@ A pre-built version for VS 2022 is available in the top level directory `cmock-c
 
 Copy the `cmocka.dll` to the Windows directory `C:\Windows` to be able to find the dll during the test execution.
 
-If CMocka has to be rebuilt for a different VS version the steps should be:
+If CMocka has to be rebuilt for a different VS version, the steps should be:
 
 ~~~shell
 mkdir build_w32
