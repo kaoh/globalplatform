@@ -31,7 +31,7 @@
 #define _tmain main
 #define _TCHAR char
 #define TCHAR char
-#if !defined(__wintypes_h__)
+#if !defined(__APPLE__)
 #define LPTSTR char *
 #define LPCTSTR const char *
 #endif
