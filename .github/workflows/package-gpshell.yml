@@ -108,12 +108,17 @@ jobs:
         shell: cmd
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
+          if exist build-dynamic rmdir /S /Q build-dynamic
           cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release -B build-dynamic -DOPENSSL_ROOT_DIR="C:\Program Files (x86)\OpenSSL-Win32" -DZLIB_ROOT="%cd%\zlib-1.2.8\win32-build"
           cmake --build build-dynamic -- -v
+          cmake --build build-dynamic --target gpshell gpshell3 -- -v
           cmake --build build-dynamic --target doc -- -v
+          dir build-dynamic\gpshell\src
+          if not exist build-dynamic\gpshell\src\gpshell.exe exit /b 1
+          if not exist build-dynamic\gpshell\src\gpshell3.exe exit /b 1
           cd build-dynamic
-          cpack -G ZIP
-          cpack -G WIX
+          cpack -G ZIP -C Release
+          cpack -G WIX -C Release
           ..\windows-bundle.bat
       - name: Rename dynamic packages
         shell: pwsh
@@ -131,12 +136,17 @@ jobs:
         shell: cmd
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
+          if exist build-static rmdir /S /Q build-static
           cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release -B build-static -DSTATIC=ON -DOPENSSL_ROOT_DIR="C:\Program Files (x86)\OpenSSL-Win32" -DZLIB_ROOT="%cd%\zlib-1.2.8\win32-build"
           cmake --build build-static -- -v
+          cmake --build build-static --target gpshellStatic gpshell3Static -- -v
           cmake --build build-static --target doc -- -v
+          dir build-static\gpshell\src
+          if not exist build-static\gpshell\src\gpshellStatic.exe exit /b 1
+          if not exist build-static\gpshell\src\gpshell3Static.exe exit /b 1
           cd build-static
-          cpack -G ZIP
-          cpack -G WIX
+          cpack -G ZIP -C Release
+          cpack -G WIX -C Release
       - name: Rename static packages
         shell: pwsh
         run: |
