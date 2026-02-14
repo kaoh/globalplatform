@@ -108,15 +108,10 @@ jobs:
           gpshell3 --help
           sudo dpkg -P "$deb_pkg"
 
-          rpm_pkg=$(rpm -qp --queryformat '%{NAME}' "$rpm_dynamic")
-          sudo rpm -Uvh --replacepkgs --replacefiles "$rpm_dynamic"
-          gpshell3 --help
-          sudo rpm -e "$rpm_pkg"
-
-          rpm_pkg=$(rpm -qp --queryformat '%{NAME}' "$rpm_static")
-          sudo rpm -Uvh --replacepkgs --replacefiles "$rpm_static"
-          gpshell3 --help
-          sudo rpm -e "$rpm_pkg"
+          docker run --rm -v "$PWD:/work" -w /work fedora:39 bash -lc \
+            "dnf -y install /work/$rpm_dynamic && gpshell3 --help"
+          docker run --rm -v "$PWD:/work" -w /work fedora:39 bash -lc \
+            "dnf -y install /work/$rpm_static && gpshell3 --help"
 
           chmod +x "$appimage"
           APPIMAGE_EXTRACT_AND_RUN=1 "$appimage" --help
@@ -161,13 +156,13 @@ jobs:
       - name: Rename dynamic packages
         shell: pwsh
         run: |
-          Get-ChildItem build-dynamic -Filter "gpshell-*.*" | ForEach-Object {
-            $base = $_.FullName.Substring(0, $_.FullName.LastIndexOf('.'))
+          Get-ChildItem build-dynamic -File | Where-Object { $_.Name -like "gpshell-*.*" -and $_.Extension } | ForEach-Object {
+            $base = $_.FullName.Substring(0, $_.FullName.Length - $_.Extension.Length)
             $ext = $_.Extension.TrimStart('.')
             Rename-Item $_.FullName "$base-dynamic.$ext"
           }
-          Get-ChildItem build-dynamic\gpshell-bundle -Filter "gpshell-*.zip" | ForEach-Object {
-            $base = $_.FullName.Substring(0, $_.FullName.LastIndexOf('.'))
+          Get-ChildItem build-dynamic\gpshell-bundle -File | Where-Object { $_.Name -like "gpshell-*.zip" -and $_.Extension } | ForEach-Object {
+            $base = $_.FullName.Substring(0, $_.FullName.Length - $_.Extension.Length)
             Rename-Item $_.FullName "$base-dynamic.zip"
           }
       - name: Build static packages
@@ -184,8 +179,8 @@ jobs:
       - name: Rename static packages
         shell: pwsh
         run: |
-          Get-ChildItem build-static -Filter "gpshell-*.*" | ForEach-Object {
-            $base = $_.FullName.Substring(0, $_.FullName.LastIndexOf('.'))
+          Get-ChildItem build-static -File | Where-Object { $_.Name -like "gpshell-*.*" -and $_.Extension } | ForEach-Object {
+            $base = $_.FullName.Substring(0, $_.FullName.Length - $_.Extension.Length)
             $ext = $_.Extension.TrimStart('.')
             Rename-Item $_.FullName "$base-static.$ext"
           }
@@ -278,18 +273,21 @@ jobs:
           set -euo pipefail
           for dmg in build-static/gpshell-*-static.dmg build-dynamic/gpshell-*-dynamic.dmg; do
             [ -f "$dmg" ] || { echo "Missing dmg: $dmg"; exit 1; }
-            mnt=$(mktemp -d /tmp/gpshell-mount.XXXXXX)
-            hdiutil attach -nobrowse -readonly -mountpoint "$mnt" "$dmg" >/dev/null
+            attach_out=$(hdiutil attach -nobrowse -readonly -noautoopen "$dmg")
+            mnt=$(echo "$attach_out" | awk '/\\/Volumes\\// {print $3; exit}')
+            if [ -z "$mnt" ]; then
+              echo "Failed to find mount point for $dmg"
+              echo "$attach_out"
+              exit 1
+            fi
             exe=$(find "$mnt" -type f -name gpshell3 | head -n1)
             if [ -z "$exe" ]; then
               hdiutil detach "$mnt" >/dev/null
-              rmdir "$mnt"
               echo "gpshell3 not found in $dmg"
               exit 1
             fi
             "$exe" --help
             hdiutil detach "$mnt" >/dev/null
-            rmdir "$mnt"
           done
       - name: Save macOS artifacts
         uses: actions/upload-artifact@v4
