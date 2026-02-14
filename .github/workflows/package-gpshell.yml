@@ -276,13 +276,13 @@ jobs:
             mnt=""
             attach_out=$(hdiutil attach -nobrowse -readonly -noautoopen -noverify -mountpoint "/tmp/gpshell-mount.$$" "$dmg" 2>&1) || true
             if echo "$attach_out" | grep -q "/Volumes/"; then
-              mnt=$(echo "$attach_out" | awk '/\\/Volumes\\// {print $3; exit}')
+              mnt=$(echo "$attach_out" | sed -n 's/.*[[:space:]]\\(\\/Volumes\\/.*\\)$/\\1/p' | head -n1)
             elif [ -d "/tmp/gpshell-mount.$$" ]; then
               mnt="/tmp/gpshell-mount.$$"
             fi
             if [ -z "$mnt" ]; then
               attach_out=$(hdiutil attach -nobrowse -readonly -noautoopen -noverify "$dmg" 2>&1) || true
-              mnt=$(echo "$attach_out" | awk '/\\/Volumes\\// {print $3; exit}')
+              mnt=$(echo "$attach_out" | sed -n 's/.*[[:space:]]\\(\\/Volumes\\/.*\\)$/\\1/p' | head -n1)
             fi
             if [ -z "$mnt" ]; then
               echo "Failed to find mount point for $dmg"
