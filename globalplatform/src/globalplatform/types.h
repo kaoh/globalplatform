@@ -26,10 +26,9 @@
 #ifndef _WIN32
 #include <wintypes.h>
 
-#ifdef __APPLE__
 #ifndef __wintypes_h__
+typedef char *LPTSTR;
 typedef const char *LPCTSTR;
-#endif
 #endif
 
 #else
