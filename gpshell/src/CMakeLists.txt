@@ -86,6 +86,11 @@ if(NOT STATIC)
     set_target_properties(gpshell PROPERTIES BUILD_RPATH "${_gpshell_plugin_rpath}")
     set_target_properties(gpshell3 PROPERTIES BUILD_RPATH "${_gpshell_plugin_rpath}")
   endif()
+  if(APPLE)
+    # Make packaged binaries runnable directly from the DMG layout (bin + ../lib).
+    set_target_properties(gpshell PROPERTIES INSTALL_RPATH "@executable_path/../lib")
+    set_target_properties(gpshell3 PROPERTIES INSTALL_RPATH "@executable_path/../lib")
+  endif()
 endif()
 
 # Optional static gpshell that embeds GlobalPlatform and PC/SC plugin
