@@ -30,6 +30,11 @@
 #include <globalplatform/globalplatform.h>
 #include "util.h"
 
+#ifdef _WIN32
+#define strtok_r strtok_s
+#define strdup _strdup
+#endif
+
 #ifndef _WIN32
 #include <sys/types.h>
 #endif
@@ -1678,7 +1683,7 @@ static int is_hex_byte_token(const char *s) {
 static int cmd_apdu(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
     if (argc < 1) { fprintf(stderr, "apdu: missing arguments\n"); return -1; }
     int nostop = 0;
-    const int MAX_APDUS = 256;
+    enum { MAX_APDUS = 256 };
     char *apdus[MAX_APDUS]; int napdus=0;
     for (int i=0;i<argc;i++) {
         const char *a = argv[i];
