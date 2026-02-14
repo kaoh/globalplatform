@@ -273,28 +273,25 @@ jobs:
           set -euo pipefail
           for dmg in build-static/gpshell-*-static.dmg build-dynamic/gpshell-*-dynamic.dmg; do
             [ -f "$dmg" ] || { echo "Missing dmg: $dmg"; exit 1; }
-            mnt=""
-            attach_out=$(hdiutil attach -nobrowse -readonly -noautoopen -noverify -mountpoint "/tmp/gpshell-mount.$$" "$dmg" 2>&1) || true
-            if [ -d "/tmp/gpshell-mount.$$" ]; then
-              mnt="/tmp/gpshell-mount.$$"
-            fi
-            if [ -z "$mnt" ]; then
-              attach_out=$(hdiutil attach -nobrowse -readonly -noautoopen -noverify "$dmg" 2>&1) || true
-              mnt=$(echo "$attach_out" | grep -m1 '/Volumes/' | awk '{print $NF}')
-            fi
-            if [ -z "$mnt" ]; then
-              echo "Failed to find mount point for $dmg"
-              echo "$attach_out"
+            dmg_id=$(basename "$dmg" .dmg | tr -c 'A-Za-z0-9._-' '_')
+            mnt="/tmp/gpshell-mount-${dmg_id}-$$"
+            rm -rf "$mnt"
+            mkdir -p "$mnt"
+            if ! hdiutil attach -nobrowse -readonly -noautoopen -noverify -mountpoint "$mnt" "$dmg" >/tmp/hdiutil-attach.log 2>&1; then
+              echo "Failed to attach $dmg"
+              cat /tmp/hdiutil-attach.log
               exit 1
             fi
             exe=$(find "$mnt" -type f -name gpshell3 | head -n1)
             if [ -z "$exe" ]; then
-              hdiutil detach "$mnt" >/dev/null
+              hdiutil detach "$mnt" >/dev/null || true
+              rm -rf "$mnt"
               echo "gpshell3 not found in $dmg"
               exit 1
             fi
             "$exe" --help
             hdiutil detach "$mnt" >/dev/null
+            rm -rf "$mnt"
           done
       - name: Save macOS artifacts
         uses: actions/upload-artifact@v4
