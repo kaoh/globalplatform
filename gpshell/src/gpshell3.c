@@ -39,11 +39,34 @@
 #include <sys/types.h>
 #endif
 
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #define MAX_READERS_BUF 4096
+#define MAX_PATH_BUF 4096
+
+static int to_opgp_string(const char *src, TCHAR *dst, size_t dst_len) {
+    if (!src || !dst || dst_len == 0) {
+        return -1;
+    }
+#ifdef _WIN32
+#ifdef UNICODE
+    int needed = MultiByteToWideChar(CP_ACP, 0, src, -1, NULL, 0);
+    if (needed <= 0 || (size_t)needed > dst_len) {
+        return -1;
+    }
+    if (!MultiByteToWideChar(CP_ACP, 0, src, -1, dst, (int)dst_len)) {
+        return -1;
+    }
+    return 0;
+#endif
+#endif
+    strncpy(dst, src, dst_len - 1);
+    dst[dst_len - 1] = '\0';
+    return 0;
+}
 
 static int status_ok(OPGP_ERROR_STATUS s) {
     if (s.errorStatus != OPGP_ERROR_STATUS_SUCCESS) {
-        fprintf(stderr, "Error 0x%08X: %s\n", (unsigned int)s.errorCode, s.errorMessage);
+        _ftprintf(stderr, _T("Error 0x%08X: %s\n"), (unsigned int)s.errorCode, s.errorMessage);
         return 0;
     }
     return 1;
@@ -568,16 +591,19 @@ static int connect_pcsc(OPGP_CARD_CONTEXT *pctx, OPGP_CARD_INFO *pinfo, const ch
     s = OPGP_establish_context(pctx);
     if (!status_ok(s)) { fprintf(stderr, "Failed to establish PC/SC context\n"); return -1; }
     if (trace) { OPGP_enable_trace_mode(OPGP_TRACE_MODE_ENABLE, stderr); }
-    char readers[MAX_READERS_BUF]; DWORD rlen = sizeof(readers);
+    TCHAR readers[MAX_READERS_BUF];
+    DWORD rlen = (DWORD)ARRAY_SIZE(readers);
+    TCHAR reader_buf[MAX_READERS_BUF];
+    OPGP_CSTRING reader_t = NULL;
     if (!reader) {
         s = OPGP_list_readers(*pctx, readers, &rlen, 1);
-        if (!status_ok(s) || rlen <= 1 || readers[0] == '\0') {
+        if (!status_ok(s) || rlen <= 1 || readers[0] == _T('\0')) {
             fprintf(stderr, "No PC/SC readers with a smart card inserted found\n");
             // release context on error path to avoid leaks
             OPGP_release_context(pctx);
             return -1;
         }
-        reader = readers; // first reader
+        reader_t = readers; // first reader
     } else {
         // Check if reader is a numeric index (1-based)
         char *endptr;
@@ -591,15 +617,15 @@ static int connect_pcsc(OPGP_CARD_CONTEXT *pctx, OPGP_CARD_INFO *pinfo, const ch
                 return -1;
             }
             // Parse reader list (null-separated strings)
-            const char *current = readers;
+            const TCHAR *current = readers;
             int count = 0;
             while (*current && current < readers + rlen) {
                 count++;
                 if (count == reader_num) {
-                    reader = current;
+                    reader_t = current;
                     break;
                 }
-                current += strlen(current) + 1;
+                current += _tcslen(current) + 1;
             }
             if (count < reader_num) {
                 fprintf(stderr, "Reader number %ld not found (only %d readers available)\n", reader_num, count);
@@ -607,16 +633,24 @@ static int connect_pcsc(OPGP_CARD_CONTEXT *pctx, OPGP_CARD_INFO *pinfo, const ch
                 return -1;
             }
         }
+        if (!reader_t) {
+            if (to_opgp_string(reader, reader_buf, ARRAY_SIZE(reader_buf)) != 0) {
+                fprintf(stderr, "Reader name too long\n");
+                OPGP_release_context(pctx);
+                return -1;
+            }
+            reader_t = reader_buf;
+        }
     }
-    if (verbose) { fprintf(stderr, "Selected reader: %s\n", reader); }
+    if (verbose) { _ftprintf(stderr, _T("Selected reader: %s\n"), reader_t); }
     DWORD proto = SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1;
     if (protocol) {
         if (strcmp(protocol, "t0") == 0) proto = SCARD_PROTOCOL_T0;
         else if (strcmp(protocol, "t1") == 0) proto = SCARD_PROTOCOL_T1;
     }
-    s = OPGP_card_connect(*pctx, reader, pinfo, proto);
+    s = OPGP_card_connect(*pctx, reader_t, pinfo, proto);
     if (!status_ok(s)) {
-        fprintf(stderr, "Failed to connect to reader '%s'\n", reader);
+        _ftprintf(stderr, _T("Failed to connect to reader '%s'\n"), reader_t);
         // release context on error path to avoid leaks
         OPGP_release_context(pctx);
         return -1;
@@ -1163,6 +1197,13 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     }
     if (ai >= argc) { fprintf(stderr, "install: missing <cap-file>\n"); return -1; }
     const char *capfile = argv[ai++];
+    TCHAR capfile_t[MAX_PATH_BUF];
+    OPGP_STRING capfile_opgp = NULL;
+    if (to_opgp_string(capfile, capfile_t, ARRAY_SIZE(capfile_t)) != 0) {
+        fprintf(stderr, "install: cap file path too long\n");
+        return -1;
+    }
+    capfile_opgp = capfile_t;
 
     // Validate mutually exclusive flags
     if (load_only && install_only) {
@@ -1235,7 +1276,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         }
     } else {
         // Read CAP file parameters for normal or --load-only mode
-        if (!status_ok(OPGP_read_executable_load_file_parameters((char*)capfile, &lfp))) {
+        if (!status_ok(OPGP_read_executable_load_file_parameters(capfile_opgp, &lfp))) {
             fprintf(stderr, "Failed to read CAP load file parameters\n");
             return -1;
         }
@@ -1274,7 +1315,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         }
 
         GP211_RECEIPT_DATA receipt; DWORD receiptAvail=0; memset(&receipt, 0, sizeof(receipt));
-        if (!status_ok(GP211_load(ctx, info, sec, dapCount?dapBlocks:NULL, dapCount, (char*)capfile, &receipt, &receiptAvail, NULL))) {
+        if (!status_ok(GP211_load(ctx, info, sec, dapCount?dapBlocks:NULL, dapCount, capfile_opgp, &receipt, &receiptAvail, NULL))) {
             return -1;
         }
         if (load_only) { return 0; }
@@ -1416,7 +1457,14 @@ static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     if (!newKvSet) { fprintf(stderr, "put-key: missing --new-kv <ver>\n"); return -1; }
     if (strcmp(type, "rsa")==0) {
         if (!pem) { fprintf(stderr, "put-key rsa: --pem <file>[:pass] required\n"); return -1; }
-        if (!status_ok(GP211_put_rsa_key(ctx, info, sec, setVer, idx, newSetVer, (char*)pem, pass))) {
+        TCHAR pem_t[MAX_PATH_BUF];
+        OPGP_STRING pem_opgp = NULL;
+        if (to_opgp_string(pem, pem_t, ARRAY_SIZE(pem_t)) != 0) {
+            fprintf(stderr, "put-key: pem path too long\n");
+            return -1;
+        }
+        pem_opgp = pem_t;
+        if (!status_ok(GP211_put_rsa_key(ctx, info, sec, setVer, idx, newSetVer, pem_opgp, pass))) {
             return -1;
         }
         return 0;
@@ -1634,9 +1682,16 @@ static int cmd_put_dm(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY
     }
 
     // Call GP211_put_delegated_management_keys
+    TCHAR pem_t[MAX_PATH_BUF];
+    OPGP_STRING pem_opgp = NULL;
+    if (to_opgp_string(pem, pem_t, ARRAY_SIZE(pem_t)) != 0) {
+        fprintf(stderr, "put-dm: pem path too long\n");
+        return -1;
+    }
+    pem_opgp = pem_t;
     if (!status_ok(GP211_put_delegated_management_keys(ctx, info, sec,
                                                         setVer, newSetVer,
-                                                        (char*)pem, pass,
+                                                        pem_opgp, pass,
                                                         tokenKeyType, receiptKey, keyLength, receiptKeyType))) {
         return -1;
     }
@@ -1734,7 +1789,7 @@ static int cmd_apdu(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
         unsigned char rapdu[APDU_RESPONSE_LEN]; DWORD rlen=sizeof(rapdu);
         OPGP_ERROR_STATUS s = GP211_send_APDU(ctx, info, sec, capdu, (DWORD)clen, rapdu, &rlen);
         if (!status_ok(s)) {
-            fprintf(stderr, "APDU %d send failed: 0x%08X (%s)\n", k+1, (unsigned int)s.errorCode, s.errorMessage);
+            _ftprintf(stderr, _T("APDU %d send failed: 0x%08X (%s)\n"), k+1, (unsigned int)s.errorCode, s.errorMessage);
             rc = -1; if (!nostop) { break; } else { continue; }
         }
         print_hex(rapdu, rlen); printf("\n");
@@ -1756,6 +1811,13 @@ static int cmd_hash(int argc, char **argv) {
     }
     if (ai >= argc) { fprintf(stderr, "hash: missing <cap-file>\n"); return -1; }
     const char *cap = argv[ai++];
+    TCHAR cap_t[MAX_PATH_BUF];
+    OPGP_STRING cap_opgp = NULL;
+    if (to_opgp_string(cap, cap_t, ARRAY_SIZE(cap_t)) != 0) {
+        fprintf(stderr, "hash: cap file path too long\n");
+        return -1;
+    }
+    cap_opgp = cap_t;
 
     BYTE hashType = GP211_HASH_SHA256;
     DWORD hash_len = 32;
@@ -1766,7 +1828,7 @@ static int cmd_hash(int argc, char **argv) {
     else if (strcmp(hash_alg, "sm3") == 0) { hashType = GP211_HASH_SM3; hash_len = 32; }
 
     BYTE hash[64]; memset(hash, 0, sizeof(hash));
-    if (!status_ok(GP211_calculate_load_file_data_block_hash((char*)cap, hash, hash_len, hashType))) {
+    if (!status_ok(GP211_calculate_load_file_data_block_hash(cap_opgp, hash, hash_len, hashType))) {
         fprintf(stderr, "hash failed\n"); return -1;
     }
     print_hex(hash, hash_len); printf("\n");
@@ -1789,7 +1851,14 @@ static int cmd_dap(int is_rsa, OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
         if (hex_to_bytes(hash_hex, hash, &hashlen)!=0) { fprintf(stderr, "Invalid hash hex\n"); return -1; }
         unsigned char sd[16]; size_t sdlen=sizeof(sd); if (hex_to_bytes(sd_hex, sd, &sdlen)!=0) { fprintf(stderr, "Invalid sd-aid\n"); return -1; }
         char pemcopy[512]; strncpy(pemcopy, pem, sizeof(pemcopy)-1); pemcopy[sizeof(pemcopy)-1]='\0'; char *pass=NULL; char *c=strchr(pemcopy,':'); if (c){*c='\0'; pass=c+1;}
-        GP211_DAP_BLOCK dap; if (!status_ok(GP211_calculate_rsa_schemeX_DAP(hash, (DWORD)hashlen, sd, (DWORD)sdlen, pemcopy, pass, &dap))) { fprintf(stderr, "calc rsa DAP failed\n"); return -1; }
+        TCHAR pem_t[MAX_PATH_BUF];
+        OPGP_STRING pem_opgp = NULL;
+        if (to_opgp_string(pemcopy, pem_t, ARRAY_SIZE(pem_t)) != 0) {
+            fprintf(stderr, "sign-dap: pem path too long\n");
+            return -1;
+        }
+        pem_opgp = pem_t;
+        GP211_DAP_BLOCK dap; if (!status_ok(GP211_calculate_rsa_schemeX_DAP(hash, (DWORD)hashlen, sd, (DWORD)sdlen, pem_opgp, pass, &dap))) { fprintf(stderr, "calc rsa DAP failed\n"); return -1; }
 
         if (output_file) {
             FILE *f = fopen(output_file, "wb");
@@ -2084,17 +2153,18 @@ static int cmd_list_readers(void) {
     OPGP_ERROR_STATUS s = OPGP_establish_context(&ctx);
     if (!status_ok(s)) { fprintf(stderr, "list-readers: failed to establish PC/SC context\n"); return -1; }
 
-    char buf[MAX_READERS_BUF]; DWORD len = sizeof(buf);
+    TCHAR buf[MAX_READERS_BUF];
+    DWORD len = (DWORD)ARRAY_SIZE(buf);
     s = OPGP_list_readers(ctx, buf, &len, 0);
     if (!status_ok(s)) {
-        fprintf(stderr, "list-readers failed with error 0x%08X (%s)\n", (unsigned int)s.errorCode, s.errorMessage);
+        _ftprintf(stderr, _T("list-readers failed with error 0x%08X (%s)\n"), (unsigned int)s.errorCode, s.errorMessage);
         OPGP_release_context(&ctx);
         return -1;
     }
     for (DWORD j = 0; j < len; ) {
-        if (buf[j] == '\0') break; // end of multi-string
-        printf("* reader name %s\n", &buf[j]);
-        j += (DWORD)strlen(&buf[j]) + 1;
+        if (buf[j] == _T('\0')) break; // end of multi-string
+        _tprintf(_T("* reader name %s\n"), &buf[j]);
+        j += (DWORD)_tcslen(&buf[j]) + 1;
     }
     OPGP_release_context(&ctx);
     return 0;
