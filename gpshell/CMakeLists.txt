@@ -47,7 +47,7 @@ set(CPACK_SOURCE_GENERATOR "TGZ")
 ENDIF()
 
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY  "GPShell is a script interpreter which talks to a smart card. It is written on top of the GlobalPlatform library.")
-set(CPACK_PACKAGE_FILE_NAME            "${PROJECT_NAME}-binary-${VERSION}")
+set(CPACK_PACKAGE_FILE_NAME            "${PROJECT_NAME}-${VERSION}")
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${VERSION}")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY    "${PROJECT_NAME}-${VERSION}")
 set(CPACK_PACKAGE_VENDOR               "Karsten Ohme")

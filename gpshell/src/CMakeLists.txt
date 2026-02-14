@@ -98,6 +98,8 @@ endif()
 if(GPSHELL_BUILD_STATIC)
   add_executable(gpshellStatic ${SOURCES})
   add_executable(gpshell3Static ${SOURCES3})
+  set_target_properties(gpshellStatic PROPERTIES OUTPUT_NAME "gpshell")
+  set_target_properties(gpshell3Static PROPERTIES OUTPUT_NAME "gpshell3")
   
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_options(gpshell3Static PRIVATE -g -O0)

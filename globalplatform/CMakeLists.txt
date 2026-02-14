@@ -61,7 +61,7 @@ set(CPACK_SOURCE_GENERATOR "TGZ")
 ENDIF(WIN32)
 
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY  "The GlobalPlatform Library is a smart card management library for OpenPlatform 2.0.1' and GlobalPlatform 2.1.1 smart cards and later")
-set(CPACK_PACKAGE_FILE_NAME            "${PROJECT_NAME}-binary-${VERSION}")
+set(CPACK_PACKAGE_FILE_NAME            "${PROJECT_NAME}-${VERSION}")
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${VERSION}")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY    "${PROJECT_NAME}-${VERSION}")
 set(CPACK_PACKAGE_VENDOR               "Karsten Ohme")

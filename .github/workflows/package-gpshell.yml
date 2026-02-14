@@ -29,7 +29,7 @@ jobs:
           cmake -S . -B build-dynamic -DCMAKE_BUILD_TYPE=Release
           cmake --build build-dynamic -- -j"$(nproc)"
           (cd build-dynamic && cpack -G DEB && cpack -G RPM)
-          for f in build-dynamic/gpshell-binary-*; do
+          for f in build-dynamic/gpshell-*; do
             [ -f "$f" ] || continue
             case "$f" in
               *.deb|*.rpm)
@@ -44,7 +44,7 @@ jobs:
           cmake -S . -B build-static -DCMAKE_BUILD_TYPE=Release -DSTATIC=ON
           cmake --build build-static -- -j"$(nproc)"
           (cd build-static && cpack -G DEB && cpack -G RPM)
-          for f in build-static/gpshell-binary-*; do
+          for f in build-static/gpshell-*; do
             [ -f "$f" ] || continue
             case "$f" in
               *.deb|*.rpm)
@@ -68,16 +68,58 @@ jobs:
           export APPIMAGE_EXTRACT_AND_RUN=1
           rm -rf AppDir
           mkdir -p AppDir/usr/bin
-          install -m 0755 build-static/gpshell/src/gpshell3Static AppDir/usr/bin/gpshell3
+          if [ -x build-static/gpshell/src/gpshell3 ]; then
+            install -m 0755 build-static/gpshell/src/gpshell3 AppDir/usr/bin/gpshell3
+          else
+            install -m 0755 build-static/gpshell/src/gpshell3Static AppDir/usr/bin/gpshell3
+          fi
           ./linuxdeploy \
             --appdir AppDir \
             -e AppDir/usr/bin/gpshell3 \
             -d gpshell.desktop \
             -i gpshell.png \
             --output appimage
-          base=$(ls build-static/gpshell-binary-*-static.deb | head -n1 | sed 's/-static\.deb$//')
           out=$(ls ./*.AppImage | head -n1)
-          mv "$out" "${base}-static.AppImage"
+          ver_current=$(awk '/_CURRENT/ {print $3}' gpshell/CMakeLists.txt | head -n1)
+          ver_revision=$(awk '/_REVISION/ {print $3}' gpshell/CMakeLists.txt | head -n1)
+          ver_age=$(awk '/_AGE/ {print $3}' gpshell/CMakeLists.txt | head -n1)
+          version="${ver_current}.${ver_revision}.${ver_age}"
+          if [ -z "$version" ]; then
+            echo "Failed to determine version for AppImage name"
+            exit 1
+          fi
+          mv "$out" "gpshell3-${version}.AppImage"
+      - name: Sanity test artifacts
+        run: |
+          set -euo pipefail
+          deb_dynamic=$(ls build-dynamic/gpshell-*-dynamic.deb | head -n1)
+          deb_static=$(ls build-static/gpshell-*-static.deb | head -n1)
+          rpm_dynamic=$(ls build-dynamic/gpshell-*-dynamic.rpm | head -n1)
+          rpm_static=$(ls build-static/gpshell-*-static.rpm | head -n1)
+          appimage=$(ls gpshell3-*.AppImage | head -n1)
+
+          deb_pkg=$(dpkg-deb -f "$deb_dynamic" Package)
+          sudo dpkg -i "$deb_dynamic"
+          gpshell3 --help
+          sudo dpkg -P "$deb_pkg"
+
+          deb_pkg=$(dpkg-deb -f "$deb_static" Package)
+          sudo dpkg -i "$deb_static"
+          gpshell3 --help
+          sudo dpkg -P "$deb_pkg"
+
+          rpm_pkg=$(rpm -qp --queryformat '%{NAME}' "$rpm_dynamic")
+          sudo rpm -Uvh --replacepkgs --replacefiles "$rpm_dynamic"
+          gpshell3 --help
+          sudo rpm -e "$rpm_pkg"
+
+          rpm_pkg=$(rpm -qp --queryformat '%{NAME}' "$rpm_static")
+          sudo rpm -Uvh --replacepkgs --replacefiles "$rpm_static"
+          gpshell3 --help
+          sudo rpm -e "$rpm_pkg"
+
+          chmod +x "$appimage"
+          APPIMAGE_EXTRACT_AND_RUN=1 "$appimage" --help
       - name: Save Linux artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -87,7 +129,7 @@ jobs:
             build-dynamic/*.rpm
             build-static/*.deb
             build-static/*.rpm
-            build-static/*.AppImage
+            gpshell3-*.AppImage
 
   build-windows:
     runs-on: windows-2022
@@ -119,12 +161,12 @@ jobs:
       - name: Rename dynamic packages
         shell: pwsh
         run: |
-          Get-ChildItem build-dynamic -Filter "gpshell-binary-*.*" | ForEach-Object {
+          Get-ChildItem build-dynamic -Filter "gpshell-*.*" | ForEach-Object {
             $base = $_.FullName.Substring(0, $_.FullName.LastIndexOf('.'))
             $ext = $_.Extension.TrimStart('.')
             Rename-Item $_.FullName "$base-dynamic.$ext"
           }
-          Get-ChildItem build-dynamic\gpshell-bundle -Filter "gpshell-binary-*.zip" | ForEach-Object {
+          Get-ChildItem build-dynamic\gpshell-bundle -Filter "gpshell-*.zip" | ForEach-Object {
             $base = $_.FullName.Substring(0, $_.FullName.LastIndexOf('.'))
             Rename-Item $_.FullName "$base-dynamic.zip"
           }
@@ -142,11 +184,53 @@ jobs:
       - name: Rename static packages
         shell: pwsh
         run: |
-          Get-ChildItem build-static -Filter "gpshell-binary-*.*" | ForEach-Object {
+          Get-ChildItem build-static -Filter "gpshell-*.*" | ForEach-Object {
             $base = $_.FullName.Substring(0, $_.FullName.LastIndexOf('.'))
             $ext = $_.Extension.TrimStart('.')
             Rename-Item $_.FullName "$base-static.$ext"
           }
+      - name: Sanity test artifacts
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $msi = Get-ChildItem build-static -Filter "gpshell-*-static.msi" | Select-Object -First 1
+          if (-not $msi) { throw "Static MSI not found" }
+          Start-Process msiexec -ArgumentList "/i `"$($msi.FullName)`" /qn /norestart" -Wait -NoNewWindow
+
+          $exe = $null
+          $roots = @($Env:ProgramFiles, ${Env:ProgramFiles(x86)})
+          foreach ($root in $roots) {
+            if (-not $root) { continue }
+            $dirs = Get-ChildItem $root -Directory -Filter "gpshell*" -ErrorAction SilentlyContinue
+            foreach ($dir in $dirs) {
+              $candidate = Join-Path $dir.FullName "bin\gpshell3.exe"
+              if (Test-Path $candidate) { $exe = $candidate; break }
+              $candidate = Join-Path $dir.FullName "gpshell3.exe"
+              if (Test-Path $candidate) { $exe = $candidate; break }
+            }
+            if ($exe) { break }
+          }
+          if (-not $exe) { throw "gpshell3.exe not found after MSI install" }
+          & $exe --help
+
+          $zip = Get-ChildItem build-static -Filter "gpshell-*-static.zip" | Select-Object -First 1
+          if (-not $zip) { throw "Static ZIP not found" }
+          $zipDir = Join-Path $env:TEMP "gpshell-static-zip"
+          if (Test-Path $zipDir) { Remove-Item -Recurse -Force $zipDir }
+          Expand-Archive -Path $zip.FullName -DestinationPath $zipDir -Force
+          $zipExe = Get-ChildItem $zipDir -Recurse -Filter "gpshell3.exe" | Select-Object -First 1
+          if (-not $zipExe) { throw "gpshell3.exe not found in static ZIP" }
+          & $zipExe.FullName --help
+
+          $bundle = Get-ChildItem build-dynamic\gpshell-bundle -Filter "gpshell-*-dynamic.zip" | Select-Object -First 1
+          if (-not $bundle) { throw "Bundle ZIP not found" }
+          $bundleDir = Join-Path $env:TEMP "gpshell-bundle"
+          if (Test-Path $bundleDir) { Remove-Item -Recurse -Force $bundleDir }
+          Expand-Archive -Path $bundle.FullName -DestinationPath $bundleDir -Force
+          $bundleExe = Get-ChildItem $bundleDir -Recurse -Filter "gpshell3.exe" | Select-Object -First 1
+          if (-not $bundleExe) { throw "gpshell3.exe not found in bundle ZIP" }
+          & $bundleExe.FullName --help
       - name: Save Windows artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -173,7 +257,7 @@ jobs:
           cmake -S . -B build-dynamic -DCMAKE_BUILD_TYPE=Release -DOPENSSL_ROOT_DIR="${OPENSSL_ROOT_DIR}"
           cmake --build build-dynamic -- -j"$(sysctl -n hw.ncpu)"
           (cd build-dynamic && cpack -G DragNDrop)
-          for f in build-dynamic/gpshell-binary-*.dmg; do
+          for f in build-dynamic/gpshell-*.dmg; do
             [ -f "$f" ] || continue
             base="${f%.*}"
             mv "$f" "${base}-dynamic.dmg"
@@ -184,10 +268,28 @@ jobs:
           cmake -S . -B build-static -DCMAKE_BUILD_TYPE=Release -DSTATIC=ON -DOPENSSL_ROOT_DIR="${OPENSSL_ROOT_DIR}"
           cmake --build build-static -- -j"$(sysctl -n hw.ncpu)"
           (cd build-static && cpack -G DragNDrop)
-          for f in build-static/gpshell-binary-*.dmg; do
+          for f in build-static/gpshell-*.dmg; do
             [ -f "$f" ] || continue
             base="${f%.*}"
             mv "$f" "${base}-static.dmg"
+          done
+      - name: Sanity test artifacts
+        run: |
+          set -euo pipefail
+          for dmg in build-static/gpshell-*-static.dmg build-dynamic/gpshell-*-dynamic.dmg; do
+            [ -f "$dmg" ] || { echo "Missing dmg: $dmg"; exit 1; }
+            mnt=$(mktemp -d /tmp/gpshell-mount.XXXXXX)
+            hdiutil attach -nobrowse -readonly -mountpoint "$mnt" "$dmg" >/dev/null
+            exe=$(find "$mnt" -type f -name gpshell3 | head -n1)
+            if [ -z "$exe" ]; then
+              hdiutil detach "$mnt" >/dev/null
+              rmdir "$mnt"
+              echo "gpshell3 not found in $dmg"
+              exit 1
+            fi
+            "$exe" --help
+            hdiutil detach "$mnt" >/dev/null
+            rmdir "$mnt"
           done
       - name: Save macOS artifacts
         uses: actions/upload-artifact@v4
