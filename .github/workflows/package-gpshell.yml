@@ -277,7 +277,7 @@ jobs:
             mnt="/tmp/gpshell-mount-${dmg_id}-$$"
             rm -rf "$mnt"
             mkdir -p "$mnt"
-            if ! hdiutil attach -acceptlicense -nobrowse -readonly -noautoopen -noverify -mountpoint "$mnt" "$dmg" >/tmp/hdiutil-attach.log 2>&1; then
+            if ! hdiutil attach -nobrowse -readonly -noautoopen -noverify -mountpoint "$mnt" "$dmg" >/tmp/hdiutil-attach.log 2>&1; then
               echo "Failed to attach $dmg"
               cat /tmp/hdiutil-attach.log
               exit 1
