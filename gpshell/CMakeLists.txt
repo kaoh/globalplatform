@@ -70,9 +70,9 @@ if(STATIC)
 elseif(WIN32)
   # Avoid preinstall target issues on Windows by installing subprojects directly.
   set(CPACK_INSTALL_CMAKE_PROJECTS
-    "${CMAKE_BINARY_DIR}/globalplatform;globalplatform;ALL;/"
-    "${CMAKE_BINARY_DIR}/gppcscconnectionplugin;gppcscconnectionplugin;ALL;/"
-    "${CMAKE_BINARY_DIR}/gpshell;gpshell;ALL;/")
+    "${CMAKE_BINARY_DIR};globalplatform;ALL;/"
+    "${CMAKE_BINARY_DIR};gppcscconnectionplugin;ALL;/"
+    "${CMAKE_BINARY_DIR};gpshell;ALL;/")
 endif()
 set(CPACK_SOURCE_IGNORE_FILES "doc;.*~;Debian;debian;\\\\.svn;\\\\.settings;Testing;CMakeFiles;Doxyfile;
 CPack.*;CMakeCache\\\\.txt;cmake_install.*;Makefile;CMakeDoxyfile\\\\.in;

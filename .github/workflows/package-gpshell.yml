@@ -101,17 +101,17 @@ jobs:
       - name: Install dependencies
         shell: cmd
         run: |
-          choco install -y doxygen.install graphviz wixtoolset
+          choco install -y doxygen.install graphviz wixtoolset ninja
           C:\Temp\Win32OpenSSL-3_6_1.msi /quiet
           copy "C:\Program Files (x86)\OpenSSL-Win32\lib\VC\x86\MD\*" "C:\Program Files (x86)\OpenSSL-Win32\lib\VC"
       - name: Build dynamic packages
         shell: cmd
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
-          cmake -G "NMake Makefiles" -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -B build-dynamic -DOPENSSL_ROOT_DIR="C:\Program Files (x86)\OpenSSL-Win32" -DZLIB_ROOT="%cd%\zlib-1.2.8\win32-build"
+          cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release -B build-dynamic -DOPENSSL_ROOT_DIR="C:\Program Files (x86)\OpenSSL-Win32" -DZLIB_ROOT="%cd%\zlib-1.2.8\win32-build"
+          cmake --build build-dynamic -- -v
+          cmake --build build-dynamic --target doc -- -v
           cd build-dynamic
-          nmake VERBOSE=1
-          nmake VERBOSE=1 doc
           cpack -G ZIP
           cpack -G WIX
           ..\windows-bundle.bat
@@ -131,10 +131,10 @@ jobs:
         shell: cmd
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
-          cmake -G "NMake Makefiles" -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -B build-static -DSTATIC=ON -DOPENSSL_ROOT_DIR="C:\Program Files (x86)\OpenSSL-Win32" -DZLIB_ROOT="%cd%\zlib-1.2.8\win32-build"
+          cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release -B build-static -DSTATIC=ON -DOPENSSL_ROOT_DIR="C:\Program Files (x86)\OpenSSL-Win32" -DZLIB_ROOT="%cd%\zlib-1.2.8\win32-build"
+          cmake --build build-static -- -v
+          cmake --build build-static --target doc -- -v
           cd build-static
-          nmake VERBOSE=1
-          nmake VERBOSE=1 doc
           cpack -G ZIP
           cpack -G WIX
       - name: Rename static packages
