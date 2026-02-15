@@ -656,7 +656,8 @@ end:
  */
 OPGP_ERROR_STATUS get_load_data(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 						  PBYTE securityDomainAID,
-								   DWORD securityDomainAIDLength, BYTE loadFileDataBlockHash[20],
+								   DWORD securityDomainAIDLength, PBYTE loadFileDataBlockHash,
+								   DWORD loadFileDataBlockHashLength, DWORD loadTokenLength,
 								   DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
 								   DWORD nonVolatileDataSpaceLimit, PBYTE loadData,
 								   PDWORD loadDataLength) {
@@ -676,9 +677,9 @@ OPGP_ERROR_STATUS get_load_data(PBYTE executableLoadFileAID, DWORD executableLoa
 	memcpy(buf+i, securityDomainAID, securityDomainAIDLength);
 	i+=securityDomainAIDLength;
 	if (loadFileDataBlockHash != NULL) {
-		buf[i++] = 0x14; // length of SHA-1 hash
-		memcpy(buf+i, loadFileDataBlockHash, 20);
-		i+=20;
+		buf[i++] = (BYTE)loadFileDataBlockHashLength;
+		memcpy(buf+i, loadFileDataBlockHash, loadFileDataBlockHashLength);
+		i+=loadFileDataBlockHashLength;
 	}
 	else buf[i++] = 0x00;
 	if ((volatileDataSpaceLimit != 0) || (nonVolatileCodeSpaceLimit != 0) ||
@@ -727,7 +728,7 @@ OPGP_ERROR_STATUS get_load_data(PBYTE executableLoadFileAID, DWORD executableLoa
 	}
 	else buf[i++] = 0x00;
 
-	buf[2] = (BYTE)i-3+128; // Lc (including 128 byte RSA signature length)
+	buf[2] = (BYTE)i-3+(BYTE)loadTokenLength; // Lc including load token length.
 	if (i > *loadDataLength) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
 	}

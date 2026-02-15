@@ -250,7 +250,7 @@ static void install(void **state) {
 	aid.AIDLength = aidLength;
  	status = OP201_install_for_load(cardContext, cardInfo, &securityInfo211,
 								loadFileParams.loadFileAID.AID, loadFileParams.loadFileAID.AIDLength,
-								aid.AID, aidLength, NULL, NULL,
+								aid.AID, aidLength, NULL, 0, NULL, 0,
 								loadFileParams.loadFileSize, 0, 0);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 	receiptDataAvailable = 0;
@@ -272,16 +272,15 @@ static void get_status_mac_enc(void **state) {
 
 	BYTE hostChallenge[8];
 	DWORD hostChallengeLen = 8;
-	BYTE initializeUpdateRequest[APDU_COMMAND_LEN], extAuthRequest[APDU_COMMAND_LEN],
-	getStatusRequest[APDU_COMMAND_LEN];
+	BYTE initializeUpdateRequest[APDU_COMMAND_LEN], extAuthRequest[APDU_COMMAND_LEN];
 
-	DWORD initializeUpdateRequestLen, extAuthRequestLen, getStatusRequestLen;
-	initializeUpdateRequestLen = extAuthRequestLen = getStatusRequestLen = APDU_COMMAND_LEN;
+	DWORD initializeUpdateRequestLen, extAuthRequestLen;
+	initializeUpdateRequestLen = extAuthRequestLen = APDU_COMMAND_LEN;
 
-	BYTE getStatusResponse[APDU_RESPONSE_LEN], initializeUpdateResponse[APDU_RESPONSE_LEN];
+	BYTE initializeUpdateResponse[APDU_RESPONSE_LEN];
 
-	DWORD getStatusResponseLen, initializeUpdateResponseLen;
-	getStatusResponseLen = initializeUpdateResponseLen = APDU_RESPONSE_LEN;
+	DWORD initializeUpdateResponseLen;
+	initializeUpdateResponseLen = APDU_RESPONSE_LEN;
 
 	BYTE extAuthResponse[] = {0x90, 0x00};
 	DWORD extAuthResponseLen = sizeof(extAuthResponse);

@@ -1566,7 +1566,8 @@ static int handleCommands(FILE *fd)
                     status = OP201_install_for_load(cardContext, cardInfo, &securityInfo201,
                                                 (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
                                                 (PBYTE)optionStr.sdAID, optionStr.sdAIDLen,
-                                                NULL, NULL,
+                                                NULL, 0,
+                                                NULL, 0,
                                                 optionStr.nvCodeLimit,
                                                 optionStr.vDataLimit,  // jvictor
                                                 0); // jvictor, k_o_: we also use 0, e.g. a Cyberflex refuses to install an applet if something else is given.
@@ -1718,6 +1719,7 @@ static int handleCommands(FILE *fd)
 							(PBYTE)optionStr.simSpecParam,
 							optionStr.simSpecParamLen,
                             NULL, // No install token
+                            0,
                             &receipt,
                             &receiptDataAvailable);
                     }
@@ -1742,6 +1744,7 @@ static int handleCommands(FILE *fd)
 								(PBYTE)optionStr.simSpecParam,
 								optionStr.simSpecParamLen,
                                 NULL, // No install token
+                                0,
                                 &receipt,
                                 &receiptDataAvailable);
                         }
@@ -1783,7 +1786,8 @@ static int handleCommands(FILE *fd)
                     status = OP201_install_for_load(cardContext, cardInfo, &securityInfo201,
                                                 (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
                                                 (PBYTE)optionStr.sdAID, optionStr.sdAIDLen,
-                                                NULL, NULL,
+                                                NULL, 0,
+                                                NULL, 0,
                                                 optionStr.nvCodeLimit,
                                                 optionStr.vDataLimit,  // jvictor
                                                 optionStr.nvDataLimit);// jvictor
@@ -2269,6 +2273,7 @@ static int handleCommands(FILE *fd)
                     (PBYTE)optionStr.instAID, optionStr.instAIDLen,
                     optionStr.privilege,
                     NULL, // No install token
+                    0,
                     &receipt,
                     &receiptDataAvailable);
               }

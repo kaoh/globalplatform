@@ -58,7 +58,8 @@ OPGP_ERROR_STATUS cap_to_ijc(OPGP_CSTRING capFileName, OPGP_STRING ijcFileName);
 OPGP_NO_API
 OPGP_ERROR_STATUS get_load_data(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 						  PBYTE securityDomainAID,
-								   DWORD securityDomainAIDLength, BYTE loadFileDataBlockHash[20],
+								   DWORD securityDomainAIDLength, PBYTE loadFileDataBlockHash,
+								   DWORD loadFileDataBlockHashLength, DWORD loadTokenLength,
 								   DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
 								   DWORD nonVolatileDataSpaceLimit, PBYTE loadData,
 								   PDWORD loadDataLength);

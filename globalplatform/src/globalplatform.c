@@ -247,7 +247,8 @@ OPGP_ERROR_STATUS calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, 
 							 PBYTE installParameters, DWORD installParametersLength,
 							 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 							 PBYTE simSpecParams, DWORD simSpecParamsLength,
-							 BYTE installToken[128], OPGP_STRING PEMKeyFileName, char *passPhrase);
+							 PBYTE installToken, PDWORD installTokenLength,
+							 OPGP_STRING PEMKeyFileName, char *passPhrase);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS put_delegated_management_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -268,9 +269,9 @@ OPGP_NO_API
 OPGP_ERROR_STATUS put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 							 BYTE keySetVersion,
 							 BYTE newKeySetVersion,
-							 BYTE newBaseKey[32],
-							 BYTE newS_ENC[32],
-							 BYTE newS_MAC[32], BYTE newDEK[32], DWORD keyLength, BYTE keyType);
+							 PBYTE newBaseKey,
+							 PBYTE newS_ENC,
+							 PBYTE newS_MAC, PBYTE newDEK, DWORD keyLength, BYTE keyType);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS delete_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE keySetVersion, BYTE keyIndex);
@@ -314,13 +315,15 @@ OPGP_ERROR_STATUS install_for_install_and_make_selectable(OPGP_CARD_CONTEXT card
 						 PBYTE installParameters, DWORD installParametersLength,
 						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 						 PBYTE simSpecParams, DWORD simSpecParamsLength,
-						 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData,
+						 PBYTE installToken, DWORD installTokenLength,
+						 GP211_RECEIPT_DATA *receiptData,
 						 PDWORD receiptDataAvailable);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 					  PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE securityDomainAID,
-					  DWORD securityDomainAIDLength, BYTE loadFileDataBlockHash[20], BYTE loadToken[128],
+					  DWORD securityDomainAIDLength, PBYTE loadFileDataBlockHash, DWORD loadFileDataBlockHashLength,
+					  PBYTE loadToken, DWORD loadTokenLength,
 					  DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
 					  DWORD nonVolatileDataSpaceLimit);
 
@@ -334,13 +337,15 @@ OPGP_ERROR_STATUS install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_I
 						 PBYTE installParameters, DWORD installParametersLength,
 						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 						 PBYTE simSpecParams, DWORD simSpecParamsLength,
-						 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
+						 PBYTE installToken, DWORD installTokenLength,
+						 GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS install_for_make_selectable(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 								 PBYTE applicationAID,
 								 DWORD applicationAIDLength, BYTE applicationPrivileges,
-								 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData,
+								 PBYTE installToken, DWORD installTokenLength,
+								 GP211_RECEIPT_DATA *receiptData,
 								 PDWORD receiptDataAvailable);
 
 
@@ -349,9 +354,9 @@ OPGP_ERROR_STATUS pin_change(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardI
 				PBYTE newPIN, DWORD newPINLength);
 
 OPGP_NO_API
-OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE baseKey[32],
-						   BYTE S_ENC[32], BYTE S_MAC[32],
-						   BYTE DEK[32], DWORD keyLength, BYTE keySetVersion,
+OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, PBYTE baseKey,
+						   PBYTE S_ENC, PBYTE S_MAC,
+						   PBYTE DEK, DWORD keyLength, BYTE keySetVersion,
 						   BYTE keyIndex, BYTE secureChannelProtocol,
 						   BYTE secureChannelProtocolImpl, BYTE securityLevel,
 						   BYTE derivationMethod,
@@ -1271,9 +1276,9 @@ end:
  */
 OPGP_ERROR_STATUS GP211_put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 							 BYTE keySetVersion,
-							 BYTE newKeySetVersion, BYTE newBaseKey[32],
-							 BYTE newS_ENC[32],
-							 BYTE newS_MAC[32], BYTE newDEK[32], DWORD keyLength, BYTE keyType) {
+							 BYTE newKeySetVersion, PBYTE newBaseKey,
+							 PBYTE newS_ENC,
+							 PBYTE newS_MAC, PBYTE newDEK, DWORD keyLength, BYTE keyType) {
 	return put_secure_channel_keys(cardContext, cardInfo, secInfo,
 							 keySetVersion,
 							 newKeySetVersion, newBaseKey, newS_ENC,
@@ -1282,9 +1287,9 @@ OPGP_ERROR_STATUS GP211_put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, O
 
 OPGP_ERROR_STATUS put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 							 BYTE keySetVersion,
-							 BYTE newKeySetVersion, BYTE newBaseKey[32],
-							 BYTE newS_ENC[32],
-							 BYTE newS_MAC[32], BYTE newDEK[32], DWORD keyLength, BYTE keyType) {
+							 BYTE newKeySetVersion, PBYTE newBaseKey,
+							 PBYTE newS_ENC,
+							 PBYTE newS_MAC, PBYTE newDEK, DWORD keyLength, BYTE keyType) {
 	OPGP_ERROR_STATUS status;
 	BYTE sendBuffer[255];
 	DWORD sendBufferLength = 255;
@@ -3071,14 +3076,17 @@ OPGP_ERROR_STATUS GP211_install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CAR
 					  DWORD nonVolatileDataSpaceLimit) {
 	return install_for_load(cardContext, cardInfo, secInfo,
 					  executableLoadFileAID, executableLoadFileAIDLength, securityDomainAID,
-					  securityDomainAIDLength, loadFileDataBlockHash, loadToken,
+					  securityDomainAIDLength, loadFileDataBlockHash,
+					  (loadFileDataBlockHash != NULL) ? 20 : 0,
+					  loadToken, (loadToken != NULL) ? 128 : 0,
 					  nonVolatileCodeSpaceLimit, volatileDataSpaceLimit,
 					  nonVolatileDataSpaceLimit);
 }
 
 OPGP_ERROR_STATUS install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 					  PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE securityDomainAID,
-					  DWORD securityDomainAIDLength, BYTE loadFileDataBlockHash[20], BYTE loadToken[128],
+					  DWORD securityDomainAIDLength, PBYTE loadFileDataBlockHash, DWORD loadFileDataBlockHashLength,
+					  PBYTE loadToken, DWORD loadTokenLength,
 					  DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
 					  DWORD nonVolatileDataSpaceLimit)
 {
@@ -3094,7 +3102,8 @@ OPGP_ERROR_STATUS install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xE6;
 	status = get_load_data(executableLoadFileAID, executableLoadFileAIDLength, securityDomainAID,
-		securityDomainAIDLength, loadFileDataBlockHash, nonVolatileCodeSpaceLimit, volatileDataSpaceLimit,
+		securityDomainAIDLength, loadFileDataBlockHash, loadFileDataBlockHashLength,
+		loadTokenLength, nonVolatileCodeSpaceLimit, volatileDataSpaceLimit,
 		nonVolatileDataSpaceLimit, buf, &bufLength);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
@@ -3102,9 +3111,9 @@ OPGP_ERROR_STATUS install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 	memcpy(sendBuffer+2, buf, bufLength);
 	i+=bufLength;
 	if (loadToken != NULL) {
-		sendBuffer[i++] = 0x80; // Length of load token
-		memcpy(sendBuffer+i, loadToken, 128);
-		i+=128;
+		sendBuffer[i++] = (BYTE)loadTokenLength;
+		memcpy(sendBuffer+i, loadToken, loadTokenLength);
+		i+=loadTokenLength;
 	}
 	else {
 		sendBuffer[i++] = 0x00; // Length of load token
@@ -3171,7 +3180,8 @@ OPGP_ERROR_STATUS GP211_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_
 						 installParameters, installParametersLength,
 						 NULL, 0,
 						 NULL, 0,
-						 installToken, receiptData, receiptDataAvailable);
+						 installToken, (installToken != NULL) ? 128 : 0,
+						 receiptData, receiptDataAvailable);
 }
 
 /**
@@ -3225,7 +3235,8 @@ OPGP_ERROR_STATUS GP211_install_for_install_uicc(OPGP_CARD_CONTEXT cardContext, 
 						 installParameters, installParametersLength,
 						 uiccSystemSpecParams, uiccSystemSpecParamsLength,
 						 simSpecParams, simSpecParamsLength,
-						 installToken, receiptData, receiptDataAvailable);
+						 installToken, (installToken != NULL) ? 128 : 0,
+						 receiptData, receiptDataAvailable);
 }
 
 OPGP_ERROR_STATUS install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -3237,7 +3248,8 @@ OPGP_ERROR_STATUS install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_I
 						 PBYTE installParameters, DWORD installParametersLength,
 						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 						 PBYTE simSpecParams, DWORD simSpecParamsLength,
-						 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable) {
+						 PBYTE installToken, DWORD installTokenLength,
+						 GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable) {
 	OPGP_ERROR_STATUS status;
 	DWORD sendBufferLength = 0;
 	DWORD recvBufferLength = APDU_RESPONSE_LEN;
@@ -3262,9 +3274,9 @@ OPGP_ERROR_STATUS install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_I
 	i+=bufLength;
 
 	if (installToken != NULL) {
-		sendBuffer[i++] = 0x80; // Length of install token
-		memcpy(sendBuffer+i, installToken, 128);
-		i+=128;
+		sendBuffer[i++] = (BYTE)installTokenLength;
+		memcpy(sendBuffer+i, installToken, installTokenLength);
+		i+=installTokenLength;
 	}
 	else {
 		sendBuffer[i++] = 0x00; // Length of install token
@@ -3333,7 +3345,8 @@ OPGP_ERROR_STATUS GP211_install_for_install_and_make_selectable(OPGP_CARD_CONTEX
 						 installParameters, installParametersLength,
 						 NULL, 0,
 						 NULL, 0,
-						 installToken, receiptData,
+						 installToken, (installToken != NULL) ? 128 : 0,
+						 receiptData,
 						 receiptDataAvailable);
 }
 
@@ -3377,7 +3390,7 @@ OPGP_ERROR_STATUS GP211_install_for_install_and_make_selectable_uicc(OPGP_CARD_C
 						 PBYTE installParameters, DWORD installParametersLength,
 						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 						 PBYTE simSpecParams, DWORD simSpecParamsLength,
-						 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData,
+						 PBYTE installToken, DWORD installTokenLength, GP211_RECEIPT_DATA *receiptData,
 						 PDWORD receiptDataAvailable) {
 	return install_for_install_and_make_selectable(cardContext, cardInfo, secInfo,
 						 executableLoadFileAID, executableLoadFileAIDLength, executableModuleAID,
@@ -3387,7 +3400,8 @@ OPGP_ERROR_STATUS GP211_install_for_install_and_make_selectable_uicc(OPGP_CARD_C
 						 installParameters, installParametersLength,
 						 uiccSystemSpecParams, uiccSystemSpecParamsLength,
 						 simSpecParams, simSpecParamsLength,
-						 installToken, receiptData,
+						 installToken, installTokenLength,
+						 receiptData,
 						 receiptDataAvailable);
 }
 
@@ -3399,7 +3413,8 @@ OPGP_ERROR_STATUS install_for_install_and_make_selectable(OPGP_CARD_CONTEXT card
 						 PBYTE installParameters, DWORD installParametersLength,
 						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 						 PBYTE simSpecParams, DWORD simSpecParamsLength,
-						 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData,
+						 PBYTE installToken, DWORD installTokenLength,
+						 GP211_RECEIPT_DATA *receiptData,
 						 PDWORD receiptDataAvailable) {
 	OPGP_ERROR_STATUS status;
 	DWORD sendBufferLength = 0;
@@ -3425,9 +3440,9 @@ OPGP_ERROR_STATUS install_for_install_and_make_selectable(OPGP_CARD_CONTEXT card
 	i+=bufLength;
 
 	if (installToken != NULL) {
-		sendBuffer[i++] = 0x80; // Length of install token
-		memcpy(sendBuffer+i, installToken, 128);
-		i+=128;
+		sendBuffer[i++] = (BYTE)installTokenLength;
+		memcpy(sendBuffer+i, installToken, installTokenLength);
+		i+=installTokenLength;
 	}
 	else {
 		sendBuffer[i++] = 0x00; // Length of install token
@@ -3599,19 +3614,20 @@ end:
 OPGP_ERROR_STATUS GP211_install_for_make_selectable(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 								 PBYTE applicationAID,
 								 DWORD applicationAIDLength, BYTE applicationPrivileges,
-								 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData,
+								 PBYTE installToken, DWORD installTokenLength, GP211_RECEIPT_DATA *receiptData,
 								 PDWORD receiptDataAvailable) {
 	return install_for_make_selectable(cardContext, cardInfo, secInfo,
 								 applicationAID,
 								 applicationAIDLength, applicationPrivileges,
-								 installToken, receiptData,
+								 installToken, installTokenLength, receiptData,
 								 receiptDataAvailable);
 }
 
 OPGP_ERROR_STATUS install_for_make_selectable(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 								 PBYTE applicationAID,
 								 DWORD applicationAIDLength, BYTE applicationPrivileges,
-								 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData,
+								 PBYTE installToken, DWORD installTokenLength,
+								 GP211_RECEIPT_DATA *receiptData,
 								 PDWORD receiptDataAvailable) {
 	OPGP_ERROR_STATUS status;
 	DWORD sendBufferLength = 0;
@@ -3640,9 +3656,9 @@ OPGP_ERROR_STATUS install_for_make_selectable(OPGP_CARD_CONTEXT cardContext, OPG
 	sendBuffer[i++] = 0x00; // install parameter field length
 
 	if (installToken != NULL) {
-		sendBuffer[i++] = 0x80; // Length of install token
-		memcpy(sendBuffer+i, installToken, 128);
-		i+=128;
+		sendBuffer[i++] = (BYTE)installTokenLength;
+		memcpy(sendBuffer+i, installToken, installTokenLength);
+		i+=installTokenLength;
 	}
 	else {
 		sendBuffer[i++] = 0x00; // Length of install token
@@ -3968,7 +3984,8 @@ OPGP_ERROR_STATUS GP211_calculate_install_token(BYTE P1, PBYTE executableLoadFil
 							 DWORD executableModuleAIDLength, PBYTE applicationAID, DWORD applicationAIDLength,
 							 BYTE applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 							 PBYTE installParameters, DWORD installParametersLength,
-							 BYTE installToken[128], OPGP_STRING PEMKeyFileName, char *passPhrase) {
+							 PBYTE installToken, PDWORD installTokenLength,
+							 OPGP_STRING PEMKeyFileName, char *passPhrase) {
 	return calculate_install_token(P1, executableLoadFileAID, executableLoadFileAIDLength,
 							 executableModuleAID,
 							 executableModuleAIDLength, applicationAID, applicationAIDLength,
@@ -3976,7 +3993,7 @@ OPGP_ERROR_STATUS GP211_calculate_install_token(BYTE P1, PBYTE executableLoadFil
 							 installParameters, installParametersLength,
 							 NULL, 0,
 							 NULL, 0,
-							 installToken, PEMKeyFileName, passPhrase);
+							 installToken, installTokenLength, PEMKeyFileName, passPhrase);
 }
 
 /**
@@ -4015,7 +4032,8 @@ OPGP_ERROR_STATUS GP211_calculate_install_token_uicc(BYTE P1, PBYTE executableLo
 							 PBYTE installParameters, DWORD installParametersLength,
 							 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 							 PBYTE simSpecParams, DWORD simSpecParamsLength,
-							 BYTE installToken[128], OPGP_STRING PEMKeyFileName, char *passPhrase) {
+							 PBYTE installToken, PDWORD installTokenLength,
+							 OPGP_STRING PEMKeyFileName, char *passPhrase) {
 	return calculate_install_token(P1, executableLoadFileAID, executableLoadFileAIDLength,
 							 executableModuleAID,
 							 executableModuleAIDLength, applicationAID, applicationAIDLength,
@@ -4023,7 +4041,7 @@ OPGP_ERROR_STATUS GP211_calculate_install_token_uicc(BYTE P1, PBYTE executableLo
 							 installParameters, installParametersLength,
 							 uiccSystemSpecParams, uiccSystemSpecParamsLength,
 							 simSpecParams, simSpecParamsLength,
-							 installToken, PEMKeyFileName, passPhrase);
+							 installToken, installTokenLength, PEMKeyFileName, passPhrase);
 }
 
 /**
@@ -4044,7 +4062,8 @@ OPGP_ERROR_STATUS GP211_calculate_install_token_uicc(BYTE P1, PBYTE executableLo
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_get_load_token_signature_data(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE securityDomainAID,
-								   DWORD securityDomainAIDLength, BYTE loadFileDataBlockHash[20],
+								   DWORD securityDomainAIDLength, PBYTE loadFileDataBlockHash,
+								   DWORD loadFileDataBlockHashLength,
 								   DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
 								   DWORD nonVolatileDataSpaceLimit, PBYTE loadTokenSignatureData,
 								   PDWORD loadTokenSignatureDataLength) {
@@ -4071,10 +4090,9 @@ OPGP_ERROR_STATUS GP211_get_load_token_signature_data(PBYTE executableLoadFileAI
 	memcpy(buf+i, securityDomainAID, securityDomainAIDLength);
 	i+=securityDomainAIDLength;
 
-	/* SHA-1 hash */
-	buf[i++] = 0x14;
-	memcpy(buf+i, loadFileDataBlockHash, 20);
-	i+=20;
+	buf[i++] = (BYTE)loadFileDataBlockHashLength;
+	memcpy(buf+i, loadFileDataBlockHash, loadFileDataBlockHashLength);
+	i+=loadFileDataBlockHashLength;
 
 	if ((volatileDataSpaceLimit != 0) || (nonVolatileCodeSpaceLimit != 0) ||
 (nonVolatileDataSpaceLimit != 0)) {
@@ -4172,22 +4190,23 @@ end:
  */
 OPGP_ERROR_STATUS GP211_calculate_load_token(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 						  PBYTE securityDomainAID,
-						  DWORD securityDomainAIDLength, BYTE loadFileDataBlockHash[20],
+						  DWORD securityDomainAIDLength, PBYTE loadFileDataBlockHash,
+						  DWORD loadFileDataBlockHashLength,
 						  DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
-						  DWORD nonVolatileDataSpaceLimit, BYTE loadToken[128],
+						  DWORD nonVolatileDataSpaceLimit, PBYTE loadToken, PDWORD loadTokenLength,
 						  OPGP_STRING PEMKeyFileName, char *passPhrase) {
 	OPGP_ERROR_STATUS status;
 	BYTE loadTokenSignatureData[256];
 	DWORD loadTokenSignatureDataLength = 256;
-	DWORD loadTokenLength = 128;
 	OPGP_LOG_START(_T("GP211_calculate_load_token"));
 	status = GP211_get_load_token_signature_data(executableLoadFileAID, executableLoadFileAIDLength, securityDomainAID, securityDomainAIDLength,
-		loadFileDataBlockHash, nonVolatileCodeSpaceLimit, volatileDataSpaceLimit, nonVolatileDataSpaceLimit, loadTokenSignatureData, &loadTokenSignatureDataLength);
+		loadFileDataBlockHash, loadFileDataBlockHashLength, nonVolatileCodeSpaceLimit, volatileDataSpaceLimit,
+		nonVolatileDataSpaceLimit, loadTokenSignatureData, &loadTokenSignatureDataLength);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
 	status = calculate_rsa_signature(loadTokenSignatureData, loadTokenSignatureDataLength, PEMKeyFileName,
-									passPhrase, loadToken, &loadTokenLength);
+									passPhrase, loadToken, loadTokenLength);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -6392,7 +6411,8 @@ end:
  */
 OPGP_ERROR_STATUS OP201_install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 					  PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE securityDomainAID,
-					  DWORD securityDomainAIDLength, BYTE loadFileDataBlockHash[20], BYTE loadToken[128],
+					  DWORD securityDomainAIDLength, PBYTE loadFileDataBlockHash,
+					  DWORD loadFileDataBlockHashLength, PBYTE loadToken, DWORD loadTokenLength,
 					  DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
 					  DWORD nonVolatileDataSpaceLimit) {
 	OPGP_ERROR_STATUS status;
@@ -6400,7 +6420,8 @@ OPGP_ERROR_STATUS OP201_install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CAR
 	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
 	status = install_for_load(cardContext, cardInfo, &gp211secInfo, executableLoadFileAID,
 		executableLoadFileAIDLength, securityDomainAID, securityDomainAIDLength,
-		loadFileDataBlockHash, loadToken, nonVolatileCodeSpaceLimit,
+		loadFileDataBlockHash, loadFileDataBlockHashLength,
+		loadToken, loadTokenLength, nonVolatileCodeSpaceLimit,
 		volatileDataSpaceLimit, nonVolatileDataSpaceLimit);
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 	return status;
@@ -6440,7 +6461,8 @@ OPGP_ERROR_STATUS OP201_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_
 						 DWORD applicationInstanceAIDLength, BYTE applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
-						 BYTE installToken[128], OP201_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable) {
+						 PBYTE installToken, DWORD installTokenLength,
+						 OP201_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable) {
 	OPGP_ERROR_STATUS status;
 	GP211_SECURITY_INFO gp211secInfo;
 	GP211_RECEIPT_DATA gp211receiptData;
@@ -6452,7 +6474,7 @@ OPGP_ERROR_STATUS OP201_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_
 		applicationInstallParameters, applicationInstallParametersLength,
 		NULL, 0,
 		NULL, 0,
-		installToken,
+		installToken, installTokenLength,
 		&gp211receiptData, receiptDataAvailable);
 	if (*receiptDataAvailable)
 		mapGP211ToOP201ReceiptData(gp211receiptData, receiptData);
@@ -6512,7 +6534,7 @@ OPGP_ERROR_STATUS OP201_install_for_install_uicc(OPGP_CARD_CONTEXT cardContext, 
 		applicationInstallParameters, applicationInstallParametersLength,
 		uiccSystemSpecParams, uiccSystemSpecParamsLength,
 		simSpecParams, simSpecParamsLength,
-		installToken,
+		installToken, (installToken != NULL) ? 128 : 0,
 		&gp211receiptData, receiptDataAvailable);
 	if (*receiptDataAvailable)
 		mapGP211ToOP201ReceiptData(gp211receiptData, receiptData);
@@ -6566,7 +6588,7 @@ OPGP_ERROR_STATUS OP201_install_for_install_and_make_selectable(OPGP_CARD_CONTEX
 		applicationInstallParameters, applicationInstallParametersLength,
 		NULL, 0,
 		NULL, 0,
-		installToken,
+		installToken, (installToken != NULL) ? 128 : 0,
 		&gp211receiptData, receiptDataAvailable);
  	if (*receiptDataAvailable) {
 		mapGP211ToOP201ReceiptData(gp211receiptData, receiptData);
@@ -6627,7 +6649,7 @@ OPGP_ERROR_STATUS OP201_install_for_install_and_make_selectable_uicc(OPGP_CARD_C
 		applicationInstallParameters, applicationInstallParametersLength,
 		uiccSystemSpecParams, uiccSystemSpecParamsLength,
 		simSpecParams, simSpecParamsLength,
-		installToken,
+		installToken, (installToken != NULL) ? 128 : 0,
 		&gp211receiptData, receiptDataAvailable);
 	if (*receiptDataAvailable) {
 		mapGP211ToOP201ReceiptData(gp211receiptData, receiptData);
@@ -6661,7 +6683,8 @@ OPGP_ERROR_STATUS OP201_install_for_make_selectable(OPGP_CARD_CONTEXT cardContex
 	GP211_SECURITY_INFO gp211secInfo;
 	GP211_RECEIPT_DATA gp211receiptData;
 	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
-	status = install_for_make_selectable(cardContext, cardInfo, &gp211secInfo, applicationInstanceAID, applicationInstanceAIDLength, applicationPrivileges, installToken,
+	status = install_for_make_selectable(cardContext, cardInfo, &gp211secInfo, applicationInstanceAID, applicationInstanceAIDLength,
+		applicationPrivileges, installToken, (installToken != NULL) ? 128 : 0,
 		&gp211receiptData, receiptDataAvailable);
 	if (*receiptDataAvailable)
 		mapGP211ToOP201ReceiptData(gp211receiptData, receiptData);
@@ -6791,13 +6814,14 @@ OPGP_ERROR_STATUS OP201_calculate_install_token(BYTE P1, PBYTE executableLoadFil
 							 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
 							 BYTE installToken[128], OPGP_STRING PEMKeyFileName, char *passPhrase) {
 	OPGP_ERROR_STATUS status;
+	DWORD installTokenLength = 128;
 	status = calculate_install_token(P1, executableLoadFileAID, executableLoadFileAIDLength,
 		AIDWithinLoadFileAID, AIDWithinLoadFileAIDLength, applicationInstanceAID, applicationInstanceAIDLength,
 		applicationPrivileges, volatileDataSpaceLimit, nonVolatileDataSpaceLimit,
 		applicationInstallParameters, applicationInstallParametersLength,
 		NULL, 0,
 		NULL, 0,
-		installToken,
+		installToken, &installTokenLength,
 		PEMKeyFileName, passPhrase);
 	return status;
 }
@@ -6838,13 +6862,14 @@ OPGP_ERROR_STATUS OP201_calculate_install_token_uicc(BYTE P1, PBYTE executableLo
 							 PBYTE simSpecParams, DWORD simSpecParamsLength,
 							 BYTE installToken[128], OPGP_STRING PEMKeyFileName, char *passPhrase) {
 	OPGP_ERROR_STATUS status;
+	DWORD installTokenLength = 128;
 	status = calculate_install_token(P1, executableLoadFileAID, executableLoadFileAIDLength,
 		AIDWithinLoadFileAID, AIDWithinLoadFileAIDLength, applicationInstanceAID, applicationInstanceAIDLength,
 		applicationPrivileges, volatileDataSpaceLimit, nonVolatileDataSpaceLimit,
 		applicationInstallParameters, applicationInstallParametersLength,
 		uiccSystemSpecParams, uiccSystemSpecParamsLength,
 		simSpecParams, simSpecParamsLength,
-		installToken,
+		installToken, &installTokenLength,
 		PEMKeyFileName, passPhrase);
 	return status;
 }
@@ -6867,7 +6892,8 @@ OPGP_ERROR_STATUS OP201_calculate_install_token_uicc(BYTE P1, PBYTE executableLo
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_get_load_token_signature_data(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE securityDomainAID,
-								   DWORD securityDomainAIDLength, BYTE loadFileDataBlockHash[20],
+								   DWORD securityDomainAIDLength, PBYTE loadFileDataBlockHash,
+								   DWORD loadFileDataBlockHashLength,
 								   DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
 								   DWORD nonVolatileDataSpaceLimit, PBYTE loadTokenSignatureData,
 								   PDWORD loadTokenSignatureDataLength) {
@@ -6939,9 +6965,8 @@ OPGP_ERROR_STATUS OP201_get_load_token_signature_data(PBYTE executableLoadFileAI
 	}
 	else buf[i++] = 0x00;
 
-	/* SHA-1 hash */
-	memcpy(buf+i, loadFileDataBlockHash, 20);
-	i+=20;
+	memcpy(buf+i, loadFileDataBlockHash, loadFileDataBlockHashLength);
+	i+=loadFileDataBlockHashLength;
 
 	/* Lc - including 128 byte RSA signature length, one more byte for signature length field,
 	   minus 3 for P1, P2 and Lc itself
@@ -6964,8 +6989,8 @@ OPGP_ERROR_STATUS OP201_get_load_token_signature_data(PBYTE executableLoadFileAI
 	OPGP_log_Msg(_T("OP201_get_load_token_signature_data: Load parameters length indicator: 0x%02x"), loadTokenSignatureData[j++]);
 	OPGP_LOG_HEX(_T("OP201_get_load_token_signature_data: Load parameters: "), loadTokenSignatureData+(j-1), *loadTokenSignatureDataLength-(j-1));
 	j+=loadTokenSignatureData[j-1];
-	OPGP_LOG_HEX(_T("OP201_get_load_token_signature_data: Hash of Load File: "), loadTokenSignatureData+j, 20);
-	j+=loadTokenSignatureData[j-1];
+	OPGP_LOG_HEX(_T("OP201_get_load_token_signature_data: Hash of Load File: "), loadTokenSignatureData+j, loadFileDataBlockHashLength);
+	j += loadFileDataBlockHashLength;
 #endif
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
@@ -6989,22 +7014,23 @@ end:
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_calculate_load_token(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE securityDomainAID,
-						  DWORD securityDomainAIDLength, BYTE loadFileDAP[20],
+						  DWORD securityDomainAIDLength, PBYTE loadFileDAP,
+						  DWORD loadFileDAPLength,
 						  DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
-						  DWORD nonVolatileDataSpaceLimit, BYTE loadToken[128],
+						  DWORD nonVolatileDataSpaceLimit, PBYTE loadToken, PDWORD loadTokenLength,
 						  OPGP_STRING PEMKeyFileName, char *passPhrase) {
 	OPGP_ERROR_STATUS status;
 	BYTE loadTokenSignatureData[256];
 	DWORD loadTokenSignatureDataLength = 256;
 	OPGP_LOG_START(_T("calculate_load_token"));
 	status = OP201_get_load_token_signature_data(executableLoadFileAID, executableLoadFileAIDLength, securityDomainAID, securityDomainAIDLength,
-		loadFileDAP, nonVolatileCodeSpaceLimit, volatileDataSpaceLimit, nonVolatileDataSpaceLimit, loadTokenSignatureData, &loadTokenSignatureDataLength);
+		loadFileDAP, loadFileDAPLength, nonVolatileCodeSpaceLimit, volatileDataSpaceLimit,
+		nonVolatileDataSpaceLimit, loadTokenSignatureData, &loadTokenSignatureDataLength);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	DWORD loadTokenLen = 128;
 	status = calculate_rsa_signature(loadTokenSignatureData, loadTokenSignatureDataLength, PEMKeyFileName,
-									passPhrase, loadToken, &loadTokenLen);
+									passPhrase, loadToken, loadTokenLength);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -7354,8 +7380,8 @@ OPGP_ERROR_STATUS OP201_pin_change(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
  * \param *secInfo [out] The returned OP201_SECURITY_INFO structure.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
-OPGP_ERROR_STATUS OP201_mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE baseKey[16], BYTE encKey[16], BYTE macKey[16],
-								 BYTE kekKey[16],
+OPGP_ERROR_STATUS OP201_mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, PBYTE baseKey, PBYTE encKey, PBYTE macKey,
+								 PBYTE kekKey,
 								 BYTE keySetVersion,
 								 BYTE keyIndex, BYTE securityLevel,
 								 BYTE derivationMethod,
@@ -7375,7 +7401,8 @@ OPGP_ERROR_STATUS calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, 
 							 PBYTE installParameters, DWORD installParametersLength,
 							 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 							 PBYTE simSpecParams, DWORD simSpecParamsLength,
-							 BYTE installToken[128], OPGP_STRING PEMKeyFileName, char *passPhrase) {
+							 PBYTE installToken, PDWORD installTokenLength,
+							 OPGP_STRING PEMKeyFileName, char *passPhrase) {
 	OPGP_ERROR_STATUS status;
 	BYTE installTokenSignatureData[256];
 	DWORD installTokenSignatureDataLength = 256;
@@ -7390,9 +7417,8 @@ OPGP_ERROR_STATUS calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, 
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	DWORD installTokenLen = 128;
 	status = calculate_rsa_signature(installTokenSignatureData, installTokenSignatureDataLength, PEMKeyFileName,
-									passPhrase, installToken, &installTokenLen);
+									passPhrase, installToken, installTokenLength);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
