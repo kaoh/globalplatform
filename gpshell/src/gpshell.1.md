@@ -395,18 +395,18 @@ __-pass__ *password*
 
 __-identifier__ *identifier*
 
-:    Identifier for the tag for the get_data command. Must be in hex format, e.g. 9F7F.
+:    Identifier for the tag for the get_data command. Must be in hex format, e.g., 9F7F.
 
-There are several identifiers available but in general not all cards are supporting them. The GlobalPlatform specification v2.3.1 lists a few in section 11.3.3.1.
+There are several identifiers available, but in general not all cards are supporting them. The GlobalPlatform specification v2.3.1 lists a few in section 11.3.3.1.
 It is useful to use some ASN.1 parser to interpret these data, like [asn1js](https://lapo.it/asn1js)
 
-Some useful identifier are:
+Some useful identifiers are:
 
 * 9F7F - CPLC (Card Production Life Cycle) Data
 * 00E0 - Key Information Templates. Instead of the first byte 00 also 01, ... can be used to get more key information templates if available. There is a dedicated command for getting this: get_key_information_templates
 * 2F00 - List of applications
 * FF21 - Extended card resources. There is a dedicated command for getting this: get_extended_card_resources_information
-* 0066 - Card Recogniti0on Data. There is a dedicated command for getting this: get_card_recognition_data
+* 0066 - Card Recognition Data. There is a dedicated command for getting this: get_card_recognition_data
 
 __-data__ *data*
 

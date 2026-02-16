@@ -72,6 +72,11 @@ static const BYTE GP231_ISD_AID[8] = { 0xA0, 0x00, 0x00, 0x01, 0x51, 0x00, 0x00,
 static const BYTE GP211_CARD_MANAGER_AID_ALT1[8] = { 0xA0, 0x00, 0x00, 0x00,
 		0x03, 0x00, 0x00, 0x00 }; //!< This AID is also used for the Issuer Security Domain, e.g. by JCOP 41 cards.
 
+static const BYTE GP211_CARD_MANAGER_AID_ALT2[7] = { 0xA0, 0x00, 0x00, 0x00,
+		0x03, 0x00, 0x00 }; //!< This AID is also used for the Issuer Security Domain old older OP2.0.1 cards, e.g., cyberflex cards
+
+	static const BYTE GP211_CARD_MANAGER_AID_GEMPLUS[8] = { 0xA0, 0x00, 0x00, 0x00, 0x18, 0x43, 0x4D, 0x00 }; //!< This AID is uses for Gemplus cards
+
 #define GP211_LIFE_CYCLE_LOAD_FILE_LOADED 0x01 //!< Executable Load File is loaded.
 #define GP211_LIFE_CYCLE_CARD_OP_READY 0x01 //!< Card is OP ready.
 #define GP211_LIFE_CYCLE_CARD_INITIALIZED 0x07 //!< Card is initialized.
@@ -159,6 +164,7 @@ static const BYTE GP211_GET_DATA_EXTENDED_CARD_RESOURCES[2] = {0xFF, 0x21}; //!<
 
 static const BYTE GP211_GET_DATA_CARD_DATA[2] = {0x00, 0x66}; //!< Card Data.
 static const BYTE GP211_GET_DATA_SECURITY_DOMAIN_MANAGEMENT_DATA[2] = {0x00, 0x66}; //!< Security Domain Management Data if Security Domain is selected.
+static const BYTE GP211_GET_DATA_CARD_CAPABILITY_INFORMATION[2] = {0x00, 0x67}; //!< Card Capability Information.
 static const BYTE GP211_GET_DATA_SEQUENCE_COUNTER_DEFAULT_KEY_VERSION[2] = {0x00, 0xC1}; //!< Sequence Counter of the default Key Version Number.
 static const BYTE GP211_GET_DATA_CONFIRMATION_COUNTER[2] = {0x00, 0xC2}; //!< Confirmation Counter for generating receipts.
 static const BYTE GP211_GET_DATA_FREE_EEPROM_MEMORY_SPACE[2] = {0x00, 0xC6}; //!< Free EEPROM memory space.
@@ -404,22 +410,126 @@ typedef struct {
 } OPGP_EXTENDED_CARD_RESOURCE_INFORMATION;
 
 /**
+ * The structure containing the Card Production Life Cycle (CPLC) data (raw values).
+ */
+typedef struct {
+	USHORT icFabricator; //!< IC Fabricator.
+	USHORT icType; //!< IC Type.
+	USHORT operatingSystemId; //!< Operating System ID.
+	USHORT operatingSystemReleaseDate; //!< Operating System release date (raw).
+	USHORT operatingSystemReleaseLevel; //!< Operating System release level.
+	USHORT icFabricationDate; //!< IC fabrication date (raw).
+	USHORT icSerialNumberHigh; //!< IC serial number (high).
+	USHORT icSerialNumberLow; //!< IC serial number (low).
+	USHORT icBatchIdentifier; //!< IC batch identifier.
+	USHORT icModuleFabricator; //!< IC module fabricator.
+	USHORT icModulePackagingDate; //!< IC module packaging date (raw).
+	USHORT iccManufacturer; //!< ICC manufacturer.
+	USHORT icEmbeddingDate; //!< IC embedding date (raw).
+	USHORT icPrePersonalizer; //!< IC pre-personalizer.
+	USHORT icPrePersonalizationEquipmentDate; //!< IC pre-personalization equipment date (raw).
+	DWORD icPrePersonalizationEquipmentId; //!< IC pre-personalization equipment ID.
+	USHORT icPersonalizer; //!< IC personalizer.
+	USHORT icPersonalizationDate; //!< IC personalization date (raw).
+	DWORD icPersonalizationEquipmentId; //!< IC personalization equipment ID.
+} OPGP_CPLC;
+
+/**
  * The Card Recognition Data returned for tag 0x66 with GET DATA.
  */
 typedef struct {
-	DWORD version; //!< The GlobalPlatform version.
+	char version[16]; //!< The GlobalPlatform version string (e.g. "2.1.1").
 	BYTE scp[16]; //!< The secure channel protocols.
 	BYTE scpImpl[16]; //!< The secure channel protocol implementations.
 	DWORD scpLength; //!< The length of the SCP.
+	char cardConfigurationDetailsOid[128]; //!< Card configuration details OID as numeric string.
+	DWORD cardConfigurationDetailsOidLength; //!< Card configuration details OID length.
 	BYTE cardConfigurationDetails[64]; //!< Card configuration details.
 	DWORD cardConfigurationDetailsLength; //!< Card configuration details length.
+	char cardChipDetailsOid[128]; //!< Card / chip details OID as numeric string.
+	DWORD cardChipDetailsOidLength; //!< Card / chip details OID length.
 	BYTE cardChipDetails[64]; //!< Card configuration details.
 	DWORD cardChipDetailsLength; //!< Card configuration details length.
+	char issuerSecurityDomainsTrustPointCertificateInformationOid[128]; //!< Issuer Security Domain’s Trust Point certificate information OID as numeric string.
+	DWORD issuerSecurityDomainsTrustPointCertificateInformationOidLength; //!< Issuer Security Domain’s Trust Point certificate information OID length.
 	BYTE issuerSecurityDomainsTrustPointCertificateInformation[64]; //!< Issuer Security Domain’s Trust Point certificate information.
 	DWORD issuerSecurityDomainsTrustPointCertificateInformationLength; //!< Issuer Security Domain’s Trust Point certificate information length.
+	char issuerSecurityDomainCertificateInformationOid[128]; //!< Issuer Security Domain certificate information OID as numeric string.
+	DWORD issuerSecurityDomainCertificateInformationOidLength; //!< Issuer Security Domain certificate information OID length.
 	BYTE issuerSecurityDomainCertificateInformation[64]; //!< Issuer Security Domain certificate information.
 	DWORD issuerSecurityDomainCertificateInformationLength; //!< Issuer Security Domain certificate information length.
 } GP211_CARD_RECOGNITION_DATA;
+
+#define GP211_MAX_CARD_CAPABILITY_SCP_INFOS 16
+#define GP211_MAX_CARD_CAPABILITY_SCP_OPTIONS 16
+#define GP211_MAX_CARD_CAPABILITY_TLS_CIPHER_SUITES 16
+#define GP211_MAX_CARD_CAPABILITY_LFDBH_ALGORITHMS 8
+#define GP211_MAX_CARD_CAPABILITY_CIPHER_SUITES 32
+#define GP211_MAX_CARD_CAPABILITY_KEY_PARAMETER_REFERENCES 128
+#define GP211_MAX_CARD_CAPABILITY_ELF_UPGRADE 32
+
+#define GP211_SCP_SUPPORTED_KEY_SIZE_128 0x01
+#define GP211_SCP_SUPPORTED_KEY_SIZE_192 0x02
+#define GP211_SCP_SUPPORTED_KEY_SIZE_256 0x04
+
+#define GP211_LFDB_ENCRYPTION_3DES_16B_KEY 0x01
+#define GP211_LFDB_ENCRYPTION_AES_128 0x02
+#define GP211_LFDB_ENCRYPTION_AES_192 0x04
+#define GP211_LFDB_ENCRYPTION_AES_256 0x08
+#define GP211_LFDB_ENCRYPTION_SM4 0x10
+#define GP211_LFDB_ENCRYPTION_ICV_SUPPORTED 0x80
+
+#define GP211_SIGNATURE_CS_RSA_1024_SHA1 0x0100
+#define GP211_SIGNATURE_CS_RSA_PSS_SHA256 0x0200
+#define GP211_SIGNATURE_CS_DES_MAC_16B 0x0400
+#define GP211_SIGNATURE_CS_CMAC_AES_128 0x0800
+#define GP211_SIGNATURE_CS_CMAC_AES_192 0x1000
+#define GP211_SIGNATURE_CS_CMAC_AES_256 0x2000
+#define GP211_SIGNATURE_CS_ECDSA_256_SHA256 0x4000
+#define GP211_SIGNATURE_CS_ECDSA_384_SHA384 0x8000
+
+#define GP211_SIGNATURE_CS_ECDSA_512_SHA512 0x0001
+#define GP211_SIGNATURE_CS_ECDSA_521_SHA512 0x0002
+#define GP211_SIGNATURE_CS_SM2 0x0004
+
+#define GP211_ELF_UPGRADE_SINGLE 0x00
+#define GP211_ELF_UPGRADE_MULTI 0x01
+
+/**
+ * SCP Information inside Card Capability Information (Tag 'A0').
+ */
+typedef struct {
+	BYTE scpIdentifier; //!< SCP Identifier (tag '80').
+	BYTE scpOptions[GP211_MAX_CARD_CAPABILITY_SCP_OPTIONS]; //!< SCP Options list (tag '81').
+	DWORD scpOptionsLength; //!< SCP Options list length.
+	BYTE scpOptionsMask[GP211_MAX_CARD_CAPABILITY_SCP_OPTIONS]; //!< SCP Options mask (tag '91').
+	DWORD scpOptionsMaskLength; //!< SCP Options mask length.
+	BYTE supportedKeySizes; //!< Supported key sizes (tag '82').
+	BYTE tlsCipherSuites[GP211_MAX_CARD_CAPABILITY_TLS_CIPHER_SUITES]; //!< Supported TLS cipher suites (tag '83').
+	DWORD tlsCipherSuitesLength; //!< Supported TLS cipher suites length.
+	BYTE maxPskLength; //!< Max length of PSK in bytes (tag '84').
+} GP211_SCP_INFORMATION;
+
+/**
+ * The Card Capability Information returned for tag 0x67 with GET DATA.
+ */
+typedef struct {
+	GP211_SCP_INFORMATION scpInformation[GP211_MAX_CARD_CAPABILITY_SCP_INFOS]; //!< SCP information entries.
+	DWORD scpInformationLength; //!< Number of SCP information entries.
+	BYTE ssdPrivileges[3]; //!< Privileges assignable to SSDs (tag '81').
+	BYTE appPrivileges[3]; //!< Privileges assignable to applications (tag '82').
+	BYTE lfdbhAlgorithms[GP211_MAX_CARD_CAPABILITY_LFDBH_ALGORITHMS]; //!< Supported LFDBH algorithms (tag '83'). See GP211_HASH_SHA256.
+	DWORD lfdbhAlgorithmsLength; //!< Supported LFDBH algorithms length
+	BYTE lfdbencryptionCipherSuites; //!< LFDB encryption cipher suites (tag '84').
+	USHORT tokenCipherSuites; //!< Cipher suites supported for tokens (tag '85'). See GP211_CIPHER_SUITE_AES_128_CBC.
+	USHORT receiptCipherSuites; //!< Cipher suites supported for receipts (tag '86').
+	USHORT dapCipherSuites; //!< Cipher suites supported for DAPs (tag '87').
+	BYTE keyParameterReferenceList[GP211_MAX_CARD_CAPABILITY_KEY_PARAMETER_REFERENCES]; //!< Key Parameter Reference List (tag '88').
+	DWORD keyParameterReferenceListLength; //!< Key Parameter Reference List length.
+	BYTE elfUpgrade; //!< Supported ELF upgrade process & options (tag '89').
+	BOOL tokenIdentifierDenyList; //!< Support for Token Identifier Deny List (tag '8A').
+	BOOL securityDomainSelfRemoval; //!< Support for Security Domain Self-Removal (tag '8B').
+} GP211_CARD_CAPABILITY_INFORMATION;
 
 //! \brief GlobalPlatform2.1.1: Selects an application on a card by AID.
 OPGP_API
@@ -429,6 +539,20 @@ OPGP_ERROR_STATUS OPGP_select_application(OPGP_CARD_CONTEXT cardContext, OPGP_CA
 OPGP_API
 OPGP_ERROR_STATUS OPGP_get_extended_card_resources_information(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 								   OPGP_EXTENDED_CARD_RESOURCE_INFORMATION *extendedCardResourceInformation);
+
+//! \brief Reads and parses the CPLC data.
+OPGP_API
+OPGP_ERROR_STATUS OPGP_get_cplc(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+				OPGP_CPLC *cplc);
+
+//! \brief Parses the CPLC data response.
+OPGP_API
+OPGP_ERROR_STATUS OPGP_parse_cplc(const BYTE *data, DWORD dataLength, OPGP_CPLC *cplc);
+
+//! \brief Parses the extended card resources information response.
+OPGP_API
+OPGP_ERROR_STATUS OPGP_parse_extended_card_resources_information(const BYTE *data, DWORD dataLength,
+								  OPGP_EXTENDED_CARD_RESOURCE_INFORMATION *extendedCardResourceInformation);
 
 /** \brief GlobalPlatform2.1.1: Gets the life cycle status of Applications, the Issuer Security
  * Domains, Security Domains and Executable Load Files and their privileges or information about
@@ -468,6 +592,11 @@ OPGP_API
 OPGP_ERROR_STATUS GP211_get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 			  BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength);
 
+//! \brief GlobalPlatform2.1.1: Retrieve diversification data (tag 0xCF).
+OPGP_API
+OPGP_ERROR_STATUS GP211_get_diversification_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+			  PBYTE recvBuffer, PDWORD recvBufferLength);
+
 //! \brief Retrieve card data according ISO/IEC 7816-4 command not within a secure channel.
 OPGP_API
 OPGP_ERROR_STATUS GP211_get_data_iso7816_4(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength);
@@ -475,6 +604,19 @@ OPGP_ERROR_STATUS GP211_get_data_iso7816_4(OPGP_CARD_CONTEXT cardContext, OPGP_C
 //! \brief GlobalPlatform2.1.1: Return the card recognition data.
 OPGP_API
 OPGP_ERROR_STATUS GP211_get_card_recognition_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_CARD_RECOGNITION_DATA *cardData);
+
+//! \brief Parses the card recognition data response.
+OPGP_API
+OPGP_ERROR_STATUS GP211_parse_card_recognition_data(const BYTE *data, DWORD dataLength, GP211_CARD_RECOGNITION_DATA *cardData);
+
+//! \brief GlobalPlatform2.3.1: Return the card capability information.
+OPGP_API
+OPGP_ERROR_STATUS GP211_get_card_capability_information(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_CARD_CAPABILITY_INFORMATION *cardCapabilityInfo);
+
+//! \brief Parses the card capability information response.
+OPGP_API
+OPGP_ERROR_STATUS GP211_parse_card_capability_information(const BYTE *data, DWORD dataLength,
+							  GP211_CARD_CAPABILITY_INFORMATION *cardCapabilityInfo);
 
 //! \brief GlobalPlatform2.1.1: This returns the Secure Channel Protocol and the Secure Channel Protocol implementation.
 OPGP_API
@@ -484,7 +626,12 @@ OPGP_ERROR_STATUS GP211_get_secure_channel_protocol_details(OPGP_CARD_CONTEXT ca
 //! \brief GlobalPlatform2.1.1: This returns the current Sequence Counter.
 OPGP_API
 OPGP_ERROR_STATUS GP211_get_sequence_counter(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
-						  BYTE sequenceCounter[2]);
+						  GP211_SECURITY_INFO *secInfo, DWORD *sequenceCounter);
+
+//! \brief GlobalPlatform2.1.1: This returns the confirmation counter.
+OPGP_API
+OPGP_ERROR_STATUS GP211_get_confirmation_counter(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
+						  GP211_SECURITY_INFO *secInfo, DWORD *confirmationCounter);
 
 //! \brief GlobalPlatform2.1.1: Put card data.
 OPGP_API
@@ -860,7 +1007,7 @@ OPGP_ERROR_STATUS OP201_delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_C
 OPGP_API
 OPGP_ERROR_STATUS OP201_install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 					  PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE securityDomainAID,
-					  DWORD securityDomainAIDLength, BYTE loadFileDAP[20], BYTE loadToken[128],
+					  DWORD securityDomainAIDLength, BYTE loadFileDataBlockHash[20], BYTE loadToken[128],
 					  DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
 					  DWORD nonVolatileDataSpaceLimit);
 
@@ -868,7 +1015,7 @@ OPGP_ERROR_STATUS OP201_install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CAR
 OPGP_API
 OPGP_ERROR_STATUS OP201_get_load_token_signature_data(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 								   PBYTE securityDomainAID, DWORD securityDomainAIDLength,
-								   BYTE loadFileDAP[20], DWORD nonVolatileCodeSpaceLimit,
+								   BYTE loadFileDataBlockHash[20], DWORD nonVolatileCodeSpaceLimit,
 								   DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 								   PBYTE loadTokenSignatureData, PDWORD loadTokenSignatureDataLength);
 

@@ -98,7 +98,8 @@ It is necessary to set the `OPENSSL_ROOT_DIR`. In case of the usage of Homebrew 
 
 ```shell
 cd \path\to\globalplatform
-cmake . -DCMAKE_C_COMPILER=/usr/bin/gcc -DOPENSSL_ROOT_DIR=$(brew --prefix openssl@3)
+cmake -B build -DCMAKE_C_COMPILER=/usr/bin/gcc -DOPENSSL_ROOT_DIR=$(brew --prefix openssl@3) .
+cd build
 make
 make install
 ```
@@ -129,7 +130,7 @@ cmake -G "NMake Makefiles" -DOPENSSL_ROOT_DIR="C:\Program Files (x86)\OpenSSL-Wi
 nmake
 ```
 
-__NOTE:__ Read also the Windows specific part in the [GlobalPlatform sub project](./globalplatform/README.md#sdk).
+__NOTE:__ Read also the Windows-specific part in the [GlobalPlatform sub project](./globalplatform/README.md#sdk).
 
 ## Documentation
 
@@ -139,9 +140,9 @@ Execute:
 
 ## Binary Packages
 
-    Execute:
+Execute:
 
-        make/nmake package
+    make/nmake package
 
 ## Source Packages
 
@@ -151,24 +152,27 @@ Execute:
 
 ## Debug Builds
 
-To be able to debug the library enable the debug symbols:
+To be able to debug the library, enable the debug symbols:
 
 ```
 cmake . -DDEBUG=ON
-
 ```
 
 ## Testing
 
-To generate the tests execute:
+To generate the tests, execute:
 
 ```shell
-cmake . -DTESTING=ON -DDEBUG=ON
+cmake -B build -DTESTING=ON -DINTEGRATION_TESTING=ON -DDEBUG=ON .
+cd build
 make
-make test
+make test-unit
+# with a recent JCOP test card with default keys
+export OPGP_PLUGIN_PATH=$(pwd)/gppcscconnectionplugin/src
+make test-integration
 ```
 
-__NOTE:__ On Windows: When using the Visual Studio command line the neccessary mock functions are not supported by the linker and tests cannot be executed.
+__NOTE:__ On Windows: When using the Visual Studio command line, the necessary mock functions are not supported by the linker and tests cannot be executed.
 
 ## Debug Output
 

@@ -73,6 +73,10 @@ LONG parse_apdu_case(PBYTE apduCommand, DWORD apduCommandLength, PBYTE caseAPDU,
 OPGP_NO_API
 LONG write_TLV_length(PBYTE buffer, DWORD offset, DWORD lengthLeft, USHORT length);
 
+//! \brief Parses a DER encoded OID into a numeric string (e.g. "1.2.840.113549").
+OPGP_NO_API
+LONG parse_OID_numeric_string(PBYTE oid, DWORD oidLength, char *out, DWORD outLength);
+
 #ifdef __cplusplus
 }
 #endif

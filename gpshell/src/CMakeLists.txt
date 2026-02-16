@@ -79,6 +79,13 @@ TARGET_LINK_LIBRARIES(gpshell ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES})
 ADD_EXECUTABLE(gpshell3 ${SOURCES3})
 TARGET_LINK_LIBRARIES(gpshell3 ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES})
 
+# Allow in-tree execution to find the PC/SC plugin without installing it
+if(UNIX)
+  set(_gpshell_plugin_rpath "$ORIGIN/../../gppcscconnectionplugin/src")
+  set_target_properties(gpshell PROPERTIES BUILD_RPATH "${_gpshell_plugin_rpath}")
+  set_target_properties(gpshell3 PROPERTIES BUILD_RPATH "${_gpshell_plugin_rpath}")
+endif()
+
 # Optional static gpshell that embeds GlobalPlatform and PC/SC plugin
 option(GPSHELL_BUILD_STATIC "Build a statically linked gpshell with built-in PC/SC plugin" ON)
 if(GPSHELL_BUILD_STATIC)

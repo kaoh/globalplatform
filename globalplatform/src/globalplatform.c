@@ -87,6 +87,158 @@ static BYTE S_RMAC_DerivationConstant_SCP03 = 0x07; //!< Constant to derive S-RM
 #define CARD_DATA_APPLICATION_TAG_0 0x60
 #define OID_TAG 0x06
 
+static void extract_oid_version(const char *oid, char *out, size_t outLength) {
+	size_t len;
+	size_t i;
+	int dotCount = 0;
+	const char *start = oid;
+	size_t copyLength;
+
+	if (out == NULL || outLength == 0) {
+		return;
+	}
+	out[0] = '\0';
+	if (oid == NULL || oid[0] == '\0') {
+		return;
+	}
+
+	len = strlen(oid);
+	for (i = len; i > 0; i--) {
+		if (oid[i - 1] == '.') {
+			dotCount++;
+			if (dotCount == 3) {
+				start = &oid[i];
+				break;
+			}
+		}
+	}
+
+	copyLength = strlen(start);
+	if (copyLength >= outLength) {
+		copyLength = outLength - 1;
+	}
+	memcpy(out, start, copyLength);
+	out[copyLength] = '\0';
+}
+
+static LONG parse_optional_oid_and_data(const TLV *sourceTlv,
+					char *oidBuffer, DWORD oidBufferLength, PDWORD oidLength,
+					PBYTE dataBuffer, DWORD dataBufferLength, PDWORD dataLength) {
+	DWORD unknownOffset = 0;
+	DWORD unknownLength = 0;
+	LONG innerResult = -1;
+	LONG oidStringLength = -1;
+	TLV innerTlv;
+	PBYTE allocated = NULL;
+	PBYTE oidValue = NULL;
+
+	if (sourceTlv == NULL || oidBuffer == NULL || oidLength == NULL || dataBuffer == NULL || dataLength == NULL) {
+		return -1;
+	}
+
+	*oidLength = 0;
+	if (oidBufferLength > 0) {
+		oidBuffer[0] = '\0';
+	}
+	*dataLength = 0;
+
+	if (sourceTlv->length == 0) {
+		return 0;
+	}
+
+	if (sourceTlv->length > sizeof(innerTlv.value)) {
+		allocated = (PBYTE)malloc(sourceTlv->length);
+		if (allocated != NULL) {
+			innerTlv.extendedValue = allocated;
+			innerResult = read_TLV(sourceTlv->value, sourceTlv->length, &innerTlv);
+		}
+	} else {
+		innerTlv.extendedValue = NULL;
+		innerResult = read_TLV(sourceTlv->value, sourceTlv->length, &innerTlv);
+	}
+
+	if (innerResult != -1 && innerTlv.tag == OID_TAG) {
+		oidValue = (innerTlv.length > sizeof(innerTlv.value)) ? innerTlv.extendedValue : innerTlv.value;
+		oidStringLength = parse_OID_numeric_string(oidValue, innerTlv.length, oidBuffer, oidBufferLength);
+		if (oidStringLength == -1) {
+			if (allocated != NULL) {
+				free(allocated);
+			}
+			return -1;
+		}
+		*oidLength = (DWORD)oidStringLength;
+		unknownOffset = (DWORD)innerResult;
+	}
+
+	if (allocated != NULL) {
+		free(allocated);
+	}
+
+	unknownLength = (sourceTlv->length > unknownOffset) ? (sourceTlv->length - unknownOffset) : 0;
+	memcpy(dataBuffer, sourceTlv->value + unknownOffset, min(unknownLength, dataBufferLength));
+	*dataLength = min(unknownLength, dataBufferLength);
+	return 0;
+}
+
+static int parse_card_capability_scp_info(const TLV *sourceTlv,
+		GP211_CARD_CAPABILITY_INFORMATION *cardCapabilityInfo) {
+	DWORD offset = 0;
+	LONG result;
+	TLV innerTlv;
+	GP211_SCP_INFORMATION *scpInfo;
+
+	if (sourceTlv == NULL || cardCapabilityInfo == NULL) {
+		return -1;
+	}
+
+	if (cardCapabilityInfo->scpInformationLength >= GP211_MAX_CARD_CAPABILITY_SCP_INFOS) {
+		return 0;
+	}
+
+	scpInfo = &cardCapabilityInfo->scpInformation[cardCapabilityInfo->scpInformationLength];
+	memset(scpInfo, 0, sizeof(*scpInfo));
+
+	while (offset < sourceTlv->length) {
+		result = read_TLV(sourceTlv->value + offset, sourceTlv->length - offset, &innerTlv);
+		if (result == -1) {
+			return -1;
+		}
+		switch (innerTlv.tag) {
+			case 0x80:
+				if (innerTlv.length > 0) {
+					scpInfo->scpIdentifier = innerTlv.value[0];
+				}
+				break;
+			case 0x81:
+				scpInfo->scpOptionsLength = min(innerTlv.length, (DWORD)sizeof(scpInfo->scpOptions));
+				memcpy(scpInfo->scpOptions, innerTlv.value, scpInfo->scpOptionsLength);
+				break;
+			case 0x91:
+				scpInfo->scpOptionsMaskLength = min(innerTlv.length, (DWORD)sizeof(scpInfo->scpOptionsMask));
+				memcpy(scpInfo->scpOptionsMask, innerTlv.value, scpInfo->scpOptionsMaskLength);
+				break;
+			case 0x82:
+				if (innerTlv.length > 0) {
+					scpInfo->supportedKeySizes = innerTlv.value[0];
+				}
+				break;
+			case 0x83:
+				scpInfo->tlsCipherSuitesLength = min(innerTlv.length, (DWORD)sizeof(scpInfo->tlsCipherSuites));
+				memcpy(scpInfo->tlsCipherSuites, innerTlv.value, scpInfo->tlsCipherSuitesLength);
+				break;
+			case 0x84:
+				if (innerTlv.length > 0) {
+					scpInfo->maxPskLength = innerTlv.value[0];
+				}
+				break;
+		}
+		offset += innerTlv.tlvLength;
+	}
+
+	cardCapabilityInfo->scpInformationLength++;
+	return 0;
+}
+
 OPGP_NO_API
 OPGP_ERROR_STATUS calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 							 PBYTE executableModuleAID,
@@ -949,12 +1101,11 @@ OPGP_ERROR_STATUS GP211_put_symmetric_key(OPGP_CARD_CONTEXT cardContext, OPGP_CA
 				  BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion, BYTE key[32], DWORD keyLength, BYTE keyType) {
 	OPGP_ERROR_STATUS status;
 	BYTE sendBuffer[APDU_COMMAND_LEN];
-	DWORD sendBufferLength = APDU_COMMAND_LEN;
 	DWORD recvBufferLength = APDU_RESPONSE_LEN;
 	BYTE recvBuffer[APDU_RESPONSE_LEN];
 	BYTE keyCheckValue[3];
-	BYTE keyDataField[22];
-	DWORD keyDataFieldLength=22;
+	BYTE keyDataField[64];
+	DWORD keyDataFieldLength=64;
 	DWORD i=0;
 	OPGP_LOG_START(_T("put_symmetric_key"));
 
@@ -966,7 +1117,7 @@ OPGP_ERROR_STATUS GP211_put_symmetric_key(OPGP_CARD_CONTEXT cardContext, OPGP_CA
 	i++;
 	sendBuffer[i++] = newKeySetVersion;
 
-	status = get_key_data_field(secInfo, key, 16, keyType, keyDataField, &keyDataFieldLength, keyCheckValue, true);
+	status = get_key_data_field(secInfo, key, keyLength, keyType, keyDataField, &keyDataFieldLength, keyCheckValue, true);
 	if ( OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -975,11 +1126,11 @@ OPGP_ERROR_STATUS GP211_put_symmetric_key(OPGP_CARD_CONTEXT cardContext, OPGP_CA
 	i+=keyDataFieldLength;
 
 	// Lc
-	sendBuffer[i] = i-5;
+	sendBuffer[4] = i-5;
 	i++;
 	sendBuffer[i] = 0x00; // Le
 
-	status = OPGP_send_APDU(cardContext, cardInfo, secInfo, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
+	status = OPGP_send_APDU(cardContext, cardInfo, secInfo, sendBuffer, i, recvBuffer, &recvBufferLength);
 	if ( OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -1481,6 +1632,105 @@ OPGP_ERROR_STATUS GP211_get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO c
 				  return get_data(cardContext, cardInfo, secInfo, identifier, recvBuffer, recvBufferLength);
 }
 
+OPGP_ERROR_STATUS GP211_get_diversification_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+			  PBYTE recvBuffer, PDWORD recvBufferLength) {
+	OPGP_ERROR_STATUS status;
+	BYTE tmpBuffer[256];
+	DWORD tmpLen = sizeof(tmpBuffer);
+	TLV tlv;
+	LONG result;
+
+	status = get_data(cardContext, cardInfo, secInfo, (PBYTE)GP211_GET_DATA_DIVERSIFICATION_DATA, tmpBuffer, &tmpLen);
+	if (OPGP_ERROR_CHECK(status)) {
+		return status;
+	}
+	result = read_TLV(tmpBuffer, tmpLen, &tlv);
+	if (result == -1 || tlv.tag != 0xCF) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+	if (tlv.length > *recvBufferLength) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		return status;
+	}
+	memcpy(recvBuffer, tlv.value, tlv.length);
+	*recvBufferLength = tlv.length;
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); return status; }
+}
+
+OPGP_ERROR_STATUS OPGP_parse_cplc(const BYTE *data, DWORD dataLength, OPGP_CPLC *cplc) {
+	OPGP_ERROR_STATUS status;
+	const BYTE *cplcData = data;
+	DWORD cplcLength = dataLength;
+	TLV tlv;
+	LONG result;
+
+	if (data == NULL || cplc == NULL || dataLength == 0) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+
+	memset(cplc, 0, sizeof(*cplc));
+	result = read_TLV((PBYTE)data, dataLength, &tlv);
+	if (result != -1 && tlv.tag == 0x9F7F) {
+		cplcData = tlv.value;
+		cplcLength = tlv.length;
+	}
+
+	if (cplcLength < 42) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+
+	cplc->icFabricator = (USHORT)((cplcData[0] << 8) | cplcData[1]);
+	cplc->icType = (USHORT)((cplcData[2] << 8) | cplcData[3]);
+	cplc->operatingSystemId = (USHORT)((cplcData[4] << 8) | cplcData[5]);
+	cplc->operatingSystemReleaseDate = (USHORT)((cplcData[6] << 8) | cplcData[7]);
+	cplc->operatingSystemReleaseLevel = (USHORT)((cplcData[8] << 8) | cplcData[9]);
+	cplc->icFabricationDate = (USHORT)((cplcData[10] << 8) | cplcData[11]);
+	cplc->icSerialNumberHigh = (USHORT)((cplcData[12] << 8) | cplcData[13]);
+	cplc->icSerialNumberLow = (USHORT)((cplcData[14] << 8) | cplcData[15]);
+	cplc->icBatchIdentifier = (USHORT)((cplcData[16] << 8) | cplcData[17]);
+	cplc->icModuleFabricator = (USHORT)((cplcData[18] << 8) | cplcData[19]);
+	cplc->icModulePackagingDate = (USHORT)((cplcData[20] << 8) | cplcData[21]);
+	cplc->iccManufacturer = (USHORT)((cplcData[22] << 8) | cplcData[23]);
+	cplc->icEmbeddingDate = (USHORT)((cplcData[24] << 8) | cplcData[25]);
+	cplc->icPrePersonalizer = (USHORT)((cplcData[26] << 8) | cplcData[27]);
+	cplc->icPrePersonalizationEquipmentDate = (USHORT)((cplcData[28] << 8) | cplcData[29]);
+	cplc->icPrePersonalizationEquipmentId = (DWORD)((cplcData[30] << 24) | (cplcData[31] << 16) |
+		(cplcData[32] << 8) | cplcData[33]) & 0xFFFFFFFF;
+	cplc->icPersonalizer = (USHORT)((cplcData[34] << 8) | cplcData[35]);
+	cplc->icPersonalizationDate = (USHORT)((cplcData[36] << 8) | cplcData[37]);
+	cplc->icPersonalizationEquipmentId = (DWORD)((cplcData[38] << 24) | (cplcData[39] << 16) |
+		(cplcData[40] << 8) | cplcData[41]) & 0xFFFFFFFF;
+
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+	return status;
+}
+
+OPGP_ERROR_STATUS OPGP_get_cplc(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+		OPGP_CPLC *cplc) {
+	OPGP_ERROR_STATUS status;
+	BYTE cplcData[APDU_RESPONSE_LEN];
+	DWORD cplcDataLength = APDU_RESPONSE_LEN;
+
+	OPGP_LOG_START(_T("OPGP_get_cplc"));
+	status = GP211_get_data(cardContext, cardInfo, secInfo, (PBYTE)GP211_GET_DATA_CPLC_WHOLE_CPLC, cplcData, &cplcDataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+
+	status = OPGP_parse_cplc(cplcData, cplcDataLength, cplc);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+end:
+	OPGP_LOG_END(_T("OPGP_get_cplc"), status);
+	return status;
+}
+
 
 /**
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
@@ -1665,30 +1915,51 @@ end:
 OPGP_ERROR_STATUS GP211_get_card_recognition_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
 		GP211_CARD_RECOGNITION_DATA *cardData) {
 	OPGP_ERROR_STATUS status;
-	LONG result;
 	BYTE recvBuffer[256];
 	DWORD recvBufferLength = sizeof(recvBuffer);
-	DWORD offset = 0, nestedOffset = 0;
-	BYTE numSCPs = 0;
-	TLV tlv1, tlv2, _73tlv;
 
 	OPGP_LOG_START(_T("GP211_get_card_data"));
 	status = GP211_get_data(cardContext, cardInfo, NULL, (PBYTE)GP211_GET_DATA_CARD_DATA, recvBuffer, &recvBufferLength);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
+	status = GP211_parse_card_recognition_data(recvBuffer, recvBufferLength, cardData);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+	goto end;
+end:
+	OPGP_LOG_END(_T("GP211_get_card_data"), status);
+	return status;
+}
+
+OPGP_ERROR_STATUS GP211_parse_card_recognition_data(const BYTE *data, DWORD dataLength,
+		GP211_CARD_RECOGNITION_DATA *cardData) {
+	OPGP_ERROR_STATUS status;
+	LONG result;
+	DWORD offset = 0, nestedOffset = 0;
+	BYTE numSCPs = 0;
+	TLV tlv1, tlv2, _73tlv;
+
+	if (data == NULL || cardData == NULL || dataLength == 0) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+
+	memset(cardData, 0, sizeof(*cardData));
 	// read outer tag, should be one 0x66
-	result = read_TLV(recvBuffer, recvBufferLength, &tlv1);
+	result = read_TLV((PBYTE)data, dataLength, &tlv1);
 	if (result == -1) {
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-		goto end;
+		return status;
 	}
 	// while tag 0x73 not found look into inner tlv objects
 	while (tlv1.tag != 0x73) {
 		result = read_TLV(tlv1.value, tlv1.length, &tlv2);
 		if (result == -1) {
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-			goto end;
+			return status;
 		}
 		tlv1 = tlv2;
 	}
@@ -1699,7 +1970,7 @@ OPGP_ERROR_STATUS GP211_get_card_recognition_data(OPGP_CARD_CONTEXT cardContext,
 	result = read_TLV(_73tlv.value+offset, _73tlv.length-offset, &tlv1);
 	if (result == -1) {
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-		goto end;
+		return status;
 	}
 	offset += result;
 
@@ -1710,19 +1981,22 @@ OPGP_ERROR_STATUS GP211_get_card_recognition_data(OPGP_CARD_CONTEXT cardContext,
 	result = read_TLV(_73tlv.value+offset, _73tlv.length-offset, &tlv1);
 	if (result == -1 || tlv1.tag != CARD_DATA_APPLICATION_TAG_0) {
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-		goto end;
+		return status;
 	}
 	offset += result;
 	/* inner tag: 0x06 Universal tag for Object Identifier (OID) and Length */
 	result = read_TLV(tlv1.value, tlv1.length, &tlv2);
 	if (result == -1) {
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-		goto end;
+		return status;
 	}
 	/* {globalPlatform 2 v} OID for Card Management Type and Version */
-	// 7 bytes is GP OID {globalPlatform 2}
-	if (tlv2.length > 7) {
-		memcpy(&(cardData->version), tlv2.value + 7, min(sizeof(DWORD), tlv2.length-7));
+	{
+		char oidBuffer[128];
+		LONG oidLength = parse_OID_numeric_string(tlv2.value, tlv2.length, oidBuffer, sizeof(oidBuffer));
+		if (oidLength != -1) {
+			extract_oid_version(oidBuffer, cardData->version, sizeof(cardData->version));
+		}
 	}
 	OPGP_LOG_HEX(_T("GP211_get_card_data: OIDCardManagementTypeAndVersion: "), tlv2.value, tlv2.length);
 
@@ -1730,14 +2004,14 @@ OPGP_ERROR_STATUS GP211_get_card_recognition_data(OPGP_CARD_CONTEXT cardContext,
 	result = read_TLV(_73tlv.value+offset, _73tlv.length-offset, &tlv1);
 	if (result == -1 || tlv1.tag != CARD_DATA_APPLICATION_TAG_3) {
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-		goto end;
+		return status;
 	}
 	offset += result;
 	/* inner tag: 0x06 Universal tag for Object Identifier (OID) and Length */
 	result = read_TLV(tlv1.value, tlv1.length, &tlv2);
 	if (result == -1) {
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-		goto end;
+		return status;
 	}
 	/* {globalPlatform 3} OID for Card Identification Scheme */
 	OPGP_LOG_HEX(_T("GP211_get_card_data: OIDCardIdentificationScheme: "), tlv2.value, tlv2.length);
@@ -1748,7 +2022,7 @@ OPGP_ERROR_STATUS GP211_get_card_recognition_data(OPGP_CARD_CONTEXT cardContext,
 		result = read_TLV(_73tlv.value+offset, _73tlv.length-offset, &tlv1);
 		if (result == -1 || tlv1.tag != CARD_DATA_APPLICATION_TAG_4) {
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-			goto end;
+			return status;
 		}
 		offset += result;
 		nestedOffset = 0;
@@ -1757,7 +2031,7 @@ OPGP_ERROR_STATUS GP211_get_card_recognition_data(OPGP_CARD_CONTEXT cardContext,
 			result = read_TLV(tlv1.value+nestedOffset, tlv1.length, &tlv2);
 			if (result == -1) {
 				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-				goto end;
+				return status;
 			}
 			nestedOffset += result;
 			/* {globalPlatform 4 scp i} OID for Secure Channel Protocol of
@@ -1780,42 +2054,201 @@ OPGP_ERROR_STATUS GP211_get_card_recognition_data(OPGP_CARD_CONTEXT cardContext,
 		result = read_TLV(_73tlv.value+offset, _73tlv.length-offset, &tlv1);
 		if (result == -1) {
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-			goto end;
+			return status;
 		}
 		offset += result;
 		switch (tlv1.tag) {
 			case CARD_DATA_APPLICATION_TAG_5:
 				/* Card configuration details */
-				memcpy(cardData->cardConfigurationDetails, tlv1.value, min(tlv1.length, sizeof(cardData->cardConfigurationDetails)));
-				cardData->cardChipDetailsLength = min(tlv1.length, sizeof(cardData->cardConfigurationDetails));
-				OPGP_LOG_HEX(_T("GP211_get_card_data: CardConfigurationDetails: "), tlv1.value, tlv1.length);
+				if (parse_optional_oid_and_data(&tlv1,
+						cardData->cardConfigurationDetailsOid,
+						sizeof(cardData->cardConfigurationDetailsOid),
+						&cardData->cardConfigurationDetailsOidLength,
+						cardData->cardConfigurationDetails,
+						sizeof(cardData->cardConfigurationDetails),
+						&cardData->cardConfigurationDetailsLength) == -1) {
+					OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+					return status;
+				}
+				OPGP_LOG_HEX(_T("GP211_get_card_data: CardConfigurationDetails: "),
+					cardData->cardConfigurationDetails, cardData->cardConfigurationDetailsLength);
 				break;
 			case CARD_DATA_APPLICATION_TAG_6:
 				/* Card / chip details */
-				memcpy(cardData->cardChipDetails, tlv1.value, min(tlv1.length, sizeof(cardData->cardChipDetails)));
-				cardData->cardChipDetailsLength = min(tlv1.length, sizeof(cardData->cardChipDetails));
-				OPGP_LOG_HEX(_T("GP211_get_card_data: CardChipDetails: "), tlv1.value, tlv1.length);
+				if (parse_optional_oid_and_data(&tlv1,
+						cardData->cardChipDetailsOid,
+						sizeof(cardData->cardChipDetailsOid),
+						&cardData->cardChipDetailsOidLength,
+						cardData->cardChipDetails,
+						sizeof(cardData->cardChipDetails),
+						&cardData->cardChipDetailsLength) == -1) {
+					OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+					return status;
+				}
+				OPGP_LOG_HEX(_T("GP211_get_card_data: CardChipDetails: "),
+					cardData->cardChipDetails, cardData->cardChipDetailsLength);
 				break;
 			case CARD_DATA_APPLICATION_TAG_7:
 				/* Issuer Security Domain’s Trust Point certificate information */
-				memcpy(cardData->issuerSecurityDomainsTrustPointCertificateInformation, tlv1.value, min(tlv1.length,
-						sizeof(cardData->issuerSecurityDomainsTrustPointCertificateInformation)));
-				cardData->issuerSecurityDomainsTrustPointCertificateInformationLength = min(tlv1.length, sizeof(cardData->issuerSecurityDomainsTrustPointCertificateInformation));
-				OPGP_LOG_HEX(_T("GP211_get_card_data: Issuer Security Domain’s Trust Point certificate information: "), tlv1.value, tlv1.length);
+				if (parse_optional_oid_and_data(&tlv1,
+						cardData->issuerSecurityDomainsTrustPointCertificateInformationOid,
+						sizeof(cardData->issuerSecurityDomainsTrustPointCertificateInformationOid),
+						&cardData->issuerSecurityDomainsTrustPointCertificateInformationOidLength,
+						cardData->issuerSecurityDomainsTrustPointCertificateInformation,
+						sizeof(cardData->issuerSecurityDomainsTrustPointCertificateInformation),
+						&cardData->issuerSecurityDomainsTrustPointCertificateInformationLength) == -1) {
+					OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+					return status;
+				}
+				OPGP_LOG_HEX(_T("GP211_get_card_data: Issuer Security Domain’s Trust Point certificate information: "),
+					cardData->issuerSecurityDomainsTrustPointCertificateInformation,
+					cardData->issuerSecurityDomainsTrustPointCertificateInformationLength);
 				break;
 			case CARD_DATA_APPLICATION_TAG_8:
 				/* Issuer Security Domain certificate information */
-				memcpy(cardData->issuerSecurityDomainCertificateInformation, tlv1.value, min(tlv1.length,
-						sizeof(cardData->issuerSecurityDomainCertificateInformation)));
-				cardData->issuerSecurityDomainCertificateInformationLength = min(tlv1.length, sizeof(cardData->issuerSecurityDomainCertificateInformation));
-				OPGP_LOG_HEX(_T("GP211_get_card_data: Issuer Security Domain certificate information: "), tlv1.value, tlv1.length);
+				if (parse_optional_oid_and_data(&tlv1,
+						cardData->issuerSecurityDomainCertificateInformationOid,
+						sizeof(cardData->issuerSecurityDomainCertificateInformationOid),
+						&cardData->issuerSecurityDomainCertificateInformationOidLength,
+						cardData->issuerSecurityDomainCertificateInformation,
+						sizeof(cardData->issuerSecurityDomainCertificateInformation),
+						&cardData->issuerSecurityDomainCertificateInformationLength) == -1) {
+					OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+					return status;
+				}
+				OPGP_LOG_HEX(_T("GP211_get_card_data: Issuer Security Domain certificate information: "),
+					cardData->issuerSecurityDomainCertificateInformation,
+					cardData->issuerSecurityDomainCertificateInformationLength);
 				break;
 		}
 
 	}
-	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+	return status;
+}
+
+/**
+ * Can only be executed before a secure channel is created.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *cardCapabilityInfo [out] A pointer to the card capability information.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS GP211_get_card_capability_information(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
+		GP211_CARD_CAPABILITY_INFORMATION *cardCapabilityInfo) {
+	OPGP_ERROR_STATUS status;
+	BYTE recvBuffer[256];
+	DWORD recvBufferLength = sizeof(recvBuffer);
+
+	OPGP_LOG_START(_T("GP211_get_card_capability_information"));
+
+	status = GP211_get_data(cardContext, cardInfo, NULL, (PBYTE)GP211_GET_DATA_CARD_CAPABILITY_INFORMATION, recvBuffer, &recvBufferLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	status = GP211_parse_card_capability_information(recvBuffer, recvBufferLength, cardCapabilityInfo);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+	goto end;
 end:
-	OPGP_LOG_END(_T("GP211_get_card_data"), status);
+	OPGP_LOG_END(_T("GP211_get_card_capability_information"), status);
+	return status;
+}
+
+OPGP_ERROR_STATUS GP211_parse_card_capability_information(const BYTE *data, DWORD dataLength,
+		GP211_CARD_CAPABILITY_INFORMATION *cardCapabilityInfo) {
+	OPGP_ERROR_STATUS status;
+	LONG result;
+	DWORD offset = 0;
+	TLV tlv1, tlv2;
+
+	if (data == NULL || cardCapabilityInfo == NULL || dataLength == 0) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+
+	memset(cardCapabilityInfo, 0, sizeof(*cardCapabilityInfo));
+	result = read_TLV((PBYTE)data, dataLength, &tlv1);
+	if (result == -1 || tlv1.tag != 0x67) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+
+	offset = 0;
+	while (offset < tlv1.length) {
+		result = read_TLV(tlv1.value + offset, tlv1.length - offset, &tlv2);
+		if (result == -1) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			return status;
+		}
+		switch (tlv2.tag) {
+			case 0xA0:
+				if (parse_card_capability_scp_info(&tlv2, cardCapabilityInfo) == -1) {
+					OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+					return status;
+				}
+				break;
+			case 0x81:
+				memcpy(cardCapabilityInfo->ssdPrivileges, tlv2.value,
+					min(tlv2.length, (DWORD)sizeof(cardCapabilityInfo->ssdPrivileges)));
+				break;
+			case 0x82:
+				memcpy(cardCapabilityInfo->appPrivileges, tlv2.value,
+					min(tlv2.length, (DWORD)sizeof(cardCapabilityInfo->appPrivileges)));
+				break;
+			case 0x83:
+				cardCapabilityInfo->lfdbhAlgorithmsLength = min(tlv2.length, (DWORD)sizeof(cardCapabilityInfo->lfdbhAlgorithms));
+				memcpy(cardCapabilityInfo->lfdbhAlgorithms, tlv2.value, cardCapabilityInfo->lfdbhAlgorithmsLength);
+				break;
+			case 0x84:
+				if (tlv2.length > 0) {
+					cardCapabilityInfo->lfdbencryptionCipherSuites = tlv2.value[0];
+				}
+				break;
+			case 0x85:
+				if (tlv2.length == 1) {
+					cardCapabilityInfo->tokenCipherSuites = (USHORT)(tlv2.value[0] << 8);
+				} else if (tlv2.length > 1) {
+					cardCapabilityInfo->tokenCipherSuites = (USHORT)((tlv2.value[0] << 8) | tlv2.value[1]);
+				}
+				break;
+			case 0x86:
+				if (tlv2.length == 1) {
+					cardCapabilityInfo->receiptCipherSuites = (USHORT)(tlv2.value[0] << 8);
+				} else if (tlv2.length > 1) {
+					cardCapabilityInfo->receiptCipherSuites = (USHORT)((tlv2.value[0] << 8) | tlv2.value[1]);
+				}
+				break;
+			case 0x87:
+				if (tlv2.length == 1) {
+					cardCapabilityInfo->dapCipherSuites = (USHORT)(tlv2.value[0] << 8);
+				} else if (tlv2.length > 1) {
+					cardCapabilityInfo->dapCipherSuites = (USHORT)((tlv2.value[0] << 8) | tlv2.value[1]);
+				}
+				break;
+			case 0x88:
+				cardCapabilityInfo->keyParameterReferenceListLength = min(tlv2.length, (DWORD)sizeof(cardCapabilityInfo->keyParameterReferenceList));
+				memcpy(cardCapabilityInfo->keyParameterReferenceList, tlv2.value, cardCapabilityInfo->keyParameterReferenceListLength);
+				break;
+			case 0x89:
+				if (tlv2.length > 0) {
+					cardCapabilityInfo->elfUpgrade = tlv2.value[0];
+				}
+				break;
+			case 0x8A:
+				cardCapabilityInfo->tokenIdentifierDenyList = (tlv2.length > 0 && tlv2.value[0] != 0);
+				break;
+			case 0x8B:
+				cardCapabilityInfo->securityDomainSelfRemoval = (tlv2.length > 0 && tlv2.value[0] != 0);
+				break;
+		}
+		offset += tlv2.tlvLength;
+	}
+
+	OPGP_ERROR_CREATE_NO_ERROR(status);
 	return status;
 }
 
@@ -1972,6 +2405,50 @@ end:
 	return status;
 }
 
+OPGP_ERROR_STATUS OPGP_parse_extended_card_resources_information(const BYTE *data, DWORD dataLength,
+		OPGP_EXTENDED_CARD_RESOURCE_INFORMATION *extendedCardResourceInformation) {
+	OPGP_ERROR_STATUS status;
+	DWORD offset = 0;
+	LONG result;
+	TLV tlv1, tlv2;
+
+	if (data == NULL || extendedCardResourceInformation == NULL || dataLength == 0) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+
+	memset(extendedCardResourceInformation, 0, sizeof(*extendedCardResourceInformation));
+	result = read_TLV((PBYTE)data, dataLength, &tlv1);
+	if (result == -1 || tlv1.tag != 0xFF21) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+
+	offset = 0;
+	while (offset < tlv1.length) {
+		result = read_TLV(tlv1.value + offset, tlv1.length - offset, &tlv2);
+		if (result == -1) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			return status;
+		}
+		switch (tlv2.tag) {
+			case 0x81:
+				extendedCardResourceInformation->numInstalledApplications = get_number(tlv2.value, 0, tlv2.length);
+				break;
+			case 0x82:
+				extendedCardResourceInformation->freeNonVolatileMemory = get_number(tlv2.value, 0, tlv2.length);
+				break;
+			case 0x83:
+				extendedCardResourceInformation->freeVolatileMemory = get_number(tlv2.value, 0, tlv2.length);
+				break;
+		}
+		offset += tlv2.tlvLength;
+	}
+
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+	return status;
+}
+
 /**
  * The ISD must support the optional report of extended card resources information.
  * The format is defined in ETSI TS 102 226, sect. 8.2.1.7.2.
@@ -1993,10 +2470,7 @@ OPGP_ERROR_STATUS get_extended_card_resources_information(OPGP_CARD_CONTEXT card
 	DWORD sendBufferLength = 5;
 	BYTE cardData[APDU_RESPONSE_LEN];
 	DWORD cardDataLength = APDU_RESPONSE_LEN;
-	DWORD offset = 0;
 	int i=0;
-	DWORD result;
-	TLV tlv1, tlv2;
 	OPGP_LOG_START(_T("get_extended_card_resources_information"));
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xCA;
@@ -2010,34 +2484,12 @@ OPGP_ERROR_STATUS get_extended_card_resources_information(OPGP_CARD_CONTEXT card
 	}
 	CHECK_SW_9000(cardData, cardDataLength, status);
 
-	result = read_TLV(cardData, cardDataLength, &tlv1);
-	if (result == -1 || tlv1.tag != 0xFF21) {
-		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+	status = OPGP_parse_extended_card_resources_information(cardData, cardDataLength, extendedCardResourceInformation);
+	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	offset = 0;
-	while (offset<tlv1.length) {
-		result = read_TLV(tlv1.value+offset, tlv1.length-offset, &tlv2);
-		if (result == -1) {
-			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-			goto end;
-		}
-		switch(tlv2.tag) {
-			case 0x81:
-				extendedCardResourceInformation->numInstalledApplications = get_number(tlv2.value, 0, tlv2.length);
-				break;
-			case 0x82:
-				extendedCardResourceInformation->freeNonVolatileMemory = get_number(tlv2.value, 0, tlv2.length);
-				break;
-			case 0x83:
-				extendedCardResourceInformation->freeVolatileMemory = get_number(tlv2.value, 0, tlv2.length);
-				break;
-		}
-		i++;
-		// increment by TLV
-		offset += tlv2.tlvLength;
-	}
-	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+	goto end;
 end:
 	OPGP_LOG_END(_T("get_extended_card_resources_information"), status);
 	return status;
@@ -5142,21 +5594,78 @@ end:
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_get_sequence_counter(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
-						  BYTE sequenceCounter[2]) {
+						  GP211_SECURITY_INFO *secInfo, DWORD *sequenceCounter) {
 	OPGP_ERROR_STATUS status;
 	BYTE recvBuffer[256];
 	DWORD recvBufferLength = sizeof(recvBuffer);
+	TLV tlv;
+	LONG result;
+	DWORD counterValue = 0;
 
 	OPGP_LOG_START(_T("get_sequence_counter"));
-	status = GP211_get_data_iso7816_4(cardContext, cardInfo, (PBYTE)GP211_GET_DATA_SEQUENCE_COUNTER_DEFAULT_KEY_VERSION,
+	status = GP211_get_data(cardContext, cardInfo, secInfo, (PBYTE)GP211_GET_DATA_SEQUENCE_COUNTER_DEFAULT_KEY_VERSION,
 		recvBuffer, &recvBufferLength);
 	if ( OPGP_ERROR_CHECK(status) ) {
 		goto end;
 	}
-	memcpy(sequenceCounter, recvBuffer, 2);
+	result = read_TLV(recvBuffer, recvBufferLength, &tlv);
+	if (result == -1) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+	if (tlv.tag != 0xC1 || tlv.length != 3) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+	counterValue = 0;
+	for (DWORD i = 0; i < tlv.length; i++) {
+		counterValue = (counterValue << 8) | tlv.value[i];
+	}
+	*sequenceCounter = counterValue;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
 	OPGP_LOG_END(_T("get_sequence_counter"), status);
+	return status;
+}
+
+/**
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param confirmationCounter [out] The confirmation counter.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS GP211_get_confirmation_counter(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
+						  GP211_SECURITY_INFO *secInfo, DWORD *confirmationCounter) {
+	OPGP_ERROR_STATUS status;
+	BYTE recvBuffer[256];
+	DWORD recvBufferLength = sizeof(recvBuffer);
+	TLV tlv;
+	LONG result;
+	DWORD counterValue = 0;
+
+	OPGP_LOG_START(_T("get_confirmation_counter"));
+	status = GP211_get_data(cardContext, cardInfo, secInfo, (PBYTE)GP211_GET_DATA_CONFIRMATION_COUNTER,
+		recvBuffer, &recvBufferLength);
+	if ( OPGP_ERROR_CHECK(status) ) {
+		goto end;
+	}
+	result = read_TLV(recvBuffer, recvBufferLength, &tlv);
+	if (result == -1) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+	if (tlv.tag != 0xC2 || tlv.length != 2) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+	counterValue = 0;
+	for (DWORD i = 0; i < tlv.length; i++) {
+		counterValue = (counterValue << 8) | tlv.value[i];
+	}
+	*confirmationCounter = counterValue;
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	OPGP_LOG_END(_T("get_confirmation_counter"), status);
 	return status;
 }
 
@@ -5874,7 +6383,7 @@ end:
  * \param executableLoadFileAIDLength [in] The length of the Executable Load File AID.
  * \param securityDomainAID [in] A buffer containing the AID of the intended associated Security Domain.
  * \param securityDomainAIDLength [in] The length of the Security Domain AID.
- * \param loadFileDAP [in] The load file DAP of the Executable Load File to INSTALL [for load].
+ * \param loadFileDataBlockHash [in] The load file DAP of the Executable Load File to INSTALL [for load].
  * \param loadToken [in] The Load Token. This is a 1024 bit (=128 byte) RSA Signature.
  * \param nonVolatileCodeSpaceLimit [in] The minimum amount of space that must be available to store the package.
  * \param volatileDataSpaceLimit [in] The minimum amount of RAM space that must be available.
@@ -5883,7 +6392,7 @@ end:
  */
 OPGP_ERROR_STATUS OP201_install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 					  PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE securityDomainAID,
-					  DWORD securityDomainAIDLength, BYTE loadFileDAP[20], BYTE loadToken[128],
+					  DWORD securityDomainAIDLength, BYTE loadFileDataBlockHash[20], BYTE loadToken[128],
 					  DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
 					  DWORD nonVolatileDataSpaceLimit) {
 	OPGP_ERROR_STATUS status;
@@ -5891,7 +6400,7 @@ OPGP_ERROR_STATUS OP201_install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CAR
 	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
 	status = install_for_load(cardContext, cardInfo, &gp211secInfo, executableLoadFileAID,
 		executableLoadFileAIDLength, securityDomainAID, securityDomainAIDLength,
-		loadFileDAP, loadToken, nonVolatileCodeSpaceLimit,
+		loadFileDataBlockHash, loadToken, nonVolatileCodeSpaceLimit,
 		volatileDataSpaceLimit, nonVolatileDataSpaceLimit);
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 	return status;
@@ -6349,7 +6858,7 @@ OPGP_ERROR_STATUS OP201_calculate_install_token_uicc(BYTE P1, PBYTE executableLo
  * \param executableLoadFileAIDLength [in] The length of the Executable Load File AID.
  * \param securityDomainAID [in] A buffer containing the Security Domain AID.
  * \param securityDomainAIDLength [in] The length of the Security Domain AID.
- * \param loadFileDAP [in] The Load File DAP. The same calculated as in install_for_load().
+ * \param loadFileDataBlockHash [in] The Load File DAP. The same calculated as in install_for_load().
  * \param nonVolatileCodeSpaceLimit [in] The minimum space required to store the application code.
  * \param volatileDataSpaceLimit [in] The minimum amount of RAM space that must be available.
  * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
@@ -6358,7 +6867,7 @@ OPGP_ERROR_STATUS OP201_calculate_install_token_uicc(BYTE P1, PBYTE executableLo
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS OP201_get_load_token_signature_data(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE securityDomainAID,
-								   DWORD securityDomainAIDLength, BYTE loadFileDAP[20],
+								   DWORD securityDomainAIDLength, BYTE loadFileDataBlockHash[20],
 								   DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
 								   DWORD nonVolatileDataSpaceLimit, PBYTE loadTokenSignatureData,
 								   PDWORD loadTokenSignatureDataLength) {
@@ -6371,7 +6880,7 @@ OPGP_ERROR_STATUS OP201_get_load_token_signature_data(PBYTE executableLoadFileAI
 	DWORD staticSize;
 	OPGP_ERROR_STATUS status;
 	OPGP_LOG_START(_T("OP201_get_load_token_signature_data"));
-	if (loadFileDAP == NULL) {
+	if (loadFileDataBlockHash == NULL) {
 		OPGP_ERROR_CREATE_ERROR(status, OP201_ERROR_LOAD_FILE_DAP_NULL, OPGP_stringify_error(OP201_ERROR_LOAD_FILE_DAP_NULL));
 		goto end;
 	}
@@ -6431,7 +6940,7 @@ OPGP_ERROR_STATUS OP201_get_load_token_signature_data(PBYTE executableLoadFileAI
 	else buf[i++] = 0x00;
 
 	/* SHA-1 hash */
-	memcpy(buf+i, loadFileDAP, 20);
+	memcpy(buf+i, loadFileDataBlockHash, 20);
 	i+=20;
 
 	/* Lc - including 128 byte RSA signature length, one more byte for signature length field,

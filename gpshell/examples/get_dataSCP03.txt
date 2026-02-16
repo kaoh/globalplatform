@@ -1,0 +1,43 @@
+mode_211
+enable_trace
+establish_context
+card_connect
+select -AID A000000151000000
+
+get_secure_channel_protocol_details
+open_sc -security 3 -keyind 0 -keyver 0 -mac_key 404142434445464748494a4b4c4d4e4f -enc_key 404142434445464748494a4b4c4d4e4f
+print Whole CPLC data from ROM and EEPROM
+get_data -identifier 9F7F -noStop
+print Card Data (or Security Domain Recognition Data)
+get_data -identifier 66 -noStop
+print Issuer Identification Number (or Security Domain Provider Identification Number)
+get_data -identifier 42 -noStop
+print Card Image Number (or Security Domain Image Number)
+get_data -identifier 45 -noStop
+print Key Version Number of the Default Secure Channel Key Set
+get_data -identifier D5 -noStop
+print Card Capability Information
+get_data -identifier 67 -noStop
+print Sequence Counter of the Default Secure Channel Key Set
+get_data -identifier C1 -noStop
+print Confirmation Counter
+get_data -identifier C2 -noStop
+print Extended Card Resources Information available for Card Content Management, as defined in [TS 102 226]
+get_data -identifier FF21 -noStop
+print Obtain details of Applications on the card, as defined in [ISO 7816-4].
+get_data -identifier 2F00 -noStop
+print Current Security Level
+get_data -identifier D3 -noStop
+print Token Identifier Deny List
+get_data -identifier A0 -noStop
+print Diversification data
+get_data -identifier CF -noStop
+print ATR historical bytes
+get_data -identifier DF71 -noStop
+print Whole EF<sub>prod</sub> data block (39 Byte)
+get_data -identifier DF7F -noStop
+print File Control Information (FCI) discretionary data
+get_data -identifier BF0C -noStop
+card_disconnect
+release_context
+

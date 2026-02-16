@@ -29,6 +29,7 @@
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
 #include <stdlib.h>
+#include <limits.h>
 
 #include "globalplatform/debug.h"
 #include "globalplatform/error.h"
@@ -95,7 +96,17 @@ OPGP_ERROR_STATUS DYN_LoadLibrary(PVOID *libraryHandle, LPCTSTR libraryName, LPC
 	}
 #endif
 	internalLibraryName[MAX_LIBRARY_NAME_SIZE-1] = _T('\0');
-	*libraryHandle = dlopen(internalLibraryName, RTLD_LAZY);
+	/* If an explicit plugin path is provided, try it first. */
+	const char *plugin_path = getenv("OPGP_PLUGIN_PATH");
+	if (plugin_path != NULL && plugin_path[0] != '\0') {
+		char fullpath[PATH_MAX];
+		if (snprintf(fullpath, sizeof(fullpath), "%s/%s", plugin_path, internalLibraryName) > 0) {
+			*libraryHandle = dlopen(fullpath, RTLD_LAZY);
+		}
+	}
+	if (*libraryHandle == NULL) {
+		*libraryHandle = dlopen(internalLibraryName, RTLD_LAZY);
+	}
 
 	if (*libraryHandle == NULL)
 	{

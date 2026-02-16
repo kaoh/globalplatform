@@ -80,6 +80,7 @@ static void test_read_public_rsa_key(void **state) {
 	OPGP_ERROR_STATUS status;
 	TCHAR filename_buffer[2048];
 	BYTE n[128];
+	DWORD nLength = sizeof(n);
 	LONG e = 0;
 	BYTE expected_rsa_n[] = {
 			 0xc6, 0x3f, 0xaf, 0x41, 0xc3, 0x43, 0xd4, 0xfa, 0xf9, 0x65, 0xe0, 0xdd, 0x32, 0xf3,
@@ -94,7 +95,7 @@ static void test_read_public_rsa_key(void **state) {
 			};
 	LONG expected_rsa_e = 0x010001L;
 	_sntprintf(filename_buffer, sizeof(filename_buffer), _T("%s/%s"), exec_path, _T("rsa_pub_key_test.pem"));
-	status = read_public_rsa_key(filename_buffer, "password", n, &e);
+	status = read_public_rsa_key(filename_buffer, "password", n, &nLength, &e);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 	assert_memory_equal(n, expected_rsa_n, sizeof(n));
 	assert_int_equal(e, expected_rsa_e);

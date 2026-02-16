@@ -294,6 +294,107 @@ Options:
   - `ber`: BER-TLV structures.
 - `--response <true|false>`: expect response data (default `false`).
 
+## cplc
+
+Read and decode the Card Production Life Cycle (CPLC) data. This command does not require authentication.
+
+Example:
+```
+gpshell3 cplc
+```
+
+## card-data
+
+Read a bundle of card data objects, in this order:
+
+- iin (Issuer Identification Number / SD Provider Identification Number, tag `0x42`)
+- cin (Card Image Number / SD Image Number, tag `0x45`)
+- CPLC
+- card-info (Card Recognition Data, tag `0x66`)
+- card-cap (Card Capability Information, tag `0x67`)
+- confirm-counter (tag `0xC2`)
+- seq-counter (tag `0xC1`)
+- div-data (Diversification Data, tag `0xCF`)
+
+This command does not require authentication.
+
+Example:
+```
+gpshell3 card-data
+```
+
+## iin
+
+Read Issuer Identification Number / SD Provider Identification Number (tag `0x42`). This command does not require authentication.
+
+Example:
+```
+gpshell3 iin
+```
+
+## cin
+
+Read Card Image Number / SD Image Number (tag `0x45`). This command does not require authentication.
+
+Example:
+```
+gpshell3 cin
+```
+
+## card-info
+
+Read and decode GlobalPlatform Card Recognition Data (Card Data tag `0x66`). This command does not require authentication.
+
+Example:
+```
+gpshell3 card-info
+```
+
+## card-cap
+
+Read and decode GlobalPlatform Card Capability Information (Card Capability Information tag `0x67`). This command does not require authentication.
+
+Example:
+```
+gpshell3 card-cap
+```
+
+## card-resources
+
+Read extended card resource information (number of installed applications and free memory). This command does not require authentication.
+
+Example:
+```
+gpshell3 card-resources
+```
+
+## div-data
+
+Read diversification data (tag `0xCF`). This command does not require authentication.
+
+Example:
+```
+gpshell3 div-data
+```
+
+## seq-counter
+
+Read the Sequence Counter of the default Secure Channel key set (tag `0xC1`). This command does not require authentication.
+
+Example:
+```
+gpshell3 seq-counter
+```
+
+## confirm-counter
+
+Read the Confirmation Counter (tag `0xC2`). This command does not require authentication.
+
+Example:
+```
+gpshell3 confirm-counter
+```
+
 # PRIVILEGES
 
 Privileges are reported by `list-apps` as `priv=[...]`. A subset can be supplied to `install --priv` as a comma-separated list of short names.
