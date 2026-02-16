@@ -1,4 +1,5 @@
-/*  Copyright (c) 2009, Karsten Ohme
+/*
+ *  Copyright (c) 2005-2026, Karsten Ohme
  *  This file is part of GlobalPlatform.
  *
  *  GlobalPlatform is free software: you can redistribute it and/or modify
@@ -12,7 +13,7 @@
  *  GNU Lesser General Public License for more details.
  *
  *  You should have received a copy of the GNU Lesser General Public License
- *  along with GlobalPlatform.  If not, see <http://www.gnu.org/licenses/>.
+ *  along with GlobalPlatform.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 /*! \file
@@ -153,6 +154,7 @@ extern "C"
 #define GP211_SCP03_SECURITY_LEVEL_R_MAC 0x10 //!< Secure Channel Protocol '03': R-MAC. Used only with BEGIN R-MAC.
 #define GP211_SCP03_SECURITY_LEVEL_R_ENC_R_MAC 0x30 //!< Secure Channel Protocol '03': R-Encryption and R-MAC. Used only with BEGIN R-MAC.
 
+#define GP211_KEY_TYPE_RSA 0xF0 //!< 'F0' Internal key type for a RSA.
 #define GP211_KEY_TYPE_RSA_PUB_N 0xA1 //!< 'A1' RSA Public Key - modulus N component (clear text).
 #define GP211_KEY_TYPE_RSA_PUB_E 0xA0 //!< 'A0' RSA Public Key - public exponent e component (clear text)
 #define GP211_KEY_TYPE_RSA_PRIV_N 0xA2 //!< ''A2' RSA Private Key - modulus N component
@@ -171,11 +173,13 @@ extern "C"
 #define GP211_KEY_TYPE_DES_CBC 0x84 //!<'84' DES in CBC mode.
 #define GP211_KEY_TYPE_PSK_TLS 0x85 //!<'85' Pre-Shared Key for Transport Layer Security
 #define GP211_KEY_TYPE_AES 0x88 //!<'88' AES (16, 24, or 32 long keys)
+#define GP211_KEY_TYPE_SM4 0x89 //!<'89' SM4 (16 bytes)
 
 #define OP201_SECURITY_LEVEL_ENC_MAC 0x03 //!< Command messages are signed and encrypted.
 #define OP201_SECURITY_LEVEL_MAC 0x01 //!< Command messages are signed.
 #define OP201_SECURITY_LEVEL_PLAIN 0x00 //!< Command messages are plain text.
 
+#define OP201_KEY_TYPE_RSA 0xF0 //!< 'F0' Internal key type for a RSA.
 #define OP201_KEY_TYPE_RSA_PUP_N 0xA1 //!< 'A1' RSA Public Key - modulus N component (clear text).
 #define OP201_KEY_TYPE_RSA_PUP_E 0xA0 //!< 'A0' RSA Public Key - public exponent e component (clear text)
 #define OP201_KEY_TYPE_DES 0x80 //!< DES (ECB/CBC) key.
@@ -269,8 +273,8 @@ typedef struct {
 typedef struct {
 	BYTE securityDomainAIDLength; //!< The length of the Security Domain.
 	BYTE securityDomainAID[16]; //!< The AID of the Security Domain.
-	BYTE signatureLength; //!< The length of the signature. Can be 8 for a 3DES signature or 128 for a RSA signature.
-	BYTE signature[128]; //!< The signature.
+	DWORD signatureLength; //!< The length of the signature. Can be 8 for a 3DES signature or <= 512 for a RSA signature.
+	BYTE signature[512]; //!< The signature.
 } GP211_DAP_BLOCK, GP211_RSA_DAP_BLOCK, GP211_3DES_DAP_BLOCK;
 
 
@@ -295,8 +299,9 @@ typedef struct {
 	BYTE keyIndex; //!< The key index.
 	BYTE keyType; //!< The key type.
 	USHORT keyLength; //!< The key length.
-	BYTE keyUsage; //!< Key usage used in extended format.
+	USHORT keyUsage; //!< Key usage used in extended format.
 	BYTE keyAccess; //!< Key access used in extended format.
+	BOOL extended; //!< Extended key information is returned.
 } GP211_KEY_INFORMATION;
 
 

@@ -1,4 +1,5 @@
-/*  Copyright (c) 2009, Karsten Ohme
+/*
+ *  Copyright (c) 2005-2026, Karsten Ohme
  *  This file is part of GlobalPlatform.
  *
  *  GlobalPlatform is free software: you can redistribute it and/or modify
@@ -12,20 +13,7 @@
  *  GNU Lesser General Public License for more details.
  *
  *  You should have received a copy of the GNU Lesser General Public License
- *  along with GlobalPlatform.  If not, see <http://www.gnu.org/licenses/>.
- * 
- * In addition, as a special exception, the copyright holders give
- * permission to link the code of portions of this program with the
- * OpenSSL library under certain conditions as described in each
- * individual source file, and distribute linked combinations
- * including the two.
- * You must obey the GNU Lesser General Public License in all respects
- * for all of the code used other than OpenSSL.  If you modify
- * file(s) with this exception, you may extend this exception to your
- * version of the file(s), but you are not obligated to do so.  If you
- * do not wish to do so, delete this exception statement from your
- * version.  If you delete this exception statement from all source
- * files in the program, then also delete it here.
+ *  along with GlobalPlatform.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 /*! \file
@@ -74,13 +62,12 @@ OPGP_ERROR_STATUS encrypt_sensitive_data(GP211_SECURITY_INFO *secInfo,
 
 OPGP_NO_API
 OPGP_ERROR_STATUS get_key_data_field(GP211_SECURITY_INFO *secInfo,
-								 PBYTE keyData,
-								 DWORD keyDataLength,
-								 BYTE keyType,
-								 BYTE isSensitive,
-								 PBYTE keyDataField,
-								 PDWORD keyDataFieldLength,
-								 BYTE keyCheckValue[3]);
+                                     PBYTE keyData,
+                                     DWORD keyDataLength,
+                                     BYTE keyType,
+                                     PBYTE keyDataField,
+                                     PDWORD keyDataFieldLength,
+                                     BYTE keyCheckValue[3], BOOL includeKeyCheckValue);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS create_session_key_SCP01(BYTE key[16], BYTE cardChallenge[8],
@@ -92,7 +79,7 @@ OPGP_ERROR_STATUS create_session_key_SCP02(BYTE key[16], BYTE constant[2],
 
 OPGP_NO_API
 OPGP_ERROR_STATUS calculate_rsa_signature(PBYTE message, DWORD messageLength, OPGP_STRING PEMKeyFileName,
-									char *passPhrase, BYTE signature[128]);
+									char *passPhrase, PBYTE signature, PDWORD signatureLength);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS calculate_MAC(BYTE sessionKey[16], BYTE *message, DWORD messageLength,
@@ -201,7 +188,7 @@ OPGP_ERROR_STATUS validate_load_receipt(DWORD confirmationCounter, PBYTE cardUni
 
 //! \brief Reads a public RSA key from a file
 OPGP_NO_API
-OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhrase, BYTE rsaModulus[128], LONG *rsaExponent);
+OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhrase, BYTE rsaModulus[128], PDWORD rsaModulusLength, LONG *rsaExponent);
 
 //! \brief Calculates a SHA-256 hash.
 OPGP_NO_API
@@ -210,6 +197,10 @@ OPGP_ERROR_STATUS calculate_sha2_hash(PBYTE message, DWORD messageLength, BYTE h
 //! \brief Calculates a SHA-1 hash.
 OPGP_NO_API
 OPGP_ERROR_STATUS calculate_sha1_hash(PBYTE message, DWORD messageLength, BYTE hash[20]);
+
+//! \brief Calculates a SM3 hash.
+OPGP_NO_API
+OPGP_ERROR_STATUS calculate_sm3_hash(PBYTE message, DWORD messageLength, BYTE hash[32]);
 
 //! \brief Calculates a MAC using first DES and 3DES for the final round when the padding is applied.
 OPGP_NO_API

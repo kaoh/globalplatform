@@ -1,4 +1,5 @@
-/*  Copyright (c) 2009, Karsten Ohme
+/*
+ *  Copyright (c) 2005-2026, Karsten Ohme
  *  This file is part of GlobalPlatform.
  *
  *  GlobalPlatform is free software: you can redistribute it and/or modify
@@ -12,7 +13,7 @@
  *  GNU Lesser General Public License for more details.
  *
  *  You should have received a copy of the GNU Lesser General Public License
- *  along with GlobalPlatform.  If not, see <http://www.gnu.org/licenses/>.
+ *  along with GlobalPlatform.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 #include "util.h"
@@ -123,8 +124,11 @@ LONG read_TLV(PBYTE buffer, DWORD length, TLV *tlv) {
 	} else {
 		tlv->length = l1;
 	}
-
-	memmove(tlv->value, buffer+offset, tlv->length);
+	if (tlv->length > 256) {
+		memmove(tlv->extendedValue, buffer+offset, tlv->length);
+	} else {
+		memmove(tlv->value, buffer+offset, tlv->length);
+	}
 	offset += tlv->length;
 	result = offset;
 	tlv->tlvLength = result;
@@ -158,4 +162,42 @@ LONG parse_apdu_case(PBYTE apduCommand, DWORD apduCommandLength, PBYTE caseAPDU,
 		}
 	}
 	return 0;
+}
+
+/**
+ * Writes a TLV length field following DER BER rules.
+ * \param buffer [out] The byte array to write to.
+ * \param offset [in] The offset in the buffer.
+ * \param lengthLeft [in] The length left in the buffer.
+ * \param length [in] The length value to encode (0-65535).
+ * \return Number of bytes written, or -1 if insufficient space.
+ */
+LONG write_TLV_length(PBYTE buffer, DWORD offset, DWORD lengthLeft, USHORT length) {
+	if (length <= 128) {
+		// Short form: 0x00-0x80 (1 byte)
+		if (lengthLeft < 1) {
+			return -1;
+		}
+		buffer[offset] = (BYTE)length;
+		return 1;
+	}
+	if (length <= 255) {
+		// Long form: 0x81 followed by 1 byte
+		if (lengthLeft < 2) {
+			return -1;
+		}
+		buffer[offset] = 0x81;
+		buffer[offset + 1] = (BYTE)length;
+		return 2;
+	}
+	{
+		// Long form: 0x82 followed by 2 bytes
+		if (lengthLeft < 3) {
+			return -1;
+		}
+		buffer[offset] = 0x82;
+		buffer[offset + 1] = (BYTE)((length >> 8) & 0xFF);
+		buffer[offset + 2] = (BYTE)(length & 0xFF);
+		return 3;
+	}
 }

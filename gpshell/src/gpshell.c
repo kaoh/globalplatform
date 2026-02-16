@@ -1,31 +1,20 @@
-/**
- *  Copyright (c) 2013, Snit Mo, Karsten Ohme
+/*
+ *  Copyright (c) 2005, Snit Mo
+ *  Copyright (c) 2005-2026, Karsten Ohme
+ *  This file is part of GlobalPlatform.
  *
- *  This program is free software: you can redistribute it and/or modify
+ *  GPShell is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GPShell is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- * In addition, as a special exception, the copyright holders give
- * permission to link the code of portions of this program with the
- * OpenSSL library under certain conditions as described in each
- * individual source file, and distribute linked combinations
- * including the two.
- * You must obey the GNU General Public License in all respects
- * for all of the code used other than OpenSSL.  If you modify
- * file(s) with this exception, you may extend this exception to your
- * version of the file(s), but you are not obligated to do so.  If you
- * do not wish to do so, delete this exception statement from your
- * version.  If you delete this exception statement from all source
- * files in the program, then also delete it here.
+ *  along with GPShell.  If not, see <https://www.gnu.org/licenses/>.
  */
 #ifdef WIN32
 #include "stdafx.h"
@@ -1067,7 +1056,7 @@ static int handleCommands(FILE *fd)
                     int k=0;
 
                     // get all readers
-                    status = OPGP_list_readers (cardContext, buf, &readerStrLen);
+                    status = OPGP_list_readers (cardContext, buf, &readerStrLen, 0);
                     if (OPGP_ERROR_CHECK(status))
                     {
                         _tprintf(_T("list_readers failed with error 0x%08X (%s)\n"), (unsigned int)status.errorCode, status.errorMessage);
@@ -1970,7 +1959,7 @@ static int handleCommands(FILE *fd)
                             goto end;
                         }
                     }
-                    status = GP211_put_secure_channel_keys_with_key_type(cardContext, cardInfo,
+                    status = GP211_put_secure_channel_keys(cardContext, cardInfo,
                                                        &securityInfo211,
                                                        optionStr.keySetVersion,
                                                        optionStr.newKeySetVersion,
@@ -2015,8 +2004,10 @@ static int handleCommands(FILE *fd)
                             optionStr.newKeySetVersion,
                             optionStr.file,
                             optionStr.passPhrase,
+                            optionStr.keyType,
                             optionStr.key,
-                            optionStr.keyLength);
+                            optionStr.keyLength,
+                            optionStr.keyType);
                 }
 
                 if (OPGP_ERROR_CHECK(status))
@@ -2181,7 +2172,7 @@ static int handleCommands(FILE *fd)
                 int k=0;
 
                 // get all readers
-                status = OPGP_list_readers (cardContext, buf, &readerStrLen);
+                status = OPGP_list_readers (cardContext, buf, &readerStrLen, 0);
                 if (OPGP_ERROR_CHECK(status))
                 {
                     _tprintf(_T("list_readers failed with error 0x%08X (%s)\n"), (unsigned int)status.errorCode, status.errorMessage);

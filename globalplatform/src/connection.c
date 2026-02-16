@@ -1,4 +1,5 @@
-/*  Copyright (c) 2009, Karsten Ohme
+/*
+ *  Copyright (c) 2010-2026, Karsten Ohme
  *  This file is part of GlobalPlatform.
  *
  *  GlobalPlatform is free software: you can redistribute it and/or modify
@@ -12,7 +13,7 @@
  *  GNU Lesser General Public License for more details.
  *
  *  You should have received a copy of the GNU Lesser General Public License
- *  along with GlobalPlatform.  If not, see <http://www.gnu.org/licenses/>.
+ *  along with GlobalPlatform.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 #include "globalplatform/connection.h"
@@ -68,7 +69,7 @@ OPGP_ERROR_STATUS OPGP_establish_context(OPGP_CARD_CONTEXT *cardContext) {
 		OPGP_ERROR_STATUS OPGP_PL_release_context(OPGP_CARD_CONTEXT *);
 		OPGP_ERROR_STATUS OPGP_PL_card_connect(OPGP_CARD_CONTEXT, OPGP_CSTRING, OPGP_CARD_INFO *, DWORD);
 		OPGP_ERROR_STATUS OPGP_PL_card_disconnect(OPGP_CARD_CONTEXT, OPGP_CARD_INFO *);
-		OPGP_ERROR_STATUS OPGP_PL_list_readers(OPGP_CARD_CONTEXT, OPGP_STRING, PDWORD);
+  OPGP_ERROR_STATUS OPGP_PL_list_readers(OPGP_CARD_CONTEXT, OPGP_STRING, PDWORD, DWORD);
 		OPGP_ERROR_STATUS OPGP_PL_send_APDU(OPGP_CARD_CONTEXT, OPGP_CARD_INFO, PBYTE, DWORD, PBYTE, PDWORD);
 
 		cardContext->libraryHandle = NULL; /* No dlopen handle when static */
@@ -168,16 +169,17 @@ end:
  *  readerNamesLength, writes the length of the multi-string that would have been returned if this parameter
  *  had not been NULL to readerNamesLength.
  * \param readerNamesLength [in, out] The length of the multi-string including all trailing null characters.
+ * \param presentOnly If non-zero, only readers with a smart card inserted are returned.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
-OPGP_ERROR_STATUS OPGP_list_readers(OPGP_CARD_CONTEXT cardContext, OPGP_STRING readerNames, PDWORD readerNamesLength) {
-	OPGP_ERROR_STATUS errorStatus;
-	OPGP_ERROR_STATUS(*plugin_listReadersFunction) (OPGP_CARD_CONTEXT, OPGP_STRING, PDWORD);
-	OPGP_LOG_START(_T("OPGP_list_readers"));
-	plugin_listReadersFunction = (OPGP_ERROR_STATUS(*)(OPGP_CARD_CONTEXT, OPGP_STRING, PDWORD)) cardContext.connectionFunctions.listReaders;
-	errorStatus = (*plugin_listReadersFunction) (cardContext, readerNames, readerNamesLength);
-	OPGP_LOG_END(_T("OPGP_list_readers"), errorStatus);
-	return errorStatus;
+OPGP_ERROR_STATUS OPGP_list_readers(OPGP_CARD_CONTEXT cardContext, OPGP_STRING readerNames, PDWORD readerNamesLength, DWORD presentOnly) {
+    OPGP_ERROR_STATUS errorStatus;
+    OPGP_ERROR_STATUS(*plugin_listReadersFunction) (OPGP_CARD_CONTEXT, OPGP_STRING, PDWORD, DWORD);
+    OPGP_LOG_START(_T("OPGP_list_readers"));
+    plugin_listReadersFunction = (OPGP_ERROR_STATUS(*)(OPGP_CARD_CONTEXT, OPGP_STRING, PDWORD, DWORD)) cardContext.connectionFunctions.listReaders;
+    errorStatus = (*plugin_listReadersFunction) (cardContext, readerNames, readerNamesLength, presentOnly);
+    OPGP_LOG_END(_T("OPGP_list_readers"), errorStatus);
+    return errorStatus;
 }
 
 /**

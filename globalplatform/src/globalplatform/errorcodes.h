@@ -1,4 +1,5 @@
-/*  Copyright (c) 2009, Karsten Ohme
+/*
+ *  Copyright (c) 2005-2026, Karsten Ohme
  *  This file is part of GlobalPlatform.
  *
  *  GlobalPlatform is free software: you can redistribute it and/or modify
@@ -12,7 +13,7 @@
  *  GNU Lesser General Public License for more details.
  *
  *  You should have received a copy of the GNU Lesser General Public License
- *  along with GlobalPlatform.  If not, see <http://www.gnu.org/licenses/>.
+ *  along with GlobalPlatform.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 /*! \file
@@ -46,6 +47,7 @@
 // Philip Wendland: added this because security level 3 of SCP03 is not supported yet.
 #define OPGP_ERROR_SCP03_SECURITY_R_ENCRYPTION_R_MAC_NOT_SUPPORTED ((DWORD)0x8030F00EL) //!< SCP03 with R-Encryption and R-MAC is not supported.
 #define OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE ((DWORD)0x8030F012L) //!< The install parameters are too large.
+#define OPGP_ERROR_WRONG_HASH_SIZE ((DWORD)0x8030F013L) //!< The hash size does not match the RSA key size.
 
 /* Open Platform 2.0.1' specific errors */
 

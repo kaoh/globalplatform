@@ -1,4 +1,5 @@
-/*  Copyright (c) 2013, Karsten Ohme
+/*
+ *  Copyright (c) 2010-2026, Karsten Ohme
  *  This file is part of GlobalPlatform.
  *
  *  GlobalPlatform is free software: you can redistribute it and/or modify
@@ -12,7 +13,7 @@
  *  GNU Lesser General Public License for more details.
  *
  *  You should have received a copy of the GNU Lesser General Public License
- *  along with GlobalPlatform.  If not, see <http://www.gnu.org/licenses/>.
+ *  along with GlobalPlatform.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 /*! \file
@@ -113,15 +114,19 @@ typedef enum {
 	GP211_GLOBAL_SERVICE = 1u << (0 + 8), //!< Application provides services to other Applications on the card.
 
 	GP211_RECEIPT_GENERATION = 1u << 7, //!< Application is capable of generating a receipt for Delegated Card Content Management.
-	GP211_CIPHERED_LOAD_FILE_DATA_BLOCK = 1u << 6, //!< The Security Domain requires that the Load File being associated to it is to be loaded ciphered.
+	GP211_CIPHERED_LOAD_FILE_DATA_BLOCK = 1u << 6, //!< The Security Domain requires that the Load File being associated with it is to be loaded ciphered.
 	GP211_CONTACTLESS_ACTIVATION = 1u << 5, //!< Application is capable of activating and deactivating any Application on the contactless interface.
 	GP211_CONTACTLESS_SELF_ACTIVATION = 1u << 4 //!< Application is capable of activating itself on the contactless interface without a prior request to the Application with the Contactless Activation privilege.
 } GP211_APPLICATION_PRIVILEGES;
 
-#define GP211_STATUS_APPLICATIONS 0x40 //!< Indicate Applications or Security Domains in GP211_get_status() (request GP211_APPLICATION_DATA) or GP211_set_status().
-#define GP211_STATUS_ISSUER_SECURITY_DOMAIN 0x80 //!< Indicate Issuer Security Domain in GP211_get_status() (request GP211_APPLICATION_DATA) or GP211_set_status().
+#define GP211_STATUS_APPLICATIONS 0x40 //!< Indicate Applications or Security Domains in GP211_get_status().
+#define GP211_STATUS_ISSUER_SECURITY_DOMAIN 0x80 //!< Indicate Issuer Security Domain in GP211_get_status().
 #define GP211_STATUS_LOAD_FILES 0x20 //!< Request GP211_APPLICATION_DATA for Executable Load Files in GP211_get_status().
 #define GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES 0x10 //!< Request GP211_EXECUTABLE_MODULES_DATA for Executable Load Files and their Executable Modules in GP211_get_status().
+
+#define GP211_STATUS_TYPE_APPLICATIONS 0x40 //!< Indicate Applications or supplementary Security Domains in GP211_set_status().
+#define GP211_STATUS_TYPE_ISSUER_SECURITY_DOMAIN 0x80 //!< Indicate Issuer Security Domain in GP211_set_status().
+#define GP211_STATUS_TYPE_SECURITY_DOMAIN_AND_APPLICATIONS 0x60 //!< Indicate Security Domain and its associated Applications in GP211_set_status().
 
 #define GP211_STATUS_FORMAT_NEW 0x02 //!< New GP2.1.1 GET STATUS format
 #define GP211_STATUS_FORMAT_DEPRECATED 0x00 //!< New GP2.1.1 GET STATUS deprecated format
@@ -305,6 +310,12 @@ static const BYTE OP201_GET_DATA_WHOLE_EF_PROD[2] = {0xDF, 0x7F}; //!< Whole EF<
 #define OPGP_DERIVATION_METHOD_EMV_CPS11 2 //!< The EMV CPS 11 derivation is used during mutual authentication.
 #define OPGP_DERIVATION_METHOD_VISA1 3 //!< The VISA1 key derivation is used during mutual authentication.
 
+#define GP211_HASH_SHA1 1 //!< SHA-1
+#define GP211_HASH_SHA256 2 //!< SHA2-256
+#define GP211_HASH_SHA384 3 //!< SHA2-384
+#define GP211_HASH_SHA512 4 //!< SHA2-512
+#define GP211_HASH_SM3 5 //!< SM3
+
 #define OPGP_WORK_UNKNOWN -1 //!< The amount of work is not known.
 #define OPGP_TASK_FINISHED 1 //!< The task is finished.
 
@@ -430,7 +441,7 @@ OPGP_ERROR_STATUS GP211_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 
 //! \brief GlobalPlatform2.1.1: Sets the life cycle status of Applications, Security Domains or the Card Manager.
 OPGP_API
-OPGP_ERROR_STATUS GP211_set_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE cardElement, PBYTE AID, DWORD AIDLength, BYTE lifeCycleState);
+OPGP_ERROR_STATUS GP211_set_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE statusType, PBYTE AID, DWORD AIDLength, BYTE lifeCycleState);
 
 //! \brief GlobalPlatform2.1.1: Mutual authentication.
 OPGP_API
@@ -508,12 +519,6 @@ OPGP_ERROR_STATUS GP211_put_rsa_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 //! \brief GlobalPlatform2.1.1: replaces or adds a secure channel key set consisting of S-ENC, S-MAC and DEK.
 OPGP_API
 OPGP_ERROR_STATUS GP211_put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-							 BYTE keySetVersion, BYTE newKeySetVersion, BYTE baseKey[32],
-							 BYTE newS_ENC[32], BYTE newS_MAC[32], BYTE newDEK[32], DWORD keyLength);
-
-//! \brief GlobalPlatform2.1.1: replaces or adds a secure channel key set consisting of S-ENC, S-MAC and DEK.
-OPGP_API
-OPGP_ERROR_STATUS GP211_put_secure_channel_keys_with_key_type(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 							 BYTE keySetVersion, BYTE newKeySetVersion, BYTE baseKey[32],
 							 BYTE newS_ENC[32], BYTE newS_MAC[32], BYTE newDEK[32], DWORD keyLength, BYTE keyType);
 
@@ -618,7 +623,7 @@ OPGP_ERROR_STATUS GP211_calculate_install_token_uicc(BYTE P1, PBYTE executableLo
 //! \brief GlobalPlatform2.1.1: Calculates a Load File Data Block Hash.
 OPGP_API
 OPGP_ERROR_STATUS GP211_calculate_load_file_data_block_hash(OPGP_STRING executableLoadFileName,
-							 BYTE hash[64], DWORD hashLength, BYTE secureChannelProtocol);
+                                                            BYTE hash[64], DWORD hashLength, BYTE hashType);
 
 //! \brief GlobalPlatform2.1.1: Loads a Executable Load File (containing an application) to the card.
 OPGP_API
@@ -704,7 +709,7 @@ OPGP_ERROR_STATUS GP211_put_delegated_management_keys(OPGP_CARD_CONTEXT cardCont
 								   BYTE keySetVersion,
 								   BYTE newKeySetVersion,
 								   OPGP_STRING PEMKeyFileName, char *passPhrase,
-								   BYTE receiptKey[32], DWORD keyLength);
+								   BYTE tokenKeyType, BYTE receiptKey[32], DWORD keyLength, BYTE receiptKeyType);
 
 //! \brief Sends an application protocol data unit.
 OPGP_API
@@ -723,6 +728,13 @@ OPGP_API
 OPGP_ERROR_STATUS GP211_calculate_rsa_DAP(BYTE loadFileDataBlockHash[20], PBYTE securityDomainAID,
 					   DWORD securityDomainAIDLength, OPGP_STRING PEMKeyFileName,
 					   char *passPhrase, GP211_DAP_BLOCK *loadFileDataBlockSignature);
+
+//! \brief GlobalPlatform2.1.1: Calculates a Load File Data Block Signature using SHA-256/SHA-512 and RSA-PSS (Scheme 2).
+OPGP_API
+OPGP_ERROR_STATUS GP211_calculate_rsa_schemeX_DAP(PBYTE loadFileDataBlockHash, DWORD loadFileDataBlockHashLength,
+				   PBYTE securityDomainAID, DWORD securityDomainAIDLength,
+				   OPGP_STRING PEMKeyFileName, char *passPhrase,
+				   GP211_DAP_BLOCK *loadFileDataBlockSignature);
 
 //! \brief GlobalPlatform2.1.1: Validates a Load Receipt.
 OPGP_API
@@ -768,10 +780,6 @@ OPGP_ERROR_STATUS OPGP_select_channel(OPGP_CARD_INFO *cardInfo, BYTE channelNumb
 
 //! \brief Calculates the key check value of a key.
 OPGP_ERROR_STATUS OPGP_calculate_key_check_value(GP211_SECURITY_INFO *secInfo,
-	PBYTE keyData, DWORD keyDataLength, BYTE keyCheckValue[3]);
-
-//! \brief Calculates the key check value of a key.
-OPGP_ERROR_STATUS OPGP_calculate_key_check_value_with_key_type(GP211_SECURITY_INFO *secInfo,
 	BYTE keyType, PBYTE keyData, DWORD keyDataLength, BYTE keyCheckValue[3]);
 
 //! \brief Encrypts sensitive data like keys or other data which is used in STORE DATA.
@@ -790,7 +798,7 @@ OPGP_ERROR_STATUS OP201_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 
 //! \brief Open Platform: Sets the life cycle status of Applications, Security Domains or the Card Manager.
 OPGP_API
-OPGP_ERROR_STATUS OP201_set_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, BYTE cardElement, PBYTE AID, DWORD AIDLength, BYTE lifeCycleState);
+OPGP_ERROR_STATUS OP201_set_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, BYTE statusType, PBYTE AID, DWORD AIDLength, BYTE lifeCycleState);
 
 
 //! \brief Open Platform: Mutual authentication.

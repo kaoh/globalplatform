@@ -1,4 +1,5 @@
-/*  Copyright (c) 2009, Karsten Ohme
+/*
+ *  Copyright (c) 2005-2026, Karsten Ohme
  *  This file is part of GlobalPlatform.
  *
  *  GlobalPlatform is free software: you can redistribute it and/or modify
@@ -12,7 +13,7 @@
  *  GNU Lesser General Public License for more details.
  *
  *  You should have received a copy of the GNU Lesser General Public License
- *  along with GlobalPlatform.  If not, see <http://www.gnu.org/licenses/>.
+ *  along with GlobalPlatform.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 /*! \file
@@ -35,12 +36,13 @@ extern "C"
 #include "globalplatform/library.h"
 
 /**
- * A TLV object. Only simple objects with tags sizes of 1 byte and lengths <= 127 are supported.
+ * A TLV object.
  **/
 typedef struct {
 	USHORT tag; //!< The Tag.
 	DWORD length; //!< The length of the value.
 	BYTE value[256]; //!< The value.
+	PBYTE extendedValue; //!< The extended value if length > 256. Must be manually allocated and deallocated.
 	DWORD tlvLength; //!< The length of the whole TLV.
 } TLV;
 
@@ -66,6 +68,10 @@ DWORD get_number(PBYTE buf, DWORD offset, BYTE numLength);
 //! \brief Parse the APDU case.
 OPGP_NO_API
 LONG parse_apdu_case(PBYTE apduCommand, DWORD apduCommandLength, PBYTE caseAPDU, PBYTE lc, PBYTE le);
+
+//! \brief Writes a TLV length field following DER BER rules.
+OPGP_NO_API
+LONG write_TLV_length(PBYTE buffer, DWORD offset, DWORD lengthLeft, USHORT length);
 
 #ifdef __cplusplus
 }

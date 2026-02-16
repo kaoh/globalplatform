@@ -1,8 +1,8 @@
 # Summary
 
-GPShell (GlobalPlatform Shell) is a script interpreter which talks to a smart card.  It is written on top of the GlobalPlatform library, which was developed by Karsten Ohme.
-It uses smart card communication protocols ISO-7816-4 and OpenPlatform 2.0.1 and GlobalPlatform 2.1.1.
-It can establish a secure channel with a smart card, load, instantiate, delete, list applets on a smart card.
+GPShell (GlobalPlatform Shell) is a script interpreter which talks to a smart card.  It is written on top of the GlobalPlatform library.
+It uses smart card communication protocols ISO-7816-4 and OpenPlatform 2.0.1 and GlobalPlatform 2.1.1 and later.
+It can establish a secure channel with a smart card, load, instantiate, delete, list applications and manage keys on a smart card.
 
 __!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!__
 
@@ -13,27 +13,58 @@ TO RESET THE RETRY COUNTER BEFORE YOU PROCEED WITH GPSHELL. CHECK THE PARAMETERS
 
 __!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!__
 
+# Pre-build Packages
+
+There are Homebrew packages for [Linux and macOS](https://github.com/kaoh/homebrew-globalplatform)
+
+Windows binaries can be downloaded from the [GitHub release page](https://github.com/kaoh/globalplatform/releases) or from [SourceForge](https://sourceforge.net/projects/globalplatform/files/GPShell/).
+
 # Execution
 
-You also need at least one connection plugin, e.g. the shipped `gppcscconnectionplugin` to use PC/SC.
+There are 2 versions of GPShell. The new GPShell 3+, using a concise, task-oriented command line, 
+and the older GPShell 1+ using script files chaining multiple commands into one session.
 
-## Example Script Files
+__NOTE:__ You also need at least one connection plugin, e.g., the shipped `gppcscconnectionplugin` to use PC/SC, which is bundled by default, so there is no need to worry.
+However, it is possible to implement a different communication channel, e.g., tunneling over TCP/IP.
+Existing solution like [pcsc-relay](https://frankmorgner.github.io/vsmartcard/pcsc-relay/README.html) might be a quicker solution.
 
-In the source directory of this project several script files are provided as an example. After being installed 
-the sample files can be found in `/usr/share/doc/gpshell<version>` or `/usr/local/share/doc/gpshell<version>` or 
-`~/.linuxbrew/share/doc/gpshell<version>`
+## GPShell 3+
 
-## Command Line Documentation
+A quick demo video showcasing the most useful features in action:
 
-Read the [GPShell man page](./src/gpshell.1.md) for all commands and their options.
+[![Demo Video](./demo/screencast.png)](https://youtu.be/MtZoTkrB41I)
 
-## MacOS
+### Command Line Documentation
 
-For MacOS you might set:
+Read the [GPShell3 man page](./src/gpshell3.1.md) for all commands and their options or use `man gpshell3` under Linux or macOS.
+
+### MacOS
+
+For macOS you might set:
 
       export DYLD_LIBRARY_PATH=/opt/local/lib
 
 so that all needed libraries are found.
+
+## GPShell 1+
+
+### Example Script Files
+
+In the [examples directory](./examples) of this project several script files are provided as examples. After being installed 
+the sample files can be found in `/usr/share/doc/gpshell2` or `/usr/local/share/doc/gpshell2` or 
+`home/linuxbrew/.linuxbrew/share/doc/gpshell2/`
+
+### Command Line Documentation
+
+Read the [GPShell1 man page](./src/gpshell.1.md) for all commands and their options or use `man gpshell` under Linux or macOS.
+
+### macOS
+
+For macOS you might set:
+
+      export DYLD_LIBRARY_PATH=/opt/local/lib
+
+so that all necessary libraries are found.
 
 # Compilation
 
@@ -96,7 +127,11 @@ cmake -DDEBUG=ON
 
 The man page is translated with [pandoc](https://pandoc.org) from markdown to groff syntax. To render a preview of the result use:
 
-    pandoc --standalone --to man gpshell.1.md | groff -man -Tascii
+~~~shell
+cd src
+pandoc --standalone --to man gpshell.1.md | groff -man -Tascii
+pandoc --standalone --to man gpshell3.1.md | groff -man -Tascii
+~~~
 
 ## Debug Output
 

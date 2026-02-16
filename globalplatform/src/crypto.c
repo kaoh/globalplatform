@@ -1,4 +1,5 @@
-/*  Copyright (c) 2019, Karsten Ohme
+/*
+ *  Copyright (c) 2005-2026, Karsten Ohme
  *  This file is part of GlobalPlatform.
  *
  *  GlobalPlatform is free software: you can redistribute it and/or modify
@@ -12,20 +13,7 @@
  *  GNU Lesser General Public License for more details.
  *
  *  You should have received a copy of the GNU Lesser General Public License
- *  along with GlobalPlatform.  If not, see <http://www.gnu.org/licenses/>.
- *
- * In addition, as a special exception, the copyright holders give
- * permission to link the code of portions of this program with the
- * OpenSSL library under certain conditions as described in each
- * individual source file, and distribute linked combinations
- * including the two.
- * You must obey the GNU Lesser General Public License in all respects
- * for all of the code used other than OpenSSL.  If you modify
- * file(s) with this exception, you may extend this exception to your
- * version of the file(s), but you are not obligated to do so.  If you
- * do not wish to do so, delete this exception statement from your
- * version.  If you delete this exception statement from all source
- * files in the program, then also delete it here.
+ *  along with GlobalPlatform.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 /**
@@ -1105,28 +1093,36 @@ end:
 }
 
 /**
- * Calculates a RSA signature using SHA-1 and PKCS#1.
- * \param message [in] The message to generate the signature for.
- * \param messageLength [in] The length of the message buffer.
+ * Calculates a RSA signature using SHA-1 and PKCS#1 v1.5 or SHA-256/SHA-512 and RSA-PSS.
+ * For RSA keys <= 1024 bits: Uses PKCS#1 v1.5 with SHA-1 (legacy scheme)
+ * For RSA keys > 1024 bits and <= 2048 bits: Uses RSA-PSS with SHA-256
+ * For RSA keys > 2048 bits: Uses RSA-PSS with SHA-512
+ * \param message [in] The hash to sign.
+ * \param messageLength [in] The length of the hash buffer.
  * \param PEMKeyFileName [in] A PEM file name with the private RSA key.
  * \param *passPhrase [in] The passphrase. Must be an ASCII string.
- * \param signature The calculated signature.
+ * \param signature [out] The calculated signature buffer.
+ * \param signatureLength [in,out] On input: the length of the signature buffer. On output: the actual signature length.
  */
 OPGP_ERROR_STATUS calculate_rsa_signature(PBYTE message, DWORD messageLength, OPGP_STRING PEMKeyFileName,
-									char *passPhrase, BYTE signature[128]) {
+									char *passPhrase, PBYTE signature, PDWORD signatureLength) {
 	LONG result;
 	OPGP_ERROR_STATUS status;
 	EVP_PKEY *key = NULL;
 	FILE *PEMKeyFile = NULL;
-	EVP_MD_CTX *mdctx;
-	unsigned int signatureLength=0;
+	EVP_MD_CTX *mdctx = NULL;
+	EVP_PKEY_CTX *pctx = NULL;
+	const EVP_MD *md = NULL;
+	unsigned int actualSignatureLength = 0;
+	int keySize = 0;
+	int rsaBits = 0;
 	OPGP_LOG_START(_T("calculate_rsa_signature"));
-	mdctx = EVP_MD_CTX_create();
-	EVP_MD_CTX_init(mdctx);
+
 	if (passPhrase == NULL)
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_PASSWORD, OPGP_stringify_error(OPGP_ERROR_INVALID_PASSWORD)); goto end; }
 	if ((PEMKeyFileName == NULL) || (_tcslen(PEMKeyFileName) == 0))
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_FILENAME, OPGP_stringify_error(OPGP_ERROR_INVALID_FILENAME)); goto end; }
+
 	PEMKeyFile = _tfopen(PEMKeyFileName, _T("rb"));
 	if (PEMKeyFile == NULL) {
 		{ OPGP_ERROR_CREATE_ERROR(status, errno, OPGP_stringify_error(errno)); goto end; }
@@ -1134,26 +1130,90 @@ OPGP_ERROR_STATUS calculate_rsa_signature(PBYTE message, DWORD messageLength, OP
 	key = EVP_PKEY_new();
 	if (!PEM_read_PrivateKey(PEMKeyFile, &key, NULL, passPhrase)) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
-	};
-	result = EVP_SignInit_ex(mdctx, EVP_sha1(), NULL);
+	}
+
+	keySize = EVP_PKEY_size(key);
+
+	result = EVP_PKEY_get_int_param(key, "bits", &rsaBits);
 	if (result != 1) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
 	}
-	result = EVP_SignUpdate(mdctx, message, messageLength);
-	if (result != 1) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
-	}
-	if (EVP_PKEY_size(key) > 128) {
+
+	// Check if signature buffer is large enough
+	if (*signatureLength < (DWORD)keySize) {
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
 	}
-	result = EVP_SignFinal(mdctx, signature, &signatureLength, key);
-	if (result != 1) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+
+	// Determine signature scheme based on RSA key size
+	if (rsaBits <= 1024) {
+		// RSA keys <= 1024 bits: Use legacy PKCS#1 v1.5 with SHA-1
+		mdctx = EVP_MD_CTX_create();
+		EVP_MD_CTX_init(mdctx);
+		result = EVP_SignInit_ex(mdctx, EVP_sha1(), NULL);
+		if (result != 1) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+		result = EVP_SignUpdate(mdctx, message, messageLength);
+		if (result != 1) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+		result = EVP_SignFinal(mdctx, signature, &actualSignatureLength, key);
+		if (result != 1) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+	} else {
+		// RSA keys > 1024 bits: Use RSA-PSS
+		// Select hash algorithm based on key size
+		if (rsaBits <= 2048) {
+			md = EVP_sha256(); // SHA-256 for keys <= 2048 bits
+		} else {
+			md = EVP_sha512(); // SHA-512 for keys > 2048 bits
+		}
+
+		mdctx = EVP_MD_CTX_create();
+		if (mdctx == NULL) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+
+		result = EVP_DigestSignInit(mdctx, &pctx, md, NULL, key);
+		if (result != 1) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+
+		// Configure RSA-PSS parameters
+		result = EVP_PKEY_CTX_set_rsa_padding(pctx, RSA_PKCS1_PSS_PADDING);
+		if (result != 1) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+
+		// Set salt length to hash length (PKCS#1 default)
+		// SHA-256 = 32 bytes, SHA-512 = 64 bytes
+		int saltLen = (rsaBits <= 2048) ? 32 : 64;
+		result = EVP_PKEY_CTX_set_rsa_pss_saltlen(pctx, saltLen);
+		if (result != 1) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+
+		// Set MGF1 hash to match main hash
+		result = EVP_PKEY_CTX_set_rsa_mgf1_md(pctx, md);
+		if (result != 1) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+
+		// Sign the pre-computed hash
+		size_t sigLen = (size_t)keySize;
+		result = EVP_DigestSign(mdctx, signature, &sigLen, message, messageLength);
+		if (result != 1) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+		actualSignatureLength = (unsigned int)sigLen;
 	}
+	*signatureLength = actualSignatureLength;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
-	EVP_MD_CTX_destroy(mdctx);
-
+	if (mdctx) {
+		EVP_MD_CTX_destroy(mdctx);
+	}
 	if (PEMKeyFile) {
 		fclose(PEMKeyFile);
 	}
@@ -1389,8 +1449,12 @@ OPGP_ERROR_STATUS calculate_key_check_value(GP211_SECURITY_INFO *secInfo,
 	BYTE keyCheckTest[16];
 	OPGP_LOG_START(_T("calculate_key_check_value"));
 	memset(keyCheckTest, 0, 16);
-	if (secInfo->secureChannelProtocol == GP211_SCP03 || keyType == GP211_KEY_TYPE_AES) {
+	if (keyType == GP211_KEY_TYPE_AES) {
 		memset(keyCheckTest, 0x01, sizeof(keyCheckTest));
+		status = calculate_enc_ecb_SCP03(keyData, keyDataLength, keyCheckTest, 16, dummy, &dummyLength);
+	}
+	else if (keyType == GP211_KEY_TYPE_SM4) {
+		memset(keyCheckTest, 0x02, sizeof(keyCheckTest));
 		status = calculate_enc_ecb_SCP03(keyData, keyDataLength, keyCheckTest, 16, dummy, &dummyLength);
 	}
 	else {
@@ -1407,67 +1471,96 @@ end:
 }
 
 OPGP_ERROR_STATUS get_key_data_field(GP211_SECURITY_INFO *secInfo,
-							 PBYTE keyData,
-							 DWORD keyDataLength,
-							 BYTE keyType,
-							 BYTE isSensitive,
-							 PBYTE keyDataField,
-							 PDWORD keyDataFieldLength,
-							 BYTE keyCheckValue[3]) {
+                                     PBYTE keyData,
+                                     DWORD keyDataLength,
+                                     BYTE keyType,
+                                     PBYTE keyDataField,
+                                     PDWORD keyDataFieldLength,
+                                     BYTE keyCheckValue[3], BOOL includeKeyCheckValue) {
 	OPGP_ERROR_STATUS status;
-	DWORD sizeNeeded=0, i=0;
+	DWORD i=0;
 	BYTE encrypted_key[32];
 	DWORD encrypted_key_length;
-	BYTE keyCheckTest[16];
+	LONG result;
+	BOOL isSensitive;
 	OPGP_LOG_START(_T("get_key_data_field"));
-	memset(keyCheckTest, 0, 16);
-	// key type + length + key data + length + key check value
-	sizeNeeded = 1 + 1 + keyDataLength + 1;
-	if (secInfo->secureChannelProtocol == GP211_SCP03 || keyType == GP211_KEY_TYPE_AES) {
-		// the length of the key component is always included
-		sizeNeeded++;
-	}
-	if (isSensitive) {
-		// 3 byte key check value
-		sizeNeeded+=3;
-	}
-	if (sizeNeeded > *keyDataFieldLength) {
+	isSensitive = (keyType == GP211_KEY_TYPE_AES || keyType == GP211_KEY_TYPE_3DES || keyType == GP211_KEY_TYPE_DES
+		|| keyType == GP211_KEY_TYPE_SM4 || keyType == GP211_KEY_TYPE_3DES_CBC || keyType == GP211_KEY_TYPE_DES_CBC
+		|| keyType == GP211_KEY_TYPE_DES_ECB);
+	// set key type
+	if (i+1 > *keyDataFieldLength) {
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
 		goto end;
 	}
-	// set key type
 	keyDataField[i++] = keyType;
 	if (isSensitive) {
 		status = encrypt_sensitive_data(secInfo, keyData, keyDataLength, encrypted_key, &encrypted_key_length);
 		if (OPGP_ERROR_CHECK(status)) {
 			goto end;
 		}
-		if (encrypted_key_length != keyDataLength || secInfo->secureChannelProtocol == GP211_SCP03 || keyType == GP211_KEY_TYPE_AES) {
+		if (encrypted_key_length != keyDataLength) {
 			// + 1 byte key component length field
-			keyDataField[i++] = encrypted_key_length + 1;
-			keyDataField[i++] = keyDataLength;
+			result = write_TLV_length(keyDataField, i, *keyDataFieldLength - i, (USHORT)(encrypted_key_length+1));
+			if (!result) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+				goto end;
+			}
+			i+=result;
+			result = write_TLV_length(keyDataField, i, *keyDataFieldLength - i, (USHORT)keyDataLength);
+			if (!result) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+				goto end;
+			}
+			i+=result;
 		}
 		else {
 			// not padded and no length must be specified
-			keyDataField[i++] = encrypted_key_length;
+			result = write_TLV_length(keyDataField, i, *keyDataFieldLength - i, (USHORT)encrypted_key_length);
+			if (!result) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+				goto end;
+			}
+			i+=result;
 		}
 		memcpy(keyDataField+i, encrypted_key, encrypted_key_length);
 		i+= encrypted_key_length;
 	}
 	else {
-		keyDataField[i++] = (BYTE)keyDataLength;
+		result = write_TLV_length(keyDataField, i, *keyDataFieldLength - i, (USHORT)keyDataLength);
+		if (!result) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+			goto end;
+		}
+		i+=result;
+		if (i+keyDataLength > *keyDataFieldLength) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+			goto end;
+		}
 		// not sensitive - copy directly, no key component length is needed
 		memcpy(keyDataField+i, keyData, keyDataLength);
 		i+=keyDataLength;
 	}
-	// we always use key check values
-	keyDataField[i++] = 0x03; // length of key check value
-	status = calculate_key_check_value(secInfo, keyType, keyData, keyDataLength, keyCheckValue);
-	if (OPGP_ERROR_CHECK(status)) {
-		goto end;
+	if (includeKeyCheckValue) {
+		if (isSensitive) {
+			if (i+1+3 > *keyDataFieldLength) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+				goto end;
+			}
+			keyDataField[i++] = 0x03; // length of key check value
+			status = calculate_key_check_value(secInfo, keyType, keyData, keyDataLength, keyCheckValue);
+			if (OPGP_ERROR_CHECK(status)) {
+				goto end;
+			}
+			memcpy(keyDataField+i, keyCheckValue, 3);
+			i+=3;
+		} else {
+			if (i+1 > *keyDataFieldLength) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+				goto end;
+			}
+			keyDataField[i++] = 0;
+		}
 	}
-	memcpy(keyDataField+i, keyCheckValue, 3);
-	i+=3;
 	*keyDataFieldLength = i;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
@@ -2060,9 +2153,10 @@ end:
  * \param PEMKeyFileName [in] The key file.
  * \param *passPhrase [in] The passphrase. Must be an ASCII string.
  * \param rsaModulus [out] The RSA modulus.
+ * \param rsaModulusLength [inout]  The RSA modules length passed in and returned.
  * \param rsaExponent [out] The RSA exponent.
  */
-OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhrase, BYTE rsaModulus[128], LONG *rsaExponent) {
+OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhrase, BYTE rsaModulus[512], PDWORD rsaModulusLength, LONG *rsaExponent) {
 	OPGP_ERROR_STATUS status;
 	EVP_PKEY *key = NULL;
 	FILE *PEMKeyFile = NULL;
@@ -2139,9 +2233,10 @@ OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhra
       *rsaExponent = get_number(rsaTmp, 0, eLength);
     }
     nLength = BN_num_bytes(n);
-    if (nLength != 128) {
+    if (nLength > *rsaModulusLength) {
         { OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
     }
+	*rsaModulusLength = nLength;
     BN_bn2bin(n, rsaModulus);
 #ifndef OPENSSL3
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
@@ -2181,7 +2276,7 @@ end:
  * \param hash [out] The calculated hash.
  * \param md [in] The message digest to use.
  */
-OPGP_ERROR_STATUS calculate_hash(PBYTE message, DWORD messageLength, BYTE hash[32], const EVP_MD *md) {
+OPGP_ERROR_STATUS calculate_hash(PBYTE message, DWORD messageLength, BYTE hash[64], const EVP_MD *md) {
 	int result;
 	OPGP_ERROR_STATUS status;
 	EVP_MD_CTX *mdctx;
@@ -2228,6 +2323,15 @@ OPGP_ERROR_STATUS calculate_sha2_hash(PBYTE message, DWORD messageLength, BYTE h
  */
 OPGP_ERROR_STATUS calculate_sha1_hash(PBYTE message, DWORD messageLength, BYTE hash[20]) {
 	return calculate_hash(message, messageLength, hash, EVP_sha1());
+}
+
+/**
+ * \param message [in] The message to generate the hash for.
+ * \param messageLength [in] The length of the message buffer.
+ * \param hash [out] The calculated hash (32 bytes for SM3).
+ */
+OPGP_ERROR_STATUS calculate_sm3_hash(PBYTE message, DWORD messageLength, BYTE hash[32]) {
+	return calculate_hash(message, messageLength, hash, EVP_sm3());
 }
 
 /**
