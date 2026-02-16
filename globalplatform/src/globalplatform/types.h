@@ -26,7 +26,10 @@
 #ifndef _WIN32
 #include <wintypes.h>
 
-#ifdef __APPLE__
+#ifndef LPTSTR
+typedef char *LPTSTR;
+#endif
+#ifndef LPCTSTR
 typedef const char *LPCTSTR;
 #endif
 
@@ -57,4 +60,3 @@ typedef long LONG; //!< A long value.
 #endif
 
 #endif
-

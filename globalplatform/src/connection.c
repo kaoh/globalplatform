@@ -56,10 +56,7 @@ OPGP_ERROR_STATUS OPGP_establish_context(OPGP_CARD_CONTEXT *cardContext) {
 
  OPGP_LOG_START(_T("OPGP_establish_context"));
 
-	// unload library
-	OPGP_release_context(cardContext);
-
-#ifdef OPGP_STATIC_PCSC
+#if defined(OPGP_STATIC_PCSC)
 	/* If statically linked PC/SC plugin is requested, wire symbols directly */
 	if (_tcscmp(cardContext->libraryName, _T("gppcscconnectionplugin")) == 0) {
 		/* Avoid dynamic loading; set function pointers to linked-in plugin */
@@ -69,7 +66,7 @@ OPGP_ERROR_STATUS OPGP_establish_context(OPGP_CARD_CONTEXT *cardContext) {
 		OPGP_ERROR_STATUS OPGP_PL_release_context(OPGP_CARD_CONTEXT *);
 		OPGP_ERROR_STATUS OPGP_PL_card_connect(OPGP_CARD_CONTEXT, OPGP_CSTRING, OPGP_CARD_INFO *, DWORD);
 		OPGP_ERROR_STATUS OPGP_PL_card_disconnect(OPGP_CARD_CONTEXT, OPGP_CARD_INFO *);
-  OPGP_ERROR_STATUS OPGP_PL_list_readers(OPGP_CARD_CONTEXT, OPGP_STRING, PDWORD, DWORD);
+		OPGP_ERROR_STATUS OPGP_PL_list_readers(OPGP_CARD_CONTEXT, OPGP_STRING, PDWORD, DWORD);
 		OPGP_ERROR_STATUS OPGP_PL_send_APDU(OPGP_CARD_CONTEXT, OPGP_CARD_INFO, PBYTE, DWORD, PBYTE, PDWORD);
 
 		cardContext->libraryHandle = NULL; /* No dlopen handle when static */
@@ -135,16 +132,16 @@ OPGP_ERROR_STATUS OPGP_release_context(OPGP_CARD_CONTEXT *cardContext) {
 	OPGP_ERROR_STATUS(*plugin_release_context) (OPGP_CARD_CONTEXT *);
 
 	OPGP_LOG_START(_T("OPGP_release_context"));
+	// call the release function even for statically linked plugins
+	plugin_release_context = (OPGP_ERROR_STATUS(*)(OPGP_CARD_CONTEXT *)) cardContext->connectionFunctions.releaseContext;
+	if (plugin_release_context != NULL) {
+		errorStatus = (*plugin_release_context) (cardContext);
+		if (OPGP_ERROR_CHECK(errorStatus)) {
+			goto end;
+		}
+	}
 	// only if handle is not NULL unload it
 	if (cardContext->libraryHandle != NULL) {
-		// call the release function
-		plugin_release_context = (OPGP_ERROR_STATUS(*)(OPGP_CARD_CONTEXT *)) cardContext->connectionFunctions.releaseContext;
-		if (plugin_release_context != NULL) {
-			errorStatus = (*plugin_release_context) (cardContext);
-			if (OPGP_ERROR_CHECK(errorStatus)) {
-				goto end;
-			}
-		}
 		errorStatus = DYN_CloseLibrary(&cardContext->libraryHandle);
 		if (OPGP_ERROR_CHECK(errorStatus)) {
 			goto end;
@@ -306,5 +303,3 @@ end:
 	OPGP_LOG_END(_T("OPGP_send_APDU"), errorStatus);
 	return errorStatus;
 }
-
-

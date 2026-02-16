@@ -23,17 +23,18 @@
 #ifndef OPGP_UNICODE_H
 #define OPGP_UNICODE_H
 
+#ifdef WIN32
+#include <tchar.h>
+#endif
+
 #ifndef WIN32
 #define _tmain main
 #define _TCHAR char
 #define TCHAR char
-#if !defined(__wintypes_h__)
-#define LPTSTR char *
-#define LPCTSTR const char *
-#endif
 #define _T(arg) arg
 #define _tcsncpy strncpy
 #define _tcscpy strcpy
+#define _tcscmp strcmp
 #define _tcslen strlen
 #define _tprintf printf
 #define _tfopen fopen

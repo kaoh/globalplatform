@@ -61,7 +61,7 @@ ENDIF()
 IF(WIN32)
     SET(SOURCES ${SOURCES} version.rc)
     ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
-    ADD_DEFINITIONS(-DUNICODE)
+    ADD_DEFINITIONS(-DUNICODE -D_UNICODE -DWIN32)
 ENDIF(WIN32)
 
 # Ensure we include in-tree GlobalPlatform headers to avoid picking up system-installed ones
@@ -72,25 +72,39 @@ IF(UNIX)
   link_directories(${PCSC_LIBDIR})
 ENDIF()
 
-ADD_EXECUTABLE(gpshell ${SOURCES})
-TARGET_LINK_LIBRARIES(gpshell ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES})
+if(NOT STATIC)
+  ADD_EXECUTABLE(gpshell ${SOURCES})
+  TARGET_LINK_LIBRARIES(gpshell ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES})
 
-# New simplified CLI
-ADD_EXECUTABLE(gpshell3 ${SOURCES3})
-TARGET_LINK_LIBRARIES(gpshell3 ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES})
+  # New simplified CLI
+  ADD_EXECUTABLE(gpshell3 ${SOURCES3})
+  TARGET_LINK_LIBRARIES(gpshell3 ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES})
 
-# Allow in-tree execution to find the PC/SC plugin without installing it
-if(UNIX)
-  set(_gpshell_plugin_rpath "$ORIGIN/../../gppcscconnectionplugin/src")
-  set_target_properties(gpshell PROPERTIES BUILD_RPATH "${_gpshell_plugin_rpath}")
-  set_target_properties(gpshell3 PROPERTIES BUILD_RPATH "${_gpshell_plugin_rpath}")
+  # Allow in-tree execution to find the PC/SC plugin without installing it
+  if(UNIX)
+    set(_gpshell_plugin_rpath "$ORIGIN/../../gppcscconnectionplugin/src")
+    set_target_properties(gpshell PROPERTIES BUILD_RPATH "${_gpshell_plugin_rpath}")
+    set_target_properties(gpshell3 PROPERTIES BUILD_RPATH "${_gpshell_plugin_rpath}")
+  endif()
+  if(APPLE)
+    # Make packaged binaries runnable directly from the DMG layout (bin + ../lib).
+    set_target_properties(gpshell PROPERTIES INSTALL_RPATH "@executable_path/../lib")
+    set_target_properties(gpshell3 PROPERTIES INSTALL_RPATH "@executable_path/../lib")
+  endif()
 endif()
 
 # Optional static gpshell that embeds GlobalPlatform and PC/SC plugin
 option(GPSHELL_BUILD_STATIC "Build a statically linked gpshell with built-in PC/SC plugin" ON)
+if(STATIC)
+  set(GPSHELL_BUILD_STATIC ON CACHE BOOL "Build a statically linked gpshell with built-in PC/SC plugin" FORCE)
+else()
+  set(GPSHELL_BUILD_STATIC OFF CACHE BOOL "Build a statically linked gpshell with built-in PC/SC plugin" FORCE)
+endif()
 if(GPSHELL_BUILD_STATIC)
   add_executable(gpshellStatic ${SOURCES})
   add_executable(gpshell3Static ${SOURCES3})
+  set_target_properties(gpshellStatic PROPERTIES OUTPUT_NAME "gpshell")
+  set_target_properties(gpshell3Static PROPERTIES OUTPUT_NAME "gpshell3")
   
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_options(gpshell3Static PRIVATE -g -O0)
@@ -139,18 +153,24 @@ if(GPSHELL_BUILD_STATIC)
     TARGET_LINK_LIBRARIES(gpshellStatic optimized ${WINDDK_DIR}/lib/win7/i386/msvcrt_win2000.obj optimized ${WINDDK_DIR}/lib/Crt/i386/msvcrt.lib)
   endif()
   # Install static gpshell as separate binary
-  INSTALL(TARGETS gpshellStatic DESTINATION bin)
+  INSTALL(TARGETS gpshellStatic gpshell3Static DESTINATION bin)
 endif()
 
 IF(WINDDK_DIR)
-  TARGET_LINK_LIBRARIES(gpshell ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES} optimized ${WINDDK_DIR}/lib/win7/i386/msvcrt_win2000.obj optimized ${WINDDK_DIR}/lib/Crt/i386/msvcrt.lib)
+  if(TARGET gpshell)
+    TARGET_LINK_LIBRARIES(gpshell ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES} optimized ${WINDDK_DIR}/lib/win7/i386/msvcrt_win2000.obj optimized ${WINDDK_DIR}/lib/Crt/i386/msvcrt.lib)
+  endif()
 ENDIF(WINDDK_DIR)
 
 # Install
-INSTALL(TARGETS gpshell DESTINATION bin)
-INSTALL(TARGETS gpshell3 DESTINATION bin)
+if(TARGET gpshell)
+  INSTALL(TARGETS gpshell DESTINATION bin)
+endif()
+if(TARGET gpshell3)
+  INSTALL(TARGETS gpshell3 DESTINATION bin)
+endif()
 
-IF(NOT(WIN32))
+IF(NOT WIN32)
 	# pandoc man page generation
 	
 	if(NOT EXISTS ${PANDOC_EXECUTABLE})
@@ -203,4 +223,4 @@ set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${make_clean_fi
 IF(UNIX)
   INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/gpshell.1 DESTINATION ${MANPAGE_DIRECTORY}/man1)
   INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/gpshell3.1 DESTINATION ${MANPAGE_DIRECTORY}/man1)
-ENDIF(UNIX)
+ENDIF()

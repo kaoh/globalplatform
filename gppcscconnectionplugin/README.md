@@ -14,7 +14,7 @@ Use a suitable packet manager for your OS or install the programs and libraries 
   * Linux: Termed `build-essential` in Debian based distributions (gcc, make)
   * MacOS: Xcode
   * Windows: Visual Studio and SDK
-* [CMake 3.5.1](http://www.cmake.org/) or higher is needed
+* [CMake 3.10](http://www.cmake.org/) or higher is needed
 * [PC/SC Lite](https://pcsclite.apdu.fr) (only for UNIXes, Windows and MacOS is already including this)
 * [GlobalPlatform](https://github.com/kaoh/globalplatform)
 

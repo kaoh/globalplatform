@@ -27,7 +27,7 @@ under `/usr/share/doc/gpshell2` or `/usr/local/share/doc/gpshell2` or `home/linu
 
 Clone the project from GitHub or download the zip file (also available under the Clone tab).
 
-Consult the individual sub projects for further instructions and prerequisites. It is also possible to compile the sub projects individually.
+Consult the individual subprojects for further instructions and prerequisites. It is also possible to compile the sub projects individually.
 
 ## Prerequisites
 
@@ -37,11 +37,11 @@ Use a suitable packet manager for your OS or install the programs and libraries 
   * Linux: Termed `build-essential` in Debian based distributions (gcc, make)
   * macOS: Xcode
   * Windows: Visual Studio and SDK
-* [CMake 3.5.1](http://www.cmake.org/) or higher is needed
+* [CMake 3.10](http://www.cmake.org/) or higher is needed
 * [PC/SC Lite](https://pcsclite.apdu.fr) (only for UNIXes, Windows and macOS are already including this)
 * [Doxygen](www.doxygen.org/) for generating the documentation
 * [Graphviz](https://graphviz.org) for generating graphics in the documentation
-* [OpenSSL](http://www.openssl.org/) (On macOS use OpenSSL 3)
+* [OpenSSL](http://www.openssl.org/) (Use OpenSSL 3)
 * [zlib](http://www.zlib.net/) (macOS should already bundle this, for Windows a pre-built version is included)
 * [cmocka](https://cmocka.org/) for running the tests
 * [Pandoc](https://pandoc.org/installing.html) for generating the man page the tests
@@ -68,7 +68,7 @@ __NOTE:__ If using Homebrew in parallel and having not used Homebrew for install
 
 ```
 cd \path\to\globalplatform
-cmake -B build .
+cmake -B build -DCMAKE_BUILD_TYPE=Release.
 cd build
 make
 make doc
@@ -94,17 +94,17 @@ brew install openssl@3 doxygen cmocka pandoc cmake graphviz
 
 ### Compile
 
-It is necessary to set the `OPENSSL_ROOT_DIR`. In case of the usage of Homebrew this works:
+It is necessary to set the `OPENSSL_ROOT_DIR`. In the case regarding the usage of Homebrew, this works:
 
 ```shell
 cd \path\to\globalplatform
-cmake -B build -DCMAKE_C_COMPILER=/usr/bin/gcc -DOPENSSL_ROOT_DIR=$(brew --prefix openssl@3) .
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=/usr/bin/gcc -DOPENSSL_ROOT_DIR=$(brew --prefix openssl@3) .
 cd build
 make
 make install
 ```
 
-__NOTE:__ `CMAKE_C_COMPILER` is required if Xcode is installed. CMake would favor the Xcode compiler leading to potential runtime errors.
+__NOTE:__ `CMAKE_C_COMPILER` is required if Xcode is installed. CMake would favor the Xcode compiler, leading to potential runtime errors.
 
 ## Windows
 
@@ -126,11 +126,11 @@ It will be necessary to set the `ZLIB_ROOT` and `CMOCKA_ROOT` and `OPENSSL_ROOT_
 
 ```shell
 cd \path\to\globalplatform
-cmake -G "NMake Makefiles" -DOPENSSL_ROOT_DIR="C:\Program Files (x86)\OpenSSL-Win32" -DZLIB_ROOT="C:\Users\john\Desktop\globalplatform\zlib-1.2.8\win32-build" -DCMOCKA_ROOT="C:\Users\john\Desktop\globalplatform\cmocka-cmocka-1.1.5\build-w32"
+cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DOPENSSL_ROOT_DIR="C:\Program Files (x86)\OpenSSL-Win32" -DZLIB_ROOT="C:\Users\john\Desktop\globalplatform\zlib-1.2.8\win32-build" -DCMOCKA_ROOT="C:\Users\john\Desktop\globalplatform\cmocka-cmocka-1.1.5\build-w32"
 nmake
 ```
 
-__NOTE:__ Read also the Windows-specific part in the [GlobalPlatform sub project](./globalplatform/README.md#sdk).
+__NOTE:__ Read also the Windows-specific part in the [GlobalPlatform subproject](./globalplatform/README.md#sdk).
 
 ## Documentation
 
@@ -155,7 +155,7 @@ Execute:
 To be able to debug the library, enable the debug symbols:
 
 ```
-cmake . -DDEBUG=ON
+cmake -B build .
 ```
 
 ## Testing
@@ -163,7 +163,7 @@ cmake . -DDEBUG=ON
 To generate the tests, execute:
 
 ```shell
-cmake -B build -DTESTING=ON -DINTEGRATION_TESTING=ON -DDEBUG=ON .
+cmake -B build -DTESTING=ON -DINTEGRATION_TESTING=ON .
 cd build
 make
 make test-unit
@@ -176,9 +176,31 @@ __NOTE:__ On Windows: When using the Visual Studio command line, the necessary m
 
 ## Debug Output
 
-The variable `GLOBALPLATFORM_DEBUG=1` in the environment must be set. The logfile can be set with `GLOBALPLATFORM_LOGFILE=<file>`. Under Windows by default `C:\Temp\GlobalPlatform.log` is chosen, under Unix systems if syslog is available it will be used by default. The default log file under Unix systems is `/tmp/GlobalPlatform.log` if syslog is not available.
+The variable `GLOBALPLATFORM_DEBUG=1` in the environment must be set. The logfile can be set with `GLOBALPLATFORM_LOGFILE=<file>`. 
+Under Windows by default `C:\Temp\GlobalPlatform.log` is chosen, under Unix systems if syslog is available it will be used by default. 
+The default log file under Unix systems is `/tmp/GlobalPlatform.log` if syslog is not available.
 
-# GitHub Documentation
+# Packaging
+
+cpack is used for packaging. 
+
+If only GPShell is in focus, a static build is recommended:
+
+~~~shell
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DSTATIC=ON
+~~~
+
+For the packaging process run inside the build directory after the build:
+
+~~~shell
+cpack
+~~~
+
+* On Linux, cpack creates both DEB and RPM. You need dpkg-deb and rpmbuild installed. 
+* Windows MSI (WIX) is generated on Windows with WiX installed. 
+* macOS DragNDrop is generated on macOS.
+
+# Generate GitHub Documentation
 
 The GitHub documentation is located under the `docs` folder and is using [Jekyll](https://jekyllrb.com).
 

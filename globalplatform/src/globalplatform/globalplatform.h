@@ -28,11 +28,6 @@ extern "C"
 {
 #endif
 
-#ifdef WIN32
-#include "stdafx.h"
-#endif
-
-
 #ifndef max
 #define max(a,b) (((a)>(b))?(a):(b))
 #endif

@@ -1,0 +1,36 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
+
+find_dependency(PCSC)
+find_dependency(OpenSSL)
+find_dependency(ZLIB)
+
+include("${CMAKE_CURRENT_LIST_DIR}/globalplatformTargets.cmake")
+
+if(PCSC_INCLUDE_DIRS)
+  if(TARGET globalplatform::globalplatformStatic)
+    set_property(TARGET globalplatform::globalplatformStatic APPEND PROPERTY
+      INTERFACE_INCLUDE_DIRECTORIES "${PCSC_INCLUDE_DIRS}")
+  endif()
+  if(TARGET globalplatform::globalplatform)
+    get_target_property(_gp_aliased globalplatform::globalplatform ALIASED_TARGET)
+    if(NOT _gp_aliased)
+      set_property(TARGET globalplatform::globalplatform APPEND PROPERTY
+        INTERFACE_INCLUDE_DIRECTORIES "${PCSC_INCLUDE_DIRS}")
+    endif()
+    unset(_gp_aliased)
+  endif()
+endif()
+
+if(NOT TARGET globalplatform::globalplatform AND TARGET globalplatform::globalplatformStatic)
+  add_library(globalplatform::globalplatform ALIAS globalplatform::globalplatformStatic)
+endif()
+if(NOT TARGET globalplatform AND TARGET globalplatform::globalplatformStatic)
+  add_library(globalplatform ALIAS globalplatform::globalplatformStatic)
+endif()
+if(NOT TARGET globalplatformStatic AND TARGET globalplatform::globalplatformStatic)
+  add_library(globalplatformStatic ALIAS globalplatform::globalplatformStatic)
+endif()

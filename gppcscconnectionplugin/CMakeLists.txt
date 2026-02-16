@@ -34,7 +34,7 @@ set(CPACK_SOURCE_GENERATOR "TGZ")
 ENDIF(WIN32)
 
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY  "This is a PC/SC connection plugin for the GlobalPlatform Library.")
-set(CPACK_PACKAGE_FILE_NAME            "${PROJECT_NAME}-binary-${VERSION}")
+set(CPACK_PACKAGE_FILE_NAME            "${PROJECT_NAME}-${VERSION}")
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${VERSION}")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY    "${PROJECT_NAME}-${VERSION}")
 set(CPACK_PACKAGE_VENDOR               "Karsten Ohme")
@@ -55,3 +55,30 @@ Doxyfile$;${CPACK_SOURCE_IGNORE_FILES}")
 include(CPack)
 
 ADD_SUBDIRECTORY(src)
+
+include(CMakePackageConfigHelpers)
+
+configure_package_config_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/gppcscconnectionpluginConfig.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/gppcscconnectionpluginConfig.cmake"
+  INSTALL_DESTINATION "lib${LIB_SUFFIX}/cmake/gppcscconnectionplugin")
+
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/gppcscconnectionpluginConfigVersion.cmake"
+  VERSION "${VERSION}"
+  COMPATIBILITY SameMajorVersion)
+
+install(EXPORT gppcscconnectionpluginTargets
+  NAMESPACE gppcscconnectionplugin::
+  DESTINATION "lib${LIB_SUFFIX}/cmake/gppcscconnectionplugin")
+
+install(FILES
+  "${CMAKE_CURRENT_BINARY_DIR}/gppcscconnectionpluginConfig.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/gppcscconnectionpluginConfigVersion.cmake"
+  DESTINATION "lib${LIB_SUFFIX}/cmake/gppcscconnectionplugin"
+  COMPONENT dev)
+
+install(FILES
+  "${CMAKE_CURRENT_SOURCE_DIR}/../globalplatform/cmake_modules/FindPCSC.cmake"
+  DESTINATION "lib${LIB_SUFFIX}/cmake/gppcscconnectionplugin"
+  COMPONENT dev)

@@ -28,10 +28,6 @@ extern "C"
 {
 #endif
 
-#ifdef WIN32
-#include "stdafx.h"
-#endif
-
 #include "types.h"
 #include "library.h"
 #include "error.h"

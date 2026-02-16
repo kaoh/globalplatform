@@ -7,18 +7,18 @@ mkdir %dirName%
 
 set "gpshellZip="
 set "gpshellZipName="
-for /f %%f in ('dir /a /b gpshell-binary-*.zip 2^>NUL') do (
+for /f %%f in ('dir /a /b gpshell-*.zip 2^>NUL') do (
   set "gpshellZip=%%f"
   set "gpshellZipName=%%f"
 )
 if not defined gpshellZip (
-  for /f %%f in ('dir /a /b "%ROOT%gpshell-binary-*.zip" 2^>NUL') do (
+  for /f %%f in ('dir /a /b "%ROOT%gpshell-*.zip" 2^>NUL') do (
     set "gpshellZip=%ROOT%%%f"
     set "gpshellZipName=%%f"
   )
 )
 if not defined gpshellZip (
-  echo No gpshell-binary-*.zip found in current directory or %ROOT%
+  echo No gpshell-*.zip found in current directory or %ROOT%
   exit /b 1
 )
 
@@ -27,7 +27,7 @@ tar -xf "%ROOT%zlib-1.2.8\zlib-1.2.8.zip" -C %dirName%
 
 rem get gpshell directory 
 set dirNamegpshell=""
-for /f %%d in ('dir /ad /b %dirName%\gpshell-binary*') do set "dirNamegpshell=%dirName%\%%d"
+for /f %%d in ('dir /ad /b %dirName%\gpshell-*') do set "dirNamegpshell=%dirName%\%%d"
 
 copy "%dirNamegpshell%\lib\globalplatform.dll" "%dirNamegpshell%\bin"
 copy "%dirNamegpshell%\lib\gppcscconnectionplugin.dll" "%dirNamegpshell%\bin"
