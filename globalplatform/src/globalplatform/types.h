@@ -26,8 +26,10 @@
 #ifndef _WIN32
 #include <wintypes.h>
 
-#ifndef __wintypes_h__
+#ifndef LPTSTR
 typedef char *LPTSTR;
+#endif
+#ifndef LPCTSTR
 typedef const char *LPCTSTR;
 #endif
 
