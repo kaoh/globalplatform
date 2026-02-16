@@ -235,15 +235,21 @@ START_TEST(test_connect_card)
 		OPGP_ERROR_STATUS status;
 		status = internal_connect();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not connect: %s", status.errorMessage);
+			ck_abort_msg("Could not connect: %s", status.errorMessage);
 		}
 		status = internal_disconnect();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not disconnect: %s", status.errorMessage);
+			ck_abort_msg("Could not disconnect: %s", status.errorMessage);
 		}
-		fail_unless(cardInfo.librarySpecific == NULL, "Library specific data must be NULL after disconnecting.");
-		fail_unless(cardContext.libraryHandle == NULL, "Library handle must be NULL after releasing.");
-		fail_unless(cardContext.librarySpecific == NULL, "Library specific data must be NULL after releasing.");
+		if (cardInfo.librarySpecific != NULL) {
+			ck_abort_msg("Library specific data must be NULL after disconnecting.");
+		}
+		if (cardContext.libraryHandle != NULL) {
+			ck_abort_msg("Library handle must be NULL after releasing.");
+		}
+		if (cardContext.librarySpecific != NULL) {
+			ck_abort_msg("Library specific data must be NULL after releasing.");
+		}
 	}END_TEST
 
 /**
@@ -254,15 +260,15 @@ START_TEST (test_list_readers)
 		OPGP_ERROR_STATUS status;
 		status = internal_establish_context();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not establish context: %s", status.errorMessage);
+			ck_abort_msg("Could not establish context: %s", status.errorMessage);
 		}
 		status = internal_list_readers();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not list readers: %s", status.errorMessage);
+			ck_abort_msg("Could not list readers: %s", status.errorMessage);
 		}
 		status = internal_release_context();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not release context: %s", status.errorMessage);
+			ck_abort_msg("Could not release context: %s", status.errorMessage);
 		}
 	}END_TEST
 
@@ -274,7 +280,7 @@ START_TEST (test_GP211_VISA2_derive_keys)
 		OPGP_ERROR_STATUS status;
 		status = internal_connect();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not connect: %s", status.errorMessage);
+			ck_abort_msg("Could not connect: %s", status.errorMessage);
 		}
 		BYTE motherKey[] = { 0x4D, 0xA5, 0xFC, 0x18, 0xA4, 0x6F, 0x8A, 0x02,
 				0x05, 0xC7, 0x7C, 0x37, 0x3B, 0x58, 0x2A, 0x1F };
@@ -285,7 +291,7 @@ START_TEST (test_GP211_VISA2_derive_keys)
 				sizeof(GP211_CARD_MANAGER_AID_ALT1), motherKey, S_ENC, S_MAC,
 				DEK);
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Derivation of keys failed: %s", status.errorMessage);
+			ck_abort_msg("Derivation of keys failed: %s", status.errorMessage);
 		}
 		for (i = 0; i < 16; i++) {
 			printf("%02X", S_ENC[i]);
@@ -301,7 +307,7 @@ START_TEST (test_GP211_VISA2_derive_keys)
 		printf("\n");
 		status = internal_disconnect();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not disconnect: %s", status.errorMessage);
+			ck_abort_msg("Could not disconnect: %s", status.errorMessage);
 		}
 	}END_TEST
 
@@ -313,15 +319,15 @@ START_TEST (test_mutual_authentication)
 		OPGP_ERROR_STATUS status;
 		status = internal_connect();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not connect: %s", status.errorMessage);
+			ck_abort_msg("Could not connect: %s", status.errorMessage);
 		}
 		status = internal_mutual_authentication();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not do mutual authentication: %s", status.errorMessage);
+			ck_abort_msg("Could not do mutual authentication: %s", status.errorMessage);
 		}
 		status = internal_disconnect();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not disconnect: %s", status.errorMessage);
+			ck_abort_msg("Could not disconnect: %s", status.errorMessage);
 		}
 		_tprintf(_T("Mutual authentication succeeded\n"));
 	}END_TEST
@@ -336,19 +342,16 @@ START_TEST (test_install)
 		DWORD receiptDataAvailable = 0;
 		DWORD receiptDataLen = 0;
 
-		char installParam[1];
-		installParam[0] = 0;
-
 		OPGP_ERROR_STATUS status;
 		GP211_RECEIPT_DATA receipt;
 
 		status = internal_connect();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not connect: %s", status.errorMessage);
+			ck_abort_msg("Could not connect: %s", status.errorMessage);
 		}
 		status = internal_mutual_authentication();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not do mutual authentication: %s", status.errorMessage);
+			ck_abort_msg("Could not do mutual authentication: %s", status.errorMessage);
 		}
 
 		internal_delete();
@@ -356,24 +359,24 @@ START_TEST (test_install)
 		status = OPGP_read_executable_load_file_parameters(TEST_LOAD_FILE,
 				&loadFileParams);
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("OPGP_read_executable_load_file_parameters() failed: ", status.errorMessage);
+			ck_abort_msg("OPGP_read_executable_load_file_parameters() failed: %s", status.errorMessage);
 		}
 
 		status = GP211_install_for_load(cardContext, cardInfo,
 				&securityInfo211, loadFileParams.loadFileAID.AID,
 				loadFileParams.loadFileAID.AIDLength,
 				(PBYTE) GP231_ISD_AID, sizeof(GP231_ISD_AID),
-				NULL, NULL, loadFileParams.loadFileSize, 0, 2000);
+				NULL, 0, NULL, 0, loadFileParams.loadFileSize, 0, 2000);
 
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("GP211_install_for_load() failed: ", status.errorMessage);
+			ck_abort_msg("GP211_install_for_load() failed: %s", status.errorMessage);
 		}
 
 		status = GP211_load(cardContext, cardInfo, &securityInfo211, NULL, 0,
 				TEST_LOAD_FILE, NULL, &receiptDataLen, NULL);
 
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("GP211_load() failed: ", status.errorMessage);
+			ck_abort_msg("GP211_load() failed: %s", status.errorMessage);
 		}
 
 		status = GP211_install_for_install_and_make_selectable(cardContext,
@@ -383,15 +386,15 @@ START_TEST (test_install)
 				loadFileParams.appletAIDs[0].AIDLength,
 				loadFileParams.appletAIDs[0].AID,
 				loadFileParams.appletAIDs[0].AIDLength, 0, 500, 1000, NULL, 0,
-				NULL, &receipt, &receiptDataAvailable);
+				NULL, 0, &receipt, &receiptDataAvailable);
 
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("GP211_install_for_install_and_make_selectable() failed: ", status.errorMessage);
+			ck_abort_msg("GP211_install_for_install_and_make_selectable() failed: %s", status.errorMessage);
 		}
 
 		status = internal_disconnect();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not disconnect: %s", status.errorMessage);
+			ck_abort_msg("Could not disconnect: %s", status.errorMessage);
 		}
 	}END_TEST
 
@@ -399,19 +402,19 @@ START_TEST (test_delete) {
 		OPGP_ERROR_STATUS status;
 		status = internal_connect();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not connect: %s", status.errorMessage);
+			ck_abort_msg("Could not connect: %s", status.errorMessage);
 		}
 		status = internal_mutual_authentication();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not do mutual authentication: %s", status.errorMessage);
+			ck_abort_msg("Could not do mutual authentication: %s", status.errorMessage);
 		}
 		status = internal_delete();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not delete applets: %s", status.errorMessage);
+			ck_abort_msg("Could not delete applets: %s", status.errorMessage);
 		}
 		status = internal_disconnect();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not disconnect: %s", status.errorMessage);
+			ck_abort_msg("Could not disconnect: %s", status.errorMessage);
 		}
 } END_TEST
 
@@ -422,20 +425,18 @@ START_TEST (test_get_status) {
 		OPGP_ERROR_STATUS status;
 		GP211_APPLICATION_DATA appData[10];
 		GP211_EXECUTABLE_MODULES_DATA modulesData[10];
-		BYTE appAID[7] = {0xa0,0,0,0,4,0x10,0x10};
-		BYTE loadFileAID[7] = {0xa0,0,0,0,3,0x53,0x50};
 		DWORD dataLength = 10;
 		status = internal_connect();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not connect: %s", status.errorMessage);
+			ck_abort_msg("Could not connect: %s", status.errorMessage);
 		}
 		status = internal_mutual_authentication();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not do mutual authentication: %s", status.errorMessage);
+			ck_abort_msg("Could not do mutual authentication: %s", status.errorMessage);
 		}
 		status = GP211_get_status(cardContext, cardInfo, &securityInfo211, GP211_STATUS_APPLICATIONS, GP211_STATUS_FORMAT_DEPRECATED, appData, modulesData, &dataLength);
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not get status from applications: %s", status.errorMessage);
+			ck_abort_msg("Could not get status from applications: %s", status.errorMessage);
 		}
 
 		{
@@ -448,15 +449,21 @@ START_TEST (test_get_status) {
 					break;
 				}
 			}
-			fail_unless(found, "Applet AID not found in application status");
-			fail_unless(appData[i].lifeCycleState == 7, "Incorrect application status life cycle state");
-			fail_unless(appData[i].privileges == 0, "Incorrect application status privileges");
+			if (!found) {
+				ck_abort_msg("Applet AID not found in application status");
+			}
+			if (appData[i].lifeCycleState != 7) {
+				ck_abort_msg("Incorrect application status life cycle state");
+			}
+			if (appData[i].privileges != 0) {
+				ck_abort_msg("Incorrect application status privileges");
+			}
 		}
 
         dataLength = 10;
 		status = GP211_get_status(cardContext, cardInfo, &securityInfo211, GP211_STATUS_LOAD_FILES, GP211_STATUS_FORMAT_DEPRECATED, appData, modulesData, &dataLength);
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not get status from applications: %s", status.errorMessage);
+			ck_abort_msg("Could not get status from applications: %s", status.errorMessage);
 		}
 
 		{
@@ -469,24 +476,36 @@ START_TEST (test_get_status) {
 					break;
 						}
 			}
-			fail_unless(found, "Applet AID not found in application status");
-			fail_unless(appData[i].lifeCycleState == 1, "Incorrect load file status");
-			fail_unless(appData[i].privileges == 0, "Incorrect load file status");
+			if (!found) {
+				ck_abort_msg("Applet AID not found in application status");
+			}
+			if (appData[i].lifeCycleState != 1) {
+				ck_abort_msg("Incorrect load file status");
+			}
+			if (appData[i].privileges != 0) {
+				ck_abort_msg("Incorrect load file status");
+			}
 		}
 
-		fail_unless(dataLength == 5, "Incorrect load file status");
+		if (dataLength != 5) {
+			ck_abort_msg("Incorrect load file status");
+		}
 
         dataLength = 10;
 		status = GP211_get_status(cardContext, cardInfo, &securityInfo211, GP211_STATUS_ISSUER_SECURITY_DOMAIN, GP211_STATUS_FORMAT_DEPRECATED, appData, modulesData, &dataLength);
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not get status from applications: %s", status.errorMessage);
+			ck_abort_msg("Could not get status from applications: %s", status.errorMessage);
 		}
-		fail_unless(dataLength == 1, "Incorrect issuer security status");
-		fail_unless(memcmp(appData[0].aid.AID, GP231_ISD_AID, sizeof(GP231_ISD_AID)) == 0, "Incorrect issuer security status");
+		if (dataLength != 1) {
+			ck_abort_msg("Incorrect issuer security status");
+		}
+		if (memcmp(appData[0].aid.AID, GP231_ISD_AID, sizeof(GP231_ISD_AID)) != 0) {
+			ck_abort_msg("Incorrect issuer security status");
+		}
 
 		status = internal_disconnect();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not disconnect: %s", status.errorMessage);
+			ck_abort_msg("Could not disconnect: %s", status.errorMessage);
 		}
 } END_TEST
 
@@ -496,20 +515,20 @@ START_TEST (test_put_aes_key) {
 		BYTE key[16] = {0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5};
 		status = internal_connect();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not connect: %s", status.errorMessage);
+			ck_abort_msg("Could not connect: %s", status.errorMessage);
 		}
 		status = internal_mutual_authentication();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not do mutual authentication: %s", status.errorMessage);
+			ck_abort_msg("Could not do mutual authentication: %s", status.errorMessage);
 		}
 		GP211_delete_key(cardContext, cardInfo, &securityInfo211, 5, 0xFF);
 		status = GP211_put_aes_key(cardContext, cardInfo, &securityInfo211, 0, 1, 5, key, sizeof(key));
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not put key: %s", status.errorMessage);
+			ck_abort_msg("Could not put key: %s", status.errorMessage);
 		}
 		status = internal_disconnect();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not disconnect: %s", status.errorMessage);
+			ck_abort_msg("Could not disconnect: %s", status.errorMessage);
 		}
 } END_TEST
 
@@ -518,19 +537,19 @@ START_TEST (test_delete_key) {
 		OPGP_ERROR_STATUS status;
 		status = internal_connect();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not connect: %s", status.errorMessage);
+			ck_abort_msg("Could not connect: %s", status.errorMessage);
 		}
 		status = internal_mutual_authentication();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not do mutual authentication: %s", status.errorMessage);
+			ck_abort_msg("Could not do mutual authentication: %s", status.errorMessage);
 		}
 		status = GP211_delete_key(cardContext, cardInfo, &securityInfo211, 5, 0xFF);
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not delete key: %s", status.errorMessage);
+			ck_abort_msg("Could not delete key: %s", status.errorMessage);
 		}
 		status = internal_disconnect();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not disconnect: %s", status.errorMessage);
+			ck_abort_msg("Could not disconnect: %s", status.errorMessage);
 		}
 } END_TEST
 
@@ -558,11 +577,11 @@ START_TEST (test_install_callback) {
 
 		status = internal_connect();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not connect: %s", status.errorMessage);
+			ck_abort_msg("Could not connect: %s", status.errorMessage);
 		}
 		status = internal_mutual_authentication();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not do mutual authentication: %s", status.errorMessage);
+			ck_abort_msg("Could not do mutual authentication: %s", status.errorMessage);
 		}
 
 		internal_delete();
@@ -570,34 +589,40 @@ START_TEST (test_install_callback) {
 		status = OPGP_read_executable_load_file_parameters(TEST_LOAD_FILE,
 				&loadFileParams);
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("OPGP_read_executable_load_file_parameters() failed: ", status.errorMessage);
+			ck_abort_msg("OPGP_read_executable_load_file_parameters() failed: %s", status.errorMessage);
 		}
 
 		status = GP211_install_for_load(cardContext, cardInfo,
 				&securityInfo211, loadFileParams.loadFileAID.AID,
 				loadFileParams.loadFileAID.AIDLength,
 				(PBYTE) GP231_ISD_AID, sizeof(GP231_ISD_AID),
-				NULL, NULL, loadFileParams.loadFileSize, 0, 2000);
+				NULL, 0, NULL, 0, loadFileParams.loadFileSize, 0, 2000);
 
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("GP211_install_for_load() failed: ", status.errorMessage);
+			ck_abort_msg("GP211_install_for_load() failed: %s", status.errorMessage);
 		}
 
-		callback.callback = (void(*)(OPGP_PROGRESS_CALLBACK_PARAMETERS))callback_function;
+		callback.callback = callback_function;
 		status = GP211_load(cardContext, cardInfo, &securityInfo211, NULL, 0,
 				TEST_LOAD_FILE, NULL, &receiptDataLen, &callback);
 
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("GP211_load() failed: ", status.errorMessage);
+			ck_abort_msg("GP211_load() failed: %s", status.errorMessage);
 		}
 
-        fail_unless(totalWork == 343, "Incorrect total size");
-        fail_unless(currentWork == 343, "Incorrect currentWork");
-        fail_unless(finished == OPGP_TASK_FINISHED, "Incorrect finished state");
+        if (totalWork != 343) {
+            ck_abort_msg("Incorrect total size");
+        }
+        if (currentWork != 343) {
+            ck_abort_msg("Incorrect currentWork");
+        }
+        if (finished != OPGP_TASK_FINISHED) {
+            ck_abort_msg("Incorrect finished state");
+        }
 
 		status = internal_disconnect();
 		if (OPGP_ERROR_CHECK(status)) {
-			fail("Could not disconnect: %s", status.errorMessage);
+			ck_abort_msg("Could not disconnect: %s", status.errorMessage);
 		}
 	}END_TEST
 

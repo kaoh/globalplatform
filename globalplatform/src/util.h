@@ -48,7 +48,7 @@ typedef struct {
 
 //! \brief Reads a TLV struct from the given buffer
 OPGP_NO_API
-LONG read_TLV(PBYTE buffer, DWORD length, TLV *tlv);
+LONG read_TLV(const BYTE *buffer, DWORD length, TLV *tlv);
 
 //! \brief Converts a ISO 7816-4 Le Byte into its value.
 OPGP_NO_API

@@ -191,7 +191,7 @@ static void install_mac_enc(void **state) {
 	aid.AIDLength = aidLength;
 	status = GP211_install_for_load(cardContext, cardInfo, &securityInfo211,
 								loadFileParams.loadFileAID.AID, loadFileParams.loadFileAID.AIDLength,
-								aid.AID, aidLength, NULL, NULL,
+								aid.AID, aidLength, NULL, 0, NULL, 0,
 								loadFileParams.loadFileSize, 0, 2000);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 	status = GP211_load(cardContext, cardInfo, &securityInfo211, NULL, 0, "helloworld.cap", NULL, &receiptDataAvailable, NULL);
@@ -201,7 +201,7 @@ static void install_mac_enc(void **state) {
 		loadFileParams.loadFileAID.AID, loadFileParams.loadFileAID.AIDLength,
 		loadFileParams.appletAIDs[0].AID, loadFileParams.appletAIDs[0].AIDLength,
 		loadFileParams.appletAIDs[0].AID, loadFileParams.appletAIDs[0].AIDLength,
-		2, 0, 2000, installParam, 1, NULL, &receiptData, &receiptDataAvailable);
+		2, 0, 2000, installParam, 1, NULL, 0, &receiptData, &receiptDataAvailable);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 }
 

@@ -188,7 +188,7 @@ OPGP_ERROR_STATUS validate_load_receipt(DWORD confirmationCounter, PBYTE cardUni
 
 //! \brief Reads a public RSA key from a file
 OPGP_NO_API
-OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhrase, BYTE rsaModulus[128], PDWORD rsaModulusLength, LONG *rsaExponent);
+OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhrase, PBYTE rsaModulus, PDWORD rsaModulusLength, LONG *rsaExponent);
 
 //! \brief Calculates a SHA-256 hash.
 OPGP_NO_API

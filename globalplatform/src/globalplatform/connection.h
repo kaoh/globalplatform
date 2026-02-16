@@ -51,24 +51,34 @@ extern "C"
 #define OPGP_CARD_PROTOCOL_T0 SCARD_PROTOCOL_T0 //!< Transport protocol T=0
 #define OPGP_CARD_PROTOCOL_T1 SCARD_PROTOCOL_T1 //!< Transport protocol T=1
 
+typedef struct OPGP_CARD_CONTEXT OPGP_CARD_CONTEXT;
+typedef struct OPGP_CARD_INFO OPGP_CARD_INFO;
+
+typedef OPGP_ERROR_STATUS (*OPGP_ESTABLISH_CONTEXT_FN)(OPGP_CARD_CONTEXT *);
+typedef OPGP_ERROR_STATUS (*OPGP_RELEASE_CONTEXT_FN)(OPGP_CARD_CONTEXT *);
+typedef OPGP_ERROR_STATUS (*OPGP_CARD_CONNECT_FN)(OPGP_CARD_CONTEXT, OPGP_CSTRING, OPGP_CARD_INFO *, DWORD);
+typedef OPGP_ERROR_STATUS (*OPGP_CARD_DISCONNECT_FN)(OPGP_CARD_CONTEXT, OPGP_CARD_INFO *);
+typedef OPGP_ERROR_STATUS (*OPGP_LIST_READERS_FN)(OPGP_CARD_CONTEXT, OPGP_STRING, PDWORD, DWORD);
+typedef OPGP_ERROR_STATUS (*OPGP_SEND_APDU_FN)(OPGP_CARD_CONTEXT, OPGP_CARD_INFO, PBYTE, DWORD, PBYTE, PDWORD);
+
 /**
  * Structure for holding all connection related functions for connection plugin libraries.
  */
 typedef struct
 {
-	PVOID establishContext; //!< Function to establish the context.
-	PVOID releaseContext; //!< Function to release the context.
-	PVOID cardConnect; //!< Function to connect to the card.
-	PVOID cardDisconnect; //!< Function to disconnect from the card.
-	PVOID listReaders; //!< Function to list the readers.
-	PVOID sendAPDU; //!< Function to send an APDU.
+	OPGP_ESTABLISH_CONTEXT_FN establishContext; //!< Function to establish the context.
+	OPGP_RELEASE_CONTEXT_FN releaseContext; //!< Function to release the context.
+	OPGP_CARD_CONNECT_FN cardConnect; //!< Function to connect to the card.
+	OPGP_CARD_DISCONNECT_FN cardDisconnect; //!< Function to disconnect from the card.
+	OPGP_LIST_READERS_FN listReaders; //!< Function to list the readers.
+	OPGP_SEND_APDU_FN sendAPDU; //!< Function to send an APDU.
 
 } OPGP_CONNECTION_FUNCTIONS;
 
 /**
  * Card context necessary for #OPGP_establish_context().
  */
-typedef struct {
+typedef struct OPGP_CARD_CONTEXT {
 	PVOID librarySpecific; //!< Library specific data.
 	TCHAR libraryName[64]; //!< The name of the connection library to use.
 	TCHAR libraryVersion[32]; //!< The version of the connection library to use.
@@ -79,7 +89,7 @@ typedef struct {
 /**
  * The card information returned by a #OPGP_card_connect() and modified by select_channel().
  */
-typedef struct {
+typedef struct OPGP_CARD_INFO {
 	BYTE ATR[MAX_ATR_SIZE]; //!< The Answer To Reset from the card.
 	DWORD ATRLength; //!< The length of the ATR buffer.
 	BYTE logicalChannel; //!< The current logical channel.

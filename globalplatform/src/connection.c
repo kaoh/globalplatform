@@ -28,6 +28,11 @@
 static DWORD traceEnable; //!< Enable trace mode.
 static FILE *traceFile; //!< The trace file for trace mode.
 
+#define ASSIGN_FUNC_PTR(dest, src) do { \
+		PVOID _fn = (src); \
+		memcpy(&(dest), &_fn, sizeof(dest)); \
+	} while (0)
+
 /**
  * \param enable [in] Enables or disables the trace mode.
  * <ul>
@@ -70,15 +75,15 @@ OPGP_ERROR_STATUS OPGP_establish_context(OPGP_CARD_CONTEXT *cardContext) {
 		OPGP_ERROR_STATUS OPGP_PL_send_APDU(OPGP_CARD_CONTEXT, OPGP_CARD_INFO, PBYTE, DWORD, PBYTE, PDWORD);
 
 		cardContext->libraryHandle = NULL; /* No dlopen handle when static */
-		cardContext->connectionFunctions.cardConnect = (PVOID)OPGP_PL_card_connect;
-		cardContext->connectionFunctions.cardDisconnect = (PVOID)OPGP_PL_card_disconnect;
-		cardContext->connectionFunctions.establishContext = (PVOID)OPGP_PL_establish_context;
-		cardContext->connectionFunctions.listReaders = (PVOID)OPGP_PL_list_readers;
-		cardContext->connectionFunctions.releaseContext = (PVOID)OPGP_PL_release_context;
-		cardContext->connectionFunctions.sendAPDU = (PVOID)OPGP_PL_send_APDU;
+		cardContext->connectionFunctions.cardConnect = OPGP_PL_card_connect;
+		cardContext->connectionFunctions.cardDisconnect = OPGP_PL_card_disconnect;
+		cardContext->connectionFunctions.establishContext = OPGP_PL_establish_context;
+		cardContext->connectionFunctions.listReaders = OPGP_PL_list_readers;
+		cardContext->connectionFunctions.releaseContext = OPGP_PL_release_context;
+		cardContext->connectionFunctions.sendAPDU = OPGP_PL_send_APDU;
 
 		/* call the establish function */
-		plugin_establishContextFunction = (OPGP_ERROR_STATUS(*)(OPGP_CARD_CONTEXT*)) cardContext->connectionFunctions.establishContext;
+		plugin_establishContextFunction = cardContext->connectionFunctions.establishContext;
 		errorStatus = (*plugin_establishContextFunction) (cardContext);
 		goto end;
 	}
@@ -89,33 +94,76 @@ OPGP_ERROR_STATUS OPGP_establish_context(OPGP_CARD_CONTEXT *cardContext) {
 		goto end;
 	}
 	// now load functions
-	errorStatus = DYN_GetAddress(cardContext->libraryHandle, &cardContext->connectionFunctions.cardConnect, _T("OPGP_PL_card_connect"));
+	{
+		PVOID fn = NULL;
+		errorStatus = DYN_GetAddress(cardContext->libraryHandle, &fn, _T("OPGP_PL_card_connect"));
+		if (OPGP_ERROR_CHECK(errorStatus)) {
+			goto end;
+		}
+		ASSIGN_FUNC_PTR(cardContext->connectionFunctions.cardConnect, fn);
+	}
+	errorStatus = DYN_GetAddress(cardContext->libraryHandle, NULL, NULL);
 	if (OPGP_ERROR_CHECK(errorStatus)) {
 		goto end;
 	}
-	errorStatus = DYN_GetAddress(cardContext->libraryHandle, &cardContext->connectionFunctions.cardDisconnect, _T("OPGP_PL_card_disconnect"));
+	{
+		PVOID fn = NULL;
+		errorStatus = DYN_GetAddress(cardContext->libraryHandle, &fn, _T("OPGP_PL_card_disconnect"));
+		if (OPGP_ERROR_CHECK(errorStatus)) {
+			goto end;
+		}
+		ASSIGN_FUNC_PTR(cardContext->connectionFunctions.cardDisconnect, fn);
+	}
 	if (OPGP_ERROR_CHECK(errorStatus)) {
 		goto end;
 	}
-	errorStatus = DYN_GetAddress(cardContext->libraryHandle, &cardContext->connectionFunctions.establishContext, _T("OPGP_PL_establish_context"));
+	{
+		PVOID fn = NULL;
+		errorStatus = DYN_GetAddress(cardContext->libraryHandle, &fn, _T("OPGP_PL_establish_context"));
+		if (OPGP_ERROR_CHECK(errorStatus)) {
+			goto end;
+		}
+		ASSIGN_FUNC_PTR(cardContext->connectionFunctions.establishContext, fn);
+	}
 	if (OPGP_ERROR_CHECK(errorStatus)) {
 		goto end;
 	}
-	errorStatus = DYN_GetAddress(cardContext->libraryHandle, &cardContext->connectionFunctions.listReaders, _T("OPGP_PL_list_readers"));
+	{
+		PVOID fn = NULL;
+		errorStatus = DYN_GetAddress(cardContext->libraryHandle, &fn, _T("OPGP_PL_list_readers"));
+		if (OPGP_ERROR_CHECK(errorStatus)) {
+			goto end;
+		}
+		ASSIGN_FUNC_PTR(cardContext->connectionFunctions.listReaders, fn);
+	}
 	if (OPGP_ERROR_CHECK(errorStatus)) {
 		goto end;
 	}
-	errorStatus = DYN_GetAddress(cardContext->libraryHandle, &cardContext->connectionFunctions.releaseContext, _T("OPGP_PL_release_context"));
+	{
+		PVOID fn = NULL;
+		errorStatus = DYN_GetAddress(cardContext->libraryHandle, &fn, _T("OPGP_PL_release_context"));
+		if (OPGP_ERROR_CHECK(errorStatus)) {
+			goto end;
+		}
+		ASSIGN_FUNC_PTR(cardContext->connectionFunctions.releaseContext, fn);
+	}
 	if (OPGP_ERROR_CHECK(errorStatus)) {
 		goto end;
 	}
-	errorStatus = DYN_GetAddress(cardContext->libraryHandle, &cardContext->connectionFunctions.sendAPDU, _T("OPGP_PL_send_APDU"));
+	{
+		PVOID fn = NULL;
+		errorStatus = DYN_GetAddress(cardContext->libraryHandle, &fn, _T("OPGP_PL_send_APDU"));
+		if (OPGP_ERROR_CHECK(errorStatus)) {
+			goto end;
+		}
+		ASSIGN_FUNC_PTR(cardContext->connectionFunctions.sendAPDU, fn);
+	}
 	if (OPGP_ERROR_CHECK(errorStatus)) {
 		goto end;
 	}
 	OPGP_ERROR_CREATE_NO_ERROR(errorStatus);
 	// call the establish function
-	plugin_establishContextFunction = (OPGP_ERROR_STATUS(*)(OPGP_CARD_CONTEXT*)) cardContext->connectionFunctions.establishContext;
+	plugin_establishContextFunction = cardContext->connectionFunctions.establishContext;
 	errorStatus = (*plugin_establishContextFunction) (cardContext);
 end:
 	OPGP_LOG_END(_T("OPGP_establish_context"), errorStatus);
@@ -133,7 +181,7 @@ OPGP_ERROR_STATUS OPGP_release_context(OPGP_CARD_CONTEXT *cardContext) {
 
 	OPGP_LOG_START(_T("OPGP_release_context"));
 	// call the release function even for statically linked plugins
-	plugin_release_context = (OPGP_ERROR_STATUS(*)(OPGP_CARD_CONTEXT *)) cardContext->connectionFunctions.releaseContext;
+	plugin_release_context = cardContext->connectionFunctions.releaseContext;
 	if (plugin_release_context != NULL) {
 		errorStatus = (*plugin_release_context) (cardContext);
 		if (OPGP_ERROR_CHECK(errorStatus)) {
@@ -173,7 +221,7 @@ OPGP_ERROR_STATUS OPGP_list_readers(OPGP_CARD_CONTEXT cardContext, OPGP_STRING r
     OPGP_ERROR_STATUS errorStatus;
     OPGP_ERROR_STATUS(*plugin_listReadersFunction) (OPGP_CARD_CONTEXT, OPGP_STRING, PDWORD, DWORD);
     OPGP_LOG_START(_T("OPGP_list_readers"));
-    plugin_listReadersFunction = (OPGP_ERROR_STATUS(*)(OPGP_CARD_CONTEXT, OPGP_STRING, PDWORD, DWORD)) cardContext.connectionFunctions.listReaders;
+    plugin_listReadersFunction = cardContext.connectionFunctions.listReaders;
     errorStatus = (*plugin_listReadersFunction) (cardContext, readerNames, readerNamesLength, presentOnly);
     OPGP_LOG_END(_T("OPGP_list_readers"), errorStatus);
     return errorStatus;
@@ -194,7 +242,7 @@ OPGP_ERROR_STATUS OPGP_card_connect(OPGP_CARD_CONTEXT cardContext, OPGP_CSTRING 
 	OPGP_LOG_START(_T("OPGP_card_connect"));
 	// set the default spec version
 	cardInfo->specVersion = GP_211;
-	plugin_cardConnectFunction = (OPGP_ERROR_STATUS(*)(OPGP_CARD_CONTEXT, OPGP_CSTRING, OPGP_CARD_INFO*, DWORD)) cardContext.connectionFunctions.cardConnect;
+	plugin_cardConnectFunction = cardContext.connectionFunctions.cardConnect;
 	errorStatus = (*plugin_cardConnectFunction) (cardContext, readerName, cardInfo, protocol);
 	OPGP_LOG_END(_T("OPGP_card_connect"), errorStatus);
 	return errorStatus;
@@ -209,7 +257,7 @@ OPGP_ERROR_STATUS OPGP_card_disconnect(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_
     OPGP_ERROR_STATUS errorStatus;
     OPGP_ERROR_STATUS(*plugin_cardDisconnectFunction) (OPGP_CARD_CONTEXT, OPGP_CARD_INFO *);
     OPGP_LOG_START(_T("OPGP_card_disconnect"));
-    plugin_cardDisconnectFunction = (OPGP_ERROR_STATUS(*)(OPGP_CARD_CONTEXT, OPGP_CARD_INFO *)) cardContext.connectionFunctions.cardDisconnect; ///<same here
+    plugin_cardDisconnectFunction = cardContext.connectionFunctions.cardDisconnect; ///<same here
     errorStatus = (*plugin_cardDisconnectFunction) (cardContext, cardInfo);
     OPGP_LOG_END(_T("OPGP_card_disconnect"), errorStatus);
     return errorStatus;
@@ -235,7 +283,7 @@ OPGP_ERROR_STATUS OPGP_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO c
 	int i=0;
 
 	OPGP_LOG_START(_T("OPGP_send_APDU"));
-	plugin_sendAPDUFunction = (OPGP_ERROR_STATUS(*)(OPGP_CARD_CONTEXT, OPGP_CARD_INFO, PBYTE, DWORD, PBYTE, PDWORD)) cardContext.connectionFunctions.sendAPDU;
+	plugin_sendAPDUFunction = cardContext.connectionFunctions.sendAPDU;
 
 	OPGP_LOG_HEX(_T("OPGP_send_APDU: Command --> "), capdu, capduLength);
 

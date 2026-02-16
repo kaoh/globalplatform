@@ -2156,7 +2156,7 @@ end:
  * \param rsaModulusLength [inout]  The RSA modules length passed in and returned.
  * \param rsaExponent [out] The RSA exponent.
  */
-OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhrase, BYTE rsaModulus[512], PDWORD rsaModulusLength, LONG *rsaExponent) {
+OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhrase, PBYTE rsaModulus, PDWORD rsaModulusLength, LONG *rsaExponent) {
 	OPGP_ERROR_STATUS status;
 	EVP_PKEY *key = NULL;
 	FILE *PEMKeyFile = NULL;

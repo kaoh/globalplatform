@@ -76,7 +76,7 @@ DWORD get_short(PBYTE buf, DWORD offset) {
  * \param *tlv [out] the returned TLV struct.
  * \return -1 in case of error, consumed length otherwise.
  */
-LONG read_TLV(PBYTE buffer, DWORD length, TLV *tlv) {
+LONG read_TLV(const BYTE *buffer, DWORD length, TLV *tlv) {
 	LONG result;
 	DWORD offset = 0;
 	DWORD numLengthOctets;

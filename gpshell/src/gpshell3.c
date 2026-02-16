@@ -1284,6 +1284,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         // Parse optional load file hash
         BYTE loadFileHash[64]; memset(loadFileHash, 0, sizeof(loadFileHash));
         BYTE *loadFileHashPtr = NULL;
+        DWORD loadFileHashLen = 0;
         if (load_file_hash_hex) {
             size_t hash_len = sizeof(loadFileHash);
             if (hex_to_bytes(load_file_hash_hex, loadFileHash, &hash_len) != 0) {
@@ -1292,11 +1293,13 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
             }
             // Only first 20 bytes are used by GP211_install_for_load
             loadFileHashPtr = loadFileHash;
+            loadFileHashLen = (DWORD)((hash_len > 20) ? 20 : hash_len);
         }
 
         // Parse optional load token
         BYTE loadToken[128]; memset(loadToken, 0, sizeof(loadToken));
         BYTE *loadTokenPtr = NULL;
+        DWORD loadTokenLen = 0;
         if (load_token_hex) {
             size_t token_len = sizeof(loadToken);
             if (hex_to_bytes(load_token_hex, loadToken, &token_len) != 0 || token_len != 128) {
@@ -1304,12 +1307,14 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
                 return -1;
             }
             loadTokenPtr = loadToken;
+            loadTokenLen = (DWORD)token_len;
         }
 
         if (!status_ok(GP211_install_for_load(ctx, info, sec,
                 lfp.loadFileAID.AID, lfp.loadFileAID.AIDLength,
                 sdAid, sdAidLen,
-                loadFileHashPtr, loadTokenPtr,
+                loadFileHashPtr, loadFileHashLen,
+                loadTokenPtr, loadTokenLen,
                 lfp.loadFileSize, v_data_limit, nv_data_limit))) {
             return -1;
         }
@@ -1350,6 +1355,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     // Parse optional install token
     BYTE installToken[128]; memset(installToken,0,sizeof(installToken));
     BYTE *installTokenPtr = NULL;
+    DWORD installTokenLen = 0;
     if (install_token_hex) {
         size_t token_len = sizeof(installToken);
         if (hex_to_bytes(install_token_hex, installToken, &token_len) != 0 || token_len != 128) {
@@ -1357,6 +1363,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
             return -1;
         }
         installTokenPtr = installToken;
+        installTokenLen = (DWORD)token_len;
     }
 
     GP211_RECEIPT_DATA rec2; DWORD rec2Avail=0; memset(&rec2,0,sizeof(rec2));
@@ -1395,7 +1402,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
                 applet_aid, (DWORD)applet_len,
                 privileges, v_data_limit, nv_data_limit,
                 inst_param_len ? inst_param : NULL, (DWORD)inst_param_len,
-                installTokenPtr, &rec2, &rec2Avail))) {
+                installTokenPtr, installTokenLen, &rec2, &rec2Avail))) {
             return -1;
         }
     } else {
@@ -1415,7 +1422,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
                     aid, aidLen,
                     privileges, v_data_limit, nv_data_limit,
                     inst_param_len ? inst_param : NULL, (DWORD)inst_param_len,
-                    installTokenPtr, &rec2, &rec2Avail))) {
+                    installTokenPtr, installTokenLen, &rec2, &rec2Avail))) {
                 fprintf(stderr, "Failed for applet index %d\n", i);
                 return -1;
             }
@@ -2279,13 +2286,13 @@ static int cmd_cplc(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
     printf("IC Pre-Personalizer : %04X\n", cplc_data.icPrePersonalizer);
     print_cplc_date_field_ushort("IC Pre-Perso. Equipment Date", cplc_data.icPrePersonalizationEquipmentDate);
     {
-        printf("IC Pre-Perso. Equipment ID : %08X", cplc_data.icPrePersonalizationEquipmentId);
+        printf("IC Pre-Perso. Equipment ID : %08lX", (unsigned long)cplc_data.icPrePersonalizationEquipmentId);
         printf("\n");
     }
     printf("IC Personalizer : %04X\n", cplc_data.icPersonalizer);
     print_cplc_date_field_ushort("IC Personalization Date", cplc_data.icPersonalizationDate);
     {
-        printf("IC Perso. Equipment ID : %08X\n", cplc_data.icPersonalizationEquipmentId);
+        printf("IC Perso. Equipment ID : %08lX\n", (unsigned long)cplc_data.icPersonalizationEquipmentId);
     }
     return 0;
 }

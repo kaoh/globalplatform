@@ -337,7 +337,7 @@ typedef struct {
  * The structure is used when the progress for a task changes in functions supporting callbacks.
  */
 typedef struct {
-	PVOID callback; //!< The callback function. The must accept a #OPGP_PROGRESS_CALLBACK_PARAMETERS parameter and return void, so the function signature is: void (*callback)(OPGP_PROGRESS_CALLBACK_PARAMETERS).
+	void (*callback)(OPGP_PROGRESS_CALLBACK_PARAMETERS); //!< The callback function. The must accept a #OPGP_PROGRESS_CALLBACK_PARAMETERS parameter and return void.
 	PVOID parameters; //!< Proprietary parameters for the callback function. Passed in when the function is called.
 } OPGP_PROGRESS_CALLBACK;
 
@@ -686,7 +686,8 @@ OPGP_API
 OPGP_ERROR_STATUS GP211_install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 					  PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 					  PBYTE securityDomainAID,
-					  DWORD securityDomainAIDLength, BYTE loadFileDataBlockHash[20], BYTE loadToken[128],
+					  DWORD securityDomainAIDLength, PBYTE loadFileDataBlockHash, DWORD loadFileDataBlockHashLength,
+					  PBYTE loadToken, DWORD loadTokenLength,
 					  DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
 					  DWORD nonVolatileDataSpaceLimit);
 
@@ -791,7 +792,8 @@ OPGP_ERROR_STATUS GP211_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_
 						 DWORD executableModuleAIDLength, PBYTE applicationAID, DWORD applicationAIDLength,
 						 BYTE applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE installParameters, DWORD installParametersLength,
-						 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
+						 PBYTE installToken, DWORD installTokenLength,
+						 GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
 
 //! \brief GlobalPlatform2.1.1: Installs an application on the card including UICC parameters.
 OPGP_API
@@ -802,7 +804,8 @@ OPGP_ERROR_STATUS GP211_install_for_install_uicc(OPGP_CARD_CONTEXT cardContext, 
 						 PBYTE installParameters, DWORD installParametersLength,
 						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 						 PBYTE simSpecParams, DWORD simSpecParamsLength,
-						 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
+						 PBYTE installToken, DWORD installTokenLength,
+						 GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
 
 //! \brief GlobalPlatform2.1.1: Makes an installed application selectable.
 OPGP_API
@@ -819,7 +822,8 @@ OPGP_ERROR_STATUS GP211_install_for_install_and_make_selectable(OPGP_CARD_CONTEX
 						 DWORD applicationAIDLength, BYTE applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE installParameters, DWORD installParametersLength,
-						 BYTE installToken[128], GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
+						 PBYTE installToken, DWORD installTokenLength,
+						 GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
 
 //! \brief GlobalPlatform2.1.1: Installs and makes an installed application selectable including UICC parameters.
 OPGP_API
@@ -1058,7 +1062,8 @@ OPGP_ERROR_STATUS OP201_calculate_install_token(BYTE P1, PBYTE executableLoadFil
 							 DWORD applicationInstanceAIDLength, BYTE applicationPrivileges,
 							 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 							 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
-							 BYTE installToken[128], OPGP_STRING PEMKeyFileName, char *passPhrase);
+							 PBYTE installToken, PDWORD installTokenLength,
+							 OPGP_STRING PEMKeyFileName, char *passPhrase);
 
 //! \brief Open Platform: Calculates an Install Token using PKCS#1 including UICC parameters.
 OPGP_API
@@ -1069,7 +1074,8 @@ OPGP_ERROR_STATUS OP201_calculate_install_token_uicc(BYTE P1, PBYTE executableLo
 							 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
 							 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 							 PBYTE simSpecParams, DWORD simSpecParamsLength,
-							 BYTE installToken[128], OPGP_STRING PEMKeyFileName, char *passPhrase);
+							 PBYTE installToken, PDWORD installTokenLength,
+							 OPGP_STRING PEMKeyFileName, char *passPhrase);
 
 //! \brief Open Platform: Calculates a Load File DAP.
 OPGP_API
@@ -1108,13 +1114,14 @@ OPGP_ERROR_STATUS OP201_install_for_install_uicc(OPGP_CARD_CONTEXT cardContext, 
 						 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
 						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 						 PBYTE simSpecParams, DWORD simSpecParamsLength,
-						 BYTE installToken[128], OP201_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
+						 PBYTE installToken, DWORD installTokenLength,
+						 OP201_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
 
 //! \brief Open Platform: Makes an installed application selectable.
 OPGP_API
 OPGP_ERROR_STATUS OP201_install_for_make_selectable(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 								 PBYTE applicationInstanceAID, DWORD applicationInstanceAIDLength,
-								 BYTE applicationPrivileges, BYTE installToken[128],
+								 BYTE applicationPrivileges, PBYTE installToken, DWORD installTokenLength,
 								 OP201_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
 
 //! \brief Open Platform: Installs and makes an installed application selectable.
@@ -1124,7 +1131,8 @@ OPGP_ERROR_STATUS OP201_install_for_install_and_make_selectable(OPGP_CARD_CONTEX
 						 DWORD applicationInstanceAIDLength, BYTE applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
-						 BYTE installToken[128], OP201_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
+						 PBYTE installToken, DWORD installTokenLength,
+						 OP201_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
 
 //! \brief Open Platform: Installs and makes an installed application selectable including UICC parameters.
 OPGP_API
@@ -1135,7 +1143,8 @@ OPGP_ERROR_STATUS OP201_install_for_install_and_make_selectable_uicc(OPGP_CARD_C
 						 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
 						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 						 PBYTE simSpecParams, DWORD simSpecParamsLength,
-						 BYTE installToken[128], OP201_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
+						 PBYTE installToken, DWORD installTokenLength,
+						 OP201_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
 
 //! \brief Open Platform: Adds a key set for Delegated Management.
 OPGP_API
@@ -1208,48 +1217,48 @@ OPGP_ERROR_STATUS OPGP_read_executable_load_file_parameters_from_buffer(PBYTE lo
 
 //! \brief Derives the static keys from a master key according the EMV CPS 1.1 key derivation scheme.
 OPGP_API
-OPGP_ERROR_STATUS GP211_EMV_CPS11_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE masterKey[16],
-							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
+OPGP_ERROR_STATUS GP211_EMV_CPS11_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBYTE masterKey,
+							PBYTE S_ENC, PBYTE S_MAC, PBYTE DEK);
 
 //! \brief Derives the static keys from a master key according the VISA 2 key derivation scheme.
 OPGP_API
-OPGP_ERROR_STATUS GP211_VISA2_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBYTE AID, DWORD AIDLength, BYTE masterKey[16],
-								 BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
+OPGP_ERROR_STATUS GP211_VISA2_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBYTE AID, DWORD AIDLength, PBYTE masterKey,
+								 PBYTE S_ENC, PBYTE S_MAC, PBYTE DEK);
 
 //! \brief Derives the static keys from a master key according the VISA 1 key derivation scheme.
 OPGP_API
-OPGP_ERROR_STATUS GP211_VISA1_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE masterKey[16],
-								 BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
+OPGP_ERROR_STATUS GP211_VISA1_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBYTE masterKey,
+								 PBYTE S_ENC, PBYTE S_MAC, PBYTE DEK);
 
 //! \brief Derives the static keys from a master key according the EMV CPS 1.1 key derivation scheme.
 OPGP_API
-OPGP_ERROR_STATUS OP201_EMV_CPS11_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, BYTE masterKey[16],
-							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
+OPGP_ERROR_STATUS OP201_EMV_CPS11_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, PBYTE masterKey,
+							PBYTE S_ENC, PBYTE S_MAC, PBYTE DEK);
 
 //! \brief Derives the static keys from a master key according the VISA 2 key derivation scheme.
 OPGP_API
-OPGP_ERROR_STATUS OP201_VISA2_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, PBYTE AID, DWORD AIDLength, BYTE masterKey[16],
-								 BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
+OPGP_ERROR_STATUS OP201_VISA2_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, PBYTE AID, DWORD AIDLength, PBYTE masterKey,
+								 PBYTE S_ENC, PBYTE S_MAC, PBYTE DEK);
 
 //! \brief Derives the static keys from a master key according the VISA 1 key derivation scheme.
 OPGP_API
-OPGP_ERROR_STATUS OP201_VISA1_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, BYTE masterKey[16],
-								 BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
+OPGP_ERROR_STATUS OP201_VISA1_derive_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, PBYTE masterKey,
+								 PBYTE S_ENC, PBYTE S_MAC, PBYTE DEK);
 
 //! \brief Derives the static keys from a master key according the VISA 2 key derivation scheme.
 OPGP_API
-OPGP_ERROR_STATUS VISA2_derive_keys(BYTE baseKeyDiversificationData[10], BYTE masterKey[16],
-							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
+OPGP_ERROR_STATUS VISA2_derive_keys(BYTE baseKeyDiversificationData[10], PBYTE masterKey,
+							PBYTE S_ENC, PBYTE S_MAC, PBYTE DEK);
 
 //! \brief Derives the static keys from a master key according the VISA 1 key derivation scheme.
 OPGP_API
-OPGP_ERROR_STATUS VISA1_derive_keys(BYTE cardSerialNumber[8], BYTE masterKey[16],
-							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
+OPGP_ERROR_STATUS VISA1_derive_keys(BYTE cardSerialNumber[8], PBYTE masterKey,
+							PBYTE S_ENC, PBYTE S_MAC, PBYTE DEK);
 
 //! \brief Derives the static keys from a master key according the EMV CPS11 derivation scheme.
 OPGP_API
-OPGP_ERROR_STATUS EMV_CPS11_derive_keys(BYTE baseKeyDiversificationData[10], BYTE masterKey[16],
-							BYTE S_ENC[16], BYTE S_MAC[16], BYTE DEK[16]);
+OPGP_ERROR_STATUS EMV_CPS11_derive_keys(BYTE baseKeyDiversificationData[10], PBYTE masterKey,
+							PBYTE S_ENC, PBYTE S_MAC, PBYTE DEK);
 
 #ifdef __cplusplus
 }

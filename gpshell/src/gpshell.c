@@ -1590,7 +1590,8 @@ static int handleCommands(FILE *fd)
                     status = GP211_install_for_load(cardContext, cardInfo, &securityInfo211,
                                                 (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
                                                 (PBYTE)optionStr.sdAID, optionStr.sdAIDLen,
-                                                NULL, NULL,
+                                                NULL, 0,
+                                                NULL, 0,
                                                 optionStr.nvCodeLimit,
                                                 optionStr.vDataLimit,          // jvictor
                                                 optionStr.nvDataLimit);        // jvictor
@@ -1655,9 +1656,10 @@ static int handleCommands(FILE *fd)
                             optionStr.instParamLen,
                             (PBYTE)optionStr.uiccSystemSpecParam,
 							optionStr.uiccSystemSpecParamLen,
-							(PBYTE)optionStr.simSpecParam,
+                            (PBYTE)optionStr.simSpecParam,
 							optionStr.simSpecParamLen,
                             NULL, // No install token
+                            0,
                             &receipt,
                             &receiptDataAvailable);
                     }
@@ -1682,6 +1684,7 @@ static int handleCommands(FILE *fd)
 								(PBYTE)optionStr.simSpecParam,
 								optionStr.simSpecParamLen,
                                 NULL, // No install token
+                                0,
                                 &receipt,
                                 &receiptDataAvailable);
                         }
@@ -1810,7 +1813,8 @@ static int handleCommands(FILE *fd)
                     status = GP211_install_for_load(cardContext, cardInfo, &securityInfo211,
                                                 (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
                                                 (PBYTE)optionStr.sdAID, optionStr.sdAIDLen,
-                                                NULL, NULL,
+                                                NULL, 0,
+                                                NULL, 0,
                                                 optionStr.nvCodeLimit,
                                                 optionStr.vDataLimit,   // jvictor
                                                 optionStr.nvDataLimit); // jvictor
@@ -1849,9 +1853,10 @@ static int handleCommands(FILE *fd)
                              optionStr.instParamLen,
                              (PBYTE)optionStr.uiccSystemSpecParam,
                              optionStr.uiccSystemSpecParamLen,
-							 (PBYTE)optionStr.simSpecParam,
+                             (PBYTE)optionStr.simSpecParam,
 							 optionStr.simSpecParamLen,
                              NULL, // No install token
+                             0,
                              &receipt,
                              &receiptDataAvailable);
                 }
@@ -1874,6 +1879,7 @@ static int handleCommands(FILE *fd)
 							 (PBYTE)optionStr.simSpecParam,
 							 optionStr.simSpecParamLen,
                              NULL, // No install token
+                             0,
                              &receipt,
                              &receiptDataAvailable);
                 }
@@ -2262,6 +2268,7 @@ static int handleCommands(FILE *fd)
                     (PBYTE)optionStr.instAID, optionStr.instAIDLen,
                     optionStr.privilege,
                     NULL, // No install token
+                    0,
                     &receipt,
                     &receiptDataAvailable);
               }
