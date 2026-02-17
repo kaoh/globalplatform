@@ -184,10 +184,12 @@ if(WIN32)
     if(NOT _gpshell_zlib_lib_name STREQUAL "zlibstat")
       set(_gpshell_zlib_dll_candidates)
       if(ZLIB_ROOT)
-        list(APPEND _gpshell_zlib_dll_candidates "${ZLIB_ROOT}/${_gpshell_zlib_lib_name}.dll")
+        file(TO_CMAKE_PATH "${ZLIB_ROOT}" _gpshell_zlib_root)
+        list(APPEND _gpshell_zlib_dll_candidates "${_gpshell_zlib_root}/${_gpshell_zlib_lib_name}.dll")
       endif()
       if(_gpshell_zlib_lib_dir)
-        list(APPEND _gpshell_zlib_dll_candidates "${_gpshell_zlib_lib_dir}/../${_gpshell_zlib_lib_name}.dll")
+        file(TO_CMAKE_PATH "${_gpshell_zlib_lib_dir}" _gpshell_zlib_lib_dir_cmake)
+        list(APPEND _gpshell_zlib_dll_candidates "${_gpshell_zlib_lib_dir_cmake}/../${_gpshell_zlib_lib_name}.dll")
       endif()
       list(APPEND _gpshell_zlib_dll_candidates "${CMAKE_SOURCE_DIR}/zlib-1.2.8/win32-build/${_gpshell_zlib_lib_name}.dll")
       foreach(_cand IN LISTS _gpshell_zlib_dll_candidates)
@@ -203,34 +205,41 @@ if(WIN32)
   endif()
 
   if(OPENSSL_ROOT_DIR)
+    file(TO_CMAKE_PATH "${OPENSSL_ROOT_DIR}" _gpshell_openssl_root)
     file(GLOB _gpshell_openssl_dlls
-      "${OPENSSL_ROOT_DIR}/libcrypto*.dll"
-      "${OPENSSL_ROOT_DIR}/libssl*.dll"
-      "${OPENSSL_ROOT_DIR}/libeay*.dll"
-      "${OPENSSL_ROOT_DIR}/ssleay*.dll"
-      "${OPENSSL_ROOT_DIR}/bin/libcrypto*.dll"
-      "${OPENSSL_ROOT_DIR}/bin/libssl*.dll"
-      "${OPENSSL_ROOT_DIR}/bin/libeay*.dll"
-      "${OPENSSL_ROOT_DIR}/bin/ssleay*.dll"
-      "${OPENSSL_ROOT_DIR}/bin/legacy*.dll")
+      "${_gpshell_openssl_root}/libcrypto*.dll"
+      "${_gpshell_openssl_root}/libssl*.dll"
+      "${_gpshell_openssl_root}/libeay*.dll"
+      "${_gpshell_openssl_root}/ssleay*.dll"
+      "${_gpshell_openssl_root}/bin/libcrypto*.dll"
+      "${_gpshell_openssl_root}/bin/libssl*.dll"
+      "${_gpshell_openssl_root}/bin/libeay*.dll"
+      "${_gpshell_openssl_root}/bin/ssleay*.dll"
+      "${_gpshell_openssl_root}/bin/legacy*.dll")
     list(APPEND _gpshell_windows_runtime_dlls ${_gpshell_openssl_dlls})
 
     # OpenSSL 3 provider modules (default/legacy/etc.) are commonly installed here.
-    if(EXISTS "${OPENSSL_ROOT_DIR}/ossl-modules")
-      install(DIRECTORY "${OPENSSL_ROOT_DIR}/ossl-modules/"
+    if(EXISTS "${_gpshell_openssl_root}/ossl-modules")
+      install(DIRECTORY "${_gpshell_openssl_root}/ossl-modules/"
         DESTINATION "bin/ossl-modules"
         FILES_MATCHING PATTERN "*.dll")
     endif()
-    if(EXISTS "${OPENSSL_ROOT_DIR}/bin/ossl-modules")
-      install(DIRECTORY "${OPENSSL_ROOT_DIR}/bin/ossl-modules/"
+    if(EXISTS "${_gpshell_openssl_root}/bin/ossl-modules")
+      install(DIRECTORY "${_gpshell_openssl_root}/bin/ossl-modules/"
         DESTINATION "bin/ossl-modules"
         FILES_MATCHING PATTERN "*.dll")
     endif()
   endif()
 
   if(_gpshell_windows_runtime_dlls)
+    set(_gpshell_windows_runtime_dlls_cmake)
+    foreach(_runtime_dll IN LISTS _gpshell_windows_runtime_dlls)
+      file(TO_CMAKE_PATH "${_runtime_dll}" _runtime_dll_cmake)
+      list(APPEND _gpshell_windows_runtime_dlls_cmake "${_runtime_dll_cmake}")
+    endforeach()
     list(REMOVE_DUPLICATES _gpshell_windows_runtime_dlls)
-    install(FILES ${_gpshell_windows_runtime_dlls} DESTINATION bin)
+    list(REMOVE_DUPLICATES _gpshell_windows_runtime_dlls_cmake)
+    install(FILES ${_gpshell_windows_runtime_dlls_cmake} DESTINATION bin)
   endif()
 endif()
 

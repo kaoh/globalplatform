@@ -60,7 +60,7 @@ set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING")
 set(CPACK_WIX_LICENSE_RTF "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.rtf")
 set(CPACK_WIX_PROGRAM_MENU_FOLDER      "GPShell")
 set(CPACK_WIX_ROOT_FEATURE_TITLE       "GPShell")
-set(CPACK_WIX_PATCH_FILE               "${CMAKE_CURRENT_SOURCE_DIR}/wix/path_env_patch.xml")
+set(CPACK_WIX_EXTRA_SOURCES            "${CMAKE_CURRENT_SOURCE_DIR}/wix/path_env_extra.wxs")
 if(APPLE)
   # DMG license dialogs block non-interactive CI attach checks.
   set(CPACK_DMG_SLA_USE_RESOURCE_FILE_LICENSE OFF)
