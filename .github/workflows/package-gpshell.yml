@@ -292,7 +292,21 @@ jobs:
 
             $exe = Get-ChildItem $msixRoot -Recurse -Filter "gpshell3.exe" | Select-Object -First 1
             if (-not $exe) { throw "gpshell3.exe not found in MSIX payload" }
-            $exeRel = $exe.FullName.Substring($msixRoot.Length).TrimStart("\\") -replace "/", "\\"
+            # Compute a path relative to the package root. Avoid substring-by-length because
+            # paths can be rendered with short (8.3) names in different parts of the pipeline.
+            $exeFull = ($exe.FullName -replace "/", "\\")
+            $rootLeaf = Split-Path $msixRoot -Leaf
+            $marker = $rootLeaf + "\\"
+            $markerIndex = $exeFull.IndexOf($marker, [System.StringComparison]::OrdinalIgnoreCase)
+            if ($markerIndex -ge 0) {
+              $exeRel = $exeFull.Substring($markerIndex + $marker.Length)
+            } else {
+              $rootFull = (($msixRoot -replace "/", "\\").TrimEnd("\\"))
+              if (-not $exeFull.StartsWith($rootFull, [System.StringComparison]::OrdinalIgnoreCase)) {
+                throw "Failed to compute relative path for gpshell3.exe (root: $msixRoot exe: $($exe.FullName))"
+              }
+              $exeRel = $exeFull.Substring($rootFull.Length).TrimStart("\\")
+            }
 
             # Generate MSIX assets from the repo icon.
             $repoIcon = Join-Path $pwd "gpshell.png"
