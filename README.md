@@ -22,7 +22,7 @@ gpg --fingerprint
 Ensure the fingerprint matches exactly.
 
 ~~~shell
-gpg --verify SHA256SUMS.asc SHA256SUMS
+gpg --verify SHA256SUMS.sig SHA256SUMS
 sha256sum -c SHA256SUMS --ignore-missing
 ~~~
 
@@ -223,6 +223,15 @@ cpack
 * On Linux, cpack creates both DEB and RPM. You need dpkg-deb and rpmbuild installed. 
 * Windows MSI (WIX) is generated on Windows with WiX installed. 
 * macOS DragNDrop is generated on macOS.
+
+There is a [GitHub Action workflow](.github/workflows/package-gpshell.yml) for creating the packages.
+
+The produced artifacts are automatically attached to a draft release of the corresponding tag. 
+The `SHA256SUMS` has to be signed manually:
+
+~~~shell
+gpg -u kaoh@users.noreply.github.com> --armor --detach-sign SHA256SUMS
+~~~
 
 # Generate GitHub Documentation
 
