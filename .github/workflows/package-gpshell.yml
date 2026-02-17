@@ -300,3 +300,40 @@ jobs:
           path: |
             build-dynamic/*.dmg
             build-static/*.dmg
+
+  publish-release:
+    runs-on: ubuntu-22.04
+    needs:
+      - build-linux
+      - build-windows
+      - build-macos
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: Collect release assets
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          cp -v dist/gpshell-linux/build-static/*.deb release-assets/
+          cp -v dist/gpshell-linux/build-static/*.rpm release-assets/
+          cp -v dist/gpshell-windows/build-static/*.msi release-assets/
+          cp -v dist/gpshell-windows/build-static/*-static.zip release-assets/
+          cp -v dist/gpshell-macos/build-static/*.dmg release-assets/
+      - name: Publish assets to GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Release $TAG_NAME already exists; uploading assets without changing prerelease status."
+            gh release upload "$TAG_NAME" release-assets/** --clobber
+          else
+            echo "Release $TAG_NAME does not exist; creating a draft release with assets."
+            gh release create "$TAG_NAME" release-assets/** --draft --title "$TAG_NAME"
+          fi
