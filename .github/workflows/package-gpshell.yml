@@ -324,16 +324,23 @@ jobs:
           cp -v dist/gpshell-windows/build-static/*.msi release-assets/
           cp -v dist/gpshell-windows/build-static/*-static.zip release-assets/
           cp -v dist/gpshell-macos/build-static/*.dmg release-assets/
+      - name: Generate SHA256 checksums
+        run: |
+          set -euo pipefail
+          for f in release-assets/*; do
+            [ -f "$f" ] || continue
+            sha256sum "$f" > "${f}.sha256"
+          done
       - name: Publish assets to GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG_NAME: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+          if gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "Release $TAG_NAME already exists; uploading assets without changing prerelease status."
-            gh release upload "$TAG_NAME" release-assets/** --clobber
+            gh release upload "$TAG_NAME" release-assets/** --clobber --repo "$GITHUB_REPOSITORY"
           else
             echo "Release $TAG_NAME does not exist; creating a draft release with assets."
-            gh release create "$TAG_NAME" release-assets/** --draft --title "$TAG_NAME"
+            gh release create "$TAG_NAME" release-assets/** --draft --title "$TAG_NAME" --repo "$GITHUB_REPOSITORY"
           fi
