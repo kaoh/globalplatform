@@ -296,7 +296,7 @@ jobs:
             # paths can be rendered with short (8.3) names in different parts of the pipeline.
             $exeFull = ($exe.FullName -replace "/", "\\")
             $rootLeaf = Split-Path $msixRoot -Leaf
-            $marker = $rootLeaf + "\\"
+            $marker = $rootLeaf + "\"
             $markerIndex = $exeFull.IndexOf($marker, [System.StringComparison]::OrdinalIgnoreCase)
             if ($markerIndex -ge 0) {
               $exeRel = $exeFull.Substring($markerIndex + $marker.Length)
