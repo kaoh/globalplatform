@@ -226,6 +226,182 @@ jobs:
           $bundleExe = Get-ChildItem $bundleDir -Recurse -Filter "gpshell3.exe" | Select-Object -First 1
           if (-not $bundleExe) { throw "gpshell3.exe not found in bundle ZIP" }
           & $bundleExe.FullName --help
+      - name: Build MSIX package (self-signed demo)
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $zip = Get-ChildItem build-static -Filter "gpshell-*-static.zip" | Select-Object -First 1
+          if (-not $zip) { throw "Static ZIP not found; cannot build MSIX" }
+
+          # One-off self-signed cert for demonstration.
+          # The MSIX manifest Publisher must exactly match the certificate subject.
+          $cert = New-SelfSignedCertificate `
+            -Type CodeSigningCert `
+            -Subject "CN=GPShell Demo" `
+            -CertStoreLocation "Cert:\CurrentUser\My" `
+            -KeyAlgorithm RSA `
+            -KeyLength 2048 `
+            -HashAlgorithm SHA256 `
+            -KeyExportPolicy Exportable `
+            -NotAfter (Get-Date).AddYears(1)
+
+          $pfxPasswordPlain = [Guid]::NewGuid().ToString("N")
+          $pfxPassword = ConvertTo-SecureString -String $pfxPasswordPlain -Force -AsPlainText
+          $pfxPath = Join-Path $zip.DirectoryName ($zip.BaseName + ".pfx")
+          $cerPath = Join-Path $zip.DirectoryName ($zip.BaseName + ".cer")
+          Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password $pfxPassword | Out-Null
+          Export-Certificate -Cert $cert -FilePath $cerPath | Out-Null
+
+          function Get-WindowsSdkToolPath([string]$toolName) {
+            $cmd = Get-Command $toolName -ErrorAction SilentlyContinue
+            if ($cmd) { return $cmd.Source }
+
+            $roots = @(
+              (Join-Path ${env:ProgramFiles(x86)} "Windows Kits\\10\\bin")
+              (Join-Path ${env:ProgramFiles(x86)} "Windows Kits\\11\\bin")
+            ) | Where-Object { Test-Path $_ }
+
+            foreach ($root in $roots) {
+              $versions = Get-ChildItem $root -Directory | Sort-Object Name -Descending
+              foreach ($ver in $versions) {
+                $candidate = Join-Path $ver.FullName ("x64\\" + $toolName)
+                if (Test-Path $candidate) { return $candidate }
+              }
+              $fallback = Join-Path $root ("x64\\" + $toolName)
+              if (Test-Path $fallback) { return $fallback }
+            }
+
+            throw "$toolName not found (Windows SDK not installed?)"
+          }
+
+          $makeappx = Get-WindowsSdkToolPath "makeappx.exe"
+          $signtool = Get-WindowsSdkToolPath "signtool.exe"
+
+          $srcDir = Join-Path $env:TEMP ("gpshell-msix-src-" + [Guid]::NewGuid().ToString("N"))
+          $msixRoot = Join-Path $env:TEMP ("gpshell-msix-root-" + [Guid]::NewGuid().ToString("N"))
+          New-Item -ItemType Directory -Path $srcDir | Out-Null
+          New-Item -ItemType Directory -Path $msixRoot | Out-Null
+
+          try {
+            Expand-Archive -Path $zip.FullName -DestinationPath $srcDir -Force
+            $payloadDir = Get-ChildItem $srcDir -Directory -Filter "gpshell-*" | Select-Object -First 1
+            if (-not $payloadDir) { throw "Expected gpshell-* directory inside $($zip.Name)" }
+
+            Copy-Item -Path (Join-Path $payloadDir.FullName "*") -Destination $msixRoot -Recurse -Force
+
+            $exe = Get-ChildItem $msixRoot -Recurse -Filter "gpshell3.exe" | Select-Object -First 1
+            if (-not $exe) { throw "gpshell3.exe not found in MSIX payload" }
+            $exeRel = $exe.FullName.Substring($msixRoot.Length).TrimStart("\\") -replace "/", "\\"
+
+            # Generate MSIX assets from the repo icon.
+            $repoIcon = Join-Path $pwd "gpshell.png"
+            if (-not (Test-Path $repoIcon)) { throw "Missing repo icon: $repoIcon" }
+            $assetsDir = Join-Path $msixRoot "Assets"
+            New-Item -ItemType Directory -Path $assetsDir -Force | Out-Null
+
+            Add-Type -AssemblyName System.Drawing
+            function Write-ResizedPng([string]$source, [string]$dest, [int]$width, [int]$height) {
+              $img = [System.Drawing.Image]::FromFile($source)
+              try {
+                $bmp = New-Object System.Drawing.Bitmap $width, $height
+                try {
+                  $g = [System.Drawing.Graphics]::FromImage($bmp)
+                  try {
+                    $g.Clear([System.Drawing.Color]::Transparent)
+                    $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+                    $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
+                    $g.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
+
+                    $ratio = [Math]::Min($width / $img.Width, $height / $img.Height)
+                    $newW = [int]([Math]::Round($img.Width * $ratio))
+                    $newH = [int]([Math]::Round($img.Height * $ratio))
+                    $x = [int](($width - $newW) / 2)
+                    $y = [int](($height - $newH) / 2)
+
+                    $g.DrawImage($img, $x, $y, $newW, $newH)
+                  } finally {
+                    $g.Dispose()
+                  }
+                  $bmp.Save($dest, [System.Drawing.Imaging.ImageFormat]::Png)
+                } finally {
+                  $bmp.Dispose()
+                }
+              } finally {
+                $img.Dispose()
+              }
+            }
+
+            Write-ResizedPng $repoIcon (Join-Path $assetsDir "Square44x44Logo.png") 44 44
+            Write-ResizedPng $repoIcon (Join-Path $assetsDir "Square150x150Logo.png") 150 150
+            Write-ResizedPng $repoIcon (Join-Path $assetsDir "Wide310x150Logo.png") 310 150
+            Write-ResizedPng $repoIcon (Join-Path $assetsDir "Square310x310Logo.png") 310 310
+            Write-ResizedPng $repoIcon (Join-Path $assetsDir "StoreLogo.png") 50 50
+
+            # Derive an MSIX-compatible 4-part version from the CPack ZIP name.
+            $ver3 = ($zip.BaseName -replace '^gpshell-','' -replace '-static$','')
+            $verParts = $ver3.Split('.')
+            if ($verParts.Count -eq 3) { $msixVersion = "$ver3.0" }
+            elseif ($verParts.Count -eq 4) { $msixVersion = $ver3 }
+            else { $msixVersion = "0.0.0.0" }
+
+            $publisher = $cert.Subject
+            $manifestPath = Join-Path $msixRoot "AppxManifest.xml"
+            @"
+          <?xml version="1.0" encoding="utf-8"?>
+          <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+                   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+                   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+                   IgnorableNamespaces="uap rescap">
+            <Identity Name="org.globalplatform.gpshell3"
+                      Publisher="$publisher"
+                      Version="$msixVersion" />
+            <Properties>
+              <DisplayName>GPShell</DisplayName>
+              <PublisherDisplayName>GPShell</PublisherDisplayName>
+              <Description>GlobalPlatform GPShell</Description>
+              <Logo>Assets\StoreLogo.png</Logo>
+            </Properties>
+            <Dependencies>
+              <TargetDeviceFamily Name="Windows.Desktop"
+                                  MinVersion="10.0.17763.0"
+                                  MaxVersionTested="10.0.26100.0" />
+            </Dependencies>
+            <Resources>
+              <Resource Language="en-us" />
+            </Resources>
+            <Applications>
+              <Application Id="GPShell"
+                           Executable="$exeRel"
+                           EntryPoint="Windows.FullTrustApplication">
+                <uap:VisualElements
+                  DisplayName="GPShell"
+                  Description="GlobalPlatform GPShell"
+                  BackgroundColor="transparent"
+                  Square44x44Logo="Assets\Square44x44Logo.png"
+                  Square150x150Logo="Assets\Square150x150Logo.png">
+                  <uap:DefaultTile
+                    Wide310x150Logo="Assets\Wide310x150Logo.png"
+                    Square310x310Logo="Assets\Square310x310Logo.png" />
+                </uap:VisualElements>
+              </Application>
+            </Applications>
+            <Capabilities>
+              <rescap:Capability Name="runFullTrust" />
+            </Capabilities>
+          </Package>
+          "@ | Set-Content -Path $manifestPath -Encoding UTF8
+
+            $msixPath = Join-Path $zip.DirectoryName ($zip.BaseName + ".msix")
+            & $makeappx pack /d $msixRoot /p $msixPath /o | Out-Host
+
+            & $signtool sign /fd SHA256 /f $pfxPath /p $pfxPasswordPlain $msixPath | Out-Host
+          }
+          finally {
+            if (Test-Path $srcDir) { Remove-Item -Recurse -Force $srcDir }
+            if (Test-Path $msixRoot) { Remove-Item -Recurse -Force $msixRoot }
+            if (Test-Path $pfxPath) { Remove-Item -Force $pfxPath }
+          }
       - name: Save Windows artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -234,7 +410,9 @@ jobs:
             build-dynamic/*.zip
             build-dynamic/*.msi
             build-dynamic/gpshell-bundle/*.zip
+            build-static/*.cer
             build-static/*.zip
+            build-static/*.msix
             build-static/*.msi
 
   build-macos:
@@ -322,6 +500,8 @@ jobs:
           cp -v dist/gpshell-linux/build-static/*.deb release-assets/
           cp -v dist/gpshell-linux/build-static/*.rpm release-assets/
           cp -v dist/gpshell-windows/build-static/*.msi release-assets/
+          cp -v dist/gpshell-windows/build-static/*.msix release-assets/
+          cp -v dist/gpshell-windows/build-static/*.cer release-assets/
           cp -v dist/gpshell-windows/build-static/*-static.zip release-assets/
           cp -v dist/gpshell-macos/build-static/*.dmg release-assets/
       - name: Generate SHA256 checksums
