@@ -327,10 +327,7 @@ jobs:
       - name: Generate SHA256 checksums
         run: |
           set -euo pipefail
-          for f in release-assets/*; do
-            [ -f "$f" ] || continue
-            sha256sum "$f" > "${f}.sha256"
-          done
+          (cd release-assets && sha256sum * > SHA256SUMS)
       - name: Publish assets to GitHub release
         env:
           GH_TOKEN: ${{ github.token }}

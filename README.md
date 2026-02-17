@@ -4,9 +4,33 @@ This is the top level project for the GlobalPlatform library for providing acces
 
 # Pre-build Packages
 
-There are Homebrew packages for [Linux and MacOS](https://github.com/kaoh/homebrew-globalplatform)
+Signed binaries for Linux (deb, rpm), Windows (msi, zip) and macOS (dmg) can be downloaded 
+from the [GitHub release page](https://github.com/kaoh/globalplatform/releases).
 
-Windows binaries can be downloaded from the [GitHub release page](https://github.com/kaoh/globalplatform/releases) or from [SourceForge](https://sourceforge.net/projects/globalplatform/files/GPShell/).
+There are also Homebrew packages for [Linux and MacOS](https://github.com/kaoh/homebrew-globalplatform)
+
+## Verifying the Signatures of the Signed Binaries
+
+The PGP fingerprint for the verification is `8024 D2E1 6156 0548 7C2F 1D7B 04B6 C967 7A2F 2791`
+
+~~~shell
+wget https://github.com/kaoh/globalplatform/raw/master/release-key.asc
+gpg --import release-key.asc
+gpg --fingerprint
+~~~
+
+Ensure the fingerprint matches exactly.
+
+~~~shell
+gpg --verify SHA256SUMS.asc SHA256SUMS
+sha256sum -c SHA256SUMS --ignore-missing
+~~~
+
+If the signature is BAD → do not use the files.
+
+You should see also something like:
+
+gpshell-3.0.0-static.deb: OK
 
 # GPShell Manual
 
