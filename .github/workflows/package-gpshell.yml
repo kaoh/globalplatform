@@ -308,6 +308,41 @@ jobs:
               $exeRel = $exeFull.Substring($rootFull.Length).TrimStart("\\")
             }
 
+            # gpshell3.exe depends on zlib on Windows. Ensure the DLL is present inside the package.
+            $zlibDll = Join-Path $pwd "zlib-1.2.8\\win32-build\\zlibwapi.dll"
+            if (Test-Path $zlibDll) {
+              Copy-Item -Path $zlibDll -Destination $exe.DirectoryName -Force
+            } else {
+              Write-Warning "zlibwapi.dll not found at $zlibDll; gpshell3.exe may fail to start."
+            }
+
+            # If OpenSSL is dynamically linked, ship the runtime DLLs inside the package.
+            $opensslRoots = @(
+              "C:\\Program Files (x86)\\OpenSSL-Win32",
+              "C:\\Program Files\\OpenSSL-Win64"
+            ) | Where-Object { Test-Path $_ }
+            foreach ($root in $opensslRoots) {
+              $bin = Join-Path $root "bin"
+              $dllDirs = @($root, $bin) | Where-Object { Test-Path $_ }
+              foreach ($dir in $dllDirs) {
+                Get-ChildItem -Path $dir -File -Filter "libcrypto*.dll" -ErrorAction SilentlyContinue | ForEach-Object {
+                  Copy-Item -Path $_.FullName -Destination $exe.DirectoryName -Force
+                }
+                Get-ChildItem -Path $dir -File -Filter "libssl*.dll" -ErrorAction SilentlyContinue | ForEach-Object {
+                  Copy-Item -Path $_.FullName -Destination $exe.DirectoryName -Force
+                }
+                Get-ChildItem -Path $dir -File -Filter "libeay*.dll" -ErrorAction SilentlyContinue | ForEach-Object {
+                  Copy-Item -Path $_.FullName -Destination $exe.DirectoryName -Force
+                }
+                Get-ChildItem -Path $dir -File -Filter "ssleay*.dll" -ErrorAction SilentlyContinue | ForEach-Object {
+                  Copy-Item -Path $_.FullName -Destination $exe.DirectoryName -Force
+                }
+                Get-ChildItem -Path $dir -File -Filter "legacy*.dll" -ErrorAction SilentlyContinue | ForEach-Object {
+                  Copy-Item -Path $_.FullName -Destination $exe.DirectoryName -Force
+                }
+              }
+            }
+
             # Generate MSIX assets from the repo icon.
             $repoIcon = Join-Path $pwd "gpshell.png"
             if (-not (Test-Path $repoIcon)) { throw "Missing repo icon: $repoIcon" }
@@ -365,8 +400,10 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
                    xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+                   xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+                   xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
                    xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-                   IgnorableNamespaces="uap rescap">
+                   IgnorableNamespaces="uap uap3 desktop rescap">
             <Identity Name="org.globalplatform.gpshell3"
                       Publisher="$publisher"
                       Version="$msixVersion" />
@@ -379,7 +416,7 @@ jobs:
             <Dependencies>
               <TargetDeviceFamily Name="Windows.Desktop"
                                   MinVersion="10.0.17763.0"
-                                  MaxVersionTested="10.0.26100.0" />
+                                  MaxVersionTested="10.0.26100.4652" />
             </Dependencies>
             <Resources>
               <Resource Language="en-us" />
@@ -398,6 +435,15 @@ jobs:
                     Wide310x150Logo="Assets\Wide310x150Logo.png"
                     Square310x310Logo="Assets\Square310x310Logo.png" />
                 </uap:VisualElements>
+                <Extensions>
+                  <uap3:Extension Category="windows.appExecutionAlias"
+                                  Executable="$exeRel"
+                                  EntryPoint="Windows.FullTrustApplication">
+                    <uap3:AppExecutionAlias>
+                      <desktop:ExecutionAlias Alias="gpshell3.exe" />
+                    </uap3:AppExecutionAlias>
+                  </uap3:Extension>
+                </Extensions>
               </Application>
             </Applications>
             <Capabilities>

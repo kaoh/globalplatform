@@ -49,7 +49,16 @@ set(_ZLIB_SEARCH_NORMAL
   )
 list(APPEND _ZLIB_SEARCHES _ZLIB_SEARCH_NORMAL)
 
-set(ZLIB_NAMES z zlib zdll zlib1 zlibd zlibd1 zlibwapi)
+set(ZLIB_NAMES)
+if(STATIC OR ZLIB_USE_STATIC_LIBS)
+  # Prefer the static library when available (Windows builds commonly ship zlibstat.lib).
+  list(APPEND ZLIB_NAMES zlibstat)
+endif()
+list(APPEND ZLIB_NAMES z zlib zdll zlib1 zlibd zlibd1 zlibwapi)
+if(NOT (STATIC OR ZLIB_USE_STATIC_LIBS))
+  # Fallback if only the static lib is available.
+  list(APPEND ZLIB_NAMES zlibstat)
+endif()
 
 # Try each search configuration.
 foreach(search ${_ZLIB_SEARCHES})

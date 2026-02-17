@@ -170,6 +170,70 @@ if(TARGET gpshell3)
   INSTALL(TARGETS gpshell3 DESTINATION bin)
 endif()
 
+if(WIN32)
+  # Bundle runtime DLL dependencies on Windows so packages (ZIP/MSI/MSIX payload) run
+  # on machines without additional OpenSSL/zlib installations.
+  set(_gpshell_windows_runtime_dlls)
+
+  # If we linked zlib statically (zlibstat.lib), no DLL is required at runtime.
+  # Otherwise, try to locate the corresponding zlib DLL next to the discovered import lib.
+  set(_gpshell_zlib_dll "")
+  if(ZLIB_LIBRARY)
+    get_filename_component(_gpshell_zlib_lib_name "${ZLIB_LIBRARY}" NAME_WE)
+    get_filename_component(_gpshell_zlib_lib_dir "${ZLIB_LIBRARY}" DIRECTORY)
+    if(NOT _gpshell_zlib_lib_name STREQUAL "zlibstat")
+      set(_gpshell_zlib_dll_candidates)
+      if(ZLIB_ROOT)
+        list(APPEND _gpshell_zlib_dll_candidates "${ZLIB_ROOT}/${_gpshell_zlib_lib_name}.dll")
+      endif()
+      if(_gpshell_zlib_lib_dir)
+        list(APPEND _gpshell_zlib_dll_candidates "${_gpshell_zlib_lib_dir}/../${_gpshell_zlib_lib_name}.dll")
+      endif()
+      list(APPEND _gpshell_zlib_dll_candidates "${CMAKE_SOURCE_DIR}/zlib-1.2.8/win32-build/${_gpshell_zlib_lib_name}.dll")
+      foreach(_cand IN LISTS _gpshell_zlib_dll_candidates)
+        if(EXISTS "${_cand}")
+          set(_gpshell_zlib_dll "${_cand}")
+          break()
+        endif()
+      endforeach()
+    endif()
+  endif()
+  if(_gpshell_zlib_dll)
+    list(APPEND _gpshell_windows_runtime_dlls "${_gpshell_zlib_dll}")
+  endif()
+
+  if(OPENSSL_ROOT_DIR)
+    file(GLOB _gpshell_openssl_dlls
+      "${OPENSSL_ROOT_DIR}/libcrypto*.dll"
+      "${OPENSSL_ROOT_DIR}/libssl*.dll"
+      "${OPENSSL_ROOT_DIR}/libeay*.dll"
+      "${OPENSSL_ROOT_DIR}/ssleay*.dll"
+      "${OPENSSL_ROOT_DIR}/bin/libcrypto*.dll"
+      "${OPENSSL_ROOT_DIR}/bin/libssl*.dll"
+      "${OPENSSL_ROOT_DIR}/bin/libeay*.dll"
+      "${OPENSSL_ROOT_DIR}/bin/ssleay*.dll"
+      "${OPENSSL_ROOT_DIR}/bin/legacy*.dll")
+    list(APPEND _gpshell_windows_runtime_dlls ${_gpshell_openssl_dlls})
+
+    # OpenSSL 3 provider modules (default/legacy/etc.) are commonly installed here.
+    if(EXISTS "${OPENSSL_ROOT_DIR}/ossl-modules")
+      install(DIRECTORY "${OPENSSL_ROOT_DIR}/ossl-modules/"
+        DESTINATION "bin/ossl-modules"
+        FILES_MATCHING PATTERN "*.dll")
+    endif()
+    if(EXISTS "${OPENSSL_ROOT_DIR}/bin/ossl-modules")
+      install(DIRECTORY "${OPENSSL_ROOT_DIR}/bin/ossl-modules/"
+        DESTINATION "bin/ossl-modules"
+        FILES_MATCHING PATTERN "*.dll")
+    endif()
+  endif()
+
+  if(_gpshell_windows_runtime_dlls)
+    list(REMOVE_DUPLICATES _gpshell_windows_runtime_dlls)
+    install(FILES ${_gpshell_windows_runtime_dlls} DESTINATION bin)
+  endif()
+endif()
+
 IF(NOT WIN32)
 	# pandoc man page generation
 	

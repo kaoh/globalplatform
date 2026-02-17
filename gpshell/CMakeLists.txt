@@ -69,6 +69,10 @@ set(CPACK_RPM_PACKAGE_LICENSE          "GPL-3.0")
 set(CPACK_RPM_PACKAGE_GROUP            "Applications/System")
 set(CPACK_RPM_PACKAGE_RELEASE          "1")
 set(CPACK_WIX_UPGRADE_GUID             "34f48725-0fe9-4d5c-9f12-90314672e332")
+if(WIN32)
+  # Avoid component/subfeature UI in MSI ("dev", 0KB root feature) and install as one feature.
+  set(CPACK_MONOLITHIC_INSTALL ON)
+endif()
 if(STATIC)
   # Only package gpshell artifacts for static builds.
   set(CPACK_INSTALL_CMAKE_PROJECTS "${CMAKE_CURRENT_BINARY_DIR};${PROJECT_NAME};ALL;/")
