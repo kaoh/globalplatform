@@ -526,6 +526,79 @@ typedef struct {
 	BOOL securityDomainSelfRemoval; //!< Support for Security Domain Self-Removal (tag '8B').
 } GP211_CARD_CAPABILITY_INFORMATION;
 
+// UICC System Specific Parameters (ETSI TS 102 226, sect. 8.2.1.3.2.2).
+#define GP211_UICC_ACCESS_DOMAIN_FULL_ACCESS 0x00 //!< Access Domain Parameter: Full access to the File System.
+#define GP211_UICC_ACCESS_DOMAIN_UICC_ACCESS 0x02 //!< Access Domain Parameter: UICC access mechanism (3-byte ADD).
+#define GP211_UICC_ACCESS_DOMAIN_NO_ACCESS 0xFF //!< Access Domain Parameter: No access to the File System.
+#define GP211_UICC_MSL_PARAMETER_MINIMUM_SPI1 0x01 //!< Minimum Security Level parameter: Minimum SPI1.
+#define GP211_UICC_TOOLKIT_MAX_TIMERS 0x08 //!< Max number of timers per ETSI TS 102 223.
+#define GP211_UICC_TOOLKIT_MAX_CHANNELS 0x07 //!< Max number of channels per ETSI TS 102 223.
+#define GP211_UICC_TOOLKIT_MAX_SERVICES 0x08 //!< Max number of services per ETSI TS 102 223.
+#define GP211_UICC_MAX_MENU_ENTRIES 8 //!< Maximum menu entries supported by the helper structures.
+#define GP211_UICC_MAX_ACCESS_RULES 4 //!< Maximum access rules supported by the helper structures.
+#define GP211_UICC_MAX_TAR_VALUES 4 //!< Maximum TAR values supported by the helper structures.
+#define GP211_UICC_TOOLKIT_DAP_MAX_LENGTH 16 //!< Maximum toolkit parameters DAP length supported.
+#define GP211_UICC_ACCESS_DOMAIN_DAP_MAX_LENGTH 16 //!< Maximum access domain DAP length supported.
+
+/**
+ * Toolkit menu entry definition.
+ */
+typedef struct {
+	BYTE position; //!< Position of the menu entry.
+	BYTE identifier; //!< Identifier of the menu entry ('00' means do not care).
+} GP211_UICC_TOOLKIT_MENU_ENTRY;
+
+/**
+ * UICC Toolkit Application specific parameters (tag '80' value).
+ */
+typedef struct {
+	BYTE priority; //!< Priority level of the Toolkit application instance.
+	BYTE maxTimers; //!< Maximum number of timers allowed.
+	BYTE maxTextLength; //!< Maximum text length for a menu entry.
+	BYTE maxMenuEntries; //!< Maximum number of menu entries (m).
+	GP211_UICC_TOOLKIT_MENU_ENTRY menuEntries[GP211_UICC_MAX_MENU_ENTRIES]; //!< Array with m entries.
+	BYTE maxChannels; //!< Maximum number of channels allowed.
+	BOOL mslPresent; //!< TRUE to include Minimum SPI1 (parameter 0x01).
+	BYTE mslSpi1; //!< Minimum SPI1 data byte.
+	BYTE tarValues[GP211_UICC_MAX_TAR_VALUES * 3]; //!< TAR Value(s) field.
+	BYTE tarValuesLength; //!< Length of TAR Value(s) field in bytes (0 or multiple of 3).
+	BYTE maxServices; //!< Maximum number of services allowed.
+} GP211_UICC_TOOLKIT_APP_PARAMS;
+
+/**
+ * UICC Access Rule for one ADF or the shared file system.
+ */
+typedef struct {
+	BYTE aidLength; //!< Length of AID (0 for shared UICC file system, or 5..16 for ADF).
+	BYTE aid[16]; //!< AID value.
+	BYTE accessDomainParameter; //!< Access Domain Parameter (0x00, 0x02, 0xFF).
+	BYTE accessDomainData[3]; //!< Access Domain Data for parameter 0x02.
+	BYTE accessDomainDap[GP211_UICC_ACCESS_DOMAIN_DAP_MAX_LENGTH]; //!< Access Domain DAP value.
+	BYTE accessDomainDapLength; //!< Access Domain DAP length in bytes.
+} GP211_UICC_ACCESS_RULE;
+
+/**
+ * UICC Access Application specific parameters (tag '81' / '82' value).
+ */
+typedef struct {
+	GP211_UICC_ACCESS_RULE rules[GP211_UICC_MAX_ACCESS_RULES]; //!< Array of access rules.
+	BYTE rulesLength; //!< Number of access rules.
+} GP211_UICC_ACCESS_PARAMS;
+
+/**
+ * UICC System Specific Parameters (tag 'EA' value without the tag and length).
+ */
+typedef struct {
+	BOOL toolkitParamsPresent; //!< TRUE to include toolkit application parameters (tag '80').
+	GP211_UICC_TOOLKIT_APP_PARAMS toolkitParams; //!< Toolkit application parameters (tag '80').
+	BYTE toolkitParametersDap[GP211_UICC_TOOLKIT_DAP_MAX_LENGTH]; //!< Toolkit parameters DAP (tag 'C3').
+	BYTE toolkitParametersDapLength; //!< Toolkit parameters DAP length in bytes.
+	BOOL accessParamsPresent; //!< TRUE to include access application parameters (tag '81').
+	GP211_UICC_ACCESS_PARAMS accessParams; //!< Access application parameters (tag '81').
+	BOOL adminAccessParamsPresent; //!< TRUE to include administrative access parameters (tag '82').
+	GP211_UICC_ACCESS_PARAMS adminAccessParams; //!< Administrative access parameters (tag '82').
+} GP211_UICC_SYSTEM_SPECIFIC_PARAMS;
+
 //! \brief GlobalPlatform2.1.1: Selects an application on a card by AID.
 OPGP_API
 OPGP_ERROR_STATUS OPGP_select_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, PBYTE AID, DWORD AIDLength);
@@ -766,6 +839,11 @@ OPGP_ERROR_STATUS GP211_calculate_install_token_uicc(BYTE P1, PBYTE executableLo
 							 PBYTE simSpecParams, DWORD simSpecParamsLength,
 							 PBYTE installToken, PDWORD installTokenLength,
 							 OPGP_STRING PEMKeyFileName, char *passPhrase);
+
+//! \brief GlobalPlatform2.1.1: Builds the UICC System Specific Parameters (tag 'EA' value without the tag and length).
+OPGP_API
+OPGP_ERROR_STATUS GP211_build_uicc_system_specific_params(GP211_UICC_SYSTEM_SPECIFIC_PARAMS *params,
+							  PBYTE uiccSystemSpecParams, PDWORD uiccSystemSpecParamsLength);
 
 //! \brief GlobalPlatform2.1.1: Calculates a Load File Data Block Hash.
 OPGP_API

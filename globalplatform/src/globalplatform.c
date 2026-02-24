@@ -3761,28 +3761,268 @@ OPGP_ERROR_STATUS GP211_get_install_token_signature_data(BYTE P1, PBYTE executab
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_get_install_token_signature_data_uicc(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE executableModuleAID,
-									  DWORD executableModuleAIDLength, PBYTE applicationAID,
-									  DWORD applicationAIDLength, BYTE applicationPrivileges,
-									  DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
-									  PBYTE installParameters, DWORD installParametersLength,
-									  PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
-									  PBYTE simSpecParams, DWORD simSpecParamsLength,
-									  PBYTE installTokenSignatureData, PDWORD installTokenSignatureDataLength) {
+										  DWORD executableModuleAIDLength, PBYTE applicationAID,
+										  DWORD applicationAIDLength, BYTE applicationPrivileges,
+										  DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
+										  PBYTE installParameters, DWORD installParametersLength,
+										  PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
+										  PBYTE simSpecParams, DWORD simSpecParamsLength,
+										  PBYTE installTokenSignatureData, PDWORD installTokenSignatureDataLength) {
 	return get_install_data(P1, executableLoadFileAID, executableLoadFileAIDLength, executableModuleAID,
-									  executableModuleAIDLength, applicationAID,
-									  applicationAIDLength, applicationPrivileges,
-									  volatileDataSpaceLimit, nonVolatileDataSpaceLimit,
-									  installParameters, installParametersLength,
-									  uiccSystemSpecParams, uiccSystemSpecParamsLength,
-									  simSpecParams, simSpecParamsLength,
-									  installTokenSignatureData, installTokenSignatureDataLength);
+										  executableModuleAIDLength, applicationAID,
+										  applicationAIDLength, applicationPrivileges,
+										  volatileDataSpaceLimit, nonVolatileDataSpaceLimit,
+										  installParameters, installParametersLength,
+										  uiccSystemSpecParams, uiccSystemSpecParamsLength,
+										  simSpecParams, simSpecParamsLength,
+										  installTokenSignatureData, installTokenSignatureDataLength);
+}
+
+static OPGP_ERROR_STATUS build_uicc_toolkit_app_params(const GP211_UICC_TOOLKIT_APP_PARAMS *params, PBYTE out,
+						       PDWORD outLength) {
+	OPGP_ERROR_STATUS status;
+	BYTE buf[256];
+	DWORD i = 0;
+	DWORD j = 0;
+	DWORD mslLength = 0;
+	DWORD requiredLength = 0;
+
+	if (params == NULL || out == NULL || outLength == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+	if (params->maxTimers > GP211_UICC_TOOLKIT_MAX_TIMERS ||
+		params->maxChannels > GP211_UICC_TOOLKIT_MAX_CHANNELS ||
+		params->maxServices > GP211_UICC_TOOLKIT_MAX_SERVICES) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+	if (params->maxMenuEntries > GP211_UICC_MAX_MENU_ENTRIES) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+	if ((params->tarValuesLength % 3) != 0 || params->tarValuesLength > (GP211_UICC_MAX_TAR_VALUES * 3)) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+
+	if (params->mslPresent) {
+		mslLength = 2;
+	}
+	requiredLength = 8 + ((DWORD)params->maxMenuEntries * 2) + mslLength + params->tarValuesLength;
+	if (requiredLength > 0xFF) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE));
+		return status;
+	}
+	if (requiredLength > *outLength) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		return status;
+	}
+
+	buf[i++] = params->priority;
+	buf[i++] = params->maxTimers;
+	buf[i++] = params->maxTextLength;
+	buf[i++] = params->maxMenuEntries;
+	for (j = 0; j < params->maxMenuEntries; j++) {
+		buf[i++] = params->menuEntries[j].position;
+		buf[i++] = params->menuEntries[j].identifier;
+	}
+	buf[i++] = params->maxChannels;
+	buf[i++] = (BYTE)mslLength;
+	if (mslLength > 0) {
+		buf[i++] = GP211_UICC_MSL_PARAMETER_MINIMUM_SPI1;
+		buf[i++] = params->mslSpi1;
+	}
+	buf[i++] = (BYTE)params->tarValuesLength;
+	if (params->tarValuesLength > 0) {
+		memcpy(buf + i, params->tarValues, params->tarValuesLength);
+		i += params->tarValuesLength;
+	}
+	buf[i++] = params->maxServices;
+
+	if (i != requiredLength) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+	memcpy(out, buf, i);
+	*outLength = i;
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); return status; }
+}
+
+static OPGP_ERROR_STATUS build_uicc_access_params(const GP211_UICC_ACCESS_PARAMS *params, PBYTE out,
+						  PDWORD outLength) {
+	OPGP_ERROR_STATUS status;
+	BYTE buf[256];
+	DWORD i = 0;
+	DWORD r = 0;
+
+	if (params == NULL || out == NULL || outLength == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+	if (params->rulesLength > GP211_UICC_MAX_ACCESS_RULES) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+
+	for (r = 0; r < params->rulesLength; r++) {
+		const GP211_UICC_ACCESS_RULE *rule = &params->rules[r];
+		DWORD accessDomainLength = 0;
+
+		if (rule->aidLength != 0 && (rule->aidLength < 5 || rule->aidLength > 16)) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			return status;
+		}
+		switch (rule->accessDomainParameter) {
+			case GP211_UICC_ACCESS_DOMAIN_FULL_ACCESS:
+			case GP211_UICC_ACCESS_DOMAIN_NO_ACCESS:
+				accessDomainLength = 1;
+				break;
+			case GP211_UICC_ACCESS_DOMAIN_UICC_ACCESS:
+				accessDomainLength = 4;
+				break;
+			default:
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+				return status;
+		}
+		if (rule->accessDomainDapLength > GP211_UICC_ACCESS_DOMAIN_DAP_MAX_LENGTH) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			return status;
+		}
+
+		if ((i + 1 + rule->aidLength + 1 + accessDomainLength + 1 + rule->accessDomainDapLength) > 0xFF) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE));
+			return status;
+		}
+
+		buf[i++] = rule->aidLength;
+		if (rule->aidLength > 0) {
+			memcpy(buf + i, rule->aid, rule->aidLength);
+			i += rule->aidLength;
+		}
+		buf[i++] = (BYTE)accessDomainLength;
+		buf[i++] = rule->accessDomainParameter;
+		if (accessDomainLength == 4) {
+			memcpy(buf + i, rule->accessDomainData, 3);
+			i += 3;
+		}
+		buf[i++] = (BYTE)rule->accessDomainDapLength;
+		if (rule->accessDomainDapLength > 0) {
+			memcpy(buf + i, rule->accessDomainDap, rule->accessDomainDapLength);
+			i += rule->accessDomainDapLength;
+		}
+	}
+
+	if (i > *outLength) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		return status;
+	}
+	memcpy(out, buf, i);
+	*outLength = i;
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); return status; }
+}
+
+OPGP_ERROR_STATUS GP211_build_uicc_system_specific_params(GP211_UICC_SYSTEM_SPECIFIC_PARAMS *params,
+							  PBYTE uiccSystemSpecParams, PDWORD uiccSystemSpecParamsLength) {
+	OPGP_ERROR_STATUS status;
+	BYTE buf[256];
+	DWORD i = 0;
+	BYTE tmp[256];
+	DWORD tmpLength = 0;
+
+	OPGP_LOG_START(_T("GP211_build_uicc_system_specific_params"));
+	if (params == NULL || uiccSystemSpecParams == NULL || uiccSystemSpecParamsLength == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+
+	if (params->toolkitParamsPresent) {
+		tmpLength = sizeof(tmp);
+		status = build_uicc_toolkit_app_params(&params->toolkitParams, tmp, &tmpLength);
+		if (OPGP_ERROR_CHECK(status)) {
+			goto end;
+		}
+		if (tmpLength > 0) {
+			if ((i + 2 + tmpLength) > 0xFF) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE));
+				goto end;
+			}
+			buf[i++] = 0x80;
+			buf[i++] = (BYTE)tmpLength;
+			memcpy(buf + i, tmp, tmpLength);
+			i += tmpLength;
+		}
+	}
+
+	if (params->toolkitParametersDapLength > 0) {
+		if (params->toolkitParametersDapLength > GP211_UICC_TOOLKIT_DAP_MAX_LENGTH) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+		if ((i + 2 + params->toolkitParametersDapLength) > 0xFF) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE));
+			goto end;
+		}
+		buf[i++] = 0xC3;
+		buf[i++] = (BYTE)params->toolkitParametersDapLength;
+		memcpy(buf + i, params->toolkitParametersDap, params->toolkitParametersDapLength);
+		i += params->toolkitParametersDapLength;
+	}
+
+	if (params->accessParamsPresent) {
+		tmpLength = sizeof(tmp);
+		status = build_uicc_access_params(&params->accessParams, tmp, &tmpLength);
+		if (OPGP_ERROR_CHECK(status)) {
+			goto end;
+		}
+		if (tmpLength > 0) {
+			if ((i + 2 + tmpLength) > 0xFF) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE));
+				goto end;
+			}
+			buf[i++] = 0x81;
+			buf[i++] = (BYTE)tmpLength;
+			memcpy(buf + i, tmp, tmpLength);
+			i += tmpLength;
+		}
+	}
+
+	if (params->adminAccessParamsPresent) {
+		tmpLength = sizeof(tmp);
+		status = build_uicc_access_params(&params->adminAccessParams, tmp, &tmpLength);
+		if (OPGP_ERROR_CHECK(status)) {
+			goto end;
+		}
+		if (tmpLength > 0) {
+			if ((i + 2 + tmpLength) > 0xFF) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE));
+				goto end;
+			}
+			buf[i++] = 0x82;
+			buf[i++] = (BYTE)tmpLength;
+			memcpy(buf + i, tmp, tmpLength);
+			i += tmpLength;
+		}
+	}
+
+	if (i > *uiccSystemSpecParamsLength) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		goto end;
+	}
+	memcpy(uiccSystemSpecParams, buf, i);
+	*uiccSystemSpecParamsLength = i;
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+
+end:
+	OPGP_LOG_END(_T("GP211_build_uicc_system_specific_params"), status);
+	return status;
 }
 
 OPGP_ERROR_STATUS get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE executableModuleAID,
-									  DWORD executableModuleAIDLength, PBYTE applicationAID,
-									  DWORD applicationAIDLength, BYTE applicationPrivileges,
-									  DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
-									  PBYTE installParameters, DWORD installParametersLength,
+										  DWORD executableModuleAIDLength, PBYTE applicationAID,
+										  DWORD applicationAIDLength, BYTE applicationPrivileges,
+										  DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
+										  PBYTE installParameters, DWORD installParametersLength,
 									  PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 									  PBYTE simSpecParams, DWORD simSpecParamsLength,
 									  PBYTE installData, PDWORD installDataLength) {

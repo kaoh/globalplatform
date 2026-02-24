@@ -253,6 +253,10 @@ IF(TESTING)
       SOURCES statusTest.c testUtil.c ${SOURCES}
       LINK_LIBRARIES ${LIBRARIES})
 
+    add_cmocka_test(installDataTest
+      SOURCES installDataTest.c testUtil.c ${SOURCES}
+      LINK_LIBRARIES ${LIBRARIES})
+
     add_cmocka_test(getDataTest
       SOURCES getDataTest.c testUtil.c ${SOURCES}
       LINK_LIBRARIES ${LIBRARIES})
