@@ -599,6 +599,31 @@ typedef struct {
 	GP211_UICC_ACCESS_PARAMS adminAccessParams; //!< Administrative access parameters (tag '82').
 } GP211_UICC_SYSTEM_SPECIFIC_PARAMS;
 
+/**
+ * SIM Toolkit application specific parameters (part of tag 'CA' value).
+ */
+typedef struct {
+	BYTE priority; //!< Priority level of the Toolkit application instance.
+	BYTE maxTimers; //!< Maximum number of timers allowed.
+	BYTE maxTextLength; //!< Maximum text length for a menu entry.
+	BYTE maxMenuEntries; //!< Maximum number of menu entries (m).
+	GP211_UICC_TOOLKIT_MENU_ENTRY menuEntries[GP211_UICC_MAX_MENU_ENTRIES]; //!< Array with m entries.
+	BYTE maxChannels; //!< Maximum number of channels allowed.
+	BOOL mslPresent; //!< TRUE to include Minimum SPI1 (parameter 0x01).
+	BYTE mslSpi1; //!< Minimum SPI1 data byte.
+	BYTE tarValues[GP211_UICC_MAX_TAR_VALUES * 3]; //!< TAR Value(s) field.
+	BYTE tarValuesLength; //!< Length of TAR Value(s) field in bytes (0 or multiple of 3).
+} GP211_SIM_TOOLKIT_PARAMS;
+
+/**
+ * SIM File Access and Toolkit Application Specific Parameters (tag 'CA' value without the tag and length).
+ */
+typedef struct {
+	BYTE accessDomainParameter; //!< Access Domain Parameter (0x00, 0x02, 0xFF).
+	BYTE accessDomainData[3]; //!< Access Domain Data for parameter 0x02.
+	GP211_SIM_TOOLKIT_PARAMS toolkitParams; //!< Toolkit application parameters.
+} GP211_SIM_SPECIFIC_PARAMS;
+
 //! \brief GlobalPlatform2.1.1: Selects an application on a card by AID.
 OPGP_API
 OPGP_ERROR_STATUS OPGP_select_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, PBYTE AID, DWORD AIDLength);
@@ -844,6 +869,11 @@ OPGP_ERROR_STATUS GP211_calculate_install_token_uicc(BYTE P1, PBYTE executableLo
 OPGP_API
 OPGP_ERROR_STATUS GP211_build_uicc_system_specific_params(GP211_UICC_SYSTEM_SPECIFIC_PARAMS *params,
 							  PBYTE uiccSystemSpecParams, PDWORD uiccSystemSpecParamsLength);
+
+//! \brief GlobalPlatform2.1.1: Builds the SIM File Access and Toolkit Application Specific Parameters (tag 'CA' value without the tag and length).
+OPGP_API
+OPGP_ERROR_STATUS GP211_build_sim_specific_params(GP211_SIM_SPECIFIC_PARAMS *params,
+						  PBYTE simSpecParams, PDWORD simSpecParamsLength);
 
 //! \brief GlobalPlatform2.1.1: Calculates a Load File Data Block Hash.
 OPGP_API

@@ -69,9 +69,40 @@ static void build_uicc_system_specific_params_toolkit(void **state) {
 	assert_memory_equal(output, expected, expectedLength);
 }
 
+static void build_sim_specific_params(void **state) {
+	OPGP_ERROR_STATUS status;
+	BYTE expected[32];
+	DWORD expectedLength = sizeof(expected);
+	BYTE output[32];
+	DWORD outputLength = sizeof(output);
+	GP211_SIM_SPECIFIC_PARAMS params;
+
+	hex_to_byte_array("010001011000010003D50101", expected, &expectedLength);
+
+	memset(&params, 0, sizeof(params));
+	params.accessDomainParameter = GP211_UICC_ACCESS_DOMAIN_FULL_ACCESS;
+
+	params.toolkitParams.priority = 0x01;
+	params.toolkitParams.maxTimers = 0x01;
+	params.toolkitParams.maxTextLength = 0x10;
+	params.toolkitParams.maxMenuEntries = 0x00;
+	params.toolkitParams.maxChannels = 0x01;
+	params.toolkitParams.mslPresent = 0;
+	params.toolkitParams.tarValuesLength = 0x03;
+	params.toolkitParams.tarValues[0] = 0xD5;
+	params.toolkitParams.tarValues[1] = 0x01;
+	params.toolkitParams.tarValues[2] = 0x01;
+
+	status = GP211_build_sim_specific_params(&params, output, &outputLength);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+	assert_int_equal(outputLength, expectedLength);
+	assert_memory_equal(output, expected, expectedLength);
+}
+
 int main(void) {
 	const struct CMUnitTest tests[] = {
 			cmocka_unit_test(build_uicc_system_specific_params_toolkit),
+			cmocka_unit_test(build_sim_specific_params),
 	};
 	return cmocka_run_group_tests_name("installData", tests, NULL, NULL);
 }

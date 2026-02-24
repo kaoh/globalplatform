@@ -3209,7 +3209,7 @@ OPGP_ERROR_STATUS GP211_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_
  * \param installParametersLength [in] The length of the installParameters buffer.
  * \param uiccSystemSpecParams [in] UICC System Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2.
  * \param uiccSystemSpecParamsLength [in] The length of the uiccSystemSpecParams buffer.
- * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2.
+ * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.1.
  * \param simSpecParamsLength [in] The length of the simSpecParams buffer.
  * \param installToken [in] The Install Token. This is a 1024 bit (=128 byte) RSA Signature.
  * \param *receiptData [out] If the deletion is performed by a security domain with delegated management privilege
@@ -3377,7 +3377,7 @@ OPGP_ERROR_STATUS GP211_install_for_install_and_make_selectable(OPGP_CARD_CONTEX
  * \param installParametersLength [in] The length of the installParameters buffer.
  * \param uiccSystemSpecParams [in] UICC System Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2.
  * \param uiccSystemSpecParamsLength [in] The length of the uiccSystemSpecParams buffer.
- * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2.
+ * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.1.
  * \param simSpecParamsLength [in] The length of the simSpecParams buffer.
  * \param installToken [in] The Install Token. This is a 1024 bit (=128 byte) RSA Signature.
  * \param *receiptData [out] If the deletion is performed by a security domain with delegated management privilege
@@ -3754,7 +3754,7 @@ OPGP_ERROR_STATUS GP211_get_install_token_signature_data(BYTE P1, PBYTE executab
  * \param installParametersLength [in] The length of the installParameters buffer.
  * \param uiccSystemSpecParams [in] UICC System Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2.
  * \param uiccSystemSpecParamsLength [in] The length of the uiccSystemSpecParams buffer.
- * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2.
+ * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.1.
  * \param simSpecParamsLength [in] The length of the simSpecParams buffer.
  * \param installTokenSignatureData [out] The data to sign in a Install Token.
  * \param installTokenSignatureDataLength [in, out] The length of the installTokenSignatureData buffer.
@@ -3922,6 +3922,75 @@ static OPGP_ERROR_STATUS build_uicc_access_params(const GP211_UICC_ACCESS_PARAMS
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); return status; }
 }
 
+static OPGP_ERROR_STATUS build_sim_toolkit_params(const GP211_SIM_TOOLKIT_PARAMS *params, PBYTE out,
+						  PDWORD outLength) {
+	OPGP_ERROR_STATUS status;
+	BYTE buf[256];
+	DWORD i = 0;
+	DWORD j = 0;
+	DWORD mslLength = 0;
+	DWORD requiredLength = 0;
+
+	if (params == NULL || out == NULL || outLength == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+	if (params->maxTimers > GP211_UICC_TOOLKIT_MAX_TIMERS ||
+		params->maxChannels > GP211_UICC_TOOLKIT_MAX_CHANNELS) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+	if (params->maxMenuEntries > GP211_UICC_MAX_MENU_ENTRIES) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+	if ((params->tarValuesLength % 3) != 0 || params->tarValuesLength > (GP211_UICC_MAX_TAR_VALUES * 3)) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+
+	if (params->mslPresent) {
+		mslLength = 2;
+	}
+	requiredLength = 7 + ((DWORD)params->maxMenuEntries * 2) + mslLength + params->tarValuesLength;
+	if (requiredLength > 0xFF) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE));
+		return status;
+	}
+	if (requiredLength > *outLength) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		return status;
+	}
+
+	buf[i++] = params->priority;
+	buf[i++] = params->maxTimers;
+	buf[i++] = params->maxTextLength;
+	buf[i++] = params->maxMenuEntries;
+	for (j = 0; j < params->maxMenuEntries; j++) {
+		buf[i++] = params->menuEntries[j].position;
+		buf[i++] = params->menuEntries[j].identifier;
+	}
+	buf[i++] = params->maxChannels;
+	buf[i++] = (BYTE)mslLength;
+	if (mslLength > 0) {
+		buf[i++] = GP211_UICC_MSL_PARAMETER_MINIMUM_SPI1;
+		buf[i++] = params->mslSpi1;
+	}
+	buf[i++] = (BYTE)params->tarValuesLength;
+	if (params->tarValuesLength > 0) {
+		memcpy(buf + i, params->tarValues, params->tarValuesLength);
+		i += params->tarValuesLength;
+	}
+
+	if (i != requiredLength) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+	memcpy(out, buf, i);
+	*outLength = i;
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); return status; }
+}
+
 OPGP_ERROR_STATUS GP211_build_uicc_system_specific_params(GP211_UICC_SYSTEM_SPECIFIC_PARAMS *params,
 							  PBYTE uiccSystemSpecParams, PDWORD uiccSystemSpecParamsLength) {
 	OPGP_ERROR_STATUS status;
@@ -4015,6 +4084,67 @@ OPGP_ERROR_STATUS GP211_build_uicc_system_specific_params(GP211_UICC_SYSTEM_SPEC
 
 end:
 	OPGP_LOG_END(_T("GP211_build_uicc_system_specific_params"), status);
+	return status;
+}
+
+OPGP_ERROR_STATUS GP211_build_sim_specific_params(GP211_SIM_SPECIFIC_PARAMS *params,
+						  PBYTE simSpecParams, PDWORD simSpecParamsLength) {
+	OPGP_ERROR_STATUS status;
+	BYTE buf[256];
+	DWORD i = 0;
+	BYTE tmp[256];
+	DWORD tmpLength = sizeof(tmp);
+	BYTE accessDomainLength = 0;
+
+	OPGP_LOG_START(_T("GP211_build_sim_specific_params"));
+	if (params == NULL || simSpecParams == NULL || simSpecParamsLength == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+
+	switch (params->accessDomainParameter) {
+		case GP211_UICC_ACCESS_DOMAIN_FULL_ACCESS:
+		case GP211_UICC_ACCESS_DOMAIN_NO_ACCESS:
+			accessDomainLength = 1;
+			break;
+		case GP211_UICC_ACCESS_DOMAIN_UICC_ACCESS:
+			accessDomainLength = 4;
+			break;
+		default:
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+	}
+
+	tmpLength = sizeof(tmp);
+	status = build_sim_toolkit_params(&params->toolkitParams, tmp, &tmpLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+
+	if ((1 + accessDomainLength + tmpLength) > 0xFF) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE));
+		goto end;
+	}
+
+	buf[i++] = accessDomainLength;
+	buf[i++] = params->accessDomainParameter;
+	if (accessDomainLength == 4) {
+		memcpy(buf + i, params->accessDomainData, 3);
+		i += 3;
+	}
+	memcpy(buf + i, tmp, tmpLength);
+	i += tmpLength;
+
+	if (i > *simSpecParamsLength) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		goto end;
+	}
+	memcpy(simSpecParams, buf, i);
+	*simSpecParamsLength = i;
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+
+end:
+	OPGP_LOG_END(_T("GP211_build_sim_specific_params"), status);
 	return status;
 }
 
@@ -4261,7 +4391,7 @@ OPGP_ERROR_STATUS GP211_calculate_install_token(BYTE P1, PBYTE executableLoadFil
  * \param installParametersLength [in] The length of the installParameters buffer.
  * \param uiccSystemSpecParams [in] UICC System Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2.
  * \param uiccSystemSpecParamsLength [in] The length of the uiccSystemSpecParams buffer.
- * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2.
+ * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.1.
  * \param simSpecParamsLength [in] The length of the simSpecParams buffer.
  * \param installToken [out] The calculated Install Token. A 1024 bit RSA signature.
  * \param PEMKeyFileName [in] A PEM file name with the private RSA key.
@@ -6749,7 +6879,7 @@ OPGP_ERROR_STATUS OP201_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_
  * \param applicationInstallParametersLength [in] The length of the applicationInstallParameters buffer.
  * \param uiccSystemSpecParams [in] UICC System Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2.
  * \param uiccSystemSpecParamsLength [in] The length of the uiccSystemSpecParams buffer.
- * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2.
+ * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.1.
  * \param simSpecParamsLength [in] The length of the simSpecParams buffer.
  * \param installToken [in] The Install Token. This is a 1024 bit (=128 byte) RSA Signature.
  * \param *receiptData [out] If the deletion is performed by a security domain with delegated management privilege
@@ -6866,7 +6996,7 @@ OPGP_ERROR_STATUS OP201_install_for_install_and_make_selectable(OPGP_CARD_CONTEX
  * \param applicationInstallParametersLength [in] The length of the applicationInstallParameters buffer.
  * \param uiccSystemSpecParams [in] UICC System Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2.
  * \param uiccSystemSpecParamsLength [in] The length of the uiccSystemSpecParams buffer.
- * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2.
+ * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.1.
  * \param simSpecParamsLength [in] The length of the simSpecParams buffer.
  * \param installToken [in] The Install Token. This is a 1024 bit (=128 byte) RSA Signature.
  * \param *receiptData [out] If the deletion is performed by a security domain with delegated management privilege
@@ -7006,7 +7136,7 @@ OPGP_ERROR_STATUS OP201_get_install_token_signature_data(BYTE P1, PBYTE executab
  * \param applicationInstallParametersLength [in] The length of the applicationInstallParameters buffer.
  * \param uiccSystemSpecParams [in] UICC System Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2.
  * \param uiccSystemSpecParamsLength [in] The length of the uiccSystemSpecParams buffer.
- * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2.
+ * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.1.
  * \param simSpecParamsLength [in] The length of the simSpecParams buffer.
  * \param installTokenSignatureData [out] The data to sign in a Install Token.
  * \param installTokenSignatureDataLength [in, out] The length of the installTokenSignatureData buffer.
@@ -7094,7 +7224,7 @@ OPGP_ERROR_STATUS OP201_calculate_install_token(BYTE P1, PBYTE executableLoadFil
  * \param applicationInstallParametersLength [in] The length of the applicationInstallParameters buffer.
  * \param uiccSystemSpecParams [in] UICC System Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2.
  * \param uiccSystemSpecParamsLength [in] The length of the uiccSystemSpecParams buffer.
- * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2.
+ * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.1.
  * \param simSpecParamsLength [in] The length of the simSpecParams buffer.
  * \param installToken [out] The calculated Install Token. A 1024 bit RSA signature.
  * \param PEMKeyFileName [in] A PEM file name with the private RSA key.
