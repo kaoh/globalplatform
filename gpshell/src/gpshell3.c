@@ -1402,6 +1402,8 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
                 applet_aid, (DWORD)applet_len,
                 privileges, v_data_limit, nv_data_limit,
                 inst_param_len ? inst_param : NULL, (DWORD)inst_param_len,
+                NULL, 0,
+                NULL, 0,
                 installTokenPtr, installTokenLen, &rec2, &rec2Avail))) {
             return -1;
         }
@@ -1422,6 +1424,8 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
                     aid, aidLen,
                     privileges, v_data_limit, nv_data_limit,
                     inst_param_len ? inst_param : NULL, (DWORD)inst_param_len,
+                    NULL, 0,
+                    NULL, 0,
                     installTokenPtr, installTokenLen, &rec2, &rec2Avail))) {
                 fprintf(stderr, "Failed for applet index %d\n", i);
                 return -1;

@@ -386,7 +386,7 @@ START_TEST (test_install)
 				loadFileParams.appletAIDs[0].AIDLength,
 				loadFileParams.appletAIDs[0].AID,
 				loadFileParams.appletAIDs[0].AIDLength, 0, 500, 1000, NULL, 0,
-				NULL, 0, &receipt, &receiptDataAvailable);
+				NULL, 0, NULL, 0, NULL, 0, &receipt, &receiptDataAvailable);
 
 		if (OPGP_ERROR_CHECK(status)) {
 			ck_abort_msg("GP211_install_for_install_and_make_selectable() failed: %s", status.errorMessage);

@@ -1644,7 +1644,7 @@ static int handleCommands(FILE *fd)
                             optionStr.instAIDLen = optionStr.AIDLen;
                             memcpy(optionStr.instAID, optionStr.AID, optionStr.instAIDLen);
                         }
-                        status = OP201_install_for_install_and_make_selectable_uicc(
+                        status = OP201_install_for_install_and_make_selectable(
                             cardContext, cardInfo, &securityInfo201,
                             (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
                             (PBYTE)optionStr.AID, optionStr.AIDLen,
@@ -1667,7 +1667,7 @@ static int handleCommands(FILE *fd)
                     {
                         for (i = 0; loadFileParams.appletAIDs[i].AIDLength; i++)
                         {
-                            status = OP201_install_for_install_and_make_selectable_uicc(
+                            status = OP201_install_for_install_and_make_selectable(
                                 cardContext, cardInfo, &securityInfo201,
                                 (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
                                 (PBYTE)loadFileParams.appletAIDs[i].AID,
@@ -1707,7 +1707,7 @@ static int handleCommands(FILE *fd)
                             optionStr.instAIDLen = optionStr.AIDLen;
                             memcpy(optionStr.instAID, optionStr.AID, optionStr.instAIDLen);
                         }
-                        status = GP211_install_for_install_and_make_selectable_uicc(
+                        status = GP211_install_for_install_and_make_selectable(
                             cardContext, cardInfo, &securityInfo211,
                             (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
                             (PBYTE)optionStr.AID, optionStr.AIDLen,
@@ -1730,7 +1730,7 @@ static int handleCommands(FILE *fd)
                     {
                         for (i = 0; loadFileParams.appletAIDs[i].AIDLength; i++)
                         {
-                            status = GP211_install_for_install_and_make_selectable_uicc(
+                            status = GP211_install_for_install_and_make_selectable(
                                 cardContext, cardInfo, &securityInfo211,
                                 (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
                                 (PBYTE)loadFileParams.appletAIDs[i].AID,
@@ -1841,7 +1841,7 @@ static int handleCommands(FILE *fd)
                 if (platform_mode == PLATFORM_MODE_OP_201)
                 {
                     OP201_RECEIPT_DATA receipt;
-                    status = OP201_install_for_install_uicc(
+                    status = OP201_install_for_install(
                              cardContext, cardInfo, &securityInfo201,
                              (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
                              (PBYTE)optionStr.AID, optionStr.AIDLen,
@@ -1864,7 +1864,7 @@ static int handleCommands(FILE *fd)
                 {
                     GP211_RECEIPT_DATA receipt;
 
-                    status = GP211_install_for_install_uicc(
+                    status = GP211_install_for_install(
                              cardContext, cardInfo, &securityInfo211,
                              (PBYTE)optionStr.pkgAID, optionStr.pkgAIDLen,
                              (PBYTE)optionStr.AID, optionStr.AIDLen,
