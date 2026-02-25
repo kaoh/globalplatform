@@ -111,7 +111,7 @@ Synopsis:
 gpshell3 install [--load-only|--install-only]
                  [--dap <hex>|@<file>] [--load-token <hex>] [--install-token <hex>]
                  [--hash <hex>] [--load-file <AIDhex>] [--applet <AIDhex>] [--module <AIDhex>]
-                 [--params <hex>] [--v-data-limit <size>] [--nv-data-limit <size>]
+                 [--params <hex>] [--sd-params <hex>] [--v-data-limit <size>] [--nv-data-limit <size>]
                  [--priv <p1,p2,...>] <cap-file>
 ```
 
@@ -120,6 +120,7 @@ Options:
 - `--applet <AIDhex>`: Applet AID to install (optional). If omitted together with `--module`, installs all applets from the CAP.
 - `--module <AIDhex>`: Module AID (often same as applet) to install (optional).
 - `--params <hex>`: Installation parameters (hex) passed to the applet `install()` method (optional).
+- `--sd-params <hex>`: Security Domain install parameters (hex) included in tag `C9` (optional).
 - `--priv <list>`: Comma-separated privileges by short names. See “Privileges” below (optional).
 - `--v-data-limit <size>`: Volatile data storage limit in bytes (optional).
 - `--nv-data-limit <size>`: Non-volatile data storage limit in bytes (optional).

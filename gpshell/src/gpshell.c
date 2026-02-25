@@ -57,6 +57,7 @@
 #define INSTPARAMLEN 128
 #define UICCSYSTEMSPECPARAMLEN 128
 #define SIMSPECPARAMLEN 128
+#define SDPARAMLEN 128
 #define DELIMITER _T(" \t\r\n,")
 #define KEY_LEN 32
 #define PLATFORM_MODE_OP_201 OP_201
@@ -106,6 +107,8 @@ typedef struct _OptionStr
     char passPhrase[PASSPHRASELEN+1];
     BYTE instParam[INSTPARAMLEN+1];
     DWORD instParamLen;
+    BYTE sdParam[SDPARAMLEN+1];
+    DWORD sdParamLen;
     BYTE uiccSystemSpecParam[UICCSYSTEMSPECPARAMLEN+1];
     DWORD uiccSystemSpecParamLen;
     BYTE simSpecParam[SIMSPECPARAMLEN+1];
@@ -680,6 +683,8 @@ static int handleOptions(OptionStr *pOptionStr)
     pOptionStr->vDataLimit = 0;
     pOptionStr->instParam[0] = '\0';
     pOptionStr->instParamLen = 0;
+    pOptionStr->sdParam[0] = '\0';
+    pOptionStr->sdParamLen = 0;
     pOptionStr->uiccSystemSpecParam[0] = '\0';
     pOptionStr->uiccSystemSpecParamLen = 0;
     pOptionStr->simSpecParam[0] = '\0';
@@ -896,6 +901,11 @@ static int handleOptions(OptionStr *pOptionStr)
         {
             CHECK_TOKEN(token, _T("-instParam"));
             pOptionStr->instParamLen = convertStringToByteArray(token, INSTPARAMLEN, pOptionStr->instParam);
+        }
+        else if (_tcscmp(token, _T("-sdParam")) == 0)
+        {
+            CHECK_TOKEN(token, _T("-sdParam"));
+            pOptionStr->sdParamLen = convertStringToByteArray(token, SDPARAMLEN, pOptionStr->sdParam);
         }
         else if (_tcscmp(token, _T("-uiccSystemSpecParam")) == 0)
         {
@@ -1654,6 +1664,8 @@ static int handleCommands(FILE *fd)
                             optionStr.nvDataLimit,
                             (PBYTE)optionStr.instParam,
                             optionStr.instParamLen,
+                            (PBYTE)optionStr.sdParam,
+                            optionStr.sdParamLen,
                             (PBYTE)optionStr.uiccSystemSpecParam,
 							optionStr.uiccSystemSpecParamLen,
                             (PBYTE)optionStr.simSpecParam,
@@ -1679,6 +1691,8 @@ static int handleCommands(FILE *fd)
                                 optionStr.nvDataLimit,
                                 (PBYTE)optionStr.instParam,
                                 optionStr.instParamLen,
+                                (PBYTE)optionStr.sdParam,
+                                optionStr.sdParamLen,
                                 (PBYTE)optionStr.uiccSystemSpecParam,
                                 optionStr.uiccSystemSpecParamLen,
 								(PBYTE)optionStr.simSpecParam,
@@ -1717,6 +1731,8 @@ static int handleCommands(FILE *fd)
                             optionStr.nvDataLimit,
                             (PBYTE)optionStr.instParam,
                             optionStr.instParamLen,
+                            (PBYTE)optionStr.sdParam,
+                            optionStr.sdParamLen,
                             (PBYTE)optionStr.uiccSystemSpecParam,
                             optionStr.uiccSystemSpecParamLen,
 							(PBYTE)optionStr.simSpecParam,
@@ -1742,6 +1758,8 @@ static int handleCommands(FILE *fd)
                                 optionStr.nvDataLimit,
                                 (PBYTE)optionStr.instParam,
                                 optionStr.instParamLen,
+                                (PBYTE)optionStr.sdParam,
+                                optionStr.sdParamLen,
                                 (PBYTE)optionStr.uiccSystemSpecParam,
                                 optionStr.uiccSystemSpecParamLen,
 								(PBYTE)optionStr.simSpecParam,
@@ -1851,6 +1869,8 @@ static int handleCommands(FILE *fd)
                              optionStr.nvDataLimit,
                              (PBYTE)optionStr.instParam,
                              optionStr.instParamLen,
+                             (PBYTE)optionStr.sdParam,
+                             optionStr.sdParamLen,
                              (PBYTE)optionStr.uiccSystemSpecParam,
                              optionStr.uiccSystemSpecParamLen,
                              (PBYTE)optionStr.simSpecParam,
@@ -1874,6 +1894,8 @@ static int handleCommands(FILE *fd)
                              optionStr.nvDataLimit,
                              (PBYTE)optionStr.instParam,
                              optionStr.instParamLen,
+                             (PBYTE)optionStr.sdParam,
+                             optionStr.sdParamLen,
                              (PBYTE)optionStr.uiccSystemSpecParam,
                              optionStr.uiccSystemSpecParamLen,
 							 (PBYTE)optionStr.simSpecParam,

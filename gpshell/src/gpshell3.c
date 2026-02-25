@@ -128,13 +128,14 @@ static void print_usage(const char *prog) {
 
     fputs(
         "  install [--load-only|--install-only] [--dap <hex>|@<file>] [--load-token <hex>] [--install-token <hex>] \\\n"
-        "          [--hash <hex>] [--load-file <AIDhex>] [--applet <AIDhex>] [--module <AIDhex>] [--params <hex>] \\\n"
+        "          [--hash <hex>] [--load-file <AIDhex>] [--applet <AIDhex>] [--module <AIDhex>] [--params <hex>] [--sd-params <hex>] \\\n"
         "          [--v-data-limit <size>] [--nv-data-limit <size>] [--priv <p1,p2,...>] <cap-file>\n"
         "      Load a CAP file, and optionally install/make selectable applet instance(s).\n"
         "      --applet <AIDhex>: Select which applet AID to install (optional).\n"
         "      --module <AIDhex>: Select which module AID to install (usually same as applet) (optional).\n"
         "                         If both --applet and --module are omitted, installs all applets in the CAP.\n"
         "      --params: installation parameters (hex) (optional).\n"
+        "      --sd-params: Security Domain install parameters (hex) added to tag C9 (optional).\n"
         "      --priv: comma-separated privilege short names (see 'Privileges' below)  (optional).\n"
         "      --v-data-limit <size>: Volatile data storage limit in bytes for applet instance (optional).\n"
         "      --nv-data-limit <size>: Non-volatile data storage limit in bytes for applet instance (optional).\n"
@@ -1176,6 +1177,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     int install_only = 0;
     DWORD v_data_limit = 0, nv_data_limit = 0;
     const char *dap_hex = NULL; const char *applet_aid_hex=NULL; const char *module_aid_hex=NULL; const char *priv_list=NULL; const char *params_hex=NULL;
+    const char *sd_params_hex = NULL;
     const char *load_token_hex = NULL; const char *install_token_hex = NULL; const char *load_file_hash_hex = NULL;
     const char *load_file_aid_hex = NULL;
     int ai = 0;
@@ -1193,6 +1195,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         else if (strcmp(argv[ai], "--v-data-limit") == 0 && ai+1 < argc) { v_data_limit = (DWORD)atoi(argv[++ai]); }
         else if (strcmp(argv[ai], "--nv-data-limit") == 0 && ai+1 < argc) { nv_data_limit = (DWORD)atoi(argv[++ai]); }
         else if (strcmp(argv[ai], "--params") == 0 && ai+1 < argc) { params_hex = argv[++ai]; }
+        else if (strcmp(argv[ai], "--sd-params") == 0 && ai+1 < argc) { sd_params_hex = argv[++ai]; }
         else break;
     }
     if (ai >= argc) { fprintf(stderr, "install: missing <cap-file>\n"); return -1; }
@@ -1351,6 +1354,14 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
             return -1;
         }
     }
+    unsigned char sd_param[256]; size_t sd_param_len=0;
+    if (sd_params_hex) {
+        sd_param_len = sizeof(sd_param);
+        if (hex_to_bytes(sd_params_hex, sd_param, &sd_param_len)!=0) {
+            fprintf(stderr, "Invalid --sd-params hex\n");
+            return -1;
+        }
+    }
 
     // Parse optional install token
     BYTE installToken[128]; memset(installToken,0,sizeof(installToken));
@@ -1402,6 +1413,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
                 applet_aid, (DWORD)applet_len,
                 privileges, v_data_limit, nv_data_limit,
                 inst_param_len ? inst_param : NULL, (DWORD)inst_param_len,
+                sd_param_len ? sd_param : NULL, (DWORD)sd_param_len,
                 NULL, 0,
                 NULL, 0,
                 installTokenPtr, installTokenLen, &rec2, &rec2Avail))) {
@@ -1424,6 +1436,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
                     aid, aidLen,
                     privileges, v_data_limit, nv_data_limit,
                     inst_param_len ? inst_param : NULL, (DWORD)inst_param_len,
+                    sd_param_len ? sd_param : NULL, (DWORD)sd_param_len,
                     NULL, 0,
                     NULL, 0,
                     installTokenPtr, installTokenLen, &rec2, &rec2Avail))) {

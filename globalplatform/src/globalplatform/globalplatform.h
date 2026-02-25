@@ -539,6 +539,37 @@ typedef struct {
 #define GP211_UICC_MAX_TAR_VALUES 4 //!< Maximum TAR values supported by the helper structures.
 #define GP211_UICC_TOOLKIT_DAP_MAX_LENGTH 16 //!< Maximum toolkit parameters DAP length supported.
 #define GP211_UICC_ACCESS_DOMAIN_DAP_MAX_LENGTH 16 //!< Maximum access domain DAP length supported.
+#define GP211_SPI1_RC_CC_DS_MASK 0x03 //!< SPI1 RC/CC/DS mask (b2..b1).
+#define GP211_SPI1_RC_CC_DS_NONE 0x00 //!< SPI1 RC/CC/DS: none.
+#define GP211_SPI1_RC_CC_DS_RC 0x01 //!< SPI1 RC/CC/DS: Redundancy Check.
+#define GP211_SPI1_RC_CC_DS_CC 0x02 //!< SPI1 RC/CC/DS: Cryptographic Checksum.
+#define GP211_SPI1_RC_CC_DS_DS 0x03 //!< SPI1 RC/CC/DS: Digital Signature (reserved).
+#define GP211_SPI1_CIPHERING 0x04 //!< SPI1 ciphering bit (b3).
+#define GP211_SPI1_COUNTER_MASK 0x18 //!< SPI1 counter mask (b5..b4).
+#define GP211_SPI1_COUNTER_NONE 0x00 //!< SPI1 counter: no counter.
+#define GP211_SPI1_COUNTER_AVAILABLE 0x08 //!< SPI1 counter: available, no replay/sequence check.
+#define GP211_SPI1_COUNTER_HIGHER_THAN_RE 0x10 //!< SPI1 counter: process if counter higher than RE.
+#define GP211_SPI1_COUNTER_INCREMENT_RE 0x18 //!< SPI1 counter: process if counter is one higher than RE.
+#define GP211_SPI1_RFU_MASK 0xE0 //!< SPI1 RFU mask (b8..b6).
+#define GP211_SD_MAX_SCP 8 //!< Maximum SCP entries supported by the helper structures.
+#define GP211_SD_PARAM_TAG_SCP 0x81 //!< SD install param tag for SCP (tag '81').
+#define GP211_SD_PARAM_TAG_ACCEPT_EXTRACTION 0x82 //!< SD install param tag for accept extraction (tag '82').
+#define GP211_SD_PARAM_TAG_ACCEPT_DELETE 0x83 //!< SD install param tag for accept deletion (tag '83').
+#define GP211_SD_PARAM_TAG_PERSONALIZED 0x84 //!< SD install param tag for personalized state (tag '84').
+#define GP211_SD_PARAM_TAG_CASD_CAPABILITY 0x86 //!< SD install param tag for CASD capability (tag '86').
+#define GP211_SD_PARAM_TAG_ACCEPT_GLOBAL_DELETE 0x87 //!< SD install param tag for accept global delete (tag '87').
+#define GP211_SD_PARAM_LEN_SCP 0x02 //!< SD install param length for SCP (tag '81').
+#define GP211_SD_PARAM_LEN_ACCEPT_DELETE 0x01 //!< SD install param length for accept deletion (tag '83').
+#define GP211_SD_PARAM_LEN_CASD_CAPABILITY 0x02 //!< SD install param length for CASD capability (tag '86').
+#define GP211_SD_PARAM_LEN_PERSONALIZED 0x00 //!< SD install param length for personalized state (tag '84').
+#define GP211_SD_PARAM_LEN_ACCEPT_MIN 0x01 //!< SD install param minimum length for accept policies (tags '82','87').
+#define GP211_SD_PARAM_LEN_ACCEPT_MAX 0x02 //!< SD install param maximum length for accept policies (tags '82','87').
+#define GP211_SD_ACCEPT_NONE 0x00 //!< Accept policy: no acceptance (default).
+#define GP211_SD_ACCEPT_ANCESTOR_AM 0x80 //!< Accept policy: from ancestor SD with AM privilege.
+#define GP211_SD_ACCEPT_HIERARCHY_AM 0x82 //!< Accept policy: from any SD in hierarchy with AM privilege.
+#define GP211_SD_ACCEPT_ISD 0x84 //!< Accept policy: from Issuer Security Domain.
+#define GP211_SD_ACCEPT_DM_UNDER_ANCESTOR_AM 0x86 //!< Accept policy: from any SD with DM under ancestor SD with AM.
+#define GP211_SD_ACCEPT_ALL_AM 0xFF //!< Accept policy: from every SD with AM privilege (RFU bits set to 0).
 
 /**
  * Toolkit menu entry definition.
@@ -558,8 +589,7 @@ typedef struct {
 	BYTE maxMenuEntries; //!< Maximum number of menu entries (m).
 	GP211_UICC_TOOLKIT_MENU_ENTRY menuEntries[GP211_UICC_MAX_MENU_ENTRIES]; //!< Array with m entries.
 	BYTE maxChannels; //!< Maximum number of channels allowed.
-	BOOL mslPresent; //!< TRUE to include Minimum SPI1 (parameter 0x01).
-	BYTE mslSpi1; //!< Minimum SPI1 data byte.
+	BYTE mslData; //!< Minimum Security Level Data (MSLD) for Minimum SPI1 parameter (SPI1 first octet coding).
 	BYTE tarValues[GP211_UICC_MAX_TAR_VALUES * 3]; //!< TAR Value(s) field.
 	BYTE tarValuesLength; //!< Length of TAR Value(s) field in bytes (0 or multiple of 3).
 	BYTE maxServices; //!< Maximum number of services allowed.
@@ -609,8 +639,7 @@ typedef struct {
 	BYTE maxMenuEntries; //!< Maximum number of menu entries (m).
 	GP211_UICC_TOOLKIT_MENU_ENTRY menuEntries[GP211_UICC_MAX_MENU_ENTRIES]; //!< Array with m entries.
 	BYTE maxChannels; //!< Maximum number of channels allowed.
-	BOOL mslPresent; //!< TRUE to include Minimum SPI1 (parameter 0x01).
-	BYTE mslSpi1; //!< Minimum SPI1 data byte.
+	BYTE mslData; //!< Minimum Security Level Data (MSLD) for Minimum SPI1 parameter (SPI1 first octet coding).
 	BYTE tarValues[GP211_UICC_MAX_TAR_VALUES * 3]; //!< TAR Value(s) field.
 	BYTE tarValuesLength; //!< Length of TAR Value(s) field in bytes (0 or multiple of 3).
 } GP211_SIM_TOOLKIT_PARAMS;
@@ -623,6 +652,30 @@ typedef struct {
 	BYTE accessDomainData[3]; //!< Access Domain Data for parameter 0x02.
 	GP211_SIM_TOOLKIT_PARAMS toolkitParams; //!< Toolkit application parameters.
 } GP211_SIM_SPECIFIC_PARAMS;
+
+/**
+ * Security Domain SCP entry (tag '81').
+ */
+typedef struct {
+	BYTE scpIdentifier; //!< Secure Channel Protocol Identifier.
+	BYTE scpImpl; //!< Secure Channel Implementation Option 'T'.
+} GP211_SD_SCP_ENTRY;
+
+/**
+ * Security Domain install parameters (tag 'C1' value).
+ */
+typedef struct {
+	GP211_SD_SCP_ENTRY scpEntries[GP211_SD_MAX_SCP]; //!< SCP entries (tag '81').
+	BYTE scpEntriesLength; //!< Number of SCP entries.
+	BYTE acceptExtraction[2]; //!< Acceptance policy for extraction (tag '82').
+	BYTE acceptExtractionLength; //!< Length of tag '82' value (1 or 2).
+	BYTE acceptDeletion; //!< Acceptance policy for deletion (tag '83').
+	BYTE acceptDeletionLength; //!< Length of tag '83' value (0 or 1).
+	BOOL personalizedStatePresent; //!< TRUE to include tag '84' (length 0).
+	BYTE casdCapabilityInfo[2]; //!< CASD capability information (tag '86').
+	BYTE acceptGlobalDelete[2]; //!< Acceptance policy for Global Delete (tag '87').
+	BYTE acceptGlobalDeleteLength; //!< Length of tag '87' value (1 or 2).
+} GP211_SD_INSTALL_PARAMS;
 
 //! \brief GlobalPlatform2.1.1: Selects an application on a card by AID.
 OPGP_API
@@ -816,6 +869,7 @@ OPGP_ERROR_STATUS GP211_get_install_token_signature_data(BYTE P1, PBYTE executab
 									  BYTE applicationPrivileges, DWORD volatileDataSpaceLimit,
 									  DWORD nonVolatileDataSpaceLimit,
 									  PBYTE installParameters, DWORD installParametersLength,
+									  PBYTE sdParameters, DWORD sdParametersLength,
 									  PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 									  PBYTE simSpecParams, DWORD simSpecParamsLength,
 									  PBYTE installTokenSignatureData, PDWORD installTokenSignatureDataLength);
@@ -838,6 +892,7 @@ OPGP_ERROR_STATUS GP211_calculate_install_token(BYTE P1, PBYTE executableLoadFil
 							 DWORD applicationAIDLength, BYTE applicationPrivileges,
 							 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 							 PBYTE installParameters, DWORD installParametersLength,
+							 PBYTE sdParameters, DWORD sdParametersLength,
 							 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 							 PBYTE simSpecParams, DWORD simSpecParamsLength,
 							 PBYTE installToken, PDWORD installTokenLength,
@@ -852,6 +907,11 @@ OPGP_ERROR_STATUS GP211_build_uicc_system_specific_params(GP211_UICC_SYSTEM_SPEC
 OPGP_API
 OPGP_ERROR_STATUS GP211_build_sim_specific_params(GP211_SIM_SPECIFIC_PARAMS *params,
 						  PBYTE simSpecParams, PDWORD simSpecParamsLength);
+
+//! \brief GlobalPlatform2.1.1: Builds the Security Domain install parameters (tag 'C1' with tag and length).
+OPGP_API
+OPGP_ERROR_STATUS GP211_build_sd_parameters(GP211_SD_INSTALL_PARAMS *params,
+						  PBYTE sdParameters, PDWORD sdParametersLength);
 
 //! \brief GlobalPlatform2.1.1: Calculates a Load File Data Block Hash.
 OPGP_API
@@ -878,6 +938,7 @@ OPGP_ERROR_STATUS GP211_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_
 						 DWORD executableModuleAIDLength, PBYTE applicationAID, DWORD applicationAIDLength,
 						 BYTE applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE installParameters, DWORD installParametersLength,
+						 PBYTE sdParameters, DWORD sdParametersLength,
 						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 						 PBYTE simSpecParams, DWORD simSpecParamsLength,
 						 PBYTE installToken, DWORD installTokenLength,
@@ -898,6 +959,7 @@ OPGP_ERROR_STATUS GP211_install_for_install_and_make_selectable(OPGP_CARD_CONTEX
 						 DWORD applicationAIDLength, BYTE applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE installParameters, DWORD installParametersLength,
+						 PBYTE sdParameters, DWORD sdParametersLength,
 						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 						 PBYTE simSpecParams, DWORD simSpecParamsLength,
 						 PBYTE installToken, DWORD installTokenLength,
@@ -1098,6 +1160,7 @@ OPGP_ERROR_STATUS OP201_get_install_token_signature_data(BYTE P1, PBYTE executab
 									  BYTE applicationPrivileges, DWORD volatileDataSpaceLimit,
 									  DWORD nonVolatileDataSpaceLimit,
 									  PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
+									  PBYTE sdParameters, DWORD sdParametersLength,
 									  PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 									  PBYTE simSpecParams, DWORD simSpecParamsLength,
 									  PBYTE installTokenSignatureData, PDWORD installTokenSignatureDataLength);
@@ -1117,6 +1180,7 @@ OPGP_ERROR_STATUS OP201_calculate_install_token(BYTE P1, PBYTE executableLoadFil
 							 DWORD applicationInstanceAIDLength, BYTE applicationPrivileges,
 							 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 							 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
+							 PBYTE sdParameters, DWORD sdParametersLength,
 							 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 							 PBYTE simSpecParams, DWORD simSpecParamsLength,
 							 PBYTE installToken, PDWORD installTokenLength,
@@ -1147,6 +1211,7 @@ OPGP_ERROR_STATUS OP201_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_
 						 DWORD AIDWithinLoadFileAIDLength, PBYTE applicationInstanceAID, DWORD applicationInstanceAIDLength,
 						 BYTE applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
+						 PBYTE sdParameters, DWORD sdParametersLength,
 						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 						 PBYTE simSpecParams, DWORD simSpecParamsLength,
 						 PBYTE installToken, DWORD installTokenLength,
@@ -1166,6 +1231,7 @@ OPGP_ERROR_STATUS OP201_install_for_install_and_make_selectable(OPGP_CARD_CONTEX
 						 DWORD applicationInstanceAIDLength, BYTE applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
+						 PBYTE sdParameters, DWORD sdParametersLength,
 						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 						 PBYTE simSpecParams, DWORD simSpecParamsLength,
 						 PBYTE installToken, DWORD installTokenLength,

@@ -245,6 +245,7 @@ OPGP_ERROR_STATUS calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, 
 							 DWORD executableModuleAIDLength, PBYTE applicationAID, DWORD applicationAIDLength,
 							 BYTE applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 							 PBYTE installParameters, DWORD installParametersLength,
+							 PBYTE sdParameters, DWORD sdParametersLength,
 							 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 							 PBYTE simSpecParams, DWORD simSpecParamsLength,
 							 PBYTE installToken, PDWORD installTokenLength,
@@ -313,6 +314,7 @@ OPGP_ERROR_STATUS install_for_install_and_make_selectable(OPGP_CARD_CONTEXT card
 						 DWORD applicationAIDLength, BYTE applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE installParameters, DWORD installParametersLength,
+						 PBYTE sdParameters, DWORD sdParametersLength,
 						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 						 PBYTE simSpecParams, DWORD simSpecParamsLength,
 						 PBYTE installToken, DWORD installTokenLength,
@@ -335,6 +337,7 @@ OPGP_ERROR_STATUS install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_I
 						 DWORD applicationAIDLength, BYTE applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE installParameters, DWORD installParametersLength,
+						 PBYTE sdParameters, DWORD sdParametersLength,
 						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 						 PBYTE simSpecParams, DWORD simSpecParamsLength,
 						 PBYTE installToken, DWORD installTokenLength,
@@ -368,6 +371,7 @@ OPGP_ERROR_STATUS get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD e
 									  DWORD applicationAIDLength, BYTE applicationPrivileges,
 									  DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 									  PBYTE installParameters, DWORD installParametersLength,
+									  PBYTE sdParameters, DWORD sdParametersLength,
 									  PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 									  PBYTE simSpecParams, DWORD simSpecParamsLength,
 									  PBYTE installData, PDWORD installDataLength);
@@ -3157,6 +3161,8 @@ end:
  * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
  * \param installParameters [in] Applet install parameters for the install() method of the application.
  * \param installParametersLength [in] The length of the installParameters buffer.
+ * \param sdParameters [in] Security Domain install parameters encoded for tag C9 (e.g., tag 'C1' with tags '81','82','83','84','86','87').
+ * \param sdParametersLength [in] The length of the sdParameters buffer.
  * \param uiccSystemSpecParams [in] UICC System Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2.
  * \param uiccSystemSpecParamsLength [in] The length of the uiccSystemSpecParams buffer.
  * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.1.
@@ -3174,6 +3180,7 @@ OPGP_ERROR_STATUS GP211_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_
 						 DWORD applicationAIDLength, BYTE applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE installParameters, DWORD installParametersLength,
+						 PBYTE sdParameters, DWORD sdParametersLength,
 						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 						 PBYTE simSpecParams, DWORD simSpecParamsLength,
 						 PBYTE installToken, DWORD installTokenLength,
@@ -3185,6 +3192,7 @@ OPGP_ERROR_STATUS GP211_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_
 						 applicationAIDLength, applicationPrivileges,
 						 volatileDataSpaceLimit, nonVolatileDataSpaceLimit,
 						 installParameters, installParametersLength,
+						 sdParameters, sdParametersLength,
 						 uiccSystemSpecParams, uiccSystemSpecParamsLength,
 						 simSpecParams, simSpecParamsLength,
 						 installToken, installTokenLength,
@@ -3198,6 +3206,7 @@ OPGP_ERROR_STATUS install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_I
 						 DWORD applicationAIDLength, BYTE applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE installParameters, DWORD installParametersLength,
+						 PBYTE sdParameters, DWORD sdParametersLength,
 						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 						 PBYTE simSpecParams, DWORD simSpecParamsLength,
 						 PBYTE installToken, DWORD installTokenLength,
@@ -3217,7 +3226,8 @@ OPGP_ERROR_STATUS install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_I
 	status = get_install_data(0x04, executableLoadFileAID, executableLoadFileAIDLength, executableModuleAID,
 		executableModuleAIDLength, applicationAID, applicationAIDLength, applicationPrivileges,
 		volatileDataSpaceLimit,	nonVolatileDataSpaceLimit, installParameters,
-		installParametersLength, uiccSystemSpecParams, uiccSystemSpecParamsLength,
+		installParametersLength, sdParameters, sdParametersLength,
+		uiccSystemSpecParams, uiccSystemSpecParamsLength,
 		simSpecParams, simSpecParamsLength, buf, &bufLength);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
@@ -3275,6 +3285,8 @@ end:
  * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
  * \param installParameters [in] Applet install parameters for the install() method of the application.
  * \param installParametersLength [in] The length of the installParameters buffer.
+ * \param sdParameters [in] Security Domain install parameters encoded for tag C9 (e.g., tag 'C1' with tags '81','82','83','84','86','87').
+ * \param sdParametersLength [in] The length of the sdParameters buffer.
  * \param uiccSystemSpecParams [in] UICC System Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2.
  * \param uiccSystemSpecParamsLength [in] The length of the uiccSystemSpecParams buffer.
  * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.1.
@@ -3291,6 +3303,7 @@ OPGP_ERROR_STATUS GP211_install_for_install_and_make_selectable(OPGP_CARD_CONTEX
 						 DWORD applicationAIDLength, BYTE applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE installParameters, DWORD installParametersLength,
+						 PBYTE sdParameters, DWORD sdParametersLength,
 						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 						 PBYTE simSpecParams, DWORD simSpecParamsLength,
 						 PBYTE installToken, DWORD installTokenLength,
@@ -3302,6 +3315,7 @@ OPGP_ERROR_STATUS GP211_install_for_install_and_make_selectable(OPGP_CARD_CONTEX
 						 applicationAIDLength, applicationPrivileges,
 						 volatileDataSpaceLimit, nonVolatileDataSpaceLimit,
 						 installParameters, installParametersLength,
+						 sdParameters, sdParametersLength,
 						 uiccSystemSpecParams, uiccSystemSpecParamsLength,
 						 simSpecParams, simSpecParamsLength,
 						 installToken, installTokenLength,
@@ -3315,6 +3329,7 @@ OPGP_ERROR_STATUS install_for_install_and_make_selectable(OPGP_CARD_CONTEXT card
 						 DWORD applicationAIDLength, BYTE applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE installParameters, DWORD installParametersLength,
+						 PBYTE sdParameters, DWORD sdParametersLength,
 						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 						 PBYTE simSpecParams, DWORD simSpecParamsLength,
 						 PBYTE installToken, DWORD installTokenLength,
@@ -3335,7 +3350,8 @@ OPGP_ERROR_STATUS install_for_install_and_make_selectable(OPGP_CARD_CONTEXT card
   	status = get_install_data(0x0C, executableLoadFileAID, executableLoadFileAIDLength, executableModuleAID,
 		executableModuleAIDLength, applicationAID, applicationAIDLength, applicationPrivileges,
 		volatileDataSpaceLimit,	nonVolatileDataSpaceLimit, installParameters,
-		installParametersLength, uiccSystemSpecParams, uiccSystemSpecParamsLength,
+		installParametersLength, sdParameters, sdParametersLength,
+		uiccSystemSpecParams, uiccSystemSpecParamsLength,
 		simSpecParams, simSpecParamsLength, buf, &bufLength);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
@@ -3611,6 +3627,8 @@ end:
  * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
  * \param installParameters [in] Applet install parameters for the install() method of the application.
  * \param installParametersLength [in] The length of the installParameters buffer.
+ * \param sdParameters [in] Security Domain install parameters encoded for tag C9 (e.g., tag 'C1' with tags '81','82','83','84','86','87').
+ * \param sdParametersLength [in] The length of the sdParameters buffer.
  * \param uiccSystemSpecParams [in] UICC System Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2.
  * \param uiccSystemSpecParamsLength [in] The length of the uiccSystemSpecParams buffer.
  * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.1.
@@ -3624,6 +3642,7 @@ OPGP_ERROR_STATUS GP211_get_install_token_signature_data(BYTE P1, PBYTE executab
 									  DWORD applicationAIDLength, BYTE applicationPrivileges,
 									  DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 									  PBYTE installParameters, DWORD installParametersLength,
+									  PBYTE sdParameters, DWORD sdParametersLength,
 									  PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 									  PBYTE simSpecParams, DWORD simSpecParamsLength,
 									  PBYTE installTokenSignatureData, PDWORD installTokenSignatureDataLength) {
@@ -3632,6 +3651,7 @@ OPGP_ERROR_STATUS GP211_get_install_token_signature_data(BYTE P1, PBYTE executab
 									  applicationAIDLength, applicationPrivileges,
 									  volatileDataSpaceLimit, nonVolatileDataSpaceLimit,
 									  installParameters, installParametersLength,
+									  sdParameters, sdParametersLength,
 									  uiccSystemSpecParams, uiccSystemSpecParamsLength,
 									  simSpecParams, simSpecParamsLength,
 									  installTokenSignatureData, installTokenSignatureDataLength);
@@ -3665,7 +3685,7 @@ static OPGP_ERROR_STATUS build_uicc_toolkit_app_params(const GP211_UICC_TOOLKIT_
 		return status;
 	}
 
-	if (params->mslPresent) {
+	if (params->mslData != 0) {
 		mslLength = 2;
 	}
 	requiredLength = 8 + ((DWORD)params->maxMenuEntries * 2) + mslLength + params->tarValuesLength;
@@ -3690,7 +3710,7 @@ static OPGP_ERROR_STATUS build_uicc_toolkit_app_params(const GP211_UICC_TOOLKIT_
 	buf[i++] = (BYTE)mslLength;
 	if (mslLength > 0) {
 		buf[i++] = GP211_UICC_MSL_PARAMETER_MINIMUM_SPI1;
-		buf[i++] = params->mslSpi1;
+		buf[i++] = params->mslData;
 	}
 	buf[i++] = (BYTE)params->tarValuesLength;
 	if (params->tarValuesLength > 0) {
@@ -3808,7 +3828,7 @@ static OPGP_ERROR_STATUS build_sim_toolkit_params(const GP211_SIM_TOOLKIT_PARAMS
 		return status;
 	}
 
-	if (params->mslPresent) {
+	if (params->mslData != 0) {
 		mslLength = 2;
 	}
 	requiredLength = 7 + ((DWORD)params->maxMenuEntries * 2) + mslLength + params->tarValuesLength;
@@ -3833,7 +3853,7 @@ static OPGP_ERROR_STATUS build_sim_toolkit_params(const GP211_SIM_TOOLKIT_PARAMS
 	buf[i++] = (BYTE)mslLength;
 	if (mslLength > 0) {
 		buf[i++] = GP211_UICC_MSL_PARAMETER_MINIMUM_SPI1;
-		buf[i++] = params->mslSpi1;
+		buf[i++] = params->mslData;
 	}
 	buf[i++] = (BYTE)params->tarValuesLength;
 	if (params->tarValuesLength > 0) {
@@ -4007,11 +4027,123 @@ end:
 	return status;
 }
 
+OPGP_ERROR_STATUS GP211_build_sd_parameters(GP211_SD_INSTALL_PARAMS *params,
+						  PBYTE sdParameters, PDWORD sdParametersLength) {
+	OPGP_ERROR_STATUS status;
+	BYTE buf[256];
+	DWORD i = 0;
+	DWORD j = 0;
+
+	OPGP_LOG_START(_T("GP211_build_sd_parameters"));
+	if (params == NULL || sdParameters == NULL || sdParametersLength == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+	if (params->scpEntriesLength > GP211_SD_MAX_SCP) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+	for (j = 0; j < params->scpEntriesLength; j++) {
+		if ((i + 4) > sizeof(buf)) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE));
+			goto end;
+		}
+		buf[i++] = GP211_SD_PARAM_TAG_SCP;
+		buf[i++] = GP211_SD_PARAM_LEN_SCP;
+		buf[i++] = params->scpEntries[j].scpIdentifier;
+		buf[i++] = params->scpEntries[j].scpImpl;
+	}
+	if (params->acceptExtractionLength > 0) {
+		if (params->acceptExtractionLength != GP211_SD_PARAM_LEN_ACCEPT_MIN &&
+			params->acceptExtractionLength != GP211_SD_PARAM_LEN_ACCEPT_MAX) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+		if ((i + 2 + params->acceptExtractionLength) > sizeof(buf)) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE));
+			goto end;
+		}
+		buf[i++] = GP211_SD_PARAM_TAG_ACCEPT_EXTRACTION;
+		buf[i++] = params->acceptExtractionLength;
+		memcpy(buf + i, params->acceptExtraction, params->acceptExtractionLength);
+		i += params->acceptExtractionLength;
+	}
+	if (params->acceptDeletionLength > 0) {
+		if (params->acceptDeletionLength != GP211_SD_PARAM_LEN_ACCEPT_DELETE) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+		if ((i + 3) > sizeof(buf)) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE));
+			goto end;
+		}
+		buf[i++] = GP211_SD_PARAM_TAG_ACCEPT_DELETE;
+		buf[i++] = GP211_SD_PARAM_LEN_ACCEPT_DELETE;
+		buf[i++] = params->acceptDeletion;
+	}
+	if (params->personalizedStatePresent) {
+		if ((i + 2) > sizeof(buf)) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE));
+			goto end;
+		}
+		buf[i++] = GP211_SD_PARAM_TAG_PERSONALIZED;
+		buf[i++] = GP211_SD_PARAM_LEN_PERSONALIZED;
+	}
+	if (params->casdCapabilityInfo[0] != 0 || params->casdCapabilityInfo[1] != 0) {
+		if ((i + 4) > sizeof(buf)) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE));
+			goto end;
+		}
+		buf[i++] = GP211_SD_PARAM_TAG_CASD_CAPABILITY;
+		buf[i++] = GP211_SD_PARAM_LEN_CASD_CAPABILITY;
+		buf[i++] = params->casdCapabilityInfo[0];
+		buf[i++] = params->casdCapabilityInfo[1];
+	}
+	if (params->acceptGlobalDeleteLength > 0) {
+		if (params->acceptGlobalDeleteLength != GP211_SD_PARAM_LEN_ACCEPT_MIN &&
+			params->acceptGlobalDeleteLength != GP211_SD_PARAM_LEN_ACCEPT_MAX) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+		if ((i + 2 + params->acceptGlobalDeleteLength) > sizeof(buf)) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE));
+			goto end;
+		}
+		buf[i++] = GP211_SD_PARAM_TAG_ACCEPT_GLOBAL_DELETE;
+		buf[i++] = params->acceptGlobalDeleteLength;
+		memcpy(buf + i, params->acceptGlobalDelete, params->acceptGlobalDeleteLength);
+		i += params->acceptGlobalDeleteLength;
+	}
+
+	if (i == 0) {
+		*sdParametersLength = 0;
+		{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+	}
+	if (i > 0xFF) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE));
+		goto end;
+	}
+	if ((i + 2) > *sdParametersLength) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		goto end;
+	}
+	sdParameters[0] = 0xC1;
+	sdParameters[1] = (BYTE)i;
+	memcpy(sdParameters + 2, buf, i);
+	*sdParametersLength = i + 2;
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+
+end:
+	OPGP_LOG_END(_T("GP211_build_sd_parameters"), status);
+	return status;
+}
+
 OPGP_ERROR_STATUS get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE executableModuleAID,
 										  DWORD executableModuleAIDLength, PBYTE applicationAID,
 										  DWORD applicationAIDLength, BYTE applicationPrivileges,
 										  DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 										  PBYTE installParameters, DWORD installParametersLength,
+									  PBYTE sdParameters, DWORD sdParametersLength,
 									  PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 									  PBYTE simSpecParams, DWORD simSpecParamsLength,
 									  PBYTE installData, PDWORD installDataLength) {
@@ -4020,6 +4152,7 @@ OPGP_ERROR_STATUS get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD e
 	DWORD hiByte, loByte;
 	DWORD installParameterFieldLengthSize;
 	DWORD installParameterFieldLength;
+	DWORD c9Length;
 	OPGP_ERROR_STATUS status;
 
 	OPGP_LOG_START(_T("get_install_data"));
@@ -4040,8 +4173,9 @@ OPGP_ERROR_STATUS get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD e
 	buf[i++] = applicationPrivileges; // application privileges
 
 	installParameterFieldLength = 0x02; // install parameter field length tag C9 + length byte (C9LL)
-	if (installParametersLength > 0) {
-		installParameterFieldLength += (BYTE)installParametersLength;
+	c9Length = installParametersLength + sdParametersLength;
+	if (c9Length > 0) {
+		installParameterFieldLength += (BYTE)c9Length;
 	}
 	if (uiccSystemSpecParamsLength > 0) {
 		installParameterFieldLength += 2;
@@ -4090,9 +4224,15 @@ OPGP_ERROR_STATUS get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD e
 			}
 	}
 	buf[i++] = 0xC9; // application install parameters
- 	buf[i++] = (BYTE)installParametersLength;
-	memcpy(buf+i, installParameters, installParametersLength);
-    i+=installParametersLength;
+ 	buf[i++] = (BYTE)c9Length;
+	if (installParametersLength > 0) {
+		memcpy(buf+i, installParameters, installParametersLength);
+		i+=installParametersLength;
+	}
+	if (sdParametersLength > 0) {
+		memcpy(buf+i, sdParameters, sdParametersLength);
+		i+=sdParametersLength;
+	}
  
  	if (nonVolatileDataSpaceLimit > 0 || volatileDataSpaceLimit > 0 || simSpecParamsLength > 0) {
 		buf[i++] = 0xEF;
@@ -4206,6 +4346,8 @@ end:
  * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
  * \param installParameters [in] Applet install parameters for the install() method of the application.
  * \param installParametersLength [in] The length of the installParameters buffer.
+ * \param sdParameters [in] Security Domain install parameters encoded for tag C9 (e.g., tag 'C1' with tags '81','82','83','84','86','87').
+ * \param sdParametersLength [in] The length of the sdParameters buffer.
  * \param uiccSystemSpecParams [in] UICC System Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2.
  * \param uiccSystemSpecParamsLength [in] The length of the uiccSystemSpecParams buffer.
  * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.1.
@@ -4220,6 +4362,7 @@ OPGP_ERROR_STATUS GP211_calculate_install_token(BYTE P1, PBYTE executableLoadFil
 							 DWORD executableModuleAIDLength, PBYTE applicationAID, DWORD applicationAIDLength,
 							 BYTE applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 							 PBYTE installParameters, DWORD installParametersLength,
+							 PBYTE sdParameters, DWORD sdParametersLength,
 							 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 							 PBYTE simSpecParams, DWORD simSpecParamsLength,
 							 PBYTE installToken, PDWORD installTokenLength,
@@ -4229,6 +4372,7 @@ OPGP_ERROR_STATUS GP211_calculate_install_token(BYTE P1, PBYTE executableLoadFil
 							 executableModuleAIDLength, applicationAID, applicationAIDLength,
 							 applicationPrivileges, volatileDataSpaceLimit, nonVolatileDataSpaceLimit,
 							 installParameters, installParametersLength,
+							 sdParameters, sdParametersLength,
 							 uiccSystemSpecParams, uiccSystemSpecParamsLength,
 							 simSpecParams, simSpecParamsLength,
 							 installToken, installTokenLength, PEMKeyFileName, passPhrase);
@@ -6639,6 +6783,8 @@ OPGP_ERROR_STATUS OP201_install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CAR
  * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
  * \param applicationInstallParameters [in] Applet install parameters for the install() method of the application.
  * \param applicationInstallParametersLength [in] The length of the applicationInstallParameters buffer.
+ * \param sdParameters [in] Security Domain install parameters encoded for tag C9 (e.g., tag 'C1' with tags '81','82','83','84','86','87').
+ * \param sdParametersLength [in] The length of the sdParameters buffer.
  * \param uiccSystemSpecParams [in] UICC System Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2.
  * \param uiccSystemSpecParamsLength [in] The length of the uiccSystemSpecParams buffer.
  * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.1.
@@ -6655,6 +6801,7 @@ OPGP_ERROR_STATUS OP201_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_
 						 DWORD applicationInstanceAIDLength, BYTE applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
+						 PBYTE sdParameters, DWORD sdParametersLength,
 						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 						 PBYTE simSpecParams, DWORD simSpecParamsLength,
 						 PBYTE installToken, DWORD installTokenLength,
@@ -6668,6 +6815,7 @@ OPGP_ERROR_STATUS OP201_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_
 		applicationInstanceAID, applicationInstanceAIDLength,
 		applicationPrivileges, volatileDataSpaceLimit, nonVolatileDataSpaceLimit,
 		applicationInstallParameters, applicationInstallParametersLength,
+		sdParameters, sdParametersLength,
 		uiccSystemSpecParams, uiccSystemSpecParamsLength,
 		simSpecParams, simSpecParamsLength,
 		installToken, installTokenLength,
@@ -6700,6 +6848,8 @@ OPGP_ERROR_STATUS OP201_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_
  * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
  * \param applicationInstallParameters [in] Applet install parameters for the install() method of the application.
  * \param applicationInstallParametersLength [in] The length of the applicationInstallParameters buffer.
+ * \param sdParameters [in] Security Domain install parameters encoded for tag C9 (e.g., tag 'C1' with tags '81','82','83','84','86','87').
+ * \param sdParametersLength [in] The length of the sdParameters buffer.
  * \param uiccSystemSpecParams [in] UICC System Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2.
  * \param uiccSystemSpecParamsLength [in] The length of the uiccSystemSpecParams buffer.
  * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.1.
@@ -6716,6 +6866,7 @@ OPGP_ERROR_STATUS OP201_install_for_install_and_make_selectable(OPGP_CARD_CONTEX
 						 DWORD applicationInstanceAIDLength, BYTE applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
+						 PBYTE sdParameters, DWORD sdParametersLength,
 						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 						 PBYTE simSpecParams, DWORD simSpecParamsLength,
 						 PBYTE installToken, DWORD installTokenLength,
@@ -6729,6 +6880,7 @@ OPGP_ERROR_STATUS OP201_install_for_install_and_make_selectable(OPGP_CARD_CONTEX
 		applicationInstanceAID, applicationInstanceAIDLength,
 		applicationPrivileges, volatileDataSpaceLimit, nonVolatileDataSpaceLimit,
 		applicationInstallParameters, applicationInstallParametersLength,
+		sdParameters, sdParametersLength,
 		uiccSystemSpecParams, uiccSystemSpecParamsLength,
 		simSpecParams, simSpecParamsLength,
 		installToken, installTokenLength,
@@ -6797,6 +6949,8 @@ OPGP_ERROR_STATUS OP201_install_for_make_selectable(OPGP_CARD_CONTEXT cardContex
  * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
  * \param applicationInstallParameters [in] Applet install parameters for the install() method of the application.
  * \param applicationInstallParametersLength [in] The length of the applicationInstallParameters buffer.
+ * \param sdParameters [in] Security Domain install parameters encoded for tag C9 (e.g., tag 'C1' with tags '81','82','83','84','86','87').
+ * \param sdParametersLength [in] The length of the sdParameters buffer.
  * \param uiccSystemSpecParams [in] UICC System Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2.
  * \param uiccSystemSpecParamsLength [in] The length of the uiccSystemSpecParams buffer.
  * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.1.
@@ -6810,6 +6964,7 @@ OPGP_ERROR_STATUS OP201_get_install_token_signature_data(BYTE P1, PBYTE executab
 									  DWORD applicationInstanceAIDLength, BYTE applicationPrivileges,
 									  DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 									  PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
+									  PBYTE sdParameters, DWORD sdParametersLength,
 									  PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 									  PBYTE simSpecParams, DWORD simSpecParamsLength,
 									  PBYTE installTokenSignatureData, PDWORD installTokenSignatureDataLength) {
@@ -6818,6 +6973,7 @@ OPGP_ERROR_STATUS OP201_get_install_token_signature_data(BYTE P1, PBYTE executab
 		AIDWithinLoadFileAID, AIDWithinLoadFileAIDLength, applicationInstanceAID,
 		applicationInstanceAIDLength, applicationPrivileges, volatileDataSpaceLimit,
 		nonVolatileDataSpaceLimit, applicationInstallParameters, applicationInstallParametersLength,
+		sdParameters, sdParametersLength,
 		uiccSystemSpecParams, uiccSystemSpecParamsLength,
 		simSpecParams, simSpecParamsLength,
 		installTokenSignatureData, installTokenSignatureDataLength);
@@ -6843,6 +6999,8 @@ OPGP_ERROR_STATUS OP201_get_install_token_signature_data(BYTE P1, PBYTE executab
  * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
  * \param applicationInstallParameters [in] Applet install parameters for the install() method of the application.
  * \param applicationInstallParametersLength [in] The length of the applicationInstallParameters buffer.
+ * \param sdParameters [in] Security Domain install parameters encoded for tag C9 (e.g., tag 'C1' with tags '81','82','83','84','86','87').
+ * \param sdParametersLength [in] The length of the sdParameters buffer.
  * \param uiccSystemSpecParams [in] UICC System Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.2.
  * \param uiccSystemSpecParamsLength [in] The length of the uiccSystemSpecParams buffer.
  * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.1.
@@ -6856,6 +7014,7 @@ OPGP_ERROR_STATUS OP201_calculate_install_token(BYTE P1, PBYTE executableLoadFil
 							 DWORD AIDWithinLoadFileAIDLength, PBYTE applicationInstanceAID, DWORD applicationInstanceAIDLength,
 							 BYTE applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 							 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
+							 PBYTE sdParameters, DWORD sdParametersLength,
 							 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 							 PBYTE simSpecParams, DWORD simSpecParamsLength,
 							 PBYTE installToken, PDWORD installTokenLength,
@@ -6865,6 +7024,7 @@ OPGP_ERROR_STATUS OP201_calculate_install_token(BYTE P1, PBYTE executableLoadFil
 		AIDWithinLoadFileAID, AIDWithinLoadFileAIDLength, applicationInstanceAID, applicationInstanceAIDLength,
 		applicationPrivileges, volatileDataSpaceLimit, nonVolatileDataSpaceLimit,
 		applicationInstallParameters, applicationInstallParametersLength,
+		sdParameters, sdParametersLength,
 		uiccSystemSpecParams, uiccSystemSpecParamsLength,
 		simSpecParams, simSpecParamsLength,
 		installToken, installTokenLength,
@@ -7397,6 +7557,7 @@ OPGP_ERROR_STATUS calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, 
 							 DWORD executableModuleAIDLength, PBYTE applicationAID, DWORD applicationAIDLength,
 							 BYTE applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 							 PBYTE installParameters, DWORD installParametersLength,
+							 PBYTE sdParameters, DWORD sdParametersLength,
 							 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 							 PBYTE simSpecParams, DWORD simSpecParamsLength,
 							 PBYTE installToken, PDWORD installTokenLength,
@@ -7409,6 +7570,7 @@ OPGP_ERROR_STATUS calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, 
 		executableModuleAID, executableModuleAIDLength, applicationAID,
 		applicationAIDLength, applicationPrivileges, volatileDataSpaceLimit,
 		nonVolatileDataSpaceLimit, installParameters, installParametersLength,
+		sdParameters, sdParametersLength,
 		uiccSystemSpecParams, uiccSystemSpecParamsLength,
 		simSpecParams, simSpecParamsLength,
 		installTokenSignatureData, &installTokenSignatureDataLength);

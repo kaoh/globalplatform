@@ -40,8 +40,7 @@ static void build_uicc_system_specific_params_toolkit(void **state) {
 	params.toolkitParams.maxTextLength = 0x14;
 	params.toolkitParams.maxMenuEntries = 0x00;
 	params.toolkitParams.maxChannels = 0x02;
-	params.toolkitParams.mslPresent = 1;
-	params.toolkitParams.mslSpi1 = 0x1E;
+	params.toolkitParams.mslData = 0x1E;
 	params.toolkitParams.tarValuesLength = 0x03;
 	params.toolkitParams.tarValues[0] = 0xD5;
 	params.toolkitParams.tarValues[1] = 0x01;
@@ -87,7 +86,6 @@ static void build_sim_specific_params(void **state) {
 	params.toolkitParams.maxTextLength = 0x10;
 	params.toolkitParams.maxMenuEntries = 0x00;
 	params.toolkitParams.maxChannels = 0x01;
-	params.toolkitParams.mslPresent = 0;
 	params.toolkitParams.tarValuesLength = 0x03;
 	params.toolkitParams.tarValues[0] = 0xD5;
 	params.toolkitParams.tarValues[1] = 0x01;
@@ -99,10 +97,43 @@ static void build_sim_specific_params(void **state) {
 	assert_memory_equal(output, expected, expectedLength);
 }
 
+static void build_sd_parameters(void **state) {
+	OPGP_ERROR_STATUS status;
+	BYTE expected[64];
+	DWORD expectedLength = sizeof(expected);
+	BYTE output[64];
+	DWORD outputLength = sizeof(output);
+	GP211_SD_INSTALL_PARAMS params;
+
+	hex_to_byte_array("C1148102021582018083018084008602010287028000",
+		expected, &expectedLength);
+
+	memset(&params, 0, sizeof(params));
+	params.scpEntriesLength = 1;
+	params.scpEntries[0].scpIdentifier = 0x02;
+	params.scpEntries[0].scpImpl = 0x15;
+	params.acceptExtractionLength = 1;
+	params.acceptExtraction[0] = 0x80;
+	params.acceptDeletionLength = 1;
+	params.acceptDeletion = 0x80;
+	params.personalizedStatePresent = 1;
+	params.casdCapabilityInfo[0] = 0x01;
+	params.casdCapabilityInfo[1] = 0x02;
+	params.acceptGlobalDeleteLength = 2;
+	params.acceptGlobalDelete[0] = 0x80;
+	params.acceptGlobalDelete[1] = 0x00;
+
+	status = GP211_build_sd_parameters(&params, output, &outputLength);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+	assert_int_equal(outputLength, expectedLength);
+	assert_memory_equal(output, expected, expectedLength);
+}
+
 int main(void) {
 	const struct CMUnitTest tests[] = {
 			cmocka_unit_test(build_uicc_system_specific_params_toolkit),
 			cmocka_unit_test(build_sim_specific_params),
+			cmocka_unit_test(build_sd_parameters),
 	};
 	return cmocka_run_group_tests_name("installData", tests, NULL, NULL);
 }
