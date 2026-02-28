@@ -20,8 +20,6 @@ Unless otherwise specified, `gpshell3` will:
 - select a suitable Issuer Security Domain (ISD) AID automatically (`A000000151000000`, `A0000001510000`, or `A000000003000000`);
 - open a Secure Channel using defaults listed below when a command requires security (e.g., install, delete, key management).
 
-See also the example scripts in `gpshell/examples/` in the repository.
-
 # GLOBAL OPTIONS
 
 -r, --reader <name|num>
@@ -33,9 +31,9 @@ See also the example scripts in `gpshell/examples/` in the repository.
 --sd <aidhex>
 :  ISD AID to select explicitly (hex). By default `gpshell3` will try, in order:
 
-   - `A000000151000000` (GP 2.3.1 ISD)
-   - `A0000001510000`   (GP 2.1.1 CM)
-   - `A000000003000000` (OP 2.0.1 CM)
+- `A000000151000000` (GP 2.3.1 ISD)
+- `A0000001510000`   (GP 2.1.1 CM)
+- `A000000003000000` (OP 2.0.1 CM)
 
 --sec <mac|mac+enc|mac+enc+rmac>
 :  Secure Channel security level. Default: `mac+enc`.
@@ -55,9 +53,9 @@ See also the example scripts in `gpshell/examples/` in the repository.
 --derive <none|visa2|emv>
 :  Key derivation method when authenticating with a single base key.
 
-   - `none` (default): use keys as provided.
-   - `visa2`: VISA2 derivation (a.k.a. VISA key derivation).
-   - `emv`: EMV CPS 1.1 derivation.
+- `none` (default): use keys as provided.
+- `visa2`: VISA2 derivation (a.k.a. VISA key derivation).
+- `emv`: EMV CPS 1.1 derivation.
 
 --key <hex>
 :  Base key (hex) used to derive ENC/MAC/DEK when `--derive` is not `none`. If `--enc/--mac/--dek` are not provided and no derivation is provided, this base key is also used directly for SCP02. Default: bytes `40..4F` (16 bytes).
@@ -117,8 +115,8 @@ gpshell3 install [--load-only|--install-only]
 
 Options:
 
-- `--applet <AIDhex>`: Applet AID to install (optional). If omitted together with `--module`, installs all applets from the CAP.
-- `--module <AIDhex>`: Module AID (often same as applet) to install (optional).
+- `--applet <AIDhex>`: Sets the applet instance AID (usually same as module) (optional).
+- `--module <AIDhex>`: Module AID to install (optional). If omitted, installs all applets from the CAP.
 - `--params <hex>`: Installation parameters (hex) passed to the applet `install()` method (optional).
 - `--priv <list>`: Comma-separated privileges by short names. See “Privileges” below (optional).
 - `--v-data-limit <size>`: Volatile data storage limit in bytes (optional).
@@ -211,7 +209,7 @@ Set secure channel keys (S-ENC, S-MAC, DEK) for a key set.
 
 Synopsis:
 ```
-gpshell3 put-auth [--type <aes|3des>] [--derive <none|emv|visa2>] --kv <ver> [--new-kv <ver>] [--key <hex> | --enc <hex> --mac <hex> --dek <hex>]
+gpshell3 put-auth [--type <aes|3des>] [--derive <none|emv|visa2>] --kv <ver> [--new-kv <ver>] [--target-sd <AIDhex>] [--key <hex> | --enc <hex> --mac <hex> --dek <hex>]
 ```
 
 Options:
@@ -220,6 +218,7 @@ Options:
 - `--kv <ver>`: Key set version, defaults to 1, 0 means that a new key set is created (optional).
 - `--new-kv <ver>`: New key set version when replacing keys, defaults to 1 (optional).
 - `--type` defaults to `aes`.
+- `--target-sd <AIDhex>`: Optional target Security Domain AID to select before operation.
 
 ## put-key
 
@@ -227,7 +226,7 @@ Put (add or replace) a key in a key set.
 
 Synopsis:
 ```
-gpshell3 put-key [--type <3des|aes|rsa>] --kv <ver> --idx <idx> --new-kv <ver> (--key <hex>|--pem <file>[:pass])
+gpshell3 put-key [--type <3des|aes|rsa>] --kv <ver> --idx <idx> --new-kv <ver> [--target-sd <AIDhex>] (--key <hex>|--pem <file>[:pass])
 ```
 
 Options:
@@ -237,6 +236,7 @@ Options:
 - `--new-kv <ver>`: New key set version when replacing keys (mandatory).
 - For `--type aes|3des`: provide the key via `--key <hex>`.
 - For `--type rsa`: provide an RSA public key in PEM via `--pem <file>[:pass]`.
+- `--target-sd <AIDhex>`: Optional target Security Domain AID to select before operation.
 
 ## put-dm
 
@@ -244,7 +244,7 @@ Put delegated management keys.
 
 Synopsis:
 ```
-gpshell3 put-dm --kv <ver> [--new-kv <ver>] [--token-type <rsa>] [--receipt-type <aes|des>] <pem-file>[:pass] <receipt-key-hex>
+gpshell3 put-dm --kv <ver> [--new-kv <ver>] [--token-type <rsa>] [--receipt-type <aes|des>] [--target-sd <AIDhex>] <pem-file>[:pass] <receipt-key-hex>
 ```
 
 Options:
@@ -255,6 +255,7 @@ Options:
 - `<receipt-key-hex>`: Receipt key material (last positional parameter).
 - `--token-type`: Token key type, default `rsa`.
 - `--receipt-type`: Receipt key type, `aes` or `des` (default `aes`).
+- `--target-sd <AIDhex>`: Optional target Security Domain AID to select before operation.
 
 ## del-key
 
@@ -262,13 +263,14 @@ Delete a key or an entire key set.
 
 Synopsis:
 ```
-gpshell3 del-key --kv <ver> [--idx <idx>]
+gpshell3 del-key --kv <ver> [--idx <idx>] [--target-sd <AIDhex>]
 ```
 
 Options:
 
 - `--kv <ver>`: Key set version (mandatory).
 - `--idx <idx>`: Key index within the set If `--idx` is omitted, the entire key set `kv` is deleted.
+- `--target-sd <AIDhex>`: Optional target Security Domain AID to select before operation.
 
 ## apdu
 
@@ -431,34 +433,30 @@ gpshell3 confirm-counter
 
 # PRIVILEGES
 
-Privileges are reported by `list-apps` as `priv=[...]`. A subset can be supplied to `install --priv` as a comma-separated list of short names.
+Privileges are reported by `list-apps` as `priv=[...]` and can be supplied to `install --priv` as a comma-separated list of short names. Multiple privileges can be combined, e.g., `--priv sd,cm-lock,trusted-path`.
 
-Accepted by `install --priv`:
+- `sd`, `security-domain` — Application is a Security Domain
+- `dap-verif`, `dap` — Application can require DAP verification for loading and installing applications
+- `delegated-mgmt` — Security Domain has delegated management right
+- `cm-lock` — Application can lock the Card Manager
+- `cm-terminate` — Application can terminate the card
+- `default-selected`, `card-reset` — Application is default selected (In GP 2.3.1 redefined as Card Reset privilege)
+- `pin-change`, `pin` — Application can change global PIN
+- `mandated-dap`, `mandated-dap-verif` — Security Domain requires DAP verification for loading and installing applications
+- `trusted-path` — Application is a Trusted Path for inter-application communication
+- `authorized-mgmt` — Application is capable of Card Content Management (Security Domain privilege shall also be set)
+- `token-mgmt`, `token-verification` — Application is capable of verifying a token for Delegated Card Content Management
+- `global-delete` — Application may delete any Card Content
+- `global-lock` — Application may lock or unlock any Application
+- `global-registry` — Application may access any entry in the GlobalPlatform Registry
+- `final-application`, `final-app` — The only Application selectable in card Life Cycle State CARD_LOCKED and TERMINATED
+- `global-service` — Application provides services to other Applications on the card
+- `receipt-generation`, `receipt` — Application is capable of generating a receipt for Delegated Card Content Management
+- `ciphered-load-file-data-block`, `ciphered-load` — The Security Domain requires that the Load File being associated with it is to be loaded ciphered
+- `contactless-activation` — Application is capable of activating and deactivating any Application on the contactless interface
+- `contactless-self-activation` — Application is capable of activating itself on the contactless interface without a prior request to the Application with the Contactless Activation privilege
 
-- `sd` — Security Domain
-- `dap-verif` — DAP Verification
-- `delegated-mgmt` — Delegated Management
-- `cm-lock` — Card Manager Lock privilege
-- `cm-terminate` — Card Manager Terminate privilege
-- `default-selected` — Default Selected (does not imply on-reset default)
-- `pin-change` — PIN Change
-- `mandated-dap` — Mandated DAP Verification
-
-Additional privilege names that may appear in `list-apps` output:
-
-- `authorized-mgmt` — Authorized Management
-- `token-mgmt` — Token Verification
-- `global-delete` — Global Delete
-- `global-lock` — Global Lock
-- `global-registry` — Global Registry
-- `final-application` — Final Application
-- `global-service` — Global Service
-- `receipt-generation` — Receipt Generation
-- `ciphered-load-file-data-block` — Ciphered Load File Data Block
-- `contactless-activation` — Contactless Activation
-- `contactless-self-activation` — Contactless Self Activation
-
-Note: Not all privileges are applicable to all element types. Refer to the GlobalPlatform Card Specification for details.
+**Note**: Not all privileges are applicable to all element types. Refer to the GlobalPlatform Card Specification v2.3.1 for details.
 
 # EXAMPLES
 
@@ -500,4 +498,4 @@ gpshell3 sign-dap aes --output dap.sig "$HASH" A000000151000000 0011223344556677
 
 # SEE ALSO
 
-`gpshell`(1), GlobalPlatform Card Specification
+`gpshell3`(1), GlobalPlatform Card Specification
