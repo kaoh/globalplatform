@@ -4168,24 +4168,22 @@ OPGP_ERROR_STATUS get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD e
 	i+=applicationAIDLength;
 
 	// Encode privileges with variable length (1, 2, or 3 bytes depending on which bits are set)
-	// Byte 0 (bits 0-7), Byte 1 (bits 8-15), Byte 2 (bits 16-23)
 	BYTE privilegeLength = 1;
-	if (applicationPrivileges & 0xFFFF00) {
+	if (applicationPrivileges & 0x0000FF) {
 		privilegeLength = 3;
 	} else if (applicationPrivileges & 0xFF00) {
 		privilegeLength = 2;
 	}
 	buf[i++] = privilegeLength;
-	// Encode privileges in big-endian format (most significant byte first)
 	if (privilegeLength == 3) {
-		buf[i++] = (BYTE)((applicationPrivileges >> 16) & 0xFF); // byte 2 (bits 16-23)
-		buf[i++] = (BYTE)((applicationPrivileges >> 8) & 0xFF);  // byte 1 (bits 8-15)
-		buf[i++] = (BYTE)(applicationPrivileges & 0xFF);         // byte 0 (bits 0-7)
+		buf[i++] = (BYTE)((applicationPrivileges >> 16) & 0xFF);
+		buf[i++] = (BYTE)((applicationPrivileges >> 8) & 0xFF);
+		buf[i++] = (BYTE)(applicationPrivileges & 0xFF);
 	} else if (privilegeLength == 2) {
-		buf[i++] = (BYTE)((applicationPrivileges >> 8) & 0xFF);  // byte 1 (bits 8-15)
-		buf[i++] = (BYTE)(applicationPrivileges & 0xFF);         // byte 0 (bits 0-7)
+		buf[i++] = (BYTE)((applicationPrivileges >> 16) & 0xFF);
+		buf[i++] = (BYTE)((applicationPrivileges >> 8) & 0xFF);
 	} else {
-		buf[i++] = (BYTE)(applicationPrivileges & 0xFF);         // byte 0 (bits 0-7)
+		buf[i++] = (BYTE)((applicationPrivileges >> 16) & 0xFF);
 	}
 
 	installParameterFieldLength = 0x02; // install parameter field length tag C9 + length byte (C9LL)
