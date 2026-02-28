@@ -243,7 +243,7 @@ OPGP_NO_API
 OPGP_ERROR_STATUS calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 							 PBYTE executableModuleAID,
 							 DWORD executableModuleAIDLength, PBYTE applicationAID, DWORD applicationAIDLength,
-							 BYTE applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
+							 DWORD applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 							 PBYTE installParameters, DWORD installParametersLength,
 							 PBYTE sdParameters, DWORD sdParametersLength,
 							 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
@@ -311,7 +311,7 @@ OPGP_NO_API
 OPGP_ERROR_STATUS install_for_install_and_make_selectable(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 						 PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE executableModuleAID,
 						 DWORD executableModuleAIDLength, PBYTE applicationAID,
-						 DWORD applicationAIDLength, BYTE applicationPrivileges,
+						 DWORD applicationAIDLength, DWORD applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE installParameters, DWORD installParametersLength,
 						 PBYTE sdParameters, DWORD sdParametersLength,
@@ -334,7 +334,7 @@ OPGP_ERROR_STATUS install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_I
 						 PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 						 PBYTE executableModuleAID,
 						 DWORD executableModuleAIDLength, PBYTE applicationAID,
-						 DWORD applicationAIDLength, BYTE applicationPrivileges,
+						 DWORD applicationAIDLength, DWORD applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE installParameters, DWORD installParametersLength,
 						 PBYTE sdParameters, DWORD sdParametersLength,
@@ -346,7 +346,7 @@ OPGP_ERROR_STATUS install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_I
 OPGP_NO_API
 OPGP_ERROR_STATUS install_for_make_selectable(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 								 PBYTE applicationAID,
-								 DWORD applicationAIDLength, BYTE applicationPrivileges,
+								 DWORD applicationAIDLength, DWORD applicationPrivileges,
 								 PBYTE installToken, DWORD installTokenLength,
 								 GP211_RECEIPT_DATA *receiptData,
 								 PDWORD receiptDataAvailable);
@@ -368,7 +368,7 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 OPGP_NO_API
 OPGP_ERROR_STATUS get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE executableModuleAID,
 									  DWORD executableModuleAIDLength, PBYTE applicationAID,
-									  DWORD applicationAIDLength, BYTE applicationPrivileges,
+									  DWORD applicationAIDLength, DWORD applicationPrivileges,
 									  DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 									  PBYTE installParameters, DWORD installParametersLength,
 									  PBYTE sdParameters, DWORD sdParametersLength,
@@ -3177,7 +3177,7 @@ OPGP_ERROR_STATUS GP211_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_
 						 PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 						 PBYTE executableModuleAID,
 						 DWORD executableModuleAIDLength, PBYTE applicationAID,
-						 DWORD applicationAIDLength, BYTE applicationPrivileges,
+						 DWORD applicationAIDLength, DWORD applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE installParameters, DWORD installParametersLength,
 						 PBYTE sdParameters, DWORD sdParametersLength,
@@ -3203,7 +3203,7 @@ OPGP_ERROR_STATUS install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_I
 						 PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 						 PBYTE executableModuleAID,
 						 DWORD executableModuleAIDLength, PBYTE applicationAID,
-						 DWORD applicationAIDLength, BYTE applicationPrivileges,
+						 DWORD applicationAIDLength, DWORD applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE installParameters, DWORD installParametersLength,
 						 PBYTE sdParameters, DWORD sdParametersLength,
@@ -3300,7 +3300,7 @@ end:
 OPGP_ERROR_STATUS GP211_install_for_install_and_make_selectable(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 						 PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE executableModuleAID,
 						 DWORD executableModuleAIDLength, PBYTE applicationAID,
-						 DWORD applicationAIDLength, BYTE applicationPrivileges,
+						 DWORD applicationAIDLength, DWORD applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE installParameters, DWORD installParametersLength,
 						 PBYTE sdParameters, DWORD sdParametersLength,
@@ -3326,7 +3326,7 @@ OPGP_ERROR_STATUS GP211_install_for_install_and_make_selectable(OPGP_CARD_CONTEX
 OPGP_ERROR_STATUS install_for_install_and_make_selectable(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 						 PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE executableModuleAID,
 						 DWORD executableModuleAIDLength, PBYTE applicationAID,
-						 DWORD applicationAIDLength, BYTE applicationPrivileges,
+						 DWORD applicationAIDLength, DWORD applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE installParameters, DWORD installParametersLength,
 						 PBYTE sdParameters, DWORD sdParametersLength,
@@ -3533,7 +3533,7 @@ end:
  */
 OPGP_ERROR_STATUS GP211_install_for_make_selectable(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 								 PBYTE applicationAID,
-								 DWORD applicationAIDLength, BYTE applicationPrivileges,
+								 DWORD applicationAIDLength, DWORD applicationPrivileges,
 								 PBYTE installToken, DWORD installTokenLength, GP211_RECEIPT_DATA *receiptData,
 								 PDWORD receiptDataAvailable) {
 	return install_for_make_selectable(cardContext, cardInfo, secInfo,
@@ -3545,7 +3545,7 @@ OPGP_ERROR_STATUS GP211_install_for_make_selectable(OPGP_CARD_CONTEXT cardContex
 
 OPGP_ERROR_STATUS install_for_make_selectable(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 								 PBYTE applicationAID,
-								 DWORD applicationAIDLength, BYTE applicationPrivileges,
+								 DWORD applicationAIDLength, DWORD applicationPrivileges,
 								 PBYTE installToken, DWORD installTokenLength,
 								 GP211_RECEIPT_DATA *receiptData,
 								 PDWORD receiptDataAvailable) {
@@ -3639,7 +3639,7 @@ end:
  */
 OPGP_ERROR_STATUS GP211_get_install_token_signature_data(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE executableModuleAID,
 									  DWORD executableModuleAIDLength, PBYTE applicationAID,
-									  DWORD applicationAIDLength, BYTE applicationPrivileges,
+									  DWORD applicationAIDLength, DWORD applicationPrivileges,
 									  DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 									  PBYTE installParameters, DWORD installParametersLength,
 									  PBYTE sdParameters, DWORD sdParametersLength,
@@ -4138,7 +4138,7 @@ end:
 
 OPGP_ERROR_STATUS get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE executableModuleAID,
 										  DWORD executableModuleAIDLength, PBYTE applicationAID,
-										  DWORD applicationAIDLength, BYTE applicationPrivileges,
+										  DWORD applicationAIDLength, DWORD applicationPrivileges,
 										  DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 										  PBYTE installParameters, DWORD installParametersLength,
 									  PBYTE sdParameters, DWORD sdParametersLength,
@@ -4167,8 +4167,26 @@ OPGP_ERROR_STATUS get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD e
 	memcpy(buf+i, applicationAID, applicationAIDLength);
 	i+=applicationAIDLength;
 
-	buf[i++] = 0x01;
-	buf[i++] = applicationPrivileges; // application privileges
+	// Encode privileges with variable length (1, 2, or 3 bytes depending on which bits are set)
+	// Byte 0 (bits 0-7), Byte 1 (bits 8-15), Byte 2 (bits 16-23)
+	BYTE privilegeLength = 1;
+	if (applicationPrivileges & 0xFFFF00) {
+		privilegeLength = 3;
+	} else if (applicationPrivileges & 0xFF00) {
+		privilegeLength = 2;
+	}
+	buf[i++] = privilegeLength;
+	// Encode privileges in big-endian format (most significant byte first)
+	if (privilegeLength == 3) {
+		buf[i++] = (BYTE)((applicationPrivileges >> 16) & 0xFF); // byte 2 (bits 16-23)
+		buf[i++] = (BYTE)((applicationPrivileges >> 8) & 0xFF);  // byte 1 (bits 8-15)
+		buf[i++] = (BYTE)(applicationPrivileges & 0xFF);         // byte 0 (bits 0-7)
+	} else if (privilegeLength == 2) {
+		buf[i++] = (BYTE)((applicationPrivileges >> 8) & 0xFF);  // byte 1 (bits 8-15)
+		buf[i++] = (BYTE)(applicationPrivileges & 0xFF);         // byte 0 (bits 0-7)
+	} else {
+		buf[i++] = (BYTE)(applicationPrivileges & 0xFF);         // byte 0 (bits 0-7)
+	}
 
 	installParameterFieldLength = 0x02; // install parameter field length tag C9 + length byte (C9LL)
 	c9Length = installParametersLength + sdParametersLength;
@@ -4358,7 +4376,7 @@ end:
 OPGP_ERROR_STATUS GP211_calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 							 PBYTE executableModuleAID,
 							 DWORD executableModuleAIDLength, PBYTE applicationAID, DWORD applicationAIDLength,
-							 BYTE applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
+							 DWORD applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 							 PBYTE installParameters, DWORD installParametersLength,
 							 PBYTE sdParameters, DWORD sdParametersLength,
 							 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
@@ -7553,7 +7571,7 @@ OPGP_ERROR_STATUS OP201_mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPG
 OPGP_ERROR_STATUS calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 							 PBYTE executableModuleAID,
 							 DWORD executableModuleAIDLength, PBYTE applicationAID, DWORD applicationAIDLength,
-							 BYTE applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
+							 DWORD applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 							 PBYTE installParameters, DWORD installParametersLength,
 							 PBYTE sdParameters, DWORD sdParametersLength,
 							 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,

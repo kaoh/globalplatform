@@ -866,7 +866,7 @@ OPGP_ERROR_STATUS GP211_get_install_token_signature_data(BYTE P1, PBYTE executab
 									  DWORD executableLoadFileAIDLength,
 									  PBYTE executableModuleAID, DWORD executableModuleAIDLength,
 									  PBYTE applicationAID, DWORD applicationAIDLength,
-									  BYTE applicationPrivileges, DWORD volatileDataSpaceLimit,
+									  DWORD applicationPrivileges, DWORD volatileDataSpaceLimit,
 									  DWORD nonVolatileDataSpaceLimit,
 									  PBYTE installParameters, DWORD installParametersLength,
 									  PBYTE sdParameters, DWORD sdParametersLength,
@@ -889,7 +889,7 @@ OPGP_API
 OPGP_ERROR_STATUS GP211_calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 							 PBYTE executableModuleAID,
 							 DWORD executableModuleAIDLength, PBYTE applicationAID,
-							 DWORD applicationAIDLength, BYTE applicationPrivileges,
+							 DWORD applicationAIDLength, DWORD applicationPrivileges,
 							 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 							 PBYTE installParameters, DWORD installParametersLength,
 							 PBYTE sdParameters, DWORD sdParametersLength,
@@ -936,7 +936,7 @@ OPGP_API
 OPGP_ERROR_STATUS GP211_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 						 PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE executableModuleAID,
 						 DWORD executableModuleAIDLength, PBYTE applicationAID, DWORD applicationAIDLength,
-						 BYTE applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
+						 DWORD applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE installParameters, DWORD installParametersLength,
 						 PBYTE sdParameters, DWORD sdParametersLength,
 						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
@@ -948,7 +948,7 @@ OPGP_ERROR_STATUS GP211_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_
 OPGP_API
 OPGP_ERROR_STATUS GP211_install_for_make_selectable(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 								 PBYTE applicationAID, DWORD applicationAIDLength,
-								 BYTE applicationPrivileges, PBYTE installToken, DWORD installTokenLength,
+								 DWORD applicationPrivileges, PBYTE installToken, DWORD installTokenLength,
 								 GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
 
 //! \brief GlobalPlatform2.1.1: Installs and makes an installed application selectable.
@@ -956,7 +956,7 @@ OPGP_API
 OPGP_ERROR_STATUS GP211_install_for_install_and_make_selectable(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 						 PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE executableModuleAID,
 						 DWORD executableModuleAIDLength, PBYTE applicationAID,
-						 DWORD applicationAIDLength, BYTE applicationPrivileges,
+						 DWORD applicationAIDLength, DWORD applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE installParameters, DWORD installParametersLength,
 						 PBYTE sdParameters, DWORD sdParametersLength,

@@ -253,9 +253,35 @@ static void print_usage(const char *prog) {
         "        dgi:    DGI format\n"
         "        ber:    BER-TLV format\n"
         "      --response: expect response data (default: false)\n"
-        "      Data supports flexible hex format (spaces/tabs ignored).\n\n"
+        "      Data supports flexible hex format (spaces/tabs ignored).\n\n",
+        stderr);
+
+    fputs(
         "Privileges (used by install --priv and shown by list-apps as priv=[...]):\n"
-        "  sd,dap-verif,delegated-mgmt,cm-lock,cm-terminate,default-selected,pin-change,mandated-dap",
+        "  Byte 2 (Security Domain privileges):\n"
+        "    sd (security-domain)         - Application is a Security Domain\n"
+        "    dap-verif (dap)              - Can require DAP verification for load/install\n"
+        "    delegated-mgmt               - Security Domain has delegated management right\n"
+        "    cm-lock                      - Can lock the Card Manager\n"
+        "    cm-terminate                 - Can terminate the card\n"
+        "    default-selected (card-reset)- Default selected / Card Reset privilege\n"
+        "    pin-change (pin)             - Can change global PIN\n"
+        "    mandated-dap (mandated-dap-verif) - Requires DAP verification for load/install\n"
+        "  Byte 1 (Advanced privileges):\n"
+        "    trusted-path                 - Trusted Path for inter-app communication\n"
+        "    authorized-mgmt              - Capable of Card Content Management (requires SD)\n"
+        "    token-mgmt (token-verification) - Can verify token for delegated management\n"
+        "    global-delete                - May delete any Card Content\n"
+        "    global-lock                  - May lock or unlock any Application\n"
+        "    global-registry              - May access any entry in GlobalPlatform Registry\n"
+        "    final-application (final-app)- Only Application selectable in CARD_LOCKED/TERMINATED\n"
+        "    global-service               - Provides services to other Applications\n"
+        "  Byte 0 (Basic privileges):\n"
+        "    receipt-generation (receipt) - Can generate receipt for delegated management\n"
+        "    ciphered-load-file-data-block (ciphered-load) - Requires ciphered Load File\n"
+        "    contactless-activation       - Can activate/deactivate apps on contactless interface\n"
+        "    contactless-self-activation  - Can activate itself on contactless interface\n"
+        "  Multiple privileges can be combined: --priv sd,cm-lock,trusted-path\n",
         stderr);
 }
 
@@ -549,27 +575,91 @@ static BYTE sec_level_from_option(BYTE proto, const char *opt) {
     return (proto == GP211_SCP03) ? GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC : GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC;
 }
 
-static int parse_privs_byte(const char *list, BYTE *out)
+// Parse comma-separated privilege names into a DWORD privilege bitfield
+// Supports all GP211_APPLICATION_PRIVILEGES enum values (3 bytes)
+static int parse_privileges(const char *list, DWORD *out)
 {
     if (!list) { *out = 0; return 0; }
-    BYTE p = 0;
-    char buf[256]; strncpy(buf, list, sizeof(buf)-1); buf[sizeof(buf)-1] = '\0';
-    char *save=NULL; char *tok = strtok_r(buf, ",", &save);
+
+    // Map of privilege names to GP211_APPLICATION_PRIVILEGES enum values
+    struct { const char *name; DWORD value; } priv_map[] = {
+        { "sd", GP211_SECURITY_DOMAIN },
+        { "security-domain", GP211_SECURITY_DOMAIN },
+        { "dap-verif", GP211_DAP_VERIFICATION },
+        { "dap", GP211_DAP_VERIFICATION },
+        { "delegated-mgmt", GP211_DELEGATED_MANAGEMENT },
+        { "cm-lock", GP211_CARD_MANAGER_LOCK_PRIVILEGE },
+        { "cm-terminate", GP211_CARD_MANAGER_TERMINATE_PRIVILEGE },
+        { "default-selected", GP211_DEFAULT_SELECTED_CARD_RESET_PRIVILEGE },
+        { "default", GP211_DEFAULT_SELECTED_CARD_RESET_PRIVILEGE },
+        { "card-reset", GP211_DEFAULT_SELECTED_CARD_RESET_PRIVILEGE },
+        { "pin-change", GP211_PIN_CHANGE_PRIVILEGE },
+        { "pin", GP211_PIN_CHANGE_PRIVILEGE },
+        { "mandated-dap", GP211_MANDATED_DAP_VERIFICATION },
+        { "mandated-dap-verif", GP211_MANDATED_DAP_VERIFICATION },
+
+        { "trusted-path", GP211_TRUSTED_PATH },
+        { "authorized-mgmt", GP211_AUTHORIZED_MANAGEMENT },
+        { "token-mgmt", GP211_TOKEN_VERIFICATION },
+        { "token-verification", GP211_TOKEN_VERIFICATION },
+        { "global-delete", GP211_GLOBAL_DELETE },
+        { "global-lock", GP211_GLOBAL_LOCK },
+        { "global-registry", GP211_GLOBAL_REGISTRY },
+        { "final-application", GP211_FINAL_APPLICATION },
+        { "final-app", GP211_FINAL_APPLICATION },
+        { "global-service", GP211_GLOBAL_SERVICE },
+
+        { "receipt-generation", GP211_RECEIPT_GENERATION },
+        { "receipt", GP211_RECEIPT_GENERATION },
+        { "ciphered-load-file-data-block", GP211_CIPHERED_LOAD_FILE_DATA_BLOCK },
+        { "ciphered-load", GP211_CIPHERED_LOAD_FILE_DATA_BLOCK },
+        { "contactless-activation", GP211_CONTACTLESS_ACTIVATION },
+        { "contactless-self-activation", GP211_CONTACTLESS_SELF_ACTIVATION },
+    };
+
+    DWORD p = 0;
+    char buf[512];
+    strncpy(buf, list, sizeof(buf)-1);
+    buf[sizeof(buf)-1] = '\0';
+
+    char *save = NULL;
+    char *tok = strtok_r(buf, ",", &save);
     while (tok) {
-        // normalize
-        for (char *c=tok; *c; ++c) *c = (char)tolower((unsigned char)*c);
-        if (!strcmp(tok, "sd") || !strcmp(tok, "security-domain")) p |= 0x80; // SECURITY_DOMAIN
-        else if (!strcmp(tok, "dap-verif") || !strcmp(tok, "dap")) p |= 0xC0; // DAP_VERIFICATION
-        else if (!strcmp(tok, "delegated-mgmt")) p |= 0xA0; // DELEGATED_MANAGEMENT
-        else if (!strcmp(tok, "cm-lock")) p |= 0x10; // CARD_MANAGER_LOCK
-        else if (!strcmp(tok, "cm-terminate")) p |= 0x08; // CARD_MANAGER_TERMINATE
-        else if (!strcmp(tok, "default-selected") || !strcmp(tok, "default")) p |= 0x04; // DEFAULT_SELECTED (do not refer to card reset)
-        else if (!strcmp(tok, "pin-change") || !strcmp(tok, "pin")) p |= 0x02; // PIN_CHANGE
-        else if (!strcmp(tok, "mandated-dap") || !strcmp(tok, "mandated-dap-verif")) p |= 0xD0; // MANDATED_DAP_VERIFICATION
-        else { fprintf(stderr, "Unknown privilege '%s'\n", tok); return -1; }
+        // Trim whitespace
+        while (*tok == ' ' || *tok == '\t') tok++;
+        char *end = tok + strlen(tok) - 1;
+        while (end > tok && (*end == ' ' || *end == '\t')) *end-- = '\0';
+
+        // Normalize to lowercase
+        for (char *c = tok; *c; ++c) {
+            *c = (char)tolower((unsigned char)*c);
+        }
+
+        // Look up privilege
+        int found = 0;
+        for (size_t i = 0; i < sizeof(priv_map)/sizeof(priv_map[0]); ++i) {
+            if (!strcmp(tok, priv_map[i].name)) {
+                p |= priv_map[i].value;
+                found = 1;
+                break;
+            }
+        }
+
+        if (!found) {
+            fprintf(stderr, "Unknown privilege '%s'\n", tok);
+            fprintf(stderr, "Valid privileges: sd, dap-verif, delegated-mgmt, cm-lock, cm-terminate,\n");
+            fprintf(stderr, "  default-selected, pin-change, mandated-dap, trusted-path, authorized-mgmt,\n");
+            fprintf(stderr, "  token-mgmt, global-delete, global-lock, global-registry, final-application,\n");
+            fprintf(stderr, "  global-service, receipt-generation, ciphered-load-file-data-block,\n");
+            fprintf(stderr, "  contactless-activation, contactless-self-activation\n");
+            return -1;
+        }
+
         tok = strtok_r(NULL, ",", &save);
     }
-    *out = p; return 0;
+
+    *out = p;
+    return 0;
 }
 
 static int parse_sd_accept_list(const char *list, BYTE *out) {
@@ -1484,9 +1574,9 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     }
 
     GP211_RECEIPT_DATA rec2; DWORD rec2Avail=0; memset(&rec2,0,sizeof(rec2));
-    BYTE privileges = 0x00; // first 8 bits only as per requirement
+    DWORD privileges = 0x00;
     if (priv_list) {
-        if (parse_privs_byte(priv_list, &privileges) != 0) {
+        if (parse_privileges(priv_list, &privileges) != 0) {
             return -1;
         }
     }
@@ -1678,7 +1768,7 @@ static int cmd_install_sd(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECU
     }
 
     GP211_RECEIPT_DATA rec; DWORD recAvail = 0; memset(&rec, 0, sizeof(rec));
-    BYTE privileges = (BYTE)GP211_SECURITY_DOMAIN;
+    DWORD privileges = GP211_SECURITY_DOMAIN;
     if (!status_ok(GP211_install_for_install_and_make_selectable(ctx, info, sec,
             load_file_aid, (DWORD)load_file_len,
             module_aid, (DWORD)module_len,

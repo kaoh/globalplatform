@@ -118,7 +118,7 @@ typedef struct _OptionStr
     BYTE dataFormat; //!< data format of STORE DATA
     BYTE responseDataExpected; //!< 1 if STORE DATA expects response data.
     BYTE keyTemplate; //!< The key template index to return.
-    BYTE privilege;
+    DWORD privilege;
     BYTE scp;
     BYTE scpImpl;
     BYTE identifier[2];
