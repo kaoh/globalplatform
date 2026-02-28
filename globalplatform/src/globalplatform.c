@@ -4053,20 +4053,20 @@ OPGP_ERROR_STATUS GP211_build_sd_parameters(GP211_SD_INSTALL_PARAMS *params,
 		buf[i++] = params->scpEntries[j].scpIdentifier;
 		buf[i++] = params->scpEntries[j].scpImpl;
 	}
-	if (params->acceptExtractionLength > 0) {
-		if (params->acceptExtractionLength != GP211_SD_PARAM_LEN_ACCEPT_MIN &&
-			params->acceptExtractionLength != GP211_SD_PARAM_LEN_ACCEPT_MAX) {
+	if (params->acceptExtractionHereLength > 0) {
+		if (params->acceptExtractionHereLength != GP211_SD_PARAM_LEN_ACCEPT_MIN &&
+			params->acceptExtractionHereLength != GP211_SD_PARAM_LEN_ACCEPT_MAX) {
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 			goto end;
 		}
-		if ((i + 2 + params->acceptExtractionLength) > sizeof(buf)) {
+		if ((i + 2 + params->acceptExtractionHereLength) > sizeof(buf)) {
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE));
 			goto end;
 		}
 		buf[i++] = GP211_SD_PARAM_TAG_ACCEPT_EXTRACTION;
-		buf[i++] = params->acceptExtractionLength;
-		memcpy(buf + i, params->acceptExtraction, params->acceptExtractionLength);
-		i += params->acceptExtractionLength;
+		buf[i++] = params->acceptExtractionHereLength;
+		memcpy(buf + i, params->acceptExtractionHere, params->acceptExtractionHereLength);
+		i += params->acceptExtractionHereLength;
 	}
 	if (params->acceptDeletionLength > 0) {
 		if (params->acceptDeletionLength != GP211_SD_PARAM_LEN_ACCEPT_DELETE) {
@@ -4099,20 +4099,20 @@ OPGP_ERROR_STATUS GP211_build_sd_parameters(GP211_SD_INSTALL_PARAMS *params,
 		buf[i++] = params->casdCapabilityInfo[0];
 		buf[i++] = params->casdCapabilityInfo[1];
 	}
-	if (params->acceptGlobalDeleteLength > 0) {
-		if (params->acceptGlobalDeleteLength != GP211_SD_PARAM_LEN_ACCEPT_MIN &&
-			params->acceptGlobalDeleteLength != GP211_SD_PARAM_LEN_ACCEPT_MAX) {
+	if (params->acceptExtractionAwayLength > 0) {
+		if (params->acceptExtractionAwayLength != GP211_SD_PARAM_LEN_ACCEPT_MIN &&
+			params->acceptExtractionAwayLength != GP211_SD_PARAM_LEN_ACCEPT_MAX) {
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 			goto end;
 		}
-		if ((i + 2 + params->acceptGlobalDeleteLength) > sizeof(buf)) {
+		if ((i + 2 + params->acceptExtractionAwayLength) > sizeof(buf)) {
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE));
 			goto end;
 		}
 		buf[i++] = GP211_SD_PARAM_TAG_ACCEPT_GLOBAL_DELETE;
-		buf[i++] = params->acceptGlobalDeleteLength;
-		memcpy(buf + i, params->acceptGlobalDelete, params->acceptGlobalDeleteLength);
-		i += params->acceptGlobalDeleteLength;
+		buf[i++] = params->acceptExtractionAwayLength;
+		memcpy(buf + i, params->acceptExtractionAway, params->acceptExtractionAwayLength);
+		i += params->acceptExtractionAwayLength;
 	}
 
 	if (i == 0) {
@@ -4123,14 +4123,12 @@ OPGP_ERROR_STATUS GP211_build_sd_parameters(GP211_SD_INSTALL_PARAMS *params,
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_INSTALL_PARAMETERS_TOO_LARGE));
 		goto end;
 	}
-	if ((i + 2) > *sdParametersLength) {
+	if (i > *sdParametersLength) {
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
 		goto end;
 	}
-	sdParameters[0] = 0xC1;
-	sdParameters[1] = (BYTE)i;
-	memcpy(sdParameters + 2, buf, i);
-	*sdParametersLength = i + 2;
+	memcpy(sdParameters, buf, i);
+	*sdParametersLength = i;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 
 end:

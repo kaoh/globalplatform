@@ -76,6 +76,9 @@ static int status_ok(OPGP_ERROR_STATUS s) {
 // so subsequent operations (e.g., install) can reuse it without probing via GET DATA.
 static unsigned char g_selected_isd[16];
 static DWORD g_selected_isd_len = 0;
+static BYTE g_current_scp = 0;
+static BYTE g_current_scp_impl = 0;
+static int g_current_scp_set = 0;
 
 // Cleanup state tracking
 static OPGP_CARD_CONTEXT *g_cleanup_ctx = NULL;
@@ -128,14 +131,13 @@ static void print_usage(const char *prog) {
 
     fputs(
         "  install [--load-only|--install-only] [--dap <hex>|@<file>] [--load-token <hex>] [--install-token <hex>] \\\n"
-        "          [--hash <hex>] [--load-file <AIDhex>] [--applet <AIDhex>] [--module <AIDhex>] [--params <hex>] [--sd-params <hex>] \\\n"
+        "          [--hash <hex>] [--load-file <AIDhex>] [--applet <AIDhex>] [--module <AIDhex>] [--params <hex>] \\\n"
         "          [--v-data-limit <size>] [--nv-data-limit <size>] [--priv <p1,p2,...>] <cap-file>\n"
         "      Load a CAP file, and optionally install/make selectable applet instance(s).\n"
-        "      --applet <AIDhex>: Select which applet AID to install (optional).\n"
-        "      --module <AIDhex>: Select which module AID to install (usually same as applet) (optional).\n"
-        "                         If both --applet and --module are omitted, installs all applets in the CAP.\n"
+        "      --applet <AIDhex>: Sets the applet instance AID (usually same as module) (optional).\n"
+        "      --module <AIDhex>: Select which module AID to install (optional).\n"
+        "                         If --module is omitted, installs all applets in the CAP.\n"
         "      --params: installation parameters (hex) (optional).\n"
-        "      --sd-params: Security Domain install parameters (hex) added to tag C9 (optional).\n"
         "      --priv: comma-separated privilege short names (see 'Privileges' below)  (optional).\n"
         "      --v-data-limit <size>: Volatile data storage limit in bytes for applet instance (optional).\n"
         "      --nv-data-limit <size>: Non-volatile data storage limit in bytes for applet instance (optional).\n"
@@ -146,7 +148,25 @@ static void print_usage(const char *prog) {
         "      --dap: DAP signature as hex or @file for binary signature (SD AID taken from --sd) (optional).\n"
         "      --hash: precomputed load-file data block hash (hex) (required for --dap) (optional).\n"
         "      --load-token <hex>: Load token for delegated management (optional).\n"
-        "      --install-token <hex>: Install token for delegated management (optional).\n\n"
+        "      --install-token <hex>: Install token for delegated management (optional).\n\n",
+        stderr);
+    fputs(
+        "  install-sd [--load-file <AIDhex>] [--module <AIDhex>] [--expl-personalized] \\\n"
+        "            [--extraction-here <list>] [--delete-here <list>] [--extraction-away <list>] <instance-aid>\n"
+        "      Install an Issuer Security Domain instance.\n"
+        "      --load-file <AIDhex>: Load file / package AID (optional).\n"
+        "      --module <AIDhex>: Module AID (optional).\n"
+        "      --expl-personalized: Include explicit personalized state tag (optional).\n"
+        "      --extraction-here <list>: Accept extraction to this SD (optional, default: isd).\n"
+        "      --delete-here <list>: Accept deletion (optional, default: isd).\n"
+        "      --extraction-away <list>: Accept extraction away from this SD (optional, default: isd).\n"
+        "      <list> is a comma-separated list; tokens can be ORed:\n"
+        "        none      = no acceptance (default if tag omitted)\n"
+        "        an-am     = ancestor SD with AM privilege\n"
+        "        am        = any SD in hierarchy with AM privilege\n"
+        "        isd       = Issuer Security Domain\n"
+        "        an-am-dm  = any SD with DM privilege under ancestor SD with AM\n"
+        "        all-am    = every SD with AM privilege on the card\n\n"
         "  delete <AIDhex>\n"
         "      Delete an application instance or load file by AID.\n\n"
         "  put-key [--type <3des|aes|rsa>] --kv <ver> --idx <idx> --new-kv <ver> \\\n"
@@ -552,6 +572,97 @@ static int parse_privs_byte(const char *list, BYTE *out)
     *out = p; return 0;
 }
 
+static int parse_sd_accept_list(const char *list, BYTE *out) {
+    if (!list || !out) return -1;
+    char buf[128];
+    strncpy(buf, list, sizeof(buf) - 1);
+    buf[sizeof(buf) - 1] = '\0';
+    BYTE val = 0;
+    int have = 0;
+    char *save = NULL;
+    char *tok = strtok_r(buf, ",", &save);
+    while (tok) {
+        while (isspace((unsigned char)*tok)) tok++;
+        char *end = tok + strlen(tok);
+        while (end > tok && isspace((unsigned char)end[-1])) { end--; }
+        *end = '\0';
+        for (char *c = tok; *c; ++c) *c = (char)tolower((unsigned char)*c);
+
+        if (!strcmp(tok, "none")) {
+            // no bits set
+            have = 1;
+        } else if (!strcmp(tok, "an-am")) {
+            val |= GP211_SD_ACCEPT_ANCESTOR_AM;
+            have = 1;
+        } else if (!strcmp(tok, "am")) {
+            val |= GP211_SD_ACCEPT_HIERARCHY_AM;
+            have = 1;
+        } else if (!strcmp(tok, "isd")) {
+            val |= GP211_SD_ACCEPT_ISD;
+            have = 1;
+        } else if (!strcmp(tok, "an-am-dm")) {
+            val |= GP211_SD_ACCEPT_DM_UNDER_ANCESTOR_AM;
+            have = 1;
+        } else if (!strcmp(tok, "all-am")) {
+            val |= GP211_SD_ACCEPT_ALL_AM;
+            have = 1;
+        } else if (*tok != '\0') {
+            fprintf(stderr, "install-sd: unknown accept token '%s'\n", tok);
+            return -1;
+        }
+        tok = strtok_r(NULL, ",", &save);
+    }
+    if (!have) {
+        fprintf(stderr, "install-sd: accept list is empty\n");
+        return -1;
+    }
+    *out = val;
+    return 0;
+}
+
+static int aid_matches_hex(const OPGP_AID *aid, const char *hex) {
+    if (!aid || !hex) return 0;
+    BYTE buf[16]; size_t len = sizeof(buf);
+    if (hex_to_bytes(hex, buf, &len) != 0) return 0;
+    if (aid->AIDLength != len) return 0;
+    return memcmp(aid->AID, buf, len) == 0;
+}
+
+static int find_default_load_file(const GP211_APPLICATION_DATA *lfs, DWORD lfs_len, BYTE *out, size_t *out_len) {
+    const char *candidates[] = { "A0000000035350", "A0000001515350" };
+    for (size_t c = 0; c < ARRAY_SIZE(candidates); ++c) {
+        for (DWORD i = 0; i < lfs_len; ++i) {
+            if (aid_matches_hex(&lfs[i].aid, candidates[c])) {
+                size_t len = lfs[i].aid.AIDLength;
+                if (len > *out_len) return 0;
+                memcpy(out, lfs[i].aid.AID, len);
+                *out_len = len;
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+static int find_default_module(const GP211_EXECUTABLE_MODULES_DATA *mods, DWORD mods_len, BYTE *out, size_t *out_len) {
+    const char *candidates[] = { "A000000003535041", "A000000151535041" };
+    for (size_t c = 0; c < ARRAY_SIZE(candidates); ++c) {
+        for (DWORD i = 0; i < mods_len; ++i) {
+            for (DWORD j = 0; j < mods[i].numExecutableModules &&
+                 j < (DWORD)(sizeof(mods[i].executableModules)/sizeof(mods[i].executableModules[0])); ++j) {
+                if (aid_matches_hex(&mods[i].executableModules[j], candidates[c])) {
+                    size_t len = mods[i].executableModules[j].AIDLength;
+                    if (len > *out_len) return 0;
+                    memcpy(out, mods[i].executableModules[j].AID, len);
+                    *out_len = len;
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
 static int select_isd(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, const char *isd_hex_opt) {
     OPGP_ERROR_STATUS s;
     if (isd_hex_opt) {
@@ -727,7 +838,13 @@ static int mutual_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     else if (derivation == 2) deriv = OPGP_DERIVATION_METHOD_EMV_CPS11;
     OPGP_ERROR_STATUS s2 = GP211_mutual_authentication(ctx, info, baseKey, S_ENC, S_MAC, DEK, keyLength,
                                                        keyset_ver, key_index, scp, scpImpl, secLevel, deriv, sec);
-    return status_ok(s2) ? 0 : -1;
+    if (!status_ok(s2)) {
+        return -1;
+    }
+    g_current_scp = scp;
+    g_current_scp_impl = scpImpl;
+    g_current_scp_set = 1;
+    return 0;
 }
 
 static const char* lc_to_string(BYTE lifeCycle, BYTE element) {
@@ -1177,7 +1294,6 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     int install_only = 0;
     DWORD v_data_limit = 0, nv_data_limit = 0;
     const char *dap_hex = NULL; const char *applet_aid_hex=NULL; const char *module_aid_hex=NULL; const char *priv_list=NULL; const char *params_hex=NULL;
-    const char *sd_params_hex = NULL;
     const char *load_token_hex = NULL; const char *install_token_hex = NULL; const char *load_file_hash_hex = NULL;
     const char *load_file_aid_hex = NULL;
     int ai = 0;
@@ -1195,7 +1311,6 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         else if (strcmp(argv[ai], "--v-data-limit") == 0 && ai+1 < argc) { v_data_limit = (DWORD)atoi(argv[++ai]); }
         else if (strcmp(argv[ai], "--nv-data-limit") == 0 && ai+1 < argc) { nv_data_limit = (DWORD)atoi(argv[++ai]); }
         else if (strcmp(argv[ai], "--params") == 0 && ai+1 < argc) { params_hex = argv[++ai]; }
-        else if (strcmp(argv[ai], "--sd-params") == 0 && ai+1 < argc) { sd_params_hex = argv[++ai]; }
         else break;
     }
     if (ai >= argc) { fprintf(stderr, "install: missing <cap-file>\n"); return -1; }
@@ -1354,15 +1469,6 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
             return -1;
         }
     }
-    unsigned char sd_param[256]; size_t sd_param_len=0;
-    if (sd_params_hex) {
-        sd_param_len = sizeof(sd_param);
-        if (hex_to_bytes(sd_params_hex, sd_param, &sd_param_len)!=0) {
-            fprintf(stderr, "Invalid --sd-params hex\n");
-            return -1;
-        }
-    }
-
     // Parse optional install token
     BYTE installToken[128]; memset(installToken,0,sizeof(installToken));
     BYTE *installTokenPtr = NULL;
@@ -1413,7 +1519,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
                 applet_aid, (DWORD)applet_len,
                 privileges, v_data_limit, nv_data_limit,
                 inst_param_len ? inst_param : NULL, (DWORD)inst_param_len,
-                sd_param_len ? sd_param : NULL, (DWORD)sd_param_len,
+                NULL, 0,
                 NULL, 0,
                 NULL, 0,
                 installTokenPtr, installTokenLen, &rec2, &rec2Avail))) {
@@ -1436,7 +1542,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
                     aid, aidLen,
                     privileges, v_data_limit, nv_data_limit,
                     inst_param_len ? inst_param : NULL, (DWORD)inst_param_len,
-                    sd_param_len ? sd_param : NULL, (DWORD)sd_param_len,
+                    NULL, 0,
                     NULL, 0,
                     NULL, 0,
                     installTokenPtr, installTokenLen, &rec2, &rec2Avail))) {
@@ -1449,6 +1555,142 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
             fprintf(stderr, "INSTALL: No applets found in CAP to install\n");
             return -1;
         }
+    }
+    return 0;
+}
+
+static int cmd_install_sd(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec,
+                          int argc, char **argv) {
+    const char *load_file_hex = NULL;
+    const char *module_hex = NULL;
+    const char *extract_here_opt = NULL;
+    const char *delete_here_opt = NULL;
+    const char *extract_away_opt = NULL;
+    int expl_personalized = 0;
+    int ai = 0;
+    for (; ai < argc; ++ai) {
+        if (strcmp(argv[ai], "--load-file") == 0 && ai + 1 < argc) { load_file_hex = argv[++ai]; }
+        else if (strcmp(argv[ai], "--module") == 0 && ai + 1 < argc) { module_hex = argv[++ai]; }
+        else if (strcmp(argv[ai], "--expl-personalized") == 0) { expl_personalized = 1; }
+        else if (strcmp(argv[ai], "--extraction-here") == 0 && ai + 1 < argc) { extract_here_opt = argv[++ai]; }
+        else if (strcmp(argv[ai], "--delete-here") == 0 && ai + 1 < argc) { delete_here_opt = argv[++ai]; }
+        else if (strcmp(argv[ai], "--extraction-away") == 0 && ai + 1 < argc) { extract_away_opt = argv[++ai]; }
+        else break;
+    }
+    if (ai >= argc) { fprintf(stderr, "install-sd: missing <instance-aid>\n"); return -1; }
+    const char *instance_hex = argv[ai++];
+    if (ai < argc) { fprintf(stderr, "install-sd: unexpected argument: %s\n", argv[ai]); return -1; }
+
+    BYTE instance_aid[16]; size_t instance_len = sizeof(instance_aid);
+    if (hex_to_bytes(instance_hex, instance_aid, &instance_len) != 0) {
+        fprintf(stderr, "install-sd: invalid <instance-aid>\n");
+        return -1;
+    }
+
+    // List existing issuer security domains to avoid duplicates
+    GP211_APPLICATION_DATA isds[64];
+    DWORD isds_len = (DWORD)ARRAY_SIZE(isds);
+    if (!status_ok(GP211_get_status(ctx, info, sec, GP211_STATUS_ISSUER_SECURITY_DOMAIN,
+                                    GP211_STATUS_FORMAT_NEW, isds, NULL, &isds_len))) {
+        fprintf(stderr, "GET STATUS (issuer security domain) failed\n");
+        return -1;
+    }
+    for (DWORD i = 0; i < isds_len; ++i) {
+        if (isds[i].aid.AIDLength == instance_len &&
+            memcmp(isds[i].aid.AID, instance_aid, instance_len) == 0) {
+            fprintf(stderr, "install-sd: instance AID already exists\n");
+            return -1;
+        }
+    }
+
+    BYTE load_file_aid[16]; size_t load_file_len = sizeof(load_file_aid);
+    if (load_file_hex) {
+        if (hex_to_bytes(load_file_hex, load_file_aid, &load_file_len) != 0) {
+            fprintf(stderr, "install-sd: invalid --load-file AID\n");
+            return -1;
+        }
+    } else {
+        GP211_APPLICATION_DATA lfs[256];
+        DWORD lfs_len = (DWORD)ARRAY_SIZE(lfs);
+        if (!status_ok(GP211_get_status(ctx, info, sec, GP211_STATUS_LOAD_FILES,
+                                        GP211_STATUS_FORMAT_NEW, lfs, NULL, &lfs_len))) {
+            fprintf(stderr, "GET STATUS (load files) failed\n");
+            return -1;
+        }
+        if (!find_default_load_file(lfs, lfs_len, load_file_aid, &load_file_len)) {
+            fprintf(stderr, "install-sd: --load-file required (default load file not found)\n");
+            return -1;
+        }
+    }
+
+    BYTE module_aid[16]; size_t module_len = sizeof(module_aid);
+    if (module_hex) {
+        if (hex_to_bytes(module_hex, module_aid, &module_len) != 0) {
+            fprintf(stderr, "install-sd: invalid --module AID\n");
+            return -1;
+        }
+    } else {
+        GP211_EXECUTABLE_MODULES_DATA mods[128];
+        DWORD mods_len = (DWORD)ARRAY_SIZE(mods);
+        if (!status_ok(GP211_get_status(ctx, info, sec, GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES,
+                                        GP211_STATUS_FORMAT_NEW, NULL, mods, &mods_len))) {
+            fprintf(stderr, "GET STATUS (load files and modules) failed\n");
+            return -1;
+        }
+        if (!find_default_module(mods, mods_len, module_aid, &module_len)) {
+            fprintf(stderr, "install-sd: --module required (default module not found)\n");
+            return -1;
+        }
+    }
+
+    BYTE accept_here = GP211_SD_ACCEPT_ISD;
+    BYTE accept_delete = GP211_SD_ACCEPT_ISD;
+    BYTE accept_away = GP211_SD_ACCEPT_ISD;
+    if (extract_here_opt && parse_sd_accept_list(extract_here_opt, &accept_here) != 0) return -1;
+    if (delete_here_opt && parse_sd_accept_list(delete_here_opt, &accept_delete) != 0) return -1;
+    if (extract_away_opt && parse_sd_accept_list(extract_away_opt, &accept_away) != 0) return -1;
+
+    if (!g_current_scp_set) {
+        fprintf(stderr, "install-sd: secure channel not established\n");
+        return -1;
+    }
+
+    GP211_SD_INSTALL_PARAMS params;
+    memset(&params, 0, sizeof(params));
+    params.scpEntriesLength = 1;
+    params.scpEntries[0].scpIdentifier = g_current_scp;
+    params.scpEntries[0].scpImpl = g_current_scp_impl;
+    params.personalizedStatePresent = expl_personalized ? 1 : 0;
+    params.acceptExtractionHere[0] = accept_here;
+    params.acceptExtractionHere[1] = accept_here;
+    params.acceptExtractionHereLength = 2;
+    params.acceptDeletion = accept_delete;
+    params.acceptDeletionLength = 0;
+    params.acceptExtractionAway[0] = accept_away;
+    params.acceptExtractionAway[1] = accept_away;
+    params.acceptExtractionAwayLength = 2;
+
+    BYTE sd_params[256];
+    DWORD sd_params_len = (DWORD)sizeof(sd_params);
+    if (!status_ok(GP211_build_sd_parameters(&params, sd_params, &sd_params_len))) {
+        fprintf(stderr, "install-sd: failed to build SD parameters\n");
+        return -1;
+    }
+
+    GP211_RECEIPT_DATA rec; DWORD recAvail = 0; memset(&rec, 0, sizeof(rec));
+    BYTE privileges = (BYTE)GP211_SECURITY_DOMAIN;
+    if (!status_ok(GP211_install_for_install_and_make_selectable(ctx, info, sec,
+            load_file_aid, (DWORD)load_file_len,
+            module_aid, (DWORD)module_len,
+            instance_aid, (DWORD)instance_len,
+            privileges, 0, 0,
+            NULL, 0,
+            sd_params, sd_params_len,
+            NULL, 0,
+            NULL, 0,
+            NULL, 0,
+            &rec, &recAvail))) {
+        return -1;
     }
     return 0;
 }
@@ -2743,6 +2985,7 @@ int main(int argc, char **argv) {
     else if (!strcmp(cmd, "seq-counter")) rc = cmd_seq_counter(ctx, info);
     else if (!strcmp(cmd, "confirm-counter")) rc = cmd_confirm_counter(ctx, info);
     else if (!strcmp(cmd, "install")) rc = cmd_install(ctx, info, &sec, argc - i, &argv[i]);
+    else if (!strcmp(cmd, "install-sd")) rc = cmd_install_sd(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "delete")) rc = cmd_delete(ctx, info, &sec, (i<argc)?argv[i]:NULL);
     else if (!strcmp(cmd, "put-key")) rc = cmd_put_key(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "put-auth")) rc = cmd_put_auth(ctx, info, &sec, argc - i, &argv[i]);

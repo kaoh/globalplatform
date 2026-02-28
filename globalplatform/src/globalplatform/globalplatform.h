@@ -566,10 +566,10 @@ typedef struct {
 #define GP211_SD_PARAM_LEN_ACCEPT_MAX 0x02 //!< SD install param maximum length for accept policies (tags '82','87').
 #define GP211_SD_ACCEPT_NONE 0x00 //!< Accept policy: no acceptance (default).
 #define GP211_SD_ACCEPT_ANCESTOR_AM 0x80 //!< Accept policy: from ancestor SD with AM privilege.
-#define GP211_SD_ACCEPT_HIERARCHY_AM 0x82 //!< Accept policy: from any SD in hierarchy with AM privilege.
-#define GP211_SD_ACCEPT_ISD 0x84 //!< Accept policy: from Issuer Security Domain.
-#define GP211_SD_ACCEPT_DM_UNDER_ANCESTOR_AM 0x86 //!< Accept policy: from any SD with DM under ancestor SD with AM.
-#define GP211_SD_ACCEPT_ALL_AM 0xFF //!< Accept policy: from every SD with AM privilege (RFU bits set to 0).
+#define GP211_SD_ACCEPT_HIERARCHY_AM 0xC0 //!< Accept policy: from any SD in hierarchy with AM privilege.
+#define GP211_SD_ACCEPT_ISD 0x20 //!< Accept policy: from Issuer Security Domain.
+#define GP211_SD_ACCEPT_DM_UNDER_ANCESTOR_AM 0x08 //!< Accept policy: from any SD with DM under ancestor SD with AM.
+#define GP211_SD_ACCEPT_ALL_AM 0xF0 //!< Accept policy: from every SD with AM privilege (RFU bits set to 0).
 
 /**
  * Toolkit menu entry definition.
@@ -667,14 +667,14 @@ typedef struct {
 typedef struct {
 	GP211_SD_SCP_ENTRY scpEntries[GP211_SD_MAX_SCP]; //!< SCP entries (tag '81').
 	BYTE scpEntriesLength; //!< Number of SCP entries.
-	BYTE acceptExtraction[2]; //!< Acceptance policy for extraction (tag '82').
-	BYTE acceptExtractionLength; //!< Length of tag '82' value (1 or 2).
-	BYTE acceptDeletion; //!< Acceptance policy for deletion (tag '83').
+	BYTE acceptExtractionHere[2]; //!< Acceptance policy for extraction to this security domain (tag '82'). See GP211_SD_ACCEPT_ALL_AM.
+	BYTE acceptExtractionHereLength; //!< Length of tag '82' value (1 or 2).
+	BYTE acceptDeletion; //!< Acceptance policy for deletion (tag '83'). See GP211_SD_ACCEPT_ALL_AM.
 	BYTE acceptDeletionLength; //!< Length of tag '83' value (0 or 1).
-	BOOL personalizedStatePresent; //!< TRUE to include tag '84' (length 0).
+	BOOL personalizedStatePresent; //!< TRUE to include tag '84' (length 0). If set an explicit SET STATUS or STORE DATA command is needed to set the personalized state.
 	BYTE casdCapabilityInfo[2]; //!< CASD capability information (tag '86').
-	BYTE acceptGlobalDelete[2]; //!< Acceptance policy for Global Delete (tag '87').
-	BYTE acceptGlobalDeleteLength; //!< Length of tag '87' value (1 or 2).
+	BYTE acceptExtractionAway[2]; //!<  Acceptance policy for extraction from this security domain away (tag '87'). See GP211_SD_ACCEPT_ALL_AM.
+	BYTE acceptExtractionAwayLength; //!< Length of tag '87' value (1 or 2).
 } GP211_SD_INSTALL_PARAMS;
 
 //! \brief GlobalPlatform2.1.1: Selects an application on a card by AID.

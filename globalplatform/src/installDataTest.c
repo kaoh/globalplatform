@@ -112,16 +112,16 @@ static void build_sd_parameters(void **state) {
 	params.scpEntriesLength = 1;
 	params.scpEntries[0].scpIdentifier = 0x02;
 	params.scpEntries[0].scpImpl = 0x15;
-	params.acceptExtractionLength = 1;
-	params.acceptExtraction[0] = 0x80;
+	params.acceptExtractionHereLength = 1;
+	params.acceptExtractionHere[0] = 0x80;
 	params.acceptDeletionLength = 1;
 	params.acceptDeletion = 0x80;
 	params.personalizedStatePresent = 1;
 	params.casdCapabilityInfo[0] = 0x01;
 	params.casdCapabilityInfo[1] = 0x02;
-	params.acceptGlobalDeleteLength = 2;
-	params.acceptGlobalDelete[0] = 0x80;
-	params.acceptGlobalDelete[1] = 0x00;
+	params.acceptExtractionAwayLength = 2;
+	params.acceptExtractionAway[0] = 0x80;
+	params.acceptExtractionAway[1] = 0x00;
 
 	status = GP211_build_sd_parameters(&params, output, &outputLength);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);

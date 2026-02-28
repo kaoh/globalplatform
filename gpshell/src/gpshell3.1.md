@@ -111,7 +111,7 @@ Synopsis:
 gpshell3 install [--load-only|--install-only]
                  [--dap <hex>|@<file>] [--load-token <hex>] [--install-token <hex>]
                  [--hash <hex>] [--load-file <AIDhex>] [--applet <AIDhex>] [--module <AIDhex>]
-                 [--params <hex>] [--sd-params <hex>] [--v-data-limit <size>] [--nv-data-limit <size>]
+                 [--params <hex>] [--v-data-limit <size>] [--nv-data-limit <size>]
                  [--priv <p1,p2,...>] <cap-file>
 ```
 
@@ -120,7 +120,6 @@ Options:
 - `--applet <AIDhex>`: Applet AID to install (optional). If omitted together with `--module`, installs all applets from the CAP.
 - `--module <AIDhex>`: Module AID (often same as applet) to install (optional).
 - `--params <hex>`: Installation parameters (hex) passed to the applet `install()` method (optional).
-- `--sd-params <hex>`: Security Domain install parameters (hex) included in tag `C9` (optional).
 - `--priv <list>`: Comma-separated privileges by short names. See “Privileges” below (optional).
 - `--v-data-limit <size>`: Volatile data storage limit in bytes (optional).
 - `--nv-data-limit <size>`: Non-volatile data storage limit in bytes (optional).
@@ -145,6 +144,40 @@ gpshell3 install --install-only \
     --module   A00000000101 \
     --applet   A0000000010101 \
     --params 80
+```
+
+## install-sd
+
+Install an Issuer Security Domain instance.
+
+Synopsis:
+```
+gpshell3 install-sd [--load-file <AIDhex>] [--module <AIDhex>] [--expl-personalized]
+                   [--extraction-here <list>] [--delete-here <list>] [--extraction-away <list>]
+                   <instance-aid>
+```
+
+Options:
+
+- `--load-file <AIDhex>`: Load file / package AID to use (optional). Defaults to `A0000000035350` or `A0000001515350` if found on card.
+- `--module <AIDhex>`: Module AID to use (optional). Defaults to `A000000003535041` or `A000000151535041` if found on card.
+- `--expl-personalized`: Include explicit personalized state tag in SD parameters (optional).
+- `--extraction-here <list>`: Accept extraction to this SD (optional, default `isd`).
+- `--delete-here <list>`: Accept deletion (optional, default `isd`).
+- `--extraction-away <list>`: Accept extraction away from this SD (optional, default `isd`).
+
+The `<list>` value is a comma-separated list; tokens can be ORed:
+
+- `none`: SD does not accept the operation (default policy if the tag is not present).
+- `an-am`: accept from an ancestor SD with AM privilege.
+- `am`: accept from any SD in its hierarchy with AM privilege.
+- `isd`: accept from Issuer Security Domain.
+- `an-am-dm`: accept from any SD with DM privilege under an ancestor SD with AM.
+- `all-am`: accept from every SD with AM privilege on the card.
+
+Example:
+```
+gpshell3 install-sd --extraction-here isd --delete-here isd --extraction-away isd A0000001510000
 ```
 
 ## delete <AIDhex>
