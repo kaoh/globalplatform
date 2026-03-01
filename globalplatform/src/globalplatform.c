@@ -5619,8 +5619,8 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
         // compare card challenge value when calculated from pseudo random value
         if ((secInfo->secureChannelProtocolImpl & 0x10) != 0) {
 			if (secInfo->invokingAidLength == 0) {
-				memcpy(secInfo->invokingAid, GP231_ISD_AID, sizeof(GP231_ISD_AID));
-				secInfo->invokingAidLength = sizeof(GP231_ISD_AID);
+				OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_MISSING_SD_AID, OPGP_stringify_error(GP211_ERROR_MISSING_SD_AID));
+				goto end;
 			}
 			status = calculate_card_challenge_SCP03(sEnc, keyLength, sequenceCounter, secInfo->invokingAid, secInfo->invokingAidLength, calculatedCardChallenge);
 			if (OPGP_ERROR_CHECK(status)) {

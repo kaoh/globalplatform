@@ -66,6 +66,7 @@
 #define GP211_ERROR_INCONSISTENT_SCP_IMPL ((DWORD)0x8030F010L) //!< The Secure Channel Protocol Implementation passed and the one reported by the card do not match.
 #define GP211_ERROR_MISSING_SCP_IMPL ((DWORD)0x8030F011L) //!< The Secure Channel Protocol Implementation must be provided as parameter.
 #define OPGP_ERROR_NO_SUPPORTED_SCP_FOUND ((DWORD)0x8030F00FL) //!< No supported Secure Channel Protocol was found.
+#define GP211_ERROR_MISSING_SD_AID ((DWORD)0x8030F014L) //!< The SD AID is missing in the GP211_mutual_authentication.
 
 
 /* Mapping of ISO7816-4 errors to error codes.

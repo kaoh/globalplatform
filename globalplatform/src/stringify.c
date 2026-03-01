@@ -107,6 +107,8 @@ OPGP_STRING OPGP_stringify_error(DWORD errorCode) {
 		return _T("The install parameters are too large.");
 	if (errorCode == OPGP_ERROR_WRONG_HASH_SIZE)
 		return _T("The hash size does not match the RSA key size.");
+	if (errorCode == GP211_ERROR_MISSING_SD_AID)
+		return _T("The SD AID is missing in the GP211_mutual_authentication.");
 	if (errorCode == OPGP_ERROR_WRONG_TRY_LIMIT)
 		return _T("Wrong maximum try limit.");
 	if (errorCode == OPGP_ERROR_WRONG_PIN_LENGTH)

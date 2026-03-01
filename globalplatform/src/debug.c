@@ -92,7 +92,8 @@ void OPGP_log_End(OPGP_STRING func, OPGP_STRING file, int line, OPGP_ERROR_STATU
 * In Unix systems which have a syslog facility the msg is stored there.
 * The environment variable <code>GLOBALPLATFORM_DEBUG</code> must be set to enable the logging.
 * With the environment variable <code>GLOBALPLATFORM_LOGFILE</code> an explicit log file name can
-* be set. If a no log file name has been set implicitly <code>/tmp/GlobalPlatform.log</code>
+* be set. If "stderr" is set as value `stderr` will be used. If no log file name has been set
+* implicitly <code>/tmp/GlobalPlatform.log</code>
 * or <code>C:\\TEMP\\GlobalPlatform.log</code> under Windows will be used. If a log file name
 * is given the syslog if available will not be used.
 * \param msg The formatted message which will be stored.
@@ -121,7 +122,12 @@ void OPGP_log_Msg(OPGP_STRING msg, ...)
 filelog:
     #endif // HAVE_VSYSLOG
     if (_tgetenv(_T("GLOBALPLATFORM_LOGFILE")))
-        fp = _tfopen(_tgetenv(_T("GLOBALPLATFORM_LOGFILE")), _T("a"));
+    {
+        if (_tcscmp(_tgetenv(_T("GLOBALPLATFORM_LOGFILE")), _T("stderr")) == 0)
+            fp = stderr;
+        else
+            fp = _tfopen(_tgetenv(_T("GLOBALPLATFORM_LOGFILE")), _T("a"));
+    }
     else
         fp = _tfopen(OPGP_LOG_FILENAME, _T("a"));
 

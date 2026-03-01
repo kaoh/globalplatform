@@ -476,7 +476,7 @@ __GLOBALPLATFORM_DEBUG__
 
 __GLOBALPLATFORM_LOGFILE__
 
-:    Sets the log file name for the debugging output.
+:    Sets the log file name for the debugging output. If the environment variable `GLOBALPLATFORM_LOGFILE` is set to "stderr" `stderr` shall be used.
 
 # Key Derivation
 

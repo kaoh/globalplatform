@@ -64,7 +64,7 @@ Unless otherwise specified, `gpshell3` will:
 :  Explicit S-ENC, S-MAC and DEK keys (hex) for mutual authentication. If provided together, `--key` is ignored.
 
 -v, --verbose
-:  Verbose output.
+:  Verbose output. Sets `GLOBALPLATFORM_DEBUG=1` and `GLOBALPLATFORM_LOGFILE=stderr`.
 
 -t, --trace
 :  Print APDU trace (hex APDUs and status words).

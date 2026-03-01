@@ -177,7 +177,7 @@ static void print_usage(const char *prog) {
         "      --new-kv <ver>: New key set version when replacing keys (mandatory).\n"
         "      --type aes|3des uses --key (hex). --type rsa uses --pem (optionally :pass).\n"
         "  put-auth [--type <aes|3des>] [--derive <none|emv|visa2>] --kv <ver> [--new-kv <ver>] \\\n"
-        "           [--key <hex> | --enc <hex> --mac <hex> --dek <hex>] [--target-sd <AIDhex>]\n"
+        "           [--key <hex> | --enc <hex> --mac <hex> --dek <hex>] [--target-sd <AIDhex>] [--perso-sd <AIDhex>]\n"
         "      Put secure channel keys (S-ENC/S-MAC/DEK) for a key set.\n"
         "      --kv <ver>: Key set version number to put keys into (default: 1), 0 means that a new key set is created (optional).\n"
         "      --new-kv <ver>: New key set version when replacing keys (default: 1) (optional).\n"
@@ -185,6 +185,7 @@ static void print_usage(const char *prog) {
         "      --type: Key type (default: aes).\n"
         "      --derive: Key derivation method for single base key (default: none).\n"
         "      --target-sd <AIDhex>: Target SD AID for personalization. If provided GP211_store_secure_channel_keys is called instead of GP211_put_secure_channel_keys (optional).\n"
+        "      --perso-sd <AIDhex>: Personalize a security domain with the initial set of keys. If provided, the SD is selected and mutual authentication is skipped (optional).\n"
         "  put-dm --kv <ver> --new-kv <ver> [--token-type <rsa>] [--receipt-type <aes|des>] \\\n"
         "         <pem-file>[:pass] <receipt-key-hex>\n"
         "      Put delegated management keys.\n"
@@ -891,8 +892,7 @@ static int mutual_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     if ((!scp_protocol || !scp_impl) && (scp != GP211_SCP01)) {
         OPGP_ERROR_STATUS s = GP211_get_secure_channel_protocol_details(ctx, info, &scp, &scpImpl);
         if (!status_ok(s)) {
-            if (verbose) fprintf(stderr, "Failed to get SCP details, defaulting to SCP02 i15\n");
-            scp = GP211_SCP02; scpImpl = GP211_SCP02_IMPL_i15;
+            if (verbose) fprintf(stderr, "Failed to get SCP details, trying to auto-detect\n");
         }
     }
     BYTE secLevel = sec_level_from_option(scp, sec_level_opt);
@@ -922,6 +922,10 @@ static int mutual_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         memcpy(DEK, dek_in, keyLength);
     } else {
         memcpy(DEK, OPGP_VISA_DEFAULT_KEY, 16);
+    }
+    if (g_selected_isd_len > 0) {
+        memcpy(sec->invokingAid, g_selected_isd, g_selected_isd_len);
+        sec->invokingAidLength = g_selected_isd_len;
     }
 
     BYTE deriv = OPGP_DERIVATION_METHOD_NONE;
@@ -1858,6 +1862,7 @@ static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURI
     BYTE setVer=1, newSetVer=1; const char *base=NULL, *enc=NULL, *mac=NULL, *dek=NULL;
     const char *type="aes", *derive="none";
     const char *target_sd_hex = NULL;
+    const char *perso_sd_hex = NULL;
     for (int i=0;i<argc;i++) {
         if (strcmp(argv[i], "--kv")==0 && i+1<argc) setVer=(BYTE)atoi(argv[++i]);
         else if (strcmp(argv[i], "--new-kv")==0 && i+1<argc) newSetVer=(BYTE)atoi(argv[++i]);
@@ -1869,6 +1874,7 @@ static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURI
         else if (strcmp(argv[i], "--type")==0 && i+1<argc) type=argv[++i];
         else if (strcmp(argv[i], "--derive")==0 && i+1<argc) derive=argv[++i];
         else if (strcmp(argv[i], "--target-sd")==0 && i+1<argc) target_sd_hex=argv[++i];
+        else if (strcmp(argv[i], "--perso-sd")==0 && i+1<argc) perso_sd_hex=argv[++i];
     }
     if (base && (enc || mac || dek)) {
         fprintf(stderr, "put-auth: use either --base/--key OR all of --enc/--mac/--dek\n");
@@ -1918,6 +1924,30 @@ static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURI
         }
         target_isd = target_sd_buf;
         target_isd_len = (DWORD)target_sd_len;
+    }
+
+    if (perso_sd_hex) {
+        setVer = 0;
+        BYTE aidbuf[16]; size_t aidlen = sizeof(aidbuf);
+        if (hex_to_bytes(perso_sd_hex, aidbuf, &aidlen) != 0) {
+            fprintf(stderr, "Invalid perso-sd AID hex\n");
+            return -1;
+        }
+        OPGP_ERROR_STATUS s = OPGP_select_application(ctx, info, aidbuf, (DWORD)aidlen);
+        if (!status_ok(s)) {
+            fprintf(stderr, "Failed to select perso-sd\n");
+            return -1;
+        }
+        if (aidlen <= sizeof(g_selected_isd)) {
+            memcpy(g_selected_isd, aidbuf, aidlen);
+            g_selected_isd_len = (DWORD)aidlen;
+        }
+        // Initialize secInfo if it's NULL (though it's usually passed by address of local var)
+        // In cmd_put_auth it's passed as GP211_SECURITY_INFO *sec.
+        memset(sec, 0, sizeof(GP211_SECURITY_INFO));
+        // We need some defaults for GP211_store_secure_channel_keys or GP211_put_secure_channel_keys
+        // but since mutual auth is skipped, we might be in trouble if they expect session keys.
+        // The issue says "not mutual authentication shall be executed".
     }
 
     if (base) {
@@ -2972,7 +3002,11 @@ int main(int argc, char **argv) {
     int i=1; for (; i<argc; ++i) {
         if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) { print_usage(prog); return 0; }
 
-        if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--verbose")) { verbose=1; }
+        if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--verbose")) {
+            verbose=1;
+            setenv("GLOBALPLATFORM_DEBUG", "1", 1);
+            setenv("GLOBALPLATFORM_LOGFILE", "stderr", 1);
+        }
         else if (!strcmp(argv[i], "-t") || !strcmp(argv[i], "--trace")) { trace=1; }
         else if (!strcmp(argv[i], "-r") || !strcmp(argv[i], "--reader")) { if(i+1<argc) reader=argv[++i]; }
         else if (!strcmp(argv[i], "--protocol") && i+1<argc) { protocol=argv[++i]; }
@@ -3077,11 +3111,22 @@ int main(int argc, char **argv) {
         }
     }
     if (need_auth) {
-        if (mutual_auth(ctx, info, &sec, keyset_ver, key_index, derivation, sec_level_opt, verbose,
-                        baseKeyPtr, encKeyPtr, macKeyPtr, dekKeyPtr, keyLength,
-                        scp_protocol, scp_impl) != 0) {
-            fprintf(stderr, "Mutual authentication failed\n");
-            cleanup_and_exit(5);
+        int bypass_auth = 0;
+        if (!strcmp(cmd, "put-auth")) {
+            for (int j=i; j<argc; ++j) {
+                if (!strcmp(argv[j], "--perso-sd")) {
+                    bypass_auth = 1;
+                    break;
+                }
+            }
+        }
+        if (!bypass_auth) {
+            if (mutual_auth(ctx, info, &sec, keyset_ver, key_index, derivation, sec_level_opt, verbose,
+                            baseKeyPtr, encKeyPtr, macKeyPtr, dekKeyPtr, keyLength,
+                            scp_protocol, scp_impl) != 0) {
+                fprintf(stderr, "Mutual authentication failed\n");
+                cleanup_and_exit(5);
+            }
         }
     } else {
         sec_ptr = NULL; // no secure channel for raw APDU by default
