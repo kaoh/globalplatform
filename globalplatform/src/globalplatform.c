@@ -6124,6 +6124,21 @@ end:
 }
 
 /**
+ * Internal helper function for STORE DATA command.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param encryptionFlags [in] Flag defining the encryption settings.
+ * \param formatFlags [in] Flag defining the format settings.
+ * \param responseDataExpected [in] TRUE if response data is expected.
+ * \param *data [in] Data to send.
+ * \param dataLength [in] The length of the data buffer.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+static OPGP_ERROR_STATUS store_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+	BYTE encryptionFlags, BYTE formatFlags, BOOL responseDataExpected, PBYTE data, DWORD dataLength);
+
+/**
  * If STORE DATA is used for personalizing an application, a GP211_install_for_personalization() must be called first.
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
@@ -6138,19 +6153,38 @@ end:
 OPGP_ERROR_STATUS GP211_store_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 	BYTE encryptionFlags, BYTE formatFlags, BOOL responseDataExpected, PBYTE data, DWORD dataLength) {
 	OPGP_ERROR_STATUS status;
+	OPGP_LOG_START(_T("GP211_store_data"));
+	status = store_data(cardContext, cardInfo, secInfo, encryptionFlags, formatFlags, responseDataExpected, data, dataLength);
+	OPGP_LOG_END(_T("GP211_store_data"), status);
+	return status;
+}
+
+/**
+ * Internal helper function for STORE DATA command.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param encryptionFlags [in] Flag defining the encryption settings.
+ * \param formatFlags [in] Flag defining the format settings.
+ * \param responseDataExpected [in] TRUE if response data is expected.
+ * \param *data [in] Data to send.
+ * \param dataLength [in] The length of the data buffer.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+static OPGP_ERROR_STATUS store_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+	BYTE encryptionFlags, BYTE formatFlags, BOOL responseDataExpected, PBYTE data, DWORD dataLength) {
+	OPGP_ERROR_STATUS status;
 	DWORD sendBufferLength = 0;
 	DWORD recvBufferLength = APDU_RESPONSE_LEN;
 	BYTE recvBuffer[APDU_RESPONSE_LEN];
 	BYTE sendBuffer[APDU_COMMAND_LEN];
 	DWORD left, read;
 	BYTE blockNumber=0x00;
-	OPGP_LOG_START(_T("GP211_store_data"));
+	OPGP_LOG_START(_T("store_data"));
 	sendBuffer[0] = 0x80;
 	sendBuffer[1] = 0xE2;
 	read = 0;
 	left = dataLength;
-	// encrypt if encryption flag is 0x11 and DGI is used and DGI starts with 0x81xy
-	// see GP Spec 2.2 Amd A 1.0.1 4.10
 	while(left > 0) {
 		if (left <= MAX_APDU_DATA_SIZE(secInfo)) {
 			sendBuffer[2] = 0x80;
@@ -6183,12 +6217,292 @@ OPGP_ERROR_STATUS GP211_store_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 			goto end;
 		}
 		CHECK_SW_9000(recvBuffer, recvBufferLength, status);
-
 	}
 
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
-	OPGP_LOG_END(_T("GP211_store_data"), status);
+	OPGP_LOG_END(_T("store_data"), status);
+	return status;
+}
+
+/**
+ * Builds STORE DATA encoding for symmetric keys according to GlobalPlatform v2.3.1.49 section 11.11.4.
+ * \param scp [in] The secure channel protocol. See GP211_SCP03.
+ * \param scpImpl [in] The secure channel protocol implementation. See GP211_SCP03_IMPL_i04.
+ * \param dataEncryptionKey [in] The data encryption key for encrypting sensitive data.
+ * \param dataEncryptionKeyLength [in] The length of the data encryption key in bytes.
+ * \param keyType [in] The key type. See GP211_KEY_TYPE_AES.
+ * \param keyPurpose [in] The key purpose. See GP211_KEY_PURPOSE_SCP03.
+ * \param keys [in] Array of key data pointers.
+ * \param keyIds [in] Array of key identifiers.
+ * \param numKeys [in] Number of keys.
+ * \param keyLength [in] The key length in bytes.
+ * \param keyVersion [in] The key version number.
+ * \param keyAccessCondition [in] The key access condition. See GP211_KEY_ACCESS_SD_AND_APPS.
+ * \param output [out] The output buffer for the encoded data.
+ * \param outputLength [in, out] The available and returned length of the output buffer.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS GP211_build_store_data_keys(BYTE scp,
+                                        BYTE scpImpl,
+                                        PBYTE dataEncryptionKey,
+                                        DWORD dataEncryptionKeyLength,
+                                        BYTE keyType,
+                                        USHORT keyPurpose,
+                                        PBYTE keys[],
+                                        BYTE keyIds[],
+                                        DWORD numKeys,
+                                        DWORD keyLength,
+                                        BYTE keyVersion,
+                                        BYTE keyAccessCondition,
+                                        PBYTE output,
+                                        PDWORD outputLength) {
+	OPGP_ERROR_STATUS status;
+	DWORD i = 0;
+	DWORD j, k;
+	LONG result;
+	BYTE keyCheckValue[3];
+	BYTE encryptedKey[256];
+	DWORD encryptedKeyLength;
+	// Temp buffers to build content before writing with length
+	BYTE b7Content[256];
+	DWORD b7Len = 0;
+	BYTE b9AllContent[1024];  // All B9 CRT entries
+	DWORD b9AllLen = 0;
+
+	OPGP_LOG_START(_T("build_store_data_keys"));
+
+	if (numKeys == 0) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_COMBINATION_KEY_SET_VERSION_KEY_INDEX, OPGP_stringify_error(OPGP_ERROR_INVALID_COMBINATION_KEY_SET_VERSION_KEY_INDEX));
+		goto end;
+	}
+
+	// Build B7 (Key Attributes) content
+	b7Content[b7Len++] = 0x80;  // Tag: Key Type
+	b7Content[b7Len++] = 0x01;  // Length
+	b7Content[b7Len++] = keyType;
+
+	// '81' Key Length
+	b7Content[b7Len++] = 0x81;  // Tag
+	if (keyLength <= 255) {
+		b7Content[b7Len++] = 0x01;
+		b7Content[b7Len++] = (BYTE)keyLength;
+	} else {
+		b7Content[b7Len++] = 0x02;
+		b7Content[b7Len++] = (BYTE)(keyLength >> 8);
+		b7Content[b7Len++] = (BYTE)(keyLength & 0xFF);
+	}
+
+	// '83' Key Version Number
+	b7Content[b7Len++] = 0x83;  // Tag
+	b7Content[b7Len++] = 0x01;  // Length
+	b7Content[b7Len++] = keyVersion;
+
+	// '96' Key Access Condition
+	b7Content[b7Len++] = 0x96;  // Tag
+	b7Content[b7Len++] = 0x01;  // Length
+	b7Content[b7Len++] = keyAccessCondition;
+
+	// '97' Key Purpose
+	b7Content[b7Len++] = 0x97;  // Tag
+	b7Content[b7Len++] = 0x02;  // Length
+	b7Content[b7Len++] = (BYTE)(keyPurpose >> 8);
+	b7Content[b7Len++] = (BYTE)(keyPurpose & 0xFF);
+
+	// Build all B9 (CRT) entries
+	for (j = 0; j < numKeys; j++) {
+		BYTE b9CrtContent[128];
+		DWORD b9CrtLen = 0;
+
+		// '82' Key Identifier
+		b9CrtContent[b9CrtLen++] = 0x82;
+		b9CrtContent[b9CrtLen++] = 0x01;
+		b9CrtContent[b9CrtLen++] = keyIds[j];
+
+		// '84' Key Check Value
+		// calculate_key_check_value doesn't actually use secInfo, pass NULL
+		status = calculate_key_check_value(NULL, keyType, keys[j], keyLength, keyCheckValue);
+		if (OPGP_ERROR_CHECK(status)) {
+			goto end;
+		}
+		b9CrtContent[b9CrtLen++] = 0x84;
+		b9CrtContent[b9CrtLen++] = 0x03;
+		memcpy(b9CrtContent + b9CrtLen, keyCheckValue, 3);
+		b9CrtLen += 3;
+
+		// Write B9 tag + length + content to b9AllContent
+		b9AllContent[b9AllLen++] = 0xB9;
+		result = write_TLV_length(b9AllContent, b9AllLen, sizeof(b9AllContent) - b9AllLen, (USHORT)b9CrtLen);
+		if (result < 0) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+			goto end;
+		}
+		b9AllLen += result;
+		memcpy(b9AllContent + b9AllLen, b9CrtContent, b9CrtLen);
+		b9AllLen += b9CrtLen;
+	}
+
+	// Now write to output: DGI '00B9' + length + B7 + B9s + DGI '8113's
+	if (i + 2 > *outputLength) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		goto end;
+	}
+	output[i++] = 0x00;  // DGI '00B9' tag
+	output[i++] = 0xB9;
+
+	// Calculate total content length for DGI '00B9': tag(1) + len(1-3) + b7Content + b9AllContent
+	DWORD dgi00B9ContentLen = 1 + 1 + b7Len + b9AllLen;  // Assuming short length for B7
+	// Recalculate with actual B7 length field size
+	LONG b7LenFieldSize = (b7Len <= 128) ? 1 : (b7Len <= 255) ? 2 : 3;
+	dgi00B9ContentLen = 1 + b7LenFieldSize + b7Len + b9AllLen;
+
+	result = write_TLV_length(output, i, *outputLength - i, (USHORT)dgi00B9ContentLen);
+	if (result < 0) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		goto end;
+	}
+	i += result;
+
+	// Write B7
+	if (i + 1 + b7LenFieldSize + b7Len > *outputLength) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		goto end;
+	}
+	output[i++] = 0xB7;
+	result = write_TLV_length(output, i, *outputLength - i, (USHORT)b7Len);
+	if (result < 0) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		goto end;
+	}
+	i += result;
+	memcpy(output + i, b7Content, b7Len);
+	i += b7Len;
+
+	// Write all B9 entries
+	if (i + b9AllLen > *outputLength) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		goto end;
+	}
+	memcpy(output + i, b9AllContent, b9AllLen);
+	i += b9AllLen;
+
+	// Now write DGI '8113' for each encrypted key
+	// Create temporary secInfo for encrypt_sensitive_data
+	GP211_SECURITY_INFO tempSecInfo;
+	memset(&tempSecInfo, 0, sizeof(tempSecInfo));
+	tempSecInfo.secureChannelProtocol = scp;
+	tempSecInfo.secureChannelProtocolImpl = scpImpl;
+	memcpy(tempSecInfo.dataEncryptionSessionKey, dataEncryptionKey, dataEncryptionKeyLength);
+	tempSecInfo.keyLength = dataEncryptionKeyLength;
+
+	for (k = 0; k < numKeys; k++) {
+		encryptedKeyLength = sizeof(encryptedKey);
+		status = encrypt_sensitive_data(&tempSecInfo, keys[k], keyLength, encryptedKey, &encryptedKeyLength);
+		if (OPGP_ERROR_CHECK(status)) {
+			goto end;
+		}
+
+		if (i + 2 > *outputLength) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+			goto end;
+		}
+		output[i++] = 0x81;  // DGI '8113' tag
+		output[i++] = 0x13;
+
+		result = write_TLV_length(output, i, *outputLength - i, (USHORT)encryptedKeyLength);
+		if (result < 0) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+			goto end;
+		}
+		i += result;
+
+		if (i + encryptedKeyLength > *outputLength) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+			goto end;
+		}
+		memcpy(output + i, encryptedKey, encryptedKeyLength);
+		i += encryptedKeyLength;
+	}
+
+	*outputLength = i;
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	OPGP_LOG_END(_T("build_store_data_keys"), status);
+	return status;
+}
+
+/**
+ * Stores secure channel keys using STORE DATA command with symmetric key format according to GlobalPlatform v2.3.1.49 section 11.11.4.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param keyType [in] The key type. See GP211_KEY_TYPE_AES.
+ * \param keyPurpose [in] The key purpose. See GP211_KEY_PURPOSE_SCP03.
+ * \param baseKey [in] The base key (optional, can be NULL).
+ * \param newS_ENC [in] The new S-ENC key.
+ * \param newS_MAC [in] The new S-MAC key.
+ * \param newDEK [in] The new DEK key.
+ * \param keyLength [in] The key length in bytes.
+ * \param keySetVersion [in] The key set version.
+ * \param keyAccessCondition [in] The key access condition. See GP211_KEY_ACCESS_SD_AND_APPS.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS GP211_store_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+	BYTE keyType, USHORT keyPurpose, PBYTE baseKey, PBYTE newS_ENC, PBYTE newS_MAC, PBYTE newDEK,
+	DWORD keyLength, BYTE keySetVersion, BYTE keyAccessCondition) {
+	OPGP_ERROR_STATUS status;
+	BYTE encodedData[2048];
+	DWORD encodedDataLength = sizeof(encodedData);
+	PBYTE keys[4];
+	BYTE keyIds[4];
+	DWORD numKeys = 0;
+
+	OPGP_LOG_START(_T("GP211_store_secure_channel_keys"));
+
+	if (baseKey != NULL) {
+		keys[numKeys] = baseKey;
+		keyIds[numKeys] = 0x01;
+		numKeys++;
+	} else {
+		if (newS_ENC != NULL) {
+			keys[numKeys] = newS_ENC;
+			keyIds[numKeys] = 0x01;
+			numKeys++;
+		}
+
+		if (newS_MAC != NULL) {
+			keys[numKeys] = newS_MAC;
+			keyIds[numKeys] = 0x02;
+			numKeys++;
+		}
+
+		if (newDEK != NULL) {
+			keys[numKeys] = newDEK;
+			keyIds[numKeys] = 0x03;
+			numKeys++;
+		}
+	}
+
+	if (numKeys == 0) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_COMBINATION_KEY_SET_VERSION_KEY_INDEX, OPGP_stringify_error(OPGP_ERROR_INVALID_COMBINATION_KEY_SET_VERSION_KEY_INDEX));
+		goto end;
+	}
+
+	// Build the STORE DATA encoding
+	status = GP211_build_store_data_keys(secInfo->secureChannelProtocol, secInfo->secureChannelProtocolImpl,
+		secInfo->dataEncryptionSessionKey, secInfo->keyLength,
+		keyType, keyPurpose, keys, keyIds, numKeys, keyLength, keySetVersion, keyAccessCondition, encodedData, &encodedDataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	status = store_data(cardContext, cardInfo, secInfo, STORE_DATA_ENCRYPTION_NO_INFORMATION, STORE_DATA_FORMAT_DGI, 0, encodedData, encodedDataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	OPGP_LOG_END(_T("GP211_store_secure_channel_keys"), status);
 	return status;
 }
 

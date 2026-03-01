@@ -131,6 +131,22 @@ typedef enum {
 #define GP211_STATUS_FORMAT_NEW 0x02 //!< New GP2.1.1 GET STATUS format
 #define GP211_STATUS_FORMAT_DEPRECATED 0x00 //!< New GP2.1.1 GET STATUS deprecated format
 
+/* Key Access Condition for STORE DATA */
+#define GP211_KEY_ACCESS_SD_AND_APPS 0x00 //!< Key may be used by the Security Domain and any associated Application
+#define GP211_KEY_ACCESS_SD_ONLY 0x01 //!< Key may only be used by the Security Domain
+#define GP211_KEY_ACCESS_APPS_ONLY 0x02 //!< Key may be used by any Application associated with the Security Domain but not by the Security Domain itself
+
+/* Key Purpose for STORE DATA */
+#define GP211_KEY_PURPOSE_SCP03 0x0003 //!< Key purpose for SCP03
+#define GP211_KEY_PURPOSE_SCP04 0x0004 //!< Key purpose for SCP04
+#define GP211_KEY_PURPOSE_SCP10 0x0010 //!< Key purpose for SCP10
+#define GP211_KEY_PURPOSE_SCP11 0x0011 //!< Key purpose for SCP11
+#define GP211_KEY_PURPOSE_TOKEN_VERIFICATION 0x7000 //!< Token Verification
+#define GP211_KEY_PURPOSE_RECEIPT_GENERATION 0x7001 //!< Receipt Generation
+#define GP211_KEY_PURPOSE_DAP_VERIFICATION 0x7003 //!< DAP Verification
+#define GP211_KEY_PURPOSE_CASD_AND_CONFIDENTIAL_SETUP 0x7004 //!< CASD and Confidential Setup of Secure Channel Keys
+#define GP211_KEY_PURPOSE_CIPHERED_LOAD_FILE 0x7005 //!< Ciphered Load File Data Block Key
+
 // flags for STORE DATA
 
 #define STORE_DATA_ENCRYPTION_NO_INFORMATION 0x00 //!< No general encryption information or non - encrypted data
@@ -1069,6 +1085,18 @@ OPGP_ERROR_STATUS OPGP_encrypt_sensitive_data(GP211_SECURITY_INFO *secInfo,
 OPGP_API
 OPGP_ERROR_STATUS GP211_store_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 				 BYTE encryptionFlags, BYTE formatFlags, BOOL responseDataExpected, PBYTE data, DWORD dataLength);
+
+//! \brief GlobalPlatform2.3.1: Builds STORE DATA encoding for symmetric keys according to section 11.11.4.
+OPGP_API
+OPGP_ERROR_STATUS GP211_build_store_data_keys(BYTE scp, BYTE scpImpl, PBYTE dataEncryptionKey, DWORD dataEncryptionKeyLength,
+				 BYTE keyType, USHORT keyPurpose, PBYTE keys[], BYTE keyIds[], DWORD numKeys,
+				 DWORD keyLength, BYTE keyVersion, BYTE keyAccessCondition, PBYTE output, PDWORD outputLength);
+
+//! \brief GlobalPlatform2.3.1: STORE DATA command for storing secure channel keys using the symmetric key format.
+OPGP_API
+OPGP_ERROR_STATUS GP211_store_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+				 BYTE keyType, USHORT keyPurpose, PBYTE baseKey, PBYTE newS_ENC, PBYTE newS_MAC, PBYTE newDEK,
+				 DWORD keyLength, BYTE keySetVersion, BYTE keyAccessCondition);
 
 //! \brief Open Platform: Gets the life cycle status of Applications, the Card Manager and Executable Load Files and their privileges.
 OPGP_API

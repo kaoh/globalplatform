@@ -209,7 +209,7 @@ Set secure channel keys (S-ENC, S-MAC, DEK) for a key set.
 
 Synopsis:
 ```
-gpshell3 put-auth [--type <aes|3des>] [--derive <none|emv|visa2>] --kv <ver> [--new-kv <ver>] [--target-sd <AIDhex>] [--key <hex> | --enc <hex> --mac <hex> --dek <hex>]
+gpshell3 put-auth [--type <aes|3des>] [--derive <none|emv|visa2>] --kv <ver> [--new-kv <ver>] [--key <hex> | --enc <hex> --mac <hex> --dek <hex>]
 ```
 
 Options:
@@ -218,7 +218,6 @@ Options:
 - `--kv <ver>`: Key set version, defaults to 1, 0 means that a new key set is created (optional).
 - `--new-kv <ver>`: New key set version when replacing keys, defaults to 1 (optional).
 - `--type` defaults to `aes`.
-- `--target-sd <AIDhex>`: Optional target Security Domain AID to select before operation.
 
 ## put-key
 
@@ -226,7 +225,7 @@ Put (add or replace) a key in a key set.
 
 Synopsis:
 ```
-gpshell3 put-key [--type <3des|aes|rsa>] --kv <ver> --idx <idx> --new-kv <ver> [--target-sd <AIDhex>] (--key <hex>|--pem <file>[:pass])
+gpshell3 put-key [--type <3des|aes|rsa>] --kv <ver> --idx <idx> --new-kv <ver> (--key <hex>|--pem <file>[:pass])
 ```
 
 Options:
@@ -236,7 +235,6 @@ Options:
 - `--new-kv <ver>`: New key set version when replacing keys (mandatory).
 - For `--type aes|3des`: provide the key via `--key <hex>`.
 - For `--type rsa`: provide an RSA public key in PEM via `--pem <file>[:pass]`.
-- `--target-sd <AIDhex>`: Optional target Security Domain AID to select before operation.
 
 ## put-dm
 
@@ -244,7 +242,7 @@ Put delegated management keys.
 
 Synopsis:
 ```
-gpshell3 put-dm --kv <ver> [--new-kv <ver>] [--token-type <rsa>] [--receipt-type <aes|des>] [--target-sd <AIDhex>] <pem-file>[:pass] <receipt-key-hex>
+gpshell3 put-dm --kv <ver> [--new-kv <ver>] [--token-type <rsa>] [--receipt-type <aes|des>] <pem-file>[:pass] <receipt-key-hex>
 ```
 
 Options:
@@ -255,7 +253,6 @@ Options:
 - `<receipt-key-hex>`: Receipt key material (last positional parameter).
 - `--token-type`: Token key type, default `rsa`.
 - `--receipt-type`: Receipt key type, `aes` or `des` (default `aes`).
-- `--target-sd <AIDhex>`: Optional target Security Domain AID to select before operation.
 
 ## del-key
 
@@ -270,7 +267,6 @@ Options:
 
 - `--kv <ver>`: Key set version (mandatory).
 - `--idx <idx>`: Key index within the set If `--idx` is omitted, the entire key set `kv` is deleted.
-- `--target-sd <AIDhex>`: Optional target Security Domain AID to select before operation.
 
 ## apdu
 

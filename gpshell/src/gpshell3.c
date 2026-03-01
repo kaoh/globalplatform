@@ -170,24 +170,22 @@ static void print_usage(const char *prog) {
         "  delete <AIDhex>\n"
         "      Delete an application instance or load file by AID.\n\n"
         "  put-key [--type <3des|aes|rsa>] --kv <ver> --idx <idx> --new-kv <ver> \\\n"
-        "          [--target-sd <AIDhex>] (--key <hex>|--pem <file>[:pass])\n"
+        "          (--key <hex>|--pem <file>[:pass])\n"
         "      Put (add/replace) a key in a key set.\n"
         "      --kv <ver>: Key set version number to put key into (mandatory).\n"
         "      --idx <idx>: Key index within key set (mandatory).\n"
         "      --new-kv <ver>: New key set version when replacing keys (mandatory).\n"
         "      --type aes|3des uses --key (hex). --type rsa uses --pem (optionally :pass).\n"
-        "      --target-sd <AIDhex>: Optional target Security Domain AID to select before operation.\n\n"
         "  put-auth [--type <aes|3des>] [--derive <none|emv|visa2>] --kv <ver> [--new-kv <ver>] \\\n"
-        "           [--target-sd <AIDhex>] [--key <hex> | --enc <hex> --mac <hex> --dek <hex>]\n"
+        "           [--key <hex> | --enc <hex> --mac <hex> --dek <hex>]\n"
         "      Put secure channel keys (S-ENC/S-MAC/DEK) for a key set.\n"
         "      --kv <ver>: Key set version number to put keys into (default: 1), 0 means that a new key set is created (optional).\n"
         "      --new-kv <ver>: New key set version when replacing keys (default: 1) (optional).\n"
         "      Use either --key (single base key) OR all of --enc/--mac/--dek.\n"
         "      --type: Key type (default: aes).\n"
         "      --derive: Key derivation method for single base key (default: none).\n"
-        "      --target-sd <AIDhex>: Optional target Security Domain AID to select before operation.\n\n"
         "  put-dm --kv <ver> --new-kv <ver> [--token-type <rsa>] [--receipt-type <aes|des>] \\\n"
-        "         [--target-sd <AIDhex>] <pem-file>[:pass] <receipt-key-hex>\n"
+        "         <pem-file>[:pass] <receipt-key-hex>\n"
         "      Put delegated management keys.\n"
         "      --kv <ver>: Key set version number to put delegated management keys into, 0 means that a new key set is created (mandatory).\n"
         "      --new-kv <ver>: New key set version when replacing keys (mandatory).\n"
@@ -195,12 +193,10 @@ static void print_usage(const char *prog) {
         "      <receipt-key-hex>: Receipt key as hex (mandatory, last positional parameter).\n"
         "      --token-type: Token key type, 'rsa' (default: rsa).\n"
         "      --receipt-type: Receipt key type, 'aes' or 'des' (default: aes).\n"
-        "      --target-sd <AIDhex>: Optional target Security Domain AID to select before operation.\n\n"
-        "  del-key --kv <ver> [--idx <idx>] [--target-sd <AIDhex>]\n"
+        "  del-key --kv <ver> [--idx <idx>]\n"
         "      Delete a key. If --idx is omitted, deletes all keys in the given key set.\n"
         "      --kv <ver>: Key set version number (mandatory).\n"
-        "      --idx <idx>: Key index within key set (optional; if omitted, deletes entire key set).\n"
-        "      --target-sd <AIDhex>: Optional target Security Domain AID to select before operation.\n\n",
+        "      --idx <idx>: Key index within key set (optional; if omitted, deletes entire key set).\n",
         stderr);
 
     fputs(
@@ -1805,7 +1801,6 @@ static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     BYTE setVer=0, idx=0, newSetVer=0;
     int kvSet=0, newKvSet=0;
     const char *type="aes"; const char *hexkey=NULL; const char *pem=NULL; char *pass=NULL;
-    const char *target_sd=NULL;
     for (int i=0;i<argc;i++) {
         if (strcmp(argv[i], "--kv")==0 && i+1<argc) { setVer=(BYTE)atoi(argv[++i]); kvSet=1; }
         else if (strcmp(argv[i], "--idx")==0 && i+1<argc) idx=(BYTE)atoi(argv[++i]);
@@ -1813,18 +1808,6 @@ static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         else if (strcmp(argv[i], "--type")==0 && i+1<argc) type=argv[++i];
         else if (strcmp(argv[i], "--key")==0 && i+1<argc) hexkey=argv[++i];
         else if (strcmp(argv[i], "--pem")==0 && i+1<argc) { pem=argv[++i]; char *c=strchr((char*)pem, ':'); if (c){ *c='\0'; pass=c+1; } }
-        else if (strcmp(argv[i], "--target-sd")==0 && i+1<argc) target_sd=argv[++i];
-    }
-    if (target_sd) {
-        unsigned char aidbuf[16]; size_t aidlen = sizeof(aidbuf);
-        if (hex_to_bytes(target_sd, aidbuf, &aidlen) != 0) {
-            fprintf(stderr, "put-key: invalid --target-sd AID\n");
-            return -1;
-        }
-        if (!status_ok(OPGP_select_application(ctx, info, aidbuf, (DWORD)aidlen))) {
-            fprintf(stderr, "put-key: failed to select target SD\n");
-            return -1;
-        }
     }
     if (!kvSet) { fprintf(stderr, "put-key: missing --kv <ver>\n"); return -1; }
     if (!newKvSet) { fprintf(stderr, "put-key: missing --new-kv <ver>\n"); return -1; }
@@ -1873,7 +1856,6 @@ static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
 static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
     BYTE setVer=1, newSetVer=1; const char *base=NULL, *enc=NULL, *mac=NULL, *dek=NULL;
     const char *type="aes", *derive="none";
-    const char *target_sd=NULL;
     for (int i=0;i<argc;i++) {
         if (strcmp(argv[i], "--kv")==0 && i+1<argc) setVer=(BYTE)atoi(argv[++i]);
         else if (strcmp(argv[i], "--new-kv")==0 && i+1<argc) newSetVer=(BYTE)atoi(argv[++i]);
@@ -1884,18 +1866,6 @@ static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURI
         else if (strcmp(argv[i], "--dek")==0 && i+1<argc) dek=argv[++i];
         else if (strcmp(argv[i], "--type")==0 && i+1<argc) type=argv[++i];
         else if (strcmp(argv[i], "--derive")==0 && i+1<argc) derive=argv[++i];
-        else if (strcmp(argv[i], "--target-sd")==0 && i+1<argc) target_sd=argv[++i];
-    }
-    if (target_sd) {
-        unsigned char aidbuf[16]; size_t aidlen = sizeof(aidbuf);
-        if (hex_to_bytes(target_sd, aidbuf, &aidlen) != 0) {
-            fprintf(stderr, "put-auth: invalid --target-sd AID\n");
-            return -1;
-        }
-        if (!status_ok(OPGP_select_application(ctx, info, aidbuf, (DWORD)aidlen))) {
-            fprintf(stderr, "put-auth: failed to select target SD\n");
-            return -1;
-        }
     }
     if (base && (enc || mac || dek)) {
         fprintf(stderr, "put-auth: use either --base/--key OR all of --enc/--mac/--dek\n");
@@ -1991,7 +1961,6 @@ static int cmd_put_dm(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY
     const char *pem=NULL;
     char *pass=NULL;
     const char *receiptKeyHex=NULL;
-    const char *target_sd=NULL;
     BYTE receiptKey[32];
     DWORD keyLength=0;
 
@@ -2010,9 +1979,6 @@ static int cmd_put_dm(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY
         else if (strcmp(argv[i], "--receipt-type")==0 && i+1<argc) {
             receiptType = argv[++i];
         }
-        else if (strcmp(argv[i], "--target-sd")==0 && i+1<argc) {
-            target_sd = argv[++i];
-        }
         else if (!pem) {
             // First positional argument is PEM file with optional :pass
             pem = argv[i];
@@ -2025,18 +1991,6 @@ static int cmd_put_dm(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY
         else if (!receiptKeyHex) {
             // Second positional argument is receipt key hex
             receiptKeyHex = argv[i];
-        }
-    }
-
-    if (target_sd) {
-        unsigned char aidbuf[16]; size_t aidlen = sizeof(aidbuf);
-        if (hex_to_bytes(target_sd, aidbuf, &aidlen) != 0) {
-            fprintf(stderr, "put-dm: invalid --target-sd AID\n");
-            return -1;
-        }
-        if (!status_ok(OPGP_select_application(ctx, info, aidbuf, (DWORD)aidlen))) {
-            fprintf(stderr, "put-dm: failed to select target SD\n");
-            return -1;
         }
     }
 
@@ -2102,22 +2056,9 @@ static int cmd_put_dm(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY
 
 static int cmd_del_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
     BYTE setVer=0; BYTE idx=0xFF; // 0xFF => delete all keys in set
-    const char *target_sd=NULL;
     for (int i=0;i<argc;i++) {
         if (strcmp(argv[i], "--kv")==0 && i+1<argc) setVer=(BYTE)atoi(argv[++i]);
         else if (strcmp(argv[i], "--idx")==0 && i+1<argc) idx=(BYTE)atoi(argv[++i]);
-        else if (strcmp(argv[i], "--target-sd")==0 && i+1<argc) target_sd=argv[++i];
-    }
-    if (target_sd) {
-        unsigned char aidbuf[16]; size_t aidlen = sizeof(aidbuf);
-        if (hex_to_bytes(target_sd, aidbuf, &aidlen) != 0) {
-            fprintf(stderr, "del-key: invalid --target-sd AID\n");
-            return -1;
-        }
-        if (!status_ok(OPGP_select_application(ctx, info, aidbuf, (DWORD)aidlen))) {
-            fprintf(stderr, "del-key: failed to select target SD\n");
-            return -1;
-        }
     }
     if (!status_ok(GP211_delete_key(ctx, info, sec, setVer, idx))) {
         return -1;
