@@ -209,7 +209,7 @@ Set secure channel keys (S-ENC, S-MAC, DEK) for a key set.
 
 Synopsis:
 ```
-gpshell3 put-auth [--type <aes|3des>] [--derive <none|emv|visa2>] --kv <ver> [--new-kv <ver>] [--key <hex> | --enc <hex> --mac <hex> --dek <hex>]
+gpshell3 put-auth [--type <aes|3des>] [--derive <none|emv|visa2>] --kv <ver> [--new-kv <ver>] [--key <hex> | --enc <hex> --mac <hex> --dek <hex>] [--target-sd <AIDhex>]
 ```
 
 Options:
@@ -218,6 +218,7 @@ Options:
 - `--kv <ver>`: Key set version, defaults to 1, 0 means that a new key set is created (optional).
 - `--new-kv <ver>`: New key set version when replacing keys, defaults to 1 (optional).
 - `--type` defaults to `aes`.
+- `--target-sd <AIDhex>`: Target SD AID for personalization. If provided `GP211_store_secure_channel_keys` is called instead of `GP211_put_secure_channel_keys` (optional).
 
 ## put-key
 

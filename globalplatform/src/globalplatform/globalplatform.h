@@ -1095,7 +1095,8 @@ OPGP_ERROR_STATUS GP211_build_store_data_keys(BYTE scp, BYTE scpImpl, PBYTE data
 //! \brief GlobalPlatform2.3.1: STORE DATA command for storing secure channel keys using the symmetric key format.
 OPGP_API
 OPGP_ERROR_STATUS GP211_store_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-				 BYTE keyType, USHORT keyPurpose, PBYTE baseKey, PBYTE newS_ENC, PBYTE newS_MAC, PBYTE newDEK,
+				 PBYTE AID, DWORD AIDLength,
+				 BYTE keyType, PBYTE baseKey, PBYTE newS_ENC, PBYTE newS_MAC, PBYTE newDEK,
 				 DWORD keyLength, BYTE keySetVersion, BYTE keyAccessCondition);
 
 //! \brief Open Platform: Gets the life cycle status of Applications, the Card Manager and Executable Load Files and their privileges.

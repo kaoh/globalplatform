@@ -6436,8 +6436,9 @@ end:
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
  * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param AID [in] The AID of the Security Domain.
+ * \param AIDLength [in] The length of the AID.
  * \param keyType [in] The key type. See GP211_KEY_TYPE_AES.
- * \param keyPurpose [in] The key purpose. See GP211_KEY_PURPOSE_SCP03.
  * \param baseKey [in] The base key (optional, can be NULL).
  * \param newS_ENC [in] The new S-ENC key.
  * \param newS_MAC [in] The new S-MAC key.
@@ -6448,7 +6449,8 @@ end:
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_store_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-	BYTE keyType, USHORT keyPurpose, PBYTE baseKey, PBYTE newS_ENC, PBYTE newS_MAC, PBYTE newDEK,
+	PBYTE AID, DWORD AIDLength,
+	BYTE keyType, PBYTE baseKey, PBYTE newS_ENC, PBYTE newS_MAC, PBYTE newDEK,
 	DWORD keyLength, BYTE keySetVersion, BYTE keyAccessCondition) {
 	OPGP_ERROR_STATUS status;
 	BYTE encodedData[2048];
@@ -6456,8 +6458,15 @@ OPGP_ERROR_STATUS GP211_store_secure_channel_keys(OPGP_CARD_CONTEXT cardContext,
 	PBYTE keys[4];
 	BYTE keyIds[4];
 	DWORD numKeys = 0;
+	USHORT keyPurpose = secInfo->secureChannelProtocol;
 
 	OPGP_LOG_START(_T("GP211_store_secure_channel_keys"));
+
+	// Install for personalization
+	status = GP211_install_for_personalization(cardContext, cardInfo, secInfo, AID, AIDLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
 
 	if (baseKey != NULL) {
 		keys[numKeys] = baseKey;
@@ -6495,7 +6504,7 @@ OPGP_ERROR_STATUS GP211_store_secure_channel_keys(OPGP_CARD_CONTEXT cardContext,
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	status = store_data(cardContext, cardInfo, secInfo, STORE_DATA_ENCRYPTION_NO_INFORMATION, STORE_DATA_FORMAT_DGI, 0, encodedData, encodedDataLength);
+	status = store_data(cardContext, cardInfo, secInfo, STORE_DATA_ENCRYPTION_ENCRYPTED, STORE_DATA_FORMAT_DGI, 0, encodedData, encodedDataLength);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
