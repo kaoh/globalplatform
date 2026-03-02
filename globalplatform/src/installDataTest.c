@@ -105,23 +105,23 @@ static void build_sd_parameters(void **state) {
 	DWORD outputLength = sizeof(output);
 	GP211_SD_INSTALL_PARAMS params;
 
-	hex_to_byte_array("C1148102021582018083018084008602010287028000",
+	hex_to_byte_array("8102021582018083018084008602010287028000",
 		expected, &expectedLength);
 
 	memset(&params, 0, sizeof(params));
 	params.scpEntriesLength = 1;
 	params.scpEntries[0].scpIdentifier = 0x02;
 	params.scpEntries[0].scpImpl = 0x15;
-	params.acceptExtractionHereLength = 1;
-	params.acceptExtractionHere[0] = 0x80;
+	params.acceptExtraditionHereLength = 1;
+	params.acceptExtraditionHere[0] = 0x80;
 	params.acceptDeletionLength = 1;
 	params.acceptDeletion = 0x80;
 	params.personalizedStatePresent = 1;
 	params.casdCapabilityInfo[0] = 0x01;
 	params.casdCapabilityInfo[1] = 0x02;
-	params.acceptExtractionAwayLength = 2;
-	params.acceptExtractionAway[0] = 0x80;
-	params.acceptExtractionAway[1] = 0x00;
+	params.acceptExtraditionAwayLength = 2;
+	params.acceptExtraditionAway[0] = 0x80;
+	params.acceptExtraditionAway[1] = 0x00;
 
 	status = GP211_build_sd_parameters(&params, output, &outputLength);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);

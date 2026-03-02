@@ -1,6 +1,8 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
 PROJECT(globalplatform C)
 
+cmake_policy(SET CMP0079 NEW)
+cmake_policy(SET CMP0045 NEW)
 cmake_policy(VERSION 3.10)
 
 # MacOS support for CMake 3+

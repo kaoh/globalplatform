@@ -7134,7 +7134,7 @@ OPGP_ERROR_STATUS OP201_install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CAR
 OPGP_ERROR_STATUS OP201_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 						 PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE AIDWithinLoadFileAID,
 						 DWORD AIDWithinLoadFileAIDLength, PBYTE applicationInstanceAID,
-						 DWORD applicationInstanceAIDLength, BYTE applicationPrivileges,
+						 DWORD applicationInstanceAIDLength, DWORD applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
 						 PBYTE sdParameters, DWORD sdParametersLength,
@@ -7199,7 +7199,7 @@ OPGP_ERROR_STATUS OP201_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_
 OPGP_ERROR_STATUS OP201_install_for_install_and_make_selectable(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 						 PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE AIDWithinLoadFileAID,
 						 DWORD AIDWithinLoadFileAIDLength, PBYTE applicationInstanceAID,
-						 DWORD applicationInstanceAIDLength, BYTE applicationPrivileges,
+						 DWORD applicationInstanceAIDLength, DWORD applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
 						 PBYTE sdParameters, DWORD sdParametersLength,
@@ -7246,7 +7246,7 @@ OPGP_ERROR_STATUS OP201_install_for_install_and_make_selectable(OPGP_CARD_CONTEX
  */
 OPGP_ERROR_STATUS OP201_install_for_make_selectable(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 								 PBYTE applicationInstanceAID,
-								 DWORD applicationInstanceAIDLength, BYTE applicationPrivileges,
+								 DWORD applicationInstanceAIDLength, DWORD applicationPrivileges,
 								 PBYTE installToken, DWORD installTokenLength,
 								 OP201_RECEIPT_DATA *receiptData,
 								 PDWORD receiptDataAvailable) {
@@ -7297,7 +7297,7 @@ OPGP_ERROR_STATUS OP201_install_for_make_selectable(OPGP_CARD_CONTEXT cardContex
  */
 OPGP_ERROR_STATUS OP201_get_install_token_signature_data(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE AIDWithinLoadFileAID,
 									  DWORD AIDWithinLoadFileAIDLength, PBYTE applicationInstanceAID,
-									  DWORD applicationInstanceAIDLength, BYTE applicationPrivileges,
+									  DWORD applicationInstanceAIDLength, DWORD applicationPrivileges,
 									  DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 									  PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
 									  PBYTE sdParameters, DWORD sdParametersLength,
@@ -7348,7 +7348,7 @@ OPGP_ERROR_STATUS OP201_get_install_token_signature_data(BYTE P1, PBYTE executab
  */
 OPGP_ERROR_STATUS OP201_calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE AIDWithinLoadFileAID,
 							 DWORD AIDWithinLoadFileAIDLength, PBYTE applicationInstanceAID, DWORD applicationInstanceAIDLength,
-							 BYTE applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
+							 DWORD applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 							 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
 							 PBYTE sdParameters, DWORD sdParametersLength,
 							 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,

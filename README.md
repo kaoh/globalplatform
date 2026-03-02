@@ -187,7 +187,7 @@ cmake -B build .
 To generate the tests, execute:
 
 ```shell
-cmake -B build -DTESTING=ON -DINTEGRATION_TESTING=ON .
+cmake -B build -DTESTING=ON -DINTEGRATION_TESTING=ON -DSTATIC=ON .
 cd build
 make
 make test-unit

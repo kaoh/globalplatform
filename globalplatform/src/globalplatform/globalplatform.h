@@ -80,11 +80,11 @@ static const BYTE GP211_CARD_MANAGER_AID_ALT2[7] = { 0xA0, 0x00, 0x00, 0x00,
 #define GP211_LIFE_CYCLE_CARD_TERMINATED 0xff //!< Card is terminated.
 #define GP211_LIFE_CYCLE_APPLICATION_INSTALLED 0x03 //!< Application is installed
 #define GP211_LIFE_CYCLE_APPLICATION_SELECTABLE 0x07 //!< Application is selectable.
-#define GP211_LIFE_CYCLE_APPLICATION_LOCKED 0xff //!< Application is locked.
+#define GP211_LIFE_CYCLE_APPLICATION_LOCKED 0x83 //!< Application is locked.
 #define GP211_LIFE_CYCLE_SECURITY_DOMAIN_INSTALLED 0x03 //!< Application is installed
 #define GP211_LIFE_CYCLE_SECURITY_DOMAIN_SELECTABLE 0x07 //!< Application is selectable.
-#define GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED 0xff //!< Application is personalized.
-#define GP211_LIFE_CYCLE_SECURITY_DOMAIN_LOCKED 0xff //!< Application is locked.
+#define GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED 0x0f //!< Application is personalized.
+#define GP211_LIFE_CYCLE_SECURITY_DOMAIN_LOCKED 0x83 //!< Application is locked.
 
 /* consts for MANAGE CHANNEL */
 
@@ -1186,7 +1186,7 @@ OPGP_API
 OPGP_ERROR_STATUS OP201_get_install_token_signature_data(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 									  PBYTE AIDWithinLoadFileAID, DWORD AIDWithinLoadFileAIDLength,
 									  PBYTE applicationInstanceAID, DWORD applicationInstanceAIDLength,
-									  BYTE applicationPrivileges, DWORD volatileDataSpaceLimit,
+									  DWORD applicationPrivileges, DWORD volatileDataSpaceLimit,
 									  DWORD nonVolatileDataSpaceLimit,
 									  PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
 									  PBYTE sdParameters, DWORD sdParametersLength,
@@ -1206,7 +1206,7 @@ OPGP_ERROR_STATUS OP201_calculate_load_token(PBYTE executableLoadFileAID, DWORD 
 OPGP_API
 OPGP_ERROR_STATUS OP201_calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE AIDWithinLoadFileAID,
 							 DWORD AIDWithinLoadFileAIDLength, PBYTE applicationInstanceAID,
-							 DWORD applicationInstanceAIDLength, BYTE applicationPrivileges,
+							 DWORD applicationInstanceAIDLength, DWORD applicationPrivileges,
 							 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 							 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
 							 PBYTE sdParameters, DWORD sdParametersLength,
@@ -1238,7 +1238,7 @@ OPGP_API
 OPGP_ERROR_STATUS OP201_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 						 PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE AIDWithinLoadFileAID,
 						 DWORD AIDWithinLoadFileAIDLength, PBYTE applicationInstanceAID, DWORD applicationInstanceAIDLength,
-						 BYTE applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
+						 DWORD applicationPrivileges, DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
 						 PBYTE sdParameters, DWORD sdParametersLength,
 						 PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
@@ -1250,14 +1250,14 @@ OPGP_ERROR_STATUS OP201_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_
 OPGP_API
 OPGP_ERROR_STATUS OP201_install_for_make_selectable(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo,
 								 PBYTE applicationInstanceAID, DWORD applicationInstanceAIDLength,
-								 BYTE applicationPrivileges, PBYTE installToken, DWORD installTokenLength,
+								 DWORD applicationPrivileges, PBYTE installToken, DWORD installTokenLength,
 								 OP201_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
 
 //! \brief Open Platform: Installs and makes an installed application selectable.
 OPGP_API
 OPGP_ERROR_STATUS OP201_install_for_install_and_make_selectable(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, OP201_SECURITY_INFO *secInfo, 						 PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE AIDWithinLoadFileAID,
 						 DWORD AIDWithinLoadFileAIDLength, PBYTE applicationInstanceAID,
-						 DWORD applicationInstanceAIDLength, BYTE applicationPrivileges,
+						 DWORD applicationInstanceAIDLength, DWORD applicationPrivileges,
 						 DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 						 PBYTE applicationInstallParameters, DWORD applicationInstallParametersLength,
 						 PBYTE sdParameters, DWORD sdParametersLength,
