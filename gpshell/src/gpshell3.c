@@ -172,6 +172,8 @@ static void print_usage(const char *prog) {
         "        all-am    = every SD with AM privilege on the card\n\n"
         "  delete <AIDhex>\n"
         "      Delete an application instance or load file by AID.\n\n"
+        "  move <applicationAID> <securityDomainAID>\n"
+        "      Move an application to a different Security Domain (extradition).\n\n"
         "  put-key [--type <3des|aes|rsa>] --kv <ver> --idx <idx> --new-kv <ver> \\\n"
         "          (--key <hex>|--pem <file>[:pass])\n"
         "      Put (add/replace) a key in a key set.\n"
@@ -1811,6 +1813,41 @@ static int cmd_delete(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY
     return 0;
 }
 
+static int cmd_move(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
+    if (argc < 2) {
+        fprintf(stderr, "move: missing parameters <applicationAID> <securityDomainAID>\n");
+        return -1;
+    }
+    const char *app_aid_hex = argv[0];
+    const char *sd_aid_hex = argv[1];
+
+    unsigned char app_aid_bytes[16];
+    size_t app_aid_len = sizeof(app_aid_bytes);
+    if (hex_to_bytes(app_aid_hex, app_aid_bytes, &app_aid_len) != 0) {
+        fprintf(stderr, "move: invalid applicationAID hex\n");
+        return -1;
+    }
+
+    unsigned char sd_aid_bytes[16];
+    size_t sd_aid_len = sizeof(sd_aid_bytes);
+    if (hex_to_bytes(sd_aid_hex, sd_aid_bytes, &sd_aid_len) != 0) {
+        fprintf(stderr, "move: invalid securityDomainAID hex\n");
+        return -1;
+    }
+
+    GP211_RECEIPT_DATA rec;
+    DWORD recAvail = 0;
+    memset(&rec, 0, sizeof(rec));
+
+    if (!status_ok(GP211_install_for_extradition(ctx, info, sec,
+                                               sd_aid_bytes, (DWORD)sd_aid_len,
+                                               app_aid_bytes, (DWORD)app_aid_len,
+                                               NULL, &rec, &recAvail))) {
+        return -1;
+    }
+    return 0;
+}
+
 static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
     BYTE setVer=0, idx=0, newSetVer=0;
     int kvSet=0, newKvSet=0;
@@ -3095,6 +3132,7 @@ int main(int argc, char **argv) {
     else if (!strcmp(cmd, "install")) rc = cmd_install(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "install-sd")) rc = cmd_install_sd(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "delete")) rc = cmd_delete(ctx, info, &sec, (i<argc)?argv[i]:NULL);
+    else if (!strcmp(cmd, "move")) rc = cmd_move(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "put-key")) rc = cmd_put_key(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "put-auth")) rc = cmd_put_auth(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "put-dm")) rc = cmd_put_dm(ctx, info, &sec, argc - i, &argv[i]);

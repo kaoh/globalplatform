@@ -179,13 +179,41 @@ Example:
 gpshell3 install-sd --extradition-here isd --delete-here isd --extradition-away isd A0000001510000
 ```
 
-## delete <AIDhex>
+## delete
 
 Delete an application instance or load file by AID.
+
+Synopsis:
+```
+gpshell3 delete <AIDhex>
+```
+
+Options:
+
+- `<AIDhex>`: AID of the application instance or load file to delete.
 
 Example:
 ```
 gpshell3 delete A0000000010101
+```
+
+## move
+
+Move an application to a different Security Domain (extradition).
+
+Synopsis:
+```
+gpshell3 move <applicationAID> <securityDomainAID>
+```
+
+Options:
+
+- `<applicationAID>`: AID of the application instance to be moved.
+- `<securityDomainAID>`: AID of the target Security Domain.
+
+Example:
+```
+gpshell3 move A0000000010101 A00000015100000002
 ```
 
 ## status
@@ -196,6 +224,12 @@ Synopsis:
 ```
 gpshell3 status <isd|sd|app|sd-app> --lc <state> <AIDhex>
 ```
+
+Options:
+
+- `<isd|sd|app|sd-app>`: Target element type.
+- `--lc <state>`: Target lifecycle state (mandatory).
+- `<AIDhex>`: AID of the target element.
 
 Element types and allowed states:
 

@@ -3067,7 +3067,7 @@ end:
  * \param securityDomainAID [in] A buffer containing the AID of the intended associated Security Domain.
  * \param securityDomainAIDLength [in] The length of the Security Domain AID.
  * \param loadFileDataBlockHash [in] The Load File Data Block Hash of the Executable Load File to INSTALL [for load].
- * \param loadToken [in] The Load Token. This is a 1024 bit (=128 byte) RSA Signature.
+ * \param loadToken [in] The Load Token. This is an assymetric (e.g., ECC or RSA) Signature.
  * \param nonVolatileCodeSpaceLimit [in] The minimum amount of space that must be available to store the package.
  * \param volatileDataSpaceLimit [in] The minimum amount of RAM space that must be available.
  * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
@@ -3167,7 +3167,7 @@ end:
  * \param uiccSystemSpecParamsLength [in] The length of the uiccSystemSpecParams buffer.
  * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.1.
  * \param simSpecParamsLength [in] The length of the simSpecParams buffer.
- * \param installToken [in] The Install Token. This is a 1024 bit (=128 byte) RSA Signature.
+ * \param installToken [in] The Install Token. This is an assymetric (e.g., ECC or RSA) Signature.
  * \param *receiptData [out] If the deletion is performed by a security domain with delegated management privilege
  * this structure contains the according data.
  * \param receiptDataAvailable [out] 0 if no receiptData is available.
@@ -3291,7 +3291,7 @@ end:
  * \param uiccSystemSpecParamsLength [in] The length of the uiccSystemSpecParams buffer.
  * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.1.
  * \param simSpecParamsLength [in] The length of the simSpecParams buffer.
- * \param installToken [in] The Install Token. This is a 1024 bit (=128 byte) RSA Signature.
+ * \param installToken [in] The Install Token. This is an assymetric (e.g., ECC or RSA) Signature.
  * \param *receiptData [out] If the deletion is performed by a security domain with delegated management privilege
  * this structure contains the according data.
  * \param receiptDataAvailable [out] 0 if no receiptData is available.
@@ -3398,12 +3398,11 @@ end:
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
  * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param securityDomainAID [in] A buffer containing the Security Domain AID.
- * \param securityDomainAIDLength [in] The length of the Security Domain AID.
- * \param applicationAID [in] The AID of the installed application.
- * \param applicationAIDLength [in] The length of the application instance AID.
-GP211_APPLICATION_PRIVILEGE_SECURITY_DOMAIN.
- * \param extraditionToken [in] The Install Token. This is a 1024 bit (=128 byte) RSA Signature.
+ * \param securityDomainAID [in] A buffer containing the target Security Domain AID.
+ * \param securityDomainAIDLength [in] The length of the target Security Domain AID.
+ * \param applicationAID [in] The AID of the installed application to be moved.
+ * \param applicationAIDLength [in] The length of the application instance AID to be moved.
+ * \param extraditionAToken [in] The Install Token. This is an assymetric (e.g., ECC or RSA) Signature.
  * \param *receiptData [out] If the deletion is performed by a security domain with delegated management privilege
  * this structure contains the according data.
  * \param receiptDataAvailable [out] 0 if no receiptData is available.
@@ -3525,7 +3524,7 @@ end:
  * \param applicationAID [in] The AID of the installed application or security domain.
  * \param applicationAIDLength [in] The length of the application instance AID.
  * \param applicationPrivileges [in] The application privileges. Can be an OR of multiple privileges. See GP211_APPLICATION_PRIVILEGE_SECURITY_DOMAIN.
- * \param installToken [in] The Install Token. This is a 1024 bit (=128 byte) RSA Signature.
+ * \param installToken [in] The Install Token. This is an assymetric (e.g., ECC or RSA) Signature.
  * \param *receiptData [out] If the deletion is performed by a security domain with delegated management privilege
  * this structure contains the according data.
  * \param receiptDataAvailable [out] 0 if no receiptData is available.
@@ -7074,7 +7073,7 @@ end:
  * \param securityDomainAID [in] A buffer containing the AID of the intended associated Security Domain.
  * \param securityDomainAIDLength [in] The length of the Security Domain AID.
  * \param loadFileDataBlockHash [in] The load file DAP of the Executable Load File to INSTALL [for load].
- * \param loadToken [in] The Load Token. This is a 1024 bit (=128 byte) RSA Signature.
+ * \param loadToken [in] The Load Token. This is an assymetric (e.g., ECC or RSA) Signature.
  * \param nonVolatileCodeSpaceLimit [in] The minimum amount of space that must be available to store the package.
  * \param volatileDataSpaceLimit [in] The minimum amount of RAM space that must be available.
  * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
@@ -7126,7 +7125,7 @@ OPGP_ERROR_STATUS OP201_install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CAR
  * \param uiccSystemSpecParamsLength [in] The length of the uiccSystemSpecParams buffer.
  * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.1.
  * \param simSpecParamsLength [in] The length of the simSpecParams buffer.
- * \param installToken [in] The Install Token. This is a 1024 bit (=128 byte) RSA Signature.
+ * \param installToken [in] The Install Token. This is an assymetric (e.g., ECC or RSA) Signature.
  * \param *receiptData [out] If the deletion is performed by a security domain with delegated management privilege
  * this structure contains the according data.
  * \param receiptDataAvailable [out] 0 if no receiptData is available.
@@ -7191,7 +7190,7 @@ OPGP_ERROR_STATUS OP201_install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_
  * \param uiccSystemSpecParamsLength [in] The length of the uiccSystemSpecParams buffer.
  * \param simSpecParams [in] SIM File Access and Toolkit Application Specific Parameters according to ETSI TS 102 226, sect. 8.2.1.3.2.1.
  * \param simSpecParamsLength [in] The length of the simSpecParams buffer.
- * \param installToken [in] The Install Token. This is a 1024 bit (=128 byte) RSA Signature.
+ * \param installToken [in] The Install Token. This is an assymetric (e.g., ECC or RSA) Signature.
  * \param *receiptData [out] If the deletion is performed by a security domain with delegated management privilege
  * this structure contains the according data.
  * \param receiptDataAvailable [out] 0 if no receiptData is available.
@@ -7239,7 +7238,7 @@ OPGP_ERROR_STATUS OP201_install_for_install_and_make_selectable(OPGP_CARD_CONTEX
  * \param applicationInstanceAID [in] The AID of the installed application or security domain.
  * \param applicationInstanceAIDLength [in] The length of the application instance AID.
  * \param applicationPrivileges [in] The application privileges. Can be an OR of multiple privileges. See OP201_APPLICATION_PRIVILEGE_SECURITY_DOMAIN.
- * \param installToken [in] The Install Token. This is a 1024 bit (=128 byte) RSA Signature.
+ * \param installToken [in] The Install Token. This is an assymetric (e.g., ECC or RSA) Signature.
  * \param *receiptData [out] If the deletion is performed by a security domain with delegated management privilege
  * this structure contains the according data.
  * \param receiptDataAvailable [out] 0 if no receiptData is available.
