@@ -683,14 +683,14 @@ typedef struct {
 typedef struct {
 	GP211_SD_SCP_ENTRY scpEntries[GP211_SD_MAX_SCP]; //!< SCP entries (tag '81').
 	BYTE scpEntriesLength; //!< Number of SCP entries.
-	BYTE acceptExtractionHere[2]; //!< Acceptance policy for extraction to this security domain (tag '82'). See GP211_SD_ACCEPT_ALL_AM.
-	BYTE acceptExtractionHereLength; //!< Length of tag '82' value (1 or 2).
+	BYTE acceptExtraditionHere[2]; //!< Acceptance policy for extradition to this security domain (tag '82'). See GP211_SD_ACCEPT_ALL_AM.
+	BYTE acceptExtraditionHereLength; //!< Length of tag '82' value (1 or 2).
 	BYTE acceptDeletion; //!< Acceptance policy for deletion (tag '83'). See GP211_SD_ACCEPT_ALL_AM.
 	BYTE acceptDeletionLength; //!< Length of tag '83' value (0 or 1).
 	BOOL personalizedStatePresent; //!< TRUE to include tag '84' (length 0). If set an explicit SET STATUS or STORE DATA command is needed to set the personalized state.
 	BYTE casdCapabilityInfo[2]; //!< CASD capability information (tag '86').
-	BYTE acceptExtractionAway[2]; //!<  Acceptance policy for extraction from this security domain away (tag '87'). See GP211_SD_ACCEPT_ALL_AM.
-	BYTE acceptExtractionAwayLength; //!< Length of tag '87' value (1 or 2).
+	BYTE acceptExtraditionAway[2]; //!<  Acceptance policy for extradition from this security domain away (tag '87'). See GP211_SD_ACCEPT_ALL_AM.
+	BYTE acceptExtraditionAwayLength; //!< Length of tag '87' value (1 or 2).
 } GP211_SD_INSTALL_PARAMS;
 
 //! \brief GlobalPlatform2.1.1: Selects an application on a card by AID.

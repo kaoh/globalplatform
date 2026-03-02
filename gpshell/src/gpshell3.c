@@ -152,14 +152,17 @@ static void print_usage(const char *prog) {
         stderr);
     fputs(
         "  install-sd [--load-file <AIDhex>] [--module <AIDhex>] [--expl-personalized] \\\n"
-        "            [--extraction-here <list>] [--delete-here <list>] [--extraction-away <list>] <instance-aid>\n"
+        "            [--priv <list>] [--extradition-here <list>] [--delete-here <list>] \\\n"
+        "            [--extradition-away <list>] <instance-aid>\n"
         "      Install an Issuer Security Domain instance.\n"
         "      --load-file <AIDhex>: Load file / package AID (optional).\n"
         "      --module <AIDhex>: Module AID (optional).\n"
         "      --expl-personalized: Include explicit personalized state tag (optional).\n"
-        "      --extraction-here <list>: Accept extraction to this SD (optional, default: isd).\n"
+        "      --priv <list>: Comma-separated privileges by short names (optional).\n"
+        "                     Note: GP211_SECURITY_DOMAIN is added automatically.\n"
+        "      --extradition-here <list>: Accept extradition to this SD (optional, default: isd).\n"
         "      --delete-here <list>: Accept deletion (optional, default: isd).\n"
-        "      --extraction-away <list>: Accept extraction away from this SD (optional, default: isd).\n"
+        "      --extradition-away <list>: Accept extradition away from this SD (optional, default: isd).\n"
         "      <list> is a comma-separated list; tokens can be ORed:\n"
         "        none      = no acceptance (default if tag omitted)\n"
         "        an-am     = ancestor SD with AM privilege\n"
@@ -177,15 +180,13 @@ static void print_usage(const char *prog) {
         "      --new-kv <ver>: New key set version when replacing keys (mandatory).\n"
         "      --type aes|3des uses --key (hex). --type rsa uses --pem (optionally :pass).\n"
         "  put-auth [--type <aes|3des>] [--derive <none|emv|visa2>] --kv <ver> [--new-kv <ver>] \\\n"
-        "           [--key <hex> | --enc <hex> --mac <hex> --dek <hex>] [--target-sd <AIDhex>] [--perso-sd <AIDhex>]\n"
+        "           [--key <hex> | --enc <hex> --mac <hex> --dek <hex>]\n"
         "      Put secure channel keys (S-ENC/S-MAC/DEK) for a key set.\n"
         "      --kv <ver>: Key set version number to put keys into (default: 1), 0 means that a new key set is created (optional).\n"
         "      --new-kv <ver>: New key set version when replacing keys (default: 1) (optional).\n"
         "      Use either --key (single base key) OR all of --enc/--mac/--dek.\n"
         "      --type: Key type (default: aes).\n"
         "      --derive: Key derivation method for single base key (default: none).\n"
-        "      --target-sd <AIDhex>: Target SD AID for personalization. If provided GP211_store_secure_channel_keys is called instead of GP211_put_secure_channel_keys (optional).\n"
-        "      --perso-sd <AIDhex>: Personalize a security domain with the initial set of keys. If provided, the SD is selected and mutual authentication is skipped (optional).\n"
         "  put-dm --kv <ver> --new-kv <ver> [--token-type <rsa>] [--receipt-type <aes|des>] \\\n"
         "         <pem-file>[:pass] <receipt-key-hex>\n"
         "      Put delegated management keys.\n"
@@ -1658,18 +1659,20 @@ static int cmd_install_sd(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECU
                           int argc, char **argv) {
     const char *load_file_hex = NULL;
     const char *module_hex = NULL;
-    const char *extract_here_opt = NULL;
+    const char *extradition_here_opt = NULL;
     const char *delete_here_opt = NULL;
-    const char *extract_away_opt = NULL;
+    const char *extradition_away_opt = NULL;
+    const char *priv_list = NULL;
     int expl_personalized = 0;
     int ai = 0;
     for (; ai < argc; ++ai) {
         if (strcmp(argv[ai], "--load-file") == 0 && ai + 1 < argc) { load_file_hex = argv[++ai]; }
         else if (strcmp(argv[ai], "--module") == 0 && ai + 1 < argc) { module_hex = argv[++ai]; }
         else if (strcmp(argv[ai], "--expl-personalized") == 0) { expl_personalized = 1; }
-        else if (strcmp(argv[ai], "--extraction-here") == 0 && ai + 1 < argc) { extract_here_opt = argv[++ai]; }
+        else if (strcmp(argv[ai], "--priv") == 0 && ai + 1 < argc) { priv_list = argv[++ai]; }
+        else if (strcmp(argv[ai], "--extradition-here") == 0 && ai + 1 < argc) { extradition_here_opt = argv[++ai]; }
         else if (strcmp(argv[ai], "--delete-here") == 0 && ai + 1 < argc) { delete_here_opt = argv[++ai]; }
-        else if (strcmp(argv[ai], "--extraction-away") == 0 && ai + 1 < argc) { extract_away_opt = argv[++ai]; }
+        else if (strcmp(argv[ai], "--extradition-away") == 0 && ai + 1 < argc) { extradition_away_opt = argv[++ai]; }
         else break;
     }
     if (ai >= argc) { fprintf(stderr, "install-sd: missing <instance-aid>\n"); return -1; }
@@ -1741,9 +1744,9 @@ static int cmd_install_sd(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECU
     BYTE accept_here = GP211_SD_ACCEPT_ISD;
     BYTE accept_delete = GP211_SD_ACCEPT_ISD;
     BYTE accept_away = GP211_SD_ACCEPT_ISD;
-    if (extract_here_opt && parse_sd_accept_list(extract_here_opt, &accept_here) != 0) return -1;
+    if (extradition_here_opt && parse_sd_accept_list(extradition_here_opt, &accept_here) != 0) return -1;
     if (delete_here_opt && parse_sd_accept_list(delete_here_opt, &accept_delete) != 0) return -1;
-    if (extract_away_opt && parse_sd_accept_list(extract_away_opt, &accept_away) != 0) return -1;
+    if (extradition_away_opt && parse_sd_accept_list(extradition_away_opt, &accept_away) != 0) return -1;
 
     if (!g_current_scp_set) {
         fprintf(stderr, "install-sd: secure channel not established\n");
@@ -1756,14 +1759,14 @@ static int cmd_install_sd(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECU
     params.scpEntries[0].scpIdentifier = g_current_scp;
     params.scpEntries[0].scpImpl = g_current_scp_impl;
     params.personalizedStatePresent = expl_personalized ? 1 : 0;
-    params.acceptExtractionHere[0] = accept_here;
-    params.acceptExtractionHere[1] = accept_here;
-    params.acceptExtractionHereLength = 2;
+    params.acceptExtraditionHere[0] = accept_here;
+    params.acceptExtraditionHere[1] = accept_here;
+    params.acceptExtraditionHereLength = 2;
     params.acceptDeletion = accept_delete;
     params.acceptDeletionLength = 1;
-    params.acceptExtractionAway[0] = accept_away;
-    params.acceptExtractionAway[1] = accept_away;
-    params.acceptExtractionAwayLength = 2;
+    params.acceptExtraditionAway[0] = accept_away;
+    params.acceptExtraditionAway[1] = accept_away;
+    params.acceptExtraditionAwayLength = 2;
 
     BYTE sd_params[256];
     DWORD sd_params_len = (DWORD)sizeof(sd_params);
@@ -1774,6 +1777,12 @@ static int cmd_install_sd(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECU
 
     GP211_RECEIPT_DATA rec; DWORD recAvail = 0; memset(&rec, 0, sizeof(rec));
     DWORD privileges = GP211_SECURITY_DOMAIN;
+    if (priv_list) {
+        if (parse_privileges(priv_list, &privileges) != 0) {
+            return -1;
+        }
+        privileges |= GP211_SECURITY_DOMAIN;
+    }
     if (!status_ok(GP211_install_for_install_and_make_selectable(ctx, info, sec,
             load_file_aid, (DWORD)load_file_len,
             module_aid, (DWORD)module_len,
@@ -1861,8 +1870,6 @@ static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
 static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
     BYTE setVer=1, newSetVer=1; const char *base=NULL, *enc=NULL, *mac=NULL, *dek=NULL;
     const char *type="aes", *derive="none";
-    const char *target_sd_hex = NULL;
-    const char *perso_sd_hex = NULL;
     for (int i=0;i<argc;i++) {
         if (strcmp(argv[i], "--kv")==0 && i+1<argc) setVer=(BYTE)atoi(argv[++i]);
         else if (strcmp(argv[i], "--new-kv")==0 && i+1<argc) newSetVer=(BYTE)atoi(argv[++i]);
@@ -1873,8 +1880,6 @@ static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURI
         else if (strcmp(argv[i], "--dek")==0 && i+1<argc) dek=argv[++i];
         else if (strcmp(argv[i], "--type")==0 && i+1<argc) type=argv[++i];
         else if (strcmp(argv[i], "--derive")==0 && i+1<argc) derive=argv[++i];
-        else if (strcmp(argv[i], "--target-sd")==0 && i+1<argc) target_sd_hex=argv[++i];
-        else if (strcmp(argv[i], "--perso-sd")==0 && i+1<argc) perso_sd_hex=argv[++i];
     }
     if (base && (enc || mac || dek)) {
         fprintf(stderr, "put-auth: use either --base/--key OR all of --enc/--mac/--dek\n");
@@ -1913,43 +1918,6 @@ static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURI
         return -1;
     }
 
-    // Prepare target SD AID
-    BYTE target_sd_buf[16]; size_t target_sd_len = sizeof(target_sd_buf);
-    BYTE *target_isd = NULL;
-    DWORD target_isd_len = 0;
-    if (target_sd_hex) {
-        if (hex_to_bytes(target_sd_hex, target_sd_buf, &target_sd_len) != 0) {
-            fprintf(stderr, "Invalid target-sd AID hex\n");
-            return -1;
-        }
-        target_isd = target_sd_buf;
-        target_isd_len = (DWORD)target_sd_len;
-    }
-
-    if (perso_sd_hex) {
-        setVer = 0;
-        BYTE aidbuf[16]; size_t aidlen = sizeof(aidbuf);
-        if (hex_to_bytes(perso_sd_hex, aidbuf, &aidlen) != 0) {
-            fprintf(stderr, "Invalid perso-sd AID hex\n");
-            return -1;
-        }
-        OPGP_ERROR_STATUS s = OPGP_select_application(ctx, info, aidbuf, (DWORD)aidlen);
-        if (!status_ok(s)) {
-            fprintf(stderr, "Failed to select perso-sd\n");
-            return -1;
-        }
-        if (aidlen <= sizeof(g_selected_isd)) {
-            memcpy(g_selected_isd, aidbuf, aidlen);
-            g_selected_isd_len = (DWORD)aidlen;
-        }
-        // Initialize secInfo if it's NULL (though it's usually passed by address of local var)
-        // In cmd_put_auth it's passed as GP211_SECURITY_INFO *sec.
-        memset(sec, 0, sizeof(GP211_SECURITY_INFO));
-        // We need some defaults for GP211_store_secure_channel_keys or GP211_put_secure_channel_keys
-        // but since mutual auth is skipped, we might be in trouble if they expect session keys.
-        // The issue says "not mutual authentication shall be executed".
-    }
-
     if (base) {
         unsigned char b[32]; size_t blen=sizeof(b);
         if (hex_to_bytes(base, b, &blen)!=0 || (blen!=16 && blen!=24 && blen!=32)) {
@@ -1976,12 +1944,7 @@ static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURI
             }
         }
 
-        OPGP_ERROR_STATUS s;
-        if (target_sd_hex) {
-            s = GP211_store_secure_channel_keys(ctx, info, sec, target_isd, target_isd_len, keyType, b, NULL, NULL, NULL, (DWORD)blen, setVer, GP211_KEY_ACCESS_SD_AND_APPS);
-        } else {
-            s = GP211_put_secure_channel_keys(ctx, info, sec, setVer, newSetVer, b, NULL, NULL, NULL, (DWORD)blen, keyType);
-        }
+        OPGP_ERROR_STATUS s = GP211_put_secure_channel_keys(ctx, info, sec, setVer, newSetVer, b, NULL, NULL, NULL, (DWORD)blen, keyType);
         if (!status_ok(s)) {
             return -1;
         }
@@ -1997,12 +1960,7 @@ static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURI
         return -1;
     }
 
-    OPGP_ERROR_STATUS s;
-    if (target_sd_hex) {
-        s = GP211_store_secure_channel_keys(ctx, info, sec, target_isd, target_isd_len, keyType, NULL, se, sm, dk, (DWORD)el, setVer, GP211_KEY_ACCESS_SD_AND_APPS);
-    } else {
-        s = GP211_put_secure_channel_keys(ctx, info, sec, setVer, newSetVer, NULL, se, sm, dk, (DWORD)el, keyType);
-    }
+    OPGP_ERROR_STATUS s = GP211_put_secure_channel_keys(ctx, info, sec, setVer, newSetVer, NULL, se, sm, dk, (DWORD)el, keyType);
     if (!status_ok(s)) {
         return -1;
     }
@@ -3111,22 +3069,11 @@ int main(int argc, char **argv) {
         }
     }
     if (need_auth) {
-        int bypass_auth = 0;
-        if (!strcmp(cmd, "put-auth")) {
-            for (int j=i; j<argc; ++j) {
-                if (!strcmp(argv[j], "--perso-sd")) {
-                    bypass_auth = 1;
-                    break;
-                }
-            }
-        }
-        if (!bypass_auth) {
-            if (mutual_auth(ctx, info, &sec, keyset_ver, key_index, derivation, sec_level_opt, verbose,
-                            baseKeyPtr, encKeyPtr, macKeyPtr, dekKeyPtr, keyLength,
-                            scp_protocol, scp_impl) != 0) {
-                fprintf(stderr, "Mutual authentication failed\n");
-                cleanup_and_exit(5);
-            }
+        if (mutual_auth(ctx, info, &sec, keyset_ver, key_index, derivation, sec_level_opt, verbose,
+                        baseKeyPtr, encKeyPtr, macKeyPtr, dekKeyPtr, keyLength,
+                        scp_protocol, scp_impl) != 0) {
+            fprintf(stderr, "Mutual authentication failed\n");
+            cleanup_and_exit(5);
         }
     } else {
         sec_ptr = NULL; // no secure channel for raw APDU by default

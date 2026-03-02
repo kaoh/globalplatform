@@ -151,8 +151,8 @@ Install an Issuer Security Domain instance.
 Synopsis:
 ```
 gpshell3 install-sd [--load-file <AIDhex>] [--module <AIDhex>] [--expl-personalized]
-                   [--extraction-here <list>] [--delete-here <list>] [--extraction-away <list>]
-                   <instance-aid>
+                   [--priv <list>] [--extradition-here <list>] [--delete-here <list>]
+                   [--extradition-away <list>] <instance-aid>
 ```
 
 Options:
@@ -160,9 +160,10 @@ Options:
 - `--load-file <AIDhex>`: Load file / package AID to use (optional). Defaults to `A0000000035350` or `A0000001515350` if found on card.
 - `--module <AIDhex>`: Module AID to use (optional). Defaults to `A000000003535041` or `A000000151535041` if found on card.
 - `--expl-personalized`: Include explicit personalized state tag in SD parameters (optional).
-- `--extraction-here <list>`: Accept extraction to this SD (optional, default `isd`).
+- `--priv <list>`: Comma-separated privileges by short names. See “Privileges” below (optional). Note: `GP211_SECURITY_DOMAIN` is automatically added.
+- `--extradition-here <list>`: Accept extradition to this SD (optional, default `isd`).
 - `--delete-here <list>`: Accept deletion (optional, default `isd`).
-- `--extraction-away <list>`: Accept extraction away from this SD (optional, default `isd`).
+- `--extradition-away <list>`: Accept extradition away from this SD (optional, default `isd`).
 
 The `<list>` value is a comma-separated list; tokens can be ORed:
 
@@ -175,7 +176,7 @@ The `<list>` value is a comma-separated list; tokens can be ORed:
 
 Example:
 ```
-gpshell3 install-sd --extraction-here isd --delete-here isd --extraction-away isd A0000001510000
+gpshell3 install-sd --extradition-here isd --delete-here isd --extradition-away isd A0000001510000
 ```
 
 ## delete <AIDhex>
@@ -209,7 +210,7 @@ Set secure channel keys (S-ENC, S-MAC, DEK) for a key set.
 
 Synopsis:
 ```
-gpshell3 put-auth [--type <aes|3des>] [--derive <none|emv|visa2>] --kv <ver> [--new-kv <ver>] [--key <hex> | --enc <hex> --mac <hex> --dek <hex>] [--target-sd <AIDhex>]
+gpshell3 put-auth [--type <aes|3des>] [--derive <none|emv|visa2>] --kv <ver> [--new-kv <ver>] [--key <hex> | --enc <hex> --mac <hex> --dek <hex>]
 ```
 
 Options:
@@ -218,7 +219,6 @@ Options:
 - `--kv <ver>`: Key set version, defaults to 1, 0 means that a new key set is created (optional).
 - `--new-kv <ver>`: New key set version when replacing keys, defaults to 1 (optional).
 - `--type` defaults to `aes`.
-- `--target-sd <AIDhex>`: Target SD AID for personalization. If provided `GP211_store_secure_channel_keys` is called instead of `GP211_put_secure_channel_keys` (optional).
 
 ## put-key
 
@@ -261,7 +261,7 @@ Delete a key or an entire key set.
 
 Synopsis:
 ```
-gpshell3 del-key --kv <ver> [--idx <idx>] [--target-sd <AIDhex>]
+gpshell3 del-key --kv <ver> [--idx <idx>]
 ```
 
 Options:

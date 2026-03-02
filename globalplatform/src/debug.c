@@ -54,6 +54,9 @@ void OPGP_log_Start(OPGP_STRING func, OPGP_STRING file, int line)
 void OPGP_log_Hex(OPGP_STRING msg, PBYTE buffer, DWORD bufferLength) {
 	TCHAR *bufferMsg;
 	int i;
+	if (bufferLength <= 0) {
+		return;
+	}
 	// each hex string needs the double size + termination
 	bufferMsg = (TCHAR *)malloc(bufferLength * sizeof(TCHAR)*2 + sizeof(TCHAR));
 	// allocation did not succeed
