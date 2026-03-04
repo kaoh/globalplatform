@@ -973,6 +973,8 @@ static int handleOptions(OptionStr *pOptionStr)
         {
             CHECK_TOKEN(token, _T("-priv"));
             pOptionStr->privilege = _tstoi(token);
+            if (pOptionStr->privilege < 0x100)
+                pOptionStr->privilege <<= 16;
         }
         else if (_tcscmp(token, _T("-scp")) == 0)
         {
