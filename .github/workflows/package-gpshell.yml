@@ -226,32 +226,13 @@ jobs:
           $bundleExe = Get-ChildItem $bundleDir -Recurse -Filter "gpshell3.exe" | Select-Object -First 1
           if (-not $bundleExe) { throw "gpshell3.exe not found in bundle ZIP" }
           & $bundleExe.FullName --help
-      - name: Build MSIX package (self-signed demo)
+      - name: Build MSIX package (unsigned)
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
 
           $zip = Get-ChildItem build-static -Filter "gpshell-*-static.zip" | Select-Object -First 1
           if (-not $zip) { throw "Static ZIP not found; cannot build MSIX" }
-
-          # One-off self-signed cert for demonstration.
-          # The MSIX manifest Publisher must exactly match the certificate subject.
-          $cert = New-SelfSignedCertificate `
-            -Type CodeSigningCert `
-            -Subject "CN=GPShell Demo" `
-            -CertStoreLocation "Cert:\CurrentUser\My" `
-            -KeyAlgorithm RSA `
-            -KeyLength 2048 `
-            -HashAlgorithm SHA256 `
-            -KeyExportPolicy Exportable `
-            -NotAfter (Get-Date).AddYears(1)
-
-          $pfxPasswordPlain = [Guid]::NewGuid().ToString("N")
-          $pfxPassword = ConvertTo-SecureString -String $pfxPasswordPlain -Force -AsPlainText
-          $pfxPath = Join-Path $zip.DirectoryName ($zip.BaseName + ".pfx")
-          $cerPath = Join-Path $zip.DirectoryName ($zip.BaseName + ".cer")
-          Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password $pfxPassword | Out-Null
-          Export-Certificate -Cert $cert -FilePath $cerPath | Out-Null
 
           function Get-WindowsSdkToolPath([string]$toolName) {
             $cmd = Get-Command $toolName -ErrorAction SilentlyContinue
@@ -276,7 +257,6 @@ jobs:
           }
 
           $makeappx = Get-WindowsSdkToolPath "makeappx.exe"
-          $signtool = Get-WindowsSdkToolPath "signtool.exe"
 
           $srcDir = Join-Path $env:TEMP ("gpshell-msix-src-" + [Guid]::NewGuid().ToString("N"))
           $msixRoot = Join-Path $env:TEMP ("gpshell-msix-root-" + [Guid]::NewGuid().ToString("N"))
@@ -394,7 +374,7 @@ jobs:
             elseif ($verParts.Count -eq 4) { $msixVersion = $ver3 }
             else { $msixVersion = "0.0.0.0" }
 
-            $publisher = $cert.Subject
+            $publisher = "CN=GPShell"
             $manifestPath = Join-Path $msixRoot "AppxManifest.xml"
             @"
           <?xml version="1.0" encoding="utf-8"?>
@@ -404,7 +384,7 @@ jobs:
                    xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
                    xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
                    IgnorableNamespaces="uap uap3 desktop rescap">
-            <Identity Name="org.globalplatform.gpshell3"
+            <Identity Name="com.github.kaoh.gpshell"
                       Publisher="$publisher"
                       Version="$msixVersion" />
             <Properties>
@@ -454,26 +434,40 @@ jobs:
 
             $msixPath = Join-Path $zip.DirectoryName ($zip.BaseName + ".msix")
             & $makeappx pack /d $msixRoot /p $msixPath /o | Out-Host
-
-            & $signtool sign /fd SHA256 /f $pfxPath /p $pfxPasswordPlain $msixPath | Out-Host
           }
           finally {
             if (Test-Path $srcDir) { Remove-Item -Recurse -Force $srcDir }
             if (Test-Path $msixRoot) { Remove-Item -Recurse -Force $msixRoot }
-            if (Test-Path $pfxPath) { Remove-Item -Force $pfxPath }
           }
-      - name: Save Windows artifacts
+      - name: Upload unsigned Windows artifacts
+        id: upload-unsigned-artifact
         uses: actions/upload-artifact@v4
         with:
-          name: gpshell-windows
+          name: gpshell-windows-unsigned
           path: |
             build-dynamic/*.zip
             build-dynamic/*.msi
             build-dynamic/gpshell-bundle/*.zip
-            build-static/*.cer
             build-static/*.zip
             build-static/*.msix
             build-static/*.msi
+
+      - name: Sign Windows artifacts
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
+          organization-id: 'e7b823d7-2b0c-486f-9562-fba743965cbf'
+          project-slug: 'globalplatform'
+          signing-policy-slug: 'test-signing'
+          github-artifact-id: '${{ steps.upload-unsigned-artifact.outputs.artifact-id }}'
+          wait-for-completion: true
+          output-artifact-directory: 'signed-artifacts'
+
+      - name: Save signed Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: gpshell-windows
+          path: signed-artifacts
 
   build-macos:
     runs-on: macos-latest
@@ -561,7 +555,6 @@ jobs:
           cp -v dist/gpshell-linux/build-static/*.rpm release-assets/
           cp -v dist/gpshell-windows/build-static/*.msi release-assets/
           cp -v dist/gpshell-windows/build-static/*.msix release-assets/
-          cp -v dist/gpshell-windows/build-static/*.cer release-assets/
           cp -v dist/gpshell-windows/build-static/*-static.zip release-assets/
           cp -v dist/gpshell-macos/build-static/*.dmg release-assets/
       - name: Generate SHA256 checksums
