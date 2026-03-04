@@ -257,6 +257,7 @@ jobs:
           }
 
           $makeappx = Get-WindowsSdkToolPath "makeappx.exe"
+          $signtool = Get-WindowsSdkToolPath "signtool.exe"
 
           $srcDir = Join-Path $env:TEMP ("gpshell-msix-src-" + [Guid]::NewGuid().ToString("N"))
           $msixRoot = Join-Path $env:TEMP ("gpshell-msix-root-" + [Guid]::NewGuid().ToString("N"))
@@ -434,6 +435,21 @@ jobs:
 
             $msixPath = Join-Path $zip.DirectoryName ($zip.BaseName + ".msix")
             & $makeappx pack /d $msixRoot /p $msixPath /o | Out-Host
+
+            # Sign the MSIX package with a temporary certificate to generate AppxMetadata/CodeIntegrity.cat,
+            # which is required for SignPath's MSIX signing configuration. This temporary signature
+            # will be replaced by the official one during the SignPath signing process.
+            $cert = New-SelfSignedCertificate -Type Custom -Subject $publisher -KeyUsage DigitalSignature -FriendlyName "GlobalPlatform" -CertStoreLocation "Cert:\CurrentUser\My" -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3")
+            $tempPfx = Join-Path $env:TEMP "temp.pfx"
+            $password = "password"
+            $secPassword = ConvertTo-SecureString -String $password -Force -AsPlainText
+            Export-PfxCertificate -Cert $cert -FilePath $tempPfx -Password $secPassword | Out-Null
+            try {
+              & $signtool sign /f $tempPfx /p $password /fd SHA256 /v /a $msixPath | Out-Host
+            } finally {
+              Remove-Item $tempPfx -ErrorAction SilentlyContinue
+              Get-ChildItem Cert:\CurrentUser\My | Where-Object { $_.Thumbprint -eq $cert.Thumbprint } | Remove-Item
+            }
           }
           finally {
             if (Test-Path $srcDir) { Remove-Item -Recurse -Force $srcDir }
