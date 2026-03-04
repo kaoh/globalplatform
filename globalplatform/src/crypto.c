@@ -1371,10 +1371,10 @@ OPGP_ERROR_STATUS validate_delete_receipt(DWORD confirmationCounter, PBYTE cardU
 	validationData[i++] = (BYTE)((confirmationCounter & 0x0000FF00) >> 8);
 	validationData[i++] = (BYTE)(confirmationCounter & 0x000000FF);
 	validationData[i++] = (BYTE)cardUniqueDataLength;
-	memcpy(validationData, cardUniqueData, cardUniqueDataLength);
+	memcpy(validationData + i, cardUniqueData, cardUniqueDataLength);
 	i+=cardUniqueDataLength;
 	validationData[i++] = (BYTE)AIDLength;
-	memcpy(validationData, AID, AIDLength);
+	memcpy(validationData + i, AID, AIDLength);
 	i+=AIDLength;
 	status = validate_receipt(validationData, validationDataLength, receiptData.receipt, receiptKey, keyLength, secureChannelProtocol);
 	if (OPGP_ERROR_CHECK(status)) {
@@ -1852,13 +1852,13 @@ OPGP_ERROR_STATUS validate_install_receipt(DWORD confirmationCounter, PBYTE card
 	validationData[i++] = (BYTE)((confirmationCounter & 0x0000FF00) >> 8);
 	validationData[i++] = (BYTE)(confirmationCounter & 0x000000FF);
 	validationData[i++] = (BYTE)cardUniqueDataLength;
-	memcpy(validationData, cardUniqueData, cardUniqueDataLength);
+	memcpy(validationData + i, cardUniqueData, cardUniqueDataLength);
 	i+=cardUniqueDataLength;
 	validationData[i++] = (BYTE)executableLoadFileAIDLength;
-	memcpy(validationData, executableLoadFileAID, executableLoadFileAIDLength);
+	memcpy(validationData + i, executableLoadFileAID, executableLoadFileAIDLength);
 	i+=executableLoadFileAIDLength;
 	validationData[i++] = (BYTE)applicationAIDLength;
-	memcpy(validationData, applicationAID, applicationAIDLength);
+	memcpy(validationData + i, applicationAID, applicationAIDLength);
 	i+=applicationAIDLength;
 	status = validate_receipt(validationData, validationDataLength, receiptData.receipt, receiptKey, keyLength, secureChannelProtocol);
 	if (OPGP_ERROR_CHECK(status)) {
@@ -1896,13 +1896,13 @@ OPGP_ERROR_STATUS validate_load_receipt(DWORD confirmationCounter, PBYTE cardUni
 	validationData[i++] = (BYTE)((confirmationCounter & 0x0000FF00) >> 8);
 	validationData[i++] = (BYTE)(confirmationCounter & 0x000000FF);
 	validationData[i++] = (BYTE)cardUniqueDataLength;
-	memcpy(validationData, cardUniqueData, cardUniqueDataLength);
+	memcpy(validationData + i, cardUniqueData, cardUniqueDataLength);
 	i+=cardUniqueDataLength;
 	validationData[i++] = (BYTE)executableLoadFileAIDLength;
-	memcpy(validationData, executableLoadFileAID, executableLoadFileAIDLength);
+	memcpy(validationData + i, executableLoadFileAID, executableLoadFileAIDLength);
 	i+=executableLoadFileAIDLength;
 	validationData[i++] = (BYTE)securityDomainAIDLength;
-	memcpy(validationData, securityDomainAID, securityDomainAIDLength);
+	memcpy(validationData + i, securityDomainAID, securityDomainAIDLength);
 	i+=securityDomainAIDLength;
 	status = validate_receipt(validationData, validationDataLength, receiptData.receipt, receiptKey, keyLength, secureChannelProtocol);
 	if (OPGP_ERROR_CHECK(status)) {
@@ -1915,6 +1915,112 @@ end:
 		free(validationData);
 	}
 	OPGP_LOG_END(_T("validate_load_receipt"), status);
+	return status;
+}
+
+OPGP_ERROR_STATUS validate_registry_update_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
+							  DWORD cardUniqueDataLength,
+						   PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+						   PBYTE oldSecurityDomainAID, DWORD oldSecurityDomainAIDLength,
+						   PBYTE applicationAID, DWORD applicationAIDLength,
+						   PBYTE newSecurityDomainAID, DWORD newSecurityDomainAIDLength,
+						   DWORD applicationPrivileges,
+						   PBYTE registryUpdateParameters, DWORD registryUpdateParametersLength,
+						   BYTE secureChannelProtocol)
+{
+	OPGP_ERROR_STATUS status;
+	DWORD i=0;
+	PBYTE validationData;
+	DWORD validationDataLength;
+	BYTE privilegeLength = 0;
+
+	OPGP_LOG_START(_T("validate_registry_update_receipt"));
+
+	validationDataLength = 1 + 2 + 1 + cardUniqueDataLength
+		+ 1 + oldSecurityDomainAIDLength
+		+ 1 + applicationAIDLength
+		+ 1 + newSecurityDomainAIDLength
+		+ 1; // privilege length indicator
+
+	if (applicationPrivileges & 0x00FFFF) {
+		privilegeLength = 3;
+	} else if (applicationPrivileges & 0xFF0000) {
+		privilegeLength = 1;
+	} else {
+		privilegeLength = 0;
+	}
+	validationDataLength += privilegeLength;
+
+	if (registryUpdateParametersLength > 0) {
+		if (registryUpdateParametersLength < 128) validationDataLength += 1;
+		else if (registryUpdateParametersLength < 256) validationDataLength += 2;
+		else validationDataLength += 3;
+		validationDataLength += registryUpdateParametersLength;
+	} else {
+		validationDataLength += 1; // '00'
+	}
+
+	validationData = (PBYTE)malloc(validationDataLength);
+	if (validationData == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, ENOMEM, OPGP_stringify_error(ENOMEM));
+		goto end;
+	}
+
+	validationData[i++] = 2;
+	validationData[i++] = (BYTE)((confirmationCounter & 0x0000FF00) >> 8);
+	validationData[i++] = (BYTE)(confirmationCounter & 0x000000FF);
+	validationData[i++] = (BYTE)cardUniqueDataLength;
+	if (cardUniqueDataLength > 0 && cardUniqueData != NULL) {
+		memcpy(validationData + i, cardUniqueData, cardUniqueDataLength);
+		i+=cardUniqueDataLength;
+	}
+
+	validationData[i++] = (BYTE)oldSecurityDomainAIDLength;
+	if (oldSecurityDomainAIDLength > 0 && oldSecurityDomainAID != NULL) {
+		memcpy(validationData + i, oldSecurityDomainAID, oldSecurityDomainAIDLength);
+		i+=oldSecurityDomainAIDLength;
+	}
+
+	validationData[i++] = (BYTE)applicationAIDLength;
+	if (applicationAIDLength > 0 && applicationAID != NULL) {
+		memcpy(validationData + i, applicationAID, applicationAIDLength);
+		i+=applicationAIDLength;
+	}
+
+	validationData[i++] = (BYTE)newSecurityDomainAIDLength;
+	if (newSecurityDomainAIDLength > 0 && newSecurityDomainAID != NULL) {
+		memcpy(validationData + i, newSecurityDomainAID, newSecurityDomainAIDLength);
+		i+=newSecurityDomainAIDLength;
+	}
+
+	validationData[i++] = privilegeLength;
+	if (privilegeLength == 3) {
+		validationData[i++] = (BYTE)((applicationPrivileges >> 16) & 0xFF);
+		validationData[i++] = (BYTE)((applicationPrivileges >> 8) & 0xFF);
+		validationData[i++] = (BYTE)(applicationPrivileges & 0xFF);
+	} else if (privilegeLength == 1) {
+		validationData[i++] = (BYTE)((applicationPrivileges >> 16) & 0xFF);
+	}
+
+	if (registryUpdateParametersLength > 0 && registryUpdateParameters != NULL) {
+		LONG lenLen = write_TLV_length(validationData, i, validationDataLength - i, (USHORT)registryUpdateParametersLength);
+		if (lenLen < 0) { OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		i += (DWORD)lenLen;
+		memcpy(validationData + i, registryUpdateParameters, registryUpdateParametersLength);
+		i += registryUpdateParametersLength;
+	} else {
+		validationData[i++] = 0x00;
+	}
+
+	status = validate_receipt(validationData, validationDataLength, receiptData.receipt, receiptKey, keyLength, secureChannelProtocol);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	if (validationData)
+		free(validationData);
+	OPGP_LOG_END(_T("validate_registry_update_receipt"), status);
 	return status;
 }
 

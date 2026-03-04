@@ -890,6 +890,16 @@ OPGP_ERROR_STATUS GP211_get_install_token_signature_data(BYTE P1, PBYTE executab
 									  PBYTE simSpecParams, DWORD simSpecParamsLength,
 									  PBYTE installTokenSignatureData, PDWORD installTokenSignatureDataLength);
 
+//! \brief GlobalPlatform2.3.1: Function to retrieve the data to sign by the Card Issuer in a Registry Update Token.
+OPGP_API
+OPGP_ERROR_STATUS GP211_get_registry_update_token_signature_data(PBYTE securityDomainAID,
+										  DWORD securityDomainAIDLength,
+										  PBYTE applicationAID, DWORD applicationAIDLength,
+										  DWORD applicationPrivileges,
+										  PBYTE registryUpdateParameters, DWORD registryUpdateParametersLength,
+										  PBYTE tokenSignatureData,
+										  PDWORD tokenSignatureDataLength);
+
 //! \brief GlobalPlatform2.1.1: Calculates a Load Token using PKCS#1.
 OPGP_API
 OPGP_ERROR_STATUS GP211_calculate_load_token(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
@@ -981,6 +991,16 @@ OPGP_ERROR_STATUS GP211_install_for_install_and_make_selectable(OPGP_CARD_CONTEX
 						 PBYTE installToken, DWORD installTokenLength,
 						 GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
 
+//! \brief GlobalPlatform2.3.1: Updates the registry of an application or Security Domain.
+OPGP_API
+OPGP_ERROR_STATUS GP211_install_for_registry_update(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+						 PBYTE securityDomainAID, DWORD securityDomainAIDLength,
+						 PBYTE applicationAID, DWORD applicationAIDLength,
+						 DWORD applicationPrivileges,
+						 PBYTE registryUpdateParameters, DWORD registryUpdateParametersLength,
+						 PBYTE registryUpdateToken, DWORD registryUpdateTokenLength,
+						 GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable);
+
 //! \brief GlobalPlatform2.1.1: Informs a Security Domain that a associated application will retrieve personalization data.
 OPGP_API
 OPGP_ERROR_STATUS GP211_install_for_personalization(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
@@ -1061,6 +1081,18 @@ OPGP_ERROR_STATUS GP211_validate_extradition_receipt(DWORD confirmationCounter, 
 						   PBYTE newSecurityDomainAID, DWORD newSecurityDomainAIDLength,
 						   PBYTE applicationOrExecutableLoadFileAID,
 						   DWORD applicationOrExecutableLoadFileAIDLength, BYTE secureChannelProtocol);
+
+//! \brief GlobalPlatform2.3.1: Validates a Registry Update Receipt.
+OPGP_API
+OPGP_ERROR_STATUS GP211_validate_registry_update_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
+							  DWORD cardUniqueDataLength,
+						   BYTE receiptKey[32], DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+						   PBYTE oldSecurityDomainAID, DWORD oldSecurityDomainAIDLength,
+						   PBYTE applicationAID, DWORD applicationAIDLength,
+						   PBYTE newSecurityDomainAID, DWORD newSecurityDomainAIDLength,
+						   DWORD applicationPrivileges,
+						   PBYTE registryUpdateParameters, DWORD registryUpdateParametersLength,
+						   BYTE secureChannelProtocol);
 
 //! \brief ISO 7816-4 / GlobalPlatform2.1.1: Opens or closes a Logical Channel.
 OPGP_API

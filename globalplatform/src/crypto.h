@@ -186,6 +186,17 @@ OPGP_ERROR_STATUS validate_load_receipt(DWORD confirmationCounter, PBYTE cardUni
 						   PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 						   PBYTE securityDomainAID, DWORD securityDomainAIDLength, BYTE secureChannelProtocol);
 
+OPGP_NO_API
+OPGP_ERROR_STATUS validate_registry_update_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
+							  DWORD cardUniqueDataLength,
+						   PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+						   PBYTE oldSecurityDomainAID, DWORD oldSecurityDomainAIDLength,
+						   PBYTE applicationAID, DWORD applicationAIDLength,
+						   PBYTE newSecurityDomainAID, DWORD newSecurityDomainAIDLength,
+						   DWORD applicationPrivileges,
+						   PBYTE registryUpdateParameters, DWORD registryUpdateParametersLength,
+						   BYTE secureChannelProtocol);
+
 //! \brief Reads a public RSA key from a file
 OPGP_NO_API
 OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhrase, PBYTE rsaModulus, PDWORD rsaModulusLength, LONG *rsaExponent);

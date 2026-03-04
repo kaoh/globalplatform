@@ -3467,6 +3467,87 @@ end:
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
  * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param securityDomainAID [in] A buffer containing the target Security Domain AID.
+ * \param securityDomainAIDLength [in] The length of the target Security Domain AID.
+ * \param applicationAID [in] The AID of the application.
+ * \param applicationAIDLength [in] The length of the application instance AID.
+ * \param applicationPrivileges [in] The application privileges.
+ * \param registryUpdateParameters [in] The Registry Update Parameters.
+ * \param registryUpdateParametersLength [in] The length of the Registry Update Parameters.
+ * \param registryUpdateToken [in] The Registry Update Token. This is an assymetric (e.g., ECC or RSA) Signature.
+ * \param registryUpdateTokenLength [in] The length of the Registry Update Token.
+ * \param *receiptData [out] If the deletion is performed by a security domain with delegated management privilege
+ * this structure contains the according data.
+ * \param receiptDataAvailable [out] 0 if no receiptData is available.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS GP211_install_for_registry_update(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+						 PBYTE securityDomainAID, DWORD securityDomainAIDLength,
+						 PBYTE applicationAID, DWORD applicationAIDLength,
+						 DWORD applicationPrivileges,
+						 PBYTE registryUpdateParameters, DWORD registryUpdateParametersLength,
+						 PBYTE registryUpdateToken, DWORD registryUpdateTokenLength,
+						 GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable) {
+	OPGP_ERROR_STATUS status;
+	DWORD sendBufferLength = 0;
+	DWORD recvBufferLength = APDU_RESPONSE_LEN;
+	BYTE recvBuffer[APDU_RESPONSE_LEN];
+	BYTE sendBuffer[1024];
+	DWORD i=0;
+	BYTE buf[512];
+	DWORD bufLength = sizeof(buf);
+	OPGP_LOG_START(_T("install_for_registry_update"));
+	*receiptDataAvailable = 0;
+
+	sendBuffer[i++] = 0x80;
+	sendBuffer[i++] = 0xE6;
+
+	status = GP211_get_registry_update_token_signature_data(securityDomainAID, securityDomainAIDLength,
+		applicationAID, applicationAIDLength, applicationPrivileges,
+		registryUpdateParameters, registryUpdateParametersLength,
+		buf, &bufLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	memcpy(sendBuffer+2, buf, bufLength);
+	i+=bufLength;
+
+	if (registryUpdateToken != NULL && registryUpdateTokenLength > 0) {
+		LONG lenLen = write_TLV_length(sendBuffer, i, sizeof(sendBuffer) - i, (USHORT)registryUpdateTokenLength);
+		if (lenLen < 0) { OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		i += (DWORD)lenLen;
+		memcpy(sendBuffer+i, registryUpdateToken, registryUpdateTokenLength);
+		i+=registryUpdateTokenLength;
+	}
+	else {
+		sendBuffer[i++] = 0x00; // Length of token
+	}
+
+	sendBuffer[4] = (BYTE)(i - 5);
+
+	sendBuffer[i++] = 0x00; // Le
+	sendBufferLength = i;
+
+	status = OPGP_send_APDU(cardContext, cardInfo, secInfo,sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	CHECK_SW_9000(recvBuffer, recvBufferLength, status);
+	if (recvBufferLength > sizeof(GP211_RECEIPT_DATA)) {
+		fillReceipt(recvBuffer, receiptData);
+		*receiptDataAvailable = 1;
+	}
+
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	OPGP_LOG_END(_T("install_for_registry_update"), status);
+	return status;
+}
+
+/**
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * \param applicationAID [in] The AID of the installed application.
  * \param applicationAIDLength [in] The length of the application instance AID.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
@@ -4328,7 +4409,7 @@ OPGP_ERROR_STATUS GP211_get_extradition_token_signature_data(PBYTE securityDomai
 	buf[i++] = 0x00;
 	buf[i++] = 0x00;
 
-	buf[2] = (BYTE)i-3+128; // Lc (including 128 byte RSA signature length)
+	buf[2] = (BYTE)i-3;
 	if (i > *extraditionTokenSignatureDataLength)
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
 	memcpy(extraditionTokenSignatureData, buf, i);
@@ -4336,6 +4417,88 @@ OPGP_ERROR_STATUS GP211_get_extradition_token_signature_data(PBYTE securityDomai
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
 	OPGP_LOG_END(_T("get_extradition_token_signature_data"), status);
+	return status;
+}
+
+/**
+ * If you are not the Card Issuer and do not know the token verification private key send this data to the
+ * Card Issuer and obtain the signature of the data, i.e. the Registry Update Token.
+ * The parameters must match the parameters of a later GP211_install_for_registry_update() method.
+ * \param securityDomainAID [in] A buffer containing the target Security Domain AID.
+ * \param securityDomainAIDLength [in] The length of the target Security Domain AID.
+ * \param applicationAID [in] The AID of the application.
+ * \param applicationAIDLength [in] The length of the application instance AID.
+ * \param applicationPrivileges [in] The application privileges.
+ * \param registryUpdateParameters [in] The Registry Update Parameters.
+ * \param registryUpdateParametersLength [in] The length of the Registry Update Parameters.
+ * \param tokenSignatureData [out] The data to sign in a Registry Update Token.
+ * \param tokenSignatureDataLength [in, out] The length of the tokenSignatureData buffer.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS GP211_get_registry_update_token_signature_data(PBYTE securityDomainAID,
+										  DWORD securityDomainAIDLength,
+										  PBYTE applicationAID, DWORD applicationAIDLength,
+										  DWORD applicationPrivileges,
+										  PBYTE registryUpdateParameters, DWORD registryUpdateParametersLength,
+										  PBYTE tokenSignatureData,
+										  PDWORD tokenSignatureDataLength) {
+	BYTE buf[512];
+	DWORD i=0;
+	OPGP_ERROR_STATUS status;
+	BYTE privilegeLength = 0;
+	DWORD lcValue;
+
+	OPGP_LOG_START(_T("get_registry_update_token_signature_data"));
+
+	buf[i++] = 0x40; // P1
+	buf[i++] = 0x00; // P2
+	buf[i++] = 0x00; // Lc dummy
+
+	buf[i++] = (BYTE)securityDomainAIDLength; // Security Domain AID length
+	if (securityDomainAIDLength > 0 && securityDomainAID != NULL) {
+		memcpy(buf+i, securityDomainAID, securityDomainAIDLength);
+		i+=securityDomainAIDLength;
+	}
+
+	buf[i++] = 0x00; // Length of data
+
+	buf[i++] = (BYTE)applicationAIDLength; // Application AID length
+	if (applicationAIDLength > 0 && applicationAID != NULL) {
+		memcpy(buf+i, applicationAID, applicationAIDLength);
+		i+=applicationAIDLength;
+	}
+
+	// Privileges
+	if (applicationPrivileges & 0x00FFFF) {
+		privilegeLength = 3;
+	} else if (applicationPrivileges & 0xFF0000) {
+		privilegeLength = 1;
+	} else {
+		privilegeLength = 0;
+	}
+
+	buf[i++] = privilegeLength;
+	if (privilegeLength == 3) {
+		buf[i++] = (BYTE)((applicationPrivileges >> 16) & 0xFF);
+		buf[i++] = (BYTE)((applicationPrivileges >> 8) & 0xFF);
+		buf[i++] = (BYTE)(applicationPrivileges & 0xFF);
+	} else if (privilegeLength == 1) {
+		buf[i++] = (BYTE)((applicationPrivileges >> 16) & 0xFF);
+	}
+
+	// Always skip Registry Update Parameters field and use 0 for its length as requested
+	buf[i++] = 0x00;
+
+	lcValue = i - 3;
+	buf[2] = (BYTE)lcValue;
+
+	if (i > *tokenSignatureDataLength)
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+	memcpy(tokenSignatureData, buf, i);
+	*tokenSignatureDataLength = i;
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	OPGP_LOG_END(_T("get_registry_update_token_signature_data"), status);
 	return status;
 }
 
@@ -4859,16 +5022,16 @@ OPGP_ERROR_STATUS GP211_validate_extradition_receipt(DWORD confirmationCounter, 
 	validationData[i++] = (BYTE)((confirmationCounter & 0x0000FF00) >> 8);
 	validationData[i++] = (BYTE)(confirmationCounter & 0x000000FF);
 	validationData[i++] = (BYTE)cardUniqueDataLength;
-	memcpy(validationData, cardUniqueData, cardUniqueDataLength);
+	memcpy(validationData + i, cardUniqueData, cardUniqueDataLength);
 	i+=cardUniqueDataLength;
 	validationData[i++] = (BYTE)oldSecurityDomainAIDLength;
-	memcpy(validationData, oldSecurityDomainAID, oldSecurityDomainAIDLength);
+	memcpy(validationData + i, oldSecurityDomainAID, oldSecurityDomainAIDLength);
 	i+=oldSecurityDomainAIDLength;
 	validationData[i++] = (BYTE)applicationOrExecutableLoadFileAIDLength;
-	memcpy(validationData, applicationOrExecutableLoadFileAID, applicationOrExecutableLoadFileAIDLength);
+	memcpy(validationData + i, applicationOrExecutableLoadFileAID, applicationOrExecutableLoadFileAIDLength);
 	i+=applicationOrExecutableLoadFileAIDLength;
 	validationData[i++] = (BYTE)newSecurityDomainAIDLength;
-	memcpy(validationData, newSecurityDomainAID, newSecurityDomainAIDLength);
+	memcpy(validationData + i, newSecurityDomainAID, newSecurityDomainAIDLength);
 	i+=newSecurityDomainAIDLength;
 	status = validate_receipt(validationData, validationDataLength, receiptData.receipt, receiptKey, keyLength, secureChannelProtocol);
 	if (OPGP_ERROR_CHECK(status)) {
@@ -4880,6 +5043,48 @@ end:
 		free(validationData);
 	OPGP_LOG_END(_T("GP211_validate_extradition_receipt"), status);
 	return status;
+}
+
+/**
+ * Each time a receipt is generated the confirmation counter is incremented by the Card Manager.
+ * You may keep track of it. Returns OPGP_ERROR_SUCCESS if receipt is valid.
+ * \param confirmationCounter [in] The confirmation counter.
+ * \param cardUniqueData [in] The card unique data.
+ * \param cardUniqueDataLength [in] The length of the card unique data buffer.
+ * \param receiptKey [in] The 3DES or AES key to generate the receipt.
+ * \param keyLength [in] The key length. 16, 24 or 32 bytes.
+ * \param receiptData [in] The GP211_RECEIPT_DATA structure containing the receipt returned
+ * from GP211_install_for_registry_update() to verify.
+ * \param oldSecurityDomainAID [in] The AID of the old associated Security Domain.
+ * \param oldSecurityDomainAIDLength [in] The length of the oldSecurityDomainAID buffer.
+ * \param applicationAID [in] The AID of the application.
+ * \param applicationAIDLength [in] The length of the applicationAID buffer.
+ * \param newSecurityDomainAID [in] The AID of the new associated Security Domain.
+ * \param newSecurityDomainAIDLength [in] The length of the newSecurityDomainAID buffer.
+ * \param applicationPrivileges [in] The application privileges.
+ * \param registryUpdateParameters [in] The Registry Update Parameters.
+ * \param registryUpdateParametersLength [in] The length of the registryUpdateParameters buffer.
+ * \param secureChannelProtocol [in] The Secure Channel Protocol.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS GP211_validate_registry_update_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
+							  DWORD cardUniqueDataLength,
+						   BYTE receiptKey[32], DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+						   PBYTE oldSecurityDomainAID, DWORD oldSecurityDomainAIDLength,
+						   PBYTE applicationAID, DWORD applicationAIDLength,
+						   PBYTE newSecurityDomainAID, DWORD newSecurityDomainAIDLength,
+						   DWORD applicationPrivileges,
+						   PBYTE registryUpdateParameters, DWORD registryUpdateParametersLength,
+						   BYTE secureChannelProtocol) {
+	return validate_registry_update_receipt(confirmationCounter, cardUniqueData,
+							  cardUniqueDataLength,
+						   receiptKey, keyLength, receiptData,
+						   oldSecurityDomainAID, oldSecurityDomainAIDLength,
+						   applicationAID, applicationAIDLength,
+						   newSecurityDomainAID, newSecurityDomainAIDLength,
+						   applicationPrivileges,
+						   registryUpdateParameters, registryUpdateParametersLength,
+						   secureChannelProtocol);
 }
 
 /**
@@ -7462,10 +7667,7 @@ OPGP_ERROR_STATUS OP201_get_load_token_signature_data(PBYTE executableLoadFileAI
 	memcpy(buf+i, loadFileDataBlockHash, loadFileDataBlockHashLength);
 	i+=loadFileDataBlockHashLength;
 
-	/* Lc - including 128 byte RSA signature length, one more byte for signature length field,
-	   minus 3 for P1, P2 and Lc itself
-	*/
-	buf[2] = (BYTE)i-3+128+1;
+	buf[2] = (BYTE)i-3;
 	if (i > *loadTokenSignatureDataLength)
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
 	memcpy(loadTokenSignatureData, buf, i);
