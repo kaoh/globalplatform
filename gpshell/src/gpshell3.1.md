@@ -197,6 +197,26 @@ Example:
 gpshell3 delete A0000000010101
 ```
 
+## update-registry
+
+Update the registry for an application (e.g. change privileges).
+
+Synopsis:
+```
+gpshell3 update-registry [--sd <AIDhex>] [--priv <p1,p2,...>] <AIDhex>
+```
+
+Options:
+
+- `<AIDhex>`: AID of the application instance to be updated (mandatory, last positional parameter).
+- `--sd <AIDhex>`: AID of the target Security Domain (optional).
+- `--priv <list>`: Comma-separated privileges by short names. See “Privileges” below (optional).
+
+Example:
+```
+gpshell3 update-registry --sd A000000151000000 --priv default-selected A0000000010101
+```
+
 ## move
 
 Move an application to a different Security Domain (extradition).

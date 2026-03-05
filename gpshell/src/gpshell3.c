@@ -172,6 +172,11 @@ static void print_usage(const char *prog) {
         "        all-am    = every SD with AM privilege on the card\n\n"
         "  delete <AIDhex>\n"
         "      Delete an application instance or load file by AID.\n\n"
+        "  update-registry [--sd <AIDhex>] [--priv <p1,p2,...>] <AIDhex>\n"
+        "      Update the registry for an application.\n"
+        "      <AIDhex>: Application AID (mandatory, last positional parameter).\n"
+        "      --sd <AIDhex>: Security Domain AID (optional).\n"
+        "      --priv <list>: Comma-separated privileges by short names (see 'Privileges' below) (optional).\n\n"
         "  move <applicationAID> <securityDomainAID>\n"
         "      Move an application to a different Security Domain (extradition).\n\n"
         "  put-key [--type <3des|aes|rsa>] --kv <ver> --idx <idx> --new-kv <ver> \\\n"
@@ -2117,6 +2122,77 @@ static int cmd_del_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     return 0;
 }
 
+static int cmd_update_registry(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
+    const char *aid_hex = NULL;
+    const char *sd_aid_hex = NULL;
+    const char *priv_list = NULL;
+    DWORD privileges = 0;
+
+    for (int i = 0; i < argc; i++) {
+        if (strcmp(argv[i], "--priv") == 0 && i + 1 < argc) {
+            priv_list = argv[++i];
+        } else if (strcmp(argv[i], "--sd") == 0 && i + 1 < argc) {
+            sd_aid_hex = argv[++i];
+        } else if (argv[i][0] != '-') {
+            aid_hex = argv[i];
+        }
+    }
+
+    if (!aid_hex) {
+        fprintf(stderr, "update-registry: missing mandatory <AIDhex>\n");
+        return -1;
+    }
+
+    if (!sec) {
+        fprintf(stderr, "update-registry: secure channel required\n");
+        return -1;
+    }
+
+    unsigned char aid[16];
+    size_t aid_len = sizeof(aid);
+    if (hex_to_bytes(aid_hex, aid, &aid_len) != 0) {
+        fprintf(stderr, "update-registry: invalid <AIDhex> hex\n");
+        return -1;
+    }
+
+    unsigned char sd_aid[16];
+    size_t sd_aid_len = 0;
+    if (sd_aid_hex) {
+        sd_aid_len = sizeof(sd_aid);
+        if (hex_to_bytes(sd_aid_hex, sd_aid, &sd_aid_len) != 0) {
+            fprintf(stderr, "update-registry: invalid --sd <AIDhex> hex\n");
+            return -1;
+        }
+    }
+
+    if (priv_list) {
+        if (parse_privileges(priv_list, &privileges) != 0) {
+            fprintf(stderr, "update-registry: invalid privileges: %s\n", priv_list);
+            return -1;
+        }
+    }
+
+    GP211_RECEIPT_DATA receipt;
+    DWORD receiptAvailable = 0;
+    OPGP_ERROR_STATUS s = GP211_install_for_registry_update(ctx, info, sec,
+                                                            sd_aid_hex ? sd_aid : NULL, (DWORD)sd_aid_len,
+                                                            aid, (DWORD)aid_len,
+                                                            privileges,
+                                                            NULL, 0, // Registry Update Parameters not supported
+                                                            NULL, 0, // Registry Update Token not supported
+                                                            &receipt, &receiptAvailable);
+
+    if (!status_ok(s)) {
+        return -1;
+    }
+
+    if (receiptAvailable) {
+        printf("Registry update receipt received.\n");
+    }
+
+    return 0;
+}
+
 static int compact_hex(const char *in, char *out, size_t outsz) {
     // Copy only hex digits, ignore spaces and tabs; fail on other chars
     size_t j=0;
@@ -3132,6 +3208,7 @@ int main(int argc, char **argv) {
     else if (!strcmp(cmd, "install")) rc = cmd_install(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "install-sd")) rc = cmd_install_sd(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "delete")) rc = cmd_delete(ctx, info, &sec, (i<argc)?argv[i]:NULL);
+    else if (!strcmp(cmd, "update-registry")) rc = cmd_update_registry(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "move")) rc = cmd_move(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "put-key")) rc = cmd_put_key(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "put-auth")) rc = cmd_put_auth(ctx, info, &sec, argc - i, &argv[i]);
