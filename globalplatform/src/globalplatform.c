@@ -2255,14 +2255,6 @@ OPGP_ERROR_STATUS GP211_build_card_recognition_data(const GP211_CARD_RECOGNITION
 	}
 
 	// Tag 0x60: OID for Card Management Type and Version
-	// Actually we need to construct the full OID from cardData->version if it's just the version,
-	// but GP211_parse_card_recognition_data parses OIDs.
-	// In the parse function, it expects Tag 0x60 to contain an OID.
-	// Here we assume cardData has the OID strings.
-
-	// The structure is 0x66 -> 0x73 -> [0x06, 0x60, 0x63, 0x64, ...]
-	// Let's build the 0x73 content first.
-
 	// 1. OID for Card Recognition Data (GlobalPlatform 1) - Usually 1.2.840.114283.1
 	oidLen = build_OID_numeric_string("1.2.840.114283.1", oidBuf, sizeof(oidBuf));
 	res = write_tlv(0x06, oidBuf, oidLen, buf, sizeof(buf), offset);
@@ -2270,9 +2262,6 @@ OPGP_ERROR_STATUS GP211_build_card_recognition_data(const GP211_CARD_RECOGNITION
 	offset = (DWORD)res;
 
 	// 2. Tag 0x60: OID for Card Management Type and Version
-	// cardData->version is just "2.1.1", we need the OID. GlobalPlatform 2 v -> 1.2.840.114283.2.v.v.v
-	// Wait, parse_card_recognition_data uses extract_oid_version.
-	// For building, we might need the original OID or we construct it.
 	// If cardData->version is "2.1.1", OID is 1.2.840.114283.2.1.1
 	char fullOid[128];
 	snprintf(fullOid, sizeof(fullOid), "1.2.840.114283.2.%s", cardData->version);

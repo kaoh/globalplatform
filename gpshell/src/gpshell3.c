@@ -1792,6 +1792,13 @@ static int cmd_install_sd(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECU
         }
         privileges |= GP211_SECURITY_DOMAIN;
     }
+    GP211_CARD_RECOGNITION_DATA crd;
+    memset(&crd, 0, sizeof(crd));
+    if (!status_ok(GP211_get_card_recognition_data(ctx, info, &crd))) {
+        fprintf(stderr, "install-sd: GP211_get_card_recognition_data failed\n");
+        return -1;
+    }
+
     if (!status_ok(GP211_install_for_install_and_make_selectable(ctx, info, sec,
             load_file_aid, (DWORD)load_file_len,
             module_aid, (DWORD)module_len,
@@ -1805,6 +1812,35 @@ static int cmd_install_sd(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECU
             &rec, &recAvail))) {
         return -1;
     }
+
+    // Select the new security domain
+    if (!status_ok(OPGP_select_application(ctx, info, instance_aid, (DWORD)instance_len))) {
+        fprintf(stderr, "install-sd: OPGP_select_application failed for the new SD\n");
+        return -1;
+    }
+
+    crd.scp[0] = g_current_scp;
+    crd.scpImpl[0] = g_current_scp_impl;
+    crd.scpLength = 1;
+
+    crd.cardConfigurationDetailsOid[0] = '\0';
+    crd.cardChipDetailsOid[0] = '\0';
+    crd.issuerSecurityDomainsTrustPointCertificateInformationOid[0] = '\0';
+    crd.issuerSecurityDomainCertificateInformationOid[0] = '\0';
+
+    BYTE crd_buf[1024];
+    DWORD crd_buf_len = (DWORD)sizeof(crd_buf);
+    if (!status_ok(GP211_build_card_recognition_data(&crd, crd_buf, &crd_buf_len))) {
+        fprintf(stderr, "install-sd: GP211_build_card_recognition_data failed\n");
+        return -1;
+    }
+
+    if (!status_ok(GP211_store_data(ctx, info, sec, STORE_DATA_ENCRYPTION_NO_INFORMATION,
+                                   STORE_DATA_FORMAT_BER_TLV, false, crd_buf, crd_buf_len))) {
+        fprintf(stderr, "install-sd: GP211_store_data failed\n");
+        return -1;
+    }
+
     return 0;
 }
 
