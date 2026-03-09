@@ -226,6 +226,10 @@ static void print_usage(const char *prog) {
         "      Read the Issuer Identification Number / SD Provider Identification Number (tag 0x42).\n"
         "  cin\n"
         "      Read the Card Image Number / SD Image Number (tag 0x45).\n"
+        "  store-iin <IIN>\n"
+        "      Store the Issuer Identification Number (tag 0x42) using BCD encoding.\n"
+        "  store-cin <CIN>\n"
+        "      Store the Card Image Number (tag 0x45) using BCD encoding.\n"
         "  card-info\n"
         "      Read and decode the GlobalPlatform Card Recognition Data.\n"
         "  card-cap\n"
@@ -268,25 +272,22 @@ static void print_usage(const char *prog) {
 
     fputs(
         "Privileges (used by install --priv and shown by list-apps as priv=[...]):\n"
-        "  Byte 2 (Security Domain privileges):\n"
         "    sd (security-domain)         - Application is a Security Domain\n"
         "    dap-verif (dap)              - Can require DAP verification for load/install\n"
-        "    delegated-mgmt               - Security Domain has delegated management right\n"
+        "    delegated-mgmt (dm)          - Security Domain has delegated management right\n"
         "    cm-lock                      - Can lock the Card Manager\n"
         "    cm-terminate                 - Can terminate the card\n"
         "    default-selected (card-reset)- Default selected / Card Reset privilege\n"
         "    pin-change (pin)             - Can change global PIN\n"
         "    mandated-dap (mandated-dap-verif) - Requires DAP verification for load/install\n"
-        "  Byte 1 (Advanced privileges):\n"
         "    trusted-path                 - Trusted Path for inter-app communication\n"
         "    authorized-mgmt              - Capable of Card Content Management (requires SD)\n"
-        "    token-mgmt (token-verification) - Can verify token for delegated management\n"
+        "    token-verif (token) - Can verify token for delegated management\n"
         "    global-delete                - May delete any Card Content\n"
         "    global-lock                  - May lock or unlock any Application\n"
         "    global-registry              - May access any entry in GlobalPlatform Registry\n"
         "    final-application (final-app)- Only Application selectable in CARD_LOCKED/TERMINATED\n"
         "    global-service               - Provides services to other Applications\n"
-        "  Byte 0 (Basic privileges):\n"
         "    receipt-generation (receipt) - Can generate receipt for delegated management\n"
         "    ciphered-load-file-data-block (ciphered-load) - Requires ciphered Load File\n"
         "    contactless-activation       - Can activate/deactivate apps on contactless interface\n"
@@ -598,6 +599,7 @@ static int parse_privileges(const char *list, DWORD *out)
         { "dap-verif", GP211_DAP_VERIFICATION },
         { "dap", GP211_DAP_VERIFICATION },
         { "delegated-mgmt", GP211_DELEGATED_MANAGEMENT },
+        { "dm", GP211_DELEGATED_MANAGEMENT },
         { "cm-lock", GP211_CARD_MANAGER_LOCK_PRIVILEGE },
         { "cm-terminate", GP211_CARD_MANAGER_TERMINATE_PRIVILEGE },
         { "default-selected", GP211_DEFAULT_SELECTED_CARD_RESET_PRIVILEGE },
@@ -610,8 +612,8 @@ static int parse_privileges(const char *list, DWORD *out)
 
         { "trusted-path", GP211_TRUSTED_PATH },
         { "authorized-mgmt", GP211_AUTHORIZED_MANAGEMENT },
-        { "token-mgmt", GP211_TOKEN_VERIFICATION },
-        { "token-verification", GP211_TOKEN_VERIFICATION },
+        { "token-verif", GP211_TOKEN_VERIFICATION },
+        { "token", GP211_TOKEN_VERIFICATION },
         { "global-delete", GP211_GLOBAL_DELETE },
         { "global-lock", GP211_GLOBAL_LOCK },
         { "global-registry", GP211_GLOBAL_REGISTRY },
@@ -659,7 +661,7 @@ static int parse_privileges(const char *list, DWORD *out)
             fprintf(stderr, "Unknown privilege '%s'\n", tok);
             fprintf(stderr, "Valid privileges: sd, dap-verif, delegated-mgmt, cm-lock, cm-terminate,\n");
             fprintf(stderr, "  default-selected, pin-change, mandated-dap, trusted-path, authorized-mgmt,\n");
-            fprintf(stderr, "  token-mgmt, global-delete, global-lock, global-registry, final-application,\n");
+            fprintf(stderr, "  token-verif, global-delete, global-lock, global-registry, final-application,\n");
             fprintf(stderr, "  global-service, receipt-generation, ciphered-load-file-data-block,\n");
             fprintf(stderr, "  contactless-activation, contactless-self-activation\n");
             return -1;
@@ -1022,7 +1024,7 @@ static void privileges_to_string(DWORD privileges, char *out, size_t outlen) {
         { GP211_MANDATED_DAP_VERIFICATION, "mandated-dap" },
         { GP211_TRUSTED_PATH, "trusted-path" },
         { GP211_AUTHORIZED_MANAGEMENT, "authorized-mgmt" },
-        { GP211_TOKEN_VERIFICATION, "token-mgmt" },
+        { GP211_TOKEN_VERIFICATION, "token-verif" },
         { GP211_GLOBAL_DELETE, "global-delete" },
         { GP211_GLOBAL_LOCK, "global-lock" },
         { GP211_GLOBAL_REGISTRY, "global-registry" },
@@ -3105,6 +3107,41 @@ int main(int argc, char **argv) {
     if (!strcmp(cmd, "hash")) {
         int rc = cmd_hash(argc - i, &argv[i]);
         return rc==0 ? 0 : 10;
+    }
+
+    if (!strcmp(cmd, "store-iin") || !strcmp(cmd, "store-cin")) {
+        if (i >= argc) {
+            fprintf(stderr, "%s: missing identification number\n", cmd);
+            return 1;
+        }
+        const char *id_str = argv[i++];
+        BYTE bcd[64];
+        DWORD bcdLen = sizeof(bcd);
+        OPGP_ERROR_STATUS status = OPGP_build_bcd_encoding(id_str, bcd, &bcdLen);
+        if (!status_ok(status)) {
+            fprintf(stderr, "%s: BCD encoding failed\n", cmd);
+            return 1;
+        }
+
+        BYTE tlv[128];
+        DWORD tlvLen = 0;
+        tlv[tlvLen++] = (!strcmp(cmd, "store-iin")) ? 0x42 : 0x45;
+        tlv[tlvLen++] = (BYTE)bcdLen;
+        memcpy(tlv + tlvLen, bcd, bcdLen);
+        tlvLen += bcdLen;
+
+        OPGP_CARD_CONTEXT ctx; OPGP_CARD_INFO info; GP211_SECURITY_INFO sec;
+        if (connect_pcsc(&ctx, &info, reader, protocol, trace, verbose) != 0) return 1;
+        if (mutual_auth(ctx, info, &sec, keyset_ver, key_index, derivation, sec_level_opt, verbose, baseKey, enc_key, mac_key, dek_key, keyLength, scp_protocol, scp_impl) != 0) {
+            return 1;
+        }
+
+        status = GP211_store_data(ctx, info, &sec, STORE_DATA_ENCRYPTION_NO_INFORMATION, STORE_DATA_FORMAT_BER_TLV, false, tlv, tlvLen);
+        if (!status_ok(status)) {
+            fprintf(stderr, "%s: GP211_store_data failed\n", cmd);
+            return 1;
+        }
+        return 0;
     }
 
     OPGP_CARD_CONTEXT ctx; OPGP_CARD_INFO info; GP211_SECURITY_INFO sec; memset(&ctx,0,sizeof(ctx)); memset(&info,0,sizeof(info)); memset(&sec,0,sizeof(sec));

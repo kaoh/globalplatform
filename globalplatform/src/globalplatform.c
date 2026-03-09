@@ -2137,6 +2137,239 @@ OPGP_ERROR_STATUS GP211_parse_card_recognition_data(const BYTE *data, DWORD data
 	return status;
 }
 
+static LONG build_OID_numeric_string(const char *oid, PBYTE out, DWORD outLength) {
+	const char *start = oid;
+	const char *end;
+	unsigned long long val;
+	DWORD offset = 0;
+	unsigned long long first = 0, second = 0;
+
+	if (oid == NULL || out == NULL) return -1;
+
+	// Parse first component
+	first = strtoull(start, (char **)&end, 10);
+	if (start == end || *end != '.') return -1;
+	start = end + 1;
+
+	// Parse second component
+	second = strtoull(start, (char **)&end, 10);
+	if (start == end) return -1;
+	if (outLength < 1) return -1;
+	out[offset++] = (BYTE)(first * 40 + second);
+	if (*end == '.') start = end + 1;
+	else start = end;
+
+	while (*start != '\0') {
+		val = strtoull(start, (char **)&end, 10);
+		if (start == end) return -1;
+
+		// Encode base 128
+		BYTE tmp[10];
+		int n = 0;
+		tmp[n++] = (BYTE)(val & 0x7F);
+		val >>= 7;
+		while (val > 0) {
+			tmp[n++] = (BYTE)((val & 0x7F) | 0x80);
+			val >>= 7;
+		}
+		if (offset + n > outLength) return -1;
+		while (n > 0) {
+			out[offset++] = tmp[--n];
+		}
+
+		if (*end == '.') start = end + 1;
+		else start = end;
+	}
+	return (LONG)offset;
+}
+
+static LONG write_tlv(BYTE tag, const BYTE *value, DWORD length, PBYTE out, DWORD outLength, DWORD offset) {
+	LONG lenBytes;
+	if (offset + 1 > outLength) return -1;
+	out[offset++] = tag;
+	lenBytes = write_TLV_length(out, offset, outLength - offset, (USHORT)length);
+	if (lenBytes == -1) return -1;
+	offset += lenBytes;
+	if (offset + length > outLength) return -1;
+	memcpy(out + offset, value, length);
+	return (LONG)(offset + length);
+}
+
+OPGP_ERROR_STATUS OPGP_build_bcd_encoding(const char *numericString, PBYTE bcdData, PDWORD bcdDataLength) {
+	OPGP_ERROR_STATUS status;
+	size_t len;
+	size_t i;
+	DWORD bcdLen;
+
+	if (numericString == NULL || bcdData == NULL || bcdDataLength == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_VALIDATION_FAILED, OPGP_stringify_error(OPGP_ERROR_VALIDATION_FAILED));
+		return status;
+	}
+
+	len = strlen(numericString);
+	bcdLen = (DWORD)((len + 1) / 2);
+	if (*bcdDataLength < bcdLen) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		return status;
+	}
+
+	memset(bcdData, 0, bcdLen);
+	for (i = 0; i < len; i++) {
+		BYTE digit;
+		if (numericString[i] < '0' || numericString[i] > '9') {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_VALIDATION_FAILED, OPGP_stringify_error(OPGP_ERROR_VALIDATION_FAILED));
+			return status;
+		}
+		digit = numericString[i] - '0';
+		if (i % 2 == 0) {
+			bcdData[i / 2] |= (digit << 4);
+		} else {
+			bcdData[i / 2] |= digit;
+		}
+	}
+	// If odd length, pad with 0xF in the lower nibble of the last byte
+	if (len % 2 != 0) {
+		bcdData[len / 2] |= 0x0F;
+	}
+
+	*bcdDataLength = bcdLen;
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+	return status;
+}
+
+OPGP_ERROR_STATUS GP211_build_card_recognition_data(const GP211_CARD_RECOGNITION_DATA *cardData,
+							 PBYTE data, PDWORD dataLength) {
+	OPGP_ERROR_STATUS status;
+	BYTE buf[512];
+	DWORD offset = 0;
+	LONG res;
+	BYTE oidBuf[128];
+	LONG oidLen;
+	BYTE innerBuf[256];
+	DWORD innerOffset = 0;
+	DWORD i;
+
+	if (cardData == NULL || data == NULL || dataLength == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_VALIDATION_FAILED, OPGP_stringify_error(OPGP_ERROR_VALIDATION_FAILED));
+		return status;
+	}
+
+	// Tag 0x60: OID for Card Management Type and Version
+	// Actually we need to construct the full OID from cardData->version if it's just the version,
+	// but GP211_parse_card_recognition_data parses OIDs.
+	// In the parse function, it expects Tag 0x60 to contain an OID.
+	// Here we assume cardData has the OID strings.
+
+	// The structure is 0x66 -> 0x73 -> [0x06, 0x60, 0x63, 0x64, ...]
+	// Let's build the 0x73 content first.
+
+	// 1. OID for Card Recognition Data (GlobalPlatform 1) - Usually 1.2.840.114283.1
+	oidLen = build_OID_numeric_string("1.2.840.114283.1", oidBuf, sizeof(oidBuf));
+	res = write_tlv(0x06, oidBuf, oidLen, buf, sizeof(buf), offset);
+	if (res == -1) goto err_buf;
+	offset = (DWORD)res;
+
+	// 2. Tag 0x60: OID for Card Management Type and Version
+	// cardData->version is just "2.1.1", we need the OID. GlobalPlatform 2 v -> 1.2.840.114283.2.v.v.v
+	// Wait, parse_card_recognition_data uses extract_oid_version.
+	// For building, we might need the original OID or we construct it.
+	// If cardData->version is "2.1.1", OID is 1.2.840.114283.2.1.1
+	char fullOid[128];
+	snprintf(fullOid, sizeof(fullOid), "1.2.840.114283.2.%s", cardData->version);
+	oidLen = build_OID_numeric_string(fullOid, oidBuf, sizeof(oidBuf));
+	innerOffset = 0;
+	res = write_tlv(0x06, oidBuf, oidLen, innerBuf, sizeof(innerBuf), innerOffset);
+	if (res == -1) goto err_buf;
+	innerOffset = (DWORD)res;
+	res = write_tlv(CARD_DATA_APPLICATION_TAG_0, innerBuf, innerOffset, buf, sizeof(buf), offset);
+	if (res == -1) goto err_buf;
+	offset = (DWORD)res;
+
+	// 3. Tag 0x63: OID for Card Identification Scheme
+	oidLen = build_OID_numeric_string("1.2.840.114283.3", oidBuf, sizeof(oidBuf));
+	innerOffset = 0;
+	res = write_tlv(0x06, oidBuf, oidLen, innerBuf, sizeof(innerBuf), innerOffset);
+	if (res == -1) goto err_buf;
+	innerOffset = (DWORD)res;
+	res = write_tlv(CARD_DATA_APPLICATION_TAG_3, innerBuf, innerOffset, buf, sizeof(buf), offset);
+	if (res == -1) goto err_buf;
+	offset = (DWORD)res;
+
+	// 4. Tag 0x64: Secure Channel Protocol OIDs
+	innerOffset = 0;
+	for (i = 0; i < cardData->scpLength; i++) {
+		snprintf(fullOid, sizeof(fullOid), "1.2.840.114283.4.%d.%d", cardData->scp[i], cardData->scpImpl[i]);
+		oidLen = build_OID_numeric_string(fullOid, oidBuf, sizeof(oidBuf));
+		res = write_tlv(0x06, oidBuf, oidLen, innerBuf, sizeof(innerBuf), innerOffset);
+		if (res == -1) goto err_buf;
+		innerOffset = (DWORD)res;
+	}
+	res = write_tlv(CARD_DATA_APPLICATION_TAG_4, innerBuf, innerOffset, buf, sizeof(buf), offset);
+	if (res == -1) goto err_buf;
+	offset = (DWORD)res;
+
+	// Optional tags 5, 6, 7, 8
+	struct {
+		BYTE tag;
+		const char *oid;
+		const BYTE *data;
+		DWORD dataLen;
+	} optional[] = {
+		{ CARD_DATA_APPLICATION_TAG_5, cardData->cardConfigurationDetailsOid, cardData->cardConfigurationDetails, cardData->cardConfigurationDetailsLength },
+		{ CARD_DATA_APPLICATION_TAG_6, cardData->cardChipDetailsOid, cardData->cardChipDetails, cardData->cardChipDetailsLength },
+		{ CARD_DATA_APPLICATION_TAG_7, cardData->issuerSecurityDomainsTrustPointCertificateInformationOid, cardData->issuerSecurityDomainsTrustPointCertificateInformation, cardData->issuerSecurityDomainsTrustPointCertificateInformationLength },
+		{ CARD_DATA_APPLICATION_TAG_8, cardData->issuerSecurityDomainCertificateInformationOid, cardData->issuerSecurityDomainCertificateInformation, cardData->issuerSecurityDomainCertificateInformationLength }
+	};
+
+	for (i = 0; i < 4; i++) {
+		if (optional[i].oid[0] != '\0' || optional[i].dataLen > 0) {
+			innerOffset = 0;
+			if (optional[i].oid[0] != '\0') {
+				oidLen = build_OID_numeric_string(optional[i].oid, oidBuf, sizeof(oidBuf));
+				res = write_tlv(0x06, oidBuf, oidLen, innerBuf, sizeof(innerBuf), innerOffset);
+				if (res == -1) goto err_buf;
+				innerOffset = (DWORD)res;
+			}
+			if (optional[i].dataLen > 0) {
+				if (innerOffset + optional[i].dataLen > sizeof(innerBuf)) goto err_buf;
+				memcpy(innerBuf + innerOffset, optional[i].data, optional[i].dataLen);
+				innerOffset += optional[i].dataLen;
+			}
+			res = write_tlv(optional[i].tag, innerBuf, innerOffset, buf, sizeof(buf), offset);
+			if (res == -1) goto err_buf;
+			offset = (DWORD)res;
+		}
+	}
+
+	// Now wrap in 0x73
+	BYTE finalBuf[1024];
+	DWORD finalOffset = 0;
+	res = write_tlv(0x73, buf, offset, finalBuf, sizeof(finalBuf), finalOffset);
+	if (res == -1) goto err_buf;
+	finalOffset = (DWORD)res;
+
+	// Wrap in 0x66
+	BYTE finalBuf2[1024];
+	DWORD finalOffset2 = 0;
+	res = write_tlv(0x66, finalBuf, finalOffset, finalBuf2, sizeof(finalBuf2), finalOffset2);
+	if (res == -1) goto err_buf;
+	finalOffset2 = (DWORD)res;
+
+	if (*dataLength < finalOffset2) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		return status;
+	}
+	memcpy(data, finalBuf2, finalOffset2);
+	*dataLength = finalOffset2;
+
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+	return status;
+
+err_buf:
+	OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+	return status;
+}
+
 /**
  * Can only be executed before a secure channel is created.
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()

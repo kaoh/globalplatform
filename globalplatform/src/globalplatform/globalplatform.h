@@ -780,6 +780,15 @@ OPGP_API
 OPGP_ERROR_STATUS GP211_parse_card_capability_information(const BYTE *data, DWORD dataLength,
 							  GP211_CARD_CAPABILITY_INFORMATION *cardCapabilityInfo);
 
+//! \brief Builds the card recognition data response.
+OPGP_API
+OPGP_ERROR_STATUS GP211_build_card_recognition_data(const GP211_CARD_RECOGNITION_DATA *cardData,
+							 PBYTE data, PDWORD dataLength);
+
+//! \brief BCD encodes a numeric string.
+OPGP_API
+OPGP_ERROR_STATUS OPGP_build_bcd_encoding(const char *numericString, PBYTE bcdData, PDWORD bcdDataLength);
+
 //! \brief GlobalPlatform2.1.1: This returns the Secure Channel Protocol and the Secure Channel Protocol implementation.
 OPGP_API
 OPGP_ERROR_STATUS GP211_get_secure_channel_protocol_details(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,

@@ -381,6 +381,42 @@ Options:
   - `ber`: BER-TLV structures.
 - `--response <true|false>`: expect response data (default `false`).
 
+## store-iin
+
+Store the Issuer Identification Number (tag `0x42`) using BCD encoding.
+
+Synopsis:
+```
+gpshell3 store-iin <IIN>
+```
+
+Options:
+
+- `<IIN>`: Issuer Identification Number as a decimal string.
+
+Example:
+```
+gpshell3 store-iin 123456
+```
+
+## store-cin
+
+Store the Card Image Number (tag `0x45`) using BCD encoding.
+
+Synopsis:
+```
+gpshell3 store-cin <CIN>
+```
+
+Options:
+
+- `<CIN>`: Card Image Number as a decimal string.
+
+Example:
+```
+gpshell3 store-cin 123456
+```
+
 ## card-data
 
 Read a bundle of card data objects, in this order:
@@ -496,7 +532,7 @@ Privileges are reported by `list-apps` as `priv=[...]` and can be supplied to `i
 - `mandated-dap`, `mandated-dap-verif` — Security Domain requires DAP verification for loading and installing applications
 - `trusted-path` — Application is a Trusted Path for inter-application communication
 - `authorized-mgmt` — Application is capable of Card Content Management (Security Domain privilege shall also be set)
-- `token-mgmt`, `token-verification` — Application is capable of verifying a token for Delegated Card Content Management
+- `token-verif`, `token` — Application is capable of verifying a token for Delegated Card Content Management
 - `global-delete` — Application may delete any Card Content
 - `global-lock` — Application may lock or unlock any Application
 - `global-registry` — Application may access any entry in the GlobalPlatform Registry
@@ -519,6 +555,16 @@ gpshell3 install --priv default-selected --params 80 ./helloworld.cap
 List applets and related:
 ```
 gpshell3 list-apps
+```
+
+Store Issuer Identification Number:
+```
+gpshell3 store-iin 123456
+```
+
+Store Card Image Number:
+```
+gpshell3 store-cin 1234567890
 ```
 
 Open APDU session with mutual auth and send GET DATA:
