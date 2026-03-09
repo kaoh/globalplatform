@@ -129,7 +129,7 @@ static OPGP_ERROR_STATUS internal_mutual_authentication() {
 	OPGP_ERROR_STATUS status;
 	BYTE scp;
 	BYTE scpImpl;
-	status = GP211_get_secure_channel_protocol_details(cardContext, cardInfo,
+	status = GP211_get_secure_channel_protocol_details(cardContext, cardInfo, &securityInfo211,
 			&scp, &scpImpl);
 	if (OPGP_ERROR_CHECK(status)) {
 		return status;
@@ -191,7 +191,7 @@ static OPGP_ERROR_STATUS internal_connect() {
 	if (OPGP_ERROR_CHECK(status)) {
 		return status;
 	}
-	status = OPGP_select_application(cardContext, cardInfo, (PBYTE)GP231_ISD_AID, 8);
+	status = OPGP_select_application(cardContext, cardInfo, &securityInfo211, (PBYTE)GP231_ISD_AID, 8);
 	if (OPGP_ERROR_CHECK(status)) {
 		return status;
 	}
@@ -753,7 +753,7 @@ START_TEST (test_personalize_sd) {
 	}
 
 	// Now select the new SD and authenticate
-	status = OPGP_select_application(cardContext, cardInfo, (PBYTE)sdInstanceAID, sizeof(sdInstanceAID));
+	status = OPGP_select_application(cardContext, cardInfo, &sdSecurityInfo, (PBYTE)sdInstanceAID, sizeof(sdInstanceAID));
 	if (OPGP_ERROR_CHECK(status)) {
 		ck_abort_msg("Selecting SD failed: %s", status.errorMessage);
 	}

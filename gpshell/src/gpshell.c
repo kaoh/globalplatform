@@ -1171,7 +1171,7 @@ static int handleCommands(FILE *fd)
                 {
                     goto end;
                 }
-                status = GP211_get_secure_channel_protocol_details(cardContext, cardInfo,
+                status = GP211_get_secure_channel_protocol_details(cardContext, cardInfo, &securityInfo211,
                     &scp,
                     &scpImpl);
                 if (OPGP_ERROR_CHECK(status))
@@ -1213,7 +1213,7 @@ static int handleCommands(FILE *fd)
                 {
                     if (optionStr.scp == 0 || optionStr.scpImpl == 0)
                     {
-                        status = GP211_get_secure_channel_protocol_details(cardContext, cardInfo,
+                        status = GP211_get_secure_channel_protocol_details(cardContext, cardInfo, &securityInfo211,
                                 &optionStr.scp,
                                 &optionStr.scpImpl);
                         if (OPGP_ERROR_CHECK(status))
@@ -2096,7 +2096,7 @@ static int handleCommands(FILE *fd)
                 {
                     goto end;
                 }
-                status = GP211_get_card_recognition_data(cardContext, cardInfo, &cardData);
+                status = GP211_get_card_recognition_data(cardContext, cardInfo, &securityInfo211, &cardData);
 
                 if (OPGP_ERROR_CHECK(status))
                 {

@@ -197,6 +197,33 @@ static void test_parse_card_recognition_vector_2(void **state) {
 	assert_string_equal(data.cardChipDetailsOid, "1.3.6.1.4.1.42.2.110.1.3");
 }
 
+static void test_build_parse_card_recognition_roundtrip(void **state) {
+	OPGP_ERROR_STATUS status;
+	GP211_CARD_RECOGNITION_DATA input = {0};
+	GP211_CARD_RECOGNITION_DATA parsed;
+	BYTE buffer[512];
+	DWORD bufferLength = sizeof(buffer);
+
+	strcpy(input.version, "2.2.3");
+	input.scpLength = 1;
+	input.scp[0] = 0x03;
+	input.scpImpl[0] = 0x70;
+	strcpy(input.cardConfigurationDetailsOid, "1.2.840.114283.5.7.2.0.0");
+	strcpy(input.cardChipDetailsOid, "1.3.6.1.4.1.42.2.110.1.3");
+
+	status = GP211_build_card_recognition_data(&input, buffer, &bufferLength);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+
+	status = GP211_parse_card_recognition_data(buffer, bufferLength, &parsed);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+	assert_string_equal(parsed.version, input.version);
+	assert_int_equal(parsed.scpLength, input.scpLength);
+	assert_int_equal(parsed.scp[0], input.scp[0]);
+	assert_int_equal(parsed.scpImpl[0], input.scpImpl[0]);
+	assert_string_equal(parsed.cardConfigurationDetailsOid, input.cardConfigurationDetailsOid);
+	assert_string_equal(parsed.cardChipDetailsOid, input.cardChipDetailsOid);
+}
+
 static void test_parse_card_capability_vector_1(void **state) {
 	OPGP_ERROR_STATUS status;
 	GP211_CARD_CAPABILITY_INFORMATION info;
@@ -245,6 +272,7 @@ int main(void) {
 		cmocka_unit_test(test_parse_extended_card_resources),
 		cmocka_unit_test(test_parse_card_recognition_vector_1),
 		cmocka_unit_test(test_parse_card_recognition_vector_2),
+		cmocka_unit_test(test_build_parse_card_recognition_roundtrip),
 		cmocka_unit_test(test_parse_card_capability_vector_1),
 		cmocka_unit_test(test_parse_card_capability_vector_2_invalid),
 	};

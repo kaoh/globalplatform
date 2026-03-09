@@ -816,11 +816,12 @@ OPGP_ERROR_STATUS GP211_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO 
 /**
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure. If non-null, the secure channel state is reset after a successful select.
  * \param AID [in] The AID.
  * \param AIDLength [in] The length of the AID.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
-OPGP_ERROR_STATUS OPGP_select_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, PBYTE AID, DWORD AIDLength) {
+OPGP_ERROR_STATUS OPGP_select_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBYTE AID, DWORD AIDLength) {
 	OPGP_ERROR_STATUS status;
 	DWORD recvBufferLength=256;
 	BYTE recvBuffer[256];
@@ -855,6 +856,10 @@ OPGP_ERROR_STATUS OPGP_select_application(OPGP_CARD_CONTEXT cardContext, OPGP_CA
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ISO7816_WARNING_CM_LOCKED, OPGP_stringify_error(OPGP_ISO7816_WARNING_CM_LOCKED)); goto end; }
 	}
 	CHECK_SW_9000(recvBuffer, recvBufferLength, status);
+
+	if (secInfo != NULL) {
+		memset(secInfo, 0, sizeof(*secInfo));
+	}
 
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
@@ -1918,17 +1923,18 @@ end:
  * Can only be executed before a secure channel is created.
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * \param *cardData [out] A pointer to the card recognition data.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
-OPGP_ERROR_STATUS GP211_get_card_recognition_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
+OPGP_ERROR_STATUS GP211_get_card_recognition_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 		GP211_CARD_RECOGNITION_DATA *cardData) {
 	OPGP_ERROR_STATUS status;
 	BYTE recvBuffer[256];
 	DWORD recvBufferLength = sizeof(recvBuffer);
 
 	OPGP_LOG_START(_T("GP211_get_card_data"));
-	status = GP211_get_data(cardContext, cardInfo, NULL, (PBYTE)GP211_GET_DATA_CARD_DATA, recvBuffer, &recvBufferLength);
+	status = GP211_get_data(cardContext, cardInfo, secInfo, (PBYTE)GP211_GET_DATA_CARD_DATA, recvBuffer, &recvBufferLength);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -2363,10 +2369,11 @@ err_buf:
  * Can only be executed before a secure channel is created.
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * \param *cardCapabilityInfo [out] A pointer to the card capability information.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
-OPGP_ERROR_STATUS GP211_get_card_capability_information(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
+OPGP_ERROR_STATUS GP211_get_card_capability_information(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 		GP211_CARD_CAPABILITY_INFORMATION *cardCapabilityInfo) {
 	OPGP_ERROR_STATUS status;
 	BYTE recvBuffer[256];
@@ -2374,7 +2381,7 @@ OPGP_ERROR_STATUS GP211_get_card_capability_information(OPGP_CARD_CONTEXT cardCo
 
 	OPGP_LOG_START(_T("GP211_get_card_capability_information"));
 
-	status = GP211_get_data(cardContext, cardInfo, NULL, (PBYTE)GP211_GET_DATA_CARD_CAPABILITY_INFORMATION, recvBuffer, &recvBufferLength);
+	status = GP211_get_data(cardContext, cardInfo, secInfo, (PBYTE)GP211_GET_DATA_CARD_CAPABILITY_INFORMATION, recvBuffer, &recvBufferLength);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -2486,11 +2493,12 @@ OPGP_ERROR_STATUS GP211_parse_card_capability_information(const BYTE *data, DWOR
 /**
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * \param *secureChannelProtocol [out] A pointer to the Secure Channel Protocol to use.
  * \param *secureChannelProtocolImpl [out] A pointer to the implementation of the Secure Channel Protocol.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
-OPGP_ERROR_STATUS GP211_get_secure_channel_protocol_details(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
+OPGP_ERROR_STATUS GP211_get_secure_channel_protocol_details(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 										 BYTE *secureChannelProtocol, BYTE *secureChannelProtocolImpl) {
 	OPGP_ERROR_STATUS status;
 	BOOL found = 0;
@@ -2498,7 +2506,7 @@ OPGP_ERROR_STATUS GP211_get_secure_channel_protocol_details(OPGP_CARD_CONTEXT ca
 
 	OPGP_LOG_START(_T("GP211_get_secure_channel_protocol_details"));
 
-	status = GP211_get_card_recognition_data(cardContext, cardInfo, &cardData);
+	status = GP211_get_card_recognition_data(cardContext, cardInfo, secInfo, &cardData);
 	if (!OPGP_ERROR_CHECK(status)) {
 		for (int i = 0; i < cardData.scpLength; i++) {
 			// only supporting SCP01 - SCP03

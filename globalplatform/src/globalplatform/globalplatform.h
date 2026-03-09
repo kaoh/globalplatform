@@ -693,9 +693,9 @@ typedef struct {
 	BYTE acceptExtraditionAwayLength; //!< Length of tag '87' value (1 or 2).
 } GP211_SD_INSTALL_PARAMS;
 
-//! \brief GlobalPlatform2.1.1: Selects an application on a card by AID.
+//! \brief GlobalPlatform2.1.1: Selects an application on a card by AID and resets secure channel state.
 OPGP_API
-OPGP_ERROR_STATUS OPGP_select_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, PBYTE AID, DWORD AIDLength);
+OPGP_ERROR_STATUS OPGP_select_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBYTE AID, DWORD AIDLength);
 
 //! \brief Reads the extended card resource information (number of applications + free memory).
 OPGP_API
@@ -765,7 +765,7 @@ OPGP_ERROR_STATUS GP211_get_data_iso7816_4(OPGP_CARD_CONTEXT cardContext, OPGP_C
 
 //! \brief GlobalPlatform2.1.1: Return the card recognition data.
 OPGP_API
-OPGP_ERROR_STATUS GP211_get_card_recognition_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_CARD_RECOGNITION_DATA *cardData);
+OPGP_ERROR_STATUS GP211_get_card_recognition_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, GP211_CARD_RECOGNITION_DATA *cardData);
 
 //! \brief Parses the card recognition data response.
 OPGP_API
@@ -773,7 +773,7 @@ OPGP_ERROR_STATUS GP211_parse_card_recognition_data(const BYTE *data, DWORD data
 
 //! \brief GlobalPlatform2.3.1: Return the card capability information.
 OPGP_API
-OPGP_ERROR_STATUS GP211_get_card_capability_information(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_CARD_CAPABILITY_INFORMATION *cardCapabilityInfo);
+OPGP_ERROR_STATUS GP211_get_card_capability_information(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, GP211_CARD_CAPABILITY_INFORMATION *cardCapabilityInfo);
 
 //! \brief Parses the card capability information response.
 OPGP_API
@@ -791,7 +791,7 @@ OPGP_ERROR_STATUS OPGP_build_bcd_encoding(const char *numericString, PBYTE bcdDa
 
 //! \brief GlobalPlatform2.1.1: This returns the Secure Channel Protocol and the Secure Channel Protocol implementation.
 OPGP_API
-OPGP_ERROR_STATUS GP211_get_secure_channel_protocol_details(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
+OPGP_ERROR_STATUS GP211_get_secure_channel_protocol_details(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 										 BYTE *secureChannelProtocol, BYTE *secureChannelProtocolImpl);
 
 //! \brief GlobalPlatform2.1.1: This returns the current Sequence Counter.
