@@ -58,12 +58,7 @@
 #include "crypto.h"
 #include "loadfile.h"
 
-// 255 bytes minus 8 byte MAC minus 8 byte encryption padding
-#define MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING 239
-// 255 bytes minus 8 byte MAC minus 16 byte encryption padding
-#define MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING_SCP03 231
-
-#define MAX_APDU_DATA_SIZE(secInfo) (secInfo->secureChannelProtocol == GP211_SCP03 ? MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING_SCP03 : MAX_APDU_DATA_SIZE_FOR_SECURE_MESSAGING)
+#define MAX_APDU_DATA_SIZE(secInfo) (get_max_apdu_data_size(secInfo))
 
 #ifndef MAX_PATH
 #define MAX_PATH 257
@@ -86,6 +81,8 @@ static BYTE S_RMAC_DerivationConstant_SCP03 = 0x07; //!< Constant to derive S-RM
 #define CARD_DATA_APPLICATION_TAG_3 0x63
 #define CARD_DATA_APPLICATION_TAG_0 0x60
 #define OID_TAG 0x06
+
+static DWORD get_max_apdu_data_size(GP211_SECURITY_INFO *secInfo);
 
 static void extract_oid_version(const char *oid, char *out, size_t outLength) {
 	size_t len;
@@ -948,6 +945,59 @@ static OPGP_ERROR_STATUS add_rsa_key_data(GP211_SECURITY_INFO *secInfo,
 	return status;
 }
 
+static DWORD get_max_apdu_data_size(GP211_SECURITY_INFO *secInfo) {
+	DWORD macSize = 8;
+	DWORD blockSize = 8;
+	BOOL encryption = 0;
+
+	if (secInfo == NULL) {
+		return 255;
+	}
+
+	if (secInfo->secureChannelProtocol == GP211_SCP03) {
+		blockSize = 16;
+		if (secInfo->securityLevel == GP211_SCP03_SECURITY_LEVEL_NO_SECURE_MESSAGING) {
+			return 255;
+		}
+		if (secInfo->securityLevel & 0x02) {
+			encryption = 1;
+		}
+	} else if (secInfo->secureChannelProtocol == GP211_SCP02) {
+		if (secInfo->securityLevel == GP211_SCP02_SECURITY_LEVEL_NO_SECURE_MESSAGING) {
+			return 255;
+		}
+		if (secInfo->securityLevel & 0x02) {
+			encryption = 1;
+		}
+	} else if (secInfo->secureChannelProtocol == GP211_SCP01) {
+		if (secInfo->securityLevel == GP211_SCP01_SECURITY_LEVEL_NO_SECURE_MESSAGING) {
+			return 255;
+		}
+		if (secInfo->securityLevel & 0x02) {
+			encryption = 1;
+		}
+	} else {
+		return 255;
+	}
+
+	if (encryption) {
+		/* Maximum data size is such that when adding padding and MAC, the total is <= 255.
+		   paddingSize = ((blockSize - ((lc + 1) % blockSize)) % blockSize) + 1;
+		   wrappedLength = lc + paddingSize + 8;
+		   Max lc is when (lc + 1) % blockSize == 0, which gives paddingSize = 1.
+		   Then wrappedLength = lc + 1 + 8 = lc + 9 <= 255 => lc <= 246.
+		   If we want a constant size that ALWAYS fits, we must assume worst-case padding.
+		   Worst-case paddingSize = blockSize.
+		   wrappedLength = lc + blockSize + 8 <= 255 => lc <= 247 - blockSize.
+		   For blockSize=8 (SCP01/02): lc <= 239.
+		   For blockSize=16 (SCP03): lc <= 231.
+		*/
+		return 255 - macSize - blockSize;
+	} else {
+		return 255 - macSize;
+	}
+}
+
 static OPGP_ERROR_STATUS send_data_in_chunks(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
 											  GP211_SECURITY_INFO *secInfo, BYTE *sendBuffer, DWORD offset,
 											  BYTE *data, DWORD dataLength,
@@ -963,7 +1013,7 @@ static OPGP_ERROR_STATUS send_data_in_chunks(OPGP_CARD_CONTEXT cardContext, OPGP
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE));
 			goto end;
 		}
-		maxChunkByBuffer = APDU_COMMAND_LEN - offset - 1;
+		maxChunkByBuffer = get_max_apdu_data_size(secInfo) - offset;
 
 		DWORD chunkLen = remaining;
 		if (chunkLen > 255) {
@@ -978,8 +1028,10 @@ static OPGP_ERROR_STATUS send_data_in_chunks(OPGP_CARD_CONTEXT cardContext, OPGP
 		}
 
 		BOOL last = (pos + chunkLen == dataLength);
-		if (last) {
+		if (!last) {
 			sendBuffer[2] |= 0x80;
+		} else {
+			sendBuffer[2] &= 0x7F;
 		}
 
 		if (offset + chunkLen + 1 > APDU_COMMAND_LEN) {
@@ -998,7 +1050,8 @@ static OPGP_ERROR_STATUS send_data_in_chunks(OPGP_CARD_CONTEXT cardContext, OPGP
 		}
 		CHECK_SW_9000(recvBuffer, *recvBufferLength, status);
 		pos += chunkLen;
-		offset = 0;
+		// set offset back to LC position
+		offset = 5;
 	}
 
 	OPGP_ERROR_CREATE_NO_ERROR(status);
@@ -1359,7 +1412,7 @@ OPGP_ERROR_STATUS put_delegated_management_token_keys(OPGP_CARD_CONTEXT cardCont
 
 	// send the stuff
 	sendBuffer[4] = (BYTE)i - 5;
-	sendBuffer[i++] = 0x00; // Le
+	sendBuffer[i] = 0x00; // Le
 	status = send_data_in_chunks(cardContext, cardInfo, secInfo, sendBuffer, i,
 							  keyDataField, keyDataFieldLength, recvBuffer, &recvBufferLength);
 	if ( OPGP_ERROR_CHECK(status)) {
@@ -1424,7 +1477,7 @@ OPGP_ERROR_STATUS put_delegated_management_receipt_keys(OPGP_CARD_CONTEXT cardCo
 	// send the stuff
 	sendBuffer[4] = (BYTE)i - 5;
 
-	sendBuffer[i++] = 0x00; // Le
+	sendBuffer[i] = 0x00; // Le
 
 	status = send_data_in_chunks(cardContext, cardInfo, secInfo, sendBuffer, i,
 							  keyDataField, currentKeyDataFieldLength, recvBuffer, &recvBufferLength);

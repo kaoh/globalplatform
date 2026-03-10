@@ -1479,14 +1479,16 @@ OPGP_ERROR_STATUS get_key_data_field(GP211_SECURITY_INFO *secInfo,
                                      BYTE keyCheckValue[3], BOOL includeKeyCheckValue) {
 	OPGP_ERROR_STATUS status;
 	DWORD i=0;
-	BYTE encrypted_key[32];
+	BYTE encrypted_key[512];
 	DWORD encrypted_key_length;
 	LONG result;
 	BOOL isSensitive;
 	OPGP_LOG_START(_T("get_key_data_field"));
 	isSensitive = (keyType == GP211_KEY_TYPE_AES || keyType == GP211_KEY_TYPE_3DES || keyType == GP211_KEY_TYPE_DES
 		|| keyType == GP211_KEY_TYPE_SM4 || keyType == GP211_KEY_TYPE_3DES_CBC || keyType == GP211_KEY_TYPE_DES_CBC
-		|| keyType == GP211_KEY_TYPE_DES_ECB);
+		|| keyType == GP211_KEY_TYPE_DES_ECB || keyType == GP211_KEY_TYPE_RSA_PRIV_ENC_N || keyType == GP211_KEY_TYPE_RSA_PRIV_D
+		|| keyType == GP211_KEY_TYPE_RSA_PRIV_P || keyType == GP211_KEY_TYPE_RSA_PRIV_Q || keyType == GP211_KEY_TYPE_RSA_PRIV_PQ
+		|| keyType == GP211_KEY_TYPE_RSA_PRIV_DP1 || keyType == GP211_KEY_TYPE_RSA_PRIV_DQ1);
 	// set key type
 	if (i+1 > *keyDataFieldLength) {
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
@@ -1499,7 +1501,7 @@ OPGP_ERROR_STATUS get_key_data_field(GP211_SECURITY_INFO *secInfo,
 			goto end;
 		}
 		if (encrypted_key_length != keyDataLength) {
-			// + 1 byte key component length field
+			// + n byte key component length field
 			result = write_TLV_length(keyDataField, i, *keyDataFieldLength - i, (USHORT)(encrypted_key_length+1));
 			if (!result) {
 				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));

@@ -155,15 +155,15 @@ extern "C"
 #define GP211_SCP03_SECURITY_LEVEL_R_ENC_R_MAC 0x30 //!< Secure Channel Protocol '03': R-Encryption and R-MAC. Used only with BEGIN R-MAC.
 
 #define GP211_KEY_TYPE_RSA 0xF0 //!< 'F0' Internal key type for a RSA.
-#define GP211_KEY_TYPE_RSA_PUB_N 0xA1 //!< 'A1' RSA Public Key - modulus N component (clear text).
 #define GP211_KEY_TYPE_RSA_PUB_E 0xA0 //!< 'A0' RSA Public Key - public exponent e component (clear text)
-#define GP211_KEY_TYPE_RSA_PRIV_N 0xA2 //!< ''A2' RSA Private Key - modulus N component
-#define GP211_KEY_TYPE_RSA_PRIV_D 0xA3 //!< ''A3' RSA Private Key - private exponent d component
-#define GP211_KEY_TYPE_RSA_PRIV_P 0xA4 //!< ''A4' RSA Private Key - Chinese Remainder P component
-#define GP211_KEY_TYPE_RSA_PRIV_Q 0xA5 //!< ''A5' RSA Private Key - Chinese Remainder Q component
-#define GP211_KEY_TYPE_RSA_PRIV_PQ 0xA6 //!< ''A6' RSA Private Key - Chinese Remainder PQ component
-#define GP211_KEY_TYPE_RSA_PRIV_DP1 0xA7 //!< ''A7' RSA Private Key - Chinese Remainder DP1 component
-#define GP211_KEY_TYPE_RSA_PRIV_DQ1 0xA8 //!< ''A8' RSA Private Key - Chinese Remainder DQ1 component
+#define GP211_KEY_TYPE_RSA_PUB_N 0xA1 //!< 'A1' RSA Public Key - modulus N component (clear text).
+#define GP211_KEY_TYPE_RSA_PRIV_ENC_N 0xA2 //!< 'A2' RSA Private Key - modulus N component (encrypted)
+#define GP211_KEY_TYPE_RSA_PRIV_D 0xA3 //!< 'A3' RSA Private Key - private exponent d component
+#define GP211_KEY_TYPE_RSA_PRIV_P 0xA4 //!< 'A4' RSA Private Key - Chinese Remainder P component
+#define GP211_KEY_TYPE_RSA_PRIV_Q 0xA5 //!< 'A5' RSA Private Key - Chinese Remainder Q component
+#define GP211_KEY_TYPE_RSA_PRIV_PQ 0xA6 //!< 'A6' RSA Private Key - Chinese Remainder PQ component
+#define GP211_KEY_TYPE_RSA_PRIV_DP1 0xA7 //!< 'A7' RSA Private Key - Chinese Remainder DP1 component
+#define GP211_KEY_TYPE_RSA_PRIV_DQ1 0xA8 //!< 'A8' RSA Private Key - Chinese Remainder DQ1 component
 
 
 #define GP211_KEY_TYPE_3DES 0x81 //!< Reserved (triple DES).

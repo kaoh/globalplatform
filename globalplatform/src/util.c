@@ -175,8 +175,8 @@ LONG parse_apdu_case(PBYTE apduCommand, DWORD apduCommandLength, PBYTE caseAPDU,
  * \return Number of bytes written, or -1 if insufficient space.
  */
 LONG write_TLV_length(PBYTE buffer, DWORD offset, DWORD lengthLeft, USHORT length) {
-	if (length <= 128) {
-		// Short form: 0x00-0x80 (1 byte)
+	if (length < 128) {
+		// Short form: 0x00-0x7F (1 byte)
 		if (lengthLeft < 1) {
 			return -1;
 		}
