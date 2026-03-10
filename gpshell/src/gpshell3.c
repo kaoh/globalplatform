@@ -194,8 +194,8 @@ static void print_usage(const char *prog) {
         "      Use either --key (single base key) OR all of --enc/--mac/--dek.\n"
         "      --type: Key type (default: aes).\n"
         "      --derive: Key derivation method for single base key (default: none).\n"
-        "  put-dm --kv <ver> --new-kv <ver> [--token-type <rsa>] [--receipt-type <aes|des>] \\\n"
-        "         <pem-file>[:pass] <receipt-key-hex>\n"
+        "  put-dm-token --kv <ver> [--new-kv <ver>] [--token-type <rsa>] <pem-file>[:pass]\n"
+        "  put-dm-receipt --kv <ver> [--new-kv <ver>] [--receipt-type <aes|des>] <receipt-key-hex>\n"
         "      Put delegated management keys.\n"
         "      --kv <ver>: Key set version number to put delegated management keys into, 0 means that a new key set is created (mandatory).\n"
         "      --new-kv <ver>: New key set version when replacing keys (mandatory).\n"
@@ -1815,41 +1815,42 @@ static int cmd_install_sd(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECU
         return -1;
     }
 
-    // Select the new security domain
-    if (!status_ok(OPGP_select_application(ctx, info, sec, instance_aid, (DWORD)instance_len))) {
-        fprintf(stderr, "install-sd: OPGP_select_application failed for the new SD\n");
-        return -1;
-    }
-
-    // Re-establish secure channel with the newly selected SD (using issuer SD keys)
-    if (mutual_auth(ctx, info, sec, keyset_ver, key_index, derivation, sec_level_opt, verbose,
-                    baseKeyPtr, encKeyPtr, macKeyPtr, dekKeyPtr, keyLength,
-                    scp_protocol, scp_impl) != 0) {
-        fprintf(stderr, "install-sd: mutual authentication failed\n");
-        return -1;
-    }
-
-    crd.scp[0] = g_current_scp;
-    crd.scpImpl[0] = g_current_scp_impl;
-    crd.scpLength = 1;
-
-    crd.cardConfigurationDetailsOid[0] = '\0';
-    crd.cardChipDetailsOid[0] = '\0';
-    crd.issuerSecurityDomainsTrustPointCertificateInformationOid[0] = '\0';
-    crd.issuerSecurityDomainCertificateInformationOid[0] = '\0';
-
-    BYTE crd_buf[1024];
-    DWORD crd_buf_len = (DWORD)sizeof(crd_buf);
-    if (!status_ok(GP211_build_card_recognition_data(&crd, crd_buf, &crd_buf_len))) {
-        fprintf(stderr, "install-sd: GP211_build_card_recognition_data failed\n");
-        return -1;
-    }
-
-    if (!status_ok(GP211_store_data(ctx, info, sec, STORE_DATA_ENCRYPTION_NO_INFORMATION,
-                                   STORE_DATA_FORMAT_BER_TLV, false, crd_buf, crd_buf_len))) {
-        fprintf(stderr, "install-sd: GP211_store_data failed\n");
-        return -1;
-    }
+    // TODO: add card data
+    // // Select the new security domain
+    // if (!status_ok(OPGP_select_application(ctx, info, sec, instance_aid, (DWORD)instance_len))) {
+    //     fprintf(stderr, "install-sd: OPGP_select_application failed for the new SD\n");
+    //     return -1;
+    // }
+    //
+    // // Re-establish secure channel with the newly selected SD (using issuer SD keys)
+    // if (mutual_auth(ctx, info, sec, keyset_ver, key_index, derivation, sec_level_opt, verbose,
+    //                 baseKeyPtr, encKeyPtr, macKeyPtr, dekKeyPtr, keyLength,
+    //                 scp_protocol, scp_impl) != 0) {
+    //     fprintf(stderr, "install-sd: mutual authentication failed\n");
+    //     return -1;
+    // }
+    //
+    // crd.scp[0] = g_current_scp;
+    // crd.scpImpl[0] = g_current_scp_impl;
+    // crd.scpLength = 1;
+    //
+    // crd.cardConfigurationDetailsOid[0] = '\0';
+    // crd.cardChipDetailsOid[0] = '\0';
+    // crd.issuerSecurityDomainsTrustPointCertificateInformationOid[0] = '\0';
+    // crd.issuerSecurityDomainCertificateInformationOid[0] = '\0';
+    //
+    // BYTE crd_buf[1024];
+    // DWORD crd_buf_len = (DWORD)sizeof(crd_buf);
+    // if (!status_ok(GP211_build_card_recognition_data(&crd, crd_buf, &crd_buf_len))) {
+    //     fprintf(stderr, "install-sd: GP211_build_card_recognition_data failed\n");
+    //     return -1;
+    // }
+    //
+    // if (!status_ok(GP211_store_data(ctx, info, sec, STORE_DATA_ENCRYPTION_NO_INFORMATION,
+    //                                STORE_DATA_FORMAT_BER_TLV, false, crd_buf, crd_buf_len))) {
+    //     fprintf(stderr, "install-sd: GP211_store_data failed\n");
+    //     return -1;
+    // }
 
     return 0;
 }
@@ -2057,34 +2058,23 @@ static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURI
     return 0;
 }
 
-static int cmd_put_dm(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
-    BYTE setVer=0, newSetVer=0;
-    int newKvSet=0;
+static int cmd_put_dm_token(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
+    BYTE setVer=0, newSetVer=GP211_KEY_VERSION_TOKEN_VERIFICATION;
     const char *tokenType="rsa";
-    const char *receiptType="aes";
     const char *pem=NULL;
     char *pass=NULL;
-    const char *receiptKeyHex=NULL;
-    BYTE receiptKey[32];
-    DWORD keyLength=0;
 
-    // Parse arguments
     for (int i=0; i<argc; i++) {
         if (strcmp(argv[i], "--kv")==0 && i+1<argc) {
             setVer = (BYTE)atoi(argv[++i]);
         }
         else if (strcmp(argv[i], "--new-kv")==0 && i+1<argc) {
             newSetVer = (BYTE)atoi(argv[++i]);
-            newKvSet = 1;
         }
         else if (strcmp(argv[i], "--token-type")==0 && i+1<argc) {
             tokenType = argv[++i];
         }
-        else if (strcmp(argv[i], "--receipt-type")==0 && i+1<argc) {
-            receiptType = argv[++i];
-        }
         else if (!pem) {
-            // First positional argument is PEM file with optional :pass
             pem = argv[i];
             char *c = strchr((char*)pem, ':');
             if (c) {
@@ -2092,67 +2082,83 @@ static int cmd_put_dm(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY
                 pass = c + 1;
             }
         }
+    }
+
+    if (!pem) {
+        fprintf(stderr, "put-dm-token: missing PEM file path\n");
+        return -1;
+    }
+
+    BYTE tokenKeyType;
+    if (strcmp(tokenType, "rsa")==0) {
+        tokenKeyType = GP211_KEY_TYPE_RSA;
+    } else {
+        fprintf(stderr, "put-dm-token: unsupported --token-type '%s' (use rsa)\n", tokenType);
+        return -1;
+    }
+
+    TCHAR pem_t[MAX_PATH_BUF];
+    if (to_opgp_string(pem, pem_t, ARRAY_SIZE(pem_t)) != 0) {
+        fprintf(stderr, "put-dm-token: pem path too long\n");
+        return -1;
+    }
+
+    if (!status_ok(GP211_put_delegated_management_token_keys(ctx, info, sec,
+                                                              setVer, newSetVer,
+                                                              pem_t, pass,
+                                                              tokenKeyType))) {
+        return -1;
+    }
+    return 0;
+}
+
+static int cmd_put_dm_receipt(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
+    BYTE setVer=0, newSetVer=(BYTE)GP211_KEY_VERSION_RECEIPT_GENERATION;
+    const char *receiptType="aes";
+    const char *receiptKeyHex=NULL;
+    BYTE receiptKey[32];
+    DWORD keyLength=0;
+
+    for (int i=0; i<argc; i++) {
+        if (strcmp(argv[i], "--kv")==0 && i+1<argc) {
+            setVer = (BYTE)atoi(argv[++i]);
+        }
+        else if (strcmp(argv[i], "--new-kv")==0 && i+1<argc) {
+            newSetVer = (BYTE)atoi(argv[++i]);
+        }
+        else if (strcmp(argv[i], "--receipt-type")==0 && i+1<argc) {
+            receiptType = argv[++i];
+        }
         else if (!receiptKeyHex) {
-            // Second positional argument is receipt key hex
             receiptKeyHex = argv[i];
         }
     }
 
-    if (!pem) {
-        fprintf(stderr, "put-dm: missing PEM file path (use <pem-file>[:pass] <receipt-key-hex>)\n");
-        return -1;
-    }
-
-    if (!newKvSet) {
-        fprintf(stderr, "put-dm: missing --new-kv <ver>\n");
-        return -1;
-    }
-
     if (!receiptKeyHex) {
-        fprintf(stderr, "put-dm: missing receipt key hex (last positional parameter)\n");
+        fprintf(stderr, "put-dm-receipt: missing receipt key hex\n");
         return -1;
     }
 
-    // Parse receipt key
     size_t len = sizeof(receiptKey);
     if (hex_to_bytes(receiptKeyHex, receiptKey, &len) != 0) {
-        fprintf(stderr, "put-dm: invalid receipt key hex\n");
+        fprintf(stderr, "put-dm-receipt: invalid receipt key hex\n");
         return -1;
     }
     keyLength = (DWORD)len;
 
-    // Map token type string to byte value
-    BYTE tokenKeyType;
-    if (strcmp(tokenType, "rsa")==0) {
-        tokenKeyType = 0xA0; // GP211_KEY_TYPE_RSA_PUB
-    } else {
-        fprintf(stderr, "put-dm: unsupported --token-type '%s' (use rsa)\n", tokenType);
-        return -1;
-    }
-
-    // Map receipt type string to byte value
-    BYTE receiptKeyType;
+    BYTE receiptKeyType = 0;
     if (strcmp(receiptType, "aes")==0) {
         receiptKeyType = 0x88; // GP211_KEY_TYPE_AES
     } else if (strcmp(receiptType, "des")==0) {
         receiptKeyType = 0x80; // GP211_KEY_TYPE_DES
     } else {
-        fprintf(stderr, "put-dm: unsupported --receipt-type '%s' (use aes|des)\n", receiptType);
+        fprintf(stderr, "put-dm-receipt: unsupported --receipt-type '%s' (use aes|des)\n", receiptType);
         return -1;
     }
 
-    // Call GP211_put_delegated_management_keys
-    TCHAR pem_t[MAX_PATH_BUF];
-    OPGP_STRING pem_opgp = NULL;
-    if (to_opgp_string(pem, pem_t, ARRAY_SIZE(pem_t)) != 0) {
-        fprintf(stderr, "put-dm: pem path too long\n");
-        return -1;
-    }
-    pem_opgp = pem_t;
-    if (!status_ok(GP211_put_delegated_management_keys(ctx, info, sec,
-                                                        setVer, newSetVer,
-                                                        pem_opgp, pass,
-                                                        tokenKeyType, receiptKey, keyLength, receiptKeyType))) {
+    if (!status_ok(GP211_put_delegated_management_receipt_keys(ctx, info, sec,
+                                                                setVer, newSetVer,
+                                                                receiptKey, keyLength, receiptKeyType))) {
         return -1;
     }
     return 0;
@@ -3316,7 +3322,8 @@ int main(int argc, char **argv) {
     else if (!strcmp(cmd, "move")) rc = cmd_move(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "put-key")) rc = cmd_put_key(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "put-auth")) rc = cmd_put_auth(ctx, info, &sec, argc - i, &argv[i]);
-    else if (!strcmp(cmd, "put-dm")) rc = cmd_put_dm(ctx, info, &sec, argc - i, &argv[i]);
+    else if (!strcmp(cmd, "put-dm-token")) rc = cmd_put_dm_token(ctx, info, &sec, argc - i, &argv[i]);
+    else if (!strcmp(cmd, "put-dm-receipt")) rc = cmd_put_dm_receipt(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "del-key")) rc = cmd_del_key(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "apdu")) rc = cmd_apdu(ctx, info, sec_ptr, argc - i, &argv[i]);
     else if (!strcmp(cmd, "status")) rc = cmd_status(ctx, info, &sec, argc - i, &argv[i]);

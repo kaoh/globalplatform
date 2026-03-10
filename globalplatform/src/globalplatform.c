@@ -251,11 +251,17 @@ OPGP_ERROR_STATUS calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, 
 							 PBYTE installToken, PDWORD installTokenLength,
 							 OPGP_STRING PEMKeyFileName, char *passPhrase);
 
+
 OPGP_NO_API
-OPGP_ERROR_STATUS put_delegated_management_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-                                                BYTE keySetVersion, BYTE newKeySetVersion,
-                                                OPGP_STRING PEMKeyFileName, char *passPhrase,
-                                                BYTE tokenKeyType, BYTE receiptKey[32], DWORD keyLength, BYTE receiptKeyType);
+OPGP_ERROR_STATUS put_delegated_management_token_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+                                                      BYTE keySetVersion, BYTE newKeySetVersion,
+                                                      OPGP_STRING PEMKeyFileName, char *passPhrase,
+                                                      BYTE tokenKeyType);
+
+OPGP_NO_API
+OPGP_ERROR_STATUS put_delegated_management_receipt_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+                                                        BYTE keySetVersion, BYTE newKeySetVersion,
+                                                        BYTE receiptKey[32], DWORD keyLength, BYTE receiptKeyType);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS put_3des_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -903,7 +909,7 @@ static OPGP_ERROR_STATUS add_rsa_key_data(GP211_SECURITY_INFO *secInfo,
 										   BYTE *keyCheckValue) {
 	OPGP_ERROR_STATUS status;
 	BYTE rsa3[] = {3};
-	BYTE rsa65535[] = {1,0,1};
+	BYTE rsa65537[] = {1,0,1};
 	BYTE keyDataField[600];
 	DWORD keyDataFieldLength = 600;
 
@@ -925,8 +931,8 @@ static OPGP_ERROR_STATUS add_rsa_key_data(GP211_SECURITY_INFO *secInfo,
 		if (OPGP_ERROR_CHECK(status)) {
 			return status;
 		}
-	} else if (rsa_exponent == 65535) {
-		status = get_key_data_field(secInfo, rsa65535, 3,
+	} else if (rsa_exponent == 65537) {
+		status = get_key_data_field(secInfo, rsa65537, 3,
 			   GP211_KEY_TYPE_RSA_PUB_E, keyDataField, &keyDataFieldLength, keyCheckValue, true);
 		if (OPGP_ERROR_CHECK(status)) {
 			return status;
@@ -982,7 +988,7 @@ static OPGP_ERROR_STATUS send_data_in_chunks(OPGP_CARD_CONTEXT cardContext, OPGP
 		}
 
 		memcpy(sendBuffer + offset, data + pos, chunkLen);
-		sendBuffer[4] = (BYTE)chunkLen;
+		sendBuffer[4] = (BYTE)(chunkLen + offset - 5);
 		/* Le */
 		sendBuffer[offset + chunkLen] = 0x00;
 		sendBufferLength = offset + chunkLen + 1;
@@ -992,6 +998,7 @@ static OPGP_ERROR_STATUS send_data_in_chunks(OPGP_CARD_CONTEXT cardContext, OPGP
 		}
 		CHECK_SW_9000(recvBuffer, *recvBufferLength, status);
 		pos += chunkLen;
+		offset = 0;
 	}
 
 	OPGP_ERROR_CREATE_NO_ERROR(status);
@@ -1012,7 +1019,7 @@ OPGP_ERROR_STATUS put_rsa_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO card
 	LONG rsa_exponent;
 	BYTE keyCheckValue[3];
 	BYTE keyDataField[600];
-	DWORD keyDataFieldLength=600;
+	DWORD keyDataFieldLength=0;
 	OPGP_LOG_START(_T("put_rsa_key"));
 
 	status = read_public_rsa_key(PEMKeyFileName, passPhrase, rsa_modulus, &rsa_modulus_length, &rsa_exponent);
@@ -1158,104 +1165,6 @@ end:
 	return status;
 }
 
-OPGP_ERROR_STATUS put_delegated_management_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-                                                BYTE keySetVersion, BYTE newKeySetVersion,
-                                                OPGP_STRING PEMKeyFileName, char *passPhrase,
-                                                BYTE tokenKeyType, BYTE receiptKey[32], DWORD keyLength, BYTE receiptKeyType) {
-	OPGP_ERROR_STATUS status;
-	BYTE sendBuffer[APDU_COMMAND_LEN];
-	DWORD recvBufferLength=APDU_RESPONSE_LEN;
-	BYTE recvBuffer[APDU_RESPONSE_LEN];
-	BYTE keyCheckValue[8];
-
-	BYTE keyDataField[1024];
-	DWORD keyDataFieldLength=1024;
-	DWORD currentKeyDataFieldLength;
-	DWORD keyDataFieldOffet = 0;
-
-	DWORD i=0;
-	BYTE token_verification_rsa_modulus[512];
-	DWORD rsa_modulus_length = 512;
-	LONG token_verification_rsa_exponent;
-	BOOL withKeyCheck = false;
-
-	OPGP_LOG_START(_T("put_delegated_management_keys"));
-	sendBuffer[i++] = 0x80;
-	sendBuffer[i++] = 0xD8;
-	sendBuffer[i++] = keySetVersion;
-	sendBuffer[i++] = 0x01; // put multiple keys starting at index 1
-	sendBuffer[i++] = 0x00; // Lc later calculated
-
-	sendBuffer[i++] = newKeySetVersion;
-
-	switch (tokenKeyType) {
-		case GP211_KEY_TYPE_RSA:
-			// read public key
-			status = read_public_rsa_key(PEMKeyFileName, passPhrase, token_verification_rsa_modulus, &rsa_modulus_length, &token_verification_rsa_exponent);
-			if (OPGP_ERROR_CHECK(status)) {
-				goto end;
-			}
-			// Token Verification Key
-			currentKeyDataFieldLength = keyDataFieldLength;
-			status = add_rsa_key_data(secInfo, token_verification_rsa_modulus, rsa_modulus_length,
-				token_verification_rsa_exponent, keyDataField, &currentKeyDataFieldLength, keyCheckValue);
-			if (OPGP_ERROR_CHECK(status)) {
-				goto end;
-			}
-			keyDataFieldOffet += currentKeyDataFieldLength;
-			break;
-		default:
-			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_WRONG_KEY_TYPE, OPGP_stringify_error(OPGP_ERROR_WRONG_KEY_TYPE)); goto end;
-	}
-
-	currentKeyDataFieldLength = keyDataFieldLength - keyDataFieldOffet;
-	switch (receiptKeyType) {
-		case GP211_KEY_TYPE_DES:
-		case GP211_KEY_TYPE_AES:
-			case GP211_KEY_TYPE_3DES:
-		case GP211_KEY_TYPE_SM4:
-		case GP211_KEY_TYPE_3DES_CBC:
-			case GP211_KEY_TYPE_DES_CBC:
-		case GP211_KEY_TYPE_DES_ECB:
-			withKeyCheck = true;
-			status = get_key_data_field(secInfo, receiptKey, keyLength, receiptKeyType, keyDataField+keyDataFieldOffet, &currentKeyDataFieldLength, keyCheckValue, true);
-			if ( OPGP_ERROR_CHECK(status)) {
-				goto end;
-			}
-			keyDataFieldOffet += currentKeyDataFieldLength;
-			break;
-		case GP211_KEY_TYPE_RSA:
-			status = add_rsa_key_data(secInfo, token_verification_rsa_modulus, rsa_modulus_length,
-				token_verification_rsa_exponent, keyDataField+keyDataFieldOffet, &currentKeyDataFieldLength, keyCheckValue);
-			if (OPGP_ERROR_CHECK(status)) {
-				goto end;
-			}
-			keyDataFieldOffet += currentKeyDataFieldLength;
-			break;
-		default:
-			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_WRONG_KEY_TYPE, OPGP_stringify_error(OPGP_ERROR_WRONG_KEY_TYPE)); goto end;
-	}
-	// send the stuff
-
-	sendBuffer[4] = (BYTE)i - 5;
-
-	sendBuffer[i++] = 0x00; // Le
-
-	status = send_data_in_chunks(cardContext, cardInfo, secInfo, sendBuffer, i,
-							  keyDataField, keyDataFieldOffet, recvBuffer, &recvBufferLength);
-	if ( OPGP_ERROR_CHECK(status)) {
-		goto end;
-	}
-
-	if (withKeyCheck && memcmp(keyCheckValue, recvBuffer+1, 3) != 0)
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_KEY_CHECK_VALUE, OPGP_stringify_error(OPGP_ERROR_KEY_CHECK_VALUE)); goto end; }
-	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
-end:
-
-	OPGP_LOG_END(_T("put_delegated_management_keys"), status);
-	return status;
-}
-
 /**
  * A keySetVersion value of 0x00 adds a new secure channel key set.
  * Any other value between 0x01 and 0x7f must match an existing key set version.
@@ -1397,30 +1306,156 @@ end:
 	return status;
 }
 
-/**
- * A keySetVersion value of 0x00 adds a new secure channel key set.
- * Any other value between 0x01 and 0x7f must match an existing key set version.
- * The new key set version defines the key set version a the new secure channel keys belongs to.
- * This can be the same key version or a new not existing key set version.
- * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
- * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
- * \param keySetVersion [in] An existing key set version.
- * \param newKeySetVersion [in] The new key set version.
- * \param PEMKeyFileName [in] A PEM file name with the public RSA key.
- * \param *passPhrase [in] The passphrase. Must be an ASCII string.
- * \param receiptKey [in] The new Receipt Generation key.
- * \param keyLength [in] The receipt key length. 16, 24 or 32 bytes.
- * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
- */
-OPGP_ERROR_STATUS GP211_put_delegated_management_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-								   BYTE keySetVersion, BYTE newKeySetVersion,
-								   OPGP_STRING PEMKeyFileName, char *passPhrase,
-								   BYTE tokenKeyType, BYTE receiptKey[32], DWORD keyLength, BYTE receiptKeyType) {
-	return put_delegated_management_keys(cardContext, cardInfo, secInfo,
-	                                     keySetVersion, newKeySetVersion,
-	                                     PEMKeyFileName, passPhrase,
-	                                     tokenKeyType, receiptKey, keyLength, receiptKeyType);
+
+OPGP_ERROR_STATUS put_delegated_management_token_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+                                                      BYTE keySetVersion, BYTE newKeySetVersion,
+                                                      OPGP_STRING PEMKeyFileName, char *passPhrase,
+                                                      BYTE tokenKeyType) {
+	OPGP_ERROR_STATUS status;
+	BYTE sendBuffer[APDU_COMMAND_LEN];
+	DWORD recvBufferLength=APDU_RESPONSE_LEN;
+	BYTE recvBuffer[APDU_RESPONSE_LEN];
+	BYTE keyCheckValue[8];
+
+	BYTE keyDataField[1024];
+	DWORD keyDataFieldLength=0;
+
+	DWORD i=0;
+	BYTE token_verification_rsa_modulus[512];
+	DWORD rsa_modulus_length = 512;
+	LONG token_verification_rsa_exponent;
+
+	OPGP_LOG_START(_T("put_delegated_management_token_keys"));
+
+	if (PEMKeyFileName == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_FILENAME, _T("PEMKeyFileName must be provided"));
+		goto end;
+	}
+
+	sendBuffer[i++] = 0x80;
+	sendBuffer[i++] = 0xD8;
+	sendBuffer[i++] = keySetVersion;
+	sendBuffer[i++] = 0x01; // put token key at index 1
+	sendBuffer[i++] = 0x00; // Lc later calculated
+
+	sendBuffer[i++] = newKeySetVersion;
+
+	switch (tokenKeyType) {
+		case GP211_KEY_TYPE_RSA:
+			// read public key
+			status = read_public_rsa_key(PEMKeyFileName, passPhrase, token_verification_rsa_modulus, &rsa_modulus_length, &token_verification_rsa_exponent);
+			if (OPGP_ERROR_CHECK(status)) {
+				goto end;
+			}
+			status = add_rsa_key_data(secInfo, token_verification_rsa_modulus, rsa_modulus_length,
+				token_verification_rsa_exponent, keyDataField, &keyDataFieldLength, keyCheckValue);
+			if (OPGP_ERROR_CHECK(status)) {
+				goto end;
+			}
+			break;
+		default:
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_WRONG_KEY_TYPE, OPGP_stringify_error(OPGP_ERROR_WRONG_KEY_TYPE)); goto end;
+	}
+
+	// send the stuff
+	sendBuffer[4] = (BYTE)i - 5;
+	sendBuffer[i++] = 0x00; // Le
+	status = send_data_in_chunks(cardContext, cardInfo, secInfo, sendBuffer, i,
+							  keyDataField, keyDataFieldLength, recvBuffer, &recvBufferLength);
+	if ( OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+
+	OPGP_LOG_END(_T("put_delegated_management_token_keys"), status);
+	return status;
+}
+
+OPGP_ERROR_STATUS put_delegated_management_receipt_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+                                                        BYTE keySetVersion, BYTE newKeySetVersion,
+                                                        BYTE receiptKey[32], DWORD keyLength, BYTE receiptKeyType) {
+	OPGP_ERROR_STATUS status;
+	BYTE sendBuffer[APDU_COMMAND_LEN];
+	DWORD recvBufferLength=APDU_RESPONSE_LEN;
+	BYTE recvBuffer[APDU_RESPONSE_LEN];
+	BYTE keyCheckValue[8];
+
+	BYTE keyDataField[1024];
+	DWORD currentKeyDataFieldLength=1024;
+
+	DWORD i=0;
+	BOOL withKeyCheck = false;
+
+	OPGP_LOG_START(_T("put_delegated_management_receipt_keys"));
+
+	if (receiptKeyType == 0) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_WRONG_KEY_TYPE, _T("receiptKeyType must be provided"));
+		goto end;
+	}
+
+	sendBuffer[i++] = 0x80;
+	sendBuffer[i++] = 0xD8;
+	sendBuffer[i++] = keySetVersion;
+	sendBuffer[i++] = 0x02; // put receipt key at index 2
+	sendBuffer[i++] = 0x00; // Lc later calculated
+
+	sendBuffer[i++] = newKeySetVersion;
+
+	switch (receiptKeyType) {
+		case GP211_KEY_TYPE_DES:
+		case GP211_KEY_TYPE_AES:
+		case GP211_KEY_TYPE_3DES:
+		case GP211_KEY_TYPE_SM4:
+		case GP211_KEY_TYPE_3DES_CBC:
+		case GP211_KEY_TYPE_DES_CBC:
+		case GP211_KEY_TYPE_DES_ECB:
+			withKeyCheck = true;
+			status = get_key_data_field(secInfo, receiptKey, keyLength, receiptKeyType, keyDataField, &currentKeyDataFieldLength, keyCheckValue, true);
+			if ( OPGP_ERROR_CHECK(status)) {
+				goto end;
+			}
+			break;
+		default:
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_WRONG_KEY_TYPE, OPGP_stringify_error(OPGP_ERROR_WRONG_KEY_TYPE)); goto end;
+	}
+
+	// send the stuff
+	sendBuffer[4] = (BYTE)i - 5;
+
+	sendBuffer[i++] = 0x00; // Le
+
+	status = send_data_in_chunks(cardContext, cardInfo, secInfo, sendBuffer, i,
+							  keyDataField, currentKeyDataFieldLength, recvBuffer, &recvBufferLength);
+	if ( OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+
+	if (withKeyCheck && memcmp(keyCheckValue, recvBuffer+1, 3) != 0)
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_KEY_CHECK_VALUE, OPGP_stringify_error(OPGP_ERROR_KEY_CHECK_VALUE)); goto end; }
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+
+	OPGP_LOG_END(_T("put_delegated_management_receipt_keys"), status);
+	return status;
+}
+
+OPGP_ERROR_STATUS GP211_put_delegated_management_token_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+                                                            BYTE keySetVersion, BYTE newKeySetVersion,
+                                                            OPGP_STRING PEMKeyFileName, char *passPhrase,
+                                                            BYTE tokenKeyType) {
+	return put_delegated_management_token_keys(cardContext, cardInfo, secInfo,
+	                                           keySetVersion, newKeySetVersion,
+	                                           PEMKeyFileName, passPhrase, tokenKeyType);
+}
+
+OPGP_ERROR_STATUS GP211_put_delegated_management_receipt_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+                                                              BYTE keySetVersion, BYTE newKeySetVersion,
+                                                              BYTE receiptKey[32], DWORD keyLength, BYTE receiptKeyType) {
+	return put_delegated_management_receipt_keys(cardContext, cardInfo, secInfo,
+	                                             keySetVersion, newKeySetVersion,
+	                                             receiptKey, keyLength, receiptKeyType);
 }
 
 /**
@@ -7150,9 +7185,27 @@ OPGP_ERROR_STATUS OP201_put_delegated_management_keys(OPGP_CARD_CONTEXT cardCont
 								   BYTE receiptGenerationKey[16]) {
 	OPGP_ERROR_STATUS status;
 	GP211_SECURITY_INFO gp211secInfo;
+	BYTE currentKeySetVersion = keySetVersion;
+
 	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
-	status = put_delegated_management_keys(cardContext, cardInfo, &gp211secInfo, keySetVersion, newKeySetVersion,
-	                                       PEMKeyFileName, passPhrase, OP201_KEY_TYPE_RSA, receiptGenerationKey, 16, OP201_KEY_TYPE_DES_ECB);
+
+	if (PEMKeyFileName != NULL) {
+		status = put_delegated_management_token_keys(cardContext, cardInfo, &gp211secInfo, currentKeySetVersion, newKeySetVersion, PEMKeyFileName, passPhrase, OP201_KEY_TYPE_RSA);
+		if (OPGP_ERROR_CHECK(status)) {
+			goto end;
+		}
+		currentKeySetVersion = newKeySetVersion;
+	}
+
+	if (receiptGenerationKey != NULL) {
+		status = put_delegated_management_receipt_keys(cardContext, cardInfo, &gp211secInfo, currentKeySetVersion, newKeySetVersion, receiptGenerationKey, 16, OP201_KEY_TYPE_DES_ECB);
+		if (OPGP_ERROR_CHECK(status)) {
+			goto end;
+		}
+	}
+
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 	return status;
 }

@@ -1368,6 +1368,7 @@ static int handleCommands(FILE *fd)
                     goto end;
                 }
                 status = OPGP_select_application (cardContext, cardInfo,
+                                              &securityInfo211,
                                               (PBYTE)optionStr.AID, optionStr.AIDLen);
                 if (OPGP_ERROR_CHECK(status))
                 {
@@ -2049,39 +2050,84 @@ static int handleCommands(FILE *fd)
                 }
                 goto timer;
             }
-            else if (_tcscmp(token, _T("put_dm_keys")) == 0)
+            else if (_tcscmp(token, _T("put_dm_token_keys")) == 0)
             {
                 rv = handleOptions(&optionStr);
                 if (rv != EXIT_SUCCESS)
                 {
                     goto end;
                 }
-                if (platform_mode == PLATFORM_MODE_OP_201)
+                if (optionStr.newKeySetVersion == 0)
                 {
-                    status = OP201_put_delegated_management_keys(cardContext, cardInfo, &securityInfo201,
-                            optionStr.keySetVersion,
-                            optionStr.newKeySetVersion,
-                            optionStr.file,
-                            optionStr.passPhrase,
-                            optionStr.key);
+                    optionStr.newKeySetVersion = GP211_KEY_VERSION_TOKEN_VERIFICATION;
                 }
-                else if (platform_mode == PLATFORM_MODE_GP_211)
+                if (optionStr.file[0] == _T('\0'))
                 {
-                    status = GP211_put_delegated_management_keys(cardContext, cardInfo,
+                    _tprintf(_T("Error: put_dm_token_keys requires -file\n"));
+                    rv = EXIT_FAILURE;
+                    goto end;
+                }
+                if (platform_mode == PLATFORM_MODE_GP_211)
+                {
+                    status = GP211_put_delegated_management_token_keys(cardContext, cardInfo,
                             &securityInfo211,
                             optionStr.keySetVersion,
                             optionStr.newKeySetVersion,
                             optionStr.file,
-                            optionStr.passPhrase,
-                            optionStr.keyType,
-                            optionStr.key,
-                            optionStr.keyLength,
-                            optionStr.keyType);
+                            optionStr.passPhrase[0] == _T('\0') ? NULL : optionStr.passPhrase,
+                            optionStr.keyType == 0 ? GP211_KEY_TYPE_RSA : optionStr.keyType);
+                }
+                else {
+                    _tprintf(_T("Error: put_dm_token_keys only supported in GP211 mode\n"));
+                    rv = EXIT_FAILURE;
+                    goto end;
                 }
 
                 if (OPGP_ERROR_CHECK(status))
                 {
-                    _tprintf (_T("put_delegated_management_keys() returns 0x%08X (%s)\n"),
+                    _tprintf (_T("put_delegated_management_token_keys() returns 0x%08X (%s)\n"),
+                              (unsigned int)status.errorCode, status.errorMessage);
+                    rv = EXIT_FAILURE;
+                    goto end;
+                }
+                goto timer;
+            }
+            else if (_tcscmp(token, _T("put_dm_receipt_keys")) == 0)
+            {
+                rv = handleOptions(&optionStr);
+                if (rv != EXIT_SUCCESS)
+                {
+                    goto end;
+                }
+                if (optionStr.newKeySetVersion == 0)
+                {
+                    optionStr.newKeySetVersion = (BYTE)GP211_KEY_VERSION_RECEIPT_GENERATION;
+                }
+                if (optionStr.keyLength == 0)
+                {
+                    _tprintf(_T("Error: put_dm_receipt_keys requires -key\n"));
+                    rv = EXIT_FAILURE;
+                    goto end;
+                }
+                if (platform_mode == PLATFORM_MODE_GP_211)
+                {
+                    status = GP211_put_delegated_management_receipt_keys(cardContext, cardInfo,
+                            &securityInfo211,
+                            optionStr.keySetVersion,
+                            optionStr.newKeySetVersion,
+                            optionStr.key,
+                            optionStr.keyLength,
+                            optionStr.keyType == 0 ? 0x88 : optionStr.keyType);
+                }
+                else {
+                    _tprintf(_T("Error: put_dm_receipt_keys only supported in GP211 mode\n"));
+                    rv = EXIT_FAILURE;
+                    goto end;
+                }
+
+                if (OPGP_ERROR_CHECK(status))
+                {
+                    _tprintf (_T("put_delegated_management_receipt_keys() returns 0x%08X (%s)\n"),
                               (unsigned int)status.errorCode, status.errorMessage);
                     rv = EXIT_FAILURE;
                     goto end;

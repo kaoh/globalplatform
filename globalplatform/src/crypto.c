@@ -2279,9 +2279,7 @@ OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhra
 	OSSL_PARAM *_e;
 #endif
 	OPGP_LOG_START(_T("read_public_rsa_key"));
-	if (passPhrase == NULL)
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_PASSWORD, OPGP_stringify_error(OPGP_ERROR_INVALID_PASSWORD)); goto end; }
-	if ((PEMKeyFileName == NULL) || (_tcslen(PEMKeyFileName) == 0))
+	if (PEMKeyFileName == NULL || _tcslen(PEMKeyFileName) == 0)
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_FILENAME, OPGP_stringify_error(OPGP_ERROR_INVALID_FILENAME)); goto end; }
 	PEMKeyFile = _tfopen(PEMKeyFileName, _T("rb"));
 	if (PEMKeyFile == NULL) {
@@ -2289,7 +2287,11 @@ OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhra
 	}
 	key = EVP_PKEY_new();
 	if (!PEM_read_PUBKEY(PEMKeyFile, &key, NULL, passPhrase)) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+        /* If it fails, it might be a private key from which we can also get the public key */
+        rewind(PEMKeyFile);
+        if (!PEM_read_PrivateKey(PEMKeyFile, &key, NULL, passPhrase)) {
+            { OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+        }
 	};
 #ifndef OPENSSL3
 	rsa = EVP_PKEY_get1_RSA(key);

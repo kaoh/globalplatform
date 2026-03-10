@@ -170,9 +170,13 @@ __put_sc_key__ -keyver *keyver* -newkeyver *newkeyver* -key *key* -keyDerivation
 
 :    Replace key set version *keyver* using key derivation *derivation* using the master (mother) key *y*
 
-__put_dm_keys__ -keyver *keyver* -newkeyver *newkeyver* -file *public_rsa_key_file* -pass *password* -key *new_receipt_generation_key*
+__put_dm_token_keys__ -keyver *keyver* [-newkeyver *newkeyver*] -file *public_key_file* [-pass *password*]
 
-:     Add a RSA delegated management key in version *newkeyver*
+:     Add an asymmetric (RSA/ECC) delegated management token verification key. If *newkeyver* is not provided, it defaults to 0x70.
+
+__put_dm_receipt_keys__ -keyver *keyver* [-newkeyver *newkeyver*] -key *new_receipt_generation_key*
+
+:     Add a symmetric delegated management receipt generation key. If *newkeyver* is not provided, it defaults to 0x701.
 
 __send_apdu__ -sc 0 -APDU *apdu*
 

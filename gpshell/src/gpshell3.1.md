@@ -291,22 +291,36 @@ Options:
 - For `--type aes|3des`: provide the key via `--key <hex>`.
 - For `--type rsa`: provide an RSA public key in PEM via `--pem <file>[:pass]`.
 
-## put-dm
+## put-dm-token
 
-Put delegated management keys.
+Put delegated management token verification key.
 
 Synopsis:
 ```
-gpshell3 put-dm --kv <ver> [--new-kv <ver>] [--token-type <rsa>] [--receipt-type <aes|des>] <pem-file>[:pass] <receipt-key-hex>
+gpshell3 put-dm-token --kv <ver> [--new-kv <ver>] [--token-type <rsa>] <pem-file>[:pass]
 ```
 
 Options:
 
 - `--kv <ver>`: Key set version, defaults to 0, 0 means that a new key set is created (optional).
-- `--new-kv <ver>`: New key set version when replacing or creating a new key set (mandatory).
+- `--new-kv <ver>`: New key set version when replacing or creating a new key set, default 0x70 (optional).
 - `<pem-file>[:pass]`: Token signing key in PEM, optional passphrase after colon.
-- `<receipt-key-hex>`: Receipt key material (last positional parameter).
 - `--token-type`: Token key type, default `rsa`.
+
+## put-dm-receipt
+
+Put delegated management receipt key.
+
+Synopsis:
+```
+gpshell3 put-dm-receipt --kv <ver> [--new-kv <ver>] [--receipt-type <aes|des>] <receipt-key-hex>
+```
+
+Options:
+
+- `--kv <ver>`: Key set version, defaults to 0, 0 means that a new key set is created (optional).
+- `--new-kv <ver>`: New key set version when replacing or creating a new key set, default 0x701 (optional).
+- `<receipt-key-hex>`: Receipt key material (last positional parameter).
 - `--receipt-type`: Receipt key type, `aes` or `des` (default `aes`).
 
 ## del-key
