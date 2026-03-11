@@ -505,12 +505,16 @@ void mapGP211ToOP201ReceiptData(GP211_RECEIPT_DATA gp211receiptData,
 OPGP_NO_API
 void mapGP211ToOP201KeyInformation(GP211_KEY_INFORMATION gp211keyInformation,
 										  OP201_KEY_INFORMATION *op201keyInformation) {
+	BYTE k;
 	if (op201keyInformation == NULL)
 		return;
 	op201keyInformation->keyIndex = gp211keyInformation.keyIndex;
-	op201keyInformation->keyLength = gp211keyInformation.keyLength;
 	op201keyInformation->keySetVersion = gp211keyInformation.keySetVersion;
-	op201keyInformation->keyType = gp211keyInformation.keyType;
+	op201keyInformation->numKeyComponents = gp211keyInformation.numKeyComponents;
+	for (k = 0; k < gp211keyInformation.numKeyComponents; k++) {
+		op201keyInformation->keyComponents[k].keyLength = (BYTE)gp211keyInformation.keyComponents[k].keyLength;
+		op201keyInformation->keyComponents[k].keyType = gp211keyInformation.keyComponents[k].keyType;
+	}
 }
 
 OPGP_NO_API
@@ -984,11 +988,6 @@ static DWORD get_max_apdu_data_size(GP211_SECURITY_INFO *secInfo) {
 		/* Maximum data size is such that when adding padding and MAC, the total is <= 255.
 		   paddingSize = ((blockSize - ((lc + 1) % blockSize)) % blockSize) + 1;
 		   wrappedLength = lc + paddingSize + 8;
-		   Max lc is when (lc + 1) % blockSize == 0, which gives paddingSize = 1.
-		   Then wrappedLength = lc + 1 + 8 = lc + 9 <= 255 => lc <= 246.
-		   If we want a constant size that ALWAYS fits, we must assume worst-case padding.
-		   Worst-case paddingSize = blockSize.
-		   wrappedLength = lc + blockSize + 8 <= 255 => lc <= 247 - blockSize.
 		   For blockSize=8 (SCP01/02): lc <= 239.
 		   For blockSize=16 (SCP03): lc <= 231.
 		*/
@@ -998,52 +997,70 @@ static DWORD get_max_apdu_data_size(GP211_SECURITY_INFO *secInfo) {
 	}
 }
 
-static OPGP_ERROR_STATUS send_data_in_chunks(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
+static OPGP_ERROR_STATUS send_chained_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
 											  GP211_SECURITY_INFO *secInfo, BYTE *sendBuffer, DWORD offset,
 											  BYTE *data, DWORD dataLength,
-											  BYTE *recvBuffer, PDWORD recvBufferLength) {
+											  BYTE *recvBuffer, PDWORD recvBufferLength,
+											  BOOL invertedChaining, BOOL incrementBlockNumber,
+											  BOOL responseDataExpected) {
 	OPGP_ERROR_STATUS status;
 	DWORD pos = 0;
 	DWORD sendBufferLength;
+	BYTE blockNumber = 0;
 
 	while (pos < dataLength) {
 		DWORD remaining = dataLength - pos;
 		DWORD maxChunkByBuffer;
+		DWORD chunkLen;
+		BOOL last = false;
+
 		if (APDU_COMMAND_LEN <= offset + 1) {
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE));
 			goto end;
 		}
-		maxChunkByBuffer = get_max_apdu_data_size(secInfo) - offset;
 
-		DWORD chunkLen = remaining;
-		if (chunkLen > 255) {
-			chunkLen = 255;
-		}
-		if (chunkLen > maxChunkByBuffer) {
-			chunkLen = maxChunkByBuffer;
-		}
-		if (chunkLen == 0) {
+		maxChunkByBuffer = MAX_APDU_DATA_SIZE(secInfo) - (offset - 5);
+		if (maxChunkByBuffer > 255) maxChunkByBuffer = 255;
+		chunkLen = remaining;
+		if (chunkLen > maxChunkByBuffer) chunkLen = maxChunkByBuffer;
+		last = (pos + chunkLen == dataLength);
+
+		if (chunkLen == 0 && dataLength > 0) {
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE));
 			goto end;
 		}
 
-		BOOL last = (pos + chunkLen == dataLength);
-		if (!last) {
-			sendBuffer[2] |= 0x80;
+		if (invertedChaining) {
+			if (!last) {
+				sendBuffer[2] &= 0x7F;
+			} else {
+				sendBuffer[2] |= 0x80;
+			}
 		} else {
-			sendBuffer[2] &= 0x7F;
+			if (!last) {
+				sendBuffer[2] |= 0x80;
+			} else {
+				sendBuffer[2] &= 0x7F;
+			}
 		}
 
-		if (offset + chunkLen + 1 > APDU_COMMAND_LEN) {
+		if (incrementBlockNumber) {
+			sendBuffer[3] = blockNumber++;
+		}
+
+		if (offset + chunkLen + (responseDataExpected ? 1 : 0) > APDU_COMMAND_LEN) {
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE));
 			goto end;
 		}
 
 		memcpy(sendBuffer + offset, data + pos, chunkLen);
 		sendBuffer[4] = (BYTE)(chunkLen + offset - 5);
-		/* Le */
-		sendBuffer[offset + chunkLen] = 0x00;
-		sendBufferLength = offset + chunkLen + 1;
+
+		sendBufferLength = offset + chunkLen;
+		if (responseDataExpected) {
+			sendBuffer[sendBufferLength++] = 0x00;
+		}
+
 		status = OPGP_send_APDU(cardContext, cardInfo, secInfo, sendBuffer, sendBufferLength, recvBuffer, recvBufferLength);
 		if (OPGP_ERROR_CHECK(status)) {
 			return status;
@@ -1092,8 +1109,9 @@ OPGP_ERROR_STATUS put_rsa_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO card
 	sendBuffer[i++] = 0; // Lc later calculated
 	sendBuffer[i++] = newKeySetVersion;
 
-	status = send_data_in_chunks(cardContext, cardInfo, secInfo, sendBuffer, i,
-	                              keyDataField, keyDataFieldLength, recvBuffer, &recvBufferLength);
+	status = send_chained_data(cardContext, cardInfo, secInfo, sendBuffer, i,
+	                              keyDataField, keyDataFieldLength, recvBuffer, &recvBufferLength,
+								  false, false, true);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -1413,8 +1431,9 @@ OPGP_ERROR_STATUS put_delegated_management_token_keys(OPGP_CARD_CONTEXT cardCont
 	// send the stuff
 	sendBuffer[4] = (BYTE)i - 5;
 	sendBuffer[i] = 0x00; // Le
-	status = send_data_in_chunks(cardContext, cardInfo, secInfo, sendBuffer, i,
-							  keyDataField, keyDataFieldLength, recvBuffer, &recvBufferLength);
+	status = send_chained_data(cardContext, cardInfo, secInfo, sendBuffer, i,
+							  keyDataField, keyDataFieldLength, recvBuffer, &recvBufferLength,
+							  false, false, true);
 	if ( OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -1479,8 +1498,9 @@ OPGP_ERROR_STATUS put_delegated_management_receipt_keys(OPGP_CARD_CONTEXT cardCo
 
 	sendBuffer[i] = 0x00; // Le
 
-	status = send_data_in_chunks(cardContext, cardInfo, secInfo, sendBuffer, i,
-							  keyDataField, currentKeyDataFieldLength, recvBuffer, &recvBufferLength);
+	status = send_chained_data(cardContext, cardInfo, secInfo, sendBuffer, i,
+							  keyDataField, currentKeyDataFieldLength, recvBuffer, &recvBufferLength,
+							  false, false, true);
 	if ( OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -1535,10 +1555,6 @@ OPGP_ERROR_STATUS delete_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardI
 	OPGP_LOG_START(_T("delete_key"));
 	if ((keySetVersion == 0x00) && (keyIndex == 0xFF))
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_COMBINATION_KEY_SET_VERSION_KEY_INDEX, OPGP_stringify_error(OPGP_ERROR_INVALID_COMBINATION_KEY_SET_VERSION_KEY_INDEX)); goto end; }
-	//if (keySetVersion > 0x7f)
-	//	{ status = OPGP_ERROR_WRONG_KEY_VERSION; goto end; }
-	//if (keyIndex > 0x7f)
-	//	{ status = OPGP_ERROR_WRONG_KEY_INDEX; goto end; }
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xE4;
 	sendBuffer[i++] = 0x00;
@@ -2673,52 +2689,53 @@ OPGP_ERROR_STATUS get_key_information_templates(OPGP_CARD_CONTEXT cardContext, O
 		goto end;
 	}
 	offset = 0;
-	while (offset<tlv1.length) {
-		BOOL extended = 0;
+	while (offset < tlv1.length) {
 		DWORD j = 0;
+		BYTE k = 0;
 		// parse C0
-		result = read_TLV(tlv1.value+offset, tlv1.length, &tlv2);
+		result = read_TLV(tlv1.value + offset, tlv1.length - offset, &tlv2);
 		if (result == -1 || tlv2.tag != 0xC0) {
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 			goto end;
 		}
-		// TODO: our key information template is actually wrong, it should be able to hold multiple key types + length in it
-		if (*keyInformationLength <= i ) {
+		if (*keyInformationLength <= i) {
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_MORE_KEY_INFORMATION_TEMPLATES, OPGP_stringify_error(OPGP_ERROR_MORE_KEY_INFORMATION_TEMPLATES)); goto end; };
 		}
 		keyInformation[i].keyIndex = tlv2.value[j++];
 		keyInformation[i].keySetVersion = tlv2.value[j++];
-		// extended format if 0xFF
-		if (tlv2.value[j] == 0xFF) {
-			extended = 1;
-		}
-		if (extended) {
-			keyInformation[i].extended = 1;
-			while (tlv2.value[j] == 0xFF) {
-				// skip 0xFF
-				j++;
-				keyInformation[i].keyType = tlv2.value[j++];
-				keyInformation[i].keyLength = get_short(tlv2.value, j);
-				j+=2;
-			}
-			// extended has key usage and key access at the end
-			if (tlv2.value[j++]) {
-				if (tlv2.value[j - 1] == 1) {
-					keyInformation[i].keyUsage = tlv2.value[j++] << 8;
-				} else {
-					keyInformation[i].keyUsage = tlv2.value[j++] << 8;
-					keyInformation[i].keyUsage |= tlv2.value[j++];
+
+		while (j < tlv2.length && k < 8) {
+			if (tlv2.value[j] == 0xFF) {
+				keyInformation[i].keyComponents[k].extended = 1;
+				j++; // skip 0xFF
+				keyInformation[i].keyComponents[k].keyType = tlv2.value[j++];
+				keyInformation[i].keyComponents[k].keyLength = get_short(tlv2.value, j);
+				j += 2;
+				// extended has key usage and key access at the end
+				if (j < tlv2.length && tlv2.value[j++]) {
+					if (tlv2.value[j - 1] == 1) {
+						keyInformation[i].keyComponents[k].keyUsage = tlv2.value[j++] << 8;
+					}
+					else {
+						keyInformation[i].keyComponents[k].keyUsage = tlv2.value[j++] << 8;
+						keyInformation[i].keyComponents[k].keyUsage |= tlv2.value[j++];
+					}
+				}
+				if (j < tlv2.length && tlv2.value[j++]) {
+					keyInformation[i].keyComponents[k].keyAccess = tlv2.value[j++];
 				}
 			}
-			if (tlv2.value[j++]) {
-				keyInformation[i].keyAccess = tlv2.value[j++];
+			else {
+				keyInformation[i].keyComponents[k].extended = 0;
+				keyInformation[i].keyComponents[k].keyType = tlv2.value[j++];
+				keyInformation[i].keyComponents[k].keyLength = tlv2.value[j++];
+				if (keyInformation[i].keyComponents[k].keyLength == 0) {
+					keyInformation[i].keyComponents[k].keyLength = 256;
+				}
 			}
+			k++;
 		}
-		else {
-			keyInformation[i].extended = 0;
-			keyInformation[i].keyType = tlv2.value[j++];
-			keyInformation[i].keyLength = tlv2.value[j++];
-		}
+		keyInformation[i].numKeyComponents = k;
 
 		i++;
 		// increment by TLV
@@ -6696,53 +6713,24 @@ OPGP_ERROR_STATUS GP211_store_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 static OPGP_ERROR_STATUS store_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 	BYTE encryptionFlags, BYTE formatFlags, BOOL responseDataExpected, PBYTE data, DWORD dataLength) {
 	OPGP_ERROR_STATUS status;
-	DWORD sendBufferLength = 0;
 	DWORD recvBufferLength = APDU_RESPONSE_LEN;
 	BYTE recvBuffer[APDU_RESPONSE_LEN];
 	BYTE sendBuffer[APDU_COMMAND_LEN];
-	DWORD left, read;
-	BYTE blockNumber=0x00;
+
 	OPGP_LOG_START(_T("store_data"));
+
 	sendBuffer[0] = 0x80;
 	sendBuffer[1] = 0xE2;
-	read = 0;
-	left = dataLength;
-	while(left > 0) {
-		if (left <= MAX_APDU_DATA_SIZE(secInfo)) {
-			sendBuffer[2] = 0x80;
-			memcpy(sendBuffer+5, data+read, left);
-			read+=left;
-			sendBufferLength=5+left;
-			sendBuffer[4] = (BYTE)left;
-			left-=left;
-			if (responseDataExpected) {
-				sendBuffer[sendBufferLength++] = 0;
-			}
-		}
-		else {
-			sendBuffer[2] = 0x00;
-			memcpy(sendBuffer+5, data+read, MAX_APDU_DATA_SIZE(secInfo));
-			read+=MAX_APDU_DATA_SIZE(secInfo);
-			sendBufferLength=5+MAX_APDU_DATA_SIZE(secInfo);
-			sendBuffer[4] = MAX_APDU_DATA_SIZE(secInfo);
-			left-=MAX_APDU_DATA_SIZE(secInfo);
-		}
-		sendBuffer[2] |= encryptionFlags | formatFlags;
-		if (responseDataExpected) {
-			sendBuffer[2] |= 0x01;
-		}
-		sendBuffer[3] = blockNumber++;
-
-		recvBufferLength=256;
-		status = OPGP_send_APDU(cardContext, cardInfo, secInfo, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
-		if (OPGP_ERROR_CHECK(status)) {
-			goto end;
-		}
-		CHECK_SW_9000(recvBuffer, recvBufferLength, status);
+	sendBuffer[2] = encryptionFlags | formatFlags;
+	if (responseDataExpected) {
+		sendBuffer[2] |= 0x01;
 	}
+	sendBuffer[3] = 0x00;
 
-	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
-end:
+	status = send_chained_data(cardContext, cardInfo, secInfo, sendBuffer, 5,
+								  data, dataLength, recvBuffer, &recvBufferLength,
+								  true, true, responseDataExpected);
+
 	OPGP_LOG_END(_T("store_data"), status);
 	return status;
 }
@@ -7417,7 +7405,7 @@ OPGP_ERROR_STATUS OP201_get_key_information_templates(OPGP_CARD_CONTEXT cardCont
 	}
 end:
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
-	if (keyInformation) {
+	if (keyInformation && gp211keyInformation) {
 		free(gp211keyInformation);
 	}
 	return status;

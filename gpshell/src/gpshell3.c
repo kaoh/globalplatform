@@ -296,6 +296,11 @@ static void print_usage(const char *prog) {
         stderr);
 }
 
+static int parse_int(const char *s) {
+    if (s == NULL) return 0;
+    return (int)strtol(s, NULL, 0);
+}
+
 static int hex_to_bytes(const char *hex, unsigned char *out, size_t *outlen) {
     size_t len = strlen(hex), i = 0, j = 0;
     if (len % 2 != 0) return -1;
@@ -880,7 +885,7 @@ static int mutual_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
 
     // Parse SCP protocol if provided
     if (scp_protocol) {
-        scp = (BYTE)atoi(scp_protocol);
+        scp = (BYTE)parse_int(scp_protocol);
         if (scp == 1) {
             scp = GP211_SCP01;
             scpImpl = GP211_SCP01_IMPL_i05;
@@ -1360,34 +1365,35 @@ static int cmd_list_keys(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECUR
     for (DWORD i = 0; i < all_len; i++) {
         if (current_kv != (int)all[i].keySetVersion) {
             current_kv = (int)all[i].keySetVersion;
-            printf("kv=%d:\n", current_kv);
+            printf("kv=0x%02x:\n", current_kv);
         }
 
         printf("  idx=%u ", all[i].keyIndex);
-
-        const char *typeStr = key_type_to_string(all[i].keyType);
-        if (typeStr) {
-            printf("type=%s ", typeStr);
-        } else {
-            printf("type=0x%02X ", all[i].keyType);
-        }
-
-        printf("len=%u", all[i].keyLength);
-
-        if (all[i].extended) {
-            char usageBuf[256];
-            key_usage_to_string(all[i].keyUsage, usageBuf, sizeof(usageBuf));
-            printf(" usage=%s", usageBuf);
-
-            const char *accessStr = key_access_to_string(all[i].keyAccess);
-            if (accessStr) {
-                printf(" access=%s", accessStr);
+        for (BYTE k = 0; k < all[i].numKeyComponents; k++) {
+            if (k > 0) printf("         ");
+            const char *typeStr = key_type_to_string(all[i].keyComponents[k].keyType);
+            if (typeStr) {
+                printf("type=%s ", typeStr);
             } else {
-                printf(" access=0x%02X", all[i].keyAccess);
+                printf("type=0x%02X ", all[i].keyComponents[k].keyType);
             }
-        }
 
-        printf("\n");
+            printf("len=%u", all[i].keyComponents[k].keyLength);
+
+            if (all[i].keyComponents[k].extended) {
+                char usageBuf[256];
+                key_usage_to_string(all[i].keyComponents[k].keyUsage, usageBuf, sizeof(usageBuf));
+                printf(" usage=%s", usageBuf);
+
+                const char *accessStr = key_access_to_string(all[i].keyComponents[k].keyAccess);
+                if (accessStr) {
+                    printf(" access=%s", accessStr);
+                } else {
+                    printf(" access=0x%02X", all[i].keyComponents[k].keyAccess);
+                }
+            }
+            printf("\n");
+        }
     }
 
     return 0;
@@ -1413,8 +1419,8 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         else if (strcmp(argv[ai], "--applet") == 0 && ai+1 < argc) { applet_aid_hex = argv[++ai]; }
         else if (strcmp(argv[ai], "--module") == 0 && ai+1 < argc) { module_aid_hex = argv[++ai]; }
         else if (strcmp(argv[ai], "--priv") == 0 && ai+1 < argc) { priv_list = argv[++ai]; }
-        else if (strcmp(argv[ai], "--v-data-limit") == 0 && ai+1 < argc) { v_data_limit = (DWORD)atoi(argv[++ai]); }
-        else if (strcmp(argv[ai], "--nv-data-limit") == 0 && ai+1 < argc) { nv_data_limit = (DWORD)atoi(argv[++ai]); }
+        else if (strcmp(argv[ai], "--v-data-limit") == 0 && ai+1 < argc) { v_data_limit = (DWORD)parse_int(argv[++ai]); }
+        else if (strcmp(argv[ai], "--nv-data-limit") == 0 && ai+1 < argc) { nv_data_limit = (DWORD)parse_int(argv[++ai]); }
         else if (strcmp(argv[ai], "--params") == 0 && ai+1 < argc) { params_hex = argv[++ai]; }
         else break;
     }
@@ -1907,9 +1913,9 @@ static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     int kvSet=0, newKvSet=0;
     const char *type="aes"; const char *hexkey=NULL; const char *pem=NULL; char *pass=NULL;
     for (int i=0;i<argc;i++) {
-        if (strcmp(argv[i], "--kv")==0 && i+1<argc) { setVer=(BYTE)atoi(argv[++i]); kvSet=1; }
-        else if (strcmp(argv[i], "--idx")==0 && i+1<argc) idx=(BYTE)atoi(argv[++i]);
-        else if (strcmp(argv[i], "--new-kv")==0 && i+1<argc) { newSetVer=(BYTE)atoi(argv[++i]); newKvSet=1; }
+        if (strcmp(argv[i], "--kv")==0 && i+1<argc) { setVer=(BYTE)parse_int(argv[++i]); kvSet=1; }
+        else if (strcmp(argv[i], "--idx")==0 && i+1<argc) idx=(BYTE)parse_int(argv[++i]);
+        else if (strcmp(argv[i], "--new-kv")==0 && i+1<argc) { newSetVer=(BYTE)parse_int(argv[++i]); newKvSet=1; }
         else if (strcmp(argv[i], "--type")==0 && i+1<argc) type=argv[++i];
         else if (strcmp(argv[i], "--key")==0 && i+1<argc) hexkey=argv[++i];
         else if (strcmp(argv[i], "--pem")==0 && i+1<argc) { pem=argv[++i]; char *c=strchr((char*)pem, ':'); if (c){ *c='\0'; pass=c+1; } }
@@ -1962,8 +1968,8 @@ static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURI
     BYTE setVer=1, newSetVer=1; const char *base=NULL, *enc=NULL, *mac=NULL, *dek=NULL;
     const char *type="aes", *derive="none";
     for (int i=0;i<argc;i++) {
-        if (strcmp(argv[i], "--kv")==0 && i+1<argc) setVer=(BYTE)atoi(argv[++i]);
-        else if (strcmp(argv[i], "--new-kv")==0 && i+1<argc) newSetVer=(BYTE)atoi(argv[++i]);
+        if (strcmp(argv[i], "--kv")==0 && i+1<argc) setVer=(BYTE)parse_int(argv[++i]);
+        else if (strcmp(argv[i], "--new-kv")==0 && i+1<argc) newSetVer=(BYTE)parse_int(argv[++i]);
         else if (strcmp(argv[i], "--base")==0 && i+1<argc) base=argv[++i];
         else if (strcmp(argv[i], "--key")==0 && i+1<argc) base=argv[++i];
         else if (strcmp(argv[i], "--enc")==0 && i+1<argc) enc=argv[++i];
@@ -2066,10 +2072,10 @@ static int cmd_put_dm_token(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SE
 
     for (int i=0; i<argc; i++) {
         if (strcmp(argv[i], "--kv")==0 && i+1<argc) {
-            setVer = (BYTE)atoi(argv[++i]);
+            setVer = (BYTE)parse_int(argv[++i]);
         }
         else if (strcmp(argv[i], "--new-kv")==0 && i+1<argc) {
-            newSetVer = (BYTE)atoi(argv[++i]);
+            newSetVer = (BYTE)parse_int(argv[++i]);
         }
         else if (strcmp(argv[i], "--token-type")==0 && i+1<argc) {
             tokenType = argv[++i];
@@ -2121,10 +2127,10 @@ static int cmd_put_dm_receipt(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_
 
     for (int i=0; i<argc; i++) {
         if (strcmp(argv[i], "--kv")==0 && i+1<argc) {
-            setVer = (BYTE)atoi(argv[++i]);
+            setVer = (BYTE)parse_int(argv[++i]);
         }
         else if (strcmp(argv[i], "--new-kv")==0 && i+1<argc) {
-            newSetVer = (BYTE)atoi(argv[++i]);
+            newSetVer = (BYTE)parse_int(argv[++i]);
         }
         else if (strcmp(argv[i], "--receipt-type")==0 && i+1<argc) {
             receiptType = argv[++i];
@@ -2167,8 +2173,8 @@ static int cmd_put_dm_receipt(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_
 static int cmd_del_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
     BYTE setVer=0; BYTE idx=0xFF; // 0xFF => delete all keys in set
     for (int i=0;i<argc;i++) {
-        if (strcmp(argv[i], "--kv")==0 && i+1<argc) setVer=(BYTE)atoi(argv[++i]);
-        else if (strcmp(argv[i], "--idx")==0 && i+1<argc) idx=(BYTE)atoi(argv[++i]);
+        if (strcmp(argv[i], "--kv")==0 && i+1<argc) setVer=(BYTE)parse_int(argv[++i]);
+        else if (strcmp(argv[i], "--idx")==0 && i+1<argc) idx=(BYTE)parse_int(argv[++i]);
     }
     if (!status_ok(GP211_delete_key(ctx, info, sec, setVer, idx))) {
         return -1;
@@ -3162,7 +3168,7 @@ static int cmd_store_iin_cin(const char *cmd, int argc, char **argv,
 
 int main(int argc, char **argv) {
     const char *prog = argv[0];
-    const char *reader=NULL, *protocol="auto", *sd_hex=NULL, *sec_level_opt="mac+enc";
+    const char *reader=NULL, *protocol="auto", *sd_hex=NULL, *sec_level_opt="mac";
     const char *key_hex=NULL, *enc_hex=NULL, *mac_hex=NULL, *dek_hex=NULL;
     int verbose=0, trace=0; BYTE keyset_ver=0, key_index=0; int derivation=0;
     BYTE baseKey[32]={0}, enc_key[32]={0}, mac_key[32]={0}, dek_key[32]={0};
@@ -3181,8 +3187,8 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--protocol") && i+1<argc) { protocol=argv[++i]; }
         else if (!strcmp(argv[i], "--scp") && i+1<argc) { scp_protocol=argv[++i]; }
         else if (!strcmp(argv[i], "--scp-impl") && i+1<argc) { scp_impl=argv[++i]; }
-        else if (!strcmp(argv[i], "--kv") && i+1<argc) { keyset_ver=(BYTE)atoi(argv[++i]); }
-        else if (!strcmp(argv[i], "--idx") && i+1<argc) { key_index=(BYTE)atoi(argv[++i]); }
+        else if (!strcmp(argv[i], "--kv") && i+1<argc) { keyset_ver=(BYTE)parse_int(argv[++i]); }
+        else if (!strcmp(argv[i], "--idx") && i+1<argc) { key_index=(BYTE)parse_int(argv[++i]); }
         else if (!strcmp(argv[i], "--derive") && i+1<argc) { const char *d=argv[++i]; if (!strcmp(d,"visa2")) derivation=1; else if (!strcmp(d,"emv")) derivation=2; else derivation=0; }
         else if (!strcmp(argv[i], "--sec") && i+1<argc) { sec_level_opt=argv[++i]; }
         else if (!strcmp(argv[i], "--sd") && i+1<argc) { sd_hex=argv[++i]; }

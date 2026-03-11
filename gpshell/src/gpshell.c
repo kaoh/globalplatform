@@ -639,10 +639,13 @@ static void displayGpKeyInformation(GP211_KEY_INFORMATION *keyInformation, int c
     _tprintf(format1, _T("ID"), _T("Version"), _T("Type"), _T("Length"), _T("Usage"), _T("Access"));
     format2 = _T("%-3d | %-7d | %-6.2x | %-6d | %-5.2x | %-6.2x \n");
     for (i=0; i<count; i++) {
-        _tprintf(format1, _T("--"), _T("--"), _T("--"), _T("--"), _T("--"), _T("--"));
-        _tprintf(format2, keyInformation[i].keyIndex, keyInformation[i].keySetVersion,
-                keyInformation[i].keyType, keyInformation[i].keyLength,
-                keyInformation[i].keyUsage, keyInformation[i].keyAccess);
+        int k;
+        for (k=0; k<keyInformation[i].numKeyComponents; k++) {
+            _tprintf(format1, _T("--"), _T("--"), _T("--"), _T("--"), _T("--"), _T("--"));
+            _tprintf(format2, keyInformation[i].keyIndex, keyInformation[i].keySetVersion,
+                    keyInformation[i].keyComponents[k].keyType, keyInformation[i].keyComponents[k].keyLength,
+                    keyInformation[i].keyComponents[k].keyUsage, keyInformation[i].keyComponents[k].keyAccess);
+        }
     }
 }
 
@@ -652,8 +655,12 @@ static void displayOpKeyInformation(OP201_KEY_INFORMATION *keyInformation, int c
     format = _T("%-3d | %-7d | %-4.2x | %-6%d \n");
     _tprintf(format, _T("ID"), _T("Version"), _T("Type"), _T("Length"));
     for (i=0; i<count; i++) {
-        _tprintf(format, _T("--"), _T("--"), _T("--"), _T("--"));
-        _tprintf(format, keyInformation[i].keyIndex, keyInformation[i].keySetVersion, keyInformation[i].keyType, keyInformation[i].keyLength);
+        int k;
+        for (k=0; k<keyInformation[i].numKeyComponents; k++) {
+            _tprintf(format, _T("--"), _T("--"), _T("--"), _T("--"));
+            _tprintf(format, keyInformation[i].keyIndex, keyInformation[i].keySetVersion,
+                    keyInformation[i].keyComponents[k].keyType, keyInformation[i].keyComponents[k].keyLength);
+        }
     }
 }
 

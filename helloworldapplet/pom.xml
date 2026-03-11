@@ -110,7 +110,7 @@
                                     <arg value="target/classes/"/>
                                     <arg value="-applet"/>
                                     <arg value="${javacard.applet.aid}"/>
-                                    <arg value="${javacard.applet.name}"/>
+                                    <arg value="HelloWorldApplet"/>
                                     <arg value="${javacard.package.name}"/>
                                     <arg value="${javacard.package.aid}"/>
                                     <arg value="${javacard.major.version}.${javacard.minor.version}"/>

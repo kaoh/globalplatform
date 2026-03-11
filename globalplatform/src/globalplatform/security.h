@@ -257,13 +257,21 @@ typedef struct {
 
 
 /**
- * A structure containing key information. Key set version, key index, key type and key length.
+ * A structure containing key component information. Key type and key length.
+ */
+typedef struct {
+	BYTE keyType; //!< The key type.
+	BYTE keyLength; //!< The key length.
+} OP201_KEY_COMPONENT;
+
+/**
+ * A structure containing key information. Key set version, key index, and multiple key components.
  */
 typedef struct {
 	BYTE keySetVersion; //!< The key set version.
 	BYTE keyIndex; //!< The key index.
-	BYTE keyType; //!< The key type.
-	BYTE keyLength; //!< The key length.
+	OP201_KEY_COMPONENT keyComponents[8]; //!< The key components.
+	BYTE numKeyComponents; //!< The number of key components.
 } OP201_KEY_INFORMATION;
 
 /**
@@ -292,16 +300,25 @@ typedef struct {
 
 
 /**
- * A structure containing key information. Key set version, key index, key type and key length.
+ * A structure containing key component information. Key type and key length.
  */
 typedef struct {
-	BYTE keySetVersion; //!< The key set version.
-	BYTE keyIndex; //!< The key index.
 	BYTE keyType; //!< The key type.
 	USHORT keyLength; //!< The key length.
 	USHORT keyUsage; //!< Key usage used in extended format.
 	BYTE keyAccess; //!< Key access used in extended format.
 	BOOL extended; //!< Extended key information is returned.
+} GP211_KEY_COMPONENT;
+
+
+/**
+ * A structure containing key information. Key set version, key index, and multiple key components.
+ */
+typedef struct {
+	BYTE keySetVersion; //!< The key set version.
+	BYTE keyIndex; //!< The key index.
+	GP211_KEY_COMPONENT keyComponents[8]; //!< The key components.
+	BYTE numKeyComponents; //!< The number of key components.
 } GP211_KEY_INFORMATION;
 
 

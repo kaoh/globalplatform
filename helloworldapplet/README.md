@@ -12,7 +12,7 @@ Java Card 2.1.2 must be installed and the environment variable `JC212_HOME` must
 
 #### Java 9+ Support 
 
-The compiler of Java 9+ is producing code with an unsupported class format. Due to this a Java 8 SDK must be installed.
+The compiler of Java 9+ is producing code with an unsupported class format. Due to this, a Java 8 SDK must be installed.
 In the Maven's `settings.xml` a profile must be created to pint to the SDK:
 
 ```xml
