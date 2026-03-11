@@ -410,8 +410,8 @@ OPGP_ERROR_STATUS OPGP_PL_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 
 	DWORD result = SCARD_S_SUCCESS;
 	BYTE caseAPDU = 0;
-	BYTE lc = 0;
-	BYTE le = 0;
+	DWORD lc = 0;
+	DWORD le = 0;
 	BYTE la = 0;
 
 	DWORD offset = 0;

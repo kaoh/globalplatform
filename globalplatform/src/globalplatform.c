@@ -998,82 +998,124 @@ static DWORD get_max_apdu_data_size(GP211_SECURITY_INFO *secInfo) {
 }
 
 static OPGP_ERROR_STATUS send_chained_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
-											  GP211_SECURITY_INFO *secInfo, BYTE *sendBuffer, DWORD offset,
-											  BYTE *data, DWORD dataLength,
-											  BYTE *recvBuffer, PDWORD recvBufferLength,
-											  BOOL invertedChaining, BOOL incrementBlockNumber,
-											  BOOL responseDataExpected) {
+								  GP211_SECURITY_INFO *secInfo, BYTE *sendBuffer, DWORD offset,
+								  BYTE *data, DWORD dataLength,
+								  BYTE *recvBuffer, PDWORD recvBufferLength,
+								  BOOL invertedChaining, BOOL incrementBlockNumber,
+								  BOOL responseDataExpected) {
 	OPGP_ERROR_STATUS status;
-	DWORD pos = 0;
-	DWORD sendBufferLength;
-	BYTE blockNumber = 0;
+	DWORD preambleLen = (offset > 5) ? (offset - 5) : 0;
+	DWORD lastMaxFirst = MAX_APDU_DATA_SIZE(secInfo) - preambleLen;
+	DWORD lastMaxOther = MAX_APDU_DATA_SIZE(secInfo);
+	DWORD remaining = dataLength;
+	DWORD count = 0;
+	DWORD i;
+	PBYTE *chunks = NULL;
+	DWORD *chunkLens = NULL;
+	BYTE baseCLA = sendBuffer[0];
+	BYTE baseINS = sendBuffer[1];
+	BYTE baseP1  = sendBuffer[2];
+	BYTE baseP2  = sendBuffer[3];
+	BYTE blockNumber = 0x00;
 
-	while (pos < dataLength) {
-		DWORD remaining = dataLength - pos;
-		DWORD maxChunkByBuffer;
-		DWORD chunkLen;
-		BOOL last = false;
+	// First pass: determine number of chunks
+	{
+		DWORD rem = remaining;
+		DWORD idx = 0;
+		DWORD curPreamble = preambleLen;
+		for (;;) {
+			DWORD nonLastCap = (idx == 0) ? (255 - curPreamble) : 255;
+			DWORD lastCap = (idx == 0) ? lastMaxFirst : lastMaxOther;
+			count++;
+			if (rem <= lastCap) break;
 
-		if (APDU_COMMAND_LEN <= offset + 1) {
-			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE));
-			goto end;
-		}
-
-		maxChunkByBuffer = MAX_APDU_DATA_SIZE(secInfo) - (offset - 5);
-		if (maxChunkByBuffer > 255) maxChunkByBuffer = 255;
-		chunkLen = remaining;
-		if (chunkLen > maxChunkByBuffer) chunkLen = maxChunkByBuffer;
-		last = (pos + chunkLen == dataLength);
-
-		if (chunkLen == 0 && dataLength > 0) {
-			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE));
-			goto end;
-		}
-
-		if (invertedChaining) {
-			if (!last) {
-				sendBuffer[2] &= 0x7F;
+			if (rem <= nonLastCap) {
+				rem = 0;
 			} else {
-				sendBuffer[2] |= 0x80;
+				rem -= nonLastCap;
 			}
-		} else {
-			if (!last) {
-				sendBuffer[2] |= 0x80;
-			} else {
-				sendBuffer[2] &= 0x7F;
-			}
+			idx++;
+			curPreamble = 0;
 		}
-
-		if (incrementBlockNumber) {
-			sendBuffer[3] = blockNumber++;
-		}
-
-		if (offset + chunkLen + (responseDataExpected ? 1 : 0) > APDU_COMMAND_LEN) {
-			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE));
-			goto end;
-		}
-
-		memcpy(sendBuffer + offset, data + pos, chunkLen);
-		sendBuffer[4] = (BYTE)(chunkLen + offset - 5);
-
-		sendBufferLength = offset + chunkLen;
-		if (responseDataExpected) {
-			sendBuffer[sendBufferLength++] = 0x00;
-		}
-
-		status = OPGP_send_APDU(cardContext, cardInfo, secInfo, sendBuffer, sendBufferLength, recvBuffer, recvBufferLength);
-		if (OPGP_ERROR_CHECK(status)) {
-			return status;
-		}
-		CHECK_SW_9000(recvBuffer, *recvBufferLength, status);
-		pos += chunkLen;
-		// set offset back to LC position
-		offset = 5;
 	}
 
-	OPGP_ERROR_CREATE_NO_ERROR(status);
-	end:
+	chunks = (PBYTE*)malloc(sizeof(PBYTE) * count);
+	chunkLens = (DWORD*)malloc(sizeof(DWORD) * count);
+	if (!chunks || !chunkLens) {
+		if (chunks) free(chunks);
+		if (chunkLens) free(chunkLens);
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
 		return status;
+	}
+
+	// Second pass: build chunks
+	{
+		DWORD pos = 0;
+		DWORD curPreamble = preambleLen;
+		for (i = 0; i < count; ++i) {
+			BOOL last;
+			DWORD nonLastCap = (i == 0) ? (255 - curPreamble) : 255;
+			DWORD lastCap = (i == 0) ? lastMaxFirst : lastMaxOther;
+			DWORD dataChunkLen;
+			last = (remaining <= lastCap);
+			if (last) {
+				dataChunkLen = remaining;
+			} else {
+				dataChunkLen = nonLastCap;
+				if (dataChunkLen >= remaining) {
+					dataChunkLen = remaining - 1;
+				}
+			}
+			DWORD apduLen = 5 + curPreamble + dataChunkLen + ((last && responseDataExpected) ? 1 : 0);
+			PBYTE apdu = (PBYTE)malloc(apduLen);
+			if (!apdu) {
+				for (DWORD j = 0; j < i; ++j) free(chunks[j]);
+				free(chunks); free(chunkLens);
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+				return status;
+			}
+			// Header
+			apdu[0] = baseCLA;
+			apdu[1] = baseINS;
+			{
+				BYTE p1 = baseP1;
+				if (invertedChaining) {
+					if (!last) p1 &= 0x7F; else p1 |= 0x80;
+				} else {
+					if (!last) p1 |= 0x80; else p1 &= 0x7F;
+				}
+				apdu[2] = p1;
+			}
+			apdu[3] = incrementBlockNumber ? blockNumber++ : baseP2;
+			apdu[4] = (BYTE)(curPreamble + dataChunkLen);
+			// Payload
+			if (curPreamble) {
+				memcpy(apdu + 5, sendBuffer + 5, curPreamble);
+			}
+			memcpy(apdu + 5 + curPreamble, data + pos, dataChunkLen);
+			pos += dataChunkLen;
+			if (last && responseDataExpected) {
+				apdu[5 + curPreamble + dataChunkLen] = 0x00;
+			}
+			chunks[i] = apdu;
+			chunkLens[i] = apduLen;
+			remaining -= dataChunkLen;
+			curPreamble = 0; // only for first chunk
+		}
+	}
+
+	// Use connection-level chained sender that wraps once and splits again after wrapping
+	status = OPGP_send_chained_APDU(cardContext, cardInfo, secInfo, chunks, chunkLens, count, recvBuffer, recvBufferLength);
+	if ( OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	CHECK_SW_9000(recvBuffer, *recvBufferLength, status);
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	for (i = 0; i < count; ++i) free(chunks[i]);
+	free(chunks);
+	free(chunkLens);
+	return status;
 }
 
 OPGP_ERROR_STATUS put_rsa_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,

@@ -22,6 +22,7 @@
  */
 
 #include "crypto.h"
+#include "globalplatform/connection.h"
 #include "globalplatform/stringify.h"
 #include "globalplatform/errorcodes.h"
 #include "globalplatform/error.h"
@@ -1585,12 +1586,12 @@ end:
  */
 OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE wrappedApduCommand, PDWORD wrappedApduCommandLength, GP211_SECURITY_INFO *secInfo) {
 	OPGP_ERROR_STATUS status;
-	BYTE lc = 0, le =0 ;
+	DWORD lc = 0, le = 0;
 	DWORD wrappedLength;
 	BYTE mac[16]; // only first 8 bytes used by SCP01/02
 	// 8 bytes reserved for MAC
-	BYTE encryption[247];
-	DWORD encryptionLength = 247;
+	PBYTE encryption = NULL;
+	DWORD encryptionLength = 0;
 	BYTE caseAPDU;
 	BYTE C_MAC_ICV[8];
 	DWORD C_MAC_ICVLength = 8;
@@ -1598,6 +1599,9 @@ OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE
 	// padding is only needed for encryption
 	DWORD paddingSize = 0;
 	DWORD blockSize = 8;
+	BOOL isExtended = 0;
+	DWORD headerLength = 5;
+
 	OPGP_LOG_START(_T("wrap_command"));
 	if (*wrappedApduCommandLength < apduCommandLength)
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
@@ -1615,6 +1619,11 @@ OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_UNRECOGNIZED_APDU_COMMAND, OPGP_stringify_error(OPGP_ERROR_UNRECOGNIZED_APDU_COMMAND)); goto end; }
 	}
 
+	if (apduCommandLength >= 7 && apduCommand[4] == 0) {
+		isExtended = 1;
+		headerLength = 7;
+	}
+
 	switch(caseAPDU) {
 		case 1:
 		case 2:
@@ -1622,7 +1631,7 @@ OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE
 			break;
 		case 3:
 		case 4:
-			wrappedLength = lc + 5;
+			wrappedLength = lc + headerLength;
 			break;
 	}
 
@@ -1652,12 +1661,20 @@ OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE
 	wrappedLength += paddingSize + 8;
 	// there was no body before, add LC field length
 	if (caseAPDU == 1 || caseAPDU == 2) {
-		wrappedLength++;
+		wrappedLength += headerLength - 4;
 	}
 	if (*wrappedApduCommandLength < wrappedLength) {
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
 		goto end;
 	}
+
+	encryptionLength = lc + paddingSize + 16; // extra space for padding and SCP01 length byte
+	encryption = (PBYTE)malloc(encryptionLength);
+	if (encryption == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		goto end;
+	}
+
 	// C_MAC on modified APDU
 	// Philip Wendland: Update the APDU header first, calculate MAC then.
 	if ((secInfo->secureChannelProtocol == GP211_SCP02 &&
@@ -1667,12 +1684,24 @@ OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE
 		switch (caseAPDU) {
 			case 1:
 			case 2: {
-				wrappedApduCommand[4] = 0x08;
+				if (isExtended) {
+					wrappedApduCommand[4] = 0;
+					wrappedApduCommand[5] = 0;
+					wrappedApduCommand[6] = 0x08;
+				} else {
+					wrappedApduCommand[4] = 0x08;
+				}
 				break;
 			}
 			case 3:
 			case 4: {
-				wrappedApduCommand[4] += 8;
+				if (isExtended) {
+					DWORD newLc = ((wrappedApduCommand[5] << 8) | wrappedApduCommand[6]) + 8;
+					wrappedApduCommand[5] = (BYTE)(newLc >> 8);
+					wrappedApduCommand[6] = (BYTE)(newLc & 0xFF);
+				} else {
+					wrappedApduCommand[4] += 8;
+				}
 				break;
 			}
 		}
@@ -1735,16 +1764,30 @@ OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE
 					goto end;
 				}
 				status = calculate_enc_cbc_SCP03(secInfo->encryptionSessionKey, secInfo->keyLength,
-						wrappedApduCommand+5, wrappedLength-5-paddingSize-8, ENC_ICV, encryption, &encryptionLength);
+						wrappedApduCommand + headerLength, lc, ENC_ICV, encryption, &encryptionLength);
 				if (OPGP_ERROR_CHECK(status)) {
 					goto end;
 				}
-				memcpy(wrappedApduCommand+5, encryption, encryptionLength);
-				wrappedApduCommand[4] += paddingSize;
+				memcpy(wrappedApduCommand + headerLength, encryption, encryptionLength);
+				if (isExtended) {
+					DWORD newLc = ((wrappedApduCommand[5] << 8) | wrappedApduCommand[6]) + paddingSize;
+					wrappedApduCommand[5] = (BYTE)(newLc >> 8);
+					wrappedApduCommand[6] = (BYTE)(newLc & 0xFF);
+				} else {
+					wrappedApduCommand[4] += (BYTE)paddingSize;
+				}
 			}
 			secInfo->sessionEncryptionCounter++;
 		}
 		// wrappedLength-8: exclude size of MAC for CMAC
+		if (traceEnable) {
+			DWORD i;
+			_ftprintf(traceFile, _T("CMAC input --> "));
+			for (i = 0; i < wrappedLength - 8; i++) {
+				_ftprintf(traceFile, _T("%02X"), wrappedApduCommand[i] & 0x00FF);
+			}
+			_ftprintf(traceFile, _T("\n"));
+		}
 		status = calculate_CMAC_aes(secInfo->C_MACSessionKey, secInfo->keyLength, wrappedApduCommand, wrappedLength-8, secInfo->lastC_MAC, mac);
 		if (OPGP_ERROR_CHECK(status)) {
 			goto end;
@@ -1756,12 +1799,24 @@ OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE
 		switch (caseAPDU) {
 			case 1:
 			case 2: {
-				wrappedApduCommand[4] = 0x08;
+				if (isExtended) {
+					wrappedApduCommand[4] = 0;
+					wrappedApduCommand[5] = 0;
+					wrappedApduCommand[6] = 0x08;
+				} else {
+					wrappedApduCommand[4] = 0x08;
+				}
 				break;
 			}
 			case 3:
 			case 4: {
-				wrappedApduCommand[4]+=8;
+				if (isExtended) {
+					DWORD newLc = ((wrappedApduCommand[5] << 8) | wrappedApduCommand[6]) + 8;
+					wrappedApduCommand[5] = (BYTE)(newLc >> 8);
+					wrappedApduCommand[6] = (BYTE)(newLc & 0xFF);
+				} else {
+					wrappedApduCommand[4] += 8;
+				}
 				break;
 			}
 		} // switch (caseAPDU)
@@ -1795,38 +1850,72 @@ OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE
 			&& !(secInfo->secureChannelProtocol == GP211_SCP01 && lc == 0)) {
 		if (secInfo->secureChannelProtocol == GP211_SCP02) {
 			status = calculate_enc_cbc_SCP02(secInfo->encryptionSessionKey,
-				wrappedApduCommand+5, lc, encryption, &encryptionLength);
+				wrappedApduCommand + headerLength, lc, encryption, &encryptionLength);
 			if (OPGP_ERROR_CHECK(status)) {
 				goto end;
 			}
 		}
 		else {
 			// SCP01 prepends a length byte
-			BYTE wrappedLc = wrappedApduCommand[4];
-			wrappedApduCommand[4] = lc;
-			status = calculate_enc_cbc(secInfo->encryptionSessionKey,
-				wrappedApduCommand+4, lc+1, encryption, &encryptionLength);
+			DWORD wrappedLc;
+			if (isExtended) {
+				wrappedLc = (wrappedApduCommand[5] << 8) | wrappedApduCommand[6];
+				// SCP01 with extended Lc is theoretically possible but unlikely.
+				// For now assume short Lc for SCP01 as per spec usually.
+				wrappedApduCommand[6] = (BYTE)lc;
+				status = calculate_enc_cbc(secInfo->encryptionSessionKey,
+					wrappedApduCommand + 6, lc + 1, encryption, &encryptionLength);
+			} else {
+				wrappedLc = wrappedApduCommand[4];
+				wrappedApduCommand[4] = (BYTE)lc;
+				status = calculate_enc_cbc(secInfo->encryptionSessionKey,
+					wrappedApduCommand + 4, lc + 1, encryption, &encryptionLength);
+			}
 			if (OPGP_ERROR_CHECK(status)) {
 				goto end;
 			}
-			wrappedApduCommand[4] = wrappedLc;
+			if (isExtended) {
+				wrappedApduCommand[5] = (BYTE)(wrappedLc >> 8);
+				wrappedApduCommand[6] = (BYTE)(wrappedLc & 0xFF);
+			} else {
+				wrappedApduCommand[4] = (BYTE)wrappedLc;
+			}
 		}
-		wrappedApduCommand[4] += paddingSize;
-		memcpy(wrappedApduCommand + 5, encryption, encryptionLength);
-		memcpy(wrappedApduCommand + encryptionLength + 5, mac, 8);
+		if (isExtended) {
+			DWORD newLc = ((wrappedApduCommand[5] << 8) | wrappedApduCommand[6]) + paddingSize;
+			wrappedApduCommand[5] = (BYTE)(newLc >> 8);
+			wrappedApduCommand[6] = (BYTE)(newLc & 0xFF);
+		} else {
+			wrappedApduCommand[4] += (BYTE)paddingSize;
+		}
+		memcpy(wrappedApduCommand + headerLength, encryption, encryptionLength);
+		memcpy(wrappedApduCommand + encryptionLength + headerLength, mac, 8);
 	}
 
 	// Set Le
 	if (caseAPDU == 2 || caseAPDU == 4) {
-		if (*wrappedApduCommandLength < wrappedLength+1)
-			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
-		wrappedApduCommand[wrappedLength] = le;
-		wrappedLength++;
+		if (isExtended) {
+			if (*wrappedApduCommandLength < wrappedLength + 2)
+			{
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end;
+			}
+			wrappedApduCommand[wrappedLength] = (BYTE)(le >> 8);
+			wrappedApduCommand[wrappedLength + 1] = (BYTE)(le & 0xFF);
+			wrappedLength += 2;
+		} else {
+			if (*wrappedApduCommandLength < wrappedLength + 1)
+			{
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end;
+			}
+			wrappedApduCommand[wrappedLength] = (BYTE)le;
+			wrappedLength++;
+		}
 	}
 	*wrappedApduCommandLength = wrappedLength;
 
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
+	if (encryption) free(encryption);
 
 	OPGP_LOG_END(_T("wrap_command"), status);
 	return status;
@@ -2043,28 +2132,51 @@ OPGP_ERROR_STATUS GP211_calculate_R_MAC(PBYTE apduCommand, DWORD apduCommandLeng
 						   BYTE mac[8])
 {
 	OPGP_ERROR_STATUS status;
-	BYTE r_MacData[261 + 258];
+	PBYTE r_MacData = NULL;
+	DWORD r_MacDataLength;
 	DWORD offset=0;
 	OPGP_LOG_START(_T("GP211_calculate_R_MAC"));
+	r_MacDataLength = apduCommandLength + responseApduLength + 10;
+	r_MacData = (PBYTE)malloc(r_MacDataLength);
+	if (r_MacData == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		goto end;
+	}
 	if (secInfo->secureChannelProtocol == GP211_SCP02) {
-		DWORD r_MacDataLength = sizeof(r_MacData);
 		BYTE caseAPDU;
-		BYTE lc;
-		BYTE le;
+		DWORD lc;
+		DWORD le;
+		DWORD headerLength = 5;
 		if (parse_apdu_case(apduCommand, apduCommandLength, &caseAPDU, &lc, &le)) {
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_UNRECOGNIZED_APDU_COMMAND, OPGP_stringify_error(OPGP_ERROR_UNRECOGNIZED_APDU_COMMAND)); goto end; }
 		}
+		if (apduCommandLength >= 7 && apduCommand[4] == 0) {
+			headerLength = 7;
+		}
 		memcpy(r_MacData, apduCommand, 4);
 		offset+=4;
-		r_MacData[offset++] = lc;
+		if (headerLength == 7) {
+			r_MacData[offset++] = 0;
+			r_MacData[offset++] = (BYTE)((lc >> 8) & 0xFF);
+			r_MacData[offset++] = (BYTE)(lc & 0xFF);
+		} else {
+			r_MacData[offset++] = (BYTE)lc;
+		}
 		// copy data
-		memcpy(r_MacData+offset, apduCommand+5, lc);
+		memcpy(r_MacData+offset, apduCommand+headerLength, lc);
 		offset+=lc;
 		// if R-MAC exists
 		if (responseApduLength >= 10) {
-			r_MacData[offset++] = responseApduLength-10;
-			memcpy(r_MacData+offset, responseApdu, responseApduLength-10);
-			offset += responseApduLength - 10;
+			DWORD rMacLen = responseApduLength - 10;
+			if (rMacLen > 255) {
+				// This case is rare but for extended APDU we might need to support it.
+				// However GP spec says for SCP02 R-MAC data field length is one byte.
+				r_MacData[offset++] = (BYTE)rMacLen; 
+			} else {
+				r_MacData[offset++] = (BYTE)rMacLen;
+			}
+			memcpy(r_MacData+offset, responseApdu, rMacLen);
+			offset += rMacLen;
 		}
 		else {
 			r_MacData[offset++] = 0;
@@ -2080,6 +2192,10 @@ OPGP_ERROR_STATUS GP211_calculate_R_MAC(PBYTE apduCommand, DWORD apduCommandLeng
 	}
 	if (secInfo->secureChannelProtocol == GP211_SCP03) {
 		BYTE scp03_mac[16];
+		if (responseApduLength < 10) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
 		memcpy(r_MacData, responseApdu, responseApduLength-10);
 		offset+=responseApduLength-10;
 		// append SW
@@ -2093,6 +2209,7 @@ OPGP_ERROR_STATUS GP211_calculate_R_MAC(PBYTE apduCommand, DWORD apduCommandLeng
 	}
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
+	if (r_MacData) free(r_MacData);
 	OPGP_LOG_END(_T("GP211_calculate_R_MAC"), status);
 	return status;
 }

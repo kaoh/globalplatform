@@ -103,6 +103,9 @@ typedef struct OPGP_CARD_INFO {
 OPGP_API
 void OPGP_enable_trace_mode(DWORD enable, FILE *out);
 
+extern DWORD traceEnable;
+extern FILE *traceFile;
+
 //! \brief This function establishes a context to connection layer.
 OPGP_API
 OPGP_ERROR_STATUS OPGP_establish_context(OPGP_CARD_CONTEXT *cardContext);
@@ -126,6 +129,10 @@ OPGP_ERROR_STATUS OPGP_card_disconnect(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_
 //! \brief This function sends an APDU.
 OPGP_API
 OPGP_ERROR_STATUS OPGP_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBYTE capdu, DWORD capduLength, PBYTE rapdu, PDWORD rapduLength);
+
+//! \brief This function sends multiple APDUs that belong to one logical command.
+OPGP_API
+OPGP_ERROR_STATUS OPGP_send_chained_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBYTE capdus[], DWORD capduLengths[], DWORD numCapdus, PBYTE rapdu, PDWORD rapduLength);
 
 #ifdef __cplusplus
 }

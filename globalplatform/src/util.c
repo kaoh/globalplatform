@@ -138,29 +138,59 @@ end:
 	return result;
 }
 
-LONG parse_apdu_case(PBYTE apduCommand, DWORD apduCommandLength, PBYTE caseAPDU, PBYTE lc, PBYTE le) {
+LONG parse_apdu_case(PBYTE apduCommand, DWORD apduCommandLength, PBYTE caseAPDU, PDWORD lc, PDWORD le) {
 	*le = 0;
 	*lc = 0;
 	// Determine which type of Exchange between the reader
+	if (apduCommandLength < 4) {
+		return -1;
+	}
 	if (apduCommandLength == 4) {
 		// Case 1 short
 		*caseAPDU = 1;
-	} else if (apduCommandLength == 5) {
-		// Case 2 short
-
-		*caseAPDU = 2;
-		*le = apduCommand[4];
-	} else {
-		*lc = apduCommand[4];
-		if (*lc + 5 == apduCommandLength) {
-			// Case 3 short
-			*caseAPDU = 3;
-		} else if (*lc + 5 + 1 == apduCommandLength) {
-			// Case 4 short
-			*caseAPDU = 4;
-			*le = apduCommand[apduCommandLength - 1];
+		return 0;
+	}
+	// Extended APDU
+	if (apduCommand[4] == 0 && apduCommandLength >= 7) {
+		if (apduCommandLength == 7) {
+			// Case 2 extended
+			*caseAPDU = 2;
+			*le = (apduCommand[5] << 8) | apduCommand[6];
+			if (*le == 0) *le = 65536;
 		} else {
-			return -1;
+			*lc = (apduCommand[5] << 8) | apduCommand[6];
+			if (*lc + 7 == apduCommandLength) {
+				// Case 3 extended
+				*caseAPDU = 3;
+			} else if (*lc + 7 + 2 == apduCommandLength) {
+				// Case 4 extended
+				*caseAPDU = 4;
+				*le = (apduCommand[apduCommandLength - 2] << 8) | apduCommand[apduCommandLength - 1];
+				if (*le == 0) *le = 65536;
+			} else {
+				return -1;
+			}
+		}
+	} else {
+		// Short APDU
+		if (apduCommandLength == 5) {
+			// Case 2 short
+			*caseAPDU = 2;
+			*le = apduCommand[4];
+			if (*le == 0) *le = 256;
+		} else {
+			*lc = apduCommand[4];
+			if (*lc + 5 == apduCommandLength) {
+				// Case 3 short
+				*caseAPDU = 3;
+			} else if (*lc + 5 + 1 == apduCommandLength) {
+				// Case 4 short
+				*caseAPDU = 4;
+				*le = apduCommand[apduCommandLength - 1];
+				if (*le == 0) *le = 256;
+			} else {
+				return -1;
+			}
 		}
 	}
 	return 0;
