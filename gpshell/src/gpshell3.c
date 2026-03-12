@@ -43,6 +43,17 @@
 #define MAX_READERS_BUF 4096
 #define MAX_PATH_BUF 4096
 
+static int gp_setenv(const char *name, const char *value, int overwrite) {
+#ifdef _WIN32
+    if (!overwrite && getenv(name) != NULL) {
+        return 0;
+    }
+    return _putenv_s(name, value ? value : "") == 0 ? 0 : -1;
+#else
+    return setenv(name, value, overwrite);
+#endif
+}
+
 static int to_opgp_string(const char *src, TCHAR *dst, size_t dst_len) {
     if (!src || !dst || dst_len == 0) {
         return -1;
@@ -57,11 +68,22 @@ static int to_opgp_string(const char *src, TCHAR *dst, size_t dst_len) {
         return -1;
     }
     return 0;
-#endif
-#endif
+#else
     strncpy(dst, src, dst_len - 1);
     dst[dst_len - 1] = '\0';
     return 0;
+#endif
+#else
+#ifdef UNICODE
+    mbstowcs(dst, src, dst_len - 1);
+    dst[dst_len - 1] = L'\0';
+    return 0;
+#else
+    strncpy(dst, src, dst_len - 1);
+    dst[dst_len - 1] = '\0';
+    return 0;
+#endif
+#endif
 }
 
 static int status_ok(OPGP_ERROR_STATUS s) {
@@ -3179,8 +3201,8 @@ int main(int argc, char **argv) {
 
         if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--verbose")) {
             verbose=1;
-            setenv("GLOBALPLATFORM_DEBUG", "1", 1);
-            setenv("GLOBALPLATFORM_LOGFILE", "stderr", 1);
+            gp_setenv("GLOBALPLATFORM_DEBUG", "1", 1);
+            gp_setenv("GLOBALPLATFORM_LOGFILE", "stderr", 1);
         }
         else if (!strcmp(argv[i], "-t") || !strcmp(argv[i], "--trace")) { trace=1; }
         else if (!strcmp(argv[i], "-r") || !strcmp(argv[i], "--reader")) { if(i+1<argc) reader=argv[++i]; }

@@ -46,6 +46,7 @@
 #define _tgetenv getenv
 #define _tcsnccmp strncmp
 #define _tcstol strtol
+#define _istspace isspace
 #endif
 
 /* Constants */
@@ -235,7 +236,7 @@ TCHAR * strReplace(TCHAR *orig, TCHAR *rep, TCHAR *with) {
     if (len_rep == 0)
         return NULL; // empty rep causes infinite loop during count
     if (!with) {
-        with = "";
+        with = _T("");
     }
     len_with = _tcslen(with);
 
@@ -1061,7 +1062,7 @@ static int handleCommands(FILE *fd)
                 it = GetTime();
             }
 
-            if (strncmp("print", commandLine, strlen("print")) != 0) {
+            if (_tcsnccmp(commandLine, _T("print"), _tcslen(_T("print"))) != 0) {
                 // print command line
                 _tprintf(_T("%s"), commandLine);
             }
@@ -2316,16 +2317,16 @@ static int handleCommands(FILE *fd)
             }
             else if (_tcscmp(token, _T("print")) == 0) 
             {
-                int contentStart = strlen("print");
-                while (commandLine[contentStart] != '\0' &&
-                       isspace(commandLine[contentStart])) {
+                int contentStart = (int)_tcslen(_T("print"));
+                while (commandLine[contentStart] != _T('\0') &&
+                       _istspace(commandLine[contentStart])) {
                     contentStart++;
                 }
 
-                if (commandLine[contentStart] == '\0') {
-                    _tprintf("\n");
+                if (commandLine[contentStart] == _T('\0')) {
+                    _tprintf(_T("\n"));
                 } else {
-                    _tprintf("# %s\n", &commandLine[contentStart]);
+                    _tprintf(_T("# %s\n"), &commandLine[contentStart]);
                 }
             }
             else if (_tcscmp(token, _T("install_for_make_selectable")) == 0)
