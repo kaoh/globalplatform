@@ -1512,7 +1512,7 @@ OPGP_ERROR_STATUS put_delegated_management_receipt_keys(OPGP_CARD_CONTEXT cardCo
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xD8;
 	sendBuffer[i++] = keySetVersion;
-	sendBuffer[i++] = 0x02; // put receipt key at index 2
+	sendBuffer[i++] = 0x01;
 	sendBuffer[i++] = 0x00; // Lc later calculated
 
 	sendBuffer[i++] = newKeySetVersion;

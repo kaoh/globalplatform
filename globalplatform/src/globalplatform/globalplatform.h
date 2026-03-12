@@ -334,7 +334,7 @@ static const BYTE OP201_GET_DATA_WHOLE_EF_PROD[2] = {0xDF, 0x7F}; //!< Whole EF<
 #define GP211_HASH_SM3 5 //!< SM3
 
 #define GP211_KEY_VERSION_TOKEN_VERIFICATION 0x70 //!< Token Verification
-#define GP211_KEY_VERSION_RECEIPT_GENERATION 0x701 //!< Receipt Generation
+#define GP211_KEY_VERSION_RECEIPT_GENERATION 0x71 //!< Receipt Generation
 #define GP211_KEY_VERSION_DAP_VERIFICATION 0x73 //!< DAP Verification
 #define GP211_KEY_VERSION_CASD_AND_CONFIDENTIAL_SETUP 0x74 //!< CASD and Confidential Setup of Secure Channel Keys
 #define GP211_KEY_VERSION_CIPHERED_LOAD_FILE 0x75 //!< Ciphered Load File Data Block Key
