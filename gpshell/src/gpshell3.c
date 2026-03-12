@@ -84,9 +84,11 @@ static int to_opgp_string(const char *src, TCHAR *dst, size_t dst_len) {
 #endif
 }
 
-static int status_ok(OPGP_ERROR_STATUS s) {
+static int status_ok(OPGP_ERROR_STATUS s, bool print_error) {
     if (s.errorStatus != OPGP_ERROR_STATUS_SUCCESS) {
-        _ftprintf(stderr, _T("Error 0x%08X: %s\n"), (unsigned int)s.errorCode, s.errorMessage);
+        if (print_error) {
+            _ftprintf(stderr, _T("Error 0x%08X: %s\n"), (unsigned int)s.errorCode, s.errorMessage);
+        }
         return 0;
     }
     return 1;
@@ -796,30 +798,30 @@ static int select_isd(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY
         unsigned char aidbuf[16]; size_t aidlen = sizeof(aidbuf);
         if (hex_to_bytes(isd_hex_opt, aidbuf, &aidlen) != 0) return -1;
         s = OPGP_select_application(ctx, info, sec, aidbuf, (DWORD)aidlen);
-        if (status_ok(s)) {
+        if (status_ok(s, true)) {
             if (aidlen <= sizeof(g_selected_isd)) { memcpy(g_selected_isd, aidbuf, aidlen); g_selected_isd_len = (DWORD)aidlen; }
             return 0;
         }
     }
     s = OPGP_select_application(ctx, info, sec, (PBYTE)GP231_ISD_AID, 8);
-    if (status_ok(s)) {
+    if (status_ok(s, true)) {
         memcpy(g_selected_isd, GP231_ISD_AID, 8); g_selected_isd_len = 8; return 0;
     }
     // has on 00 less but would still work on GP2.3.1 cards
     s = OPGP_select_application(ctx, info, sec, (PBYTE)GP211_CARD_MANAGER_AID, 7);
-    if (status_ok(s)) {
+    if (status_ok(s, true)) {
         memcpy(g_selected_isd, GP211_CARD_MANAGER_AID, 7); g_selected_isd_len = 7; return 0;
     }
     s = OPGP_select_application(ctx, info, sec, (PBYTE)GP211_CARD_MANAGER_AID_ALT1, 8);
-    if (status_ok(s)) {
+    if (status_ok(s, true)) {
         memcpy(g_selected_isd, GP211_CARD_MANAGER_AID_ALT1, 8); g_selected_isd_len = 8; return 0;
     }
     s = OPGP_select_application(ctx, info, sec, (PBYTE)GP211_CARD_MANAGER_AID_ALT2, 7);
-    if (status_ok(s)) {
+    if (status_ok(s, true)) {
         memcpy(g_selected_isd, GP211_CARD_MANAGER_AID_ALT2, 7); g_selected_isd_len = 7; return 0;
     }
     s = OPGP_select_application(ctx, info, sec, (PBYTE)GP211_CARD_MANAGER_AID_GEMPLUS, 8);
-    if (status_ok(s)) {
+    if (status_ok(s, true)) {
         memcpy(g_selected_isd, GP211_CARD_MANAGER_AID_GEMPLUS, 8); g_selected_isd_len = 8; return 0;
     }
     return -1;
@@ -828,7 +830,7 @@ static int select_isd(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY
 static int connect_pcsc(OPGP_CARD_CONTEXT *pctx, OPGP_CARD_INFO *pinfo, const char *reader, const char *protocol, int trace, int verbose) {
     OPGP_ERROR_STATUS s;
     s = OPGP_establish_context(pctx);
-    if (!status_ok(s)) { fprintf(stderr, "Failed to establish PC/SC context\n"); return -1; }
+    if (!status_ok(s, true)) { fprintf(stderr, "Failed to establish PC/SC context\n"); return -1; }
     if (trace) { OPGP_enable_trace_mode(OPGP_TRACE_MODE_ENABLE, stderr); }
     TCHAR readers[MAX_READERS_BUF];
     DWORD rlen = (DWORD)ARRAY_SIZE(readers);
@@ -836,7 +838,7 @@ static int connect_pcsc(OPGP_CARD_CONTEXT *pctx, OPGP_CARD_INFO *pinfo, const ch
     OPGP_CSTRING reader_t = NULL;
     if (!reader) {
         s = OPGP_list_readers(*pctx, readers, &rlen, 1);
-        if (!status_ok(s) || rlen <= 1 || readers[0] == _T('\0')) {
+        if (!status_ok(s, true) || rlen <= 1 || readers[0] == _T('\0')) {
             fprintf(stderr, "No PC/SC readers with a smart card inserted found\n");
             // release context on error path to avoid leaks
             OPGP_release_context(pctx);
@@ -850,7 +852,7 @@ static int connect_pcsc(OPGP_CARD_CONTEXT *pctx, OPGP_CARD_INFO *pinfo, const ch
         if (*endptr == '\0' && reader_num > 0) {
             // It's a number - list all readers and select by index
             s = OPGP_list_readers(*pctx, readers, &rlen, 0);
-            if (!status_ok(s) || rlen <= 1) {
+            if (!status_ok(s, true) || rlen <= 1) {
                 fprintf(stderr, "No PC/SC readers found\n");
                 OPGP_release_context(pctx);
                 return -1;
@@ -888,7 +890,7 @@ static int connect_pcsc(OPGP_CARD_CONTEXT *pctx, OPGP_CARD_INFO *pinfo, const ch
         else if (strcmp(protocol, "t1") == 0) proto = SCARD_PROTOCOL_T1;
     }
     s = OPGP_card_connect(*pctx, reader_t, pinfo, proto);
-    if (!status_ok(s)) {
+    if (!status_ok(s, true)) {
         _ftprintf(stderr, _T("Failed to connect to reader '%s'\n"), reader_t);
         // release context on error path to avoid leaks
         OPGP_release_context(pctx);
@@ -926,7 +928,7 @@ static int mutual_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     // Only fetch from card if both are not provided
     if ((!scp_protocol || !scp_impl) && (scp != GP211_SCP01)) {
         OPGP_ERROR_STATUS s = GP211_get_secure_channel_protocol_details(ctx, info, sec, &scp, &scpImpl);
-        if (!status_ok(s)) {
+        if (!status_ok(s, false)) {
             if (verbose) fprintf(stderr, "Failed to get SCP details, trying to auto-detect\n");
         }
     }
@@ -968,7 +970,7 @@ static int mutual_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     else if (derivation == 2) deriv = OPGP_DERIVATION_METHOD_EMV_CPS11;
     OPGP_ERROR_STATUS s2 = GP211_mutual_authentication(ctx, info, baseKey, S_ENC, S_MAC, DEK, keyLength,
                                                        keyset_ver, key_index, scp, scpImpl, secLevel, deriv, sec);
-    if (!status_ok(s2)) {
+    if (!status_ok(s2, true)) {
         return -1;
     }
     g_current_scp = scp;
@@ -1118,16 +1120,16 @@ static int cmd_list_apps(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECUR
     OPGP_ERROR_STATUS s;
 
     s = GP211_get_status(ctx, info, sec, GP211_STATUS_APPLICATIONS, GP211_STATUS_FORMAT_NEW, apps, NULL, &apps_len);
-    if (!status_ok(s)) { fprintf(stderr, "GET STATUS (applications) failed\n"); return -1; }
+    if (!status_ok(s, true)) { fprintf(stderr, "GET STATUS (applications) failed\n"); return -1; }
 
     s = GP211_get_status(ctx, info, sec, GP211_STATUS_ISSUER_SECURITY_DOMAIN, GP211_STATUS_FORMAT_NEW, isds, NULL, &isds_len);
-    if (!status_ok(s)) { fprintf(stderr, "GET STATUS (issuer security domain) failed\n"); return -1; }
+    if (!status_ok(s, true)) { fprintf(stderr, "GET STATUS (issuer security domain) failed\n"); return -1; }
 
     s = GP211_get_status(ctx, info, sec, GP211_STATUS_LOAD_FILES, GP211_STATUS_FORMAT_NEW, lfs, NULL, &lfs_len);
-    if (!status_ok(s)) { fprintf(stderr, "GET STATUS (load files) failed\n"); return -1; }
+    if (!status_ok(s, true)) { fprintf(stderr, "GET STATUS (load files) failed\n"); return -1; }
 
     s = GP211_get_status(ctx, info, sec, GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES, GP211_STATUS_FORMAT_NEW, NULL, mods, &mods_len);
-    if (!status_ok(s)) { fprintf(stderr, "GET STATUS (load files and executable modules) failed\n"); return -1; }
+    if (!status_ok(s, true)) { fprintf(stderr, "GET STATUS (load files and executable modules) failed\n"); return -1; }
 
     // Collect distinct Security Domains (by associatedSecurityDomainAID) from all results.
     OPGP_AID sds[256];
@@ -1356,7 +1358,7 @@ static int cmd_list_keys(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECUR
         }
 
         // All other errors should be checked with status_ok
-        if (!status_ok(s)) {
+        if (!status_ok(s, true)) {
             return -1;
         }
 
@@ -1525,7 +1527,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         }
     } else {
         // Read CAP file parameters for normal or --load-only mode
-        if (!status_ok(OPGP_read_executable_load_file_parameters(capfile_opgp, &lfp))) {
+        if (!status_ok(OPGP_read_executable_load_file_parameters(capfile_opgp, &lfp), false)) {
             fprintf(stderr, "Failed to read CAP load file parameters\n");
             return -1;
         }
@@ -1564,12 +1566,12 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
                 sdAid, sdAidLen,
                 loadFileHashPtr, loadFileHashLen,
                 loadTokenPtr, loadTokenLen,
-                lfp.loadFileSize, v_data_limit, nv_data_limit))) {
+                lfp.loadFileSize, v_data_limit, nv_data_limit), true)) {
             return -1;
         }
 
         GP211_RECEIPT_DATA receipt; DWORD receiptAvail=0; memset(&receipt, 0, sizeof(receipt));
-        if (!status_ok(GP211_load(ctx, info, sec, dapCount?dapBlocks:NULL, dapCount, capfile_opgp, &receipt, &receiptAvail, NULL))) {
+        if (!status_ok(GP211_load(ctx, info, sec, dapCount?dapBlocks:NULL, dapCount, capfile_opgp, &receipt, &receiptAvail, NULL), true)) {
             return -1;
         }
         if (load_only) { return 0; }
@@ -1653,7 +1655,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
                 NULL, 0,
                 NULL, 0,
                 NULL, 0,
-                installTokenPtr, installTokenLen, &rec2, &rec2Avail))) {
+                installTokenPtr, installTokenLen, &rec2, &rec2Avail), true)) {
             return -1;
         }
     } else {
@@ -1676,7 +1678,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
                     NULL, 0,
                     NULL, 0,
                     NULL, 0,
-                    installTokenPtr, installTokenLen, &rec2, &rec2Avail))) {
+                    installTokenPtr, installTokenLen, &rec2, &rec2Avail), false)) {
                 fprintf(stderr, "Failed for applet index %d\n", i);
                 return -1;
             }
@@ -1727,7 +1729,7 @@ static int cmd_install_sd(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECU
     GP211_APPLICATION_DATA isds[64];
     DWORD isds_len = (DWORD)ARRAY_SIZE(isds);
     if (!status_ok(GP211_get_status(ctx, info, sec, GP211_STATUS_ISSUER_SECURITY_DOMAIN,
-                                    GP211_STATUS_FORMAT_NEW, isds, NULL, &isds_len))) {
+                                    GP211_STATUS_FORMAT_NEW, isds, NULL, &isds_len), false)) {
         fprintf(stderr, "GET STATUS (issuer security domain) failed\n");
         return -1;
     }
@@ -1749,7 +1751,7 @@ static int cmd_install_sd(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECU
         GP211_APPLICATION_DATA lfs[256];
         DWORD lfs_len = (DWORD)ARRAY_SIZE(lfs);
         if (!status_ok(GP211_get_status(ctx, info, sec, GP211_STATUS_LOAD_FILES,
-                                        GP211_STATUS_FORMAT_NEW, lfs, NULL, &lfs_len))) {
+                                        GP211_STATUS_FORMAT_NEW, lfs, NULL, &lfs_len), false)) {
             fprintf(stderr, "GET STATUS (load files) failed\n");
             return -1;
         }
@@ -1769,7 +1771,7 @@ static int cmd_install_sd(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECU
         GP211_EXECUTABLE_MODULES_DATA mods[128];
         DWORD mods_len = (DWORD)ARRAY_SIZE(mods);
         if (!status_ok(GP211_get_status(ctx, info, sec, GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES,
-                                        GP211_STATUS_FORMAT_NEW, NULL, mods, &mods_len))) {
+                                        GP211_STATUS_FORMAT_NEW, NULL, mods, &mods_len), false)) {
             fprintf(stderr, "GET STATUS (load files and modules) failed\n");
             return -1;
         }
@@ -1808,7 +1810,7 @@ static int cmd_install_sd(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECU
 
     BYTE sd_params[256];
     DWORD sd_params_len = (DWORD)sizeof(sd_params);
-    if (!status_ok(GP211_build_sd_parameters(&params, sd_params, &sd_params_len))) {
+    if (!status_ok(GP211_build_sd_parameters(&params, sd_params, &sd_params_len), false)) {
         fprintf(stderr, "install-sd: failed to build SD parameters\n");
         return -1;
     }
@@ -1822,7 +1824,7 @@ static int cmd_install_sd(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECU
         privileges |= GP211_SECURITY_DOMAIN;
     }
     GP211_CARD_RECOGNITION_DATA crd;
-    if (!status_ok(GP211_get_card_recognition_data(ctx, info, sec, &crd))) {
+    if (!status_ok(GP211_get_card_recognition_data(ctx, info, sec, &crd), false)) {
         fprintf(stderr, "install-sd: GP211_get_card_recognition_data failed\n");
         return -1;
     }
@@ -1837,7 +1839,7 @@ static int cmd_install_sd(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECU
             NULL, 0,
             NULL, 0,
             NULL, 0,
-            &rec, &recAvail))) {
+            &rec, &recAvail), true)) {
         return -1;
     }
 
@@ -1887,7 +1889,7 @@ static int cmd_delete(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY
     if (hex_to_bytes(aid_hex, aidb, &alen)!=0) { fprintf(stderr, "Invalid AID hex\n"); return -1; }
     OPGP_AID a; memset(&a,0,sizeof(a)); a.AIDLength=(BYTE)alen; memcpy(a.AID, aidb, alen);
     GP211_RECEIPT_DATA rec; DWORD recLen=0; memset(&rec,0,sizeof(rec));
-    if (!status_ok(GP211_delete_application(ctx, info, sec, &a, 1, &rec, &recLen))) {
+    if (!status_ok(GP211_delete_application(ctx, info, sec, &a, 1, &rec, &recLen), true)) {
         return -1;
     }
     return 0;
@@ -1922,7 +1924,7 @@ static int cmd_move(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
     if (!status_ok(GP211_install_for_extradition(ctx, info, sec,
                                                sd_aid_bytes, (DWORD)sd_aid_len,
                                                app_aid_bytes, (DWORD)app_aid_len,
-                                               NULL, &rec, &recAvail))) {
+                                               NULL, &rec, &recAvail), true)) {
         return -1;
     }
     return 0;
@@ -1951,7 +1953,7 @@ static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
             return -1;
         }
         pem_opgp = pem_t;
-        if (!status_ok(GP211_put_rsa_key(ctx, info, sec, setVer, idx, newSetVer, pem_opgp, pass))) {
+        if (!status_ok(GP211_put_rsa_key(ctx, info, sec, setVer, idx, newSetVer, pem_opgp, pass), true)) {
             return -1;
         }
         return 0;
@@ -1963,7 +1965,7 @@ static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
             fprintf(stderr, "Invalid AES key len\n");
             return -1;
         }
-        if (!status_ok(GP211_put_aes_key(ctx, info, sec, setVer, idx, newSetVer, k, (DWORD)klen))) {
+        if (!status_ok(GP211_put_aes_key(ctx, info, sec, setVer, idx, newSetVer, k, (DWORD)klen), true)) {
             return -1;
         }
         return 0;
@@ -1975,7 +1977,7 @@ static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
             fprintf(stderr, "3DES key must be 16 hex bytes\n");
             return -1;
         }
-        if (!status_ok(GP211_put_3des_key(ctx, info, sec, setVer, idx, newSetVer, k))) {
+        if (!status_ok(GP211_put_3des_key(ctx, info, sec, setVer, idx, newSetVer, k), true)) {
             return -1;
         }
         return 0;
@@ -2045,7 +2047,7 @@ static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURI
         // Apply key derivation if requested
         if (derivation == OPGP_DERIVATION_METHOD_EMV_CPS11) {
             OPGP_ERROR_STATUS s = GP211_EMV_CPS11_derive_keys(ctx, info, sec, b, b, b, b);
-            if (!status_ok(s)) {
+            if (!status_ok(s, true)) {
                 fprintf(stderr, "EMV CPS11 key derivation failed\n");
                 return -1;
             }
@@ -2055,14 +2057,14 @@ static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURI
                 return -1;
             }
             OPGP_ERROR_STATUS s = GP211_VISA2_derive_keys(ctx, info, sec, g_selected_isd, g_selected_isd_len, b, b, b, b);
-            if (!status_ok(s)) {
+            if (!status_ok(s, true)) {
                 fprintf(stderr, "VISA2 key derivation failed\n");
                 return -1;
             }
         }
 
         OPGP_ERROR_STATUS s = GP211_put_secure_channel_keys(ctx, info, sec, setVer, newSetVer, b, NULL, NULL, NULL, (DWORD)blen, keyType);
-        if (!status_ok(s)) {
+        if (!status_ok(s, true)) {
             return -1;
         }
         return 0;
@@ -2078,7 +2080,7 @@ static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURI
     }
 
     OPGP_ERROR_STATUS s = GP211_put_secure_channel_keys(ctx, info, sec, setVer, newSetVer, NULL, se, sm, dk, (DWORD)el, keyType);
-    if (!status_ok(s)) {
+    if (!status_ok(s, true)) {
         return -1;
     }
     return 0;
@@ -2132,7 +2134,7 @@ static int cmd_put_dm_token(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SE
     if (!status_ok(GP211_put_delegated_management_token_keys(ctx, info, sec,
                                                               setVer, newSetVer,
                                                               pem_t, pass,
-                                                              tokenKeyType))) {
+                                                              tokenKeyType), true)) {
         return -1;
     }
     return 0;
@@ -2184,7 +2186,7 @@ static int cmd_put_dm_receipt(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_
 
     if (!status_ok(GP211_put_delegated_management_receipt_keys(ctx, info, sec,
                                                                 setVer, newSetVer,
-                                                                receiptKey, keyLength, receiptKeyType))) {
+                                                                receiptKey, keyLength, receiptKeyType), true)) {
         return -1;
     }
     return 0;
@@ -2196,7 +2198,7 @@ static int cmd_del_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         if (strcmp(argv[i], "--kv")==0 && i+1<argc) setVer=(BYTE)parse_int(argv[++i]);
         else if (strcmp(argv[i], "--idx")==0 && i+1<argc) idx=(BYTE)parse_int(argv[++i]);
     }
-    if (!status_ok(GP211_delete_key(ctx, info, sec, setVer, idx))) {
+    if (!status_ok(GP211_delete_key(ctx, info, sec, setVer, idx), true)) {
         return -1;
     }
     return 0;
@@ -2262,7 +2264,7 @@ static int cmd_update_registry(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
                                                             NULL, 0, // Registry Update Token not supported
                                                             &receipt, &receiptAvailable);
 
-    if (!status_ok(s)) {
+    if (!status_ok(s, true)) {
         return -1;
     }
 
@@ -2351,7 +2353,7 @@ static int cmd_apdu(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
         }
         unsigned char rapdu[APDU_RESPONSE_LEN]; DWORD rlen=sizeof(rapdu);
         OPGP_ERROR_STATUS s = GP211_send_APDU(ctx, info, sec, capdu, (DWORD)clen, rapdu, &rlen);
-        if (!status_ok(s)) {
+        if (!status_ok(s, true)) {
             _ftprintf(stderr, _T("APDU %d send failed: 0x%08X (%s)\n"), k+1, (unsigned int)s.errorCode, s.errorMessage);
             rc = -1; if (!nostop) { break; } else { continue; }
         }
@@ -2391,7 +2393,7 @@ static int cmd_hash(int argc, char **argv) {
     else if (strcmp(hash_alg, "sm3") == 0) { hashType = GP211_HASH_SM3; hash_len = 32; }
 
     BYTE hash[64]; memset(hash, 0, sizeof(hash));
-    if (!status_ok(GP211_calculate_load_file_data_block_hash(cap_opgp, hash, hash_len, hashType))) {
+    if (!status_ok(GP211_calculate_load_file_data_block_hash(cap_opgp, hash, hash_len, hashType), false)) {
         fprintf(stderr, "hash failed\n"); return -1;
     }
     print_hex(hash, hash_len); printf("\n");
@@ -2421,7 +2423,7 @@ static int cmd_dap(int is_rsa, OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
             return -1;
         }
         pem_opgp = pem_t;
-        GP211_DAP_BLOCK dap; if (!status_ok(GP211_calculate_rsa_schemeX_DAP(hash, (DWORD)hashlen, sd, (DWORD)sdlen, pem_opgp, pass, &dap))) { fprintf(stderr, "calc rsa DAP failed\n"); return -1; }
+        GP211_DAP_BLOCK dap; if (!status_ok(GP211_calculate_rsa_schemeX_DAP(hash, (DWORD)hashlen, sd, (DWORD)sdlen, pem_opgp, pass, &dap), false)) { fprintf(stderr, "calc rsa DAP failed\n"); return -1; }
 
         if (output_file) {
             FILE *f = fopen(output_file, "wb");
@@ -2441,7 +2443,7 @@ static int cmd_dap(int is_rsa, OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
         unsigned char key[32]; size_t klen=sizeof(key); if (hex_to_bytes(hexkey, key, &klen)!=0) { fprintf(stderr, "Invalid hexkey\n"); return -1; }
         // Determine SCP based on hash length
         BYTE scp = (hashlen > 20) ? GP211_SCP03 : GP211_SCP02;
-        GP211_DAP_BLOCK dap; if (!status_ok(GP211_calculate_DAP(hash, (BYTE)hashlen, sd, (DWORD)sdlen, key, (DWORD)klen, &dap, scp))) { fprintf(stderr, "calc aes DAP failed\n"); return -1; }
+        GP211_DAP_BLOCK dap; if (!status_ok(GP211_calculate_DAP(hash, (BYTE)hashlen, sd, (DWORD)sdlen, key, (DWORD)klen, &dap, scp), false)) { fprintf(stderr, "calc aes DAP failed\n"); return -1; }
 
         if (output_file) {
             FILE *f = fopen(output_file, "wb");
@@ -2585,7 +2587,7 @@ static int cmd_status(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY
     }
 
     // Call GP211_set_status
-    if (!status_ok(GP211_set_status(ctx, info, sec, statusType, aid, (DWORD)aidlen, lifeCycleState))) {
+    if (!status_ok(GP211_set_status(ctx, info, sec, statusType, aid, (DWORD)aidlen, lifeCycleState), true)) {
         return -1;
     }
 
@@ -2692,14 +2694,14 @@ static int cmd_store(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_
     }
 
     // Step 1: Install for personalization
-    if (!status_ok(GP211_install_for_personalization(ctx, info, sec, aid, (DWORD)aidlen))) {
+    if (!status_ok(GP211_install_for_personalization(ctx, info, sec, aid, (DWORD)aidlen), false)) {
         fprintf(stderr, "store: GP211_install_for_personalization failed\n");
         return -1;
     }
 
     // Step 2: Store data
     if (!status_ok(GP211_store_data(ctx, info, sec, encryptionFlags, formatFlags,
-                                     responseDataExpected, data, (DWORD)datalen))) {
+                                     responseDataExpected, data, (DWORD)datalen), false)) {
         fprintf(stderr, "store: GP211_store_data failed\n");
         return -1;
     }
@@ -2714,12 +2716,12 @@ static int cmd_list_readers(void) {
     _tcsncpy(ctx.libraryName, _T("gppcscconnectionplugin"), _tcslen(_T("gppcscconnectionplugin"))+1);
     _tcsncpy(ctx.libraryVersion, _T("1"), _tcslen(_T("1"))+1);
     OPGP_ERROR_STATUS s = OPGP_establish_context(&ctx);
-    if (!status_ok(s)) { fprintf(stderr, "list-readers: failed to establish PC/SC context\n"); return -1; }
+    if (!status_ok(s, true)) { fprintf(stderr, "list-readers: failed to establish PC/SC context\n"); return -1; }
 
     TCHAR buf[MAX_READERS_BUF];
     DWORD len = (DWORD)ARRAY_SIZE(buf);
     s = OPGP_list_readers(ctx, buf, &len, 0);
-    if (!status_ok(s)) {
+    if (!status_ok(s, true)) {
         _ftprintf(stderr, _T("list-readers failed with error 0x%08X (%s)\n"), (unsigned int)s.errorCode, s.errorMessage);
         OPGP_release_context(&ctx);
         return -1;
@@ -2797,7 +2799,7 @@ static const char* get_os_id_name(USHORT id) {
 static int cmd_cplc(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
     OPGP_CPLC cplc_data;
 
-    if (!status_ok(OPGP_get_cplc(ctx, info, sec, &cplc_data))) {
+    if (!status_ok(OPGP_get_cplc(ctx, info, sec, &cplc_data), false)) {
         fprintf(stderr, "clpc: OPGP_get_cplc failed\n");
         return -1;
     }
@@ -2855,7 +2857,7 @@ static int cmd_cplc(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
 
 static int cmd_card_info(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
     GP211_CARD_RECOGNITION_DATA data;
-    if (!status_ok(GP211_get_card_recognition_data(ctx, info, sec, &data))) {
+    if (!status_ok(GP211_get_card_recognition_data(ctx, info, sec, &data), false)) {
         fprintf(stderr, "card-info: GP211_get_card_recognition_data failed\n");
         return -1;
     }
@@ -2920,7 +2922,7 @@ static int cmd_card_info(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECUR
 
 static int cmd_card_capability(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
     GP211_CARD_CAPABILITY_INFORMATION data;
-    if (!status_ok(GP211_get_card_capability_information(ctx, info, sec, &data))) {
+    if (!status_ok(GP211_get_card_capability_information(ctx, info, sec, &data), false)) {
         fprintf(stderr, "card-cap: GP211_get_card_capability_information failed\n");
         return -1;
     }
@@ -3043,7 +3045,7 @@ static int cmd_card_capability(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
 
 static int cmd_card_resources(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
     OPGP_EXTENDED_CARD_RESOURCE_INFORMATION data;
-    if (!status_ok(OPGP_get_extended_card_resources_information(ctx, info, sec, &data))) {
+    if (!status_ok(OPGP_get_extended_card_resources_information(ctx, info, sec, &data), false)) {
         fprintf(stderr, "card-resources: OPGP_get_extended_card_resources_information failed\n");
         return -1;
     }
@@ -3057,7 +3059,7 @@ static int cmd_card_resources(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_
 static int cmd_diversification(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
     BYTE data[256];
     DWORD dataLen = sizeof(data);
-    if (!status_ok(GP211_get_diversification_data(ctx, info, sec, data, &dataLen))) {
+    if (!status_ok(GP211_get_diversification_data(ctx, info, sec, data, &dataLen), false)) {
         fprintf(stderr, "diversification: GP211_get_diversification_data failed\n");
         return -1;
     }
@@ -3069,7 +3071,7 @@ static int cmd_diversification(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
 static int cmd_iin(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
     BYTE data[256];
     DWORD dataLen = sizeof(data);
-    if (!status_ok(GP211_get_data(ctx, info, sec, (BYTE *)GP211_GET_DATA_ISSUER_IDENTIFICATION_NUMBER, data, &dataLen))) {
+    if (!status_ok(GP211_get_data(ctx, info, sec, (BYTE *)GP211_GET_DATA_ISSUER_IDENTIFICATION_NUMBER, data, &dataLen), false)) {
         fprintf(stderr, "iin: GP211_get_data failed\n");
         return -1;
     }
@@ -3081,7 +3083,7 @@ static int cmd_iin(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_IN
 static int cmd_cin(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
     BYTE data[256];
     DWORD dataLen = sizeof(data);
-    if (!status_ok(GP211_get_data(ctx, info, sec, (BYTE *)GP211_GET_DATA_CARD_IMAGE_NUMBER, data, &dataLen))) {
+    if (!status_ok(GP211_get_data(ctx, info, sec, (BYTE *)GP211_GET_DATA_CARD_IMAGE_NUMBER, data, &dataLen), false)) {
         fprintf(stderr, "cin: GP211_get_data failed\n");
         return -1;
     }
@@ -3092,7 +3094,7 @@ static int cmd_cin(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_IN
 
 static int cmd_seq_counter(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
     DWORD counter = 0;
-    if (!status_ok(GP211_get_sequence_counter(ctx, info, sec, &counter))) {
+    if (!status_ok(GP211_get_sequence_counter(ctx, info, sec, &counter), false)) {
         fprintf(stderr, "seq-counter: GP211_get_sequence_counter failed\n");
         return -1;
     }
@@ -3102,7 +3104,7 @@ static int cmd_seq_counter(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SEC
 
 static int cmd_confirm_counter(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
     DWORD counter = 0;
-    if (!status_ok(GP211_get_confirmation_counter(ctx, info, sec, &counter))) {
+    if (!status_ok(GP211_get_confirmation_counter(ctx, info, sec, &counter), false)) {
         fprintf(stderr, "confirm-counter: GP211_get_confirmation_counter failed\n");
         return -1;
     }
@@ -3158,7 +3160,7 @@ static int cmd_store_iin_cin(const char *cmd, int argc, char **argv,
     BYTE bcd[64];
     DWORD bcdLen = sizeof(bcd);
     OPGP_ERROR_STATUS status = OPGP_build_bcd_encoding(id_str, bcd, &bcdLen);
-    if (!status_ok(status)) {
+    if (!status_ok(status, false)) {
         fprintf(stderr, "%s: BCD encoding failed\n", cmd);
         return 1;
     }
@@ -3179,7 +3181,7 @@ static int cmd_store_iin_cin(const char *cmd, int argc, char **argv,
 
     status = GP211_store_data(ctx, info, &sec, STORE_DATA_ENCRYPTION_NO_INFORMATION,
                               STORE_DATA_FORMAT_BER_TLV, false, tlv, tlvLen);
-    if (!status_ok(status)) {
+    if (!status_ok(status, false)) {
         fprintf(stderr, "%s: GP211_store_data failed\n", cmd);
         return 1;
     }
