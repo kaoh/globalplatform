@@ -43,16 +43,14 @@
 #define MAX_READERS_BUF 4096
 #define MAX_PATH_BUF 4096
 
-static int gp_setenv(const char *name, const char *value, int overwrite) {
 #ifdef _WIN32
+static int setenv(const char *name, const char *value, int overwrite) {
     if (!overwrite && getenv(name) != NULL) {
         return 0;
     }
     return _putenv_s(name, value ? value : "") == 0 ? 0 : -1;
-#else
-    return setenv(name, value, overwrite);
-#endif
 }
+#endif
 
 static int to_opgp_string(const char *src, TCHAR *dst, size_t dst_len) {
     if (!src || !dst || dst_len == 0) {
@@ -3201,8 +3199,8 @@ int main(int argc, char **argv) {
 
         if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--verbose")) {
             verbose=1;
-            gp_setenv("GLOBALPLATFORM_DEBUG", "1", 1);
-            gp_setenv("GLOBALPLATFORM_LOGFILE", "stderr", 1);
+            setenv("GLOBALPLATFORM_DEBUG", "1", 1);
+            setenv("GLOBALPLATFORM_LOGFILE", "stderr", 1);
         }
         else if (!strcmp(argv[i], "-t") || !strcmp(argv[i], "--trace")) { trace=1; }
         else if (!strcmp(argv[i], "-r") || !strcmp(argv[i], "--reader")) { if(i+1<argc) reader=argv[++i]; }

@@ -719,7 +719,6 @@ ALPHABETICAL_INDEX     = NO
 # the COLS_IN_ALPHA_INDEX tag can be used to specify the number of columns 
 # in which this list will be split (can be a number in the range [1..20])
 
-COLS_IN_ALPHA_INDEX    = 5
 
 # In case all classes in a project start with a common prefix, all 
 # classes will be put under the same header in the alphabetical index. 
@@ -1272,7 +1271,6 @@ EXTERNAL_GROUPS        = YES
 # fallback. It is recommended to install and use dot, since it yields more 
 # powerful graphs.
 
-CLASS_DIAGRAMS         = YES
 
 # If set to YES, the inheritance and collaboration graphs will hide 
 # inheritance and usage relations if the target is undocumented 
@@ -1296,12 +1294,10 @@ HAVE_DOT               = @DOXYFILE_DOT@
 # DOTFONTPATH environment variable or by setting DOT_FONTPATH to the directory 
 # containing the font.
 
-DOT_FONTNAME           = Helvetica
 
 # The DOT_FONTSIZE tag can be used to set the size of the font of dot graphs. 
 # The default size is 10pt.
 
-DOT_FONTSIZE           = 10
 
 # By default doxygen will tell dot to use the output directory to look for the 
 # FreeSans.ttf font (which doxygen will put there itself). If you specify a 
@@ -1425,7 +1421,6 @@ MAX_DOT_GRAPH_DEPTH    = 0
 # enabling this option may lead to badly anti-aliased labels on the edges of 
 # a graph (i.e. they become hard to read).
 
-DOT_TRANSPARENT        = YES
 
 # Set the DOT_MULTI_TARGETS tag to YES allow dot to generate multiple output 
 # files in one run (i.e. multiple -o and -T options on the command line). This 

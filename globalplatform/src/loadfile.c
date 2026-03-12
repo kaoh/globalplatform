@@ -647,6 +647,8 @@ end:
  * \param securityDomainAID [in] A buffer containing the Security Domain AID.
  * \param securityDomainAIDLength [in] The length of the Security Domain AID.
  * \param loadFileDataBlockHash [in] The Load File DAP.
+ * \param loadFileDataBlockHashLength [in] The length of the loadFileDataBlockHash buffer.
+ * \param loadTokenLength [in] The length of the load token that will follow the load data.
  * \param nonVolatileCodeSpaceLimit [in] The minimum space required to store the application code.
  * \param volatileDataSpaceLimit [in] The minimum amount of RAM space that must be available.
  * \param nonVolatileDataSpaceLimit [in] The minimum amount of space for objects of the application, i.e. the data allocated in its lifetime.
