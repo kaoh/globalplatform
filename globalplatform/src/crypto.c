@@ -2445,7 +2445,7 @@ end:
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_check_R_MAC(PBYTE apduCommand, DWORD apduCommandLength,
-		PBYTE responseApdu, DWORD responseApduLength,
+				 PBYTE responseApdu, DWORD responseApduLength,
 				 PBYTE unwrappedResponseApdu, PDWORD unwrappedResponseApduLength,
 				 GP211_SECURITY_INFO *secInfo) {
 	OPGP_ERROR_STATUS status;
@@ -2503,6 +2503,66 @@ end:
 
 	OPGP_LOG_END(_T("GP211_check_R_MAC"), status);
 	return status;
+}
+
+static BOOL curve_name_equals(const char *curveName, const char *referenceName) {
+	return curveName != NULL && referenceName != NULL && strcmp(curveName, referenceName) == 0;
+}
+
+static BOOL get_ecc_key_parameter_reference(const char *curveName, BYTE *eccKeyComponentType, BYTE *keyParameterReference) {
+	if (curve_name_equals(curveName, "prime256v1") || curve_name_equals(curveName, "secp256r1")
+			|| curve_name_equals(curveName, "P-256")) {
+		*eccKeyComponentType = GP211_KEY_TYPE_ECC_PUBLIC_OR_PRIVATE;
+		*keyParameterReference = GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_P256;
+		return 1;
+	}
+	if (curve_name_equals(curveName, "secp384r1") || curve_name_equals(curveName, "P-384")) {
+		*eccKeyComponentType = GP211_KEY_TYPE_ECC_PUBLIC_OR_PRIVATE;
+		*keyParameterReference = GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_P384;
+		return 1;
+	}
+	if (curve_name_equals(curveName, "secp521r1") || curve_name_equals(curveName, "P-521")) {
+		*eccKeyComponentType = GP211_KEY_TYPE_ECC_PUBLIC_OR_PRIVATE;
+		*keyParameterReference = GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_P521;
+		return 1;
+	}
+	if (curve_name_equals(curveName, "brainpoolP256r1")) {
+		*eccKeyComponentType = GP211_KEY_TYPE_ECC_PUBLIC_OR_PRIVATE;
+		*keyParameterReference = GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_BRAINPOOLP256R1;
+		return 1;
+	}
+	if (curve_name_equals(curveName, "brainpoolP256t1")) {
+		*eccKeyComponentType = GP211_KEY_TYPE_ECC_PUBLIC_OR_PRIVATE;
+		*keyParameterReference = GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_BRAINPOOLP256T1;
+		return 1;
+	}
+	if (curve_name_equals(curveName, "brainpoolP384r1")) {
+		*eccKeyComponentType = GP211_KEY_TYPE_ECC_PUBLIC_OR_PRIVATE;
+		*keyParameterReference = GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_BRAINPOOLP384R1;
+		return 1;
+	}
+	if (curve_name_equals(curveName, "brainpoolP384t1")) {
+		*eccKeyComponentType = GP211_KEY_TYPE_ECC_PUBLIC_OR_PRIVATE;
+		*keyParameterReference = GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_BRAINPOOLP384T1;
+		return 1;
+	}
+	if (curve_name_equals(curveName, "brainpoolP512r1")) {
+		*eccKeyComponentType = GP211_KEY_TYPE_ECC_PUBLIC_OR_PRIVATE;
+		*keyParameterReference = GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_BRAINPOOLP512R1;
+		return 1;
+	}
+	if (curve_name_equals(curveName, "brainpoolP512t1")) {
+		*eccKeyComponentType = GP211_KEY_TYPE_ECC_PUBLIC_OR_PRIVATE;
+		*keyParameterReference = GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_BRAINPOOLP512T1;
+		return 1;
+	}
+	if (curve_name_equals(curveName, "SM2") || curve_name_equals(curveName, "sm2")
+			|| curve_name_equals(curveName, "sm2p256v1") || curve_name_equals(curveName, "id-sm2")) {
+		*eccKeyComponentType = GP211_KEY_TYPE_ECC_SM2_PUBLIC_OR_PRIVATE;
+		*keyParameterReference = GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_SM2P256V1;
+		return 1;
+	}
+	return 0;
 }
 
 /**
@@ -2625,6 +2685,102 @@ end:
         fclose(PEMKeyFile);
     }
 	OPGP_LOG_END(_T("read_public_rsa_key"), status);
+	return status;
+}
+
+/**
+ * \param PEMKeyFileName [in] The key file.
+ * \param *passPhrase [in] The passphrase. Must be an ASCII string.
+ * \param eccPublicPoint [out] The ECC public point in uncompressed form.
+ * \param eccPublicPointLength [inout]  The ECC public point length passed in and returned.
+ * \param eccKeyComponentType [out] GP211_KEY_TYPE_ECC_PUBLIC_OR_PRIVATE or GP211_KEY_TYPE_ECC_SM2_PUBLIC_OR_PRIVATE.
+ * \param keyParameterReference [out] ECC key parameter reference (see GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_*).
+ */
+OPGP_ERROR_STATUS read_public_ecc_key(OPGP_STRING PEMKeyFileName, char *passPhrase,
+		PBYTE eccPublicPoint, PDWORD eccPublicPointLength,
+		PBYTE eccKeyComponentType, PBYTE keyParameterReference) {
+	OPGP_ERROR_STATUS status;
+	EVP_PKEY *key = NULL;
+	FILE *PEMKeyFile = NULL;
+	EC_KEY *ec = NULL;
+	const EC_GROUP *group = NULL;
+	const EC_POINT *point = NULL;
+	const char *curveName = NULL;
+	int curveNid;
+	size_t encodedPointLength;
+	OPGP_LOG_START(_T("read_public_ecc_key"));
+
+	if (PEMKeyFileName == NULL || _tcslen(PEMKeyFileName) == 0)
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_FILENAME, OPGP_stringify_error(OPGP_ERROR_INVALID_FILENAME)); goto end; }
+	if (eccPublicPoint == NULL || eccPublicPointLength == NULL || eccKeyComponentType == NULL || keyParameterReference == NULL)
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+	if (passPhrase == NULL) {
+		passPhrase = "";
+	}
+	PEMKeyFile = _tfopen(PEMKeyFileName, _T("rb"));
+	if (PEMKeyFile == NULL) {
+		{ OPGP_ERROR_CREATE_ERROR(status, errno, OPGP_stringify_error(errno)); goto end; }
+	}
+	key = EVP_PKEY_new();
+	if (!PEM_read_PUBKEY(PEMKeyFile, &key, NULL, passPhrase)) {
+		/* If it fails, it might be a private key from which we can also get the public key */
+		rewind(PEMKeyFile);
+		if (!PEM_read_PrivateKey(PEMKeyFile, &key, NULL, passPhrase)) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+	}
+#if defined(EVP_PKEY_SM2)
+	if (EVP_PKEY_base_id(key) != EVP_PKEY_EC && EVP_PKEY_base_id(key) != EVP_PKEY_SM2) {
+#else
+	if (EVP_PKEY_base_id(key) != EVP_PKEY_EC) {
+#endif
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_WRONG_KEY_TYPE, OPGP_stringify_error(OPGP_ERROR_WRONG_KEY_TYPE)); goto end; }
+	}
+	ec = EVP_PKEY_get1_EC_KEY(key);
+	if (ec == NULL) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	group = EC_KEY_get0_group(ec);
+	point = EC_KEY_get0_public_key(ec);
+	if (group == NULL || point == NULL) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	curveNid = EC_GROUP_get_curve_name(group);
+	if (curveNid == NID_undef) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_WRONG_KEY_TYPE, _T("Unsupported ECC curve for delegated management token key")); goto end; }
+	}
+	curveName = OBJ_nid2sn(curveNid);
+	if (!get_ecc_key_parameter_reference(curveName, eccKeyComponentType, keyParameterReference)) {
+		curveName = OBJ_nid2ln(curveNid);
+		if (!get_ecc_key_parameter_reference(curveName, eccKeyComponentType, keyParameterReference)) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_WRONG_KEY_TYPE, _T("Unsupported ECC curve for delegated management token key")); goto end; }
+		}
+	}
+	encodedPointLength = EC_POINT_point2oct(group, point, POINT_CONVERSION_UNCOMPRESSED, NULL, 0, NULL);
+	if (encodedPointLength == 0) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	if (encodedPointLength > *eccPublicPointLength) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+	}
+	if (EC_POINT_point2oct(group, point, POINT_CONVERSION_UNCOMPRESSED,
+			eccPublicPoint, *eccPublicPointLength, NULL) != encodedPointLength) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	*eccPublicPointLength = (DWORD)encodedPointLength;
+
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	if (ec != NULL) {
+		EC_KEY_free(ec);
+	}
+	if (key != NULL) {
+		EVP_PKEY_free(key);
+	}
+	if (PEMKeyFile != NULL) {
+		fclose(PEMKeyFile);
+	}
+	OPGP_LOG_END(_T("read_public_ecc_key"), status);
 	return status;
 }
 

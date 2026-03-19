@@ -949,6 +949,43 @@ static OPGP_ERROR_STATUS add_rsa_key_data(GP211_SECURITY_INFO *secInfo,
 	return status;
 }
 
+static OPGP_ERROR_STATUS add_ecc_key_data(GP211_SECURITY_INFO *secInfo,
+										   BYTE *ecc_public_point, DWORD ecc_public_point_length,
+										   BYTE ecc_key_component_type, BYTE key_parameter_reference,
+										   BYTE *sendBuffer, DWORD *sendBufferIndex,
+										   BYTE *keyCheckValue) {
+	OPGP_ERROR_STATUS status;
+	BYTE keyDataField[600];
+	DWORD keyDataFieldLength = 600;
+	BYTE keyParameterReference[] = {key_parameter_reference};
+
+	if (ecc_key_component_type != GP211_KEY_TYPE_ECC_PUBLIC_OR_PRIVATE &&
+			ecc_key_component_type != GP211_KEY_TYPE_ECC_SM2_PUBLIC_OR_PRIVATE) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_WRONG_KEY_TYPE, OPGP_stringify_error(OPGP_ERROR_WRONG_KEY_TYPE));
+		return status;
+	}
+
+	status = get_key_data_field(secInfo, ecc_public_point, ecc_public_point_length,
+		ecc_key_component_type, keyDataField, &keyDataFieldLength, keyCheckValue, false);
+	if (OPGP_ERROR_CHECK(status)) {
+		return status;
+	}
+	memcpy(sendBuffer + *sendBufferIndex, keyDataField, keyDataFieldLength);
+	*sendBufferIndex += keyDataFieldLength;
+
+	keyDataFieldLength = 600;
+	status = get_key_data_field(secInfo, keyParameterReference, sizeof(keyParameterReference),
+		GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE, keyDataField, &keyDataFieldLength, keyCheckValue, true);
+	if (OPGP_ERROR_CHECK(status)) {
+		return status;
+	}
+	memcpy(sendBuffer + *sendBufferIndex, keyDataField, keyDataFieldLength);
+	*sendBufferIndex += keyDataFieldLength;
+
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+	return status;
+}
+
 static DWORD get_max_apdu_data_size(GP211_SECURITY_INFO *secInfo) {
 	DWORD macSize = 8;
 	DWORD blockSize = 8;
@@ -1437,6 +1474,10 @@ OPGP_ERROR_STATUS put_delegated_management_token_keys(OPGP_CARD_CONTEXT cardCont
 	BYTE token_verification_rsa_modulus[512];
 	DWORD rsa_modulus_length = 512;
 	LONG token_verification_rsa_exponent;
+	BYTE token_verification_ecc_public_point[512];
+	DWORD ecc_public_point_length = 512;
+	BYTE token_verification_ecc_key_component_type;
+	BYTE token_verification_ecc_key_parameter_reference;
 
 	OPGP_LOG_START(_T("put_delegated_management_token_keys"));
 
@@ -1462,6 +1503,20 @@ OPGP_ERROR_STATUS put_delegated_management_token_keys(OPGP_CARD_CONTEXT cardCont
 			}
 			status = add_rsa_key_data(secInfo, token_verification_rsa_modulus, rsa_modulus_length,
 				token_verification_rsa_exponent, keyDataField, &keyDataFieldLength, keyCheckValue);
+			if (OPGP_ERROR_CHECK(status)) {
+				goto end;
+			}
+			break;
+		case GP211_KEY_TYPE_ECC:
+			status = read_public_ecc_key(PEMKeyFileName, passPhrase,
+				token_verification_ecc_public_point, &ecc_public_point_length,
+				&token_verification_ecc_key_component_type, &token_verification_ecc_key_parameter_reference);
+			if (OPGP_ERROR_CHECK(status)) {
+				goto end;
+			}
+			status = add_ecc_key_data(secInfo, token_verification_ecc_public_point, ecc_public_point_length,
+				token_verification_ecc_key_component_type, token_verification_ecc_key_parameter_reference,
+				keyDataField, &keyDataFieldLength, keyCheckValue);
 			if (OPGP_ERROR_CHECK(status)) {
 				goto end;
 			}

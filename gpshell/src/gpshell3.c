@@ -216,14 +216,14 @@ static void print_usage(const char *prog) {
         "      Use either --key (single base key) OR all of --enc/--mac/--dek.\n"
         "      --type: Key type (default: aes).\n"
         "      --derive: Key derivation method for single base key (default: none).\n"
-        "  put-dm-token --kv <ver> [--new-kv <ver>] [--token-type <rsa>] <pem-file>[:pass]\n"
+        "  put-dm-token --kv <ver> [--new-kv <ver>] [--token-type <rsa|ecc>] <pem-file>[:pass]\n"
         "  put-dm-receipt --kv <ver> [--new-kv <ver>] [--receipt-type <aes|des>] <receipt-key-hex>\n"
         "      Put delegated management keys.\n"
         "      --kv <ver>: Key set version number to put delegated management keys into, 0 means that a new key set is created (mandatory).\n"
         "      --new-kv <ver>: New key set version when replacing keys (mandatory).\n"
         "      <pem-file>[:pass]: PEM file path with optional passphrase after colon.\n"
         "      <receipt-key-hex>: Receipt key as hex (mandatory, last positional parameter).\n"
-        "      --token-type: Token key type, 'rsa' (default: rsa).\n"
+        "      --token-type: Token key type, 'rsa' or 'ecc' (default: rsa).\n"
         "      --receipt-type: Receipt key type, 'aes' or 'des' (default: aes).\n"
         "  del-key --kv <ver> [--idx <idx>]\n"
         "      Delete a key. If --idx is omitted, deletes all keys in the given key set.\n"
@@ -2122,8 +2122,10 @@ static int cmd_put_dm_token(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SE
     BYTE tokenKeyType;
     if (strcmp(tokenType, "rsa")==0) {
         tokenKeyType = GP211_KEY_TYPE_RSA;
+    } else if (strcmp(tokenType, "ecc")==0) {
+        tokenKeyType = GP211_KEY_TYPE_ECC;
     } else {
-        fprintf(stderr, "put-dm-token: unsupported --token-type '%s' (use rsa)\n", tokenType);
+        fprintf(stderr, "put-dm-token: unsupported --token-type '%s' (use rsa|ecc)\n", tokenType);
         return -1;
     }
 
@@ -2402,7 +2404,7 @@ static int cmd_hash(int argc, char **argv) {
     return 0;
 }
 
-static int cmd_dap(const char *dap_type, OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
+static int cmd_sign_dap(const char *dap_type, OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
     // Parse optional flags
     const char *output_file = NULL;
     int ai = 0;
@@ -3385,7 +3387,7 @@ int main(int argc, char **argv) {
     else if (!strcmp(cmd, "store")) rc = cmd_store(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "sign-dap")) {
         if (i>=argc) { fprintf(stderr, "sign-dap: missing type aes|rsa|ecc\n"); rc=-1; }
-        else if (!strcmp(argv[i], "rsa") || !strcmp(argv[i], "aes") || !strcmp(argv[i], "ecc")) rc = cmd_dap(argv[i], ctx, info, &sec, argc - (i+1), &argv[i+1]);
+        else if (!strcmp(argv[i], "rsa") || !strcmp(argv[i], "aes") || !strcmp(argv[i], "ecc")) rc = cmd_sign_dap(argv[i], ctx, info, &sec, argc - (i+1), &argv[i+1]);
         else { fprintf(stderr, "sign-dap: unknown type (use aes|rsa|ecc)\n"); rc=-1; }
     } else { fprintf(stderr, "Unknown command: %s\n", cmd); rc=-1; }
 

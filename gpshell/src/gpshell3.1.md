@@ -297,7 +297,7 @@ Put delegated management token verification key.
 
 Synopsis:
 ```
-gpshell3 put-dm-token --kv <ver> [--new-kv <ver>] [--token-type <rsa>] <pem-file>[:pass]
+gpshell3 put-dm-token --kv <ver> [--new-kv <ver>] [--token-type <rsa|ecc>] <pem-file>[:pass]
 ```
 
 Options:
@@ -305,7 +305,7 @@ Options:
 - `--kv <ver>`: Key set version, defaults to 0, 0 means that a new key set is created (optional).
 - `--new-kv <ver>`: New key set version when replacing or creating a new key set, default 0x70 (optional).
 - `<pem-file>[:pass]`: Token signing key in PEM, optional passphrase after colon.
-- `--token-type`: Token key type, default `rsa`.
+- `--token-type`: Token key type, `rsa` or `ecc` (default `rsa`).
 
 ## put-dm-receipt
 

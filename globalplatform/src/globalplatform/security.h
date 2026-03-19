@@ -155,6 +155,7 @@ extern "C"
 #define GP211_SCP03_SECURITY_LEVEL_R_ENC_R_MAC 0x30 //!< Secure Channel Protocol '03': R-Encryption and R-MAC. Used only with BEGIN R-MAC.
 
 #define GP211_KEY_TYPE_RSA 0xF0 //!< 'F0' Internal key type for a RSA.
+#define GP211_KEY_TYPE_ECC 0xF1 //!< 'F1' Internal key type for ECC.
 #define GP211_KEY_TYPE_RSA_PUB_E 0xA0 //!< 'A0' RSA Public Key - public exponent e component (clear text)
 #define GP211_KEY_TYPE_RSA_PUB_N 0xA1 //!< 'A1' RSA Public Key - modulus N component (clear text).
 #define GP211_KEY_TYPE_RSA_PRIV_ENC_N 0xA2 //!< 'A2' RSA Private Key - modulus N component (encrypted)
@@ -164,6 +165,19 @@ extern "C"
 #define GP211_KEY_TYPE_RSA_PRIV_PQ 0xA6 //!< 'A6' RSA Private Key - Chinese Remainder PQ component
 #define GP211_KEY_TYPE_RSA_PRIV_DP1 0xA7 //!< 'A7' RSA Private Key - Chinese Remainder DP1 component
 #define GP211_KEY_TYPE_RSA_PRIV_DQ1 0xA8 //!< 'A8' RSA Private Key - Chinese Remainder DQ1 component
+#define GP211_KEY_TYPE_ECC_PUBLIC_OR_PRIVATE 0xB0 //!< 'B0' ECC public or private key component.
+#define GP211_KEY_TYPE_ECC_SM2_PUBLIC_OR_PRIVATE 0xB7 //!< 'B7' SM2 public or private key component.
+#define GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE 0xF0 //!< 'F0' ECC key parameter reference component.
+#define GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_P256 0x00 //!< '00' NIST P-256.
+#define GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_P384 0x01 //!< '01' NIST P-384.
+#define GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_P521 0x02 //!< '02' NIST P-521.
+#define GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_BRAINPOOLP256R1 0x03 //!< '03' brainpoolP256r1.
+#define GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_BRAINPOOLP256T1 0x04 //!< '04' brainpoolP256t1.
+#define GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_BRAINPOOLP384R1 0x05 //!< '05' brainpoolP384r1.
+#define GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_BRAINPOOLP384T1 0x06 //!< '06' brainpoolP384t1.
+#define GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_BRAINPOOLP512R1 0x07 //!< '07' brainpoolP512r1.
+#define GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_BRAINPOOLP512T1 0x08 //!< '08' brainpoolP512t1.
+#define GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_SM2P256V1 0x09 //!< '09' sm2p256v1.
 
 
 #define GP211_KEY_TYPE_3DES 0x81 //!< Reserved (triple DES).

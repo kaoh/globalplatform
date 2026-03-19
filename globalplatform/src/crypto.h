@@ -205,6 +205,12 @@ OPGP_ERROR_STATUS validate_registry_update_receipt(DWORD confirmationCounter, PB
 OPGP_NO_API
 OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhrase, PBYTE rsaModulus, PDWORD rsaModulusLength, LONG *rsaExponent);
 
+//! \brief Reads a public ECC key from a file
+OPGP_NO_API
+OPGP_ERROR_STATUS read_public_ecc_key(OPGP_STRING PEMKeyFileName, char *passPhrase,
+		PBYTE eccPublicPoint, PDWORD eccPublicPointLength,
+		PBYTE eccKeyComponentType, PBYTE keyParameterReference);
+
 //! \brief Calculates a SHA-256 hash.
 OPGP_NO_API
 OPGP_ERROR_STATUS calculate_sha2_hash(PBYTE message, DWORD messageLength, BYTE hash[64], DWORD hashLength);
