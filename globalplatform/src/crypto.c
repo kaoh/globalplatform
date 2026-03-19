@@ -37,6 +37,8 @@
 #include <openssl/pem.h>
 #include <openssl/aes.h>
 #include <openssl/cmac.h>
+#include <openssl/ec.h>
+#include <openssl/ecdsa.h>
 #if OPENSSL_VERSION_NUMBER > 0x10100000L
 #include <openssl/rsa.h>
 #endif
@@ -1222,6 +1224,135 @@ end:
 		EVP_PKEY_free(key);
 	}
 	OPGP_LOG_END(_T("calculate_rsa_signature"), status);
+	return status;
+}
+
+/**
+ * Calculates an ECC signature and encodes it in plain format according to BSI TR-03111.
+ * The output is r||s, where r and s are fixed-length big-endian integers padded to the curve size.
+ * \param message [in] The digest to sign.
+ * \param messageLength [in] The digest length.
+ * \param PEMKeyFileName [in] A PEM file name with the private ECC key.
+ * \param *passPhrase [in] The passphrase. Must be an ASCII string. Use an empty string for unencrypted keys.
+ * \param signature [out] The calculated signature buffer in plain format (r||s).
+ * \param signatureLength [in,out] On input: size of signature buffer. On output: actual signature length.
+ */
+OPGP_ERROR_STATUS calculate_ecc_signature(PBYTE message, DWORD messageLength, OPGP_STRING PEMKeyFileName,
+									char *passPhrase, PBYTE signature, PDWORD signatureLength) {
+	LONG result;
+	OPGP_ERROR_STATUS status;
+	EVP_PKEY *key = NULL;
+	EVP_PKEY_CTX *pctx = NULL;
+	FILE *PEMKeyFile = NULL;
+	BYTE derSignature[512];
+	size_t derSignatureLength = 0;
+	const unsigned char *derPtr = NULL;
+	ECDSA_SIG *ecdsaSignature = NULL;
+	const BIGNUM *r = NULL;
+	const BIGNUM *s = NULL;
+	int keyBits = 0;
+	int componentLength = 0;
+	int rLength = 0;
+	int sLength = 0;
+	size_t plainSignatureLength = 0;
+	OPGP_LOG_START(_T("calculate_ecc_signature"));
+
+	if ((PEMKeyFileName == NULL) || (_tcslen(PEMKeyFileName) == 0))
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_FILENAME, OPGP_stringify_error(OPGP_ERROR_INVALID_FILENAME)); goto end; }
+	if ((signature == NULL) || (signatureLength == NULL))
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+	if (passPhrase == NULL) {
+		passPhrase = "";
+	}
+
+	PEMKeyFile = _tfopen(PEMKeyFileName, _T("rb"));
+	if (PEMKeyFile == NULL) {
+		{ OPGP_ERROR_CREATE_ERROR(status, errno, OPGP_stringify_error(errno)); goto end; }
+	}
+	key = EVP_PKEY_new();
+	if (!PEM_read_PrivateKey(PEMKeyFile, &key, NULL, passPhrase)) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	if (EVP_PKEY_base_id(key) != EVP_PKEY_EC) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+
+	keyBits = EVP_PKEY_bits(key);
+	if (keyBits <= 0) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	componentLength = (keyBits + 7) / 8;
+	plainSignatureLength = (size_t)componentLength * 2;
+
+	if (*signatureLength < plainSignatureLength) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+	}
+
+	pctx = EVP_PKEY_CTX_new(key, NULL);
+	if (pctx == NULL) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	result = EVP_PKEY_sign_init(pctx);
+	if (result != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	result = EVP_PKEY_sign(pctx, NULL, &derSignatureLength, message, messageLength);
+	if (result != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	if (derSignatureLength > sizeof(derSignature)) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+	}
+	result = EVP_PKEY_sign(pctx, derSignature, &derSignatureLength, message, messageLength);
+	if (result != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+
+	derPtr = derSignature;
+	ecdsaSignature = d2i_ECDSA_SIG(NULL, &derPtr, (long)derSignatureLength);
+	if ((ecdsaSignature == NULL) || (derPtr != (derSignature + derSignatureLength))) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+	r = ecdsaSignature->r;
+	s = ecdsaSignature->s;
+#else
+	ECDSA_SIG_get0(ecdsaSignature, &r, &s);
+#endif
+	if ((r == NULL) || (s == NULL)) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+
+	rLength = BN_num_bytes(r);
+	sLength = BN_num_bytes(s);
+	if ((rLength > componentLength) || (sLength > componentLength)) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+
+	memset(signature, 0, plainSignatureLength);
+	if ((rLength > 0) && (BN_bn2bin(r, signature + (componentLength - rLength)) != rLength)) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	if ((sLength > 0) && (BN_bn2bin(s, signature + componentLength + (componentLength - sLength)) != sLength)) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	*signatureLength = (DWORD)plainSignatureLength;
+
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	if (ecdsaSignature != NULL) {
+		ECDSA_SIG_free(ecdsaSignature);
+	}
+	if (pctx != NULL) {
+		EVP_PKEY_CTX_free(pctx);
+	}
+	if (PEMKeyFile != NULL) {
+		fclose(PEMKeyFile);
+	}
+	if (key != NULL) {
+		EVP_PKEY_free(key);
+	}
+	OPGP_LOG_END(_T("calculate_ecc_signature"), status);
 	return status;
 }
 

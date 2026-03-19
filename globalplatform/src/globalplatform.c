@@ -5277,6 +5277,42 @@ end:
 	return status;
 }
 
+/**
+ * Calculates an ECC Load File Data Block Signature according to GlobalPlatform Card Specification 2.3.1.
+ * The returned signature is encoded in plain format according to BSI TR-03111 (r||s).
+ * \param loadFileDataBlockHash [in] The Load File Data Block Hash to sign.
+ * \param loadFileDataBlockHashLength [in] The length of the Load File Data Block Hash.
+ * \param securityDomainAID [in] A buffer containing the Security Domain AID.
+ * \param securityDomainAIDLength [in] The length of the Security Domain AID.
+ * \param PEMKeyFileName [in] A PEM file name with the private ECC key.
+ * \param *passPhrase [in] The passphrase. Must be an ASCII string.
+ * \param *loadFileDataBlockSignature [out] A pointer to the returned GP211_DAP_BLOCK structure.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS GP211_calculate_ecc_DAP(PBYTE loadFileDataBlockHash, DWORD loadFileDataBlockHashLength,
+					   PBYTE securityDomainAID, DWORD securityDomainAIDLength,
+					   OPGP_STRING PEMKeyFileName, char *passPhrase,
+					   GP211_DAP_BLOCK *loadFileDataBlockSignature)
+{
+	OPGP_ERROR_STATUS status;
+	DWORD signatureLength = sizeof(loadFileDataBlockSignature->signature);
+	OPGP_LOG_START(_T("GP211_calculate_ecc_DAP"));
+
+	status = calculate_ecc_signature(loadFileDataBlockHash, loadFileDataBlockHashLength, PEMKeyFileName, passPhrase,
+		loadFileDataBlockSignature->signature, &signatureLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	loadFileDataBlockSignature->signatureLength = signatureLength;
+	memcpy(loadFileDataBlockSignature->securityDomainAID, securityDomainAID, securityDomainAIDLength);
+	loadFileDataBlockSignature->securityDomainAIDLength = (BYTE)securityDomainAIDLength;
+
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	OPGP_LOG_END(_T("GP211_calculate_ecc_DAP"), status);
+	return status;
+}
+
 
 /**
  * Each time a receipt is generated the confirmation counter is incremented by the Card Manager.

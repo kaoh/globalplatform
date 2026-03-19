@@ -274,8 +274,10 @@ static void print_usage(const char *prog) {
         "      Compute the load-file data block hash of a CAP file. Default is sha256.\n\n"
         "  sign-dap aes [--output <file>] <hash-hex> <sd-aidhex> <hexkey>\n"
         "  sign-dap rsa [--output <file>] <hash-hex> <sd-aidhex> <pem>[:pass]\n"
+        "  sign-dap ecc [--output <file>] <hash-hex> <sd-aidhex> <pem>[:pass]\n"
         "      Generate a DAP signature from a precomputed hash.\n"
         "      Output is signature only (for use with 'install --dap <hex>' or '--dap @file').\n"
+        "      ECC signatures are encoded in plain format (TR-03111: r||s).\n"
         "      --output: write signature to a binary file.\n\n"
         "  store [--encryption <noinfo|app|enc>] [--format <noinfo|dgi|ber>] \\\n"
         "        [--response <true|false>] <AIDhex> <datahex>\n"
@@ -2400,7 +2402,7 @@ static int cmd_hash(int argc, char **argv) {
     return 0;
 }
 
-static int cmd_dap(int is_rsa, OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
+static int cmd_dap(const char *dap_type, OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
     // Parse optional flags
     const char *output_file = NULL;
     int ai = 0;
@@ -2409,13 +2411,13 @@ static int cmd_dap(int is_rsa, OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
         else break;
     }
 
-    if (is_rsa) {
+    if (strcmp(dap_type, "rsa") == 0) {
         if (argc - ai < 3) { fprintf(stderr, "sign-dap rsa [--output <file>] <hash-hex> <sd-aidhex> <pem>[:pass]\n"); return -1; }
         const char *hash_hex = argv[ai++]; const char *sd_hex = argv[ai++]; const char *pem = argv[ai++];
         unsigned char hash[64]; size_t hashlen=sizeof(hash);
         if (hex_to_bytes(hash_hex, hash, &hashlen)!=0) { fprintf(stderr, "Invalid hash hex\n"); return -1; }
         unsigned char sd[16]; size_t sdlen=sizeof(sd); if (hex_to_bytes(sd_hex, sd, &sdlen)!=0) { fprintf(stderr, "Invalid sd-aid\n"); return -1; }
-        char pemcopy[512]; strncpy(pemcopy, pem, sizeof(pemcopy)-1); pemcopy[sizeof(pemcopy)-1]='\0'; char *pass=NULL; char *c=strchr(pemcopy,':'); if (c){*c='\0'; pass=c+1;}
+        char pemcopy[512]; strncpy(pemcopy, pem, sizeof(pemcopy)-1); pemcopy[sizeof(pemcopy)-1]='\0'; char *pass=""; char *c=strchr(pemcopy,':'); if (c){*c='\0'; pass=c+1;}
         TCHAR pem_t[MAX_PATH_BUF];
         OPGP_STRING pem_opgp = NULL;
         if (to_opgp_string(pemcopy, pem_t, ARRAY_SIZE(pem_t)) != 0) {
@@ -2424,6 +2426,31 @@ static int cmd_dap(int is_rsa, OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
         }
         pem_opgp = pem_t;
         GP211_DAP_BLOCK dap; if (!status_ok(GP211_calculate_rsa_schemeX_DAP(hash, (DWORD)hashlen, sd, (DWORD)sdlen, pem_opgp, pass, &dap), false)) { fprintf(stderr, "calc rsa DAP failed\n"); return -1; }
+
+        if (output_file) {
+            FILE *f = fopen(output_file, "wb");
+            if (!f) { fprintf(stderr, "Failed to open output file: %s\n", output_file); return -1; }
+            fwrite(dap.signature, 1, dap.signatureLength, f);
+            fclose(f);
+        } else {
+            print_hex(dap.signature, dap.signatureLength); printf("\n");
+        }
+        return 0;
+    } else if (strcmp(dap_type, "ecc") == 0) {
+        if (argc - ai < 3) { fprintf(stderr, "sign-dap ecc [--output <file>] <hash-hex> <sd-aidhex> <pem>[:pass]\n"); return -1; }
+        const char *hash_hex = argv[ai++]; const char *sd_hex = argv[ai++]; const char *pem = argv[ai++];
+        unsigned char hash[64]; size_t hashlen=sizeof(hash);
+        if (hex_to_bytes(hash_hex, hash, &hashlen)!=0) { fprintf(stderr, "Invalid hash hex\n"); return -1; }
+        unsigned char sd[16]; size_t sdlen=sizeof(sd); if (hex_to_bytes(sd_hex, sd, &sdlen)!=0) { fprintf(stderr, "Invalid sd-aid\n"); return -1; }
+        char pemcopy[512]; strncpy(pemcopy, pem, sizeof(pemcopy)-1); pemcopy[sizeof(pemcopy)-1]='\0'; char *pass=""; char *c=strchr(pemcopy,':'); if (c){*c='\0'; pass=c+1;}
+        TCHAR pem_t[MAX_PATH_BUF];
+        OPGP_STRING pem_opgp = NULL;
+        if (to_opgp_string(pemcopy, pem_t, ARRAY_SIZE(pem_t)) != 0) {
+            fprintf(stderr, "sign-dap: pem path too long\n");
+            return -1;
+        }
+        pem_opgp = pem_t;
+        GP211_DAP_BLOCK dap; if (!status_ok(GP211_calculate_ecc_DAP(hash, (DWORD)hashlen, sd, (DWORD)sdlen, pem_opgp, pass, &dap), false)) { fprintf(stderr, "calc ecc DAP failed\n"); return -1; }
 
         if (output_file) {
             FILE *f = fopen(output_file, "wb");
@@ -3357,10 +3384,9 @@ int main(int argc, char **argv) {
     else if (!strcmp(cmd, "status")) rc = cmd_status(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "store")) rc = cmd_store(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "sign-dap")) {
-        if (i>=argc) { fprintf(stderr, "sign-dap: missing type aes|rsa\n"); rc=-1; }
-        else if (!strcmp(argv[i], "rsa")) rc = cmd_dap(1, ctx, info, &sec, argc - (i+1), &argv[i+1]);
-        else if (!strcmp(argv[i], "aes")) rc = cmd_dap(0, ctx, info, &sec, argc - (i+1), &argv[i+1]);
-        else { fprintf(stderr, "sign-dap: unknown type\n"); rc=-1; }
+        if (i>=argc) { fprintf(stderr, "sign-dap: missing type aes|rsa|ecc\n"); rc=-1; }
+        else if (!strcmp(argv[i], "rsa") || !strcmp(argv[i], "aes") || !strcmp(argv[i], "ecc")) rc = cmd_dap(argv[i], ctx, info, &sec, argc - (i+1), &argv[i+1]);
+        else { fprintf(stderr, "sign-dap: unknown type (use aes|rsa|ecc)\n"); rc=-1; }
     } else { fprintf(stderr, "Unknown command: %s\n", cmd); rc=-1; }
 
     if (rc != 0) {

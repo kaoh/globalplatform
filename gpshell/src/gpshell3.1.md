@@ -370,9 +370,11 @@ Synopsis:
 ```
 gpshell3 sign-dap aes [--output <file>] <hash-hex> <sd-aidhex> <hexkey>
 gpshell3 sign-dap rsa [--output <file>] <hash-hex> <sd-aidhex> <pem>[:pass]
+gpshell3 sign-dap ecc [--output <file>] <hash-hex> <sd-aidhex> <pem>[:pass]
 ```
 
 Writes the signature bytes to stdout unless `--output` is provided.
+For `ecc`, the signature is encoded in plain format according to BSI TR-03111 (`r||s`).
 
 ## store
 

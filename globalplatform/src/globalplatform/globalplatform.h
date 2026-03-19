@@ -1073,6 +1073,13 @@ OPGP_ERROR_STATUS GP211_calculate_rsa_schemeX_DAP(PBYTE loadFileDataBlockHash, D
 				   OPGP_STRING PEMKeyFileName, char *passPhrase,
 				   GP211_DAP_BLOCK *loadFileDataBlockSignature);
 
+//! \brief GlobalPlatform2.3.1: Calculates an ECC Load File Data Block Signature in plain format (TR-03111 r||s).
+OPGP_API
+OPGP_ERROR_STATUS GP211_calculate_ecc_DAP(PBYTE loadFileDataBlockHash, DWORD loadFileDataBlockHashLength,
+				   PBYTE securityDomainAID, DWORD securityDomainAIDLength,
+				   OPGP_STRING PEMKeyFileName, char *passPhrase,
+				   GP211_DAP_BLOCK *loadFileDataBlockSignature);
+
 //! \brief GlobalPlatform2.1.1: Validates a Load Receipt.
 OPGP_API
 OPGP_ERROR_STATUS GP211_validate_delete_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
