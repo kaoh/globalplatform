@@ -1494,7 +1494,8 @@ static int handleCommands(FILE *fd)
                     status = GP211_delete_application(cardContext, cardInfo, &securityInfo211,
                                                   AIDs, 1,
                                                   (GP211_RECEIPT_DATA *)receipt,
-                                                  &receiptLen);
+                                                  &receiptLen,
+                                                  NULL, 0);
 
                 }
                 if (OPGP_ERROR_CHECK(status))

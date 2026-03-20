@@ -861,7 +861,8 @@ OPGP_ERROR_STATUS GP211_get_key_information_templates(OPGP_CARD_CONTEXT cardCont
 OPGP_API
 OPGP_ERROR_STATUS GP211_delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 				   OPGP_AID *AIDs, DWORD AIDsLength,
-				   GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataLength);
+				   GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataLength,
+				   PBYTE deleteToken, DWORD deleteTokenLength);
 
 //! \brief GlobalPlatform2.1.1: Prepares the card for loading an application.
 OPGP_API
@@ -905,7 +906,7 @@ OPGP_ERROR_STATUS GP211_get_install_token_signature_data(BYTE P1, PBYTE executab
 									  PBYTE simSpecParams, DWORD simSpecParamsLength,
 									  PBYTE installTokenSignatureData, PDWORD installTokenSignatureDataLength);
 
-//! \brief GlobalPlatform2.3.1: Function to retrieve the data to sign by the Card Issuer in a Registry Update Token.
+//! \brief GlobalPlatform2.3.1: Function to retrieve the data to sign for delegated management in a Registry Update Token.
 OPGP_API
 OPGP_ERROR_STATUS GP211_get_registry_update_token_signature_data(PBYTE securityDomainAID,
 										  DWORD securityDomainAIDLength,
@@ -914,6 +915,12 @@ OPGP_ERROR_STATUS GP211_get_registry_update_token_signature_data(PBYTE securityD
 										  PBYTE registryUpdateParameters, DWORD registryUpdateParametersLength,
 										  PBYTE tokenSignatureData,
 										  PDWORD tokenSignatureDataLength);
+
+//! \brief GlobalPlatform2.3.1: Function to retrieve the data to sign for delegated management in a Delete Token.
+OPGP_API
+OPGP_ERROR_STATUS GP211_get_delete_token_signature_data(OPGP_AID *AIDs, DWORD AIDsLength,
+										  PBYTE deleteTokenSignatureData,
+										  PDWORD deleteTokenSignatureDataLength);
 
 //! \brief GlobalPlatform2.1.1: Calculates a Load Token using PKCS#1.
 OPGP_API
@@ -938,6 +945,31 @@ OPGP_ERROR_STATUS GP211_calculate_install_token(BYTE P1, PBYTE executableLoadFil
 							 PBYTE simSpecParams, DWORD simSpecParamsLength,
 							 PBYTE installToken, PDWORD installTokenLength,
 							 OPGP_STRING PEMKeyFileName, char *passPhrase);
+
+//! \brief GlobalPlatform2.1.1: Calculates an Extradition Token using PKCS#1.
+OPGP_API
+OPGP_ERROR_STATUS GP211_calculate_extradition_token(PBYTE securityDomainAID,
+										  DWORD securityDomainAIDLength,
+										  PBYTE applicationAID, DWORD applicationAIDLength,
+										  PBYTE extraditionToken, PDWORD extraditionTokenLength,
+										  OPGP_STRING PEMKeyFileName, char *passPhrase);
+
+//! \brief GlobalPlatform2.3.1: Calculates a Registry Update Token using PKCS#1.
+OPGP_API
+OPGP_ERROR_STATUS GP211_calculate_update_registry_token(PBYTE securityDomainAID,
+										  DWORD securityDomainAIDLength,
+										  PBYTE applicationAID, DWORD applicationAIDLength,
+										  DWORD applicationPrivileges,
+										  PBYTE registryUpdateParameters, DWORD registryUpdateParametersLength,
+										  PBYTE registryUpdateToken, PDWORD registryUpdateTokenLength,
+										  OPGP_STRING PEMKeyFileName, char *passPhrase);
+
+//! \brief GlobalPlatform2.3.1: Calculates a Delete Token using PKCS#1.
+OPGP_API
+OPGP_ERROR_STATUS GP211_calculate_delete_token(PBYTE applicationOrExecutableLoadFileAID,
+										  DWORD applicationOrExecutableLoadFileAIDLength,
+										  PBYTE deleteToken, PDWORD deleteTokenLength,
+										  OPGP_STRING PEMKeyFileName, char *passPhrase);
 
 //! \brief GlobalPlatform2.1.1: Builds the UICC System Specific Parameters (tag 'EA' value without the tag and length).
 OPGP_API
@@ -1234,7 +1266,7 @@ OPGP_ERROR_STATUS OP201_install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CAR
 					  DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
 					  DWORD nonVolatileDataSpaceLimit);
 
-//! \brief Open Platform: Function to retrieve the data to sign by the Card Issuer in a Load Token.
+//! \brief Open Platform: Function to retrieve the data to sign for delegated management in a Load Token.
 OPGP_API
 OPGP_ERROR_STATUS OP201_get_load_token_signature_data(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 								   PBYTE securityDomainAID, DWORD securityDomainAIDLength,
@@ -1243,7 +1275,7 @@ OPGP_ERROR_STATUS OP201_get_load_token_signature_data(PBYTE executableLoadFileAI
 								   DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 								   PBYTE loadTokenSignatureData, PDWORD loadTokenSignatureDataLength);
 
-//! \brief Open Platform: Function to retrieve the data to sign by the Card Issuer in an Install Token.
+//! \brief Open Platform: Function to retrieve the data to sign for delegated management in an Install Token.
 OPGP_API
 OPGP_ERROR_STATUS OP201_get_install_token_signature_data(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
 									  PBYTE AIDWithinLoadFileAID, DWORD AIDWithinLoadFileAIDLength,

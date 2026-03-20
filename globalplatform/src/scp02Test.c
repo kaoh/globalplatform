@@ -171,14 +171,14 @@ static void install_mac_enc(void **state) {
 	aidLength = sizeof(aid.AID);
 	hex_to_byte_array(_T("D0D1D2D3D4D50101"), aid.AID, &aidLength);
 	aid.AIDLength = aidLength;
-	status = GP211_delete_application(cardContext, cardInfo, &securityInfo211, &aid, 1, &receiptData, &receiptDataLength);
+	status = GP211_delete_application(cardContext, cardInfo, &securityInfo211, &aid, 1, &receiptData, &receiptDataLength, NULL, 0);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_FAILURE);
 
 	aidLength = sizeof(aid.AID);
 	hex_to_byte_array(_T("D0D1D2D3D4D501"), aid.AID, &aidLength);
 	aid.AIDLength = aidLength;
 	receiptDataLength = 1;
-	status = GP211_delete_application(cardContext, cardInfo, &securityInfo211, &aid, 1, &receiptData, &receiptDataLength);
+	status = GP211_delete_application(cardContext, cardInfo, &securityInfo211, &aid, 1, &receiptData, &receiptDataLength, NULL, 0);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 
 //  install -file helloworld.cap -nvDataLimit 2000 -instParam 00 -priv 2

@@ -185,11 +185,12 @@ Delete an application instance or load file by AID.
 
 Synopsis:
 ```
-gpshell3 delete <AIDhex>
+gpshell3 delete [--delete-token <hex>] <AIDhex>
 ```
 
 Options:
 
+- `--delete-token <hex>`: Optional delegated-management delete token (encoded with tag `9F`).
 - `<AIDhex>`: AID of the application instance or load file to delete.
 
 Example:
@@ -375,6 +376,51 @@ gpshell3 sign-dap ecc [--output <file>] <hash-hex> <sd-aidhex> <pem>[:pass]
 
 Writes the signature bytes to stdout unless `--output` is provided.
 For `ecc`, the signature is encoded in plain format according to BSI TR-03111 (`r||s`).
+
+## sign-load-token
+
+Calculate a Load Token using a private RSA key.
+
+Synopsis:
+```
+gpshell3 sign-load-token [--output <file>] [--nv-code-limit <n>] [--v-data-limit <n>] [--nv-data-limit <n>] <load-file-aidhex> <sd-aidhex> <hash-hex> <pem>[:pass]
+```
+
+## sign-install-token
+
+Calculate an Install Token using a private RSA key.
+
+Synopsis:
+```
+gpshell3 sign-install-token [--output <file>] [--p1 <n>] [--priv <n>] [--v-data-limit <n>] [--nv-data-limit <n>] [--params <hex>] [--sd-params <hex>] [--uicc-params <hex>] [--sim-params <hex>] <load-file-aidhex> <module-aidhex> <app-aidhex> <pem>[:pass]
+```
+
+## sign-extradition-token
+
+Calculate an Extradition Token using a private RSA key.
+
+Synopsis:
+```
+gpshell3 sign-extradition-token [--output <file>] <sd-aidhex> <app-aidhex> <pem>[:pass]
+```
+
+## sign-update-registry-token
+
+Calculate a Registry Update Token using a private RSA key.
+
+Synopsis:
+```
+gpshell3 sign-update-registry-token [--output <file>] [--priv <n>] [--registry-params <hex>] <sd-aidhex> <app-aidhex> <pem>[:pass]
+```
+
+## sign-delete-token
+
+Calculate a Delete Token using a private RSA key.
+
+Synopsis:
+```
+gpshell3 sign-delete-token [--output <file>] <aidhex> <pem>[:pass]
+```
 
 ## store
 

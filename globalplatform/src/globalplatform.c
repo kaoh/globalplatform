@@ -282,7 +282,8 @@ OPGP_ERROR_STATUS delete_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardI
 
 OPGP_NO_API
 OPGP_ERROR_STATUS delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-				   OPGP_AID *AIDs, DWORD AIDsLength, GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataLength, DWORD mode);
+				   OPGP_AID *AIDs, DWORD AIDsLength, GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataLength,
+				   PBYTE deleteToken, DWORD deleteTokenLength, DWORD mode);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -1703,11 +1704,15 @@ end:
  * this structure contains the according data for each deleted application or package.
  * \param receiptDataLength [in, out] A pointer to the length of the receiptData array.
  * If no receiptData is available this length is 0;
+ * \param deleteToken [in] Optional delete token value. If present, it is encoded with tag '9F'.
+ * \param deleteTokenLength [in] The length of the deleteToken buffer.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-						OPGP_AID *AIDs, DWORD AIDsLength, GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataLength) {
-	return delete_application(cardContext, cardInfo, secInfo, AIDs, AIDsLength, receiptData, receiptDataLength, GP_211);
+						OPGP_AID *AIDs, DWORD AIDsLength, GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataLength,
+						PBYTE deleteToken, DWORD deleteTokenLength) {
+	return delete_application(cardContext, cardInfo, secInfo, AIDs, AIDsLength, receiptData, receiptDataLength,
+		deleteToken, deleteTokenLength, GP_211);
 }
 
 /**
@@ -1721,13 +1726,18 @@ OPGP_ERROR_STATUS GP211_delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_C
  * this structure contains the according data for each deleted application or package.
  * \param receiptDataLength [in, out] A pointer to the length of the receiptData array.
  * If no receiptData is available this length is 0;
+ * \param deleteToken [in] Optional delete token value. If present, it is encoded with tag '9F'.
+ * \param deleteTokenLength [in] The length of the deleteToken buffer.
  * \param mode OpenPlatform 2.0.1' or GlobalPlatform 2.1.1 delete command.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-				   OPGP_AID *AIDs, DWORD AIDsLength, GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataLength, DWORD mode) {
+				   OPGP_AID *AIDs, DWORD AIDsLength, GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataLength,
+				   PBYTE deleteToken, DWORD deleteTokenLength, DWORD mode) {
 	OPGP_ERROR_STATUS status;
 	DWORD count=0;
+	BYTE deleteTokenSignatureData[APDU_COMMAND_LEN] = {0};
+	DWORD deleteTokenSignatureDataLength = sizeof(deleteTokenSignatureData);
 	BYTE sendBuffer[APDU_COMMAND_LEN] = {0};
 	DWORD sendBufferLength = 0;
 	DWORD recvBufferLength = APDU_RESPONSE_LEN;
@@ -1736,25 +1746,58 @@ OPGP_ERROR_STATUS delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_IN
 	OPGP_LOG_START(_T("delete_application"));
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xE4;
-	sendBuffer[i++] = 0x00;
-	if (mode == OP_201)
-		sendBuffer[i++] = 0x00;
-	else
-		sendBuffer[i++] = 0x80;
-	sendBuffer[i++] = 0x00;
-	for (j=0; j< AIDsLength; j++) {
-		// reserve one byte for Le
-		if (i + AIDs[j].AIDLength+2 > APDU_COMMAND_LEN-1) {
+	if (mode == GP_211) {
+		status = GP211_get_delete_token_signature_data(AIDs, AIDsLength,
+			deleteTokenSignatureData, &deleteTokenSignatureDataLength);
+		if (OPGP_ERROR_CHECK(status)) {
+			*receiptDataLength = 0;
+			goto end;
+		}
+		if (i + deleteTokenSignatureDataLength > APDU_COMMAND_LEN - 1) {
 			*receiptDataLength = 0;
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
 		}
-		OPGP_LOG_HEX(_T("delete_application: AID to delete: "), AIDs[j].AID, AIDs[j].AIDLength);
-		sendBuffer[4] += AIDs[j].AIDLength+2;
-		sendBuffer[i++] = 0x4F;
-		sendBuffer[i++] = AIDs[j].AIDLength;
-		memcpy(sendBuffer+i, AIDs[j].AID, AIDs[j].AIDLength);
-		i+=AIDs[j].AIDLength;
+		memcpy(sendBuffer + i, deleteTokenSignatureData, deleteTokenSignatureDataLength);
+		i += deleteTokenSignatureDataLength;
+	} else {
+		sendBuffer[i++] = 0x00;
+		sendBuffer[i++] = 0x00;
+		sendBuffer[i++] = 0x00;
+		for (j=0; j< AIDsLength; j++) {
+			// reserve one byte for Le
+			if (i + AIDs[j].AIDLength+2 > APDU_COMMAND_LEN-1) {
+				*receiptDataLength = 0;
+				{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
+			}
+			OPGP_LOG_HEX(_T("delete_application: AID to delete: "), AIDs[j].AID, AIDs[j].AIDLength);
+			sendBuffer[i++] = 0x4F;
+			sendBuffer[i++] = AIDs[j].AIDLength;
+			memcpy(sendBuffer+i, AIDs[j].AID, AIDs[j].AIDLength);
+			i+=AIDs[j].AIDLength;
+		}
 	}
+	if (mode == GP_211 && deleteToken != NULL && deleteTokenLength > 0) {
+		LONG lenLen;
+		if (i + 1 > APDU_COMMAND_LEN - 1) {
+			*receiptDataLength = 0;
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
+		}
+		sendBuffer[i++] = 0x9F;
+		lenLen = write_TLV_length(sendBuffer, i, APDU_COMMAND_LEN - 1 - i, (USHORT)deleteTokenLength);
+		if (lenLen < 0) {
+			*receiptDataLength = 0;
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
+		}
+		i += (DWORD)lenLen;
+		if (deleteTokenLength > (DWORD)(APDU_COMMAND_LEN - 1 - i)) {
+			*receiptDataLength = 0;
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
+		}
+		OPGP_LOG_HEX(_T("delete_application: Delete Token: "), deleteToken, deleteTokenLength);
+		memcpy(sendBuffer+i, deleteToken, deleteTokenLength);
+		i+=deleteTokenLength;
+	}
+	sendBuffer[4] = (BYTE)(i - 5);
 	sendBuffer[i++] = 0x00;
 	sendBufferLength = i;
 
@@ -3830,7 +3873,7 @@ end:
 /**
  * In the case of delegated management an Extradition Token authorizing the
  * INSTALL [for extradition] must be included.
- * Otherwise extraditionToken must be NULL. See GP211_calculate_install_token().
+ * Otherwise extraditionToken must be NULL. See GP211_calculate_extradition_token().
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
  * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
  * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
@@ -4859,7 +4902,7 @@ end:
 
 /**
  * If you are not the Card Issuer and do not know the token verification private key send this data to the
- * Card Issuer and obtain the signature of the data, i.e. the Registry Update Token.
+ * Card Issuer and obtain the signature of the data, i.e., the Registry Update Token.
  * The parameters must match the parameters of a later GP211_install_for_registry_update() method.
  * \param securityDomainAID [in] A buffer containing the target Security Domain AID.
  * \param securityDomainAIDLength [in] The length of the target Security Domain AID.
@@ -4940,6 +4983,56 @@ end:
 }
 
 /**
+ * If you are not the Card Issuer and do not know the token verification private key send this data to the
+ * Card Issuer and obtain the signature of the data, i.e., the Delete Token.
+ * The parameters must match the parameters of a later GP211_delete_application() method.
+ * \param AIDs [in] A pointer to an array of OPGP_AID structures describing the applications and load files to delete.
+ * \param AIDsLength [in] The number of OPGP_AID structures.
+ * \param deleteTokenSignatureData [out] The data to sign in a Delete Token.
+ * \param deleteTokenSignatureDataLength [in, out] The length of the deleteTokenSignatureData buffer.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS GP211_get_delete_token_signature_data(OPGP_AID *AIDs, DWORD AIDsLength,
+										  PBYTE deleteTokenSignatureData,
+										  PDWORD deleteTokenSignatureDataLength) {
+	BYTE buf[APDU_COMMAND_LEN];
+	DWORD i=0;
+	DWORD j;
+	OPGP_ERROR_STATUS status;
+
+	OPGP_LOG_START(_T("get_delete_token_signature_data"));
+	buf[i++] = 0x00; // P1
+	buf[i++] = 0x80; // P2
+	buf[i++] = 0x00; // Lc dummy
+
+	for (j=0; j<AIDsLength; j++) {
+		if (i + AIDs[j].AIDLength + 2 > sizeof(buf)) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
+		}
+		OPGP_LOG_HEX(_T("get_delete_token_signature_data: AID: "), AIDs[j].AID, AIDs[j].AIDLength);
+		buf[i++] = 0x4F;
+		buf[i++] = AIDs[j].AIDLength;
+		memcpy(buf+i, AIDs[j].AID, AIDs[j].AIDLength);
+		i+=AIDs[j].AIDLength;
+	}
+
+	if (i - 3 > 255) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
+	}
+	buf[2] = (BYTE)i-3;
+	if (i > *deleteTokenSignatureDataLength) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+	}
+	memcpy(deleteTokenSignatureData, buf, i);
+	*deleteTokenSignatureDataLength = i;
+
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	OPGP_LOG_END(_T("get_delete_token_signature_data"), status);
+	return status;
+}
+
+/**
  * The parameters must match the parameters of a later GP211_install_for_install(), GP211_install_for_make_selectable() and GP211_install_for_install_and_make_selectable() method.
  * \param P1 [in] The parameter P1 in the APDU command.
  * <ul>
@@ -4990,6 +5083,129 @@ OPGP_ERROR_STATUS GP211_calculate_install_token(BYTE P1, PBYTE executableLoadFil
 							 uiccSystemSpecParams, uiccSystemSpecParamsLength,
 							 simSpecParams, simSpecParamsLength,
 							 installToken, installTokenLength, PEMKeyFileName, passPhrase);
+}
+
+/**
+ * The parameters must match the parameters of a later GP211_install_for_extradition() method.
+ * \param securityDomainAID [in] A buffer containing the Security Domain AID.
+ * \param securityDomainAIDLength [in] The length of the Security Domain AID.
+ * \param applicationAID [in] The AID of the installed application.
+ * \param applicationAIDLength [in] The length of the application instance AID.
+ * \param extraditionToken [out] The calculated Extradition Token.
+ * \param extraditionTokenLength [in, out] The length of the extraditionToken buffer.
+ * \param PEMKeyFileName [in] A PEM file name with the private RSA key.
+ * \param *passPhrase [in] The passphrase. Must be an ASCII string.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS GP211_calculate_extradition_token(PBYTE securityDomainAID,
+										  DWORD securityDomainAIDLength,
+										  PBYTE applicationAID, DWORD applicationAIDLength,
+										  PBYTE extraditionToken, PDWORD extraditionTokenLength,
+										  OPGP_STRING PEMKeyFileName, char *passPhrase) {
+	OPGP_ERROR_STATUS status;
+	BYTE signatureData[APDU_COMMAND_LEN];
+	DWORD signatureDataLength = sizeof(signatureData);
+	OPGP_LOG_START(_T("GP211_calculate_extradition_token"));
+	status = GP211_get_extradition_token_signature_data(securityDomainAID, securityDomainAIDLength,
+		applicationAID, applicationAIDLength, signatureData, &signatureDataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	status = calculate_rsa_signature(signatureData, signatureDataLength, PEMKeyFileName,
+									passPhrase, extraditionToken, extraditionTokenLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	OPGP_LOG_END(_T("GP211_calculate_extradition_token"), status);
+	return status;
+}
+
+/**
+ * The parameters must match the parameters of a later GP211_install_for_registry_update() method.
+ * \param securityDomainAID [in] A buffer containing the target Security Domain AID.
+ * \param securityDomainAIDLength [in] The length of the target Security Domain AID.
+ * \param applicationAID [in] The AID of the application.
+ * \param applicationAIDLength [in] The length of the application instance AID.
+ * \param applicationPrivileges [in] The application privileges.
+ * \param registryUpdateParameters [in] The Registry Update Parameters.
+ * \param registryUpdateParametersLength [in] The length of the Registry Update Parameters.
+ * \param registryUpdateToken [out] The calculated Registry Update Token.
+ * \param registryUpdateTokenLength [in, out] The length of the registryUpdateToken buffer.
+ * \param PEMKeyFileName [in] A PEM file name with the private RSA key.
+ * \param *passPhrase [in] The passphrase. Must be an ASCII string.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS GP211_calculate_update_registry_token(PBYTE securityDomainAID,
+										  DWORD securityDomainAIDLength,
+										  PBYTE applicationAID, DWORD applicationAIDLength,
+										  DWORD applicationPrivileges,
+										  PBYTE registryUpdateParameters, DWORD registryUpdateParametersLength,
+										  PBYTE registryUpdateToken, PDWORD registryUpdateTokenLength,
+										  OPGP_STRING PEMKeyFileName, char *passPhrase) {
+	OPGP_ERROR_STATUS status;
+	BYTE signatureData[512];
+	DWORD signatureDataLength = sizeof(signatureData);
+	OPGP_LOG_START(_T("GP211_calculate_update_registry_token"));
+	status = GP211_get_registry_update_token_signature_data(securityDomainAID, securityDomainAIDLength,
+		applicationAID, applicationAIDLength, applicationPrivileges,
+		registryUpdateParameters, registryUpdateParametersLength,
+		signatureData, &signatureDataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	status = calculate_rsa_signature(signatureData, signatureDataLength, PEMKeyFileName,
+									passPhrase, registryUpdateToken, registryUpdateTokenLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	OPGP_LOG_END(_T("GP211_calculate_update_registry_token"), status);
+	return status;
+}
+
+/**
+ * The parameters must match the parameters of a later GP211_delete_application() method.
+ * \param applicationOrExecutableLoadFileAID [in] A buffer containing the AID of the application or executable load file.
+ * \param applicationOrExecutableLoadFileAIDLength [in] The length of the AID buffer.
+ * \param deleteToken [out] The calculated Delete Token.
+ * \param deleteTokenLength [in, out] The length of the deleteToken buffer.
+ * \param PEMKeyFileName [in] A PEM file name with the private RSA key.
+ * \param *passPhrase [in] The passphrase. Must be an ASCII string.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS GP211_calculate_delete_token(PBYTE applicationOrExecutableLoadFileAID,
+										  DWORD applicationOrExecutableLoadFileAIDLength,
+										  PBYTE deleteToken, PDWORD deleteTokenLength,
+										  OPGP_STRING PEMKeyFileName, char *passPhrase) {
+	OPGP_ERROR_STATUS status;
+	BYTE signatureData[APDU_COMMAND_LEN];
+	DWORD signatureDataLength = sizeof(signatureData);
+	OPGP_AID aid;
+	OPGP_LOG_START(_T("GP211_calculate_delete_token"));
+
+	if (applicationOrExecutableLoadFileAIDLength > sizeof(aid.AID)) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
+	}
+	memset(&aid, 0, sizeof(aid));
+	aid.AIDLength = (BYTE)applicationOrExecutableLoadFileAIDLength;
+	memcpy(aid.AID, applicationOrExecutableLoadFileAID, applicationOrExecutableLoadFileAIDLength);
+
+	status = GP211_get_delete_token_signature_data(&aid, 1, signatureData, &signatureDataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	status = calculate_rsa_signature(signatureData, signatureDataLength, PEMKeyFileName,
+									passPhrase, deleteToken, deleteTokenLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	OPGP_LOG_END(_T("GP211_calculate_delete_token"), status);
+	return status;
 }
 
 /**
@@ -7444,7 +7660,7 @@ OPGP_ERROR_STATUS OP201_delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_C
     }
 
 	status = delete_application(cardContext, cardInfo, &gp211secInfo, AIDs, AIDsLength,
-		gp211receiptData, receiptDataLength, OP_201);
+		gp211receiptData, receiptDataLength, NULL, 0, OP_201);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}

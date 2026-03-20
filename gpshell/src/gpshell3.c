@@ -192,8 +192,9 @@ static void print_usage(const char *prog) {
         "        isd       = Issuer Security Domain\n"
         "        an-am-dm  = any SD with DM privilege under ancestor SD with AM\n"
         "        all-am    = every SD with AM privilege on the card\n\n"
-        "  delete <AIDhex>\n"
-        "      Delete an application instance or load file by AID.\n\n"
+        "  delete [--delete-token <hex>] <AIDhex>\n"
+        "      Delete an application instance or load file by AID.\n"
+        "      --delete-token <hex>: Delete token for delegated management (optional).\n\n"
         "  update-registry [--sd <AIDhex>] [--priv <p1,p2,...>] <AIDhex>\n"
         "      Update the registry for an application.\n"
         "      <AIDhex>: Application AID (mandatory, last positional parameter).\n"
@@ -278,7 +279,24 @@ static void print_usage(const char *prog) {
         "      Generate a DAP signature from a precomputed hash.\n"
         "      Output is signature only (for use with 'install --dap <hex>' or '--dap @file').\n"
         "      ECC signatures are encoded in plain format (TR-03111: r||s).\n"
-        "      --output: write signature to a binary file.\n\n"
+        "      --output: write signature to a binary file.\n\n",
+        stderr);
+
+    fputs(
+        "  sign-load-token [--output <file>] [--nv-code-limit <n>] [--v-data-limit <n>] [--nv-data-limit <n>] \\\n"
+        "      <load-file-aidhex> <sd-aidhex> <hash-hex> <pem>[:pass]\n"
+        "      Calculate a Load Token using the provided private RSA|ECC key.\n"
+        "  sign-install-token [--output <file>] [--p1 <n>] [--priv <n>] [--v-data-limit <n>] [--nv-data-limit <n>] \\\n"
+        "      [--params <hex>] [--sd-params <hex>] [--uicc-params <hex>] [--sim-params <hex>] \\\n"
+        "      <load-file-aidhex> <module-aidhex> <app-aidhex> <pem>[:pass]\n"
+        "      Calculate an Install Token using the provided private RSA|ECC key.\n"
+        "  sign-extradition-token [--output <file>] <sd-aidhex> <app-aidhex> <pem>[:pass]\n"
+        "      Calculate an Extradition Token using the provided private RSA|ECC key.\n"
+        "  sign-update-registry-token [--output <file>] [--priv <n>] [--registry-params <hex>] \\\n"
+        "      <sd-aidhex> <app-aidhex> <pem>[:pass]\n"
+        "      Calculate a Registry Update Token using the provided private RSA|ECC key.\n"
+        "  sign-delete-token [--output <file>] <aidhex> <pem>[:pass]\n"
+        "      Calculate a Delete Token using the provided private RSA|ECC key.\n\n"
         "  store [--encryption <noinfo|app|enc>] [--format <noinfo|dgi|ber>] \\\n"
         "        [--response <true|false>] <AIDhex> <datahex>\n"
         "      Personalize an application by combining INSTALL [for personalization] and STORE DATA.\n"
@@ -1885,13 +1903,51 @@ static int cmd_install_sd(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECU
     return 0;
 }
 
-static int cmd_delete(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, const char *aid_hex) {
+static int cmd_delete(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
+    const char *aid_hex = NULL;
+    const char *delete_token_hex = NULL;
+    BYTE delete_token[255];
+    BYTE *delete_token_ptr = NULL;
+    DWORD delete_token_len = 0;
+
+    for (int i = 0; i < argc; i++) {
+        if (strcmp(argv[i], "--delete-token") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "delete: --delete-token requires <hex>\n");
+                return -1;
+            }
+            delete_token_hex = argv[++i];
+        }
+        else if (argv[i][0] == '-') {
+            fprintf(stderr, "delete: unknown option %s\n", argv[i]);
+            return -1;
+        }
+        else if (aid_hex == NULL) {
+            aid_hex = argv[i];
+        }
+        else {
+            fprintf(stderr, "delete: unexpected argument %s\n", argv[i]);
+            return -1;
+        }
+    }
+
     if (!aid_hex) { fprintf(stderr, "delete: missing <AIDhex>\n"); return -1; }
     unsigned char aidb[16]; size_t alen=sizeof(aidb);
     if (hex_to_bytes(aid_hex, aidb, &alen)!=0) { fprintf(stderr, "Invalid AID hex\n"); return -1; }
+
+    if (delete_token_hex != NULL) {
+        size_t token_len = sizeof(delete_token);
+        if (hex_to_bytes(delete_token_hex, delete_token, &token_len) != 0 || token_len == 0) {
+            fprintf(stderr, "delete: invalid --delete-token hex\n");
+            return -1;
+        }
+        delete_token_ptr = delete_token;
+        delete_token_len = (DWORD)token_len;
+    }
+
     OPGP_AID a; memset(&a,0,sizeof(a)); a.AIDLength=(BYTE)alen; memcpy(a.AID, aidb, alen);
     GP211_RECEIPT_DATA rec; DWORD recLen=0; memset(&rec,0,sizeof(rec));
-    if (!status_ok(GP211_delete_application(ctx, info, sec, &a, 1, &rec, &recLen), true)) {
+    if (!status_ok(GP211_delete_application(ctx, info, sec, &a, 1, &rec, &recLen, delete_token_ptr, delete_token_len), true)) {
         return -1;
     }
     return 0;
@@ -2404,7 +2460,7 @@ static int cmd_hash(int argc, char **argv) {
     return 0;
 }
 
-static int cmd_sign_dap(const char *dap_type, OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
+static int cmd_sign_dap(const char *dap_type, int argc, char **argv) {
     // Parse optional flags
     const char *output_file = NULL;
     int ai = 0;
@@ -2484,6 +2540,486 @@ static int cmd_sign_dap(const char *dap_type, OPGP_CARD_CONTEXT ctx, OPGP_CARD_I
         }
         return 0;
     }
+}
+
+static int write_hex_or_binary_output(const BYTE *data, DWORD dataLength, const char *outputFile) {
+    if (outputFile != NULL) {
+        FILE *f = fopen(outputFile, "wb");
+        if (f == NULL) {
+            fprintf(stderr, "Failed to open output file: %s\n", outputFile);
+            return -1;
+        }
+        if (fwrite(data, 1, dataLength, f) != dataLength) {
+            fprintf(stderr, "Failed to write output file: %s\n", outputFile);
+            fclose(f);
+            return -1;
+        }
+        fclose(f);
+        return 0;
+    }
+    print_hex(data, dataLength);
+    printf("\n");
+    return 0;
+}
+
+static int cmd_gp211_calculate_load_token(int argc, char **argv) {
+    const char *output_file = NULL;
+    DWORD nv_code_limit = 0;
+    DWORD v_data_limit = 0;
+    DWORD nv_data_limit = 0;
+    int ai = 0;
+
+    while (ai < argc && argv[ai][0] == '-') {
+        if (strcmp(argv[ai], "--output") == 0 && ai + 1 < argc) {
+            output_file = argv[++ai];
+        } else if (strcmp(argv[ai], "--nv-code-limit") == 0 && ai + 1 < argc) {
+            nv_code_limit = (DWORD)parse_int(argv[++ai]);
+        } else if (strcmp(argv[ai], "--v-data-limit") == 0 && ai + 1 < argc) {
+            v_data_limit = (DWORD)parse_int(argv[++ai]);
+        } else if (strcmp(argv[ai], "--nv-data-limit") == 0 && ai + 1 < argc) {
+            nv_data_limit = (DWORD)parse_int(argv[++ai]);
+        } else {
+            break;
+        }
+        ai++;
+    }
+
+    if (argc - ai < 4) {
+        fprintf(stderr, "sign-load-token [--output <file>] [--nv-code-limit <n>] [--v-data-limit <n>] [--nv-data-limit <n>] <load-file-aidhex> <sd-aidhex> <hash-hex> <pem>[:pass]\n");
+        return -1;
+    }
+
+    const char *load_file_hex = argv[ai++];
+    const char *sd_hex = argv[ai++];
+    const char *hash_hex = argv[ai++];
+    const char *pem_arg = argv[ai++];
+
+    if (ai != argc) {
+        fprintf(stderr, "sign-load-token: unexpected argument %s\n", argv[ai]);
+        return -1;
+    }
+
+    BYTE load_file_aid[16];
+    size_t load_file_aid_len = sizeof(load_file_aid);
+    if (hex_to_bytes(load_file_hex, load_file_aid, &load_file_aid_len) != 0) {
+        fprintf(stderr, "sign-load-token: invalid <load-file-aidhex>\n");
+        return -1;
+    }
+
+    BYTE sd_aid[16];
+    size_t sd_aid_len = sizeof(sd_aid);
+    if (hex_to_bytes(sd_hex, sd_aid, &sd_aid_len) != 0) {
+        fprintf(stderr, "sign-load-token: invalid <sd-aidhex>\n");
+        return -1;
+    }
+
+    BYTE hash[64];
+    size_t hash_len = sizeof(hash);
+    if (hex_to_bytes(hash_hex, hash, &hash_len) != 0 || hash_len == 0) {
+        fprintf(stderr, "sign-load-token: invalid <hash-hex>\n");
+        return -1;
+    }
+
+    char pemcopy[MAX_PATH_BUF];
+    char *pass = "";
+    char *sep;
+    TCHAR pem_t[MAX_PATH_BUF];
+    OPGP_STRING pem_opgp = NULL;
+    strncpy(pemcopy, pem_arg, sizeof(pemcopy) - 1);
+    pemcopy[sizeof(pemcopy) - 1] = '\0';
+    sep = strchr(pemcopy, ':');
+    if (sep != NULL) {
+        *sep = '\0';
+        pass = sep + 1;
+    }
+    if (to_opgp_string(pemcopy, pem_t, ARRAY_SIZE(pem_t)) != 0) {
+        fprintf(stderr, "sign-load-token: pem path too long\n");
+        return -1;
+    }
+    pem_opgp = pem_t;
+
+    BYTE token[512];
+    DWORD token_len = sizeof(token);
+    if (!status_ok(GP211_calculate_load_token(load_file_aid, (DWORD)load_file_aid_len,
+                                              sd_aid, (DWORD)sd_aid_len,
+                                              hash, (DWORD)hash_len,
+                                              nv_code_limit, v_data_limit, nv_data_limit,
+                                              token, &token_len,
+                                              pem_opgp, pass), false)) {
+        fprintf(stderr, "sign-load-token failed\n");
+        return -1;
+    }
+
+    return write_hex_or_binary_output(token, token_len, output_file);
+}
+
+static int cmd_gp211_calculate_install_token(int argc, char **argv) {
+    const char *output_file = NULL;
+    BYTE p1 = 0x0C;
+    DWORD privileges = 0;
+    DWORD v_data_limit = 0;
+    DWORD nv_data_limit = 0;
+    const char *params_hex = NULL;
+    const char *sd_params_hex = NULL;
+    const char *uicc_params_hex = NULL;
+    const char *sim_params_hex = NULL;
+    int ai = 0;
+
+    while (ai < argc && argv[ai][0] == '-') {
+        if (strcmp(argv[ai], "--output") == 0 && ai + 1 < argc) {
+            output_file = argv[++ai];
+        } else if (strcmp(argv[ai], "--p1") == 0 && ai + 1 < argc) {
+            p1 = (BYTE)parse_int(argv[++ai]);
+        } else if (strcmp(argv[ai], "--priv") == 0 && ai + 1 < argc) {
+            privileges = (DWORD)strtoul(argv[++ai], NULL, 0);
+            if (privileges < 0x100) {
+                privileges <<= 16;
+            }
+        } else if (strcmp(argv[ai], "--v-data-limit") == 0 && ai + 1 < argc) {
+            v_data_limit = (DWORD)parse_int(argv[++ai]);
+        } else if (strcmp(argv[ai], "--nv-data-limit") == 0 && ai + 1 < argc) {
+            nv_data_limit = (DWORD)parse_int(argv[++ai]);
+        } else if (strcmp(argv[ai], "--params") == 0 && ai + 1 < argc) {
+            params_hex = argv[++ai];
+        } else if (strcmp(argv[ai], "--sd-params") == 0 && ai + 1 < argc) {
+            sd_params_hex = argv[++ai];
+        } else if (strcmp(argv[ai], "--uicc-params") == 0 && ai + 1 < argc) {
+            uicc_params_hex = argv[++ai];
+        } else if (strcmp(argv[ai], "--sim-params") == 0 && ai + 1 < argc) {
+            sim_params_hex = argv[++ai];
+        } else {
+            break;
+        }
+        ai++;
+    }
+
+    if (argc - ai < 4) {
+        fprintf(stderr, "sign-install-token [--output <file>] [--p1 <n>] [--priv <n>] [--v-data-limit <n>] [--nv-data-limit <n>] [--params <hex>] [--sd-params <hex>] [--uicc-params <hex>] [--sim-params <hex>] <load-file-aidhex> <module-aidhex> <app-aidhex> <pem>[:pass]\n");
+        return -1;
+    }
+
+    const char *load_file_hex = argv[ai++];
+    const char *module_hex = argv[ai++];
+    const char *app_hex = argv[ai++];
+    const char *pem_arg = argv[ai++];
+    if (ai != argc) {
+        fprintf(stderr, "sign-install-token: unexpected argument %s\n", argv[ai]);
+        return -1;
+    }
+
+    BYTE load_file_aid[16];
+    size_t load_file_aid_len = sizeof(load_file_aid);
+    BYTE module_aid[16];
+    size_t module_aid_len = sizeof(module_aid);
+    BYTE app_aid[16];
+    size_t app_aid_len = sizeof(app_aid);
+
+    if (hex_to_bytes(load_file_hex, load_file_aid, &load_file_aid_len) != 0) {
+        fprintf(stderr, "sign-install-token: invalid <load-file-aidhex>\n");
+        return -1;
+    }
+    if (hex_to_bytes(module_hex, module_aid, &module_aid_len) != 0) {
+        fprintf(stderr, "sign-install-token: invalid <module-aidhex>\n");
+        return -1;
+    }
+    if (hex_to_bytes(app_hex, app_aid, &app_aid_len) != 0) {
+        fprintf(stderr, "sign-install-token: invalid <app-aidhex>\n");
+        return -1;
+    }
+
+    BYTE params[512];
+    size_t params_len = 0;
+    BYTE sd_params[512];
+    size_t sd_params_len = 0;
+    BYTE uicc_params[512];
+    size_t uicc_params_len = 0;
+    BYTE sim_params[512];
+    size_t sim_params_len = 0;
+
+    if (params_hex != NULL) {
+        params_len = sizeof(params);
+        if (hex_to_bytes(params_hex, params, &params_len) != 0) {
+            fprintf(stderr, "sign-install-token: invalid --params\n");
+            return -1;
+        }
+    }
+    if (sd_params_hex != NULL) {
+        sd_params_len = sizeof(sd_params);
+        if (hex_to_bytes(sd_params_hex, sd_params, &sd_params_len) != 0) {
+            fprintf(stderr, "sign-install-token: invalid --sd-params\n");
+            return -1;
+        }
+    }
+    if (uicc_params_hex != NULL) {
+        uicc_params_len = sizeof(uicc_params);
+        if (hex_to_bytes(uicc_params_hex, uicc_params, &uicc_params_len) != 0) {
+            fprintf(stderr, "sign-install-token: invalid --uicc-params\n");
+            return -1;
+        }
+    }
+    if (sim_params_hex != NULL) {
+        sim_params_len = sizeof(sim_params);
+        if (hex_to_bytes(sim_params_hex, sim_params, &sim_params_len) != 0) {
+            fprintf(stderr, "sign-install-token: invalid --sim-params\n");
+            return -1;
+        }
+    }
+
+    char pemcopy[MAX_PATH_BUF];
+    char *pass = "";
+    char *sep;
+    TCHAR pem_t[MAX_PATH_BUF];
+    OPGP_STRING pem_opgp = NULL;
+    strncpy(pemcopy, pem_arg, sizeof(pemcopy) - 1);
+    pemcopy[sizeof(pemcopy) - 1] = '\0';
+    sep = strchr(pemcopy, ':');
+    if (sep != NULL) {
+        *sep = '\0';
+        pass = sep + 1;
+    }
+    if (to_opgp_string(pemcopy, pem_t, ARRAY_SIZE(pem_t)) != 0) {
+        fprintf(stderr, "sign-install-token: pem path too long\n");
+        return -1;
+    }
+    pem_opgp = pem_t;
+
+    BYTE token[512];
+    DWORD token_len = sizeof(token);
+    if (!status_ok(GP211_calculate_install_token(p1,
+                                                 load_file_aid, (DWORD)load_file_aid_len,
+                                                 module_aid, (DWORD)module_aid_len,
+                                                 app_aid, (DWORD)app_aid_len,
+                                                 privileges, v_data_limit, nv_data_limit,
+                                                 params_len ? params : NULL, (DWORD)params_len,
+                                                 sd_params_len ? sd_params : NULL, (DWORD)sd_params_len,
+                                                 uicc_params_len ? uicc_params : NULL, (DWORD)uicc_params_len,
+                                                 sim_params_len ? sim_params : NULL, (DWORD)sim_params_len,
+                                                 token, &token_len,
+                                                 pem_opgp, pass), false)) {
+        fprintf(stderr, "sign-install-token failed\n");
+        return -1;
+    }
+
+    return write_hex_or_binary_output(token, token_len, output_file);
+}
+
+static int cmd_gp211_calculate_extradition_token(int argc, char **argv) {
+    const char *output_file = NULL;
+    int ai = 0;
+    while (ai < argc && argv[ai][0] == '-') {
+        if (strcmp(argv[ai], "--output") == 0 && ai + 1 < argc) {
+            output_file = argv[++ai];
+        } else {
+            break;
+        }
+        ai++;
+    }
+
+    if (argc - ai < 3) {
+        fprintf(stderr, "sign-extradition-token [--output <file>] <sd-aidhex> <app-aidhex> <pem>[:pass]\n");
+        return -1;
+    }
+
+    const char *sd_hex = argv[ai++];
+    const char *app_hex = argv[ai++];
+    const char *pem_arg = argv[ai++];
+    if (ai != argc) {
+        fprintf(stderr, "sign-extradition-token: unexpected argument %s\n", argv[ai]);
+        return -1;
+    }
+
+    BYTE sd_aid[16];
+    size_t sd_aid_len = sizeof(sd_aid);
+    BYTE app_aid[16];
+    size_t app_aid_len = sizeof(app_aid);
+    if (hex_to_bytes(sd_hex, sd_aid, &sd_aid_len) != 0) {
+        fprintf(stderr, "sign-extradition-token: invalid <sd-aidhex>\n");
+        return -1;
+    }
+    if (hex_to_bytes(app_hex, app_aid, &app_aid_len) != 0) {
+        fprintf(stderr, "sign-extradition-token: invalid <app-aidhex>\n");
+        return -1;
+    }
+
+    char pemcopy[MAX_PATH_BUF];
+    char *pass = "";
+    char *sep;
+    TCHAR pem_t[MAX_PATH_BUF];
+    OPGP_STRING pem_opgp = NULL;
+    strncpy(pemcopy, pem_arg, sizeof(pemcopy) - 1);
+    pemcopy[sizeof(pemcopy) - 1] = '\0';
+    sep = strchr(pemcopy, ':');
+    if (sep != NULL) {
+        *sep = '\0';
+        pass = sep + 1;
+    }
+    if (to_opgp_string(pemcopy, pem_t, ARRAY_SIZE(pem_t)) != 0) {
+        fprintf(stderr, "sign-extradition-token: pem path too long\n");
+        return -1;
+    }
+    pem_opgp = pem_t;
+
+    BYTE token[512];
+    DWORD token_len = sizeof(token);
+    if (!status_ok(GP211_calculate_extradition_token(sd_aid, (DWORD)sd_aid_len,
+                                                     app_aid, (DWORD)app_aid_len,
+                                                     token, &token_len,
+                                                     pem_opgp, pass), false)) {
+        fprintf(stderr, "sign-extradition-token failed\n");
+        return -1;
+    }
+    return write_hex_or_binary_output(token, token_len, output_file);
+}
+
+static int cmd_gp211_calculate_update_registry_token(int argc, char **argv) {
+    const char *output_file = NULL;
+    DWORD privileges = 0;
+    const char *registry_params_hex = NULL;
+    int ai = 0;
+
+    while (ai < argc && argv[ai][0] == '-') {
+        if (strcmp(argv[ai], "--output") == 0 && ai + 1 < argc) {
+            output_file = argv[++ai];
+        } else if (strcmp(argv[ai], "--priv") == 0 && ai + 1 < argc) {
+            privileges = (DWORD)strtoul(argv[++ai], NULL, 0);
+            if (privileges < 0x100) {
+                privileges <<= 16;
+            }
+        } else if (strcmp(argv[ai], "--registry-params") == 0 && ai + 1 < argc) {
+            registry_params_hex = argv[++ai];
+        } else {
+            break;
+        }
+        ai++;
+    }
+
+    if (argc - ai < 3) {
+        fprintf(stderr, "sign-update-registry-token [--output <file>] [--priv <n>] [--registry-params <hex>] <sd-aidhex> <app-aidhex> <pem>[:pass]\n");
+        return -1;
+    }
+
+    const char *sd_hex = argv[ai++];
+    const char *app_hex = argv[ai++];
+    const char *pem_arg = argv[ai++];
+    if (ai != argc) {
+        fprintf(stderr, "sign-update-registry-token: unexpected argument %s\n", argv[ai]);
+        return -1;
+    }
+
+    BYTE sd_aid[16];
+    size_t sd_aid_len = sizeof(sd_aid);
+    BYTE app_aid[16];
+    size_t app_aid_len = sizeof(app_aid);
+    if (hex_to_bytes(sd_hex, sd_aid, &sd_aid_len) != 0) {
+        fprintf(stderr, "sign-update-registry-token: invalid <sd-aidhex>\n");
+        return -1;
+    }
+    if (hex_to_bytes(app_hex, app_aid, &app_aid_len) != 0) {
+        fprintf(stderr, "sign-update-registry-token: invalid <app-aidhex>\n");
+        return -1;
+    }
+
+    BYTE registry_params[512];
+    size_t registry_params_len = 0;
+    if (registry_params_hex != NULL) {
+        registry_params_len = sizeof(registry_params);
+        if (hex_to_bytes(registry_params_hex, registry_params, &registry_params_len) != 0) {
+            fprintf(stderr, "sign-update-registry-token: invalid --registry-params\n");
+            return -1;
+        }
+    }
+
+    char pemcopy[MAX_PATH_BUF];
+    char *pass = "";
+    char *sep;
+    TCHAR pem_t[MAX_PATH_BUF];
+    OPGP_STRING pem_opgp = NULL;
+    strncpy(pemcopy, pem_arg, sizeof(pemcopy) - 1);
+    pemcopy[sizeof(pemcopy) - 1] = '\0';
+    sep = strchr(pemcopy, ':');
+    if (sep != NULL) {
+        *sep = '\0';
+        pass = sep + 1;
+    }
+    if (to_opgp_string(pemcopy, pem_t, ARRAY_SIZE(pem_t)) != 0) {
+        fprintf(stderr, "sign-update-registry-token: pem path too long\n");
+        return -1;
+    }
+    pem_opgp = pem_t;
+
+    BYTE token[512];
+    DWORD token_len = sizeof(token);
+    if (!status_ok(GP211_calculate_update_registry_token(sd_aid, (DWORD)sd_aid_len,
+                                                         app_aid, (DWORD)app_aid_len,
+                                                         privileges,
+                                                         registry_params_len ? registry_params : NULL,
+                                                         (DWORD)registry_params_len,
+                                                         token, &token_len,
+                                                         pem_opgp, pass), false)) {
+        fprintf(stderr, "sign-update-registry-token failed\n");
+        return -1;
+    }
+    return write_hex_or_binary_output(token, token_len, output_file);
+}
+
+static int cmd_gp211_calculate_delete_token(int argc, char **argv) {
+    const char *output_file = NULL;
+    int ai = 0;
+    while (ai < argc && argv[ai][0] == '-') {
+        if (strcmp(argv[ai], "--output") == 0 && ai + 1 < argc) {
+            output_file = argv[++ai];
+        } else {
+            break;
+        }
+        ai++;
+    }
+
+    if (argc - ai < 2) {
+        fprintf(stderr, "sign-delete-token [--output <file>] <aidhex> <pem>[:pass]\n");
+        return -1;
+    }
+
+    const char *aid_hex = argv[ai++];
+    const char *pem_arg = argv[ai++];
+    if (ai != argc) {
+        fprintf(stderr, "sign-delete-token: unexpected argument %s\n", argv[ai]);
+        return -1;
+    }
+
+    BYTE aid[16];
+    size_t aid_len = sizeof(aid);
+    if (hex_to_bytes(aid_hex, aid, &aid_len) != 0) {
+        fprintf(stderr, "sign-delete-token: invalid <aidhex>\n");
+        return -1;
+    }
+
+    char pemcopy[MAX_PATH_BUF];
+    char *pass = "";
+    char *sep;
+    TCHAR pem_t[MAX_PATH_BUF];
+    OPGP_STRING pem_opgp = NULL;
+    strncpy(pemcopy, pem_arg, sizeof(pemcopy) - 1);
+    pemcopy[sizeof(pemcopy) - 1] = '\0';
+    sep = strchr(pemcopy, ':');
+    if (sep != NULL) {
+        *sep = '\0';
+        pass = sep + 1;
+    }
+    if (to_opgp_string(pemcopy, pem_t, ARRAY_SIZE(pem_t)) != 0) {
+        fprintf(stderr, "sign-delete-token: pem path too long\n");
+        return -1;
+    }
+    pem_opgp = pem_t;
+
+    BYTE token[512];
+    DWORD token_len = sizeof(token);
+    if (!status_ok(GP211_calculate_delete_token(aid, (DWORD)aid_len,
+                                                token, &token_len,
+                                                pem_opgp, pass), false)) {
+        fprintf(stderr, "sign-delete-token failed\n");
+        return -1;
+    }
+    return write_hex_or_binary_output(token, token_len, output_file);
 }
 
 static int cmd_status(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
@@ -3261,6 +3797,39 @@ int main(int argc, char **argv) {
         int rc = cmd_hash(argc - i, &argv[i]);
         return rc==0 ? 0 : 10;
     }
+    if (!strcmp(cmd, "sign-dap")) {
+        int rc;
+        if (i >= argc) {
+            fprintf(stderr, "sign-dap: missing type aes|rsa|ecc\n");
+            return 10;
+        }
+        if (strcmp(argv[i], "rsa") && strcmp(argv[i], "aes") && strcmp(argv[i], "ecc")) {
+            fprintf(stderr, "sign-dap: unknown type (use aes|rsa|ecc)\n");
+            return 10;
+        }
+        rc = cmd_sign_dap(argv[i], argc - (i + 1), &argv[i + 1]);
+        return rc==0 ? 0 : 10;
+    }
+    if (!strcmp(cmd, "sign-load-token")) {
+        int rc = cmd_gp211_calculate_load_token(argc - i, &argv[i]);
+        return rc==0 ? 0 : 10;
+    }
+    if (!strcmp(cmd, "sign-install-token")) {
+        int rc = cmd_gp211_calculate_install_token(argc - i, &argv[i]);
+        return rc==0 ? 0 : 10;
+    }
+    if (!strcmp(cmd, "sign-extradition-token")) {
+        int rc = cmd_gp211_calculate_extradition_token(argc - i, &argv[i]);
+        return rc==0 ? 0 : 10;
+    }
+    if (!strcmp(cmd, "sign-update-registry-token")) {
+        int rc = cmd_gp211_calculate_update_registry_token(argc - i, &argv[i]);
+        return rc==0 ? 0 : 10;
+    }
+    if (!strcmp(cmd, "sign-delete-token")) {
+        int rc = cmd_gp211_calculate_delete_token(argc - i, &argv[i]);
+        return rc==0 ? 0 : 10;
+    }
 
     int store_rc = cmd_store_iin_cin(cmd, argc - i, &argv[i],
                                      reader, protocol, trace, verbose,
@@ -3295,13 +3864,10 @@ int main(int argc, char **argv) {
             if (!strcmp(argv[j], "--auth") || !strcmp(argv[j], "--secure")) { need_auth = 1; need_select = 1; break; }
         }
     }
-    if (!strcmp(cmd, "sign-dap") || !strcmp(cmd, "hash") || !strcmp(cmd, "card-data") || !strcmp(cmd, "iin") || !strcmp(cmd, "cin")
+    if (!strcmp(cmd, "card-data") || !strcmp(cmd, "iin") || !strcmp(cmd, "cin")
         || !strcmp(cmd, "card-info") || !strcmp(cmd, "card-cap") || !strcmp(cmd, "card-resources") || !strcmp(cmd, "div-data")
         || !strcmp(cmd, "seq-counter") || !strcmp(cmd, "confirm-counter")) {
         need_auth = 0;
-    }
-    if (!strcmp(cmd, "sign-dap") || !strcmp(cmd, "hash")) {
-        need_select = 0;
     }
     // Parse key options if provided
     BYTE *baseKeyPtr = NULL, *encKeyPtr = NULL, *macKeyPtr = NULL, *dekKeyPtr = NULL;
@@ -3374,7 +3940,7 @@ int main(int argc, char **argv) {
                                                              keyset_ver, key_index, derivation, sec_level_opt, verbose,
                                                              baseKeyPtr, encKeyPtr, macKeyPtr, dekKeyPtr, keyLength,
                                                              scp_protocol, scp_impl);
-    else if (!strcmp(cmd, "delete")) rc = cmd_delete(ctx, info, &sec, (i<argc)?argv[i]:NULL);
+    else if (!strcmp(cmd, "delete")) rc = cmd_delete(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "update-registry")) rc = cmd_update_registry(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "move")) rc = cmd_move(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "put-key")) rc = cmd_put_key(ctx, info, &sec, argc - i, &argv[i]);
@@ -3385,11 +3951,7 @@ int main(int argc, char **argv) {
     else if (!strcmp(cmd, "apdu")) rc = cmd_apdu(ctx, info, sec_ptr, argc - i, &argv[i]);
     else if (!strcmp(cmd, "status")) rc = cmd_status(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "store")) rc = cmd_store(ctx, info, &sec, argc - i, &argv[i]);
-    else if (!strcmp(cmd, "sign-dap")) {
-        if (i>=argc) { fprintf(stderr, "sign-dap: missing type aes|rsa|ecc\n"); rc=-1; }
-        else if (!strcmp(argv[i], "rsa") || !strcmp(argv[i], "aes") || !strcmp(argv[i], "ecc")) rc = cmd_sign_dap(argv[i], ctx, info, &sec, argc - (i+1), &argv[i+1]);
-        else { fprintf(stderr, "sign-dap: unknown type (use aes|rsa|ecc)\n"); rc=-1; }
-    } else { fprintf(stderr, "Unknown command: %s\n", cmd); rc=-1; }
+    else { fprintf(stderr, "Unknown command: %s\n", cmd); rc=-1; }
 
     if (rc != 0) {
         cleanup_and_exit(10);

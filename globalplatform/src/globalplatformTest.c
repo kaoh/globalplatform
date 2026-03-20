@@ -225,9 +225,9 @@ static OPGP_ERROR_STATUS internal_delete() {
 	memcpy(deleteApplet.AID, appletAID, sizeof(appletAID));
 	deleteApplet.AIDLength = sizeof(appletAID);
 	// first try to delete applet
-	GP211_delete_application(cardContext, cardInfo, &securityInfo211, &deleteApplet, 1, &receiptData, &receiptDataLength);
+	GP211_delete_application(cardContext, cardInfo, &securityInfo211, &deleteApplet, 1, &receiptData, &receiptDataLength, NULL, 0);
 	// now delete package
-	status = GP211_delete_application(cardContext, cardInfo, &securityInfo211, &deletePackage, 1, &receiptData, &receiptDataLength);
+	status = GP211_delete_application(cardContext, cardInfo, &securityInfo211, &deletePackage, 1, &receiptData, &receiptDataLength, NULL, 0);
 	if (OPGP_ERROR_CHECK(status)) {
 		return status;
 	}
@@ -242,7 +242,7 @@ static OPGP_ERROR_STATUS internal_delete_sd() {
 	OPGP_AID deleteSD;
 	memcpy(deleteSD.AID, sdInstanceAID, sizeof(sdInstanceAID));
 	deleteSD.AIDLength = sizeof(sdInstanceAID);
-	status = GP211_delete_application(cardContext, cardInfo, &securityInfo211, &deleteSD, 1, &receiptData, &receiptDataLength);
+	status = GP211_delete_application(cardContext, cardInfo, &securityInfo211, &deleteSD, 1, &receiptData, &receiptDataLength, NULL, 0);
 	if (OPGP_ERROR_CHECK(status)) {
 		return status;
 	}
