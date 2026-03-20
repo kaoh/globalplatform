@@ -86,6 +86,10 @@ OPGP_ERROR_STATUS calculate_ecc_signature(PBYTE message, DWORD messageLength, OP
 									char *passPhrase, PBYTE signature, PDWORD signatureLength);
 
 OPGP_NO_API
+OPGP_ERROR_STATUS calculate_signature(PBYTE message, DWORD messageLength, OPGP_STRING PEMKeyFileName,
+									char *passPhrase, PBYTE signature, PDWORD signatureLength);
+
+OPGP_NO_API
 OPGP_ERROR_STATUS calculate_MAC(BYTE sessionKey[16], BYTE *message, DWORD messageLength,
 						  BYTE icv[8], BYTE mac[8]);
 

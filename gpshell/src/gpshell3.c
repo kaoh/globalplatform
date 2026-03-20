@@ -2639,7 +2639,7 @@ static int write_hex_or_binary_output(const BYTE *data, DWORD dataLength, const 
     return 0;
 }
 
-static int cmd_gp211_calculate_load_token(int argc, char **argv) {
+static int cmd_sign_load_token(int argc, char **argv) {
     const char *output_file = NULL;
     DWORD nv_code_limit = 0;
     DWORD v_data_limit = 0;
@@ -3888,7 +3888,7 @@ int main(int argc, char **argv) {
         return rc==0 ? 0 : 10;
     }
     if (!strcmp(cmd, "sign-load-token")) {
-        int rc = cmd_gp211_calculate_load_token(argc - i, &argv[i]);
+        int rc = cmd_sign_load_token(argc - i, &argv[i]);
         return rc==0 ? 0 : 10;
     }
     if (!strcmp(cmd, "sign-install-token")) {

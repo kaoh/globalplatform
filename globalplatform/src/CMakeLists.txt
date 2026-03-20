@@ -284,6 +284,12 @@ IF(TESTING)
     IF(CHECK_INCLUDE_DIRS AND CHECK_LIBRARIES)
       add_executable(globalplatformIntegrationTest globalplatformTest.c)
       target_include_directories(globalplatformIntegrationTest PRIVATE ${CHECK_INCLUDE_DIRS} ${PCSC_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR})
+      add_custom_command(TARGET globalplatformIntegrationTest POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          ${CMAKE_CURRENT_SOURCE_DIR}/helloworld.cap
+          ${CMAKE_CURRENT_SOURCE_DIR}/ecc_private_key_test.pem
+          ${CMAKE_CURRENT_SOURCE_DIR}/ecc_public_key_test.pem
+          $<TARGET_FILE_DIR:globalplatformIntegrationTest>)
       set(_gp_lib globalplatform)
       if(TARGET globalplatformStatic)
         set(_gp_lib globalplatformStatic)

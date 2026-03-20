@@ -40,6 +40,12 @@
  * Test load file
  */
 #define TEST_LOAD_FILE "helloworld.cap"
+#define TEST_ECC_PRIVATE_KEY "ecc_private_key_test.pem"
+#define TEST_ECC_PUBLIC_KEY "ecc_public_key_test.pem"
+
+#define INTERNAL_DELETE_APPLET 0x01
+#define INTERNAL_DELETE_PACKAGE 0x02
+#define INTERNAL_DELETE_SD 0x04
 
 /**
  * Global card context for the test.
@@ -73,6 +79,21 @@ static const BYTE sdInstanceAID[8] = {0xD4, 0xD4, 0xD4, 0xD4, 0xD4, 0x01, 0x01, 
 
 static const BYTE sdPackageAID[7] = {0xA0, 0x00, 0x00, 0x01, 0x51, 0x53, 0x50};
 static const BYTE sdModuleAID[8] = {0xA0, 0x00, 0x00, 0x01, 0x51, 0x53, 0x50, 0x41};
+static const BYTE delegatedReceiptKey[32] = {
+		0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+		0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F,
+		0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27,
+		0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F
+};
+
+static OPGP_LOAD_FILE_PARAMETERS dmLoadFileParams;
+static BYTE dmLoadFileDataBlockHash[64];
+static DWORD dmLoadFileDataBlockHashLength;
+static BYTE dmLoadToken[512];
+static DWORD dmLoadTokenLength;
+static BYTE dmInstallToken[512];
+static DWORD dmInstallTokenLength;
+static int dmLoadFileParamsAvailable = 0;
 
 /**
  * Readername for the test.
@@ -214,20 +235,72 @@ static OPGP_ERROR_STATUS internal_disconnect() {
 }
 
 
-static OPGP_ERROR_STATUS internal_delete() {
+static OPGP_ERROR_STATUS internal_delete_aid(const BYTE *aid, BYTE aidLength, int ignoreErrors) {
 	OPGP_ERROR_STATUS status;
 	GP211_RECEIPT_DATA receiptData;
-	DWORD receiptDataLength;
-	OPGP_AID deletePackage;
-	OPGP_AID deleteApplet;
-	memcpy(deletePackage.AID, packageAID, sizeof(packageAID));
-	deletePackage.AIDLength = sizeof(packageAID);
-	memcpy(deleteApplet.AID, appletAID, sizeof(appletAID));
-	deleteApplet.AIDLength = sizeof(appletAID);
-	// first try to delete applet
-	GP211_delete_application(cardContext, cardInfo, &securityInfo211, &deleteApplet, 1, &receiptData, &receiptDataLength, NULL, 0);
-	// now delete package
-	status = GP211_delete_application(cardContext, cardInfo, &securityInfo211, &deletePackage, 1, &receiptData, &receiptDataLength, NULL, 0);
+	DWORD receiptDataLength = 0;
+	OPGP_AID deleteAID;
+
+	memcpy(deleteAID.AID, aid, aidLength);
+	deleteAID.AIDLength = aidLength;
+	status = GP211_delete_application(cardContext, cardInfo, &securityInfo211, &deleteAID, 1, &receiptData, &receiptDataLength, NULL, 0);
+	if (OPGP_ERROR_CHECK(status)) {
+		if (ignoreErrors) {
+			OPGP_ERROR_CREATE_NO_ERROR(status);
+			return status;
+		}
+		return status;
+	}
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+	return status;
+}
+
+static OPGP_ERROR_STATUS internal_delete_selected(DWORD deleteFlags, int ignoreErrors) {
+	OPGP_ERROR_STATUS status;
+
+	if (deleteFlags & INTERNAL_DELETE_APPLET) {
+		status = internal_delete_aid(appletAID, sizeof(appletAID), ignoreErrors);
+		if (OPGP_ERROR_CHECK(status)) {
+			return status;
+		}
+	}
+	if (deleteFlags & INTERNAL_DELETE_PACKAGE) {
+		status = internal_delete_aid(packageAID, sizeof(packageAID), ignoreErrors);
+		if (OPGP_ERROR_CHECK(status)) {
+			return status;
+		}
+	}
+	if (deleteFlags & INTERNAL_DELETE_SD) {
+		status = internal_delete_aid(sdInstanceAID, sizeof(sdInstanceAID), ignoreErrors);
+		if (OPGP_ERROR_CHECK(status)) {
+			return status;
+		}
+	}
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+	return status;
+}
+
+static OPGP_ERROR_STATUS internal_delete_key_set(BYTE keySetVersion, int ignoreErrors) {
+	OPGP_ERROR_STATUS status;
+	status = GP211_delete_key(cardContext, cardInfo, &securityInfo211, keySetVersion, 0xFF);
+	if (OPGP_ERROR_CHECK(status)) {
+		if (ignoreErrors) {
+			OPGP_ERROR_CREATE_NO_ERROR(status);
+			return status;
+		}
+		return status;
+	}
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+	return status;
+}
+
+static OPGP_ERROR_STATUS internal_delete() {
+	OPGP_ERROR_STATUS status;
+	status = internal_delete_selected(INTERNAL_DELETE_APPLET, 1);
+	if (OPGP_ERROR_CHECK(status)) {
+		return status;
+	}
+	status = internal_delete_selected(INTERNAL_DELETE_PACKAGE, 0);
 	if (OPGP_ERROR_CHECK(status)) {
 		return status;
 	}
@@ -236,13 +309,32 @@ static OPGP_ERROR_STATUS internal_delete() {
 }
 
 static OPGP_ERROR_STATUS internal_delete_sd() {
+	return internal_delete_selected(INTERNAL_DELETE_SD, 0);
+}
+
+static OPGP_ERROR_STATUS internal_read_dm_load_file_parameters() {
 	OPGP_ERROR_STATUS status;
-	GP211_RECEIPT_DATA receiptData;
-	DWORD receiptDataLength;
-	OPGP_AID deleteSD;
-	memcpy(deleteSD.AID, sdInstanceAID, sizeof(sdInstanceAID));
-	deleteSD.AIDLength = sizeof(sdInstanceAID);
-	status = GP211_delete_application(cardContext, cardInfo, &securityInfo211, &deleteSD, 1, &receiptData, &receiptDataLength, NULL, 0);
+	memset(&dmLoadFileParams, 0, sizeof(dmLoadFileParams));
+	status = OPGP_read_executable_load_file_parameters(TEST_LOAD_FILE, &dmLoadFileParams);
+	if (OPGP_ERROR_CHECK(status)) {
+		return status;
+	}
+	if (dmLoadFileParams.appletAIDs[0].AIDLength == 0) {
+		OPGP_ERROR_CREATE_ERROR(status, -1, "No applet AID found in CAP file.");
+		return status;
+	}
+	dmLoadFileParamsAvailable = 1;
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+	return status;
+}
+
+static OPGP_ERROR_STATUS internal_connect_and_authenticate() {
+	OPGP_ERROR_STATUS status;
+	status = internal_connect();
+	if (OPGP_ERROR_CHECK(status)) {
+		return status;
+	}
+	status = internal_mutual_authentication();
 	if (OPGP_ERROR_CHECK(status)) {
 		return status;
 	}
@@ -905,6 +997,454 @@ START_TEST (test_delete_sd) {
 	}
 } END_TEST
 
+/**
+ * Delegated management test step 1:
+ * Put ECC token verification key.
+ */
+START_TEST (test_dm_put_token_key_ecc) {
+	OPGP_ERROR_STATUS status;
+	status = internal_connect_and_authenticate();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not connect and authenticate: %s", status.errorMessage);
+	}
+
+	status = internal_delete_key_set(GP211_KEY_VERSION_TOKEN_VERIFICATION, 1);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not pre-delete token key set: %s", status.errorMessage);
+	}
+
+	status = GP211_put_delegated_management_token_keys(cardContext, cardInfo, &securityInfo211,
+			0, GP211_KEY_VERSION_TOKEN_VERIFICATION,
+			TEST_ECC_PUBLIC_KEY, NULL, GP211_KEY_TYPE_ECC);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_put_delegated_management_token_keys() failed: %s", status.errorMessage);
+	}
+
+	status = internal_disconnect();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not disconnect: %s", status.errorMessage);
+	}
+} END_TEST
+
+/**
+ * Delegated management test step 2:
+ * Put AES-256 receipt key.
+ */
+START_TEST (test_dm_put_receipt_key_aes256) {
+	OPGP_ERROR_STATUS status;
+	status = internal_connect_and_authenticate();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not connect and authenticate: %s", status.errorMessage);
+	}
+
+	status = internal_delete_key_set(GP211_KEY_VERSION_RECEIPT_GENERATION, 1);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not pre-delete receipt key set: %s", status.errorMessage);
+	}
+
+	status = GP211_put_delegated_management_receipt_keys(cardContext, cardInfo, &securityInfo211,
+			0, GP211_KEY_VERSION_RECEIPT_GENERATION,
+			(BYTE *)delegatedReceiptKey, sizeof(delegatedReceiptKey), GP211_KEY_TYPE_AES);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_put_delegated_management_receipt_keys() failed: %s", status.errorMessage);
+	}
+
+	status = internal_disconnect();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not disconnect: %s", status.errorMessage);
+	}
+} END_TEST
+
+/**
+ * Delegated management test step 3:
+ * Install a delegated management SD.
+ */
+START_TEST (test_dm_install_sd_with_delegated_management) {
+	OPGP_ERROR_STATUS status;
+	GP211_SD_INSTALL_PARAMS sdParams;
+	BYTE sdParamsBuf[100];
+	DWORD sdParamsLen = sizeof(sdParamsBuf);
+	GP211_RECEIPT_DATA receipt;
+	DWORD receiptDataAvailable = 0;
+	GP211_APPLICATION_DATA appData[20];
+	GP211_EXECUTABLE_MODULES_DATA modulesData[20];
+	DWORD dataLength = 20;
+
+	status = internal_connect_and_authenticate();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not connect and authenticate: %s", status.errorMessage);
+	}
+
+	status = internal_delete_selected(INTERNAL_DELETE_SD, 1);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not pre-delete delegated management SD: %s", status.errorMessage);
+	}
+
+	memset(&sdParams, 0, sizeof(sdParams));
+	sdParams.acceptExtraditionHere[0] = GP211_SD_ACCEPT_ISD;
+	sdParams.acceptExtraditionHere[1] = GP211_SD_ACCEPT_ISD;
+	sdParams.acceptExtraditionHereLength = 2;
+	sdParams.acceptExtraditionAway[0] = GP211_SD_ACCEPT_ISD;
+	sdParams.acceptExtraditionAway[1] = GP211_SD_ACCEPT_ISD;
+	sdParams.acceptExtraditionAwayLength = 2;
+	sdParams.acceptDeletion = GP211_SD_ACCEPT_ISD;
+	sdParams.acceptDeletionLength = 1;
+
+	status = GP211_build_sd_parameters(&sdParams, sdParamsBuf, &sdParamsLen);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_build_sd_parameters() failed: %s", status.errorMessage);
+	}
+
+	status = GP211_install_for_install_and_make_selectable(cardContext, cardInfo, &securityInfo211,
+			(PBYTE)sdPackageAID, sizeof(sdPackageAID),
+			(PBYTE)sdModuleAID, sizeof(sdModuleAID),
+			(PBYTE)sdInstanceAID, sizeof(sdInstanceAID),
+			GP211_SECURITY_DOMAIN | GP211_DELEGATED_MANAGEMENT,
+			0, 0,
+			NULL, 0,
+			sdParamsBuf, sdParamsLen,
+			NULL, 0,
+			NULL, 0,
+			NULL, 0,
+			&receipt, &receiptDataAvailable);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_install_for_install_and_make_selectable() failed: %s", status.errorMessage);
+	}
+
+	status = GP211_get_status(cardContext, cardInfo, &securityInfo211,
+			GP211_STATUS_APPLICATIONS, GP211_STATUS_FORMAT_NEW,
+			appData, modulesData, &dataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not get status from applications: %s", status.errorMessage);
+	}
+
+	{
+		int found = 0;
+		DWORD i;
+		for (i = 0; i < dataLength; i++) {
+			if (appData[i].aid.AIDLength == sizeof(sdInstanceAID) &&
+					memcmp(appData[i].aid.AID, sdInstanceAID, sizeof(sdInstanceAID)) == 0) {
+				found = 1;
+				break;
+			}
+		}
+		if (!found) {
+			ck_abort_msg("Delegated management SD AID not found in status.");
+		}
+		if (!(appData[i].privileges & GP211_SECURITY_DOMAIN) ||
+				!(appData[i].privileges & GP211_DELEGATED_MANAGEMENT)) {
+			ck_abort_msg("SD privileges do not contain security-domain and delegated-management.");
+		}
+	}
+
+	status = internal_disconnect();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not disconnect: %s", status.errorMessage);
+	}
+} END_TEST
+
+/**
+ * Delegated management test step 4:
+ * Calculate hash and load token for helloworld.cap.
+ */
+START_TEST (test_dm_calculate_load_token) {
+	OPGP_ERROR_STATUS status;
+
+	status = internal_read_dm_load_file_parameters();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("OPGP_read_executable_load_file_parameters() failed: %s", status.errorMessage);
+	}
+
+	dmLoadFileDataBlockHashLength = 32;
+	memset(dmLoadFileDataBlockHash, 0, sizeof(dmLoadFileDataBlockHash));
+	status = GP211_calculate_load_file_data_block_hash(TEST_LOAD_FILE,
+			dmLoadFileDataBlockHash, dmLoadFileDataBlockHashLength, GP211_HASH_SHA256);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_calculate_load_file_data_block_hash() failed: %s", status.errorMessage);
+	}
+
+	dmLoadTokenLength = sizeof(dmLoadToken);
+	status = GP211_calculate_load_token(
+			dmLoadFileParams.loadFileAID.AID, dmLoadFileParams.loadFileAID.AIDLength,
+			(PBYTE)sdInstanceAID, sizeof(sdInstanceAID),
+			dmLoadFileDataBlockHash, dmLoadFileDataBlockHashLength,
+			dmLoadFileParams.loadFileSize, 0, 0,
+			dmLoadToken, &dmLoadTokenLength,
+			TEST_ECC_PRIVATE_KEY, NULL);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_calculate_load_token() failed: %s", status.errorMessage);
+	}
+	if (dmLoadTokenLength == 0) {
+		ck_abort_msg("Load token calculation returned empty token.");
+	}
+} END_TEST
+
+/**
+ * Delegated management test step 5:
+ * Calculate install token for helloworld.cap.
+ */
+START_TEST (test_dm_calculate_install_token) {
+	OPGP_ERROR_STATUS status;
+
+	if (!dmLoadFileParamsAvailable) {
+		status = internal_read_dm_load_file_parameters();
+		if (OPGP_ERROR_CHECK(status)) {
+			ck_abort_msg("OPGP_read_executable_load_file_parameters() failed: %s", status.errorMessage);
+		}
+	}
+
+	dmInstallTokenLength = sizeof(dmInstallToken);
+	status = GP211_calculate_install_token(
+			0x0C,
+			dmLoadFileParams.loadFileAID.AID, dmLoadFileParams.loadFileAID.AIDLength,
+			dmLoadFileParams.appletAIDs[0].AID, dmLoadFileParams.appletAIDs[0].AIDLength,
+			dmLoadFileParams.appletAIDs[0].AID, dmLoadFileParams.appletAIDs[0].AIDLength,
+			0, 0, 0,
+			NULL, 0,
+			NULL, 0,
+			NULL, 0,
+			NULL, 0,
+			dmInstallToken, &dmInstallTokenLength,
+			TEST_ECC_PRIVATE_KEY, NULL);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_calculate_install_token() failed: %s", status.errorMessage);
+	}
+	if (dmInstallTokenLength == 0) {
+		ck_abort_msg("Install token calculation returned empty token.");
+	}
+} END_TEST
+
+/**
+ * Delegated management test step 6:
+ * Install helloworld.cap in delegated management SD using load and install tokens.
+ */
+START_TEST (test_dm_install_helloworld_with_tokens) {
+	OPGP_ERROR_STATUS status;
+	DWORD receiptDataLen = 0;
+	GP211_RECEIPT_DATA receipt;
+	DWORD receiptDataAvailable = 0;
+	GP211_APPLICATION_DATA appData[20];
+	GP211_EXECUTABLE_MODULES_DATA modulesData[20];
+	DWORD dataLength = 20;
+
+	if (!dmLoadFileParamsAvailable || dmLoadTokenLength == 0 || dmInstallTokenLength == 0 ||
+			dmLoadFileDataBlockHashLength == 0) {
+		ck_abort_msg("Delegated management token preconditions missing. Run token calculation tests first.");
+	}
+
+	status = internal_connect_and_authenticate();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not connect and authenticate: %s", status.errorMessage);
+	}
+
+	status = internal_delete_selected(INTERNAL_DELETE_APPLET | INTERNAL_DELETE_PACKAGE, 1);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not pre-delete applet/package: %s", status.errorMessage);
+	}
+
+	status = GP211_install_for_load(cardContext, cardInfo, &securityInfo211,
+			dmLoadFileParams.loadFileAID.AID, dmLoadFileParams.loadFileAID.AIDLength,
+			(PBYTE)sdInstanceAID, sizeof(sdInstanceAID),
+			dmLoadFileDataBlockHash, dmLoadFileDataBlockHashLength,
+			dmLoadToken, dmLoadTokenLength,
+			dmLoadFileParams.loadFileSize, 0, 0);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_install_for_load() with delegated token failed: %s", status.errorMessage);
+	}
+
+	status = GP211_load(cardContext, cardInfo, &securityInfo211,
+			NULL, 0, TEST_LOAD_FILE, NULL, &receiptDataLen, NULL);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_load() failed: %s", status.errorMessage);
+	}
+
+	status = GP211_install_for_install_and_make_selectable(cardContext, cardInfo, &securityInfo211,
+			dmLoadFileParams.loadFileAID.AID, dmLoadFileParams.loadFileAID.AIDLength,
+			dmLoadFileParams.appletAIDs[0].AID, dmLoadFileParams.appletAIDs[0].AIDLength,
+			dmLoadFileParams.appletAIDs[0].AID, dmLoadFileParams.appletAIDs[0].AIDLength,
+			0, 0, 0,
+			NULL, 0,
+			NULL, 0,
+			NULL, 0,
+			NULL, 0,
+			dmInstallToken, dmInstallTokenLength,
+			&receipt, &receiptDataAvailable);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_install_for_install_and_make_selectable() with delegated token failed: %s", status.errorMessage);
+	}
+
+	status = GP211_get_status(cardContext, cardInfo, &securityInfo211,
+			GP211_STATUS_APPLICATIONS, GP211_STATUS_FORMAT_NEW,
+			appData, modulesData, &dataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not get status from applications: %s", status.errorMessage);
+	}
+
+	{
+		int found = 0;
+		DWORD i;
+		for (i = 0; i < dataLength; i++) {
+			if (appData[i].aid.AIDLength == dmLoadFileParams.appletAIDs[0].AIDLength &&
+					memcmp(appData[i].aid.AID, dmLoadFileParams.appletAIDs[0].AID,
+							dmLoadFileParams.appletAIDs[0].AIDLength) == 0) {
+				found = 1;
+				break;
+			}
+		}
+		if (!found) {
+			ck_abort_msg("Installed delegated applet AID not found in status.");
+		}
+		if (appData[i].associatedSecurityDomainAID.AIDLength != sizeof(sdInstanceAID) ||
+				memcmp(appData[i].associatedSecurityDomainAID.AID, sdInstanceAID, sizeof(sdInstanceAID)) != 0) {
+			ck_abort_msg("Installed delegated applet is not associated with delegated management SD.");
+		}
+	}
+
+	status = internal_disconnect();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not disconnect: %s", status.errorMessage);
+	}
+} END_TEST
+
+/**
+ * Delegated management test step 7:
+ * Delete the delegated applet and package.
+ */
+START_TEST (test_dm_delete_helloworld) {
+	OPGP_ERROR_STATUS status;
+	GP211_APPLICATION_DATA appData[20];
+	GP211_EXECUTABLE_MODULES_DATA modulesData[20];
+	DWORD dataLength = 20;
+	const BYTE *loadFileAIDToCheck = packageAID;
+	DWORD loadFileAIDToCheckLen = sizeof(packageAID);
+	const BYTE *appletAIDToCheck = appletAID;
+	DWORD appletAIDToCheckLen = sizeof(appletAID);
+
+	if (dmLoadFileParamsAvailable) {
+		loadFileAIDToCheck = dmLoadFileParams.loadFileAID.AID;
+		loadFileAIDToCheckLen = dmLoadFileParams.loadFileAID.AIDLength;
+		appletAIDToCheck = dmLoadFileParams.appletAIDs[0].AID;
+		appletAIDToCheckLen = dmLoadFileParams.appletAIDs[0].AIDLength;
+	}
+
+	status = internal_connect_and_authenticate();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not connect and authenticate: %s", status.errorMessage);
+	}
+
+	status = internal_delete_selected(INTERNAL_DELETE_APPLET | INTERNAL_DELETE_PACKAGE, 0);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not delete delegated applet/package: %s", status.errorMessage);
+	}
+
+	status = GP211_get_status(cardContext, cardInfo, &securityInfo211,
+			GP211_STATUS_APPLICATIONS, GP211_STATUS_FORMAT_NEW,
+			appData, modulesData, &dataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not get status from applications: %s", status.errorMessage);
+	}
+	{
+		DWORD i;
+		for (i = 0; i < dataLength; i++) {
+			if (appData[i].aid.AIDLength == appletAIDToCheckLen &&
+					memcmp(appData[i].aid.AID, appletAIDToCheck, appletAIDToCheckLen) == 0) {
+				ck_abort_msg("Delegated applet AID still found in status after deletion.");
+			}
+		}
+	}
+
+	dataLength = 20;
+	status = GP211_get_status(cardContext, cardInfo, &securityInfo211,
+			GP211_STATUS_LOAD_FILES, GP211_STATUS_FORMAT_NEW,
+			appData, modulesData, &dataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not get status from load files: %s", status.errorMessage);
+	}
+	{
+		DWORD i;
+		for (i = 0; i < dataLength; i++) {
+			if (appData[i].aid.AIDLength == loadFileAIDToCheckLen &&
+					memcmp(appData[i].aid.AID, loadFileAIDToCheck, loadFileAIDToCheckLen) == 0) {
+				ck_abort_msg("Delegated load file AID still found in status after deletion.");
+			}
+		}
+	}
+
+	status = internal_disconnect();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not disconnect: %s", status.errorMessage);
+	}
+} END_TEST
+
+/**
+ * Delegated management test step 8:
+ * Delete delegated management SD.
+ */
+START_TEST (test_dm_delete_sd) {
+	OPGP_ERROR_STATUS status;
+	GP211_APPLICATION_DATA appData[20];
+	GP211_EXECUTABLE_MODULES_DATA modulesData[20];
+	DWORD dataLength = 20;
+
+	status = internal_connect_and_authenticate();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not connect and authenticate: %s", status.errorMessage);
+	}
+
+	status = internal_delete_selected(INTERNAL_DELETE_SD, 0);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not delete delegated management SD: %s", status.errorMessage);
+	}
+
+	status = GP211_get_status(cardContext, cardInfo, &securityInfo211,
+			GP211_STATUS_APPLICATIONS, GP211_STATUS_FORMAT_NEW,
+			appData, modulesData, &dataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not get status from applications: %s", status.errorMessage);
+	}
+	{
+		DWORD i;
+		for (i = 0; i < dataLength; i++) {
+			if (appData[i].aid.AIDLength == sizeof(sdInstanceAID) &&
+					memcmp(appData[i].aid.AID, sdInstanceAID, sizeof(sdInstanceAID)) == 0) {
+				ck_abort_msg("Delegated management SD AID still found in status after deletion.");
+			}
+		}
+	}
+
+	status = internal_disconnect();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not disconnect: %s", status.errorMessage);
+	}
+} END_TEST
+
+/**
+ * Delegated management test step 9:
+ * Delete delegated management key sets.
+ */
+START_TEST (test_dm_delete_keys) {
+	OPGP_ERROR_STATUS status;
+	status = internal_connect_and_authenticate();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not connect and authenticate: %s", status.errorMessage);
+	}
+
+	status = internal_delete_key_set(GP211_KEY_VERSION_TOKEN_VERIFICATION, 0);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not delete delegated token key set: %s", status.errorMessage);
+	}
+
+	status = internal_delete_key_set(GP211_KEY_VERSION_RECEIPT_GENERATION, 0);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not delete delegated receipt key set: %s", status.errorMessage);
+	}
+
+	status = internal_disconnect();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not disconnect: %s", status.errorMessage);
+	}
+} END_TEST
+
 Suite * GlobalPlatform_suite(void) {
 	Suite *s = suite_create("GlobalPlatform");
 	/* Core test case */
@@ -924,6 +1464,15 @@ Suite * GlobalPlatform_suite(void) {
 	tcase_add_test (tc_core, test_personalize_sd);
 	tcase_add_test (tc_core, test_move_sd);
 	tcase_add_test (tc_core, test_delete_sd);
+	tcase_add_test (tc_core, test_dm_put_token_key_ecc);
+	tcase_add_test (tc_core, test_dm_put_receipt_key_aes256);
+	tcase_add_test (tc_core, test_dm_install_sd_with_delegated_management);
+	tcase_add_test (tc_core, test_dm_calculate_load_token);
+	tcase_add_test (tc_core, test_dm_calculate_install_token);
+	tcase_add_test (tc_core, test_dm_install_helloworld_with_tokens);
+	tcase_add_test (tc_core, test_dm_delete_helloworld);
+	tcase_add_test (tc_core, test_dm_delete_sd);
+	tcase_add_test (tc_core, test_dm_delete_keys);
 	suite_add_tcase(s, tc_core);
 
 	return s;
