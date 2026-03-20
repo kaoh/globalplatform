@@ -185,12 +185,12 @@ Delete an application instance or load file by AID.
 
 Synopsis:
 ```
-gpshell3 delete [--delete-token <hex>] <AIDhex>
+gpshell3 delete [--token <hex>] <AIDhex>
 ```
 
 Options:
 
-- `--delete-token <hex>`: Optional delegated-management delete token (encoded with tag `9F`).
+- `--token <hex>`: Optional delegated-management delete token (encoded with tag `9F`).
 - `<AIDhex>`: AID of the application instance or load file to delete.
 
 Example:
@@ -204,7 +204,7 @@ Update the registry for an application (e.g. change privileges).
 
 Synopsis:
 ```
-gpshell3 update-registry [--sd <AIDhex>] [--priv <p1,p2,...>] <AIDhex>
+gpshell3 update-registry [--sd <AIDhex>] [--priv <p1,p2,...>] [--token <hex>] <AIDhex>
 ```
 
 Options:
@@ -212,6 +212,7 @@ Options:
 - `<AIDhex>`: AID of the application instance to be updated (mandatory, last positional parameter).
 - `--sd <AIDhex>`: AID of the target Security Domain (optional).
 - `--priv <list>`: Comma-separated privileges by short names. See “Privileges” below (optional).
+- `--token <hex>`: Optional delegated-management registry update token.
 
 Example:
 ```
@@ -224,13 +225,14 @@ Move an application to a different Security Domain (extradition).
 
 Synopsis:
 ```
-gpshell3 move <applicationAID> <securityDomainAID>
+gpshell3 move [--token <hex>] <applicationAID> <securityDomainAID>
 ```
 
 Options:
 
 - `<applicationAID>`: AID of the application instance to be moved.
 - `<securityDomainAID>`: AID of the target Security Domain.
+- `--token <hex>`: Optional delegated-management extradition token.
 
 Example:
 ```

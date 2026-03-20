@@ -192,15 +192,16 @@ static void print_usage(const char *prog) {
         "        isd       = Issuer Security Domain\n"
         "        an-am-dm  = any SD with DM privilege under ancestor SD with AM\n"
         "        all-am    = every SD with AM privilege on the card\n\n"
-        "  delete [--delete-token <hex>] <AIDhex>\n"
+        "  delete [--token <hex>] <AIDhex>\n"
         "      Delete an application instance or load file by AID.\n"
-        "      --delete-token <hex>: Delete token for delegated management (optional).\n\n"
-        "  update-registry [--sd <AIDhex>] [--priv <p1,p2,...>] <AIDhex>\n"
+        "      --token <hex>: Delete token for delegated management (optional).\n\n"
+        "  update-registry [--sd <AIDhex>] [--priv <p1,p2,...>] [--token <hex>] <AIDhex>\n"
         "      Update the registry for an application.\n"
         "      <AIDhex>: Application AID (mandatory, last positional parameter).\n"
         "      --sd <AIDhex>: Security Domain AID (optional).\n"
-        "      --priv <list>: Comma-separated privileges by short names (see 'Privileges' below) (optional).\n\n"
-        "  move <applicationAID> <securityDomainAID>\n"
+        "      --priv <list>: Comma-separated privileges by short names (see 'Privileges' below) (optional).\n"
+        "      --token <hex>: Registry update token for delegated management (optional).\n\n"
+        "  move [--token <hex>] <applicationAID> <securityDomainAID>\n"
         "      Move an application to a different Security Domain (extradition).\n\n"
         "  put-key [--type <3des|aes|rsa>] --kv <ver> --idx <idx> --new-kv <ver> \\\n"
         "          (--key <hex>|--pem <file>[:pass])\n"
@@ -1905,18 +1906,18 @@ static int cmd_install_sd(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECU
 
 static int cmd_delete(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
     const char *aid_hex = NULL;
-    const char *delete_token_hex = NULL;
+    const char *token_hex = NULL;
     BYTE delete_token[255];
     BYTE *delete_token_ptr = NULL;
     DWORD delete_token_len = 0;
 
     for (int i = 0; i < argc; i++) {
-        if (strcmp(argv[i], "--delete-token") == 0) {
+        if (strcmp(argv[i], "--token") == 0) {
             if (i + 1 >= argc) {
-                fprintf(stderr, "delete: --delete-token requires <hex>\n");
+                fprintf(stderr, "delete: --token requires <hex>\n");
                 return -1;
             }
-            delete_token_hex = argv[++i];
+            token_hex = argv[++i];
         }
         else if (argv[i][0] == '-') {
             fprintf(stderr, "delete: unknown option %s\n", argv[i]);
@@ -1935,10 +1936,10 @@ static int cmd_delete(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY
     unsigned char aidb[16]; size_t alen=sizeof(aidb);
     if (hex_to_bytes(aid_hex, aidb, &alen)!=0) { fprintf(stderr, "Invalid AID hex\n"); return -1; }
 
-    if (delete_token_hex != NULL) {
+    if (token_hex != NULL) {
         size_t token_len = sizeof(delete_token);
-        if (hex_to_bytes(delete_token_hex, delete_token, &token_len) != 0 || token_len == 0) {
-            fprintf(stderr, "delete: invalid --delete-token hex\n");
+        if (hex_to_bytes(token_hex, delete_token, &token_len) != 0 || token_len == 0) {
+            fprintf(stderr, "delete: invalid --token hex\n");
             return -1;
         }
         delete_token_ptr = delete_token;
@@ -1954,12 +1955,40 @@ static int cmd_delete(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY
 }
 
 static int cmd_move(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
-    if (argc < 2) {
+    const char *token_hex = NULL;
+    const char *app_aid_hex = NULL;
+    const char *sd_aid_hex = NULL;
+    BYTE token[128];
+    BYTE *token_ptr = NULL;
+
+    for (int i = 0; i < argc; i++) {
+        if (strcmp(argv[i], "--token") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "move: --token requires <hex>\n");
+                return -1;
+            }
+            token_hex = argv[++i];
+        }
+        else if (argv[i][0] == '-') {
+            fprintf(stderr, "move: unknown option %s\n", argv[i]);
+            return -1;
+        }
+        else if (app_aid_hex == NULL) {
+            app_aid_hex = argv[i];
+        }
+        else if (sd_aid_hex == NULL) {
+            sd_aid_hex = argv[i];
+        }
+        else {
+            fprintf(stderr, "move: unexpected argument %s\n", argv[i]);
+            return -1;
+        }
+    }
+
+    if (app_aid_hex == NULL || sd_aid_hex == NULL) {
         fprintf(stderr, "move: missing parameters <applicationAID> <securityDomainAID>\n");
         return -1;
     }
-    const char *app_aid_hex = argv[0];
-    const char *sd_aid_hex = argv[1];
 
     unsigned char app_aid_bytes[16];
     size_t app_aid_len = sizeof(app_aid_bytes);
@@ -1975,6 +2004,15 @@ static int cmd_move(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
         return -1;
     }
 
+    if (token_hex != NULL) {
+        size_t token_len = sizeof(token);
+        if (hex_to_bytes(token_hex, token, &token_len) != 0 || token_len != sizeof(token)) {
+            fprintf(stderr, "move: invalid --token hex (expected 128 bytes)\n");
+            return -1;
+        }
+        token_ptr = token;
+    }
+
     GP211_RECEIPT_DATA rec;
     DWORD recAvail = 0;
     memset(&rec, 0, sizeof(rec));
@@ -1982,7 +2020,7 @@ static int cmd_move(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
     if (!status_ok(GP211_install_for_extradition(ctx, info, sec,
                                                sd_aid_bytes, (DWORD)sd_aid_len,
                                                app_aid_bytes, (DWORD)app_aid_len,
-                                               NULL, &rec, &recAvail), true)) {
+                                               token_ptr, &rec, &recAvail), true)) {
         return -1;
     }
     return 0;
@@ -2268,15 +2306,44 @@ static int cmd_update_registry(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
     const char *aid_hex = NULL;
     const char *sd_aid_hex = NULL;
     const char *priv_list = NULL;
+    const char *token_hex = NULL;
+    BYTE token[512];
+    BYTE *token_ptr = NULL;
+    DWORD token_len = 0;
     DWORD privileges = 0;
 
     for (int i = 0; i < argc; i++) {
-        if (strcmp(argv[i], "--priv") == 0 && i + 1 < argc) {
+        if (strcmp(argv[i], "--priv") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "update-registry: --priv requires <p1,p2,...>\n");
+                return -1;
+            }
             priv_list = argv[++i];
-        } else if (strcmp(argv[i], "--sd") == 0 && i + 1 < argc) {
+        }
+        else if (strcmp(argv[i], "--sd") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "update-registry: --sd requires <AIDhex>\n");
+                return -1;
+            }
             sd_aid_hex = argv[++i];
-        } else if (argv[i][0] != '-') {
+        }
+        else if (strcmp(argv[i], "--token") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "update-registry: --token requires <hex>\n");
+                return -1;
+            }
+            token_hex = argv[++i];
+        }
+        else if (argv[i][0] == '-') {
+            fprintf(stderr, "update-registry: unknown option %s\n", argv[i]);
+            return -1;
+        }
+        else if (aid_hex == NULL) {
             aid_hex = argv[i];
+        }
+        else {
+            fprintf(stderr, "update-registry: unexpected argument %s\n", argv[i]);
+            return -1;
         }
     }
 
@@ -2314,6 +2381,16 @@ static int cmd_update_registry(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
         }
     }
 
+    if (token_hex) {
+        size_t len = sizeof(token);
+        if (hex_to_bytes(token_hex, token, &len) != 0 || len == 0) {
+            fprintf(stderr, "update-registry: invalid --token hex\n");
+            return -1;
+        }
+        token_ptr = token;
+        token_len = (DWORD)len;
+    }
+
     GP211_RECEIPT_DATA receipt;
     DWORD receiptAvailable = 0;
     OPGP_ERROR_STATUS s = GP211_install_for_registry_update(ctx, info, sec,
@@ -2321,7 +2398,7 @@ static int cmd_update_registry(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
                                                             aid, (DWORD)aid_len,
                                                             privileges,
                                                             NULL, 0, // Registry Update Parameters not supported
-                                                            NULL, 0, // Registry Update Token not supported
+                                                            token_ptr, token_len,
                                                             &receipt, &receiptAvailable);
 
     if (!status_ok(s, true)) {
