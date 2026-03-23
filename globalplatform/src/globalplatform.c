@@ -371,19 +371,19 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 
 OPGP_NO_API
 OPGP_ERROR_STATUS get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE executableModuleAID,
-									  DWORD executableModuleAIDLength, PBYTE applicationAID,
-									  DWORD applicationAIDLength, DWORD applicationPrivileges,
+										  DWORD executableModuleAIDLength, PBYTE applicationAID,
+										  DWORD applicationAIDLength, DWORD applicationPrivileges,
 									  DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 									  PBYTE installParameters, DWORD installParametersLength,
 									  PBYTE sdParameters, DWORD sdParametersLength,
-									  PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
-									  PBYTE simSpecParams, DWORD simSpecParamsLength,
-									  PBYTE installData, PDWORD installDataLength);
+										  PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
+										  PBYTE simSpecParams, DWORD simSpecParamsLength,
+										  PBYTE installData, PDWORD installDataLength);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS load_from_buffer(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-				 GP211_DAP_BLOCK *loadFileDataBlockSignature, DWORD loadFileDataBlockSignatureLength,
-				 PBYTE loadFileBuf, DWORD loadFileBufSize,
+					 GP211_DAP_BLOCK *loadFileDataBlockSignature, DWORD loadFileDataBlockSignatureLength,
+					 PBYTE loadFileBuf, DWORD loadFileBufSize,
 				 GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable, OPGP_PROGRESS_CALLBACK *callback);
 
 OPGP_NO_API
@@ -3979,8 +3979,7 @@ OPGP_ERROR_STATUS GP211_install_for_extradition(OPGP_CARD_CONTEXT cardContext, O
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xE6;
 	status = GP211_get_extradition_token_signature_data(securityDomainAID, securityDomainAIDLength,
-		applicationAID, applicationAIDLength,
-		buf, &bufLength);
+		applicationAID, applicationAIDLength, buf, &bufLength);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -4056,8 +4055,7 @@ OPGP_ERROR_STATUS GP211_install_for_registry_update(OPGP_CARD_CONTEXT cardContex
 
 	status = GP211_get_registry_update_token_signature_data(securityDomainAID, securityDomainAIDLength,
 		applicationAID, applicationAIDLength, applicationPrivileges,
-		registryUpdateParameters, registryUpdateParametersLength,
-		buf, &bufLength);
+		registryUpdateParameters, registryUpdateParametersLength, buf, &bufLength);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -4271,23 +4269,23 @@ end:
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_get_install_token_signature_data(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE executableModuleAID,
-									  DWORD executableModuleAIDLength, PBYTE applicationAID,
-									  DWORD applicationAIDLength, DWORD applicationPrivileges,
-									  DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
+										  DWORD executableModuleAIDLength, PBYTE applicationAID,
+										  DWORD applicationAIDLength, DWORD applicationPrivileges,
+										  DWORD volatileDataSpaceLimit, DWORD nonVolatileDataSpaceLimit,
 									  PBYTE installParameters, DWORD installParametersLength,
-									  PBYTE sdParameters, DWORD sdParametersLength,
-									  PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
-									  PBYTE simSpecParams, DWORD simSpecParamsLength,
-									  PBYTE installTokenSignatureData, PDWORD installTokenSignatureDataLength) {
+										  PBYTE sdParameters, DWORD sdParametersLength,
+										  PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
+										  PBYTE simSpecParams, DWORD simSpecParamsLength,
+										  PBYTE installTokenSignatureData, PDWORD installTokenSignatureDataLength) {
 	return get_install_data(P1, executableLoadFileAID, executableLoadFileAIDLength, executableModuleAID,
-									  executableModuleAIDLength, applicationAID,
-									  applicationAIDLength, applicationPrivileges,
-									  volatileDataSpaceLimit, nonVolatileDataSpaceLimit,
-									  installParameters, installParametersLength,
-									  sdParameters, sdParametersLength,
-									  uiccSystemSpecParams, uiccSystemSpecParamsLength,
-									  simSpecParams, simSpecParamsLength,
-									  installTokenSignatureData, installTokenSignatureDataLength);
+										  executableModuleAIDLength, applicationAID,
+										  applicationAIDLength, applicationPrivileges,
+										  volatileDataSpaceLimit, nonVolatileDataSpaceLimit,
+										  installParameters, installParametersLength,
+										  sdParameters, sdParametersLength,
+										  uiccSystemSpecParams, uiccSystemSpecParamsLength,
+										  simSpecParams, simSpecParamsLength,
+										  installTokenSignatureData, installTokenSignatureDataLength);
 }
 
 static OPGP_ERROR_STATUS build_uicc_toolkit_app_params(const GP211_UICC_TOOLKIT_APP_PARAMS *params, PBYTE out,
@@ -4778,18 +4776,22 @@ OPGP_ERROR_STATUS get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD e
 									  PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 									  PBYTE simSpecParams, DWORD simSpecParamsLength,
 									  PBYTE installData, PDWORD installDataLength) {
-	BYTE buf[256];
+	BYTE buf[258];
 	DWORD i=0;
 	DWORD hiByte, loByte;
 	DWORD installParameterFieldLengthSize;
 	DWORD installParameterFieldLength;
 	DWORD c9Length;
+	DWORD bodyLength;
+	DWORD encodedLength;
 	OPGP_ERROR_STATUS status;
 
 	OPGP_LOG_START(_T("get_install_data"));
 	buf[i++] = P1;
 	buf[i++] = 0x00;
-	buf[i++] = 0x00; // Lc dummy
+	buf[i++] = 0x00; // Lc dummy (extended)
+	buf[i++] = 0x00; // Lc dummy (extended)
+	buf[i++] = 0x00; // Lc dummy (extended)
 	buf[i++] = (BYTE)executableLoadFileAIDLength; // Executable Load File AID
 	memcpy(buf+i, executableLoadFileAID, executableLoadFileAIDLength);
 	i+=executableLoadFileAIDLength;
@@ -4908,18 +4910,34 @@ OPGP_ERROR_STATUS get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD e
 		}
 	}
 
-  	if (uiccSystemSpecParamsLength > 0) {
-		buf[i++] = 0xEA;
+	if (uiccSystemSpecParamsLength > 0) {
+	 	buf[i++] = 0xEA;
 		buf[i++] = uiccSystemSpecParamsLength;
 		memcpy(buf+i, uiccSystemSpecParams, uiccSystemSpecParamsLength);
 		i+=uiccSystemSpecParamsLength;
 	}
- 	buf[2] = (BYTE)i-3; // Lc
-	if (i > *installDataLength) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+	bodyLength = i - 5;
+	if (bodyLength > 0xFF) {
+		encodedLength = i;
+		buf[2] = 0x00;
+		buf[3] = (BYTE)(bodyLength >> 8);
+		buf[4] = (BYTE)(bodyLength & 0xFF);
+		if (encodedLength > *installDataLength) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
+		memcpy(installData, buf, encodedLength);
+		*installDataLength = encodedLength;
+	} else {
+		encodedLength = bodyLength + 3;
+		if (encodedLength > *installDataLength) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
+		installData[0] = buf[0];
+		installData[1] = buf[1];
+		installData[2] = (BYTE)bodyLength;
+		memcpy(installData + 3, buf + 5, bodyLength);
+		*installDataLength = encodedLength;
 	}
-	memcpy(installData, buf, i);
-	*installDataLength = i;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
 	OPGP_LOG_END(_T("get_install_data"), status);
@@ -4943,14 +4961,18 @@ OPGP_ERROR_STATUS GP211_get_extradition_token_signature_data(PBYTE securityDomai
 										  PBYTE applicationAID, DWORD applicationAIDLength,
 										  PBYTE extraditionTokenSignatureData,
 										  PDWORD extraditionTokenSignatureDataLength) {
-	BYTE buf[258];
+	BYTE buf[260];
 	DWORD i=0;
+	DWORD bodyLength;
+	DWORD encodedLength;
 	OPGP_ERROR_STATUS status;
 
 	OPGP_LOG_START(_T("get_extradition_token_signature_data"));
 	buf[i++] = 0x10;
 	buf[i++] = 0x00;
-	buf[i++] = 0x00; // Lc dummy
+	buf[i++] = 0x00; // Lc dummy (extended)
+	buf[i++] = 0x00; // Lc dummy (extended)
+	buf[i++] = 0x00; // Lc dummy (extended)
 	buf[i++] = (BYTE)securityDomainAIDLength; // Security Domain AID
 	memcpy(buf+i, securityDomainAID, securityDomainAIDLength);
 	i+=securityDomainAIDLength;
@@ -4962,11 +4984,28 @@ OPGP_ERROR_STATUS GP211_get_extradition_token_signature_data(PBYTE securityDomai
 	buf[i++] = 0x00;
 	buf[i++] = 0x00;
 
-	buf[2] = (BYTE)i-3;
-	if (i > *extraditionTokenSignatureDataLength)
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
-	memcpy(extraditionTokenSignatureData, buf, i);
-	*extraditionTokenSignatureDataLength = i;
+	bodyLength = i - 5;
+	if (bodyLength > 0xFF) {
+		encodedLength = i;
+		buf[2] = 0x00;
+		buf[3] = (BYTE)(bodyLength >> 8);
+		buf[4] = (BYTE)(bodyLength & 0xFF);
+		if (encodedLength > *extraditionTokenSignatureDataLength) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
+		memcpy(extraditionTokenSignatureData, buf, encodedLength);
+		*extraditionTokenSignatureDataLength = encodedLength;
+	} else {
+		encodedLength = bodyLength + 3;
+		if (encodedLength > *extraditionTokenSignatureDataLength) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
+		extraditionTokenSignatureData[0] = buf[0];
+		extraditionTokenSignatureData[1] = buf[1];
+		extraditionTokenSignatureData[2] = (BYTE)bodyLength;
+		memcpy(extraditionTokenSignatureData + 3, buf + 5, bodyLength);
+		*extraditionTokenSignatureDataLength = encodedLength;
+	}
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
 	OPGP_LOG_END(_T("get_extradition_token_signature_data"), status);
@@ -4997,15 +5036,18 @@ OPGP_ERROR_STATUS GP211_get_registry_update_token_signature_data(PBYTE securityD
 										  PDWORD tokenSignatureDataLength) {
 	BYTE buf[512];
 	DWORD i=0;
+	DWORD bodyLength;
+	DWORD encodedLength;
 	OPGP_ERROR_STATUS status;
 	BYTE privilegeLength = 0;
-	DWORD lcValue;
 
 	OPGP_LOG_START(_T("get_registry_update_token_signature_data"));
 
 	buf[i++] = 0x40; // P1
 	buf[i++] = 0x00; // P2
-	buf[i++] = 0x00; // Lc dummy
+	buf[i++] = 0x00; // Lc dummy (extended)
+	buf[i++] = 0x00; // Lc dummy (extended)
+	buf[i++] = 0x00; // Lc dummy (extended)
 
 	buf[i++] = (BYTE)securityDomainAIDLength; // Security Domain AID length
 	if (securityDomainAIDLength > 0 && securityDomainAID != NULL) {
@@ -5042,13 +5084,28 @@ OPGP_ERROR_STATUS GP211_get_registry_update_token_signature_data(PBYTE securityD
 	// Always skip Registry Update Parameters field and use 0 for its length as requested
 	buf[i++] = 0x00;
 
-	lcValue = i - 3;
-	buf[2] = (BYTE)lcValue;
-
-	if (i > *tokenSignatureDataLength)
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
-	memcpy(tokenSignatureData, buf, i);
-	*tokenSignatureDataLength = i;
+	bodyLength = i - 5;
+	if (bodyLength > 0xFF) {
+		encodedLength = i;
+		buf[2] = 0x00;
+		buf[3] = (BYTE)(bodyLength >> 8);
+		buf[4] = (BYTE)(bodyLength & 0xFF);
+		if (encodedLength > *tokenSignatureDataLength) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
+		memcpy(tokenSignatureData, buf, encodedLength);
+		*tokenSignatureDataLength = encodedLength;
+	} else {
+		encodedLength = bodyLength + 3;
+		if (encodedLength > *tokenSignatureDataLength) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
+		tokenSignatureData[0] = buf[0];
+		tokenSignatureData[1] = buf[1];
+		tokenSignatureData[2] = (BYTE)bodyLength;
+		memcpy(tokenSignatureData + 3, buf + 5, bodyLength);
+		*tokenSignatureDataLength = encodedLength;
+	}
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
 	OPGP_LOG_END(_T("get_registry_update_token_signature_data"), status);
@@ -5071,12 +5128,16 @@ OPGP_ERROR_STATUS GP211_get_delete_token_signature_data(OPGP_AID *AIDs, DWORD AI
 	BYTE buf[APDU_COMMAND_LEN];
 	DWORD i=0;
 	DWORD j;
+	DWORD bodyLength;
+	DWORD encodedLength;
 	OPGP_ERROR_STATUS status;
 
 	OPGP_LOG_START(_T("get_delete_token_signature_data"));
 	buf[i++] = 0x00; // P1
 	buf[i++] = 0x80; // P2
-	buf[i++] = 0x00; // Lc dummy
+	buf[i++] = 0x00; // Lc dummy (extended)
+	buf[i++] = 0x00; // Lc dummy (extended)
+	buf[i++] = 0x00; // Lc dummy (extended)
 
 	for (j=0; j<AIDsLength; j++) {
 		if (i + AIDs[j].AIDLength + 2 > sizeof(buf)) {
@@ -5089,15 +5150,28 @@ OPGP_ERROR_STATUS GP211_get_delete_token_signature_data(OPGP_AID *AIDs, DWORD AI
 		i+=AIDs[j].AIDLength;
 	}
 
-	if (i - 3 > 255) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
+	bodyLength = i - 5;
+	if (bodyLength > 0xFF) {
+		encodedLength = i;
+		buf[2] = 0x00;
+		buf[3] = (BYTE)(bodyLength >> 8);
+		buf[4] = (BYTE)(bodyLength & 0xFF);
+		if (encodedLength > *deleteTokenSignatureDataLength) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
+		memcpy(deleteTokenSignatureData, buf, encodedLength);
+		*deleteTokenSignatureDataLength = encodedLength;
+	} else {
+		encodedLength = bodyLength + 3;
+		if (encodedLength > *deleteTokenSignatureDataLength) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
+		deleteTokenSignatureData[0] = buf[0];
+		deleteTokenSignatureData[1] = buf[1];
+		deleteTokenSignatureData[2] = (BYTE)bodyLength;
+		memcpy(deleteTokenSignatureData + 3, buf + 5, bodyLength);
+		*deleteTokenSignatureDataLength = encodedLength;
 	}
-	buf[2] = (BYTE)i-3;
-	if (i > *deleteTokenSignatureDataLength) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
-	}
-	memcpy(deleteTokenSignatureData, buf, i);
-	*deleteTokenSignatureDataLength = i;
 
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
@@ -5300,109 +5374,26 @@ end:
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_get_load_token_signature_data(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE securityDomainAID,
-								   DWORD securityDomainAIDLength, PBYTE loadFileDataBlockHash,
-								   DWORD loadFileDataBlockHashLength,
-								   DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
-								   DWORD nonVolatileDataSpaceLimit, PBYTE loadTokenSignatureData,
-								   PDWORD loadTokenSignatureDataLength) {
-	BYTE buf[258];
-	DWORD i=0;
-#ifdef OPGP_DEBUG
-	DWORD j=0;
-#endif
-	DWORD hiByte, loByte;
-	DWORD staticSize;
+									   DWORD securityDomainAIDLength, PBYTE loadFileDataBlockHash,
+									   DWORD loadFileDataBlockHashLength,
+									   DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
+									   DWORD nonVolatileDataSpaceLimit, PBYTE loadTokenSignatureData,
+									   PDWORD loadTokenSignatureDataLength) {
 	OPGP_ERROR_STATUS status;
 	OPGP_LOG_START(_T("GP211_get_load_token_signature_data"));
 	if (loadFileDataBlockHash == NULL) {
 		OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_LOAD_FILE_DATA_BLOCK_HASH_NULL, OPGP_stringify_error(GP211_ERROR_LOAD_FILE_DATA_BLOCK_HASH_NULL));
 		goto end;
 	}
-	buf[i++] = 0x02;
-	buf[i++] = 0x00;
-	buf[i++] = 0x00; // Lc dummy
-	buf[i++] = (BYTE)executableLoadFileAIDLength; // Executable Load File AID
-	memcpy(buf+i, executableLoadFileAID, executableLoadFileAIDLength);
-	i+=executableLoadFileAIDLength;
-	buf[i++] = (BYTE)securityDomainAIDLength; // Security Domain AID
-	memcpy(buf+i, securityDomainAID, securityDomainAIDLength);
-	i+=securityDomainAIDLength;
-
-	buf[i++] = (BYTE)loadFileDataBlockHashLength;
-	memcpy(buf+i, loadFileDataBlockHash, loadFileDataBlockHashLength);
-	i+=loadFileDataBlockHashLength;
-
-	if ((volatileDataSpaceLimit != 0) || (nonVolatileCodeSpaceLimit != 0) ||
-(nonVolatileDataSpaceLimit != 0)) {
-		buf[i++] = 0x02; // load parameter field
-		if (volatileDataSpaceLimit != 0)
-			buf[i-1] += 4;
-		if (nonVolatileDataSpaceLimit != 0)
-			buf[i-1] += 4;
-		if (nonVolatileCodeSpaceLimit != 0)
-			buf[i-1] += 4;
-		buf[i++] = 0xEF;
-		buf[i++] = 0x00;
-		if (volatileDataSpaceLimit != 0)
-			buf[i-1] += 4;
-		if (nonVolatileDataSpaceLimit != 0)
-			buf[i-1] += 4;
-		if (nonVolatileCodeSpaceLimit != 0)
-			buf[i-1] += 4;
-		if (nonVolatileCodeSpaceLimit != 0) {
-			buf[i++] = 0xC6; // non-volatile code space limit.
-			buf[i++] = 0x02; //
-			staticSize = 8 - (nonVolatileCodeSpaceLimit % 8) + 8;
-            nonVolatileCodeSpaceLimit += staticSize;
-			hiByte = nonVolatileCodeSpaceLimit >> 8;
-			loByte = nonVolatileCodeSpaceLimit - (hiByte << 8);
-			buf[i++] = (BYTE)hiByte; // minimum amount
-			buf[i++] = (BYTE)loByte; // of space needed
-		}
-		if (volatileDataSpaceLimit != 0) {
-			buf[i++] = 0xC7;
-			buf[i++] = 0x02;
-			hiByte = volatileDataSpaceLimit >> 8;
-			loByte = volatileDataSpaceLimit - (hiByte << 8);
-			buf[i++] = (BYTE)hiByte;
-			buf[i++] = (BYTE)loByte;
-		}
-		if (nonVolatileDataSpaceLimit != 0) {
-			buf[i++] = 0xC8;
-			buf[i++] = 0x02;
-			hiByte = nonVolatileDataSpaceLimit >> 8;
-			loByte = nonVolatileDataSpaceLimit - (hiByte << 8);
-			buf[i++] = (BYTE)hiByte;
-			buf[i++] = (BYTE)loByte;
-		}
+	status = get_load_data(executableLoadFileAID, executableLoadFileAIDLength,
+		securityDomainAID, securityDomainAIDLength, loadFileDataBlockHash,
+		loadFileDataBlockHashLength, 0, nonVolatileCodeSpaceLimit, volatileDataSpaceLimit,
+		nonVolatileDataSpaceLimit, loadTokenSignatureData, loadTokenSignatureDataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
 	}
-	else buf[i++] = 0x00;
-
-	/* Length of all following fields - minus 3 for P1, P2 and length field itself */
-	buf[2] = (BYTE)i-3;
-	if (i > *loadTokenSignatureDataLength)
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
-	memcpy(loadTokenSignatureData, buf, i);
-	*loadTokenSignatureDataLength = i;
 #ifdef OPGP_DEBUG
-	OPGP_log_Msg(_T("GP211_get_load_token_signature_data: Reference control parameter P1: 0x%02x"), loadTokenSignatureData[j++]);
-	OPGP_log_Msg(_T("GP211_get_load_token_signature_data: Reference control parameter P2: 0x%02x"), loadTokenSignatureData[j++]);
-	OPGP_log_Msg(_T("GP211_get_load_token_signature_data: Length of the following fields: 0x%02x"), loadTokenSignatureData[j++]);
-	OPGP_log_Msg(_T("GP211_get_load_token_signature_data: Load file AID length: 0x%02x"), loadTokenSignatureData[j++]);
-	OPGP_LOG_HEX(_T("GP211_get_load_token_signature_data: Load file AID: "), loadTokenSignatureData+(j-1), *loadTokenSignatureDataLength-(j-1));
-
-	j+=loadTokenSignatureData[j-1];
-	OPGP_log_Msg(_T("GP211_get_load_token_signature_data: Security Domain AID length: 0x%02x"), loadTokenSignatureData[j++]);
-	OPGP_LOG_HEX(_T("GP211_get_load_token_signature_data: Security Domain AID: "), loadTokenSignatureData+(j-1), *loadTokenSignatureDataLength-(j-1));
-	j+=loadTokenSignatureData[j-1];
-	OPGP_log_Msg(_T("GP211_get_load_token_signature_data: Length of the Load File Data Block Hash: 0x%02x"), loadTokenSignatureData[j++]);
-	OPGP_LOG_HEX(_T("GP211_get_load_token_signature_data: Load File Data Block Hash: "), loadTokenSignatureData+(j-1), *loadTokenSignatureDataLength-(j-1));
-	j+=loadTokenSignatureData[j-1];
-
-	OPGP_log_Msg(_T("GP211_get_load_token_signature_data: Load parameters field length: 0x%02x"), loadTokenSignatureData[j++]);
-	OPGP_LOG_HEX(_T("GP211_get_load_token_signature_data: Load parameters field: "), loadTokenSignatureData+(j-1), *loadTokenSignatureDataLength-(j-1));
-	j+=loadTokenSignatureData[j-1];
-
+	OPGP_LOG_HEX(_T("GP211_get_load_token_signature_data: Signature Data: "), loadTokenSignatureData, *loadTokenSignatureDataLength);
 #endif
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
@@ -8271,8 +8262,7 @@ OPGP_ERROR_STATUS OP201_get_install_token_signature_data(BYTE P1, PBYTE executab
 									  PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 									  PBYTE simSpecParams, DWORD simSpecParamsLength,
 									  PBYTE installTokenSignatureData, PDWORD installTokenSignatureDataLength) {
-	OPGP_ERROR_STATUS status;
-	status = get_install_data(P1, executableLoadFileAID, executableLoadFileAIDLength,
+	return get_install_data(P1, executableLoadFileAID, executableLoadFileAIDLength,
 		AIDWithinLoadFileAID, AIDWithinLoadFileAIDLength, applicationInstanceAID,
 		applicationInstanceAIDLength, applicationPrivileges, volatileDataSpaceLimit,
 		nonVolatileDataSpaceLimit, applicationInstallParameters, applicationInstallParametersLength,
@@ -8280,7 +8270,6 @@ OPGP_ERROR_STATUS OP201_get_install_token_signature_data(BYTE P1, PBYTE executab
 		uiccSystemSpecParams, uiccSystemSpecParamsLength,
 		simSpecParams, simSpecParamsLength,
 		installTokenSignatureData, installTokenSignatureDataLength);
-	return status;
 }
 
 /**

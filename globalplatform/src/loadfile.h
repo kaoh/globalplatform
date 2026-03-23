@@ -54,15 +54,14 @@ OPGP_NO_API
 OPGP_ERROR_STATUS cap_to_ijc(OPGP_CSTRING capFileName, OPGP_STRING ijcFileName);
 
 
-//! \brief Gets the data for a GP211_install_for_load() command.
+//! \brief Gets the data for a GP211_install_for_load() command and Load Token signature input.
 OPGP_NO_API
 OPGP_ERROR_STATUS get_load_data(PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
-						  PBYTE securityDomainAID,
-								   DWORD securityDomainAIDLength, PBYTE loadFileDataBlockHash,
-								   DWORD loadFileDataBlockHashLength, DWORD loadTokenLength,
-								   DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
-								   DWORD nonVolatileDataSpaceLimit, PBYTE loadData,
-								   PDWORD loadDataLength);
+							  PBYTE securityDomainAID,
+									   DWORD securityDomainAIDLength, PBYTE loadFileDataBlockHash,
+									   DWORD loadFileDataBlockHashLength, DWORD loadTokenLength,
+									   DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
+									   DWORD nonVolatileDataSpaceLimit, PBYTE loadData, PDWORD loadDataLength);
 
 //! \brief Can read CAP and IJC files (concatenated extracted CAP files).
 OPGP_NO_API

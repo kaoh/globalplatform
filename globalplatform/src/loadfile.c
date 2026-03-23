@@ -661,17 +661,21 @@ OPGP_ERROR_STATUS get_load_data(PBYTE executableLoadFileAID, DWORD executableLoa
 								   DWORD securityDomainAIDLength, PBYTE loadFileDataBlockHash,
 								   DWORD loadFileDataBlockHashLength, DWORD loadTokenLength,
 								   DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
-								   DWORD nonVolatileDataSpaceLimit, PBYTE loadData,
-								   PDWORD loadDataLength) {
+								   DWORD nonVolatileDataSpaceLimit, PBYTE loadData, PDWORD loadDataLength) {
 	OPGP_ERROR_STATUS status;
-	unsigned char buf[258];
+	unsigned char buf[260];
 	DWORD i=0;
 	DWORD hiByte, loByte;
 	DWORD staticSize;
+	DWORD bodyLength;
+	DWORD encodedLength;
+	DWORD lcValue;
 	OPGP_LOG_START(_T("get_load_data"));
 	buf[i++] = 0x02;
 	buf[i++] = 0x00;
-	buf[i++] = 0x00; // Lc dummy
+	buf[i++] = 0x00; // Lc dummy (extended)
+	buf[i++] = 0x00; // Lc dummy (extended)
+	buf[i++] = 0x00; // Lc dummy (extended)
 	buf[i++] = (BYTE)executableLoadFileAIDLength; // Executable Load File AID
 	memcpy(buf+i, executableLoadFileAID, executableLoadFileAIDLength);
 	i+=executableLoadFileAIDLength;
@@ -730,12 +734,33 @@ OPGP_ERROR_STATUS get_load_data(PBYTE executableLoadFileAID, DWORD executableLoa
 	}
 	else buf[i++] = 0x00;
 
-	buf[2] = (BYTE)i-3+(BYTE)loadTokenLength; // Lc including load token length.
-	if (i > *loadDataLength) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+	bodyLength = i - 5;
+	/* For token signature inputs (loadTokenLength == 0), use 3-byte Lc only when body exceeds 255. */
+	if (bodyLength > 0xFF && loadTokenLength == 0) {
+		encodedLength = i;
+		buf[2] = 0x00;
+		buf[3] = (BYTE)(bodyLength >> 8);
+		buf[4] = (BYTE)(bodyLength & 0xFF);
+		if (encodedLength > *loadDataLength) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
+		memcpy(loadData, buf, encodedLength);
+		*loadDataLength = encodedLength;
+	} else {
+		lcValue = bodyLength + loadTokenLength;
+		encodedLength = bodyLength + 3;
+		if (lcValue > 0xFF) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
+		}
+		if (encodedLength > *loadDataLength) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
+		loadData[0] = buf[0];
+		loadData[1] = buf[1];
+		loadData[2] = (BYTE)lcValue; // Lc including load token length.
+		memcpy(loadData + 3, buf + 5, bodyLength);
+		*loadDataLength = encodedLength;
 	}
-	memcpy(loadData, buf, i);
-	*loadDataLength = i;
 	OPGP_LOG_HEX(_T("get_load_data: Gathered data : "), loadData, *loadDataLength);
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
