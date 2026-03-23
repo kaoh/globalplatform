@@ -79,6 +79,10 @@ static const BYTE sdInstanceAID[8] = {0xD4, 0xD4, 0xD4, 0xD4, 0xD4, 0x01, 0x01, 
 
 static const BYTE sdPackageAID[7] = {0xA0, 0x00, 0x00, 0x01, 0x51, 0x53, 0x50};
 static const BYTE sdModuleAID[8] = {0xA0, 0x00, 0x00, 0x01, 0x51, 0x53, 0x50, 0x41};
+static const BYTE sdPersonalizationKey[16] = {
+		0x40,0x41,0x42,0x43,0x44,0x45,0x46,0x47,
+		0x48,0x49,0x4a,0x4b,0x4c,0x4d,0x4e,0x40
+};
 static const BYTE delegatedReceiptKey[32] = {
 		0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
 		0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F,
@@ -831,7 +835,6 @@ START_TEST (test_create_sd) {
  */
 START_TEST (test_personalize_sd) {
 	OPGP_ERROR_STATUS status;
-	BYTE key[16] = {0x40,0x41,0x42,0x43,0x44,0x45,0x46,0x47,0x48,0x49,0x4a,0x4b,0x4c,0x4d,0x4e,0x40};
 	GP211_SECURITY_INFO sdSecurityInfo;
 	GP211_APPLICATION_DATA appData[10];
 	GP211_EXECUTABLE_MODULES_DATA modulesData[10];
@@ -852,13 +855,17 @@ START_TEST (test_personalize_sd) {
 
 	memcpy(sdSecurityInfo.invokingAid, sdInstanceAID, sizeof(sdInstanceAID));
 	sdSecurityInfo.invokingAidLength = sizeof(sdInstanceAID);
-	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, OPGP_VISA_DEFAULT_KEY, OPGP_VISA_DEFAULT_KEY, OPGP_VISA_DEFAULT_KEY, 16, 0, 0, 0, 0, GP211_SCP03, OPGP_DERIVATION_METHOD_NONE, &sdSecurityInfo);
+	status = GP211_mutual_authentication(cardContext, cardInfo, NULL,
+			(PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY,
+			16, 0, 0, 0, 0, GP211_SCP03, OPGP_DERIVATION_METHOD_NONE, &sdSecurityInfo);
 	if (OPGP_ERROR_CHECK(status)) {
 		ck_abort_msg("Mutual authentication with new SD failed: %s", status.errorMessage);
 	}
 
 	// Personalize: put-auth
-	status = GP211_put_secure_channel_keys(cardContext, cardInfo, &sdSecurityInfo, 0, 1, NULL, key, key, key, 16, GP211_KEY_TYPE_AES);
+	status = GP211_put_secure_channel_keys(cardContext, cardInfo, &sdSecurityInfo, 0, 1, NULL,
+			(PBYTE)sdPersonalizationKey, (PBYTE)sdPersonalizationKey, (PBYTE)sdPersonalizationKey,
+			sizeof(sdPersonalizationKey), GP211_KEY_TYPE_AES);
 	if (OPGP_ERROR_CHECK(status)) {
 		ck_abort_msg("GP211_put_secure_channel_keys() failed: %s", status.errorMessage);
 	}
@@ -1220,6 +1227,7 @@ START_TEST (test_dm_calculate_install_token) {
  */
 START_TEST (test_dm_install_helloworld_with_tokens) {
 	OPGP_ERROR_STATUS status;
+	GP211_SECURITY_INFO sdSecurityInfo;
 	DWORD receiptDataLen = 0;
 	GP211_RECEIPT_DATA receipt;
 	DWORD receiptDataAvailable = 0;
@@ -1242,7 +1250,21 @@ START_TEST (test_dm_install_helloworld_with_tokens) {
 		ck_abort_msg("Could not pre-delete applet/package: %s", status.errorMessage);
 	}
 
-	status = GP211_install_for_load(cardContext, cardInfo, &securityInfo211,
+	status = OPGP_select_application(cardContext, cardInfo, &sdSecurityInfo, (PBYTE)sdInstanceAID, sizeof(sdInstanceAID));
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Selecting delegated management SD failed: %s", status.errorMessage);
+	}
+
+	memcpy(sdSecurityInfo.invokingAid, sdInstanceAID, sizeof(sdInstanceAID));
+	sdSecurityInfo.invokingAidLength = sizeof(sdInstanceAID);
+	status = GP211_mutual_authentication(cardContext, cardInfo, NULL,
+			(PBYTE)sdPersonalizationKey, (PBYTE)sdPersonalizationKey, (PBYTE)sdPersonalizationKey,
+			sizeof(sdPersonalizationKey), 1, 0, 0, 0, GP211_SCP03, OPGP_DERIVATION_METHOD_NONE, &sdSecurityInfo);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Mutual authentication with personalized delegated SD failed: %s", status.errorMessage);
+	}
+
+	status = GP211_install_for_load(cardContext, cardInfo, &sdSecurityInfo,
 			dmLoadFileParams.loadFileAID.AID, dmLoadFileParams.loadFileAID.AIDLength,
 			(PBYTE)sdInstanceAID, sizeof(sdInstanceAID),
 			dmLoadFileDataBlockHash, dmLoadFileDataBlockHashLength,
@@ -1252,13 +1274,13 @@ START_TEST (test_dm_install_helloworld_with_tokens) {
 		ck_abort_msg("GP211_install_for_load() with delegated token failed: %s", status.errorMessage);
 	}
 
-	status = GP211_load(cardContext, cardInfo, &securityInfo211,
+	status = GP211_load(cardContext, cardInfo, &sdSecurityInfo,
 			NULL, 0, TEST_LOAD_FILE, NULL, &receiptDataLen, NULL);
 	if (OPGP_ERROR_CHECK(status)) {
 		ck_abort_msg("GP211_load() failed: %s", status.errorMessage);
 	}
 
-	status = GP211_install_for_install_and_make_selectable(cardContext, cardInfo, &securityInfo211,
+	status = GP211_install_for_install_and_make_selectable(cardContext, cardInfo, &sdSecurityInfo,
 			dmLoadFileParams.loadFileAID.AID, dmLoadFileParams.loadFileAID.AIDLength,
 			dmLoadFileParams.appletAIDs[0].AID, dmLoadFileParams.appletAIDs[0].AIDLength,
 			dmLoadFileParams.appletAIDs[0].AID, dmLoadFileParams.appletAIDs[0].AIDLength,
@@ -1273,7 +1295,7 @@ START_TEST (test_dm_install_helloworld_with_tokens) {
 		ck_abort_msg("GP211_install_for_install_and_make_selectable() with delegated token failed: %s", status.errorMessage);
 	}
 
-	status = GP211_get_status(cardContext, cardInfo, &securityInfo211,
+	status = GP211_get_status(cardContext, cardInfo, &sdSecurityInfo,
 			GP211_STATUS_APPLICATIONS, GP211_STATUS_FORMAT_NEW,
 			appData, modulesData, &dataLength);
 	if (OPGP_ERROR_CHECK(status)) {
@@ -1466,12 +1488,13 @@ Suite * GlobalPlatform_suite(void) {
 	// tcase_add_test (tc_core, test_delete_sd);
 	tcase_add_test (tc_core, test_dm_put_token_key_ecc);
 	tcase_add_test (tc_core, test_dm_put_receipt_key_aes256);
-	// tcase_add_test (tc_core, test_dm_install_sd_with_delegated_management);
-	// tcase_add_test (tc_core, test_dm_calculate_load_token);
-	// tcase_add_test (tc_core, test_dm_calculate_install_token);
-	// tcase_add_test (tc_core, test_dm_install_helloworld_with_tokens);
-	// tcase_add_test (tc_core, test_dm_delete_helloworld);
-	// tcase_add_test (tc_core, test_dm_delete_sd);
+	tcase_add_test (tc_core, test_dm_install_sd_with_delegated_management);
+	tcase_add_test (tc_core, test_personalize_sd);
+	tcase_add_test (tc_core, test_dm_calculate_load_token);
+	tcase_add_test (tc_core, test_dm_calculate_install_token);
+	tcase_add_test (tc_core, test_dm_install_helloworld_with_tokens);
+	tcase_add_test (tc_core, test_dm_delete_helloworld);
+	tcase_add_test (tc_core, test_dm_delete_sd);
 	tcase_add_test (tc_core, test_dm_delete_keys);
 	suite_add_tcase(s, tc_core);
 
