@@ -1173,7 +1173,7 @@ START_TEST (test_dm_calculate_load_token) {
 	dmLoadTokenLength = sizeof(dmLoadToken);
 	status = GP211_calculate_load_token(
 			dmLoadFileParams.loadFileAID.AID, dmLoadFileParams.loadFileAID.AIDLength,
-			(PBYTE)sdInstanceAID, sizeof(sdInstanceAID),
+			GP231_ISD_AID, sizeof(GP231_ISD_AID),
 			dmLoadFileDataBlockHash, dmLoadFileDataBlockHashLength,
 			dmLoadFileParams.loadFileSize, 0, 0,
 			dmLoadToken, &dmLoadTokenLength,
@@ -1266,7 +1266,7 @@ START_TEST (test_dm_install_helloworld_with_tokens) {
 
 	status = GP211_install_for_load(cardContext, cardInfo, &sdSecurityInfo,
 			dmLoadFileParams.loadFileAID.AID, dmLoadFileParams.loadFileAID.AIDLength,
-			(PBYTE)sdInstanceAID, sizeof(sdInstanceAID),
+			GP231_ISD_AID, sizeof(GP231_ISD_AID),
 			dmLoadFileDataBlockHash, dmLoadFileDataBlockHashLength,
 			dmLoadToken, dmLoadTokenLength,
 			dmLoadFileParams.loadFileSize, 0, 0);
