@@ -1960,6 +1960,7 @@ static int cmd_move(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
     const char *sd_aid_hex = NULL;
     BYTE token[128];
     BYTE *token_ptr = NULL;
+    DWORD token_len = 0;
 
     for (int i = 0; i < argc; i++) {
         if (strcmp(argv[i], "--token") == 0) {
@@ -2005,12 +2006,13 @@ static int cmd_move(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
     }
 
     if (token_hex != NULL) {
-        size_t token_len = sizeof(token);
-        if (hex_to_bytes(token_hex, token, &token_len) != 0 || token_len != sizeof(token)) {
+        size_t token_size = sizeof(token);
+        if (hex_to_bytes(token_hex, token, &token_size) != 0 || token_size != sizeof(token)) {
             fprintf(stderr, "move: invalid --token hex (expected 128 bytes)\n");
             return -1;
         }
         token_ptr = token;
+        token_len = (DWORD)token_size;
     }
 
     GP211_RECEIPT_DATA rec;
@@ -2020,7 +2022,7 @@ static int cmd_move(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
     if (!status_ok(GP211_install_for_extradition(ctx, info, sec,
                                                sd_aid_bytes, (DWORD)sd_aid_len,
                                                app_aid_bytes, (DWORD)app_aid_len,
-                                               token_ptr, &rec, &recAvail), true)) {
+                                               token_ptr, token_len, &rec, &recAvail), true)) {
         return -1;
     }
     return 0;

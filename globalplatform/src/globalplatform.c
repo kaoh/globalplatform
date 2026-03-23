@@ -1104,6 +1104,47 @@ static DWORD get_max_apdu_data_size(GP211_SECURITY_INFO *secInfo) {
 	}
 }
 
+static OPGP_ERROR_STATUS extract_case3_data(PBYTE apduData, DWORD apduDataLength,
+									  PBYTE p1, PBYTE p2, PBYTE *payload, PDWORD payloadLength) {
+	OPGP_ERROR_STATUS status;
+	DWORD offset;
+	DWORD lc;
+
+	if (apduData == NULL || p1 == NULL || p2 == NULL || payload == NULL || payloadLength == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_UNRECOGNIZED_APDU_COMMAND, OPGP_stringify_error(OPGP_ERROR_UNRECOGNIZED_APDU_COMMAND));
+		return status;
+	}
+	if (apduDataLength < 3) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_UNRECOGNIZED_APDU_COMMAND, OPGP_stringify_error(OPGP_ERROR_UNRECOGNIZED_APDU_COMMAND));
+		return status;
+	}
+
+	*p1 = apduData[0];
+	*p2 = apduData[1];
+	if (apduData[2] == 0x00) {
+		if (apduDataLength < 5) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_UNRECOGNIZED_APDU_COMMAND, OPGP_stringify_error(OPGP_ERROR_UNRECOGNIZED_APDU_COMMAND));
+			return status;
+		}
+		offset = 5;
+		lc = ((DWORD)apduData[3] << 8) | apduData[4];
+	}
+	else {
+		offset = 3;
+		lc = apduData[2];
+	}
+
+	if (apduDataLength != offset + lc) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_UNRECOGNIZED_APDU_COMMAND, OPGP_stringify_error(OPGP_ERROR_UNRECOGNIZED_APDU_COMMAND));
+		return status;
+	}
+	*payload = apduData + offset;
+	*payloadLength = lc;
+
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+	return status;
+}
+
 static OPGP_ERROR_STATUS send_chained_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
 								  GP211_SECURITY_INFO *secInfo, BYTE *sendBuffer, DWORD offset,
 								  BYTE *data, DWORD dataLength,
@@ -1809,16 +1850,17 @@ OPGP_ERROR_STATUS delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_IN
 				   PBYTE deleteToken, DWORD deleteTokenLength, DWORD mode) {
 	OPGP_ERROR_STATUS status;
 	DWORD count=0;
-	BYTE deleteTokenSignatureData[APDU_COMMAND_LEN] = {0};
+	BYTE deleteTokenSignatureData[1000] = {0};
 	DWORD deleteTokenSignatureDataLength = sizeof(deleteTokenSignatureData);
-	BYTE sendBuffer[APDU_COMMAND_LEN] = {0};
-	DWORD sendBufferLength = 0;
+	BYTE commandHeader[5] = {0x80, 0xE4, 0x00, 0x00, 0x00};
+	BYTE sendBuffer[1000] = {0};
 	DWORD recvBufferLength = APDU_RESPONSE_LEN;
 	BYTE recvBuffer[APDU_RESPONSE_LEN] = {0};
 	DWORD j,i=0;
+	LONG lenLen;
+	PBYTE parsedData = NULL;
+	DWORD parsedDataLength = 0;
 	OPGP_LOG_START(_T("delete_application"));
-	sendBuffer[i++] = 0x80;
-	sendBuffer[i++] = 0xE4;
 	if (mode == GP_211) {
 		status = GP211_get_delete_token_signature_data(AIDs, AIDsLength,
 			deleteTokenSignatureData, &deleteTokenSignatureDataLength);
@@ -1826,19 +1868,21 @@ OPGP_ERROR_STATUS delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_IN
 			*receiptDataLength = 0;
 			goto end;
 		}
-		if (i + deleteTokenSignatureDataLength > APDU_COMMAND_LEN - 1) {
+		status = extract_case3_data(deleteTokenSignatureData, deleteTokenSignatureDataLength,
+			&commandHeader[2], &commandHeader[3], &parsedData, &parsedDataLength);
+		if (OPGP_ERROR_CHECK(status)) {
+			*receiptDataLength = 0;
+			goto end;
+		}
+		if (parsedDataLength > sizeof(sendBuffer)) {
 			*receiptDataLength = 0;
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
 		}
-		memcpy(sendBuffer + i, deleteTokenSignatureData, deleteTokenSignatureDataLength);
-		i += deleteTokenSignatureDataLength;
+		memcpy(sendBuffer, parsedData, parsedDataLength);
+		i += parsedDataLength;
 	} else {
-		sendBuffer[i++] = 0x00;
-		sendBuffer[i++] = 0x00;
-		sendBuffer[i++] = 0x00;
 		for (j=0; j< AIDsLength; j++) {
-			// reserve one byte for Le
-			if (i + AIDs[j].AIDLength+2 > APDU_COMMAND_LEN-1) {
+			if (i + AIDs[j].AIDLength + 2 > sizeof(sendBuffer)) {
 				*receiptDataLength = 0;
 				{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
 			}
@@ -1850,36 +1894,36 @@ OPGP_ERROR_STATUS delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_IN
 		}
 	}
 	if (mode == GP_211 && deleteToken != NULL && deleteTokenLength > 0) {
-		LONG lenLen;
-		if (i + 1 > APDU_COMMAND_LEN - 1) {
+		if (deleteTokenLength > 0xFFFF) {
 			*receiptDataLength = 0;
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
 		}
-		sendBuffer[i++] = 0x9F;
-		lenLen = write_TLV_length(sendBuffer, i, APDU_COMMAND_LEN - 1 - i, (USHORT)deleteTokenLength);
+		if (i + 1 > sizeof(sendBuffer)) {
+			*receiptDataLength = 0;
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
+		sendBuffer[i++] = 0x9E;
+		lenLen = write_TLV_length(sendBuffer, i, sizeof(sendBuffer) - i, (USHORT)deleteTokenLength);
 		if (lenLen < 0) {
 			*receiptDataLength = 0;
-			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
+		if (i + (DWORD)lenLen + deleteTokenLength > sizeof(sendBuffer)) {
+			*receiptDataLength = 0;
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
 		}
 		i += (DWORD)lenLen;
-		if (deleteTokenLength > (DWORD)(APDU_COMMAND_LEN - 1 - i)) {
-			*receiptDataLength = 0;
-			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
-		}
 		OPGP_LOG_HEX(_T("delete_application: Delete Token: "), deleteToken, deleteTokenLength);
 		memcpy(sendBuffer+i, deleteToken, deleteTokenLength);
 		i+=deleteTokenLength;
 	}
-	sendBuffer[4] = (BYTE)(i - 5);
-	sendBuffer[i++] = 0x00;
-	sendBufferLength = i;
 
-	status = OPGP_send_APDU(cardContext, cardInfo, secInfo, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
+	status = send_chained_data(cardContext, cardInfo, secInfo, commandHeader, 5, sendBuffer, i,
+		recvBuffer, &recvBufferLength, false, false, true);
 	if (OPGP_ERROR_CHECK(status)) {
 		*receiptDataLength = 0;
 		goto end;
 	}
-	CHECK_SW_9000(recvBuffer, recvBufferLength, status);
 	if (recvBufferLength-count > sizeof(GP211_RECEIPT_DATA)) { // assumption that a GP211_RECEIPT_DATA structure is returned in a delegated management deletion
 		*receiptDataLength = 0;
 		while (recvBufferLength-count > sizeof(GP211_RECEIPT_DATA)) {
@@ -3645,42 +3689,61 @@ OPGP_ERROR_STATUS install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 					  DWORD nonVolatileDataSpaceLimit)
 {
 	OPGP_ERROR_STATUS status;
-	DWORD sendBufferLength = 0;
+	BYTE commandHeader[5] = {0x80, 0xE6, 0x00, 0x00, 0x00};
 	DWORD recvBufferLength = APDU_RESPONSE_LEN;
 	BYTE recvBuffer[APDU_RESPONSE_LEN];
-	BYTE sendBuffer[APDU_COMMAND_LEN];
+	BYTE sendBuffer[1000];
 	DWORD i=0;
-	BYTE buf[256];
+	BYTE buf[1000];
 	DWORD bufLength = sizeof(buf);
+	PBYTE parsedData = NULL;
+	DWORD parsedDataLength = 0;
+	LONG lenLen;
 	OPGP_LOG_START(_T("install_for_load"));
-	sendBuffer[i++] = 0x80;
-	sendBuffer[i++] = 0xE6;
 	status = get_load_data(executableLoadFileAID, executableLoadFileAIDLength, securityDomainAID,
 		securityDomainAIDLength, loadFileDataBlockHash, loadFileDataBlockHashLength,
-		loadTokenLength, nonVolatileCodeSpaceLimit, volatileDataSpaceLimit,
+		0, nonVolatileCodeSpaceLimit, volatileDataSpaceLimit,
 		nonVolatileDataSpaceLimit, buf, &bufLength);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	memcpy(sendBuffer+2, buf, bufLength);
-	i+=bufLength;
-	if (loadToken != NULL) {
-		sendBuffer[i++] = (BYTE)loadTokenLength;
+	status = extract_case3_data(buf, bufLength, &commandHeader[2], &commandHeader[3], &parsedData, &parsedDataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	if (parsedDataLength > sizeof(sendBuffer)) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
+	}
+	memcpy(sendBuffer, parsedData, parsedDataLength);
+	i += parsedDataLength;
+
+	if (loadToken != NULL && loadTokenLength > 0) {
+		if (loadTokenLength > 0xFFFF) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
+		}
+		lenLen = write_TLV_length(sendBuffer, i, sizeof(sendBuffer) - i, (USHORT)loadTokenLength);
+		if (lenLen < 0) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
+		if (i + (DWORD)lenLen + loadTokenLength > sizeof(sendBuffer)) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
+		i += (DWORD)lenLen;
 		memcpy(sendBuffer+i, loadToken, loadTokenLength);
 		i+=loadTokenLength;
 	}
 	else {
+		if (i + 1 > sizeof(sendBuffer)) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
 		sendBuffer[i++] = 0x00; // Length of load token
 	}
-	sendBuffer[4] = (BYTE)i-5; // Lc
-	sendBuffer[i++] = 0x00; // Le
-	sendBufferLength = i;
 
-	status = OPGP_send_APDU(cardContext, cardInfo, secInfo,sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
+	status = send_chained_data(cardContext, cardInfo, secInfo, commandHeader, 5, sendBuffer, i,
+		recvBuffer, &recvBufferLength, false, false, true);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	CHECK_SW_9000(recvBuffer, recvBufferLength, status);
 
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
@@ -3768,7 +3831,7 @@ OPGP_ERROR_STATUS install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_I
 	BYTE recvBuffer[APDU_RESPONSE_LEN];
 	BYTE sendBuffer[APDU_COMMAND_LEN];
 	DWORD i=0;
-	BYTE buf[256];
+	BYTE buf[1000];
 	DWORD bufLength = sizeof(buf);
 	OPGP_LOG_START(_T("install_for_install"));
 	*receiptDataAvailable = 0;
@@ -3888,17 +3951,18 @@ OPGP_ERROR_STATUS install_for_install_and_make_selectable(OPGP_CARD_CONTEXT card
 						 GP211_RECEIPT_DATA *receiptData,
 						 PDWORD receiptDataAvailable) {
 	OPGP_ERROR_STATUS status;
-	DWORD sendBufferLength = 0;
+	BYTE commandHeader[5] = {0x80, 0xE6, 0x00, 0x00, 0x00};
 	DWORD recvBufferLength = APDU_RESPONSE_LEN;
 	BYTE recvBuffer[APDU_RESPONSE_LEN];
-	BYTE sendBuffer[APDU_COMMAND_LEN];
+	BYTE sendBuffer[1000];
 	DWORD i=0;
-	BYTE buf[256];
+	BYTE buf[1000];
 	DWORD bufLength = sizeof(buf);
+	PBYTE parsedData = NULL;
+	DWORD parsedDataLength = 0;
+	LONG lenLen;
 	OPGP_LOG_START(_T("install_for_install_and_make_selectable"));
 	*receiptDataAvailable = 0;
-	sendBuffer[i++] = 0x80;
-	sendBuffer[i++] = 0xE6;
   	status = get_install_data(0x0C, executableLoadFileAID, executableLoadFileAIDLength, executableModuleAID,
 		executableModuleAIDLength, applicationAID, applicationAIDLength, applicationPrivileges,
 		volatileDataSpaceLimit,	nonVolatileDataSpaceLimit, installParameters,
@@ -3908,30 +3972,43 @@ OPGP_ERROR_STATUS install_for_install_and_make_selectable(OPGP_CARD_CONTEXT card
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	memcpy(sendBuffer+2, buf, bufLength);
-	i+=bufLength;
+	status = extract_case3_data(buf, bufLength, &commandHeader[2], &commandHeader[3], &parsedData, &parsedDataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	if (parsedDataLength > sizeof(sendBuffer)) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
+	}
+	memcpy(sendBuffer, parsedData, parsedDataLength);
+	i += parsedDataLength;
 
-	if (installToken != NULL) {
-		sendBuffer[i++] = (BYTE)installTokenLength;
+	if (installToken != NULL && installTokenLength > 0) {
+		if (installTokenLength > 0xFFFF) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
+		}
+		lenLen = write_TLV_length(sendBuffer, i, sizeof(sendBuffer) - i, (USHORT)installTokenLength);
+		if (lenLen < 0) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
+		if (i + (DWORD)lenLen + installTokenLength > sizeof(sendBuffer)) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
+		i += (DWORD)lenLen;
 		memcpy(sendBuffer+i, installToken, installTokenLength);
 		i+=installTokenLength;
 	}
 	else {
+		if (i + 1 > sizeof(sendBuffer)) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
 		sendBuffer[i++] = 0x00; // Length of install token
 	}
-	sendBuffer[4] = (BYTE)i-5; // Lc
-	// TODO: is this special JCOP handling needed? not generic
-	if (cardInfo.ATRLength == sizeof(JCOP21V22_ATR) &&
-			memcmp(JCOP21V22_ATR, cardInfo.ATR, cardInfo.ATRLength) != 0) {
-		sendBuffer[i++] = 0x00; // Le
-	}
-	sendBufferLength = i;
 
- 	status = OPGP_send_APDU(cardContext, cardInfo, secInfo,sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
+ 	status = send_chained_data(cardContext, cardInfo, secInfo, commandHeader, 5, sendBuffer, i,
+		recvBuffer, &recvBufferLength, false, false, true);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	CHECK_SW_9000(recvBuffer, recvBufferLength, status);
 	if (recvBufferLength > sizeof(GP211_RECEIPT_DATA)) { // assumption that a GP211_RECEIPT_DATA structure is returned in a delegated management deletion
 		fillReceipt(recvBuffer, receiptData);
 		*receiptDataAvailable = 1;
@@ -3955,6 +4032,7 @@ end:
  * \param applicationAID [in] The AID of the installed application to be moved.
  * \param applicationAIDLength [in] The length of the application instance AID to be moved.
  * \param extraditionToken [in] The Extradition Token. This is an assymetric (e.g., ECC or RSA) Signature.
+ * \param extraditionTokenLength [in] The length of the extraditionToken buffer.
  * \param *receiptData [out] If the deletion is performed by a security domain with delegated management privilege
  * this structure contains the according data.
  * \param receiptDataAvailable [out] 0 if no receiptData is available.
@@ -3964,45 +4042,63 @@ OPGP_ERROR_STATUS GP211_install_for_extradition(OPGP_CARD_CONTEXT cardContext, O
 							  PBYTE securityDomainAID,
 						 DWORD securityDomainAIDLength, PBYTE applicationAID,
 						 DWORD applicationAIDLength,
-						 BYTE extraditionToken[128], GP211_RECEIPT_DATA *receiptData,
+						 PBYTE extraditionToken, DWORD extraditionTokenLength, GP211_RECEIPT_DATA *receiptData,
 						 PDWORD receiptDataAvailable) {
 	OPGP_ERROR_STATUS status;
-	DWORD sendBufferLength = 0;
+	BYTE commandHeader[5] = {0x80, 0xE6, 0x00, 0x00, 0x00};
 	DWORD recvBufferLength = APDU_RESPONSE_LEN;
 	BYTE recvBuffer[APDU_RESPONSE_LEN];
-	BYTE sendBuffer[APDU_COMMAND_LEN];
+	BYTE sendBuffer[1000];
 	DWORD i=0;
-	BYTE buf[256];
+	BYTE buf[1000];
 	DWORD bufLength = sizeof(buf);
+	PBYTE parsedData = NULL;
+	DWORD parsedDataLength = 0;
+	LONG lenLen;
 	OPGP_LOG_START(_T("install_for_extradition"));
 	*receiptDataAvailable = 0;
-	sendBuffer[i++] = 0x80;
-	sendBuffer[i++] = 0xE6;
 	status = GP211_get_extradition_token_signature_data(securityDomainAID, securityDomainAIDLength,
 		applicationAID, applicationAIDLength, buf, &bufLength);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	memcpy(sendBuffer+2, buf, bufLength);
-	i+=bufLength;
-
-	if (extraditionToken != NULL) {
-		sendBuffer[i++] = 0x80; // Length of extradition token
-		memcpy(sendBuffer+i, extraditionToken, 128);
-		i+=128;
-	}
-	else {
-		sendBuffer[i++] = 0x00; // Length of install token
-	}
-	sendBuffer[4] = (BYTE)i-5; // Lc
-	sendBuffer[i++] = 0x00; // Le
-	sendBufferLength = i;
-
-	status = OPGP_send_APDU(cardContext, cardInfo, secInfo,sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
+	status = extract_case3_data(buf, bufLength, &commandHeader[2], &commandHeader[3], &parsedData, &parsedDataLength);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	CHECK_SW_9000(recvBuffer, recvBufferLength, status);
+	if (parsedDataLength > sizeof(sendBuffer)) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
+	}
+	memcpy(sendBuffer, parsedData, parsedDataLength);
+	i += parsedDataLength;
+
+	if (extraditionToken != NULL && extraditionTokenLength > 0) {
+		if (extraditionTokenLength > 0xFFFF) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
+		}
+		lenLen = write_TLV_length(sendBuffer, i, sizeof(sendBuffer) - i, (USHORT)extraditionTokenLength);
+		if (lenLen < 0) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
+		if (i + (DWORD)lenLen + extraditionTokenLength > sizeof(sendBuffer)) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
+		i += (DWORD)lenLen;
+		memcpy(sendBuffer+i, extraditionToken, extraditionTokenLength);
+		i+=extraditionTokenLength;
+	}
+	else {
+		if (i + 1 > sizeof(sendBuffer)) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
+		sendBuffer[i++] = 0x00; // Length of install token
+	}
+
+	status = send_chained_data(cardContext, cardInfo, secInfo, commandHeader, 5, sendBuffer, i,
+		recvBuffer, &recvBufferLength, false, false, true);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
 	if (recvBufferLength > sizeof(GP211_RECEIPT_DATA)) { // assumption that a GP211_RECEIPT_DATA structure is returned in a delegated management deletion
 		fillReceipt(recvBuffer, receiptData);
 		*receiptDataAvailable = 1;
@@ -4040,18 +4136,18 @@ OPGP_ERROR_STATUS GP211_install_for_registry_update(OPGP_CARD_CONTEXT cardContex
 						 PBYTE registryUpdateToken, DWORD registryUpdateTokenLength,
 						 GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable) {
 	OPGP_ERROR_STATUS status;
-	DWORD sendBufferLength = 0;
+	BYTE commandHeader[5] = {0x80, 0xE6, 0x00, 0x00, 0x00};
 	DWORD recvBufferLength = APDU_RESPONSE_LEN;
 	BYTE recvBuffer[APDU_RESPONSE_LEN];
-	BYTE sendBuffer[1024];
+	BYTE sendBuffer[1000];
 	DWORD i=0;
 	BYTE buf[512];
 	DWORD bufLength = sizeof(buf);
+	PBYTE parsedData = NULL;
+	DWORD parsedDataLength = 0;
+	LONG lenLen;
 	OPGP_LOG_START(_T("install_for_registry_update"));
 	*receiptDataAvailable = 0;
-
-	sendBuffer[i++] = 0x80;
-	sendBuffer[i++] = 0xE6;
 
 	status = GP211_get_registry_update_token_signature_data(securityDomainAID, securityDomainAIDLength,
 		applicationAID, applicationAIDLength, applicationPrivileges,
@@ -4059,30 +4155,41 @@ OPGP_ERROR_STATUS GP211_install_for_registry_update(OPGP_CARD_CONTEXT cardContex
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	memcpy(sendBuffer+2, buf, bufLength);
-	i+=bufLength;
+	status = extract_case3_data(buf, bufLength, &commandHeader[2], &commandHeader[3], &parsedData, &parsedDataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	if (parsedDataLength > sizeof(sendBuffer)) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
+	}
+	memcpy(sendBuffer, parsedData, parsedDataLength);
+	i += parsedDataLength;
 
 	if (registryUpdateToken != NULL && registryUpdateTokenLength > 0) {
-		LONG lenLen = write_TLV_length(sendBuffer, i, sizeof(sendBuffer) - i, (USHORT)registryUpdateTokenLength);
+		if (registryUpdateTokenLength > 0xFFFF) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end;
+		}
+		lenLen = write_TLV_length(sendBuffer, i, sizeof(sendBuffer) - i, (USHORT)registryUpdateTokenLength);
 		if (lenLen < 0) { OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		if (i + (DWORD)lenLen + registryUpdateTokenLength > sizeof(sendBuffer)) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end;
+		}
 		i += (DWORD)lenLen;
 		memcpy(sendBuffer+i, registryUpdateToken, registryUpdateTokenLength);
 		i+=registryUpdateTokenLength;
 	}
 	else {
+		if (i + 1 > sizeof(sendBuffer)) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
 		sendBuffer[i++] = 0x00; // Length of token
 	}
 
-	sendBuffer[4] = (BYTE)(i - 5);
-
-	sendBuffer[i++] = 0x00; // Le
-	sendBufferLength = i;
-
-	status = OPGP_send_APDU(cardContext, cardInfo, secInfo,sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
+	status = send_chained_data(cardContext, cardInfo, secInfo, commandHeader, 5, sendBuffer, i,
+		recvBuffer, &recvBufferLength, false, false, true);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	CHECK_SW_9000(recvBuffer, recvBufferLength, status);
 	if (recvBufferLength > sizeof(GP211_RECEIPT_DATA)) {
 		fillReceipt(recvBuffer, receiptData);
 		*receiptDataAvailable = 1;
@@ -4181,22 +4288,20 @@ OPGP_ERROR_STATUS install_for_make_selectable(OPGP_CARD_CONTEXT cardContext, OPG
 								 GP211_RECEIPT_DATA *receiptData,
 								 PDWORD receiptDataAvailable) {
 	OPGP_ERROR_STATUS status;
-	DWORD sendBufferLength = 0;
+	BYTE commandHeader[5] = {0x80, 0xE6, 0x08, 0x00, 0x00};
 	DWORD recvBufferLength = APDU_RESPONSE_LEN;
 	BYTE recvBuffer[APDU_RESPONSE_LEN];
-	BYTE sendBuffer[APDU_COMMAND_LEN];
+	BYTE sendBuffer[1000];
 	DWORD i=0;
+	LONG lenLen;
 	OPGP_LOG_START(_T("install_for_make_selectable"));
 	*receiptDataAvailable = 0;
-	sendBuffer[i++] = 0x80;
-	sendBuffer[i++] = 0xE6;
-	sendBuffer[i++] = 0x08;
-	sendBuffer[i++] = 0x00;
-	sendBuffer[i++] = 0x00; // Lc dummy
-
 	sendBuffer[i++] = 0x00; //  Executable Load File AID
 	sendBuffer[i++] = 0x00; // application class AID
 
+	if (i + 1 + applicationAIDLength > sizeof(sendBuffer)) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
+	}
 	sendBuffer[i++] = (BYTE)applicationAIDLength; // application instance AID
 	memcpy(sendBuffer+i, applicationAID, applicationAIDLength);
 	i+=applicationAIDLength;
@@ -4206,25 +4311,33 @@ OPGP_ERROR_STATUS install_for_make_selectable(OPGP_CARD_CONTEXT cardContext, OPG
 
 	sendBuffer[i++] = 0x00; // install parameter field length
 
-	if (installToken != NULL) {
-		sendBuffer[i++] = (BYTE)installTokenLength;
+	if (installToken != NULL && installTokenLength > 0) {
+		if (installTokenLength > 0xFFFF) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
+		}
+		lenLen = write_TLV_length(sendBuffer, i, sizeof(sendBuffer) - i, (USHORT)installTokenLength);
+		if (lenLen < 0) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
+		if (i + (DWORD)lenLen + installTokenLength > sizeof(sendBuffer)) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
+		i += (DWORD)lenLen;
 		memcpy(sendBuffer+i, installToken, installTokenLength);
 		i+=installTokenLength;
 	}
 	else {
+		if (i + 1 > sizeof(sendBuffer)) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
 		sendBuffer[i++] = 0x00; // Length of install token
 	}
-	sendBuffer[4] = (BYTE)i-5; // Lc
-	if (memcmp(JCOP21V22_ATR, cardInfo.ATR, max(cardInfo.ATRLength, sizeof(JCOP21V22_ATR))) != 0) {
-		sendBuffer[i++] = 0x00; // Le
-	}
-	sendBufferLength = i;
 
-	status = OPGP_send_APDU(cardContext, cardInfo, secInfo,sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
+	status = send_chained_data(cardContext, cardInfo, secInfo, commandHeader, 5, sendBuffer, i,
+		recvBuffer, &recvBufferLength, false, false, true);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	CHECK_SW_9000(recvBuffer, recvBufferLength, status);
 	if (recvBufferLength > sizeof(GP211_RECEIPT_DATA)) { // assumption that a GP211_RECEIPT_DATA structure is returned in a delegated management deletion
 		fillReceipt(recvBuffer, receiptData);
 		*receiptDataAvailable = 1;
@@ -4776,7 +4889,7 @@ OPGP_ERROR_STATUS get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD e
 									  PBYTE uiccSystemSpecParams, DWORD uiccSystemSpecParamsLength,
 									  PBYTE simSpecParams, DWORD simSpecParamsLength,
 									  PBYTE installData, PDWORD installDataLength) {
-	BYTE buf[258];
+	BYTE buf[300];
 	DWORD i=0;
 	DWORD hiByte, loByte;
 	DWORD installParameterFieldLengthSize;
@@ -5125,7 +5238,7 @@ end:
 OPGP_ERROR_STATUS GP211_get_delete_token_signature_data(OPGP_AID *AIDs, DWORD AIDsLength,
 										  PBYTE deleteTokenSignatureData,
 										  PDWORD deleteTokenSignatureDataLength) {
-	BYTE buf[APDU_COMMAND_LEN];
+	BYTE buf[1000];
 	DWORD i=0;
 	DWORD j;
 	DWORD bodyLength;

@@ -1061,7 +1061,7 @@ OPGP_ERROR_STATUS GP211_install_for_extradition(OPGP_CARD_CONTEXT cardContext, O
 							  PBYTE securityDomainAID,
 						 DWORD securityDomainAIDLength, PBYTE applicationAID,
 						 DWORD applicationAIDLength,
-						 BYTE extraditionToken[128], GP211_RECEIPT_DATA *receiptData,
+						 PBYTE extraditionToken, DWORD extraditionTokenLength, GP211_RECEIPT_DATA *receiptData,
 						 PDWORD receiptDataAvailable);
 
 

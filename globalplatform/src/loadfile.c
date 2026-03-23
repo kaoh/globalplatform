@@ -663,7 +663,7 @@ OPGP_ERROR_STATUS get_load_data(PBYTE executableLoadFileAID, DWORD executableLoa
 								   DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
 								   DWORD nonVolatileDataSpaceLimit, PBYTE loadData, PDWORD loadDataLength) {
 	OPGP_ERROR_STATUS status;
-	unsigned char buf[260];
+	unsigned char buf[300];
 	DWORD i=0;
 	DWORD hiByte, loByte;
 	DWORD staticSize;

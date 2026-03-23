@@ -931,7 +931,7 @@ START_TEST (test_move_sd) {
 		ck_abort_msg("Could not do mutual authentication: %s", status.errorMessage);
 	}
 
-	status = GP211_install_for_extradition(cardContext, cardInfo, &securityInfo211, (PBYTE)sdInstanceAID, sizeof(sdInstanceAID), (PBYTE)sdInstanceAID, sizeof(sdInstanceAID), NULL, &receipt, &receiptDataAvailable);
+	status = GP211_install_for_extradition(cardContext, cardInfo, &securityInfo211, (PBYTE)sdInstanceAID, sizeof(sdInstanceAID), (PBYTE)sdInstanceAID, sizeof(sdInstanceAID), NULL, 0, &receipt, &receiptDataAvailable);
 	if (OPGP_ERROR_CHECK(status)) {
 		ck_abort_msg("GP211_install_for_extradition() failed: %s", status.errorMessage);
 	}
