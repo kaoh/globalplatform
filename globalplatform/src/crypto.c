@@ -1921,15 +1921,6 @@ OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE
 			}
 			secInfo->sessionEncryptionCounter++;
 		}
-		// wrappedLength-8: exclude size of MAC for CMAC
-		if (traceEnable) {
-			DWORD i;
-			_ftprintf(traceFile, _T("CMAC input --> "));
-			for (i = 0; i < wrappedLength - 8; i++) {
-				_ftprintf(traceFile, _T("%02X"), wrappedApduCommand[i] & 0x00FF);
-			}
-			_ftprintf(traceFile, _T("\n"));
-		}
 		status = calculate_CMAC_aes(secInfo->C_MACSessionKey, secInfo->keyLength, wrappedApduCommand, wrappedLength-8, secInfo->lastC_MAC, mac);
 		if (OPGP_ERROR_CHECK(status)) {
 			goto end;
@@ -2576,6 +2567,44 @@ static BOOL get_ecc_key_parameter_reference(const char *curveName, BYTE *eccKeyC
 	return 0;
 }
 
+static BOOL bn_to_fixed_length_bytes(const BIGNUM *value, DWORD fixedLength, PBYTE out, DWORD outSize, PDWORD outLength) {
+	int valueLength;
+	if (value == NULL || out == NULL || outLength == NULL || fixedLength == 0 || fixedLength > outSize) {
+		return 0;
+	}
+	valueLength = BN_num_bytes(value);
+	if (valueLength < 0 || (DWORD)valueLength > fixedLength) {
+		return 0;
+	}
+	memset(out, 0, fixedLength);
+	if (valueLength > 0 && BN_bn2bin(value, out + (fixedLength - (DWORD)valueLength)) != valueLength) {
+		return 0;
+	}
+	*outLength = fixedLength;
+	return 1;
+}
+
+static BOOL bn_to_minimal_length_bytes(const BIGNUM *value, PBYTE out, DWORD outSize, PDWORD outLength) {
+	int valueLength;
+	if (value == NULL || out == NULL || outLength == NULL || outSize == 0) {
+		return 0;
+	}
+	valueLength = BN_num_bytes(value);
+	if (valueLength < 0 || (DWORD)valueLength > outSize) {
+		return 0;
+	}
+	if (valueLength == 0) {
+		out[0] = 0;
+		*outLength = 1;
+		return 1;
+	}
+	if (BN_bn2bin(value, out) != valueLength) {
+		return 0;
+	}
+	*outLength = (DWORD)valueLength;
+	return 1;
+}
+
 /**
  * \param PEMKeyFileName [in] The key file.
  * \param *passPhrase [in] The passphrase. Must be an ASCII string.
@@ -2706,25 +2735,39 @@ end:
  * \param eccPublicPointLength [inout]  The ECC public point length passed in and returned.
  * \param eccKeyComponentType [out] GP211_KEY_TYPE_ECC_PUBLIC_OR_PRIVATE or GP211_KEY_TYPE_ECC_SM2_PUBLIC_OR_PRIVATE.
  * \param keyParameterReference [out] ECC key parameter reference (see GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_*).
+ * \param domainParameters [out] Optional ECC domain parameters for own-parameter key loading.
  */
 OPGP_ERROR_STATUS read_public_ecc_key(OPGP_STRING PEMKeyFileName, char *passPhrase,
 		PBYTE eccPublicPoint, PDWORD eccPublicPointLength,
-		PBYTE eccKeyComponentType, PBYTE keyParameterReference) {
+		PBYTE eccKeyComponentType, PBYTE keyParameterReference,
+		GP211_ECC_DOMAIN_PARAMETERS *domainParameters) {
 	OPGP_ERROR_STATUS status;
 	EVP_PKEY *key = NULL;
 	FILE *PEMKeyFile = NULL;
 	EC_KEY *ec = NULL;
 	const EC_GROUP *group = NULL;
 	const EC_POINT *point = NULL;
+	const EC_POINT *generator = NULL;
+	BIGNUM *fieldP = NULL;
+	BIGNUM *fieldA = NULL;
+	BIGNUM *fieldB = NULL;
+	BIGNUM *order = NULL;
+	BIGNUM *cofactor = NULL;
 	const char *curveName = NULL;
 	int curveNid;
+	int fieldBits;
+	DWORD fieldLength;
 	size_t encodedPointLength;
+	size_t encodedGeneratorLength;
 	OPGP_LOG_START(_T("read_public_ecc_key"));
 
 	if (PEMKeyFileName == NULL || _tcslen(PEMKeyFileName) == 0)
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_FILENAME, OPGP_stringify_error(OPGP_ERROR_INVALID_FILENAME)); goto end; }
 	if (eccPublicPoint == NULL || eccPublicPointLength == NULL || eccKeyComponentType == NULL || keyParameterReference == NULL)
 		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+	if (domainParameters != NULL) {
+		memset(domainParameters, 0, sizeof(*domainParameters));
+	}
 	if (passPhrase == NULL) {
 		passPhrase = "";
 	}
@@ -2780,8 +2823,78 @@ OPGP_ERROR_STATUS read_public_ecc_key(OPGP_STRING PEMKeyFileName, char *passPhra
 	}
 	*eccPublicPointLength = (DWORD)encodedPointLength;
 
+	if (domainParameters != NULL) {
+		fieldBits = EC_GROUP_get_degree(group);
+		if (fieldBits <= 0) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+		fieldLength = (DWORD)((fieldBits + 7) / 8);
+
+		generator = EC_GROUP_get0_generator(group);
+		if (generator == NULL) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+
+		fieldP = BN_new();
+		fieldA = BN_new();
+		fieldB = BN_new();
+		order = BN_new();
+		cofactor = BN_new();
+		if (fieldP == NULL || fieldA == NULL || fieldB == NULL || order == NULL || cofactor == NULL) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+		if (EC_GROUP_get_curve_GFp(group, fieldP, fieldA, fieldB, NULL) != 1
+				&& EC_GROUP_get_curve_GF2m(group, fieldP, fieldA, fieldB, NULL) != 1) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+#else
+		if (EC_GROUP_get_curve(group, fieldP, fieldA, fieldB, NULL) != 1) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+#endif
+
+		if (EC_GROUP_get_order(group, order, NULL) != 1 || EC_GROUP_get_cofactor(group, cofactor, NULL) != 1) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+
+		if (!bn_to_fixed_length_bytes(fieldP, fieldLength, domainParameters->fieldP, sizeof(domainParameters->fieldP), &domainParameters->fieldPLength)
+				|| !bn_to_fixed_length_bytes(fieldA, fieldLength, domainParameters->fieldA, sizeof(domainParameters->fieldA), &domainParameters->fieldALength)
+				|| !bn_to_fixed_length_bytes(fieldB, fieldLength, domainParameters->fieldB, sizeof(domainParameters->fieldB), &domainParameters->fieldBLength)
+				|| !bn_to_fixed_length_bytes(order, fieldLength, domainParameters->order, sizeof(domainParameters->order), &domainParameters->orderLength)
+				|| !bn_to_minimal_length_bytes(cofactor, domainParameters->cofactor, sizeof(domainParameters->cofactor), &domainParameters->cofactorLength)) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
+
+		encodedGeneratorLength = EC_POINT_point2oct(group, generator, POINT_CONVERSION_UNCOMPRESSED, NULL, 0, NULL);
+		if (encodedGeneratorLength == 0 || encodedGeneratorLength > sizeof(domainParameters->generator)) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		}
+		if (EC_POINT_point2oct(group, generator, POINT_CONVERSION_UNCOMPRESSED,
+				domainParameters->generator, sizeof(domainParameters->generator), NULL) != encodedGeneratorLength) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+		}
+		domainParameters->generatorLength = (DWORD)encodedGeneratorLength;
+	}
+
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
+	if (cofactor != NULL) {
+		BN_free(cofactor);
+	}
+	if (order != NULL) {
+		BN_free(order);
+	}
+	if (fieldB != NULL) {
+		BN_free(fieldB);
+	}
+	if (fieldA != NULL) {
+		BN_free(fieldA);
+	}
+	if (fieldP != NULL) {
+		BN_free(fieldP);
+	}
 	if (ec != NULL) {
 		EC_KEY_free(ec);
 	}

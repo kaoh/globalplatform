@@ -953,12 +953,14 @@ static OPGP_ERROR_STATUS add_rsa_key_data(GP211_SECURITY_INFO *secInfo,
 static OPGP_ERROR_STATUS add_ecc_key_data(GP211_SECURITY_INFO *secInfo,
 										   BYTE *ecc_public_point, DWORD ecc_public_point_length,
 										   BYTE ecc_key_component_type, BYTE key_parameter_reference,
+										   GP211_ECC_DOMAIN_PARAMETERS *domainParameters,
+										   BOOL withEccParams,
 										   BYTE *sendBuffer, DWORD *sendBufferIndex,
 										   BYTE *keyCheckValue) {
 	OPGP_ERROR_STATUS status;
 	BYTE keyDataField[600];
-	DWORD keyDataFieldLength = 600;
 	BYTE keyParameterReference[] = {key_parameter_reference};
+	DWORD keyDataFieldLength = sizeof(keyDataField);
 
 	if (ecc_key_component_type != GP211_KEY_TYPE_ECC_PUBLIC_OR_PRIVATE &&
 			ecc_key_component_type != GP211_KEY_TYPE_ECC_SM2_PUBLIC_OR_PRIVATE) {
@@ -974,14 +976,81 @@ static OPGP_ERROR_STATUS add_ecc_key_data(GP211_SECURITY_INFO *secInfo,
 	memcpy(sendBuffer + *sendBufferIndex, keyDataField, keyDataFieldLength);
 	*sendBufferIndex += keyDataFieldLength;
 
-	keyDataFieldLength = 600;
-	status = get_key_data_field(secInfo, keyParameterReference, sizeof(keyParameterReference),
-		GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE, keyDataField, &keyDataFieldLength, keyCheckValue, true);
-	if (OPGP_ERROR_CHECK(status)) {
-		return status;
+	if (withEccParams) {
+		BOOL withCofactor;
+		if (domainParameters == NULL || domainParameters->fieldPLength == 0 || domainParameters->fieldALength == 0
+				|| domainParameters->fieldBLength == 0 || domainParameters->generatorLength == 0 || domainParameters->orderLength == 0) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, _T("ECC domain parameters are missing"));
+			return status;
+		}
+			withCofactor = domainParameters->cofactorLength > 0
+				&& !(domainParameters->cofactorLength == 1 && domainParameters->cofactor[0] == 0x01);
+
+		keyDataFieldLength = sizeof(keyDataField);
+		status = get_key_data_field(secInfo, domainParameters->fieldP, domainParameters->fieldPLength,
+			0xB2, keyDataField, &keyDataFieldLength, keyCheckValue, false);
+		if (OPGP_ERROR_CHECK(status)) {
+			return status;
+		}
+		memcpy(sendBuffer + *sendBufferIndex, keyDataField, keyDataFieldLength);
+		*sendBufferIndex += keyDataFieldLength;
+
+		keyDataFieldLength = sizeof(keyDataField);
+		status = get_key_data_field(secInfo, domainParameters->fieldA, domainParameters->fieldALength,
+			0xB3, keyDataField, &keyDataFieldLength, keyCheckValue, false);
+		if (OPGP_ERROR_CHECK(status)) {
+			return status;
+		}
+		memcpy(sendBuffer + *sendBufferIndex, keyDataField, keyDataFieldLength);
+		*sendBufferIndex += keyDataFieldLength;
+
+		keyDataFieldLength = sizeof(keyDataField);
+		status = get_key_data_field(secInfo, domainParameters->fieldB, domainParameters->fieldBLength,
+			0xB4, keyDataField, &keyDataFieldLength, keyCheckValue, false);
+		if (OPGP_ERROR_CHECK(status)) {
+			return status;
+		}
+		memcpy(sendBuffer + *sendBufferIndex, keyDataField, keyDataFieldLength);
+		*sendBufferIndex += keyDataFieldLength;
+
+		keyDataFieldLength = sizeof(keyDataField);
+		status = get_key_data_field(secInfo, domainParameters->generator, domainParameters->generatorLength,
+			0xB5, keyDataField, &keyDataFieldLength, keyCheckValue, false);
+		if (OPGP_ERROR_CHECK(status)) {
+			return status;
+		}
+		memcpy(sendBuffer + *sendBufferIndex, keyDataField, keyDataFieldLength);
+		*sendBufferIndex += keyDataFieldLength;
+
+		keyDataFieldLength = sizeof(keyDataField);
+		status = get_key_data_field(secInfo, domainParameters->order, domainParameters->orderLength,
+			0xB6, keyDataField, &keyDataFieldLength, keyCheckValue, !withCofactor);
+		if (OPGP_ERROR_CHECK(status)) {
+			return status;
+		}
+		memcpy(sendBuffer + *sendBufferIndex, keyDataField, keyDataFieldLength);
+		*sendBufferIndex += keyDataFieldLength;
+
+		if (withCofactor) {
+			keyDataFieldLength = sizeof(keyDataField);
+			status = get_key_data_field(secInfo, domainParameters->cofactor, domainParameters->cofactorLength,
+				0xB7, keyDataField, &keyDataFieldLength, keyCheckValue, true);
+			if (OPGP_ERROR_CHECK(status)) {
+				return status;
+			}
+			memcpy(sendBuffer + *sendBufferIndex, keyDataField, keyDataFieldLength);
+			*sendBufferIndex += keyDataFieldLength;
+		}
+	} else {
+		keyDataFieldLength = sizeof(keyDataField);
+		status = get_key_data_field(secInfo, keyParameterReference, sizeof(keyParameterReference),
+			GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE, keyDataField, &keyDataFieldLength, keyCheckValue, true);
+		if (OPGP_ERROR_CHECK(status)) {
+			return status;
+		}
+		memcpy(sendBuffer + *sendBufferIndex, keyDataField, keyDataFieldLength);
+		*sendBufferIndex += keyDataFieldLength;
 	}
-	memcpy(sendBuffer + *sendBufferIndex, keyDataField, keyDataFieldLength);
-	*sendBufferIndex += keyDataFieldLength;
 
 	OPGP_ERROR_CREATE_NO_ERROR(status);
 	return status;
@@ -1479,6 +1548,8 @@ OPGP_ERROR_STATUS put_delegated_management_token_keys(OPGP_CARD_CONTEXT cardCont
 	DWORD ecc_public_point_length = 512;
 	BYTE token_verification_ecc_key_component_type;
 	BYTE token_verification_ecc_key_parameter_reference;
+	GP211_ECC_DOMAIN_PARAMETERS token_verification_ecc_domain_parameters;
+	BOOL withEccParams = true;
 
 	OPGP_LOG_START(_T("put_delegated_management_token_keys"));
 
@@ -1511,12 +1582,14 @@ OPGP_ERROR_STATUS put_delegated_management_token_keys(OPGP_CARD_CONTEXT cardCont
 		case GP211_KEY_TYPE_ECC:
 			status = read_public_ecc_key(PEMKeyFileName, passPhrase,
 				token_verification_ecc_public_point, &ecc_public_point_length,
-				&token_verification_ecc_key_component_type, &token_verification_ecc_key_parameter_reference);
+				&token_verification_ecc_key_component_type, &token_verification_ecc_key_parameter_reference,
+				&token_verification_ecc_domain_parameters);
 			if (OPGP_ERROR_CHECK(status)) {
 				goto end;
 			}
 			status = add_ecc_key_data(secInfo, token_verification_ecc_public_point, ecc_public_point_length,
 				token_verification_ecc_key_component_type, token_verification_ecc_key_parameter_reference,
+				&token_verification_ecc_domain_parameters, withEccParams,
 				keyDataField, &keyDataFieldLength, keyCheckValue);
 			if (OPGP_ERROR_CHECK(status)) {
 				goto end;
