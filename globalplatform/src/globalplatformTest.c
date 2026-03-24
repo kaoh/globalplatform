@@ -42,6 +42,8 @@
 #define TEST_LOAD_FILE "helloworld.cap"
 #define TEST_ECC_PRIVATE_KEY "ecc_private_key_test.pem"
 #define TEST_ECC_PUBLIC_KEY "ecc_public_key_test.pem"
+#define TEST_RSA_PRIVATE_KEY "rsa_private_key.pem"
+#define TEST_RSA_PUBLIC_KEY "rsa_public_key.pem"
 
 #define INTERNAL_DELETE_APPLET 0x01
 #define INTERNAL_DELETE_PACKAGE 0x02
@@ -98,6 +100,8 @@ static DWORD dmLoadTokenLength;
 static BYTE dmInstallToken[512];
 static DWORD dmInstallTokenLength;
 static int dmLoadFileParamsAvailable = 0;
+static const char *dmLoadTokenKeyLabel = NULL;
+static const char *dmInstallTokenKeyLabel = NULL;
 
 /**
  * Readername for the test.
@@ -1006,9 +1010,9 @@ START_TEST (test_delete_sd) {
 
 /**
  * Delegated management test step 1:
- * Put ECC token verification key.
+ * Put token verification key.
  */
-START_TEST (test_dm_put_token_key_ecc) {
+static void test_dm_put_token_key(OPGP_STRING publicKeyFile, BYTE tokenKeyType, const char *tokenKeyLabel) {
 	OPGP_ERROR_STATUS status;
 	status = internal_connect_and_authenticate();
 	if (OPGP_ERROR_CHECK(status)) {
@@ -1022,15 +1026,23 @@ START_TEST (test_dm_put_token_key_ecc) {
 
 	status = GP211_put_delegated_management_token_keys(cardContext, cardInfo, &securityInfo211,
 			0, GP211_KEY_VERSION_TOKEN_VERIFICATION,
-			TEST_ECC_PUBLIC_KEY, NULL, GP211_KEY_TYPE_ECC);
+			publicKeyFile, NULL, tokenKeyType);
 	if (OPGP_ERROR_CHECK(status)) {
-		ck_abort_msg("GP211_put_delegated_management_token_keys() failed: %s", status.errorMessage);
+		ck_abort_msg("GP211_put_delegated_management_token_keys() failed for %s: %s", tokenKeyLabel, status.errorMessage);
 	}
 
 	status = internal_disconnect();
 	if (OPGP_ERROR_CHECK(status)) {
 		ck_abort_msg("Could not disconnect: %s", status.errorMessage);
 	}
+}
+
+START_TEST (test_dm_put_token_key_ecc) {
+	test_dm_put_token_key(TEST_ECC_PUBLIC_KEY, GP211_KEY_TYPE_ECC, "ECC");
+} END_TEST
+
+START_TEST (test_dm_put_token_key_rsa) {
+	test_dm_put_token_key(TEST_RSA_PUBLIC_KEY, GP211_KEY_TYPE_RSA, "RSA");
 } END_TEST
 
 /**
@@ -1154,7 +1166,7 @@ START_TEST (test_dm_install_sd_with_delegated_management) {
  * Delegated management test step 4:
  * Calculate hash and load token for helloworld.cap.
  */
-START_TEST (test_dm_calculate_load_token) {
+static void test_dm_calculate_load_token(OPGP_STRING privateKeyFile, char *privateKeyPassPhrase, const char *tokenKeyLabel) {
 	OPGP_ERROR_STATUS status;
 
 	status = internal_read_dm_load_file_parameters();
@@ -1177,20 +1189,29 @@ START_TEST (test_dm_calculate_load_token) {
 			dmLoadFileDataBlockHash, dmLoadFileDataBlockHashLength,
 			dmLoadFileParams.loadFileSize, 0, 0,
 			dmLoadToken, &dmLoadTokenLength,
-			TEST_ECC_PRIVATE_KEY, NULL);
+			privateKeyFile, privateKeyPassPhrase);
 	if (OPGP_ERROR_CHECK(status)) {
 		ck_abort_msg("GP211_calculate_load_token() failed: %s", status.errorMessage);
 	}
 	if (dmLoadTokenLength == 0) {
 		ck_abort_msg("Load token calculation returned empty token.");
 	}
+	dmLoadTokenKeyLabel = tokenKeyLabel;
+}
+
+START_TEST (test_dm_calculate_load_token_ecc) {
+	test_dm_calculate_load_token(TEST_ECC_PRIVATE_KEY, NULL, "ECC");
+} END_TEST
+
+START_TEST (test_dm_calculate_load_token_rsa) {
+	test_dm_calculate_load_token(TEST_RSA_PRIVATE_KEY, "password", "RSA");
 } END_TEST
 
 /**
  * Delegated management test step 5:
  * Calculate install token for helloworld.cap.
  */
-START_TEST (test_dm_calculate_install_token) {
+static void test_dm_calculate_install_token(OPGP_STRING privateKeyFile, char *privateKeyPassPhrase, const char *tokenKeyLabel) {
 	OPGP_ERROR_STATUS status;
 
 	if (!dmLoadFileParamsAvailable) {
@@ -1212,20 +1233,29 @@ START_TEST (test_dm_calculate_install_token) {
 			NULL, 0,
 			NULL, 0,
 			dmInstallToken, &dmInstallTokenLength,
-			TEST_ECC_PRIVATE_KEY, NULL);
+			privateKeyFile, privateKeyPassPhrase);
 	if (OPGP_ERROR_CHECK(status)) {
 		ck_abort_msg("GP211_calculate_install_token() failed: %s", status.errorMessage);
 	}
 	if (dmInstallTokenLength == 0) {
 		ck_abort_msg("Install token calculation returned empty token.");
 	}
+	dmInstallTokenKeyLabel = tokenKeyLabel;
+}
+
+START_TEST (test_dm_calculate_install_token_ecc) {
+	test_dm_calculate_install_token(TEST_ECC_PRIVATE_KEY, NULL, "ECC");
+} END_TEST
+
+START_TEST (test_dm_calculate_install_token_rsa) {
+	test_dm_calculate_install_token(TEST_RSA_PRIVATE_KEY, "password", "RSA");
 } END_TEST
 
 /**
  * Delegated management test step 6:
  * Install helloworld.cap in delegated management SD using load and install tokens.
  */
-START_TEST (test_dm_install_helloworld_with_tokens) {
+static void test_dm_install_helloworld_with_tokens(const char *tokenKeyLabel) {
 	OPGP_ERROR_STATUS status;
 	GP211_SECURITY_INFO sdSecurityInfo;
 	DWORD receiptDataLen = 0;
@@ -1236,8 +1266,12 @@ START_TEST (test_dm_install_helloworld_with_tokens) {
 	DWORD dataLength = 20;
 
 	if (!dmLoadFileParamsAvailable || dmLoadTokenLength == 0 || dmInstallTokenLength == 0 ||
-			dmLoadFileDataBlockHashLength == 0) {
-		ck_abort_msg("Delegated management token preconditions missing. Run token calculation tests first.");
+			dmLoadFileDataBlockHashLength == 0 || dmLoadTokenKeyLabel == NULL ||
+			dmInstallTokenKeyLabel == NULL ||
+			strcmp(dmLoadTokenKeyLabel, tokenKeyLabel) != 0 ||
+			strcmp(dmInstallTokenKeyLabel, tokenKeyLabel) != 0) {
+		ck_abort_msg("Delegated management token preconditions missing for %s keys. Run matching token calculation tests first.",
+				tokenKeyLabel);
 	}
 
 	status = internal_connect_and_authenticate();
@@ -1326,6 +1360,14 @@ START_TEST (test_dm_install_helloworld_with_tokens) {
 	if (OPGP_ERROR_CHECK(status)) {
 		ck_abort_msg("Could not disconnect: %s", status.errorMessage);
 	}
+}
+
+START_TEST (test_dm_install_helloworld_with_tokens_ecc) {
+	test_dm_install_helloworld_with_tokens("ECC");
+} END_TEST
+
+START_TEST (test_dm_install_helloworld_with_tokens_rsa) {
+	test_dm_install_helloworld_with_tokens("RSA");
 } END_TEST
 
 /**
@@ -1486,13 +1528,13 @@ Suite * GlobalPlatform_suite(void) {
 	// tcase_add_test (tc_core, test_personalize_sd);
 	// tcase_add_test (tc_core, test_move_sd);
 	// tcase_add_test (tc_core, test_delete_sd);
-	tcase_add_test (tc_core, test_dm_put_token_key_ecc);
+	tcase_add_test (tc_core, test_dm_put_token_key_rsa);
 	tcase_add_test (tc_core, test_dm_put_receipt_key_aes256);
 	tcase_add_test (tc_core, test_dm_install_sd_with_delegated_management);
 	tcase_add_test (tc_core, test_personalize_sd);
-	tcase_add_test (tc_core, test_dm_calculate_load_token);
-	tcase_add_test (tc_core, test_dm_calculate_install_token);
-	tcase_add_test (tc_core, test_dm_install_helloworld_with_tokens);
+	tcase_add_test (tc_core, test_dm_calculate_load_token_rsa);
+	tcase_add_test (tc_core, test_dm_calculate_install_token_rsa);
+	tcase_add_test (tc_core, test_dm_install_helloworld_with_tokens_rsa);
 	tcase_add_test (tc_core, test_dm_delete_helloworld);
 	tcase_add_test (tc_core, test_dm_delete_sd);
 	tcase_add_test (tc_core, test_dm_delete_keys);

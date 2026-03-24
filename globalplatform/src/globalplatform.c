@@ -1573,12 +1573,12 @@ OPGP_ERROR_STATUS put_delegated_management_token_keys(OPGP_CARD_CONTEXT cardCont
                                                       OPGP_STRING PEMKeyFileName, char *passPhrase,
                                                       BYTE tokenKeyType) {
 	OPGP_ERROR_STATUS status;
-	BYTE sendBuffer[APDU_COMMAND_LEN];
+	BYTE sendBuffer[1000];
 	DWORD recvBufferLength=APDU_RESPONSE_LEN;
 	BYTE recvBuffer[APDU_RESPONSE_LEN];
 	BYTE keyCheckValue[8];
 
-	BYTE keyDataField[1024];
+	BYTE keyDataField[800];
 	DWORD keyDataFieldLength=0;
 
 	DWORD i=0;
@@ -1640,9 +1640,6 @@ OPGP_ERROR_STATUS put_delegated_management_token_keys(OPGP_CARD_CONTEXT cardCont
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_WRONG_KEY_TYPE, OPGP_stringify_error(OPGP_ERROR_WRONG_KEY_TYPE)); goto end;
 	}
 
-	// send the stuff
-	sendBuffer[4] = (BYTE)i - 5;
-	sendBuffer[i] = 0x00; // Le
 	status = send_chained_data(cardContext, cardInfo, secInfo, sendBuffer, i,
 							  keyDataField, keyDataFieldLength, recvBuffer, &recvBufferLength,
 							  false, false, true);
