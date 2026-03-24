@@ -505,9 +505,8 @@ OPGP_ERROR_STATUS OPGP_send_chained_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CAR
 			// Send via plugin
 			tmpRespLen = *rapduLength;
 
-			OPGP_LOG_HEX(_T("OPGP_send_chained_APDU: Command --> "), capduChunk, capduChunkLen);
 			if (traceEnable) {
-				_ftprintf(traceFile, _T("Command --> "));
+				_ftprintf(traceFile, _T("Chained command --> "));
 				for (i = 0; i < capduChunkLen; i++) {
 					_ftprintf(traceFile, _T("%02X"), capduChunk[i] & 0x00FF);
 				}
@@ -516,9 +515,8 @@ OPGP_ERROR_STATUS OPGP_send_chained_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CAR
 
 			status = (*plugin_sendAPDUFunction)(cardContext, cardInfo, capduChunk, capduChunkLen, tmpResp, &tmpRespLen);
 
-			OPGP_LOG_HEX(_T("OPGP_send_chained_APDU: Response <-- "), tmpResp, tmpRespLen);
 			if (traceEnable) {
-				_ftprintf(traceFile, _T("Response <-- "));
+				_ftprintf(traceFile, _T("Chained response <-- "));
 				for (i = 0; i < tmpRespLen; i++) {
 					_ftprintf(traceFile, _T("%02X"), tmpResp[i] & 0x00FF);
 				}

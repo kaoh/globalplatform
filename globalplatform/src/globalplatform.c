@@ -5537,8 +5537,8 @@ OPGP_ERROR_STATUS GP211_calculate_load_token(PBYTE executableLoadFileAID, DWORD 
 						  DWORD nonVolatileDataSpaceLimit, PBYTE loadToken, PDWORD loadTokenLength,
 						  OPGP_STRING PEMKeyFileName, char *passPhrase) {
 	OPGP_ERROR_STATUS status;
-	BYTE loadTokenSignatureData[256];
-	DWORD loadTokenSignatureDataLength = 256;
+	BYTE loadTokenSignatureData[512];
+	DWORD loadTokenSignatureDataLength = 512;
 	OPGP_LOG_START(_T("GP211_calculate_load_token"));
 	status = GP211_get_load_token_signature_data(executableLoadFileAID, executableLoadFileAIDLength, securityDomainAID, securityDomainAIDLength,
 		loadFileDataBlockHash, loadFileDataBlockHashLength, nonVolatileCodeSpaceLimit, volatileDataSpaceLimit,
