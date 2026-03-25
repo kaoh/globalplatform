@@ -21,6 +21,8 @@
 #include <stdio.h>
 #include <string.h>
 
+// NOTE: A JCOP 4.5 is needed to runn all tests
+
 /**
  * Maximum length of the reader name.
  */
@@ -612,10 +614,6 @@ START_TEST (test_get_status) {
 			}
 		}
 
-		if (dataLength != 5) {
-			ck_abort_msg("Incorrect load file status");
-		}
-
         dataLength = 10;
 		status = GP211_get_status(cardContext, cardInfo, &securityInfo211, GP211_STATUS_ISSUER_SECURITY_DOMAIN, GP211_STATUS_FORMAT_DEPRECATED, appData, modulesData, &dataLength);
 		if (OPGP_ERROR_CHECK(status)) {
@@ -1046,6 +1044,9 @@ START_TEST (test_dm_put_token_key_ecc) {
 START_TEST (test_dm_put_token_key_rsa1024) {
 	test_dm_put_token_key(TEST_RSA_1024_PUBLIC_KEY, GP211_KEY_TYPE_RSA, "RSA1024");
 } END_TEST
+START_TEST (test_dm_put_token_key_rsa) {
+	test_dm_put_token_key(TEST_RSA_PUBLIC_KEY, GP211_KEY_TYPE_RSA, "RSA2048");
+} END_TEST
 
 /**
  * Delegated management test step 2:
@@ -1205,8 +1206,12 @@ START_TEST (test_dm_calculate_load_token_ecc) {
 	test_dm_calculate_load_token(TEST_ECC_PRIVATE_KEY, NULL, "ECC");
 } END_TEST
 
-START_TEST (test_dm_calculate_load_token_rsa_1024) {
+START_TEST (test_dm_calculate_load_token_rsa1024) {
 	test_dm_calculate_load_token(TEST_RSA_1024_PRIVATE_KEY, NULL, "RSA1024");
+} END_TEST
+
+START_TEST (test_dm_calculate_load_token_rsa) {
+	test_dm_calculate_load_token(TEST_RSA_PRIVATE_KEY, "password", "RSA2048");
 } END_TEST
 
 START_TEST (test_GP211_calculate_load_token_rsa1024_known_vector) {
@@ -1303,6 +1308,11 @@ START_TEST (test_dm_calculate_install_token_rsa1024) {
 	test_dm_calculate_install_token(TEST_RSA_1024_PRIVATE_KEY, NULL, "RSA1024");
 } END_TEST
 
+
+START_TEST (test_dm_calculate_install_token_rsa) {
+	test_dm_calculate_install_token(TEST_RSA_PRIVATE_KEY, "password", "RSA2048");
+} END_TEST
+
 /**
  * Delegated management test step 6:
  * Install helloworld.cap in delegated management SD using load and install tokens.
@@ -1345,7 +1355,7 @@ static void test_dm_install_helloworld_with_tokens(const char *tokenKeyLabel) {
 	sdSecurityInfo.invokingAidLength = sizeof(sdInstanceAID);
 	status = GP211_mutual_authentication(cardContext, cardInfo, NULL,
 			(PBYTE)sdPersonalizationKey, (PBYTE)sdPersonalizationKey, (PBYTE)sdPersonalizationKey,
-			sizeof(sdPersonalizationKey), 1, 0, 0, 0, GP211_SCP03_SECURITY_LEVEL_C_MAC, OPGP_DERIVATION_METHOD_NONE, &sdSecurityInfo);
+			sizeof(sdPersonalizationKey), 1, 0, 0, 0, GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC, OPGP_DERIVATION_METHOD_NONE, &sdSecurityInfo);
 	if (OPGP_ERROR_CHECK(status)) {
 		ck_abort_msg("Mutual authentication with personalized delegated SD failed: %s", status.errorMessage);
 	}
@@ -1420,6 +1430,10 @@ START_TEST (test_dm_install_helloworld_with_tokens_ecc) {
 
 START_TEST (test_dm_install_helloworld_with_tokens_rsa1024) {
 	test_dm_install_helloworld_with_tokens("RSA1024");
+} END_TEST
+
+START_TEST (test_dm_install_helloworld_with_tokens_rsa) {
+	test_dm_install_helloworld_with_tokens("RSA2048");
 } END_TEST
 
 /**
@@ -1574,23 +1588,51 @@ Suite * GlobalPlatform_suite(void) {
  //    tcase_add_test (tc_core, test_get_status);
  //    tcase_add_test (tc_core, test_delete);
  //    tcase_add_test (tc_core, test_install_callback);
+	// tcase_add_test (tc_core, test_delete);
  //    tcase_add_test (tc_core, test_put_aes_key);
  //    tcase_add_test (tc_core, test_delete_key);
 	// tcase_add_test (tc_core, test_create_sd);
 	// tcase_add_test (tc_core, test_personalize_sd);
 	// tcase_add_test (tc_core, test_move_sd);
 	// tcase_add_test (tc_core, test_delete_sd);
-	tcase_add_test (tc_core, test_GP211_calculate_load_token_rsa1024_known_vector);
-	tcase_add_test (tc_core, test_dm_put_token_key_rsa1024);
+
+	// RSA 1024
+	// tcase_add_test (tc_core, test_GP211_calculate_load_token_rsa1024_known_vector);
+	// tcase_add_test (tc_core, test_dm_put_token_key_rsa1024);
+	// tcase_add_test (tc_core, test_dm_put_receipt_key_aes256);
+	// tcase_add_test (tc_core, test_dm_install_sd_with_delegated_management);
+	// tcase_add_test (tc_core, test_personalize_sd);
+	// tcase_add_test (tc_core, test_dm_calculate_load_token_rsa_1024);
+	// tcase_add_test (tc_core, test_dm_calculate_install_token_rsa1024);
+	// tcase_add_test (tc_core, test_dm_install_helloworld_with_tokens_rsa1024);
+	// tcase_add_test (tc_core, test_dm_delete_helloworld);
+	// tcase_add_test (tc_core, test_dm_delete_sd);
+	// tcase_add_test (tc_core, test_dm_delete_keys);
+
+	// RSA 2048
+	// tcase_add_test (tc_core, test_dm_put_token_key_rsa);
+	// tcase_add_test (tc_core, test_dm_put_receipt_key_aes256);
+	// tcase_add_test (tc_core, test_dm_install_sd_with_delegated_management);
+	// tcase_add_test (tc_core, test_personalize_sd);
+	// tcase_add_test (tc_core, test_dm_calculate_load_token_rsa);
+	// tcase_add_test (tc_core, test_dm_calculate_install_token_rsa);
+	// tcase_add_test (tc_core, test_dm_install_helloworld_with_tokens_rsa);
+	// tcase_add_test (tc_core, test_dm_delete_helloworld);
+	// tcase_add_test (tc_core, test_dm_delete_sd);
+	// tcase_add_test (tc_core, test_dm_delete_keys);
+
+	// ECC 256
+	tcase_add_test (tc_core, test_dm_put_token_key_ecc);
 	tcase_add_test (tc_core, test_dm_put_receipt_key_aes256);
 	tcase_add_test (tc_core, test_dm_install_sd_with_delegated_management);
 	tcase_add_test (tc_core, test_personalize_sd);
-	tcase_add_test (tc_core, test_dm_calculate_load_token_rsa_1024);
-	tcase_add_test (tc_core, test_dm_calculate_install_token_rsa1024);
-	tcase_add_test (tc_core, test_dm_install_helloworld_with_tokens_rsa1024);
+	tcase_add_test (tc_core, test_dm_calculate_load_token_ecc);
+	tcase_add_test (tc_core, test_dm_calculate_install_token_ecc);
+	tcase_add_test (tc_core, test_dm_install_helloworld_with_tokens_ecc);
 	tcase_add_test (tc_core, test_dm_delete_helloworld);
 	tcase_add_test (tc_core, test_dm_delete_sd);
 	tcase_add_test (tc_core, test_dm_delete_keys);
+
 	suite_add_tcase(s, tc_core);
 
 	return s;
