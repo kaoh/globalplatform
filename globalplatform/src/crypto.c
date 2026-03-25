@@ -1209,7 +1209,9 @@ rsa_end:
 #else
 	if (keyType == EVP_PKEY_EC) {
 #endif
+		EVP_MD_CTX *mdctx = NULL;
 		EVP_PKEY_CTX *pctx = NULL;
+		const EVP_MD *md = NULL;
 		unsigned char *derSignature = NULL;
 		size_t derSignatureLength = 0;
 		const unsigned char *derPtr = NULL;
@@ -1232,15 +1234,27 @@ rsa_end:
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto ecc_end; }
 		}
 
-		pctx = EVP_PKEY_CTX_new(key, NULL);
-		if (pctx == NULL) {
+		/*
+		 * GP ECDSA signatures for tokens/DAPs are digest-based and encoded in plain (r||s) format.
+		 * Select digest by key size to match common GP profiles.
+		 */
+		if (keyBits <= 256) {
+			md = EVP_sha256();
+		} else if (keyBits <= 384) {
+			md = EVP_sha384();
+		} else {
+			md = EVP_sha512();
+		}
+
+		mdctx = EVP_MD_CTX_create();
+		if (mdctx == NULL) {
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto ecc_end; }
 		}
-		result = EVP_PKEY_sign_init(pctx);
+		result = EVP_DigestSignInit(mdctx, &pctx, md, NULL, key);
 		if (result != 1) {
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto ecc_end; }
 		}
-		result = EVP_PKEY_sign(pctx, NULL, &derSignatureLength, message, messageLength);
+		result = EVP_DigestSign(mdctx, NULL, &derSignatureLength, message, messageLength);
 		if (result != 1 || derSignatureLength == 0) {
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto ecc_end; }
 		}
@@ -1249,7 +1263,7 @@ rsa_end:
 		if (derSignature == NULL) {
 			{ OPGP_ERROR_CREATE_ERROR(status, ENOMEM, OPGP_stringify_error(ENOMEM)); goto ecc_end; }
 		}
-		result = EVP_PKEY_sign(pctx, derSignature, &derSignatureLength, message, messageLength);
+		result = EVP_DigestSign(mdctx, derSignature, &derSignatureLength, message, messageLength);
 		if (result != 1) {
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto ecc_end; }
 		}
@@ -1292,8 +1306,8 @@ ecc_end:
 		if (derSignature != NULL) {
 			free(derSignature);
 		}
-		if (pctx != NULL) {
-			EVP_PKEY_CTX_free(pctx);
+		if (mdctx != NULL) {
+			EVP_MD_CTX_destroy(mdctx);
 		}
 		goto end;
 	}
