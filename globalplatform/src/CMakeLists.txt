@@ -291,6 +291,8 @@ IF(TESTING)
           ${CMAKE_CURRENT_SOURCE_DIR}/ecc_public_key_test.pem
           ${CMAKE_CURRENT_SOURCE_DIR}/rsa_private_key.pem
           ${CMAKE_CURRENT_SOURCE_DIR}/rsa_public_key.pem
+          ${CMAKE_CURRENT_SOURCE_DIR}/rsa_1024_private_key_test.pem
+          ${CMAKE_CURRENT_SOURCE_DIR}/rsa_1024_public_key_test.pem
           $<TARGET_FILE_DIR:globalplatformIntegrationTest>)
       set(_gp_lib globalplatform)
       if(TARGET globalplatformStatic)

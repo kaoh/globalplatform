@@ -663,13 +663,16 @@ OPGP_ERROR_STATUS get_load_data(PBYTE executableLoadFileAID, DWORD executableLoa
 								   DWORD nonVolatileCodeSpaceLimit, DWORD volatileDataSpaceLimit,
 								   DWORD nonVolatileDataSpaceLimit, PBYTE loadData, PDWORD loadDataLength) {
 	OPGP_ERROR_STATUS status;
-	unsigned char buf[300];
+	unsigned char buf[700];
 	DWORD i=0;
 	DWORD hiByte, loByte;
 	DWORD staticSize;
 	DWORD bodyLength;
 	DWORD encodedLength;
 	DWORD lcValue;
+	DWORD tokenLengthFieldLength = 0;
+	BYTE tokenLengthField[3];
+	LONG lenLen;
 	OPGP_LOG_START(_T("get_load_data"));
 	buf[i++] = 0x02;
 	buf[i++] = 0x00;
@@ -735,23 +738,36 @@ OPGP_ERROR_STATUS get_load_data(PBYTE executableLoadFileAID, DWORD executableLoa
 	else buf[i++] = 0x00;
 
 	bodyLength = i - 5;
-	/* For token signature inputs (loadTokenLength == 0), use 3-byte Lc only when body exceeds 255. */
-	if (bodyLength > 0xFF && loadTokenLength == 0) {
+	lcValue = bodyLength;
+
+	if (loadTokenLength > 0) {
+		if (loadTokenLength > 0xFFFF) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
+		}
+		lenLen = write_TLV_length(tokenLengthField, 0, sizeof(tokenLengthField), (USHORT)loadTokenLength);
+		if (lenLen < 0) {
+			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
+		}
+		tokenLengthFieldLength = (DWORD)lenLen;
+		lcValue += tokenLengthFieldLength + loadTokenLength;
+	}
+
+	if (lcValue > 0xFFFF) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
+	}
+
+	if (lcValue > 0xFF) {
 		encodedLength = i;
 		buf[2] = 0x00;
-		buf[3] = (BYTE)(bodyLength >> 8);
-		buf[4] = (BYTE)(bodyLength & 0xFF);
+		buf[3] = (BYTE)(lcValue >> 8);
+		buf[4] = (BYTE)(lcValue & 0xFF);
 		if (encodedLength > *loadDataLength) {
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
 		}
 		memcpy(loadData, buf, encodedLength);
 		*loadDataLength = encodedLength;
 	} else {
-		lcValue = bodyLength + loadTokenLength;
 		encodedLength = bodyLength + 3;
-		if (lcValue > 0xFF) {
-			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
-		}
 		if (encodedLength > *loadDataLength) {
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
 		}

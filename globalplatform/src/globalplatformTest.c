@@ -44,6 +44,8 @@
 #define TEST_ECC_PUBLIC_KEY "ecc_public_key_test.pem"
 #define TEST_RSA_PRIVATE_KEY "rsa_private_key.pem"
 #define TEST_RSA_PUBLIC_KEY "rsa_public_key.pem"
+#define TEST_RSA_1024_PRIVATE_KEY "rsa_1024_private_key_test.pem"
+#define TEST_RSA_1024_PUBLIC_KEY "rsa_1024_public_key_test.pem"
 
 #define INTERNAL_DELETE_APPLET 0x01
 #define INTERNAL_DELETE_PACKAGE 0x02
@@ -168,7 +170,7 @@ static OPGP_ERROR_STATUS internal_mutual_authentication() {
 	status = GP211_mutual_authentication(cardContext, cardInfo, NULL,
 			(PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE) OPGP_VISA_DEFAULT_KEY,
 			(PBYTE) OPGP_VISA_DEFAULT_KEY, sizeof(OPGP_VISA_DEFAULT_KEY), 0, 0, scp, scpImpl,
-			GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC, OPGP_DERIVATION_METHOD_NONE, &securityInfo211);
+			GP211_SCP01_SECURITY_LEVEL_C_MAC, OPGP_DERIVATION_METHOD_NONE, &securityInfo211);
 	if (OPGP_ERROR_CHECK(status)) {
 		return status;
 	}
@@ -861,7 +863,7 @@ START_TEST (test_personalize_sd) {
 	sdSecurityInfo.invokingAidLength = sizeof(sdInstanceAID);
 	status = GP211_mutual_authentication(cardContext, cardInfo, NULL,
 			(PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY,
-			16, 0, 0, 0, 0, GP211_SCP03, OPGP_DERIVATION_METHOD_NONE, &sdSecurityInfo);
+			16, 0, 0, 0, 0, GP211_SCP03_SECURITY_LEVEL_C_MAC, OPGP_DERIVATION_METHOD_NONE, &sdSecurityInfo);
 	if (OPGP_ERROR_CHECK(status)) {
 		ck_abort_msg("Mutual authentication with new SD failed: %s", status.errorMessage);
 	}
@@ -1041,8 +1043,8 @@ START_TEST (test_dm_put_token_key_ecc) {
 	test_dm_put_token_key(TEST_ECC_PUBLIC_KEY, GP211_KEY_TYPE_ECC, "ECC");
 } END_TEST
 
-START_TEST (test_dm_put_token_key_rsa) {
-	test_dm_put_token_key(TEST_RSA_PUBLIC_KEY, GP211_KEY_TYPE_RSA, "RSA");
+START_TEST (test_dm_put_token_key_rsa1024) {
+	test_dm_put_token_key(TEST_RSA_1024_PUBLIC_KEY, GP211_KEY_TYPE_RSA, "RSA1024");
 } END_TEST
 
 /**
@@ -1185,7 +1187,7 @@ static void test_dm_calculate_load_token(OPGP_STRING privateKeyFile, char *priva
 	dmLoadTokenLength = sizeof(dmLoadToken);
 	status = GP211_calculate_load_token(
 			dmLoadFileParams.loadFileAID.AID, dmLoadFileParams.loadFileAID.AIDLength,
-			GP231_ISD_AID, sizeof(GP231_ISD_AID),
+			(PBYTE)sdInstanceAID, sizeof(sdInstanceAID),
 			dmLoadFileDataBlockHash, dmLoadFileDataBlockHashLength,
 			dmLoadFileParams.loadFileSize, 0, 0,
 			dmLoadToken, &dmLoadTokenLength,
@@ -1203,8 +1205,58 @@ START_TEST (test_dm_calculate_load_token_ecc) {
 	test_dm_calculate_load_token(TEST_ECC_PRIVATE_KEY, NULL, "ECC");
 } END_TEST
 
-START_TEST (test_dm_calculate_load_token_rsa) {
-	test_dm_calculate_load_token(TEST_RSA_PRIVATE_KEY, "password", "RSA");
+START_TEST (test_dm_calculate_load_token_rsa_1024) {
+	test_dm_calculate_load_token(TEST_RSA_1024_PRIVATE_KEY, NULL, "RSA1024");
+} END_TEST
+
+START_TEST (test_GP211_calculate_load_token_rsa1024_known_vector) {
+	OPGP_ERROR_STATUS status;
+	BYTE executableLoadFileAID[] = {0xD0, 0xD1, 0xD2, 0xD3, 0xD4, 0xD5, 0x01};
+	BYTE securityDomainAID[] = {0x02, 0x02, 0x02, 0x02, 0x02, 0x02};
+	BYTE loadFileDataBlockHash[] = {
+			0x9C, 0x8E, 0x7F, 0x3D, 0xA8, 0x9B, 0x91, 0x42,
+			0x6B, 0x0F, 0x42, 0x93, 0xA2, 0x3D, 0xDB, 0x63,
+			0x9C, 0xAB, 0xFF, 0x9F, 0x68, 0xBF, 0x8C, 0x3E,
+			0x8E, 0xB8, 0xC9, 0xBB, 0x4F, 0x71, 0xF6, 0xA4
+	};
+	BYTE expectedLoadToken[] = {
+			0x0A, 0xD0, 0x70, 0x1C, 0x8C, 0x9F, 0xA0, 0xAF,
+			0xA1, 0x6E, 0x46, 0xA2, 0x04, 0x06, 0xE0, 0x62,
+			0xED, 0xD1, 0xC9, 0xC1, 0xBA, 0xC2, 0x00, 0x98,
+			0xDB, 0xAC, 0xA1, 0x5B, 0x81, 0xC6, 0x7B, 0x7A,
+			0xB6, 0x30, 0x0C, 0x39, 0xD3, 0xF7, 0x51, 0xAC,
+			0x42, 0xBC, 0x71, 0x9F, 0x61, 0x01, 0x09, 0x04,
+			0xC2, 0x06, 0x6E, 0x52, 0x14, 0x46, 0xB1, 0x25,
+			0x14, 0x55, 0x25, 0xF6, 0xE1, 0x93, 0x9B, 0xCE,
+			0x38, 0x43, 0xA6, 0x5D, 0x03, 0x33, 0x28, 0xAC,
+			0xB7, 0x41, 0xD8, 0xA6, 0xAB, 0x87, 0xE2, 0x58,
+			0xD4, 0xF9, 0x9C, 0xCF, 0x3E, 0x11, 0xD8, 0xC8,
+			0xFC, 0xE6, 0x53, 0x69, 0x69, 0xEA, 0x59, 0x8E,
+			0x50, 0xB4, 0x25, 0xD2, 0x25, 0xA6, 0x19, 0xD4,
+			0xD9, 0x4F, 0xE6, 0xA7, 0x4E, 0x36, 0x6D, 0x28,
+			0x21, 0xCA, 0xAF, 0xE2, 0x88, 0x43, 0xCF, 0xB7,
+			0x14, 0xB1, 0xFD, 0xB9, 0x71, 0xCC, 0x98, 0x5D
+	};
+	BYTE loadToken[512];
+	DWORD loadTokenLength = sizeof(loadToken);
+
+	status = GP211_calculate_load_token(
+			executableLoadFileAID, sizeof(executableLoadFileAID),
+			securityDomainAID, sizeof(securityDomainAID),
+			loadFileDataBlockHash, sizeof(loadFileDataBlockHash),
+			0, 0, 0,
+			loadToken, &loadTokenLength,
+			TEST_RSA_1024_PRIVATE_KEY, NULL);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_calculate_load_token() failed: %s", status.errorMessage);
+	}
+	if (loadTokenLength != sizeof(expectedLoadToken)) {
+		ck_abort_msg("Unexpected load token length. expected=%lu actual=%lu",
+				(unsigned long)sizeof(expectedLoadToken), (unsigned long)loadTokenLength);
+	}
+	if (memcmp(loadToken, expectedLoadToken, sizeof(expectedLoadToken)) != 0) {
+		ck_abort_msg("Unexpected load token value.");
+	}
 } END_TEST
 
 /**
@@ -1247,8 +1299,8 @@ START_TEST (test_dm_calculate_install_token_ecc) {
 	test_dm_calculate_install_token(TEST_ECC_PRIVATE_KEY, NULL, "ECC");
 } END_TEST
 
-START_TEST (test_dm_calculate_install_token_rsa) {
-	test_dm_calculate_install_token(TEST_RSA_PRIVATE_KEY, "password", "RSA");
+START_TEST (test_dm_calculate_install_token_rsa1024) {
+	test_dm_calculate_install_token(TEST_RSA_1024_PRIVATE_KEY, NULL, "RSA1024");
 } END_TEST
 
 /**
@@ -1293,14 +1345,14 @@ static void test_dm_install_helloworld_with_tokens(const char *tokenKeyLabel) {
 	sdSecurityInfo.invokingAidLength = sizeof(sdInstanceAID);
 	status = GP211_mutual_authentication(cardContext, cardInfo, NULL,
 			(PBYTE)sdPersonalizationKey, (PBYTE)sdPersonalizationKey, (PBYTE)sdPersonalizationKey,
-			sizeof(sdPersonalizationKey), 1, 0, 0, 0, GP211_SCP03, OPGP_DERIVATION_METHOD_NONE, &sdSecurityInfo);
+			sizeof(sdPersonalizationKey), 1, 0, 0, 0, GP211_SCP03_SECURITY_LEVEL_C_MAC, OPGP_DERIVATION_METHOD_NONE, &sdSecurityInfo);
 	if (OPGP_ERROR_CHECK(status)) {
 		ck_abort_msg("Mutual authentication with personalized delegated SD failed: %s", status.errorMessage);
 	}
 
 	status = GP211_install_for_load(cardContext, cardInfo, &sdSecurityInfo,
 			dmLoadFileParams.loadFileAID.AID, dmLoadFileParams.loadFileAID.AIDLength,
-			GP231_ISD_AID, sizeof(GP231_ISD_AID),
+			(PBYTE)sdInstanceAID, sizeof(sdInstanceAID),
 			dmLoadFileDataBlockHash, dmLoadFileDataBlockHashLength,
 			dmLoadToken, dmLoadTokenLength,
 			dmLoadFileParams.loadFileSize, 0, 0);
@@ -1366,8 +1418,8 @@ START_TEST (test_dm_install_helloworld_with_tokens_ecc) {
 	test_dm_install_helloworld_with_tokens("ECC");
 } END_TEST
 
-START_TEST (test_dm_install_helloworld_with_tokens_rsa) {
-	test_dm_install_helloworld_with_tokens("RSA");
+START_TEST (test_dm_install_helloworld_with_tokens_rsa1024) {
+	test_dm_install_helloworld_with_tokens("RSA1024");
 } END_TEST
 
 /**
@@ -1528,13 +1580,14 @@ Suite * GlobalPlatform_suite(void) {
 	// tcase_add_test (tc_core, test_personalize_sd);
 	// tcase_add_test (tc_core, test_move_sd);
 	// tcase_add_test (tc_core, test_delete_sd);
-	tcase_add_test (tc_core, test_dm_put_token_key_rsa);
+	tcase_add_test (tc_core, test_GP211_calculate_load_token_rsa1024_known_vector);
+	tcase_add_test (tc_core, test_dm_put_token_key_rsa1024);
 	tcase_add_test (tc_core, test_dm_put_receipt_key_aes256);
 	tcase_add_test (tc_core, test_dm_install_sd_with_delegated_management);
 	tcase_add_test (tc_core, test_personalize_sd);
-	tcase_add_test (tc_core, test_dm_calculate_load_token_rsa);
-	tcase_add_test (tc_core, test_dm_calculate_install_token_rsa);
-	tcase_add_test (tc_core, test_dm_install_helloworld_with_tokens_rsa);
+	tcase_add_test (tc_core, test_dm_calculate_load_token_rsa_1024);
+	tcase_add_test (tc_core, test_dm_calculate_install_token_rsa1024);
+	tcase_add_test (tc_core, test_dm_install_helloworld_with_tokens_rsa1024);
 	tcase_add_test (tc_core, test_dm_delete_helloworld);
 	tcase_add_test (tc_core, test_dm_delete_sd);
 	tcase_add_test (tc_core, test_dm_delete_keys);
