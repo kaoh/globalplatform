@@ -127,6 +127,7 @@ Options:
 - `--dap <hex>|@file`: DAP signature as hex or binary file (security domain AID is taken from `--sd`). If used, `--hash` must provide the precomputed load-file data block hash.
 - `--hash <hex>`: Precomputed load-file data block hash (hex) required when `--dap` is supplied.
 - `--load-token <hex>` / `--install-token <hex>`: Tokens for delegated management (optional).
+- Delegated management note: the selected Security Domain (`--sd`, the one used for SCP/authentication) is also used as the target Security Domain AID in INSTALL [for load]. In typical DM flows this means the delegated management SD is also the receiving/associated SD for the loaded package and installed applets.
 
 Examples:
 ```
@@ -143,6 +144,27 @@ gpshell3 install --install-only \
     --applet   A0000000010101 \
     --params 80
 ```
+
+### Delegated Management Token Workflow
+
+For delegated management, token verification must match both the key material on card and the exact APDU payload:
+
+1. Select/authenticate the delegated management Security Domain using global `--sd <AIDhex>` and valid SCP keys.
+2. Provision the matching **public** token verification key with `put-dm-token`.
+3. Generate tokens with the corresponding **private** key using `sign-*-token` commands.
+4. Pass the generated token bytes into the operation (`install --load-token`, `install --install-token`, `delete --token`, `move --token`, `update-registry --token`).
+
+Important parameter matching rules:
+
+- `sign-load-token <load-file-aid> <sd-aid> ...`:
+  - `<sd-aid>` must be the same SD AID used as `--sd` during `install`.
+  - It must also be the target SD AID used in INSTALL [for load].
+- `sign-install-token <load-file-aid> <module-aid> <app-aid> ...`:
+  - All AIDs, privileges, limits, and parameters must match the INSTALL [for install and make selectable] command.
+- `sign-extradition-token` / `sign-update-registry-token`:
+  - `<sd-aid>` must match the Security Domain AID used by the corresponding command.
+
+If these fields differ, cards typically reject the command with status words such as `6982`/`6985`.
 
 ## install-sd
 
@@ -307,8 +329,11 @@ Options:
 
 - `--kv <ver>`: Key set version, defaults to 0, 0 means that a new key set is created (optional).
 - `--new-kv <ver>`: New key set version when replacing or creating a new key set, default 0x70 (optional).
-- `<pem-file>[:pass]`: Token signing key in PEM, optional passphrase after colon.
+- `<pem-file>[:pass]`: Token verification public key in PEM, optional passphrase after colon.
 - `--token-type`: Token key type, `rsa` or `ecc` (default `rsa`).
+
+`put-dm-token` stores the token **verification** public key on card.  
+`sign-load-token`, `sign-install-token`, `sign-extradition-token`, `sign-update-registry-token`, and `sign-delete-token` must use the matching **private** key to create tokens accepted by that verification key.
 
 ## put-dm-receipt
 
@@ -381,7 +406,7 @@ For `ecc`, the signature is encoded in plain format according to BSI TR-03111 (`
 
 ## sign-load-token
 
-Calculate a Load Token using a private RSA key.
+Calculate a Load Token using a private RSA or ECC key.
 
 Synopsis:
 ```
@@ -390,7 +415,7 @@ gpshell3 sign-load-token [--output <file>] [--nv-code-limit <n>] [--v-data-limit
 
 ## sign-install-token
 
-Calculate an Install Token using a private RSA key.
+Calculate an Install Token using a private RSA or ECC key.
 
 Synopsis:
 ```
@@ -399,7 +424,7 @@ gpshell3 sign-install-token [--output <file>] [--p1 <n>] [--priv <n>] [--v-data-
 
 ## sign-extradition-token
 
-Calculate an Extradition Token using a private RSA key.
+Calculate an Extradition Token using a private RSA or ECC key.
 
 Synopsis:
 ```
@@ -408,7 +433,7 @@ gpshell3 sign-extradition-token [--output <file>] <sd-aidhex> <app-aidhex> <pem>
 
 ## sign-update-registry-token
 
-Calculate a Registry Update Token using a private RSA key.
+Calculate a Registry Update Token using a private RSA or ECC key.
 
 Synopsis:
 ```
@@ -417,7 +442,7 @@ gpshell3 sign-update-registry-token [--output <file>] [--priv <n>] [--registry-p
 
 ## sign-delete-token
 
-Calculate a Delete Token using a private RSA key.
+Calculate a Delete Token using a private RSA or ECC key.
 
 Synopsis:
 ```

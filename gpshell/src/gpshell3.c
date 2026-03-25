@@ -170,7 +170,9 @@ static void print_usage(const char *prog) {
         "      --dap: DAP signature as hex or @file for binary signature (SD AID taken from --sd) (optional).\n"
         "      --hash: precomputed load-file data block hash (hex) (required for --dap) (optional).\n"
         "      --load-token <hex>: Load token for delegated management (optional).\n"
-        "      --install-token <hex>: Install token for delegated management (optional).\n\n",
+        "      --install-token <hex>: Install token for delegated management (optional).\n"
+        "      DM note: the currently selected SD (--sd) is also used as target SD in INSTALL [for load].\n"
+        "      Put matching public token keys with put-dm-token; create matching signatures with sign-*-token.\n\n",
         stderr);
     fputs(
         "  install-sd [--load-file <AIDhex>] [--module <AIDhex>] [--expl-personalized] \\\n"
