@@ -90,6 +90,10 @@ OPGP_ERROR_STATUS calculate_signature(PBYTE message, DWORD messageLength, OPGP_S
 									char *passPhrase, PBYTE signature, PDWORD signatureLength);
 
 OPGP_NO_API
+OPGP_ERROR_STATUS validate_signature(PBYTE message, DWORD messageLength, OPGP_STRING PEMKeyFileName,
+									char *passPhrase, PBYTE signature, DWORD signatureLength);
+
+OPGP_NO_API
 OPGP_ERROR_STATUS calculate_MAC(BYTE sessionKey[16], BYTE *message, DWORD messageLength,
 						  BYTE icv[8], BYTE mac[8]);
 
@@ -171,39 +175,49 @@ OPGP_ERROR_STATUS validate_receipt(PBYTE validationData, DWORD validationDataLen
 							 BYTE receipt[16], PBYTE receiptKey, DWORD keyLength, BYTE secureChannelProtocol);
 
 OPGP_NO_API
+OPGP_ERROR_STATUS validate_receipt_ex(PBYTE validationData, DWORD validationDataLength,
+							  PBYTE receipt, DWORD receiptLength,
+							  PBYTE receiptKey, DWORD keyLength,
+							  BYTE receiptKeyType,
+							  OPGP_STRING PEMKeyFileName, char *passPhrase);
+
+OPGP_NO_API
 OPGP_ERROR_STATUS calculate_MAC_des_3des(BYTE _3des_key[16], BYTE *message, DWORD messageLength,
 		BYTE initialICV[8], BYTE mac[8]);
 
 OPGP_NO_API
-OPGP_ERROR_STATUS validate_install_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
-						  DWORD cardUniqueDataLength,
-					   PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
-					   PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
-					   PBYTE applicationAID, DWORD applicationAIDLength, BYTE secureChannelProtocol);
-
-OPGP_NO_API
-OPGP_ERROR_STATUS validate_delete_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
-						 DWORD cardUniqueDataLength,
-					   PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
-					   PBYTE AID, DWORD AIDLengthv, BYTE secureChannelProtocol);
-
-OPGP_NO_API
-OPGP_ERROR_STATUS validate_load_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
-						   DWORD cardUniqueDataLength,
-						   PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+OPGP_ERROR_STATUS validate_install_receipt(PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
 						   PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
-						   PBYTE securityDomainAID, DWORD securityDomainAIDLength, BYTE secureChannelProtocol);
+						   PBYTE applicationAID, DWORD applicationAIDLength,
+						   BYTE receiptKeyType, OPGP_STRING PEMKeyFileName, char *passPhrase);
 
 OPGP_NO_API
-OPGP_ERROR_STATUS validate_registry_update_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
-							  DWORD cardUniqueDataLength,
-						   PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+OPGP_ERROR_STATUS validate_delete_receipt(PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+						   PBYTE AID, DWORD AIDLength,
+						   BYTE receiptKeyType, OPGP_STRING PEMKeyFileName, char *passPhrase);
+
+OPGP_NO_API
+OPGP_ERROR_STATUS validate_load_receipt(PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+						   PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
+						   PBYTE securityDomainAID, DWORD securityDomainAIDLength,
+						   BYTE receiptKeyType, OPGP_STRING PEMKeyFileName, char *passPhrase);
+
+OPGP_NO_API
+OPGP_ERROR_STATUS validate_extradition_receipt(PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+						   PBYTE oldSecurityDomainAID, DWORD oldSecurityDomainAIDLength,
+						   PBYTE newSecurityDomainAID, DWORD newSecurityDomainAIDLength,
+						   PBYTE applicationOrExecutableLoadFileAID,
+						   DWORD applicationOrExecutableLoadFileAIDLength,
+						   BYTE receiptKeyType, OPGP_STRING PEMKeyFileName, char *passPhrase);
+
+OPGP_NO_API
+OPGP_ERROR_STATUS validate_registry_update_receipt(PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
 						   PBYTE oldSecurityDomainAID, DWORD oldSecurityDomainAIDLength,
 						   PBYTE applicationAID, DWORD applicationAIDLength,
 						   PBYTE newSecurityDomainAID, DWORD newSecurityDomainAIDLength,
 						   DWORD applicationPrivileges,
 						   PBYTE registryUpdateParameters, DWORD registryUpdateParametersLength,
-						   BYTE secureChannelProtocol);
+						   BYTE receiptKeyType, OPGP_STRING PEMKeyFileName, char *passPhrase);
 
 //! \brief Reads a public RSA key from a file
 OPGP_NO_API

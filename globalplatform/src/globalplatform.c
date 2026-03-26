@@ -470,27 +470,61 @@ void mapOP201ToGP211DAPBlock(OP201_DAP_BLOCK op201dapBlock,
 OPGP_NO_API
 void mapOP201ToGP211ReceiptData(OP201_RECEIPT_DATA op201receiptData,
 									   GP211_RECEIPT_DATA *gp211receiptData) {
+	DWORD copyLength;
 	if (gp211receiptData == NULL)
 		return;
-	gp211receiptData->cardUniqueDataLength = op201receiptData.cardUniqueDataLength;
-	memcpy(gp211receiptData->cardUniqueData, op201receiptData.cardUniqueData, op201receiptData.cardUniqueDataLength);
-	gp211receiptData->confirmationCounterLength = op201receiptData.confirmationCounterLength;
-	memcpy(gp211receiptData->confirmationCounter, op201receiptData.confirmationCounter, op201receiptData.confirmationCounterLength);
-	gp211receiptData->receiptLength = op201receiptData.receiptLength;
-	memcpy(gp211receiptData->receipt, op201receiptData.receipt, op201receiptData.receiptLength);
+	memset(gp211receiptData, 0, sizeof(*gp211receiptData));
+
+	copyLength = op201receiptData.cardUniqueDataLength;
+	if (copyLength > sizeof(gp211receiptData->cardUniqueData)) {
+		copyLength = sizeof(gp211receiptData->cardUniqueData);
+	}
+	gp211receiptData->cardUniqueDataLength = (BYTE)copyLength;
+	memcpy(gp211receiptData->cardUniqueData, op201receiptData.cardUniqueData, copyLength);
+
+	copyLength = op201receiptData.confirmationCounterLength;
+	if (copyLength > sizeof(gp211receiptData->confirmationCounter)) {
+		copyLength = sizeof(gp211receiptData->confirmationCounter);
+	}
+	gp211receiptData->confirmationCounterLength = (BYTE)copyLength;
+	memcpy(gp211receiptData->confirmationCounter, op201receiptData.confirmationCounter, copyLength);
+
+	copyLength = op201receiptData.receiptLength;
+	if (copyLength > sizeof(gp211receiptData->receipt)) {
+		copyLength = sizeof(gp211receiptData->receipt);
+	}
+	gp211receiptData->receiptLength = (BYTE)copyLength;
+	memcpy(gp211receiptData->receipt, op201receiptData.receipt, copyLength);
 }
 
 OPGP_NO_API
 void mapGP211ToOP201ReceiptData(GP211_RECEIPT_DATA gp211receiptData,
 										OP201_RECEIPT_DATA *op201receiptData) {
+	DWORD copyLength;
 	if (op201receiptData == NULL)
 		return;
-	op201receiptData->cardUniqueDataLength = gp211receiptData.cardUniqueDataLength;
-	memcpy(op201receiptData->cardUniqueData, gp211receiptData.cardUniqueData, gp211receiptData.cardUniqueDataLength);
-	op201receiptData->confirmationCounterLength = gp211receiptData.confirmationCounterLength;
-	memcpy(op201receiptData->confirmationCounter, gp211receiptData.confirmationCounter, gp211receiptData.confirmationCounterLength);
-	op201receiptData->receiptLength = gp211receiptData.receiptLength;
-	memcpy(op201receiptData->receipt, gp211receiptData.receipt, gp211receiptData.receiptLength);
+	memset(op201receiptData, 0, sizeof(*op201receiptData));
+
+	copyLength = gp211receiptData.cardUniqueDataLength;
+	if (copyLength > sizeof(op201receiptData->cardUniqueData)) {
+		copyLength = sizeof(op201receiptData->cardUniqueData);
+	}
+	op201receiptData->cardUniqueDataLength = (BYTE)copyLength;
+	memcpy(op201receiptData->cardUniqueData, gp211receiptData.cardUniqueData, copyLength);
+
+	copyLength = gp211receiptData.confirmationCounterLength;
+	if (copyLength > sizeof(op201receiptData->confirmationCounter)) {
+		copyLength = sizeof(op201receiptData->confirmationCounter);
+	}
+	op201receiptData->confirmationCounterLength = (BYTE)copyLength;
+	memcpy(op201receiptData->confirmationCounter, gp211receiptData.confirmationCounter, copyLength);
+
+	copyLength = gp211receiptData.receiptLength;
+	if (copyLength > sizeof(op201receiptData->receipt)) {
+		copyLength = sizeof(op201receiptData->receipt);
+	}
+	op201receiptData->receiptLength = (BYTE)copyLength;
+	memcpy(op201receiptData->receipt, gp211receiptData.receipt, copyLength);
 }
 
 OPGP_NO_API
@@ -776,24 +810,141 @@ end:
 /**
  * Reads a valid buffer containing a (delete, load, install) receipt and parses it in a GP211_RECEIPT_DATA.
  * \param buf [in] The buffer to parse.
+ * \param bufLength [in] The length of the buffer.
  * \param receiptData [out] The receipt data.
  * \return The number of bytes which were consumed while parsing the buffer.
  */
+static DWORD parse_receipt_length_ber(PBYTE buf, DWORD bufLength, PDWORD receiptLength) {
+	if (bufLength < 1 || receiptLength == NULL) {
+		return 0;
+	}
+	if (buf[0] <= 0x7F) {
+		*receiptLength = buf[0];
+		return 1;
+	}
+	if (buf[0] == 0x81) {
+		if (bufLength < 2 || buf[1] < 0x80) {
+			return 0;
+		}
+		*receiptLength = buf[1];
+		return 2;
+	}
+	return 0;
+}
+
 OPGP_NO_API
-DWORD fillReceipt(PBYTE buf, GP211_RECEIPT_DATA *receiptData) {
-	DWORD j = 0;
-	j++;
-	memcpy(receiptData->receipt, buf+j, 8);
-	j+=8;
-	receiptData->confirmationCounterLength = 2;//buf[j++];
-	j++;
-	memcpy(receiptData->confirmationCounter, buf+j, receiptData->confirmationCounterLength);
-	j+=receiptData->confirmationCounterLength;
-	receiptData->cardUniqueDataLength = 1;//buf[j++];
-	j++;
-	memcpy(receiptData->cardUniqueData, buf+j, receiptData->cardUniqueDataLength);
-	j+=receiptData->cardUniqueDataLength;
-	return j;
+DWORD fillReceipt(PBYTE buf, DWORD bufLength, GP211_RECEIPT_DATA *receiptData) {
+	DWORD offset = 0;
+	DWORD receiptLength = 0;
+	DWORD lengthFieldSize;
+
+	if (buf == NULL || receiptData == NULL) {
+		return 0;
+	}
+	memset(receiptData, 0, sizeof(*receiptData));
+
+	lengthFieldSize = parse_receipt_length_ber(buf, bufLength, &receiptLength);
+	if (lengthFieldSize == 0 || receiptLength > sizeof(receiptData->receipt)) {
+		return 0;
+	}
+	offset += lengthFieldSize;
+	if (bufLength - offset < receiptLength) {
+		return 0;
+	}
+
+	receiptData->receiptLength = (BYTE)receiptLength;
+	if (receiptLength > 0) {
+		memcpy(receiptData->receipt, buf + offset, receiptLength);
+		offset += receiptLength;
+	}
+
+	if (bufLength - offset < 1) {
+		return 0;
+	}
+	receiptData->confirmationCounterLength = buf[offset++];
+	if (receiptData->confirmationCounterLength == 0 ||
+		receiptData->confirmationCounterLength > sizeof(receiptData->confirmationCounter) ||
+		bufLength - offset < receiptData->confirmationCounterLength) {
+		return 0;
+	}
+	memcpy(receiptData->confirmationCounter, buf + offset, receiptData->confirmationCounterLength);
+	offset += receiptData->confirmationCounterLength;
+
+	if (bufLength - offset < 1) {
+		return 0;
+	}
+	receiptData->cardUniqueDataLength = buf[offset++];
+	if (receiptData->cardUniqueDataLength > sizeof(receiptData->cardUniqueData) ||
+		bufLength - offset < receiptData->cardUniqueDataLength) {
+		return 0;
+	}
+	if (receiptData->cardUniqueDataLength > 0) {
+		memcpy(receiptData->cardUniqueData, buf + offset, receiptData->cardUniqueDataLength);
+		offset += receiptData->cardUniqueDataLength;
+	}
+
+	if (bufLength > offset) {
+		receiptData->tokenIdentifierPresent = 1;
+		receiptData->tokenIdentifierLength = buf[offset++];
+		if (receiptData->tokenIdentifierLength > sizeof(receiptData->tokenIdentifier) ||
+			bufLength - offset < receiptData->tokenIdentifierLength) {
+			return 0;
+		}
+		if (receiptData->tokenIdentifierLength > 0) {
+			memcpy(receiptData->tokenIdentifier, buf + offset, receiptData->tokenIdentifierLength);
+			offset += receiptData->tokenIdentifierLength;
+		}
+	}
+
+	if (bufLength > offset) {
+		receiptData->tokenDataDigestPresent = 1;
+		receiptData->tokenDataDigestLength = buf[offset++];
+		if (receiptData->tokenDataDigestLength > sizeof(receiptData->tokenDataDigest) ||
+			bufLength - offset < receiptData->tokenDataDigestLength) {
+			return 0;
+		}
+		if (receiptData->tokenDataDigestLength > 0) {
+			memcpy(receiptData->tokenDataDigest, buf + offset, receiptData->tokenDataDigestLength);
+			offset += receiptData->tokenDataDigestLength;
+		}
+	}
+
+	return offset;
+}
+
+OPGP_NO_API
+OPGP_ERROR_STATUS parse_receipt_from_response(PBYTE recvBuffer, DWORD recvBufferLength,
+											  GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable) {
+	OPGP_ERROR_STATUS status;
+	DWORD consumed;
+	DWORD receiptPayloadLength;
+
+	if (receiptDataAvailable != NULL) {
+		*receiptDataAvailable = 0;
+	}
+	if (recvBuffer == NULL || recvBufferLength < 2) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+	receiptPayloadLength = recvBufferLength - 2;
+	if (receiptPayloadLength == 0) {
+		OPGP_ERROR_CREATE_NO_ERROR(status);
+		goto end;
+	}
+	if (receiptData == NULL || receiptDataAvailable == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		goto end;
+	}
+
+	consumed = fillReceipt(recvBuffer, receiptPayloadLength, receiptData);
+	if (consumed == 0 || consumed != receiptPayloadLength) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+	*receiptDataAvailable = 1;
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+end:
+	return status;
 }
 
 /**
@@ -1875,7 +2026,9 @@ OPGP_ERROR_STATUS delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_IN
 				   OPGP_AID *AIDs, DWORD AIDsLength, GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataLength,
 				   PBYTE deleteToken, DWORD deleteTokenLength, DWORD mode) {
 	OPGP_ERROR_STATUS status;
-	DWORD count=0;
+	DWORD receiptCapacity = 0;
+	DWORD receiptPayloadLength = 0;
+	DWORD consumed = 0;
 	BYTE deleteTokenSignatureData[1000] = {0};
 	DWORD deleteTokenSignatureDataLength = sizeof(deleteTokenSignatureData);
 	BYTE commandHeader[5] = {0x80, 0xE4, 0x00, 0x00, 0x00};
@@ -1950,15 +2103,26 @@ OPGP_ERROR_STATUS delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_IN
 		*receiptDataLength = 0;
 		goto end;
 	}
-	if (recvBufferLength-count > sizeof(GP211_RECEIPT_DATA)) { // assumption that a GP211_RECEIPT_DATA structure is returned in a delegated management deletion
+	if (receiptDataLength != NULL) {
+		receiptCapacity = *receiptDataLength;
 		*receiptDataLength = 0;
-		while (recvBufferLength-count > sizeof(GP211_RECEIPT_DATA)) {
-			count+=fillReceipt(recvBuffer, receiptData + *receiptDataLength++);
-		}
 	}
-	else {
-		*receiptDataLength = 0;
+	if (recvBufferLength < 2) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 		goto end;
+	}
+	receiptPayloadLength = recvBufferLength - 2;
+	if (receiptPayloadLength > 0) {
+		if (receiptDataLength == NULL || receiptData == NULL || receiptCapacity == 0) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+			goto end;
+		}
+		consumed = fillReceipt(recvBuffer, receiptPayloadLength, receiptData);
+		if (consumed == 0 || consumed != receiptPayloadLength) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+		*receiptDataLength = 1;
 	}
 
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
@@ -3607,9 +3771,9 @@ OPGP_ERROR_STATUS load_from_buffer(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 			callback->callback(callbackParameters);
 		}
 	}
-	if (recvBufferLength > sizeof(GP211_RECEIPT_DATA)) { // assumption that a GP211_RECEIPT_DATA structure is returned in a delegated management deletion
-		fillReceipt(recvBuffer, receiptData);
-		*receiptDataAvailable = 1;
+	status = parse_receipt_from_response(recvBuffer, recvBufferLength, receiptData, receiptDataAvailable);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
 	}
 
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
@@ -3912,9 +4076,9 @@ OPGP_ERROR_STATUS install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_I
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	if (recvBufferLength > sizeof(GP211_RECEIPT_DATA)) { // assumption that a GP211_RECEIPT_DATA structure is returned in a delegated management deletion
-		fillReceipt(recvBuffer, receiptData);
-		*receiptDataAvailable = 1;
+	status = parse_receipt_from_response(recvBuffer, recvBufferLength, receiptData, receiptDataAvailable);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
 	}
 
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
@@ -4055,9 +4219,9 @@ OPGP_ERROR_STATUS install_for_install_and_make_selectable(OPGP_CARD_CONTEXT card
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	if (recvBufferLength > sizeof(GP211_RECEIPT_DATA)) { // assumption that a GP211_RECEIPT_DATA structure is returned in a delegated management deletion
-		fillReceipt(recvBuffer, receiptData);
-		*receiptDataAvailable = 1;
+	status = parse_receipt_from_response(recvBuffer, recvBufferLength, receiptData, receiptDataAvailable);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
 	}
 
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
@@ -4145,9 +4309,9 @@ OPGP_ERROR_STATUS GP211_install_for_extradition(OPGP_CARD_CONTEXT cardContext, O
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	if (recvBufferLength > sizeof(GP211_RECEIPT_DATA)) { // assumption that a GP211_RECEIPT_DATA structure is returned in a delegated management deletion
-		fillReceipt(recvBuffer, receiptData);
-		*receiptDataAvailable = 1;
+	status = parse_receipt_from_response(recvBuffer, recvBufferLength, receiptData, receiptDataAvailable);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
 	}
 
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
@@ -4236,9 +4400,9 @@ OPGP_ERROR_STATUS GP211_install_for_registry_update(OPGP_CARD_CONTEXT cardContex
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	if (recvBufferLength > sizeof(GP211_RECEIPT_DATA)) {
-		fillReceipt(recvBuffer, receiptData);
-		*receiptDataAvailable = 1;
+	status = parse_receipt_from_response(recvBuffer, recvBufferLength, receiptData, receiptDataAvailable);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
 	}
 
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
@@ -4384,9 +4548,9 @@ OPGP_ERROR_STATUS install_for_make_selectable(OPGP_CARD_CONTEXT cardContext, OPG
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	if (recvBufferLength > sizeof(GP211_RECEIPT_DATA)) { // assumption that a GP211_RECEIPT_DATA structure is returned in a delegated management deletion
-		fillReceipt(recvBuffer, receiptData);
-		*receiptDataAvailable = 1;
+	status = parse_receipt_from_response(recvBuffer, recvBufferLength, receiptData, receiptDataAvailable);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
 	}
 
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
@@ -5809,198 +5973,73 @@ end:
 
 
 /**
- * Each time a receipt is generated the confirmation counter is incremented by the Card Manager.
- * You may keep track of it. Returns OPGP_ERROR_SUCCESS if receipt is valid.
- * \param confirmationCounter [in] The confirmation counter.
- * \param cardUniqueData [in] The card unique data.
- * \param cardUniqueDataLength [in] The length of the card unique data buffer.
- * \param receiptKey [in] The 3DES or AES key to generate the receipt.
- * \param keyLength [in] The key length. 16, 24 or 32 bytes.
- * \param receiptData [in] The GP211_RECEIPT_DATA structure containing the receipt returned
- * from load() to verify.
- * \param executableLoadFileAID [in] A buffer with AID of the Executable Load File which was INSTALL [for load].
- * \param executableLoadFileAIDLength [in] The length of the Executable Load File AID.
- * \param securityDomainAID [in] A buffer containing the AID of the associated Security Domain.
- * \param securityDomainAIDLength [in] The length of the Security Domain AID.
- * \param secureChannelProtocol [in] The Secure Channel Protocol.
- * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
+ * Validates a GlobalPlatform 2.3.1 Load Receipt with symmetric (DES/AES) or asymmetric (RSA/ECC) keys.
  */
-OPGP_ERROR_STATUS GP211_validate_load_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
-						   DWORD cardUniqueDataLength,
-						   BYTE receiptKey[32], DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+OPGP_ERROR_STATUS GP211_validate_load_receipt(PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
 						   PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
-						   PBYTE securityDomainAID, DWORD securityDomainAIDLength, BYTE secureChannelProtocol) {
-	return validate_load_receipt(confirmationCounter, cardUniqueData,
-						   cardUniqueDataLength,
-						   receiptKey, keyLength, receiptData,
-						   executableLoadFileAID, executableLoadFileAIDLength,
-						   securityDomainAID, securityDomainAIDLength, secureChannelProtocol);
-}
-
-
-/**
- * Each time a receipt is generated the confirmation counter is incremented by the Card Manager.
- * You may keep track of it. Returns OPGP_ERROR_SUCCESS if receipt is valid.
- * \param confirmationCounter [in] The confirmation counter.
- * \param cardUniqueData [in] The card unique data.
- * \param cardUniqueDataLength [in] The length of the card unique data buffer.
- * \param receiptKey [in] The 3DES or AES key to generate the receipt.
- * \param keyLength [in] The key length. 16, 24 or 32 bytes.
- * \param receiptData [in] The GP211_RECEIPT_DATA structure containing the receipt returned
- * from GP211_install_for_install() to verify.
- * \param executableLoadFileAID [in] A buffer with AID of the Executable Load File which was INSTALL [for install].
- * \param executableLoadFileAIDLength [in] The length of the Executable Load File AID.
- * \param applicationAID [in] The AID of the installed application.
- * \param applicationAIDLength [in] The length of the application instance AID.
- * \param secureChannelProtocol [in] The Secure Channel Protocol.
- * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
- */
-OPGP_ERROR_STATUS GP211_validate_install_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
-							  DWORD cardUniqueDataLength,
-						   BYTE receiptKey[32], DWORD keyLength, GP211_RECEIPT_DATA receiptData,
-						   PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
-						   PBYTE applicationAID, DWORD applicationAIDLength, BYTE secureChannelProtocol) {
-	return validate_install_receipt(confirmationCounter, cardUniqueData,
-							  cardUniqueDataLength,
-						   receiptKey, keyLength, receiptData,
-						   executableLoadFileAID, executableLoadFileAIDLength,
-						   applicationAID, applicationAIDLength, secureChannelProtocol);
-}
-
-
-/**
- * Each time a receipt is generated the confirmation counter is incremented by the Card Manager.
- * You may keep track of it. Returns OPGP_ERROR_SUCCESS if receipt is valid.
- * \param confirmationCounter [in] The confirmation counter.
- * \param cardUniqueData [in] The card unique data.
- * \param cardUniqueDataLength [in] The length of the card unique data buffer.
- * \param receiptKey [in] The 3DES or AES key to generate the receipt.
- * \param keyLength [in] The key length. 16, 24 or 32 bytes.
- * \param receiptData [in] The GP211_RECEIPT_DATA structure containing the receipt returned
- * from delete_application() to verify.
- * \param AID [in] A buffer with AID of the application which was deleted.
- * \param AIDLength [in] The length of the AID.
- * \param secureChannelProtocol [in] The Secure Channel Protocol.
- * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
- */
-OPGP_ERROR_STATUS GP211_validate_delete_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
-							 DWORD cardUniqueDataLength,
-						   BYTE receiptKey[32], DWORD keyLength, GP211_RECEIPT_DATA receiptData,
-						   PBYTE AID, DWORD AIDLength, BYTE secureChannelProtocol) {
-	return validate_delete_receipt(confirmationCounter, cardUniqueData,
-							 cardUniqueDataLength,
-						   receiptKey, keyLength, receiptData,
-						   AID, AIDLength, secureChannelProtocol);
+						   PBYTE securityDomainAID, DWORD securityDomainAIDLength,
+						   BYTE receiptKeyType, OPGP_STRING PEMKeyFileName, char *passPhrase) {
+	return validate_load_receipt(receiptKey, keyLength, receiptData,
+		executableLoadFileAID, executableLoadFileAIDLength,
+		securityDomainAID, securityDomainAIDLength,
+		receiptKeyType, PEMKeyFileName, passPhrase);
 }
 
 /**
- * Each time a receipt is generated the confirmation counter is incremented by the Card Manager.
- * You may keep track of it. Returns OPGP_ERROR_SUCCESS if receipt is valid.
- * \param confirmationCounter [in] The confirmation counter.
- * \param cardUniqueData [in] The card unique data.
- * \param cardUniqueDataLength [in] The length of the card unique data buffer.
- * \param receiptKey [in] The 3DES oe AES key to generate the receipt.
- * \param keyLength [in] The key length. 16, 24 or 32 bytes.
- * \param receiptData [in] The GP211_RECEIPT_DATA structure containing the receipt returned
- * from GP211_install_for_extradition() to verify.
- * \param oldSecurityDomainAID [in] The AID of the old associated Security Domain.
- * \param oldSecurityDomainAIDLength [in] The length of the oldSecurityDomainAID buffer.
- * \param newSecurityDomainAID [in] The AID of the new associated Security Domain.
- * \param newSecurityDomainAIDLength [in] The length of the newSecurityDomainAID buffer.
- * \param applicationOrExecutableLoadFileAID [in] A buffer with AID of the Executable Load File which was INSTALL [for install].
- * \param applicationOrExecutableLoadFileAIDLength [in] The length of the Executable Load File AID.
- * \param secureChannelProtocol [in] The Secure Channel Protocol.
- * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
+ * Validates a GlobalPlatform 2.3.1 Install Receipt with symmetric (DES/AES) or asymmetric (RSA/ECC) keys.
  */
-OPGP_ERROR_STATUS GP211_validate_extradition_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
-							  DWORD cardUniqueDataLength,
-						   BYTE receiptKey[32], DWORD keyLength, GP211_RECEIPT_DATA receiptData,
-						   PBYTE oldSecurityDomainAID, DWORD oldSecurityDomainAIDLength,
-						   PBYTE newSecurityDomainAID, DWORD newSecurityDomainAIDLength,
-						   PBYTE applicationOrExecutableLoadFileAID,
-						   DWORD applicationOrExecutableLoadFileAIDLength, BYTE secureChannelProtocol)
-{
-	OPGP_ERROR_STATUS status;
-	DWORD i=0;
-	PBYTE validationData;
-	DWORD validationDataLength;
-	OPGP_LOG_START(_T("GP211_validate_extradition_receipt"));
-	validationDataLength = 1 + 2 + 1 + cardUniqueDataLength + 1
-		+ oldSecurityDomainAIDLength + 1 + applicationOrExecutableLoadFileAIDLength +
-		1 + newSecurityDomainAIDLength;
-	validationData = (PBYTE)malloc(validationDataLength);
-	if (validationData == NULL) {
-		OPGP_ERROR_CREATE_ERROR(status, ENOMEM, OPGP_stringify_error(ENOMEM));
-		goto end;
-	}
-
-	validationData[i++] = 2;
-	validationData[i++] = (BYTE)((confirmationCounter & 0x0000FF00) >> 8);
-	validationData[i++] = (BYTE)(confirmationCounter & 0x000000FF);
-	validationData[i++] = (BYTE)cardUniqueDataLength;
-	memcpy(validationData + i, cardUniqueData, cardUniqueDataLength);
-	i+=cardUniqueDataLength;
-	validationData[i++] = (BYTE)oldSecurityDomainAIDLength;
-	memcpy(validationData + i, oldSecurityDomainAID, oldSecurityDomainAIDLength);
-	i+=oldSecurityDomainAIDLength;
-	validationData[i++] = (BYTE)applicationOrExecutableLoadFileAIDLength;
-	memcpy(validationData + i, applicationOrExecutableLoadFileAID, applicationOrExecutableLoadFileAIDLength);
-	i+=applicationOrExecutableLoadFileAIDLength;
-	validationData[i++] = (BYTE)newSecurityDomainAIDLength;
-	memcpy(validationData + i, newSecurityDomainAID, newSecurityDomainAIDLength);
-	i+=newSecurityDomainAIDLength;
-	status = validate_receipt(validationData, validationDataLength, receiptData.receipt, receiptKey, keyLength, secureChannelProtocol);
-	if (OPGP_ERROR_CHECK(status)) {
-		goto end;
-	}
-	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
-end:
-	if (validationData)
-		free(validationData);
-	OPGP_LOG_END(_T("GP211_validate_extradition_receipt"), status);
-	return status;
+OPGP_ERROR_STATUS GP211_validate_install_receipt(PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+							  PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
+							  PBYTE applicationAID, DWORD applicationAIDLength,
+							  BYTE receiptKeyType, OPGP_STRING PEMKeyFileName, char *passPhrase) {
+	return validate_install_receipt(receiptKey, keyLength, receiptData,
+		executableLoadFileAID, executableLoadFileAIDLength,
+		applicationAID, applicationAIDLength,
+		receiptKeyType, PEMKeyFileName, passPhrase);
 }
 
 /**
- * Each time a receipt is generated the confirmation counter is incremented by the Card Manager.
- * You may keep track of it. Returns OPGP_ERROR_SUCCESS if receipt is valid.
- * \param confirmationCounter [in] The confirmation counter.
- * \param cardUniqueData [in] The card unique data.
- * \param cardUniqueDataLength [in] The length of the card unique data buffer.
- * \param receiptKey [in] The 3DES or AES key to generate the receipt.
- * \param keyLength [in] The key length. 16, 24 or 32 bytes.
- * \param receiptData [in] The GP211_RECEIPT_DATA structure containing the receipt returned
- * from GP211_install_for_registry_update() to verify.
- * \param oldSecurityDomainAID [in] The AID of the old associated Security Domain.
- * \param oldSecurityDomainAIDLength [in] The length of the oldSecurityDomainAID buffer.
- * \param applicationAID [in] The AID of the application.
- * \param applicationAIDLength [in] The length of the applicationAID buffer.
- * \param newSecurityDomainAID [in] The AID of the new associated Security Domain.
- * \param newSecurityDomainAIDLength [in] The length of the newSecurityDomainAID buffer.
- * \param applicationPrivileges [in] The application privileges.
- * \param registryUpdateParameters [in] The Registry Update Parameters.
- * \param registryUpdateParametersLength [in] The length of the registryUpdateParameters buffer.
- * \param secureChannelProtocol [in] The Secure Channel Protocol.
- * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
+ * Validates a GlobalPlatform 2.3.1 Delete Receipt with symmetric (DES/AES) or asymmetric (RSA/ECC) keys.
  */
-OPGP_ERROR_STATUS GP211_validate_registry_update_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
-							  DWORD cardUniqueDataLength,
-						   BYTE receiptKey[32], DWORD keyLength, GP211_RECEIPT_DATA receiptData,
-						   PBYTE oldSecurityDomainAID, DWORD oldSecurityDomainAIDLength,
-						   PBYTE applicationAID, DWORD applicationAIDLength,
-						   PBYTE newSecurityDomainAID, DWORD newSecurityDomainAIDLength,
-						   DWORD applicationPrivileges,
-						   PBYTE registryUpdateParameters, DWORD registryUpdateParametersLength,
-						   BYTE secureChannelProtocol) {
-	return validate_registry_update_receipt(confirmationCounter, cardUniqueData,
-							  cardUniqueDataLength,
-						   receiptKey, keyLength, receiptData,
-						   oldSecurityDomainAID, oldSecurityDomainAIDLength,
-						   applicationAID, applicationAIDLength,
-						   newSecurityDomainAID, newSecurityDomainAIDLength,
-						   applicationPrivileges,
-						   registryUpdateParameters, registryUpdateParametersLength,
-						   secureChannelProtocol);
+OPGP_ERROR_STATUS GP211_validate_delete_receipt(PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+							 PBYTE AID, DWORD AIDLength,
+							 BYTE receiptKeyType, OPGP_STRING PEMKeyFileName, char *passPhrase) {
+	return validate_delete_receipt(receiptKey, keyLength, receiptData,
+		AID, AIDLength, receiptKeyType, PEMKeyFileName, passPhrase);
+}
+
+/**
+ * Validates a GlobalPlatform 2.3.1 Extradition Receipt with symmetric (DES/AES) or asymmetric (RSA/ECC) keys.
+ */
+OPGP_ERROR_STATUS GP211_validate_extradition_receipt(PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+							  PBYTE oldSecurityDomainAID, DWORD oldSecurityDomainAIDLength,
+							  PBYTE newSecurityDomainAID, DWORD newSecurityDomainAIDLength,
+							  PBYTE applicationOrExecutableLoadFileAID,
+							  DWORD applicationOrExecutableLoadFileAIDLength,
+							  BYTE receiptKeyType, OPGP_STRING PEMKeyFileName, char *passPhrase) {
+	return validate_extradition_receipt(receiptKey, keyLength, receiptData,
+		oldSecurityDomainAID, oldSecurityDomainAIDLength,
+		newSecurityDomainAID, newSecurityDomainAIDLength,
+		applicationOrExecutableLoadFileAID, applicationOrExecutableLoadFileAIDLength,
+		receiptKeyType, PEMKeyFileName, passPhrase);
+}
+
+/**
+ * Validates a GlobalPlatform 2.3.1 Registry Update Receipt with symmetric (DES/AES) or asymmetric (RSA/ECC) keys.
+ */
+OPGP_ERROR_STATUS GP211_validate_registry_update_receipt(PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+								  PBYTE oldSecurityDomainAID, DWORD oldSecurityDomainAIDLength,
+								  PBYTE applicationAID, DWORD applicationAIDLength,
+								  PBYTE newSecurityDomainAID, DWORD newSecurityDomainAIDLength,
+								  DWORD applicationPrivileges,
+								  PBYTE registryUpdateParameters, DWORD registryUpdateParametersLength,
+								  BYTE receiptKeyType, OPGP_STRING PEMKeyFileName, char *passPhrase) {
+	return validate_registry_update_receipt(receiptKey, keyLength, receiptData,
+		oldSecurityDomainAID, oldSecurityDomainAIDLength,
+		applicationAID, applicationAIDLength,
+		newSecurityDomainAID, newSecurityDomainAIDLength,
+		applicationPrivileges, registryUpdateParameters, registryUpdateParametersLength,
+		receiptKeyType, PEMKeyFileName, passPhrase);
 }
 
 /**
@@ -8894,9 +8933,14 @@ OPGP_ERROR_STATUS OP201_validate_load_receipt(DWORD confirmationCounter, BYTE ca
 	OPGP_ERROR_STATUS status;
 	GP211_RECEIPT_DATA gp211receiptData;
 	mapOP201ToGP211ReceiptData(receiptData, &gp211receiptData);
-	status = validate_load_receipt(confirmationCounter, cardUniqueData,
-		10, receiptGenerationKey, 16, gp211receiptData, executableLoadFileAID,
-		executableLoadFileAIDLength, securityDomainAID, securityDomainAIDLength, GP211_SCP02);
+	gp211receiptData.confirmationCounterLength = 2;
+	gp211receiptData.confirmationCounter[0] = (BYTE)((confirmationCounter >> 8) & 0xFF);
+	gp211receiptData.confirmationCounter[1] = (BYTE)(confirmationCounter & 0xFF);
+	gp211receiptData.cardUniqueDataLength = 10;
+	memcpy(gp211receiptData.cardUniqueData, cardUniqueData, 10);
+	status = validate_load_receipt(receiptGenerationKey, 16, gp211receiptData, executableLoadFileAID,
+		executableLoadFileAIDLength, securityDomainAID, securityDomainAIDLength,
+		GP211_KEY_TYPE_DES, NULL, NULL);
 	return status;
 }
 
@@ -8921,9 +8965,14 @@ OPGP_ERROR_STATUS OP201_validate_install_receipt(DWORD confirmationCounter, BYTE
 	OPGP_ERROR_STATUS status;
 	GP211_RECEIPT_DATA gp211receiptData;
 	mapOP201ToGP211ReceiptData(receiptData, &gp211receiptData);
-	status = validate_install_receipt(confirmationCounter, cardUniqueData,
-		10, receiptGenerationKey, 16, gp211receiptData, executableLoadFileAID,
-		executableLoadFileAIDLength, applicationInstanceAID, applicationInstanceAIDLength, GP211_SCP02);
+	gp211receiptData.confirmationCounterLength = 2;
+	gp211receiptData.confirmationCounter[0] = (BYTE)((confirmationCounter >> 8) & 0xFF);
+	gp211receiptData.confirmationCounter[1] = (BYTE)(confirmationCounter & 0xFF);
+	gp211receiptData.cardUniqueDataLength = 10;
+	memcpy(gp211receiptData.cardUniqueData, cardUniqueData, 10);
+	status = validate_install_receipt(receiptGenerationKey, 16, gp211receiptData, executableLoadFileAID,
+		executableLoadFileAIDLength, applicationInstanceAID, applicationInstanceAIDLength,
+		GP211_KEY_TYPE_DES, NULL, NULL);
 	return status;
 }
 
@@ -8945,8 +8994,13 @@ OPGP_ERROR_STATUS OP201_validate_delete_receipt(DWORD confirmationCounter, BYTE 
 	OPGP_ERROR_STATUS status;
 	GP211_RECEIPT_DATA gp211receiptData;
 	mapOP201ToGP211ReceiptData(receiptData, &gp211receiptData);
-	status = validate_delete_receipt(confirmationCounter, cardUniqueData,
-		10, receiptGenerationKey, 16, gp211receiptData, AID, AIDLength, GP211_SCP02);
+	gp211receiptData.confirmationCounterLength = 2;
+	gp211receiptData.confirmationCounter[0] = (BYTE)((confirmationCounter >> 8) & 0xFF);
+	gp211receiptData.confirmationCounter[1] = (BYTE)(confirmationCounter & 0xFF);
+	gp211receiptData.cardUniqueDataLength = 10;
+	memcpy(gp211receiptData.cardUniqueData, cardUniqueData, 10);
+	status = validate_delete_receipt(receiptGenerationKey, 16, gp211receiptData, AID, AIDLength,
+		GP211_KEY_TYPE_DES, NULL, NULL);
 	return status;
 }
 

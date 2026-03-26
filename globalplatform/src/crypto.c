@@ -139,8 +139,8 @@ end:
 /**
  * \brief Creates a MAC for commands (APDUs) using CMAC AES.
  * This is used by SCP03.
- * The MAC for the message are the first 8 Bytes of mac.
- * The next chainingValue are the full 16 Bytes of mac. Save this value for the next command MAC calculation.
+ * The MAC for the message is the first 8 Bytes of mac.
+ * The next chainingValue is the full 16 Bytes of mac. Save this value for the next command MAC calculation.
  *
  * \param sMacKey [in] The S-MAC key (session MAC key) to use for MAC generation.
  * \param keyLength [in] The AES key length in bytes (16, 24, or 32).
@@ -205,7 +205,7 @@ end:
 }
 
 /**
- * Calculates a message authentication code, using AES-128 in CBC mode. This is the algorithm specified in NIST 800-38B.
+ * Calculates a message authentication code, using AES-128/224/256 in CBC mode. This is the algorithm specified in NIST 800-38B.
  * \param key [in] The AES key to use.
  * \param keyLength [in] The AES key length in bytes (16, 24, or 32).
  * \param *message [in] The message to calculate the MAC for.
@@ -1382,6 +1382,274 @@ OPGP_ERROR_STATUS calculate_ecc_signature(PBYTE message, DWORD messageLength, OP
 }
 
 /**
+ * Validates a signature using an asymmetric public (or private) key.
+ * RSA verification rules mirror calculate_signature_with_key().
+ * ECC signatures are expected in plain TR-03111 format (r||s).
+ */
+static OPGP_ERROR_STATUS validate_signature_with_key(PBYTE message, DWORD messageLength,
+													 EVP_PKEY *key, PBYTE signature,
+													 DWORD signatureLength) {
+	OPGP_ERROR_STATUS status;
+	int result;
+	int keyType;
+	keyType = EVP_PKEY_base_id(key);
+
+	if (signature == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		goto end;
+	}
+
+	if (keyType == EVP_PKEY_RSA) {
+		EVP_MD_CTX *mdctx = NULL;
+		EVP_PKEY_CTX *pctx = NULL;
+		const EVP_MD *md = NULL;
+		int rsaBits = 0;
+
+		result = EVP_PKEY_get_int_param(key, "bits", &rsaBits);
+		if (result != 1 || rsaBits <= 0) {
+			int keySize = EVP_PKEY_size(key);
+			if (keySize <= 0) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+				goto rsa_end;
+			}
+			rsaBits = keySize * 8;
+		}
+
+		mdctx = EVP_MD_CTX_create();
+		if (mdctx == NULL) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+			goto rsa_end;
+		}
+
+		if (rsaBits <= 1024) {
+			result = EVP_VerifyInit_ex(mdctx, EVP_sha1(), NULL);
+			if (result != 1) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+				goto rsa_end;
+			}
+			result = EVP_VerifyUpdate(mdctx, message, messageLength);
+			if (result != 1) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+				goto rsa_end;
+			}
+			result = EVP_VerifyFinal(mdctx, signature, (unsigned int)signatureLength, key);
+		} else {
+			int saltLen;
+			if (rsaBits <= 2048) {
+				md = EVP_sha256();
+				saltLen = 32;
+			} else {
+				md = EVP_sha512();
+				saltLen = 64;
+			}
+
+			result = EVP_DigestVerifyInit(mdctx, &pctx, md, NULL, key);
+			if (result != 1) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+				goto rsa_end;
+			}
+			result = EVP_PKEY_CTX_set_rsa_padding(pctx, RSA_PKCS1_PSS_PADDING);
+			if (result != 1) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+				goto rsa_end;
+			}
+			result = EVP_PKEY_CTX_set_rsa_pss_saltlen(pctx, saltLen);
+			if (result != 1) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+				goto rsa_end;
+			}
+			result = EVP_PKEY_CTX_set_rsa_mgf1_md(pctx, md);
+			if (result != 1) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+				goto rsa_end;
+			}
+
+			result = EVP_DigestVerify(mdctx, signature, signatureLength, message, messageLength);
+		}
+
+		if (result == 1) {
+			OPGP_ERROR_CREATE_NO_ERROR(status);
+		} else if (result == 0) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_VALIDATION_FAILED, OPGP_stringify_error(OPGP_ERROR_VALIDATION_FAILED));
+		} else {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+		}
+rsa_end:
+		if (mdctx != NULL) {
+			EVP_MD_CTX_destroy(mdctx);
+		}
+		goto end;
+	}
+
+#if defined(EVP_PKEY_SM2)
+	if (keyType == EVP_PKEY_EC || keyType == EVP_PKEY_SM2) {
+#else
+	if (keyType == EVP_PKEY_EC) {
+#endif
+		EVP_MD_CTX *mdctx = NULL;
+		EVP_PKEY_CTX *pctx = NULL;
+		const EVP_MD *md = NULL;
+		ECDSA_SIG *ecdsaSignature = NULL;
+		BIGNUM *r = NULL;
+		BIGNUM *s = NULL;
+		unsigned char *derSignature = NULL;
+		unsigned char *derPtr = NULL;
+		int keyBits;
+		int componentLength;
+		int derSignatureLength;
+
+		keyBits = EVP_PKEY_bits(key);
+		if (keyBits <= 0) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+			goto ecc_end;
+		}
+		componentLength = (keyBits + 7) / 8;
+		if (signatureLength != (DWORD)(componentLength * 2)) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_VALIDATION_FAILED, OPGP_stringify_error(OPGP_ERROR_VALIDATION_FAILED));
+			goto ecc_end;
+		}
+
+		r = BN_bin2bn(signature, componentLength, NULL);
+		s = BN_bin2bn(signature + componentLength, componentLength, NULL);
+		if (r == NULL || s == NULL) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+			goto ecc_end;
+		}
+
+		ecdsaSignature = ECDSA_SIG_new();
+		if (ecdsaSignature == NULL) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+			goto ecc_end;
+		}
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+		ecdsaSignature->r = r;
+		ecdsaSignature->s = s;
+		r = NULL;
+		s = NULL;
+#else
+		if (ECDSA_SIG_set0(ecdsaSignature, r, s) != 1) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+			goto ecc_end;
+		}
+		r = NULL;
+		s = NULL;
+#endif
+
+		derSignatureLength = i2d_ECDSA_SIG(ecdsaSignature, NULL);
+		if (derSignatureLength <= 0) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+			goto ecc_end;
+		}
+		derSignature = (unsigned char *)malloc((size_t)derSignatureLength);
+		if (derSignature == NULL) {
+			OPGP_ERROR_CREATE_ERROR(status, ENOMEM, OPGP_stringify_error(ENOMEM));
+			goto ecc_end;
+		}
+		derPtr = derSignature;
+		if (i2d_ECDSA_SIG(ecdsaSignature, &derPtr) != derSignatureLength) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+			goto ecc_end;
+		}
+
+		if (keyBits <= 256) {
+			md = EVP_sha256();
+		} else if (keyBits <= 384) {
+			md = EVP_sha384();
+		} else {
+			md = EVP_sha512();
+		}
+
+		mdctx = EVP_MD_CTX_create();
+		if (mdctx == NULL) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+			goto ecc_end;
+		}
+		result = EVP_DigestVerifyInit(mdctx, &pctx, md, NULL, key);
+		if (result != 1) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+			goto ecc_end;
+		}
+		result = EVP_DigestVerify(mdctx, derSignature, (size_t)derSignatureLength, message, messageLength);
+		if (result == 1) {
+			OPGP_ERROR_CREATE_NO_ERROR(status);
+		} else if (result == 0) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_VALIDATION_FAILED, OPGP_stringify_error(OPGP_ERROR_VALIDATION_FAILED));
+		} else {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+		}
+
+ecc_end:
+		if (mdctx != NULL) {
+			EVP_MD_CTX_destroy(mdctx);
+		}
+		if (ecdsaSignature != NULL) {
+			ECDSA_SIG_free(ecdsaSignature);
+		}
+		if (r != NULL) {
+			BN_free(r);
+		}
+		if (s != NULL) {
+			BN_free(s);
+		}
+		if (derSignature != NULL) {
+			free(derSignature);
+		}
+		goto end;
+	}
+
+	OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_WRONG_KEY_TYPE, OPGP_stringify_error(OPGP_ERROR_WRONG_KEY_TYPE));
+end:
+	return status;
+}
+
+OPGP_ERROR_STATUS validate_signature(PBYTE message, DWORD messageLength, OPGP_STRING PEMKeyFileName,
+									char *passPhrase, PBYTE signature, DWORD signatureLength) {
+	OPGP_ERROR_STATUS status;
+	EVP_PKEY *key = NULL;
+	FILE *PEMKeyFile = NULL;
+	OPGP_LOG_START(_T("validate_signature"));
+
+	if ((PEMKeyFileName == NULL) || (_tcslen(PEMKeyFileName) == 0)) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_FILENAME, OPGP_stringify_error(OPGP_ERROR_INVALID_FILENAME));
+		goto end;
+	}
+	if (passPhrase == NULL) {
+		passPhrase = "";
+	}
+
+	PEMKeyFile = _tfopen(PEMKeyFileName, _T("rb"));
+	if (PEMKeyFile == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, errno, OPGP_stringify_error(errno));
+		goto end;
+	}
+
+	if (!PEM_read_PUBKEY(PEMKeyFile, &key, NULL, passPhrase)) {
+		ERR_clear_error();
+		rewind(PEMKeyFile);
+		if (!PEM_read_PrivateKey(PEMKeyFile, &key, NULL, passPhrase)) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+			goto end;
+		}
+	}
+
+	status = validate_signature_with_key(message, messageLength, key, signature, signatureLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+end:
+	if (PEMKeyFile != NULL) {
+		fclose(PEMKeyFile);
+	}
+	if (key != NULL) {
+		EVP_PKEY_free(key);
+	}
+	OPGP_LOG_END(_T("validate_signature"), status);
+	return status;
+}
+
+/**
  * Calculates a message authentication code using the left half key of a two key 3DES key
  * and the full key for the final operation.
  * Pads the message always with 0x80 and additional 0x00 until message length is a multiple of 8.
@@ -1464,84 +1732,227 @@ end:
 }
 
 
-/**
- * GlobalPlatform2.1.1: Validates a Receipt.
- * Returns OPGP_ERROR_STATUS_SUCCESS if the receipt is valid.
- * \param validationData [in] The data used to validate the returned receipt.
- * \param validationDataLength [in] The length of the validationData buffer.
- * \param receipt [in] The receipt.
- * \param receiptKey [in] The 3DES or AES key to generate the receipt.
- * \param keyLength [in] The key length. 16, 24 or 32 bytes.
- * \param secureChannelProtocol [in] The Secure Channel Protocol.
- * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
- */
+static OPGP_ERROR_STATUS build_confirmation_data(GP211_RECEIPT_DATA receiptData,
+												 PBYTE confirmationData,
+												 PDWORD confirmationDataLength) {
+	OPGP_ERROR_STATUS status;
+	DWORD i = 0;
+	DWORD requiredLength;
+
+	if (receiptData.confirmationCounterLength == 0 ||
+		receiptData.confirmationCounterLength > sizeof(receiptData.confirmationCounter)) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_VALIDATION_FAILED, OPGP_stringify_error(OPGP_ERROR_VALIDATION_FAILED));
+		goto end;
+	}
+	if (receiptData.cardUniqueDataLength > sizeof(receiptData.cardUniqueData)) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_VALIDATION_FAILED, OPGP_stringify_error(OPGP_ERROR_VALIDATION_FAILED));
+		goto end;
+	}
+	requiredLength = 1 + receiptData.confirmationCounterLength + 1 + receiptData.cardUniqueDataLength;
+	if (receiptData.tokenIdentifierPresent) {
+		if (receiptData.tokenIdentifierLength > sizeof(receiptData.tokenIdentifier)) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_VALIDATION_FAILED, OPGP_stringify_error(OPGP_ERROR_VALIDATION_FAILED));
+			goto end;
+		}
+		requiredLength += 1 + receiptData.tokenIdentifierLength;
+	}
+	if (receiptData.tokenDataDigestPresent) {
+		if (receiptData.tokenDataDigestLength > sizeof(receiptData.tokenDataDigest)) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_VALIDATION_FAILED, OPGP_stringify_error(OPGP_ERROR_VALIDATION_FAILED));
+			goto end;
+		}
+		requiredLength += 1 + receiptData.tokenDataDigestLength;
+	}
+	if (confirmationData == NULL || confirmationDataLength == NULL || *confirmationDataLength < requiredLength) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		goto end;
+	}
+
+	confirmationData[i++] = receiptData.confirmationCounterLength;
+	memcpy(confirmationData + i, receiptData.confirmationCounter, receiptData.confirmationCounterLength);
+	i += receiptData.confirmationCounterLength;
+
+	confirmationData[i++] = receiptData.cardUniqueDataLength;
+	if (receiptData.cardUniqueDataLength > 0) {
+		memcpy(confirmationData + i, receiptData.cardUniqueData, receiptData.cardUniqueDataLength);
+		i += receiptData.cardUniqueDataLength;
+	}
+
+	if (receiptData.tokenIdentifierPresent) {
+		confirmationData[i++] = receiptData.tokenIdentifierLength;
+		if (receiptData.tokenIdentifierLength > 0) {
+			memcpy(confirmationData + i, receiptData.tokenIdentifier, receiptData.tokenIdentifierLength);
+			i += receiptData.tokenIdentifierLength;
+		}
+	}
+	if (receiptData.tokenDataDigestPresent) {
+		confirmationData[i++] = receiptData.tokenDataDigestLength;
+		if (receiptData.tokenDataDigestLength > 0) {
+			memcpy(confirmationData + i, receiptData.tokenDataDigest, receiptData.tokenDataDigestLength);
+			i += receiptData.tokenDataDigestLength;
+		}
+	}
+
+	*confirmationDataLength = i;
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+end:
+	return status;
+}
+
+OPGP_ERROR_STATUS validate_receipt_ex(PBYTE validationData, DWORD validationDataLength,
+							  PBYTE receipt, DWORD receiptLength,
+							  PBYTE receiptKey, DWORD keyLength,
+							  BYTE receiptKeyType,
+							  OPGP_STRING PEMKeyFileName, char *passPhrase) {
+	OPGP_ERROR_STATUS status;
+	BYTE mac[16];
+	OPGP_LOG_START(_T("validate_receipt_ex"));
+
+	if (receipt == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		goto end;
+	}
+
+	if (receiptKeyType == GP211_SCP02) {
+		receiptKeyType = GP211_KEY_TYPE_DES;
+	} else if (receiptKeyType == GP211_SCP03) {
+		receiptKeyType = GP211_KEY_TYPE_AES;
+	}
+
+	switch (receiptKeyType) {
+		case GP211_KEY_TYPE_DES:
+		case GP211_KEY_TYPE_3DES:
+		case GP211_KEY_TYPE_3DES_CBC:
+		case GP211_KEY_TYPE_DES_CBC:
+		case GP211_KEY_TYPE_DES_ECB:
+			if (receiptLength != 8 || receiptKey == NULL || keyLength < 16) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_VALIDATION_FAILED, OPGP_stringify_error(OPGP_ERROR_VALIDATION_FAILED));
+				goto end;
+			}
+			status = calculate_MAC_des_3des(receiptKey, validationData, validationDataLength, (PBYTE)ICV, mac);
+			if (OPGP_ERROR_CHECK(status)) {
+				goto end;
+			}
+			if (memcmp(mac, receipt, 8) != 0) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_VALIDATION_FAILED, OPGP_stringify_error(OPGP_ERROR_VALIDATION_FAILED));
+				goto end;
+			}
+			break;
+		case GP211_KEY_TYPE_AES:
+			if (receiptLength != 16 || receiptKey == NULL || !(keyLength == 16 || keyLength == 24 || keyLength == 32)) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_VALIDATION_FAILED, OPGP_stringify_error(OPGP_ERROR_VALIDATION_FAILED));
+				goto end;
+			}
+			status = calculate_MAC_aes(receiptKey, keyLength, validationData, validationDataLength, mac);
+			if (OPGP_ERROR_CHECK(status)) {
+				goto end;
+			}
+			if (memcmp(mac, receipt, 16) != 0) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_VALIDATION_FAILED, OPGP_stringify_error(OPGP_ERROR_VALIDATION_FAILED));
+				goto end;
+			}
+			break;
+		case GP211_KEY_TYPE_RSA:
+		case GP211_KEY_TYPE_ECC:
+			status = validate_signature(validationData, validationDataLength, PEMKeyFileName, passPhrase, receipt, receiptLength);
+			if (OPGP_ERROR_CHECK(status)) {
+				goto end;
+			}
+			break;
+		default:
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_WRONG_KEY_TYPE, OPGP_stringify_error(OPGP_ERROR_WRONG_KEY_TYPE));
+			goto end;
+	}
+
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+end:
+	OPGP_LOG_END(_T("validate_receipt_ex"), status);
+	return status;
+}
+
 OPGP_ERROR_STATUS validate_receipt(PBYTE validationData, DWORD validationDataLength,
 							 BYTE receipt[16], PBYTE receiptKey, DWORD keyLength, BYTE secureChannelProtocol)
 {
 	OPGP_ERROR_STATUS status;
-	BYTE mac[16];
-	BYTE receiptLength = 8;
+	DWORD receiptLength;
+	BYTE receiptKeyType;
 	OPGP_LOG_START(_T("validate_receipt"));
+
 	if (secureChannelProtocol == GP211_SCP02) {
-		status = calculate_MAC_des_3des(receiptKey, validationData, validationDataLength, (PBYTE)ICV, mac);
-	}
-	else if (secureChannelProtocol == GP211_SCP03) {
-		status = calculate_CMAC_aes(receiptKey, keyLength, validationData, validationDataLength, NULL, mac);
-		receiptLength = 16;
-	}
-	else {
+		receiptKeyType = GP211_KEY_TYPE_DES;
+	} else if (secureChannelProtocol == GP211_SCP03) {
+		receiptKeyType = GP211_KEY_TYPE_AES;
+	} else {
 		OPGP_ERROR_CREATE_ERROR(status, GP211_ERROR_INVALID_SCP, OPGP_stringify_error(GP211_ERROR_INVALID_SCP));
 		goto end;
 	}
+	receiptLength = (receiptKeyType == GP211_KEY_TYPE_AES) ? 16 : 8;
 
+	status = validate_receipt_ex(validationData, validationDataLength, receipt, receiptLength,
+		receiptKey, keyLength, receiptKeyType, NULL, NULL);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	if (memcmp(mac, receipt, receiptLength) != 0) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_VALIDATION_FAILED, OPGP_stringify_error(OPGP_ERROR_VALIDATION_FAILED)); goto end; }
-	}
-	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+	OPGP_ERROR_CREATE_NO_ERROR(status);
 end:
-
 	OPGP_LOG_END(_T("validate_receipt"), status);
 	return status;
 }
 
-OPGP_ERROR_STATUS validate_delete_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
-						 DWORD cardUniqueDataLength,
-					   PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
-					   PBYTE AID, DWORD AIDLength, BYTE secureChannelProtocol)
+OPGP_ERROR_STATUS validate_delete_receipt(PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+						   PBYTE AID, DWORD AIDLength,
+						   BYTE receiptKeyType, OPGP_STRING PEMKeyFileName, char *passPhrase)
 {
 	OPGP_ERROR_STATUS status;
-	DWORD i=0;
+	DWORD i = 0;
+	DWORD confirmationDataLength = 1 + receiptData.confirmationCounterLength + 1 + receiptData.cardUniqueDataLength;
+	PBYTE confirmationData = NULL;
 	PBYTE validationData = NULL;
 	DWORD validationDataLength;
 	OPGP_LOG_START(_T("validate_delete_receipt"));
-	validationDataLength = 1 + 2 + 1 + cardUniqueDataLength + 1 + AIDLength;
+
+	if (receiptData.tokenIdentifierPresent) {
+		confirmationDataLength += 1 + receiptData.tokenIdentifierLength;
+	}
+	if (receiptData.tokenDataDigestPresent) {
+		confirmationDataLength += 1 + receiptData.tokenDataDigestLength;
+	}
+	confirmationData = (PBYTE)malloc(confirmationDataLength);
+	if (confirmationData == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, ENOMEM, OPGP_stringify_error(ENOMEM));
+		goto end;
+	}
+	status = build_confirmation_data(receiptData, confirmationData, &confirmationDataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+
+	validationDataLength = confirmationDataLength + 1 + AIDLength;
 	validationData = (PBYTE)malloc(validationDataLength);
 	if (validationData == NULL) {
 		OPGP_ERROR_CREATE_ERROR(status, ENOMEM, OPGP_stringify_error(ENOMEM));
 		goto end;
 	}
-
-	validationData[i++] = 2;
-	validationData[i++] = (BYTE)((confirmationCounter & 0x0000FF00) >> 8);
-	validationData[i++] = (BYTE)(confirmationCounter & 0x000000FF);
-	validationData[i++] = (BYTE)cardUniqueDataLength;
-	memcpy(validationData + i, cardUniqueData, cardUniqueDataLength);
-	i+=cardUniqueDataLength;
+	memcpy(validationData + i, confirmationData, confirmationDataLength);
+	i += confirmationDataLength;
 	validationData[i++] = (BYTE)AIDLength;
-	memcpy(validationData + i, AID, AIDLength);
-	i+=AIDLength;
-	status = validate_receipt(validationData, validationDataLength, receiptData.receipt, receiptKey, keyLength, secureChannelProtocol);
+	if (AIDLength > 0) {
+		memcpy(validationData + i, AID, AIDLength);
+		i += AIDLength;
+	}
+
+	status = validate_receipt_ex(validationData, validationDataLength, receiptData.receipt, receiptData.receiptLength,
+		receiptKey, keyLength, receiptKeyType, PEMKeyFileName, passPhrase);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+	OPGP_ERROR_CREATE_NO_ERROR(status);
 end:
-
 	if (validationData) {
 		free(validationData);
+	}
+	if (confirmationData) {
+		free(confirmationData);
 	}
 	OPGP_LOG_END(_T("validate_delete_receipt"), status);
 	return status;
@@ -2068,134 +2479,265 @@ end:
 	return status;
 }
 
-OPGP_ERROR_STATUS validate_install_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
-						  DWORD cardUniqueDataLength,
-					   PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
-					   PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
-					   PBYTE applicationAID, DWORD applicationAIDLength, BYTE secureChannelProtocol)
+OPGP_ERROR_STATUS validate_install_receipt(PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+						   PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
+						   PBYTE applicationAID, DWORD applicationAIDLength,
+						   BYTE receiptKeyType, OPGP_STRING PEMKeyFileName, char *passPhrase)
 {
 	OPGP_ERROR_STATUS status;
-	DWORD i=0;
-	PBYTE validationData;
+	DWORD i = 0;
+	DWORD confirmationDataLength = 1 + receiptData.confirmationCounterLength + 1 + receiptData.cardUniqueDataLength;
+	PBYTE confirmationData = NULL;
+	PBYTE validationData = NULL;
 	DWORD validationDataLength;
 	OPGP_LOG_START(_T("validate_install_receipt"));
-	validationDataLength = 1 + 2 + 1 + cardUniqueDataLength + 1 + executableLoadFileAIDLength + 1 + applicationAIDLength;
+
+	if (receiptData.tokenIdentifierPresent) {
+		confirmationDataLength += 1 + receiptData.tokenIdentifierLength;
+	}
+	if (receiptData.tokenDataDigestPresent) {
+		confirmationDataLength += 1 + receiptData.tokenDataDigestLength;
+	}
+	confirmationData = (PBYTE)malloc(confirmationDataLength);
+	if (confirmationData == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, ENOMEM, OPGP_stringify_error(ENOMEM));
+		goto end;
+	}
+	status = build_confirmation_data(receiptData, confirmationData, &confirmationDataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+
+	validationDataLength = confirmationDataLength + 1 + executableLoadFileAIDLength + 1 + applicationAIDLength;
 	validationData = (PBYTE)malloc(validationDataLength);
 	if (validationData == NULL) {
 		OPGP_ERROR_CREATE_ERROR(status, ENOMEM, OPGP_stringify_error(ENOMEM));
 		goto end;
 	}
-
-	validationData[i++] = 2;
-	validationData[i++] = (BYTE)((confirmationCounter & 0x0000FF00) >> 8);
-	validationData[i++] = (BYTE)(confirmationCounter & 0x000000FF);
-	validationData[i++] = (BYTE)cardUniqueDataLength;
-	memcpy(validationData + i, cardUniqueData, cardUniqueDataLength);
-	i+=cardUniqueDataLength;
+	memcpy(validationData + i, confirmationData, confirmationDataLength);
+	i += confirmationDataLength;
 	validationData[i++] = (BYTE)executableLoadFileAIDLength;
-	memcpy(validationData + i, executableLoadFileAID, executableLoadFileAIDLength);
-	i+=executableLoadFileAIDLength;
+	if (executableLoadFileAIDLength > 0) {
+		memcpy(validationData + i, executableLoadFileAID, executableLoadFileAIDLength);
+		i += executableLoadFileAIDLength;
+	}
 	validationData[i++] = (BYTE)applicationAIDLength;
-	memcpy(validationData + i, applicationAID, applicationAIDLength);
-	i+=applicationAIDLength;
-	status = validate_receipt(validationData, validationDataLength, receiptData.receipt, receiptKey, keyLength, secureChannelProtocol);
+	if (applicationAIDLength > 0) {
+		memcpy(validationData + i, applicationAID, applicationAIDLength);
+		i += applicationAIDLength;
+	}
+	status = validate_receipt_ex(validationData, validationDataLength, receiptData.receipt, receiptData.receiptLength,
+		receiptKey, keyLength, receiptKeyType, PEMKeyFileName, passPhrase);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+	OPGP_ERROR_CREATE_NO_ERROR(status);
 end:
-
 	if (validationData) {
 		free(validationData);
+	}
+	if (confirmationData) {
+		free(confirmationData);
 	}
 	OPGP_LOG_END(_T("validate_install_receipt"), status);
 	return status;
 }
 
-OPGP_ERROR_STATUS validate_load_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
-						   DWORD cardUniqueDataLength,
-						   PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+OPGP_ERROR_STATUS validate_load_receipt(PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
 						   PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
-						   PBYTE securityDomainAID, DWORD securityDomainAIDLength, BYTE secureChannelProtocol)
+						   PBYTE securityDomainAID, DWORD securityDomainAIDLength,
+						   BYTE receiptKeyType, OPGP_STRING PEMKeyFileName, char *passPhrase)
 {
 	OPGP_ERROR_STATUS status;
+	DWORD i = 0;
+	DWORD confirmationDataLength = 1 + receiptData.confirmationCounterLength + 1 + receiptData.cardUniqueDataLength;
+	PBYTE confirmationData = NULL;
 	PBYTE validationData = NULL;
 	DWORD validationDataLength;
-	DWORD i=0;
 	OPGP_LOG_START(_T("validate_load_receipt"));
-	validationDataLength = 1 + 2 + 1 + cardUniqueDataLength + 1 + executableLoadFileAIDLength + 1 + securityDomainAIDLength;
+
+	if (receiptData.tokenIdentifierPresent) {
+		confirmationDataLength += 1 + receiptData.tokenIdentifierLength;
+	}
+	if (receiptData.tokenDataDigestPresent) {
+		confirmationDataLength += 1 + receiptData.tokenDataDigestLength;
+	}
+	confirmationData = (PBYTE)malloc(confirmationDataLength);
+	if (confirmationData == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, ENOMEM, OPGP_stringify_error(ENOMEM));
+		goto end;
+	}
+	status = build_confirmation_data(receiptData, confirmationData, &confirmationDataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+
+	validationDataLength = confirmationDataLength + 1 + executableLoadFileAIDLength + 1 + securityDomainAIDLength;
 	validationData = (PBYTE)malloc(validationDataLength);
 	if (validationData == NULL) {
 		OPGP_ERROR_CREATE_ERROR(status, ENOMEM, OPGP_stringify_error(ENOMEM));
 		goto end;
 	}
-
-	validationData[i++] = 2;
-	validationData[i++] = (BYTE)((confirmationCounter & 0x0000FF00) >> 8);
-	validationData[i++] = (BYTE)(confirmationCounter & 0x000000FF);
-	validationData[i++] = (BYTE)cardUniqueDataLength;
-	memcpy(validationData + i, cardUniqueData, cardUniqueDataLength);
-	i+=cardUniqueDataLength;
+	memcpy(validationData + i, confirmationData, confirmationDataLength);
+	i += confirmationDataLength;
 	validationData[i++] = (BYTE)executableLoadFileAIDLength;
-	memcpy(validationData + i, executableLoadFileAID, executableLoadFileAIDLength);
-	i+=executableLoadFileAIDLength;
+	if (executableLoadFileAIDLength > 0) {
+		memcpy(validationData + i, executableLoadFileAID, executableLoadFileAIDLength);
+		i += executableLoadFileAIDLength;
+	}
 	validationData[i++] = (BYTE)securityDomainAIDLength;
-	memcpy(validationData + i, securityDomainAID, securityDomainAIDLength);
-	i+=securityDomainAIDLength;
-	status = validate_receipt(validationData, validationDataLength, receiptData.receipt, receiptKey, keyLength, secureChannelProtocol);
+	if (securityDomainAIDLength > 0) {
+		memcpy(validationData + i, securityDomainAID, securityDomainAIDLength);
+		i += securityDomainAIDLength;
+	}
+
+	status = validate_receipt_ex(validationData, validationDataLength, receiptData.receipt, receiptData.receiptLength,
+		receiptKey, keyLength, receiptKeyType, PEMKeyFileName, passPhrase);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+	OPGP_ERROR_CREATE_NO_ERROR(status);
 end:
-
 	if (validationData) {
 		free(validationData);
+	}
+	if (confirmationData) {
+		free(confirmationData);
 	}
 	OPGP_LOG_END(_T("validate_load_receipt"), status);
 	return status;
 }
 
-OPGP_ERROR_STATUS validate_registry_update_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
-							  DWORD cardUniqueDataLength,
-						   PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+OPGP_ERROR_STATUS validate_extradition_receipt(PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+						   PBYTE oldSecurityDomainAID, DWORD oldSecurityDomainAIDLength,
+						   PBYTE newSecurityDomainAID, DWORD newSecurityDomainAIDLength,
+						   PBYTE applicationOrExecutableLoadFileAID,
+						   DWORD applicationOrExecutableLoadFileAIDLength,
+						   BYTE receiptKeyType, OPGP_STRING PEMKeyFileName, char *passPhrase) {
+	OPGP_ERROR_STATUS status;
+	DWORD i = 0;
+	DWORD confirmationDataLength = 1 + receiptData.confirmationCounterLength + 1 + receiptData.cardUniqueDataLength;
+	PBYTE confirmationData = NULL;
+	PBYTE validationData = NULL;
+	DWORD validationDataLength;
+	OPGP_LOG_START(_T("validate_extradition_receipt"));
+
+	if (receiptData.tokenIdentifierPresent) {
+		confirmationDataLength += 1 + receiptData.tokenIdentifierLength;
+	}
+	if (receiptData.tokenDataDigestPresent) {
+		confirmationDataLength += 1 + receiptData.tokenDataDigestLength;
+	}
+	confirmationData = (PBYTE)malloc(confirmationDataLength);
+	if (confirmationData == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, ENOMEM, OPGP_stringify_error(ENOMEM));
+		goto end;
+	}
+	status = build_confirmation_data(receiptData, confirmationData, &confirmationDataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+
+	validationDataLength = confirmationDataLength
+		+ 1 + oldSecurityDomainAIDLength
+		+ 1 + applicationOrExecutableLoadFileAIDLength
+		+ 1 + newSecurityDomainAIDLength;
+	validationData = (PBYTE)malloc(validationDataLength);
+	if (validationData == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, ENOMEM, OPGP_stringify_error(ENOMEM));
+		goto end;
+	}
+	memcpy(validationData + i, confirmationData, confirmationDataLength);
+	i += confirmationDataLength;
+	validationData[i++] = (BYTE)oldSecurityDomainAIDLength;
+	if (oldSecurityDomainAIDLength > 0) {
+		memcpy(validationData + i, oldSecurityDomainAID, oldSecurityDomainAIDLength);
+		i += oldSecurityDomainAIDLength;
+	}
+	validationData[i++] = (BYTE)applicationOrExecutableLoadFileAIDLength;
+	if (applicationOrExecutableLoadFileAIDLength > 0) {
+		memcpy(validationData + i, applicationOrExecutableLoadFileAID, applicationOrExecutableLoadFileAIDLength);
+		i += applicationOrExecutableLoadFileAIDLength;
+	}
+	validationData[i++] = (BYTE)newSecurityDomainAIDLength;
+	if (newSecurityDomainAIDLength > 0) {
+		memcpy(validationData + i, newSecurityDomainAID, newSecurityDomainAIDLength);
+		i += newSecurityDomainAIDLength;
+	}
+
+	status = validate_receipt_ex(validationData, validationDataLength, receiptData.receipt, receiptData.receiptLength,
+		receiptKey, keyLength, receiptKeyType, PEMKeyFileName, passPhrase);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+end:
+	if (validationData) {
+		free(validationData);
+	}
+	if (confirmationData) {
+		free(confirmationData);
+	}
+	OPGP_LOG_END(_T("validate_extradition_receipt"), status);
+	return status;
+}
+
+OPGP_ERROR_STATUS validate_registry_update_receipt(PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
 						   PBYTE oldSecurityDomainAID, DWORD oldSecurityDomainAIDLength,
 						   PBYTE applicationAID, DWORD applicationAIDLength,
 						   PBYTE newSecurityDomainAID, DWORD newSecurityDomainAIDLength,
 						   DWORD applicationPrivileges,
 						   PBYTE registryUpdateParameters, DWORD registryUpdateParametersLength,
-						   BYTE secureChannelProtocol)
-{
+						   BYTE receiptKeyType, OPGP_STRING PEMKeyFileName, char *passPhrase) {
 	OPGP_ERROR_STATUS status;
-	DWORD i=0;
-	PBYTE validationData;
+	DWORD i = 0;
+	DWORD confirmationDataLength = 1 + receiptData.confirmationCounterLength + 1 + receiptData.cardUniqueDataLength;
+	PBYTE confirmationData = NULL;
+	PBYTE validationData = NULL;
 	DWORD validationDataLength;
 	BYTE privilegeLength = 0;
-
 	OPGP_LOG_START(_T("validate_registry_update_receipt"));
 
-	validationDataLength = 1 + 2 + 1 + cardUniqueDataLength
+	if (receiptData.tokenIdentifierPresent) {
+		confirmationDataLength += 1 + receiptData.tokenIdentifierLength;
+	}
+	if (receiptData.tokenDataDigestPresent) {
+		confirmationDataLength += 1 + receiptData.tokenDataDigestLength;
+	}
+	confirmationData = (PBYTE)malloc(confirmationDataLength);
+	if (confirmationData == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, ENOMEM, OPGP_stringify_error(ENOMEM));
+		goto end;
+	}
+	status = build_confirmation_data(receiptData, confirmationData, &confirmationDataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+
+	validationDataLength = confirmationDataLength
 		+ 1 + oldSecurityDomainAIDLength
 		+ 1 + applicationAIDLength
 		+ 1 + newSecurityDomainAIDLength
-		+ 1; // privilege length indicator
+		+ 1;
 
 	if (applicationPrivileges & 0x00FFFF) {
 		privilegeLength = 3;
 	} else if (applicationPrivileges & 0xFF0000) {
 		privilegeLength = 1;
-	} else {
-		privilegeLength = 0;
 	}
 	validationDataLength += privilegeLength;
 
 	if (registryUpdateParametersLength > 0) {
-		if (registryUpdateParametersLength < 128) validationDataLength += 1;
-		else if (registryUpdateParametersLength < 256) validationDataLength += 2;
-		else validationDataLength += 3;
+		if (registryUpdateParametersLength < 128) {
+			validationDataLength += 1;
+		} else if (registryUpdateParametersLength < 256) {
+			validationDataLength += 2;
+		} else {
+			validationDataLength += 3;
+		}
 		validationDataLength += registryUpdateParametersLength;
 	} else {
-		validationDataLength += 1; // '00'
+		validationDataLength += 1;
 	}
 
 	validationData = (PBYTE)malloc(validationDataLength);
@@ -2203,32 +2745,25 @@ OPGP_ERROR_STATUS validate_registry_update_receipt(DWORD confirmationCounter, PB
 		OPGP_ERROR_CREATE_ERROR(status, ENOMEM, OPGP_stringify_error(ENOMEM));
 		goto end;
 	}
-
-	validationData[i++] = 2;
-	validationData[i++] = (BYTE)((confirmationCounter & 0x0000FF00) >> 8);
-	validationData[i++] = (BYTE)(confirmationCounter & 0x000000FF);
-	validationData[i++] = (BYTE)cardUniqueDataLength;
-	if (cardUniqueDataLength > 0 && cardUniqueData != NULL) {
-		memcpy(validationData + i, cardUniqueData, cardUniqueDataLength);
-		i+=cardUniqueDataLength;
-	}
+	memcpy(validationData + i, confirmationData, confirmationDataLength);
+	i += confirmationDataLength;
 
 	validationData[i++] = (BYTE)oldSecurityDomainAIDLength;
 	if (oldSecurityDomainAIDLength > 0 && oldSecurityDomainAID != NULL) {
 		memcpy(validationData + i, oldSecurityDomainAID, oldSecurityDomainAIDLength);
-		i+=oldSecurityDomainAIDLength;
+		i += oldSecurityDomainAIDLength;
 	}
 
 	validationData[i++] = (BYTE)applicationAIDLength;
 	if (applicationAIDLength > 0 && applicationAID != NULL) {
 		memcpy(validationData + i, applicationAID, applicationAIDLength);
-		i+=applicationAIDLength;
+		i += applicationAIDLength;
 	}
 
 	validationData[i++] = (BYTE)newSecurityDomainAIDLength;
 	if (newSecurityDomainAIDLength > 0 && newSecurityDomainAID != NULL) {
 		memcpy(validationData + i, newSecurityDomainAID, newSecurityDomainAIDLength);
-		i+=newSecurityDomainAIDLength;
+		i += newSecurityDomainAIDLength;
 	}
 
 	validationData[i++] = privilegeLength;
@@ -2242,7 +2777,10 @@ OPGP_ERROR_STATUS validate_registry_update_receipt(DWORD confirmationCounter, PB
 
 	if (registryUpdateParametersLength > 0 && registryUpdateParameters != NULL) {
 		LONG lenLen = write_TLV_length(validationData, i, validationDataLength - i, (USHORT)registryUpdateParametersLength);
-		if (lenLen < 0) { OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+		if (lenLen < 0) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+			goto end;
+		}
 		i += (DWORD)lenLen;
 		memcpy(validationData + i, registryUpdateParameters, registryUpdateParametersLength);
 		i += registryUpdateParametersLength;
@@ -2250,14 +2788,19 @@ OPGP_ERROR_STATUS validate_registry_update_receipt(DWORD confirmationCounter, PB
 		validationData[i++] = 0x00;
 	}
 
-	status = validate_receipt(validationData, validationDataLength, receiptData.receipt, receiptKey, keyLength, secureChannelProtocol);
+	status = validate_receipt_ex(validationData, validationDataLength, receiptData.receipt, receiptData.receiptLength,
+		receiptKey, keyLength, receiptKeyType, PEMKeyFileName, passPhrase);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+	OPGP_ERROR_CREATE_NO_ERROR(status);
 end:
-	if (validationData)
+	if (validationData) {
 		free(validationData);
+	}
+	if (confirmationData) {
+		free(confirmationData);
+	}
 	OPGP_LOG_END(_T("validate_registry_update_receipt"), status);
 	return status;
 }

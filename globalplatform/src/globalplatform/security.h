@@ -300,16 +300,31 @@ typedef struct {
 } GP211_DAP_BLOCK, GP211_RSA_DAP_BLOCK, GP211_3DES_DAP_BLOCK;
 
 
+//! Maximum receipt length according to GP confirmation BER length encoding ('00'..'7F' or '81 80'..'81 FF').
+#define GP211_RECEIPT_MAX_LENGTH 255
+//! Maximum SD unique data length in confirmation data.
+#define GP211_RECEIPT_SD_UNIQUE_DATA_MAX_LENGTH 255
+//! Maximum token identifier length in confirmation data.
+#define GP211_RECEIPT_TOKEN_IDENTIFIER_MAX_LENGTH 255
+//! Maximum token data digest length in confirmation data.
+#define GP211_RECEIPT_TOKEN_DATA_DIGEST_MAX_LENGTH 255
+
 /**
- * A structure returned in DELETE, LOAD, INSTALL[for load], INSTALL[for install] with delegated management.
+ * A structure returned in DELETE, LOAD, INSTALL[for load], INSTALL[for install], INSTALL[for extradition]. INSTALL[for registry update] with delegated management.
  */
 typedef struct {
 	BYTE receiptLength; //!< The length of the receipt DAP.
-	BYTE receipt[16]; //!< The receipt DAP.
+	BYTE receipt[GP211_RECEIPT_MAX_LENGTH]; //!< The receipt signature or MAC.
 	BYTE confirmationCounterLength; //!< Length of the confirmation counter buffer.
 	BYTE confirmationCounter[2]; //!< The confirmation counter buffer.
-	BYTE cardUniqueDataLength; //!< The length of the card unique data buffer.
-	BYTE cardUniqueData[10]; //!< Card unique data buffer.
+	BYTE cardUniqueDataLength; //!< The length of SD unique data in the confirmation data.
+	BYTE cardUniqueData[GP211_RECEIPT_SD_UNIQUE_DATA_MAX_LENGTH]; //!< SD unique data buffer.
+	BOOL tokenIdentifierPresent; //!< Whether the optional token identifier length/value field is present.
+	BYTE tokenIdentifierLength; //!< The length of the token identifier buffer.
+	BYTE tokenIdentifier[GP211_RECEIPT_TOKEN_IDENTIFIER_MAX_LENGTH]; //!< Token identifier buffer.
+	BOOL tokenDataDigestPresent; //!< Whether the optional token data digest length/value field is present.
+	BYTE tokenDataDigestLength; //!< The length of the token data digest buffer.
+	BYTE tokenDataDigest[GP211_RECEIPT_TOKEN_DATA_DIGEST_MAX_LENGTH]; //!< Token data digest buffer.
 } GP211_RECEIPT_DATA;
 
 

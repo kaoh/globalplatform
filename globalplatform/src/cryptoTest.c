@@ -134,6 +134,60 @@ static void test_read_encrypted_private_rsa_key(void **state) {
 	assert_int_equal(e, expected_rsa_e);
 }
 
+static void test_validate_signature_rsa(void **state) {
+	OPGP_ERROR_STATUS status;
+	TCHAR private_key_file[2048];
+	TCHAR public_key_file[2048];
+	BYTE message[] = {
+		0x44, 0x65, 0x6C, 0x65, 0x67, 0x61, 0x74, 0x65,
+		0x64, 0x20, 0x4D, 0x61, 0x6E, 0x61, 0x67, 0x65,
+		0x6D, 0x65, 0x6E, 0x74
+	};
+	BYTE signature[512];
+	DWORD signatureLength = sizeof(signature);
+
+	_sntprintf(private_key_file, sizeof(private_key_file), _T("%s/%s"), exec_path, _T("rsa_private_key.pem"));
+	_sntprintf(public_key_file, sizeof(public_key_file), _T("%s/%s"), exec_path, _T("rsa_public_key.pem"));
+
+	status = calculate_signature(message, sizeof(message), private_key_file, "password", signature, &signatureLength);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+
+	status = validate_signature(message, sizeof(message), public_key_file, NULL, signature, signatureLength);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+
+	message[0] ^= 0x01;
+	status = validate_signature(message, sizeof(message), public_key_file, NULL, signature, signatureLength);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_FAILURE);
+	assert_int_equal(status.errorCode, OPGP_ERROR_VALIDATION_FAILED);
+}
+
+static void test_validate_signature_ecc(void **state) {
+	OPGP_ERROR_STATUS status;
+	TCHAR private_key_file[2048];
+	TCHAR public_key_file[2048];
+	BYTE message[] = {
+		0x52, 0x65, 0x63, 0x65, 0x69, 0x70, 0x74, 0x20,
+		0x56, 0x61, 0x6C, 0x69, 0x64, 0x61, 0x74, 0x69,
+		0x6F, 0x6E
+	};
+	BYTE signature[512];
+	DWORD signatureLength = sizeof(signature);
+
+	_sntprintf(private_key_file, sizeof(private_key_file), _T("%s/%s"), exec_path, _T("ecc_private_key_test.pem"));
+	_sntprintf(public_key_file, sizeof(public_key_file), _T("%s/%s"), exec_path, _T("ecc_public_key_test.pem"));
+
+	status = calculate_signature(message, sizeof(message), private_key_file, NULL, signature, &signatureLength);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+
+	status = validate_signature(message, sizeof(message), public_key_file, NULL, signature, signatureLength);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+
+	message[0] ^= 0x01;
+	status = validate_signature(message, sizeof(message), public_key_file, NULL, signature, signatureLength);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_FAILURE);
+	assert_int_equal(status.errorCode, OPGP_ERROR_VALIDATION_FAILED);
+}
+
 static int setup(void **state) {
 	return 0;
 }
@@ -148,6 +202,8 @@ int main(int argc, TCHAR *argv[]) {
 			cmocka_unit_test(test_aes_cmac_192),
 			cmocka_unit_test(test_read_public_rsa_key),
 			cmocka_unit_test(test_read_encrypted_private_rsa_key),
+			cmocka_unit_test(test_validate_signature_rsa),
+			cmocka_unit_test(test_validate_signature_ecc),
 	};
 	return cmocka_run_group_tests_name("crypto", tests, setup, NULL);
 }

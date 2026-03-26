@@ -205,6 +205,56 @@ static void print_usage(const char *prog) {
         "      --token <hex>: Registry update token for delegated management (optional).\n\n"
         "  move [--token <hex>] <applicationAID> <securityDomainAID>\n"
         "      Move an application to a different Security Domain (extradition).\n\n"
+        "  verify-delete-receipt [--type <des|aes|rsa|ecc>] [--key <hex>|--pem <file>[:pass]] \\\n"
+        "                        --aid <AIDhex> <response-apdu-hex>\n"
+        "      Verify delegated-management Delete receipt from response APDU.\n"
+        "      --aid <AIDhex>: Application instance or Executable Load File AID (mandatory).\n"
+        "      --type <des|aes|rsa|ecc>: Receipt verification key type (default: aes).\n"
+        "      --key <hex>: Symmetric receipt key (mandatory for type des|aes).\n"
+        "      --pem <file>[:pass]: Public key for RSA/ECC verification (mandatory for type rsa|ecc).\n"
+        "      <response-apdu-hex>: Response APDU including trailing 9000 (mandatory, last positional parameter).\n\n"
+        "  verify-load-receipt [--type <des|aes|rsa|ecc>] [--key <hex>|--pem <file>[:pass]] \\\n"
+        "                      --load-file <AIDhex> --sd <AIDhex> <response-apdu-hex>\n"
+        "      Verify delegated-management Load receipt from response APDU.\n"
+        "      --load-file <AIDhex>: Executable Load File AID (mandatory).\n"
+        "      --sd <AIDhex>: Security Domain AID (mandatory).\n"
+        "      --type <des|aes|rsa|ecc>: Receipt verification key type (default: aes).\n"
+        "      --key <hex>: Symmetric receipt key (mandatory for type des|aes).\n"
+        "      --pem <file>[:pass]: Public key for RSA/ECC verification (mandatory for type rsa|ecc).\n"
+        "      <response-apdu-hex>: Response APDU including trailing 9000 (mandatory, last positional parameter).\n\n",
+        stderr);
+    fputs(
+        "  verify-install-receipt [--type <des|aes|rsa|ecc>] [--key <hex>|--pem <file>[:pass]] \\\n"
+        "                         --load-file <AIDhex> --sd <AIDhex> <response-apdu-hex>\n"
+        "      Verify delegated-management Install receipt from response APDU.\n"
+        "      --load-file <AIDhex>: Executable Load File AID (mandatory).\n"
+        "      --sd <AIDhex>: AID used as second receipt parameter (mandatory).\n"
+        "      --type <des|aes|rsa|ecc>: Receipt verification key type (default: aes).\n"
+        "      --key <hex>: Symmetric receipt key (mandatory for type des|aes).\n"
+        "      --pem <file>[:pass]: Public key for RSA/ECC verification (mandatory for type rsa|ecc).\n"
+        "      <response-apdu-hex>: Response APDU including trailing 9000 (mandatory, last positional parameter).\n\n"
+        "  verify-registry-update-receipt [--type <des|aes|rsa|ecc>] [--key <hex>|--pem <file>[:pass]] \\\n"
+        "                                 --aid <AIDhex> --oldsd <AIDhex> --newsd <AIDhex> --priv <list> <response-apdu-hex>\n"
+        "      Verify delegated-management Registry Update receipt from response APDU.\n"
+        "      --aid <AIDhex>: Application AID (mandatory).\n"
+        "      --oldsd <AIDhex>: Old Security Domain AID (mandatory).\n"
+        "      --newsd <AIDhex>: New Security Domain AID (mandatory).\n"
+        "      --priv <list>: Privileges encoded like install --priv (mandatory).\n"
+        "      --type <des|aes|rsa|ecc>: Receipt verification key type (default: aes).\n"
+        "      --key <hex>: Symmetric receipt key (mandatory for type des|aes).\n"
+        "      --pem <file>[:pass]: Public key for RSA/ECC verification (mandatory for type rsa|ecc).\n"
+        "      <response-apdu-hex>: Response APDU including trailing 9000 (mandatory, last positional parameter).\n\n"
+        "  verify-move-receipt [--type <des|aes|rsa|ecc>] [--key <hex>|--pem <file>[:pass]] \\\n"
+        "                     --aid <AIDhex> --oldsd <AIDhex> --newsd <AIDhex> <response-apdu-hex>\n"
+        "      Verify delegated-management Move/Extradition receipt from response APDU.\n"
+        "      --aid <AIDhex>: Application instance or Executable Load File AID (mandatory).\n"
+        "      --oldsd <AIDhex>: Old Security Domain AID (mandatory).\n"
+        "      --newsd <AIDhex>: New Security Domain AID (mandatory).\n"
+        "      --type <des|aes|rsa|ecc>: Receipt verification key type (default: aes).\n"
+        "      --key <hex>: Symmetric receipt key (mandatory for type des|aes).\n"
+        "      --pem <file>[:pass]: Public key for RSA/ECC verification (mandatory for type rsa|ecc).\n"
+        "      <response-apdu-hex>: Response APDU including trailing 9000 (mandatory, last positional parameter).\n"
+        "      Confirmation Data is extracted from the response APDU and printed before verification.\n\n"
         "  put-key [--type <3des|aes|rsa|ecc>] --kv <ver> --idx <idx> --new-kv <ver> \\\n"
         "          (--key <hex>|--pem <file>[:pass])\n"
         "      Put (add/replace) a key in a key set.\n"
@@ -822,6 +872,262 @@ static int find_default_module(const GP211_EXECUTABLE_MODULES_DATA *mods, DWORD 
                 }
             }
         }
+    }
+    return 0;
+}
+
+typedef struct {
+    BYTE receiptKeyType;
+    BYTE receiptKey[32];
+    DWORD receiptKeyLength;
+    PBYTE receiptKeyPtr;
+    TCHAR pemFileName[MAX_PATH_BUF];
+    OPGP_STRING pemKeyFileName;
+    char passPhrase[256];
+    char *passPhrasePtr;
+} RECEIPT_VERIFY_KEY_INPUT;
+
+static int parse_receipt_length_ber_cli(const BYTE *buf, size_t bufLength, size_t *receiptLength, size_t *lengthFieldSize) {
+    if (!buf || !receiptLength || !lengthFieldSize || bufLength < 1) {
+        return -1;
+    }
+    if (buf[0] <= 0x7F) {
+        *receiptLength = buf[0];
+        *lengthFieldSize = 1;
+        return 0;
+    }
+    if (buf[0] == 0x81) {
+        if (bufLength < 2 || buf[1] < 0x80) {
+            return -1;
+        }
+        *receiptLength = buf[1];
+        *lengthFieldSize = 2;
+        return 0;
+    }
+    return -1;
+}
+
+static int parse_receipt_from_rapdu_hex(const char *cmd, const char *rapduHex, GP211_RECEIPT_DATA *receiptData) {
+    BYTE rapdu[1024];
+    size_t rapduLen = sizeof(rapdu);
+    size_t payloadLen;
+    size_t offset = 0;
+    size_t receiptLen = 0;
+    size_t lengthFieldSize = 0;
+
+    if (!rapduHex || !receiptData) {
+        return -1;
+    }
+    if (hex_to_bytes(rapduHex, rapdu, &rapduLen) != 0) {
+        fprintf(stderr, "%s: invalid response APDU hex\n", cmd);
+        return -1;
+    }
+    if (rapduLen < 2) {
+        fprintf(stderr, "%s: response APDU too short\n", cmd);
+        return -1;
+    }
+    if (rapdu[rapduLen - 2] != 0x90 || rapdu[rapduLen - 1] != 0x00) {
+        fprintf(stderr, "%s: response APDU must end in 9000\n", cmd);
+        return -1;
+    }
+    payloadLen = rapduLen - 2;
+    if (payloadLen == 0) {
+        fprintf(stderr, "%s: response APDU has no receipt payload\n", cmd);
+        return -1;
+    }
+
+    memset(receiptData, 0, sizeof(*receiptData));
+    if (parse_receipt_length_ber_cli(rapdu, payloadLen, &receiptLen, &lengthFieldSize) != 0) {
+        fprintf(stderr, "%s: invalid receipt length BER field\n", cmd);
+        return -1;
+    }
+    if (receiptLen > sizeof(receiptData->receipt)) {
+        fprintf(stderr, "%s: receipt length too large\n", cmd);
+        return -1;
+    }
+
+    offset += lengthFieldSize;
+    if (payloadLen - offset < receiptLen) {
+        fprintf(stderr, "%s: truncated receipt data\n", cmd);
+        return -1;
+    }
+    receiptData->receiptLength = (BYTE)receiptLen;
+    if (receiptLen > 0) {
+        memcpy(receiptData->receipt, rapdu + offset, receiptLen);
+    }
+    offset += receiptLen;
+
+    if (payloadLen - offset < 1) {
+        fprintf(stderr, "%s: missing confirmation counter length\n", cmd);
+        return -1;
+    }
+    receiptData->confirmationCounterLength = rapdu[offset++];
+    if (receiptData->confirmationCounterLength == 0 ||
+        receiptData->confirmationCounterLength > sizeof(receiptData->confirmationCounter) ||
+        payloadLen - offset < receiptData->confirmationCounterLength) {
+        fprintf(stderr, "%s: invalid confirmation counter field\n", cmd);
+        return -1;
+    }
+    memcpy(receiptData->confirmationCounter, rapdu + offset, receiptData->confirmationCounterLength);
+    offset += receiptData->confirmationCounterLength;
+
+    if (payloadLen - offset < 1) {
+        fprintf(stderr, "%s: missing SD unique data length\n", cmd);
+        return -1;
+    }
+    receiptData->cardUniqueDataLength = rapdu[offset++];
+    if (receiptData->cardUniqueDataLength > sizeof(receiptData->cardUniqueData) ||
+        payloadLen - offset < receiptData->cardUniqueDataLength) {
+        fprintf(stderr, "%s: invalid SD unique data field\n", cmd);
+        return -1;
+    }
+    if (receiptData->cardUniqueDataLength > 0) {
+        memcpy(receiptData->cardUniqueData, rapdu + offset, receiptData->cardUniqueDataLength);
+    }
+    offset += receiptData->cardUniqueDataLength;
+
+    if (payloadLen > offset) {
+        receiptData->tokenIdentifierPresent = 1;
+        receiptData->tokenIdentifierLength = rapdu[offset++];
+        if (receiptData->tokenIdentifierLength > sizeof(receiptData->tokenIdentifier) ||
+            payloadLen - offset < receiptData->tokenIdentifierLength) {
+            fprintf(stderr, "%s: invalid token identifier field\n", cmd);
+            return -1;
+        }
+        if (receiptData->tokenIdentifierLength > 0) {
+            memcpy(receiptData->tokenIdentifier, rapdu + offset, receiptData->tokenIdentifierLength);
+        }
+        offset += receiptData->tokenIdentifierLength;
+    }
+
+    if (payloadLen > offset) {
+        receiptData->tokenDataDigestPresent = 1;
+        receiptData->tokenDataDigestLength = rapdu[offset++];
+        if (receiptData->tokenDataDigestLength > sizeof(receiptData->tokenDataDigest) ||
+            payloadLen - offset < receiptData->tokenDataDigestLength) {
+            fprintf(stderr, "%s: invalid token data digest field\n", cmd);
+            return -1;
+        }
+        if (receiptData->tokenDataDigestLength > 0) {
+            memcpy(receiptData->tokenDataDigest, rapdu + offset, receiptData->tokenDataDigestLength);
+        }
+        offset += receiptData->tokenDataDigestLength;
+    }
+
+    if (offset != payloadLen) {
+        fprintf(stderr, "%s: trailing bytes in receipt payload\n", cmd);
+        return -1;
+    }
+    return 0;
+}
+
+static void print_receipt_confirmation_data(const GP211_RECEIPT_DATA *receiptData) {
+    if (!receiptData) {
+        return;
+    }
+    printf("Confirmation Counter: ");
+    print_hex(receiptData->confirmationCounter, receiptData->confirmationCounterLength);
+    printf("\n");
+    printf("SD Unique Data: ");
+    print_hex(receiptData->cardUniqueData, receiptData->cardUniqueDataLength);
+    printf("\n");
+    if (receiptData->tokenIdentifierPresent) {
+        printf("Token Identifier: ");
+        print_hex(receiptData->tokenIdentifier, receiptData->tokenIdentifierLength);
+        printf("\n");
+    }
+    if (receiptData->tokenDataDigestPresent) {
+        printf("Token Data Digest: ");
+        print_hex(receiptData->tokenDataDigest, receiptData->tokenDataDigestLength);
+        printf("\n");
+    }
+}
+
+static int parse_receipt_verify_key(const char *cmd, const char *typeOpt, const char *keyHex, const char *pemSpec,
+                                    RECEIPT_VERIFY_KEY_INPUT *out) {
+    const char *type = typeOpt ? typeOpt : "aes";
+    size_t len;
+
+    if (!cmd || !out) {
+        return -1;
+    }
+    memset(out, 0, sizeof(*out));
+
+    if (strcmp(type, "des") == 0 || strcmp(type, "3des") == 0) {
+        if (!keyHex) {
+            fprintf(stderr, "%s: --key <hex> is required for type des\n", cmd);
+            return -1;
+        }
+        out->receiptKeyType = GP211_KEY_TYPE_DES;
+        len = sizeof(out->receiptKey);
+        if (hex_to_bytes(keyHex, out->receiptKey, &len) != 0 || !(len == 16 || len == 24)) {
+            fprintf(stderr, "%s: invalid DES receipt key (must be 16 or 24 bytes)\n", cmd);
+            return -1;
+        }
+        out->receiptKeyLength = (DWORD)len;
+        out->receiptKeyPtr = out->receiptKey;
+        return 0;
+    }
+
+    if (strcmp(type, "aes") == 0) {
+        if (!keyHex) {
+            fprintf(stderr, "%s: --key <hex> is required for type aes\n", cmd);
+            return -1;
+        }
+        out->receiptKeyType = GP211_KEY_TYPE_AES;
+        len = sizeof(out->receiptKey);
+        if (hex_to_bytes(keyHex, out->receiptKey, &len) != 0 || !(len == 16 || len == 24 || len == 32)) {
+            fprintf(stderr, "%s: invalid AES receipt key (must be 16, 24, or 32 bytes)\n", cmd);
+            return -1;
+        }
+        out->receiptKeyLength = (DWORD)len;
+        out->receiptKeyPtr = out->receiptKey;
+        return 0;
+    }
+
+    if (strcmp(type, "rsa") == 0 || strcmp(type, "ecc") == 0) {
+        char pemCopy[MAX_PATH_BUF];
+        char *sep;
+        const char *pemPath;
+
+        if (!pemSpec) {
+            fprintf(stderr, "%s: --pem <file>[:pass] is required for type %s\n", cmd, type);
+            return -1;
+        }
+        out->receiptKeyType = (strcmp(type, "rsa") == 0) ? GP211_KEY_TYPE_RSA : GP211_KEY_TYPE_ECC;
+        strncpy(pemCopy, pemSpec, sizeof(pemCopy) - 1);
+        pemCopy[sizeof(pemCopy) - 1] = '\0';
+        sep = strchr(pemCopy, ':');
+        if (sep) {
+            *sep = '\0';
+            strncpy(out->passPhrase, sep + 1, sizeof(out->passPhrase) - 1);
+            out->passPhrase[sizeof(out->passPhrase) - 1] = '\0';
+            out->passPhrasePtr = out->passPhrase;
+        } else {
+            out->passPhrasePtr = NULL;
+        }
+        pemPath = pemCopy;
+        if (to_opgp_string(pemPath, out->pemFileName, ARRAY_SIZE(out->pemFileName)) != 0) {
+            fprintf(stderr, "%s: PEM file path too long\n", cmd);
+            return -1;
+        }
+        out->pemKeyFileName = out->pemFileName;
+        return 0;
+    }
+
+    fprintf(stderr, "%s: unsupported --type '%s' (use des|aes|rsa|ecc)\n", cmd, type);
+    return -1;
+}
+
+static int parse_required_hex_field(const char *cmd, const char *fieldName, const char *hex,
+                                    BYTE *out, size_t *outLen) {
+    if (!hex) {
+        fprintf(stderr, "%s: missing %s\n", cmd, fieldName);
+        return -1;
+    }
+    if (hex_to_bytes(hex, out, outLen) != 0) {
+        fprintf(stderr, "%s: invalid %s\n", cmd, fieldName);
+        return -1;
     }
     return 0;
 }
@@ -2038,6 +2344,282 @@ static int cmd_move(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
                                                token_ptr, token_len, &rec, &recAvail), true)) {
         return -1;
     }
+    return 0;
+}
+
+static int cmd_verify_delete_receipt(int argc, char **argv) {
+    const char *cmd = "verify-delete-receipt";
+    const char *type_opt = "aes";
+    const char *key_hex = NULL;
+    const char *pem_spec = NULL;
+    const char *aid_hex = NULL;
+    const char *rapdu_hex = NULL;
+    BYTE aid[16];
+    size_t aid_len = sizeof(aid);
+    GP211_RECEIPT_DATA receiptData;
+    RECEIPT_VERIFY_KEY_INPUT keyInput;
+    OPGP_ERROR_STATUS s;
+
+    for (int i = 0; i < argc; i++) {
+        if (strcmp(argv[i], "--type") == 0 && i + 1 < argc) type_opt = argv[++i];
+        else if (strcmp(argv[i], "--key") == 0 && i + 1 < argc) key_hex = argv[++i];
+        else if (strcmp(argv[i], "--pem") == 0 && i + 1 < argc) pem_spec = argv[++i];
+        else if (strcmp(argv[i], "--aid") == 0 && i + 1 < argc) aid_hex = argv[++i];
+        else if (argv[i][0] == '-') {
+            fprintf(stderr, "%s: unknown option %s\n", cmd, argv[i]);
+            return -1;
+        } else {
+            if (i != argc - 1 || rapdu_hex != NULL) {
+                fprintf(stderr, "%s: response APDU must be the last positional parameter\n", cmd);
+                return -1;
+            }
+            rapdu_hex = argv[i];
+        }
+    }
+    if (!rapdu_hex) {
+        fprintf(stderr, "%s: missing <response-apdu-hex>\n", cmd);
+        return -1;
+    }
+    if (parse_required_hex_field(cmd, "--aid <AIDhex>", aid_hex, aid, &aid_len) != 0) return -1;
+    if (parse_receipt_verify_key(cmd, type_opt, key_hex, pem_spec, &keyInput) != 0) return -1;
+    if (parse_receipt_from_rapdu_hex(cmd, rapdu_hex, &receiptData) != 0) return -1;
+    print_receipt_confirmation_data(&receiptData);
+
+    s = GP211_validate_delete_receipt(keyInput.receiptKeyPtr, keyInput.receiptKeyLength, receiptData,
+                                      aid, (DWORD)aid_len,
+                                      keyInput.receiptKeyType, keyInput.pemKeyFileName, keyInput.passPhrasePtr);
+    if (!status_ok(s, true)) return -1;
+    printf("%s: receipt verification successful\n", cmd);
+    return 0;
+}
+
+static int cmd_verify_load_receipt(int argc, char **argv) {
+    const char *cmd = "verify-load-receipt";
+    const char *type_opt = "aes";
+    const char *key_hex = NULL;
+    const char *pem_spec = NULL;
+    const char *load_file_hex = NULL;
+    const char *sd_hex = NULL;
+    const char *rapdu_hex = NULL;
+    BYTE load_file_aid[16];
+    size_t load_file_aid_len = sizeof(load_file_aid);
+    BYTE sd_aid[16];
+    size_t sd_aid_len = sizeof(sd_aid);
+    GP211_RECEIPT_DATA receiptData;
+    RECEIPT_VERIFY_KEY_INPUT keyInput;
+    OPGP_ERROR_STATUS s;
+
+    for (int i = 0; i < argc; i++) {
+        if (strcmp(argv[i], "--type") == 0 && i + 1 < argc) type_opt = argv[++i];
+        else if (strcmp(argv[i], "--key") == 0 && i + 1 < argc) key_hex = argv[++i];
+        else if (strcmp(argv[i], "--pem") == 0 && i + 1 < argc) pem_spec = argv[++i];
+        else if (strcmp(argv[i], "--load-file") == 0 && i + 1 < argc) load_file_hex = argv[++i];
+        else if (strcmp(argv[i], "--sd") == 0 && i + 1 < argc) sd_hex = argv[++i];
+        else if (argv[i][0] == '-') {
+            fprintf(stderr, "%s: unknown option %s\n", cmd, argv[i]);
+            return -1;
+        } else {
+            if (i != argc - 1 || rapdu_hex != NULL) {
+                fprintf(stderr, "%s: response APDU must be the last positional parameter\n", cmd);
+                return -1;
+            }
+            rapdu_hex = argv[i];
+        }
+    }
+    if (!rapdu_hex) {
+        fprintf(stderr, "%s: missing <response-apdu-hex>\n", cmd);
+        return -1;
+    }
+    if (parse_required_hex_field(cmd, "--load-file <AIDhex>", load_file_hex, load_file_aid, &load_file_aid_len) != 0) return -1;
+    if (parse_required_hex_field(cmd, "--sd <AIDhex>", sd_hex, sd_aid, &sd_aid_len) != 0) return -1;
+    if (parse_receipt_verify_key(cmd, type_opt, key_hex, pem_spec, &keyInput) != 0) return -1;
+    if (parse_receipt_from_rapdu_hex(cmd, rapdu_hex, &receiptData) != 0) return -1;
+    print_receipt_confirmation_data(&receiptData);
+
+    s = GP211_validate_load_receipt(keyInput.receiptKeyPtr, keyInput.receiptKeyLength, receiptData,
+                                    load_file_aid, (DWORD)load_file_aid_len,
+                                    sd_aid, (DWORD)sd_aid_len,
+                                    keyInput.receiptKeyType, keyInput.pemKeyFileName, keyInput.passPhrasePtr);
+    if (!status_ok(s, true)) return -1;
+    printf("%s: receipt verification successful\n", cmd);
+    return 0;
+}
+
+static int cmd_verify_install_receipt(int argc, char **argv) {
+    const char *cmd = "verify-install-receipt";
+    const char *type_opt = "aes";
+    const char *key_hex = NULL;
+    const char *pem_spec = NULL;
+    const char *load_file_hex = NULL;
+    const char *sd_hex = NULL;
+    const char *rapdu_hex = NULL;
+    BYTE load_file_aid[16];
+    size_t load_file_aid_len = sizeof(load_file_aid);
+    BYTE sd_or_instance_aid[16];
+    size_t sd_or_instance_aid_len = sizeof(sd_or_instance_aid);
+    GP211_RECEIPT_DATA receiptData;
+    RECEIPT_VERIFY_KEY_INPUT keyInput;
+    OPGP_ERROR_STATUS s;
+
+    for (int i = 0; i < argc; i++) {
+        if (strcmp(argv[i], "--type") == 0 && i + 1 < argc) type_opt = argv[++i];
+        else if (strcmp(argv[i], "--key") == 0 && i + 1 < argc) key_hex = argv[++i];
+        else if (strcmp(argv[i], "--pem") == 0 && i + 1 < argc) pem_spec = argv[++i];
+        else if (strcmp(argv[i], "--load-file") == 0 && i + 1 < argc) load_file_hex = argv[++i];
+        else if (strcmp(argv[i], "--sd") == 0 && i + 1 < argc) sd_hex = argv[++i];
+        else if (argv[i][0] == '-') {
+            fprintf(stderr, "%s: unknown option %s\n", cmd, argv[i]);
+            return -1;
+        } else {
+            if (i != argc - 1 || rapdu_hex != NULL) {
+                fprintf(stderr, "%s: response APDU must be the last positional parameter\n", cmd);
+                return -1;
+            }
+            rapdu_hex = argv[i];
+        }
+    }
+    if (!rapdu_hex) {
+        fprintf(stderr, "%s: missing <response-apdu-hex>\n", cmd);
+        return -1;
+    }
+    if (parse_required_hex_field(cmd, "--load-file <AIDhex>", load_file_hex, load_file_aid, &load_file_aid_len) != 0) return -1;
+    if (parse_required_hex_field(cmd, "--sd <AIDhex>", sd_hex, sd_or_instance_aid, &sd_or_instance_aid_len) != 0) return -1;
+    if (parse_receipt_verify_key(cmd, type_opt, key_hex, pem_spec, &keyInput) != 0) return -1;
+    if (parse_receipt_from_rapdu_hex(cmd, rapdu_hex, &receiptData) != 0) return -1;
+    print_receipt_confirmation_data(&receiptData);
+
+    s = GP211_validate_install_receipt(keyInput.receiptKeyPtr, keyInput.receiptKeyLength, receiptData,
+                                       load_file_aid, (DWORD)load_file_aid_len,
+                                       sd_or_instance_aid, (DWORD)sd_or_instance_aid_len,
+                                       keyInput.receiptKeyType, keyInput.pemKeyFileName, keyInput.passPhrasePtr);
+    if (!status_ok(s, true)) return -1;
+    printf("%s: receipt verification successful\n", cmd);
+    return 0;
+}
+
+static int cmd_verify_move_receipt(int argc, char **argv) {
+    const char *cmd = "verify-move-receipt";
+    const char *type_opt = "aes";
+    const char *key_hex = NULL;
+    const char *pem_spec = NULL;
+    const char *aid_hex = NULL;
+    const char *oldsd_hex = NULL;
+    const char *newsd_hex = NULL;
+    const char *rapdu_hex = NULL;
+    BYTE aid[16];
+    size_t aid_len = sizeof(aid);
+    BYTE oldsd[16];
+    size_t oldsd_len = sizeof(oldsd);
+    BYTE newsd[16];
+    size_t newsd_len = sizeof(newsd);
+    GP211_RECEIPT_DATA receiptData;
+    RECEIPT_VERIFY_KEY_INPUT keyInput;
+    OPGP_ERROR_STATUS s;
+
+    for (int i = 0; i < argc; i++) {
+        if (strcmp(argv[i], "--type") == 0 && i + 1 < argc) type_opt = argv[++i];
+        else if (strcmp(argv[i], "--key") == 0 && i + 1 < argc) key_hex = argv[++i];
+        else if (strcmp(argv[i], "--pem") == 0 && i + 1 < argc) pem_spec = argv[++i];
+        else if (strcmp(argv[i], "--aid") == 0 && i + 1 < argc) aid_hex = argv[++i];
+        else if (strcmp(argv[i], "--oldsd") == 0 && i + 1 < argc) oldsd_hex = argv[++i];
+        else if (strcmp(argv[i], "--newsd") == 0 && i + 1 < argc) newsd_hex = argv[++i];
+        else if (argv[i][0] == '-') {
+            fprintf(stderr, "%s: unknown option %s\n", cmd, argv[i]);
+            return -1;
+        } else {
+            if (i != argc - 1 || rapdu_hex != NULL) {
+                fprintf(stderr, "%s: response APDU must be the last positional parameter\n", cmd);
+                return -1;
+            }
+            rapdu_hex = argv[i];
+        }
+    }
+    if (!rapdu_hex) {
+        fprintf(stderr, "%s: missing <response-apdu-hex>\n", cmd);
+        return -1;
+    }
+    if (parse_required_hex_field(cmd, "--aid <AIDhex>", aid_hex, aid, &aid_len) != 0) return -1;
+    if (parse_required_hex_field(cmd, "--oldsd <AIDhex>", oldsd_hex, oldsd, &oldsd_len) != 0) return -1;
+    if (parse_required_hex_field(cmd, "--newsd <AIDhex>", newsd_hex, newsd, &newsd_len) != 0) return -1;
+    if (parse_receipt_verify_key(cmd, type_opt, key_hex, pem_spec, &keyInput) != 0) return -1;
+    if (parse_receipt_from_rapdu_hex(cmd, rapdu_hex, &receiptData) != 0) return -1;
+    print_receipt_confirmation_data(&receiptData);
+
+    s = GP211_validate_extradition_receipt(keyInput.receiptKeyPtr, keyInput.receiptKeyLength, receiptData,
+                                           oldsd, (DWORD)oldsd_len,
+                                           newsd, (DWORD)newsd_len,
+                                           aid, (DWORD)aid_len,
+                                           keyInput.receiptKeyType, keyInput.pemKeyFileName, keyInput.passPhrasePtr);
+    if (!status_ok(s, true)) return -1;
+    printf("%s: receipt verification successful\n", cmd);
+    return 0;
+}
+
+static int cmd_verify_registry_update_receipt(int argc, char **argv) {
+    const char *cmd = "verify-registry-update-receipt";
+    const char *type_opt = "aes";
+    const char *key_hex = NULL;
+    const char *pem_spec = NULL;
+    const char *aid_hex = NULL;
+    const char *oldsd_hex = NULL;
+    const char *newsd_hex = NULL;
+    const char *priv_list = NULL;
+    const char *rapdu_hex = NULL;
+    BYTE aid[16];
+    size_t aid_len = sizeof(aid);
+    BYTE oldsd[16];
+    size_t oldsd_len = sizeof(oldsd);
+    BYTE newsd[16];
+    size_t newsd_len = sizeof(newsd);
+    DWORD privileges = 0;
+    GP211_RECEIPT_DATA receiptData;
+    RECEIPT_VERIFY_KEY_INPUT keyInput;
+    OPGP_ERROR_STATUS s;
+
+    for (int i = 0; i < argc; i++) {
+        if (strcmp(argv[i], "--type") == 0 && i + 1 < argc) type_opt = argv[++i];
+        else if (strcmp(argv[i], "--key") == 0 && i + 1 < argc) key_hex = argv[++i];
+        else if (strcmp(argv[i], "--pem") == 0 && i + 1 < argc) pem_spec = argv[++i];
+        else if (strcmp(argv[i], "--aid") == 0 && i + 1 < argc) aid_hex = argv[++i];
+        else if (strcmp(argv[i], "--oldsd") == 0 && i + 1 < argc) oldsd_hex = argv[++i];
+        else if (strcmp(argv[i], "--newsd") == 0 && i + 1 < argc) newsd_hex = argv[++i];
+        else if (strcmp(argv[i], "--priv") == 0 && i + 1 < argc) priv_list = argv[++i];
+        else if (argv[i][0] == '-') {
+            fprintf(stderr, "%s: unknown option %s\n", cmd, argv[i]);
+            return -1;
+        } else {
+            if (i != argc - 1 || rapdu_hex != NULL) {
+                fprintf(stderr, "%s: response APDU must be the last positional parameter\n", cmd);
+                return -1;
+            }
+            rapdu_hex = argv[i];
+        }
+    }
+    if (!rapdu_hex) {
+        fprintf(stderr, "%s: missing <response-apdu-hex>\n", cmd);
+        return -1;
+    }
+    if (!priv_list) {
+        fprintf(stderr, "%s: missing --priv <list>\n", cmd);
+        return -1;
+    }
+    if (parse_required_hex_field(cmd, "--aid <AIDhex>", aid_hex, aid, &aid_len) != 0) return -1;
+    if (parse_required_hex_field(cmd, "--oldsd <AIDhex>", oldsd_hex, oldsd, &oldsd_len) != 0) return -1;
+    if (parse_required_hex_field(cmd, "--newsd <AIDhex>", newsd_hex, newsd, &newsd_len) != 0) return -1;
+    if (parse_privileges(priv_list, &privileges) != 0) return -1;
+    if (parse_receipt_verify_key(cmd, type_opt, key_hex, pem_spec, &keyInput) != 0) return -1;
+    if (parse_receipt_from_rapdu_hex(cmd, rapdu_hex, &receiptData) != 0) return -1;
+    print_receipt_confirmation_data(&receiptData);
+
+    s = GP211_validate_registry_update_receipt(keyInput.receiptKeyPtr, keyInput.receiptKeyLength, receiptData,
+                                               oldsd, (DWORD)oldsd_len,
+                                               aid, (DWORD)aid_len,
+                                               newsd, (DWORD)newsd_len,
+                                               privileges,
+                                               NULL, 0,
+                                               keyInput.receiptKeyType, keyInput.pemKeyFileName, keyInput.passPhrasePtr);
+    if (!status_ok(s, true)) return -1;
+    printf("%s: receipt verification successful\n", cmd);
     return 0;
 }
 
@@ -4016,6 +4598,26 @@ int main(int argc, char **argv) {
     }
     if (!strcmp(cmd, "sign-delete-token")) {
         int rc = cmd_gp211_calculate_delete_token(argc - i, &argv[i]);
+        return rc==0 ? 0 : 10;
+    }
+    if (!strcmp(cmd, "verify-delete-receipt")) {
+        int rc = cmd_verify_delete_receipt(argc - i, &argv[i]);
+        return rc==0 ? 0 : 10;
+    }
+    if (!strcmp(cmd, "verify-load-receipt")) {
+        int rc = cmd_verify_load_receipt(argc - i, &argv[i]);
+        return rc==0 ? 0 : 10;
+    }
+    if (!strcmp(cmd, "verify-install-receipt")) {
+        int rc = cmd_verify_install_receipt(argc - i, &argv[i]);
+        return rc==0 ? 0 : 10;
+    }
+    if (!strcmp(cmd, "verify-registry-update-receipt")) {
+        int rc = cmd_verify_registry_update_receipt(argc - i, &argv[i]);
+        return rc==0 ? 0 : 10;
+    }
+    if (!strcmp(cmd, "verify-move-receipt")) {
+        int rc = cmd_verify_move_receipt(argc - i, &argv[i]);
         return rc==0 ? 0 : 10;
     }
 

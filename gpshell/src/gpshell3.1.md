@@ -261,6 +261,100 @@ Example:
 gpshell3 move A0000000010101 A00000015100000002
 ```
 
+## verify-delete-receipt
+
+Verify a Delete receipt from a response APDU (R-APDU).
+
+Synopsis:
+```
+gpshell3 verify-delete-receipt [--type <des|aes|rsa|ecc>] [--key <hex>|--pem <file>[:pass]] --aid <AIDhex> <response-apdu-hex>
+```
+
+Options:
+
+- `--aid <AIDhex>`: Application instance or Executable Load File AID (mandatory).
+- `--type`: Receipt verification key type. Default: `aes`.
+- `--key <hex>`: Symmetric DES/AES receipt key (required for `--type des|aes`).
+- `--pem <file>[:pass]`: Public key PEM (required for `--type rsa|ecc`).
+- `<response-apdu-hex>`: Full response APDU hex including trailing `9000` (mandatory, last positional parameter).
+
+The command parses and prints Confirmation Data (counter, SD Unique Data, optional token fields) before signature/MAC verification.
+
+## verify-load-receipt
+
+Verify a Load receipt from a response APDU.
+
+Synopsis:
+```
+gpshell3 verify-load-receipt [--type <des|aes|rsa|ecc>] [--key <hex>|--pem <file>[:pass]] --load-file <AIDhex> --sd <AIDhex> <response-apdu-hex>
+```
+
+Options:
+
+- `--load-file <AIDhex>`: Executable Load File AID (mandatory).
+- `--sd <AIDhex>`: Security Domain AID (mandatory).
+- `--type`: Receipt verification key type. Default: `aes`.
+- `--key <hex>`: Symmetric DES/AES receipt key (required for `--type des|aes`).
+- `--pem <file>[:pass]`: Public key PEM (required for `--type rsa|ecc`).
+- `<response-apdu-hex>`: Full response APDU hex including trailing `9000` (mandatory, last positional parameter).
+
+## verify-install-receipt
+
+Verify an Install receipt from a response APDU.
+
+Synopsis:
+```
+gpshell3 verify-install-receipt [--type <des|aes|rsa|ecc>] [--key <hex>|--pem <file>[:pass]] --load-file <AIDhex> --sd <AIDhex> <response-apdu-hex>
+```
+
+Options:
+
+- `--load-file <AIDhex>`: Executable Load File AID (mandatory).
+- `--sd <AIDhex>`: Second receipt AID parameter (mandatory; for GP Install receipt validation this corresponds to the instance AID value).
+- `--type`: Receipt verification key type. Default: `aes`.
+- `--key <hex>`: Symmetric DES/AES receipt key (required for `--type des|aes`).
+- `--pem <file>[:pass]`: Public key PEM (required for `--type rsa|ecc`).
+- `<response-apdu-hex>`: Full response APDU hex including trailing `9000` (mandatory, last positional parameter).
+
+## verify-move-receipt
+
+Verify a Move (Extradition) receipt from a response APDU.
+
+Synopsis:
+```
+gpshell3 verify-move-receipt [--type <des|aes|rsa|ecc>] [--key <hex>|--pem <file>[:pass]] --aid <AIDhex> --oldsd <AIDhex> --newsd <AIDhex> <response-apdu-hex>
+```
+
+Options:
+
+- `--aid <AIDhex>`: Application instance or Executable Load File AID (mandatory).
+- `--oldsd <AIDhex>`: Old Security Domain AID (mandatory).
+- `--newsd <AIDhex>`: New Security Domain AID (mandatory).
+- `--type`: Receipt verification key type. Default: `aes`.
+- `--key <hex>`: Symmetric DES/AES receipt key (required for `--type des|aes`).
+- `--pem <file>[:pass]`: Public key PEM (required for `--type rsa|ecc`).
+- `<response-apdu-hex>`: Full response APDU hex including trailing `9000` (mandatory, last positional parameter).
+
+## verify-registry-update-receipt
+
+Verify a Registry Update receipt from a response APDU.
+
+Synopsis:
+```
+gpshell3 verify-registry-update-receipt [--type <des|aes|rsa|ecc>] [--key <hex>|--pem <file>[:pass]] --aid <AIDhex> --oldsd <AIDhex> --newsd <AIDhex> --priv <list> <response-apdu-hex>
+```
+
+Options:
+
+- `--aid <AIDhex>`: Application AID (mandatory).
+- `--oldsd <AIDhex>`: Old Security Domain AID (mandatory).
+- `--newsd <AIDhex>`: New Security Domain AID (mandatory).
+- `--priv <list>`: Privileges encoded exactly like `install --priv` (mandatory).
+- `--type`: Receipt verification key type. Default: `aes`.
+- `--key <hex>`: Symmetric DES/AES receipt key (required for `--type des|aes`).
+- `--pem <file>[:pass]`: Public key PEM (required for `--type rsa|ecc`).
+- `<response-apdu-hex>`: Full response APDU hex including trailing `9000` (mandatory, last positional parameter).
+
 ## status
 
 Set the lifecycle state of a card element.

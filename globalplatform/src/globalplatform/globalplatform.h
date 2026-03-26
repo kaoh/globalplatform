@@ -1130,49 +1130,44 @@ OPGP_ERROR_STATUS GP211_calculate_ecc_DAP(PBYTE loadFileDataBlockHash, DWORD loa
 				   OPGP_STRING PEMKeyFileName, char *passPhrase,
 				   GP211_DAP_BLOCK *loadFileDataBlockSignature);
 
-//! \brief GlobalPlatform2.1.1: Validates a Load Receipt.
+//! \brief GlobalPlatform2.3.1: Validates a Delete Receipt with symmetric (DES/AES) or asymmetric (RSA/ECC) receipt keys.
 OPGP_API
-OPGP_ERROR_STATUS GP211_validate_delete_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
-						   DWORD cardUniqueDataLength,
-						   BYTE receiptKey[32], DWORD keyLength, GP211_RECEIPT_DATA receiptData,
-						   PBYTE AID, DWORD AIDLength, BYTE secureChannelProtocol);
+OPGP_ERROR_STATUS GP211_validate_delete_receipt(PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+						  PBYTE AID, DWORD AIDLength,
+						  BYTE receiptKeyType, OPGP_STRING PEMKeyFileName, char *passPhrase);
 
-//! \brief GlobalPlatform2.1.1: Validates an Install Receipt.
+//! \brief GlobalPlatform2.3.1: Validates an Install Receipt with symmetric (DES/AES) or asymmetric (RSA/ECC) receipt keys.
 OPGP_API
-OPGP_ERROR_STATUS GP211_validate_install_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
-						   DWORD cardUniqueDataLength,
-						   BYTE receiptKey[32], DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+OPGP_ERROR_STATUS GP211_validate_install_receipt(PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
 						   PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
-						   PBYTE applicationAID, DWORD applicationAIDLength, BYTE secureChannelProtocol);
-
-//! \brief GlobalPlatform2.1.1: Validates a Load Receipt.
-OPGP_API
-OPGP_ERROR_STATUS GP211_validate_load_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
-						   DWORD cardUniqueDataLength,
-						   BYTE receiptKey[32], DWORD keyLength, GP211_RECEIPT_DATA receiptData,
-						   PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
-						   PBYTE securityDomainAID, DWORD securityDomainAIDLength, BYTE secureChannelProtocol);
-
-//! \brief GlobalPlatform2.1.1: Validates an Extradition Receipt.
-OPGP_ERROR_STATUS GP211_validate_extradition_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
-							  DWORD cardUniqueDataLength,
-						   BYTE receiptKey[32], DWORD keyLength, GP211_RECEIPT_DATA receiptData,
-						   PBYTE oldSecurityDomainAID, DWORD oldSecurityDomainAIDLength,
-						   PBYTE newSecurityDomainAID, DWORD newSecurityDomainAIDLength,
-						   PBYTE applicationOrExecutableLoadFileAID,
-						   DWORD applicationOrExecutableLoadFileAIDLength, BYTE secureChannelProtocol);
-
-//! \brief GlobalPlatform2.3.1: Validates a Registry Update Receipt.
-OPGP_API
-OPGP_ERROR_STATUS GP211_validate_registry_update_receipt(DWORD confirmationCounter, PBYTE cardUniqueData,
-							  DWORD cardUniqueDataLength,
-						   BYTE receiptKey[32], DWORD keyLength, GP211_RECEIPT_DATA receiptData,
-						   PBYTE oldSecurityDomainAID, DWORD oldSecurityDomainAIDLength,
 						   PBYTE applicationAID, DWORD applicationAIDLength,
-						   PBYTE newSecurityDomainAID, DWORD newSecurityDomainAIDLength,
-						   DWORD applicationPrivileges,
-						   PBYTE registryUpdateParameters, DWORD registryUpdateParametersLength,
-						   BYTE secureChannelProtocol);
+						   BYTE receiptKeyType, OPGP_STRING PEMKeyFileName, char *passPhrase);
+
+//! \brief GlobalPlatform2.3.1: Validates a Load Receipt with symmetric (DES/AES) or asymmetric (RSA/ECC) receipt keys.
+OPGP_API
+OPGP_ERROR_STATUS GP211_validate_load_receipt(PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+						PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength,
+						PBYTE securityDomainAID, DWORD securityDomainAIDLength,
+						BYTE receiptKeyType, OPGP_STRING PEMKeyFileName, char *passPhrase);
+
+//! \brief GlobalPlatform2.3.1: Validates an Extradition Receipt with symmetric (DES/AES) or asymmetric (RSA/ECC) receipt keys.
+OPGP_API
+OPGP_ERROR_STATUS GP211_validate_extradition_receipt(PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+							   PBYTE oldSecurityDomainAID, DWORD oldSecurityDomainAIDLength,
+							   PBYTE newSecurityDomainAID, DWORD newSecurityDomainAIDLength,
+							   PBYTE applicationOrExecutableLoadFileAID,
+							   DWORD applicationOrExecutableLoadFileAIDLength,
+							   BYTE receiptKeyType, OPGP_STRING PEMKeyFileName, char *passPhrase);
+
+//! \brief GlobalPlatform2.3.1: Validates a Registry Update Receipt with symmetric (DES/AES) or asymmetric (RSA/ECC) receipt keys.
+OPGP_API
+OPGP_ERROR_STATUS GP211_validate_registry_update_receipt(PBYTE receiptKey, DWORD keyLength, GP211_RECEIPT_DATA receiptData,
+								  PBYTE oldSecurityDomainAID, DWORD oldSecurityDomainAIDLength,
+								  PBYTE applicationAID, DWORD applicationAIDLength,
+								  PBYTE newSecurityDomainAID, DWORD newSecurityDomainAIDLength,
+								  DWORD applicationPrivileges,
+								  PBYTE registryUpdateParameters, DWORD registryUpdateParametersLength,
+								  BYTE receiptKeyType, OPGP_STRING PEMKeyFileName, char *passPhrase);
 
 //! \brief ISO 7816-4 / GlobalPlatform2.1.1: Opens or closes a Logical Channel.
 OPGP_API
