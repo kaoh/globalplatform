@@ -250,10 +250,10 @@ OPGP_ERROR_STATUS calculate_install_token(BYTE P1, PBYTE executableLoadFileAID, 
 
 
 OPGP_NO_API
-OPGP_ERROR_STATUS put_delegated_management_token_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-                                                      BYTE keySetVersion, BYTE newKeySetVersion,
-                                                      OPGP_STRING PEMKeyFileName, char *passPhrase,
-                                                      BYTE tokenKeyType);
+OPGP_ERROR_STATUS put_asymmetric_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+									  BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion,
+									  OPGP_STRING PEMKeyFileName, char *passPhrase,
+									  BYTE keyType);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS put_delegated_management_receipt_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -263,11 +263,6 @@ OPGP_ERROR_STATUS put_delegated_management_receipt_keys(OPGP_CARD_CONTEXT cardCo
 OPGP_NO_API
 OPGP_ERROR_STATUS put_3des_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 				  BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion, BYTE _3DESKey[16]);
-
-OPGP_NO_API
-OPGP_ERROR_STATUS put_rsa_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-				 BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion,
-				 OPGP_STRING PEMKeyFileName, char *passPhrase);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -889,8 +884,37 @@ OPGP_ERROR_STATUS GP211_put_rsa_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 				 BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion,
 				 OPGP_STRING PEMKeyFileName, char *passPhrase) {
 	OPGP_ERROR_STATUS status;
-	status = put_rsa_key(cardContext, cardInfo, secInfo, keySetVersion, keyIndex,
-						 newKeySetVersion, PEMKeyFileName, passPhrase);
+	status = put_asymmetric_keys(cardContext, cardInfo, secInfo, keySetVersion, keyIndex,
+								 newKeySetVersion, PEMKeyFileName, passPhrase, GP211_KEY_TYPE_RSA);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	return status;
+}
+
+/**
+ * A keySetVersion value of 0x00 adds a new key.
+ * Any other value between 0x01 and 0x7f must match an existing key set version.
+ * The new key set version defines the key set version a new key belongs to.
+ * This can be the same key version or a new not existing key set version.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context()
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
+ * \param keySetVersion [in] An existing key set version.
+ * \param keyIndex [in] The position of the key in the key set version.
+ * \param newKeySetVersion [in] The new key set version.
+ * \param PEMKeyFileName [in] A PEM file name with the public ECC key.
+ * \param *passPhrase [in] The passphrase. Must be an ASCII string.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
+ */
+OPGP_ERROR_STATUS GP211_put_ecc_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+				 BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion,
+				 OPGP_STRING PEMKeyFileName, char *passPhrase) {
+	OPGP_ERROR_STATUS status;
+	status = put_asymmetric_keys(cardContext, cardInfo, secInfo, keySetVersion, keyIndex,
+								 newKeySetVersion, PEMKeyFileName, passPhrase, GP211_KEY_TYPE_ECC);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -1261,53 +1285,6 @@ end:
 	return status;
 }
 
-OPGP_ERROR_STATUS put_rsa_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-				 BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion,
-				 OPGP_STRING PEMKeyFileName, char *passPhrase) {
-	OPGP_ERROR_STATUS status;
-	BYTE sendBuffer[APDU_COMMAND_LEN];
-	DWORD recvBufferLength=APDU_RESPONSE_LEN;
-	BYTE recvBuffer[APDU_RESPONSE_LEN];
-	DWORD i=0;
-	BYTE rsa_modulus[512];
-	DWORD rsa_modulus_length = 512;
-	LONG rsa_exponent;
-	BYTE keyCheckValue[3];
-	BYTE keyDataField[600];
-	DWORD keyDataFieldLength=0;
-	OPGP_LOG_START(_T("put_rsa_key"));
-
-	status = read_public_rsa_key(PEMKeyFileName, passPhrase, rsa_modulus, &rsa_modulus_length, &rsa_exponent);
-	if (OPGP_ERROR_CHECK(status)) {
-		goto end;
-	}
-
-	status = add_rsa_key_data(secInfo, rsa_modulus, rsa_modulus_length, rsa_exponent, keyDataField, &keyDataFieldLength, keyCheckValue);
-	if (OPGP_ERROR_CHECK(status)) {
-		goto end;
-	}
-
-	sendBuffer[i++] = 0x80;
-	sendBuffer[i++] = 0xD8;
-	sendBuffer[i++] = keySetVersion;
-	sendBuffer[i++] = keyIndex;
-	sendBuffer[i++] = 0; // Lc later calculated
-	sendBuffer[i++] = newKeySetVersion;
-
-	status = send_chained_data(cardContext, cardInfo, secInfo, sendBuffer, i,
-	                              keyDataField, keyDataFieldLength, recvBuffer, &recvBufferLength,
-								  false, false, true);
-	if (OPGP_ERROR_CHECK(status)) {
-		goto end;
-	}
-
-	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
-end:
-
-	OPGP_LOG_END(_T("put_rsa_key"), status);
-	return status;
-}
-
 /**
  * A keySetVersion value of 0x00 adds a new key.
  * Any other value between 0x01 and 0x7f must match an existing key set version.
@@ -1563,10 +1540,10 @@ end:
 }
 
 
-OPGP_ERROR_STATUS put_delegated_management_token_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-                                                      BYTE keySetVersion, BYTE newKeySetVersion,
-                                                      OPGP_STRING PEMKeyFileName, char *passPhrase,
-                                                      BYTE tokenKeyType) {
+OPGP_ERROR_STATUS put_asymmetric_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+									  BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion,
+									  OPGP_STRING PEMKeyFileName, char *passPhrase,
+									  BYTE keyType) {
 	OPGP_ERROR_STATUS status;
 	BYTE sendBuffer[1000];
 	DWORD recvBufferLength=APDU_RESPONSE_LEN;
@@ -1587,7 +1564,7 @@ OPGP_ERROR_STATUS put_delegated_management_token_keys(OPGP_CARD_CONTEXT cardCont
 	GP211_ECC_DOMAIN_PARAMETERS token_verification_ecc_domain_parameters;
 	BOOL withEccParams = true;
 
-	OPGP_LOG_START(_T("put_delegated_management_token_keys"));
+	OPGP_LOG_START(_T("put_asymmetric_keys"));
 
 	if (PEMKeyFileName == NULL) {
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_FILENAME, _T("PEMKeyFileName must be provided"));
@@ -1597,12 +1574,12 @@ OPGP_ERROR_STATUS put_delegated_management_token_keys(OPGP_CARD_CONTEXT cardCont
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xD8;
 	sendBuffer[i++] = keySetVersion;
-	sendBuffer[i++] = 0x01; // put token key at index 1
+	sendBuffer[i++] = keyIndex;
 	sendBuffer[i++] = 0x00; // Lc later calculated
 
 	sendBuffer[i++] = newKeySetVersion;
 
-	switch (tokenKeyType) {
+	switch (keyType) {
 		case GP211_KEY_TYPE_RSA:
 			// read public key
 			status = read_public_rsa_key(PEMKeyFileName, passPhrase, token_verification_rsa_modulus, &rsa_modulus_length, &token_verification_rsa_exponent);
@@ -1645,7 +1622,7 @@ OPGP_ERROR_STATUS put_delegated_management_token_keys(OPGP_CARD_CONTEXT cardCont
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
 
-	OPGP_LOG_END(_T("put_delegated_management_token_keys"), status);
+	OPGP_LOG_END(_T("put_asymmetric_keys"), status);
 	return status;
 }
 
@@ -1722,9 +1699,18 @@ OPGP_ERROR_STATUS GP211_put_delegated_management_token_keys(OPGP_CARD_CONTEXT ca
                                                             BYTE keySetVersion, BYTE newKeySetVersion,
                                                             OPGP_STRING PEMKeyFileName, char *passPhrase,
                                                             BYTE tokenKeyType) {
-	return put_delegated_management_token_keys(cardContext, cardInfo, secInfo,
-	                                           keySetVersion, newKeySetVersion,
-	                                           PEMKeyFileName, passPhrase, tokenKeyType);
+	return put_asymmetric_keys(cardContext, cardInfo, secInfo,
+							   keySetVersion, 0x01, newKeySetVersion,
+							   PEMKeyFileName, passPhrase, tokenKeyType);
+}
+
+OPGP_ERROR_STATUS GP211_put_dap_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+									 BYTE keySetVersion, BYTE newKeySetVersion,
+									 OPGP_STRING PEMKeyFileName, char *passPhrase,
+									 BYTE keyType) {
+	return put_asymmetric_keys(cardContext, cardInfo, secInfo,
+							   keySetVersion, 0x01, newKeySetVersion,
+							   PEMKeyFileName, passPhrase, keyType);
 }
 
 OPGP_ERROR_STATUS GP211_put_delegated_management_receipt_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -7696,8 +7682,8 @@ OPGP_ERROR_STATUS OP201_put_rsa_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 	OPGP_ERROR_STATUS status;
 	GP211_SECURITY_INFO gp211secInfo;
 	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
-	status = put_rsa_key(cardContext, cardInfo, &gp211secInfo, keySetVersion, keyIndex, newKeySetVersion,
-		PEMKeyFileName, passPhrase);
+	status = put_asymmetric_keys(cardContext, cardInfo, &gp211secInfo, keySetVersion, keyIndex,
+								 newKeySetVersion, PEMKeyFileName, passPhrase, GP211_KEY_TYPE_RSA);
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 	return status;
 }
@@ -7780,7 +7766,8 @@ OPGP_ERROR_STATUS OP201_put_delegated_management_keys(OPGP_CARD_CONTEXT cardCont
 	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
 
 	if (PEMKeyFileName != NULL) {
-		status = put_delegated_management_token_keys(cardContext, cardInfo, &gp211secInfo, currentKeySetVersion, newKeySetVersion, PEMKeyFileName, passPhrase, OP201_KEY_TYPE_RSA);
+		status = put_asymmetric_keys(cardContext, cardInfo, &gp211secInfo, currentKeySetVersion, 0x01,
+									 newKeySetVersion, PEMKeyFileName, passPhrase, OP201_KEY_TYPE_RSA);
 		if (OPGP_ERROR_CHECK(status)) {
 			goto end;
 		}

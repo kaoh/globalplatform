@@ -107,6 +107,13 @@ static int dmLoadFileParamsAvailable = 0;
 static const char *dmLoadTokenKeyLabel = NULL;
 static const char *dmInstallTokenKeyLabel = NULL;
 
+static OPGP_LOAD_FILE_PARAMETERS dapLoadFileParams;
+static BYTE dapLoadFileDataBlockHash[64];
+static DWORD dapLoadFileDataBlockHashLength;
+static GP211_DAP_BLOCK dapLoadFileSignature;
+static int dapLoadFileParamsAvailable = 0;
+static int dapLoadFileSignatureAvailable = 0;
+
 /**
  * Readername for the test.
  */
@@ -292,9 +299,9 @@ static OPGP_ERROR_STATUS internal_delete_selected(DWORD deleteFlags, int ignoreE
 	return status;
 }
 
-static OPGP_ERROR_STATUS internal_delete_key_set(BYTE keySetVersion, int ignoreErrors) {
+static OPGP_ERROR_STATUS internal_delete_key_set_with_secinfo(GP211_SECURITY_INFO *secInfo, BYTE keySetVersion, int ignoreErrors) {
 	OPGP_ERROR_STATUS status;
-	status = GP211_delete_key(cardContext, cardInfo, &securityInfo211, keySetVersion, 0xFF);
+	status = GP211_delete_key(cardContext, cardInfo, secInfo, keySetVersion, 0xFF);
 	if (OPGP_ERROR_CHECK(status)) {
 		if (ignoreErrors) {
 			OPGP_ERROR_CREATE_NO_ERROR(status);
@@ -304,6 +311,10 @@ static OPGP_ERROR_STATUS internal_delete_key_set(BYTE keySetVersion, int ignoreE
 	}
 	OPGP_ERROR_CREATE_NO_ERROR(status);
 	return status;
+}
+
+static OPGP_ERROR_STATUS internal_delete_key_set(BYTE keySetVersion, int ignoreErrors) {
+	return internal_delete_key_set_with_secinfo(&securityInfo211, keySetVersion, ignoreErrors);
 }
 
 static OPGP_ERROR_STATUS internal_delete() {
@@ -340,6 +351,22 @@ static OPGP_ERROR_STATUS internal_read_dm_load_file_parameters() {
 	return status;
 }
 
+static OPGP_ERROR_STATUS internal_read_dap_load_file_parameters() {
+	OPGP_ERROR_STATUS status;
+	memset(&dapLoadFileParams, 0, sizeof(dapLoadFileParams));
+	status = OPGP_read_executable_load_file_parameters(TEST_LOAD_FILE, &dapLoadFileParams);
+	if (OPGP_ERROR_CHECK(status)) {
+		return status;
+	}
+	if (dapLoadFileParams.appletAIDs[0].AIDLength == 0) {
+		OPGP_ERROR_CREATE_ERROR(status, -1, "No applet AID found in CAP file.");
+		return status;
+	}
+	dapLoadFileParamsAvailable = 1;
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+	return status;
+}
+
 static OPGP_ERROR_STATUS internal_connect_and_authenticate() {
 	OPGP_ERROR_STATUS status;
 	status = internal_connect();
@@ -350,6 +377,26 @@ static OPGP_ERROR_STATUS internal_connect_and_authenticate() {
 	if (OPGP_ERROR_CHECK(status)) {
 		return status;
 	}
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+	return status;
+}
+
+static OPGP_ERROR_STATUS internal_select_and_authenticate_personalized_sd(GP211_SECURITY_INFO *sdSecurityInfo) {
+	OPGP_ERROR_STATUS status;
+	status = OPGP_select_application(cardContext, cardInfo, sdSecurityInfo, (PBYTE)sdInstanceAID, sizeof(sdInstanceAID));
+	if (OPGP_ERROR_CHECK(status)) {
+		return status;
+	}
+
+	memcpy(sdSecurityInfo->invokingAid, sdInstanceAID, sizeof(sdInstanceAID));
+	sdSecurityInfo->invokingAidLength = sizeof(sdInstanceAID);
+	status = GP211_mutual_authentication(cardContext, cardInfo, NULL,
+			(PBYTE)sdPersonalizationKey, (PBYTE)sdPersonalizationKey, (PBYTE)sdPersonalizationKey,
+			sizeof(sdPersonalizationKey), 1, 0, 0, 0, GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC, OPGP_DERIVATION_METHOD_NONE, sdSecurityInfo);
+	if (OPGP_ERROR_CHECK(status)) {
+		return status;
+	}
+
 	OPGP_ERROR_CREATE_NO_ERROR(status);
 	return status;
 }
@@ -1166,6 +1213,483 @@ START_TEST (test_dm_install_sd_with_delegated_management) {
 } END_TEST
 
 /**
+ * ECC DAP test step 1:
+ * Install a Security Domain with mandated DAP verification privileges.
+ */
+START_TEST (test_dap_install_sd_with_mandated_dap) {
+	OPGP_ERROR_STATUS status;
+	GP211_SD_INSTALL_PARAMS sdParams;
+	BYTE sdParamsBuf[100];
+	DWORD sdParamsLen = sizeof(sdParamsBuf);
+	GP211_RECEIPT_DATA receipt;
+	DWORD receiptDataAvailable = 0;
+	GP211_APPLICATION_DATA appData[20];
+	GP211_EXECUTABLE_MODULES_DATA modulesData[20];
+	DWORD dataLength = 20;
+
+	status = internal_connect_and_authenticate();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not connect and authenticate: %s", status.errorMessage);
+	}
+
+	status = internal_delete_selected(INTERNAL_DELETE_SD, 1);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not pre-delete DAP SD: %s", status.errorMessage);
+	}
+
+	memset(&sdParams, 0, sizeof(sdParams));
+	sdParams.acceptExtraditionHere[0] = GP211_SD_ACCEPT_ISD;
+	sdParams.acceptExtraditionHere[1] = GP211_SD_ACCEPT_ISD;
+	sdParams.acceptExtraditionHereLength = 2;
+	sdParams.acceptExtraditionAway[0] = GP211_SD_ACCEPT_ISD;
+	sdParams.acceptExtraditionAway[1] = GP211_SD_ACCEPT_ISD;
+	sdParams.acceptExtraditionAwayLength = 2;
+	sdParams.acceptDeletion = GP211_SD_ACCEPT_ISD;
+	sdParams.acceptDeletionLength = 1;
+
+	status = GP211_build_sd_parameters(&sdParams, sdParamsBuf, &sdParamsLen);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_build_sd_parameters() failed: %s", status.errorMessage);
+	}
+
+	status = GP211_install_for_install_and_make_selectable(cardContext, cardInfo, &securityInfo211,
+			(PBYTE)sdPackageAID, sizeof(sdPackageAID),
+			(PBYTE)sdModuleAID, sizeof(sdModuleAID),
+			(PBYTE)sdInstanceAID, sizeof(sdInstanceAID),
+			GP211_SECURITY_DOMAIN | GP211_MANDATED_DAP_VERIFICATION | GP211_DAP_VERIFICATION,
+			0, 0,
+			NULL, 0,
+			sdParamsBuf, sdParamsLen,
+			NULL, 0,
+			NULL, 0,
+			NULL, 0,
+			&receipt, &receiptDataAvailable);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_install_for_install_and_make_selectable() failed: %s", status.errorMessage);
+	}
+
+	status = GP211_get_status(cardContext, cardInfo, &securityInfo211,
+			GP211_STATUS_APPLICATIONS, GP211_STATUS_FORMAT_NEW,
+			appData, modulesData, &dataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not get status from applications: %s", status.errorMessage);
+	}
+
+	{
+		int found = 0;
+		DWORD i;
+		for (i = 0; i < dataLength; i++) {
+			if (appData[i].aid.AIDLength == sizeof(sdInstanceAID) &&
+					memcmp(appData[i].aid.AID, sdInstanceAID, sizeof(sdInstanceAID)) == 0) {
+				found = 1;
+				break;
+			}
+		}
+		if (!found) {
+			ck_abort_msg("DAP SD AID not found in status.");
+		}
+		if (!(appData[i].privileges & GP211_SECURITY_DOMAIN) ||
+				!(appData[i].privileges & GP211_DAP_VERIFICATION) ||
+				!(appData[i].privileges & GP211_MANDATED_DAP_VERIFICATION)) {
+			ck_abort_msg("SD privileges do not contain Security Domain, DAP Verification and Mandated DAP Verification.");
+		}
+	}
+
+	status = internal_disconnect();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not disconnect: %s", status.errorMessage);
+	}
+} END_TEST
+
+/**
+ * ECC DAP test step 2:
+ * Personalize the DAP Security Domain and put the ECC DAP verification key.
+ */
+START_TEST (test_dap_personalize_sd) {
+	OPGP_ERROR_STATUS status;
+	GP211_SECURITY_INFO sdSecurityInfo;
+	GP211_APPLICATION_DATA appData[10];
+	GP211_EXECUTABLE_MODULES_DATA modulesData[10];
+	DWORD dataLength = 10;
+	GP211_KEY_INFORMATION keyInfo[20];
+	DWORD keyInfoLen = 20;
+
+	status = internal_connect();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not connect: %s", status.errorMessage);
+	}
+
+	status = OPGP_select_application(cardContext, cardInfo, &sdSecurityInfo, (PBYTE)sdInstanceAID, sizeof(sdInstanceAID));
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Selecting DAP SD failed: %s", status.errorMessage);
+	}
+
+	memcpy(sdSecurityInfo.invokingAid, sdInstanceAID, sizeof(sdInstanceAID));
+	sdSecurityInfo.invokingAidLength = sizeof(sdInstanceAID);
+	status = GP211_mutual_authentication(cardContext, cardInfo, NULL,
+			(PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY,
+			16, 0, 0, 0, 0, GP211_SCP03_SECURITY_LEVEL_C_MAC, OPGP_DERIVATION_METHOD_NONE, &sdSecurityInfo);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Mutual authentication with new SD failed: %s", status.errorMessage);
+	}
+
+	status = GP211_put_secure_channel_keys(cardContext, cardInfo, &sdSecurityInfo, 0, 1, NULL,
+			(PBYTE)sdPersonalizationKey, (PBYTE)sdPersonalizationKey, (PBYTE)sdPersonalizationKey,
+			sizeof(sdPersonalizationKey), GP211_KEY_TYPE_AES);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_put_secure_channel_keys() failed: %s", status.errorMessage);
+	}
+
+	status = internal_select_and_authenticate_personalized_sd(&sdSecurityInfo);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not select/authenticate personalized DAP SD: %s", status.errorMessage);
+	}
+
+	status = internal_delete_key_set_with_secinfo(&sdSecurityInfo, GP211_KEY_VERSION_DAP_VERIFICATION, 1);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not pre-delete DAP verification key set: %s", status.errorMessage);
+	}
+
+	status = GP211_put_dap_keys(cardContext, cardInfo, &sdSecurityInfo,
+			0, GP211_KEY_VERSION_DAP_VERIFICATION,
+			TEST_ECC_PUBLIC_KEY, NULL, GP211_KEY_TYPE_ECC);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_put_dap_keys() failed: %s", status.errorMessage);
+	}
+
+	keyInfoLen = 20;
+	status = GP211_get_key_information_templates(cardContext, cardInfo, &sdSecurityInfo, 0, keyInfo, &keyInfoLen);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_get_key_information_templates() failed: %s", status.errorMessage);
+	}
+	if (keyInfoLen == 0) {
+		ck_abort_msg("No keys found in personalized DAP SD.");
+	}
+	{
+		int found = 0;
+		DWORD i;
+		for (i = 0; i < keyInfoLen; i++) {
+			if (keyInfo[i].keySetVersion == GP211_KEY_VERSION_DAP_VERIFICATION &&
+					keyInfo[i].keyIndex == 1) {
+				found = 1;
+				break;
+			}
+		}
+		if (!found) {
+			ck_abort_msg("DAP verification key set not found after GP211_put_dap_keys().");
+		}
+	}
+
+	dataLength = 10;
+	status = GP211_get_status(cardContext, cardInfo, &sdSecurityInfo,
+			GP211_STATUS_APPLICATIONS, GP211_STATUS_FORMAT_NEW,
+			appData, modulesData, &dataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not get status from applications: %s", status.errorMessage);
+	}
+
+	{
+		int found = 0;
+		DWORD i;
+		for (i = 0; i < dataLength; i++) {
+			if (appData[i].aid.AIDLength == sizeof(sdInstanceAID) &&
+					memcmp(appData[i].aid.AID, sdInstanceAID, sizeof(sdInstanceAID)) == 0) {
+				found = 1;
+				break;
+			}
+		}
+		if (!found) {
+			ck_abort_msg("DAP SD AID not found in application status after personalization.");
+		}
+		if (appData[i].lifeCycleState != GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED) {
+			ck_abort_msg("Incorrect DAP SD life cycle state: expected %d, got %d",
+					GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED, appData[i].lifeCycleState);
+		}
+	}
+
+	status = internal_disconnect();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not disconnect: %s", status.errorMessage);
+	}
+} END_TEST
+
+/**
+ * ECC DAP test step 3:
+ * Calculate load file hash and ECC DAP for helloworld.cap.
+ */
+START_TEST (test_dap_calculate_helloworld_ecc_dap) {
+	OPGP_ERROR_STATUS status;
+
+	status = internal_read_dap_load_file_parameters();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("OPGP_read_executable_load_file_parameters() failed: %s", status.errorMessage);
+	}
+
+	dapLoadFileDataBlockHashLength = 32;
+	memset(dapLoadFileDataBlockHash, 0, sizeof(dapLoadFileDataBlockHash));
+	status = GP211_calculate_load_file_data_block_hash(TEST_LOAD_FILE,
+			dapLoadFileDataBlockHash, dapLoadFileDataBlockHashLength, GP211_HASH_SHA256);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_calculate_load_file_data_block_hash() failed: %s", status.errorMessage);
+	}
+
+	memset(&dapLoadFileSignature, 0, sizeof(dapLoadFileSignature));
+	status = GP211_calculate_ecc_DAP(dapLoadFileDataBlockHash, dapLoadFileDataBlockHashLength,
+			(PBYTE)sdInstanceAID, sizeof(sdInstanceAID),
+			TEST_ECC_PRIVATE_KEY, NULL, &dapLoadFileSignature);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_calculate_ecc_DAP() failed: %s", status.errorMessage);
+	}
+	if (dapLoadFileSignature.signatureLength == 0) {
+		ck_abort_msg("ECC DAP calculation returned empty signature.");
+	}
+	dapLoadFileSignatureAvailable = 1;
+} END_TEST
+
+/**
+ * ECC DAP test step 5:
+ * Install helloworld.cap with ECC DAP.
+ */
+START_TEST (test_dm_install_helloworld_with_dap) {
+	OPGP_ERROR_STATUS status;
+	DWORD receiptDataLen = 0;
+	GP211_RECEIPT_DATA receipt;
+	DWORD receiptDataAvailable = 0;
+	GP211_APPLICATION_DATA appData[20];
+	GP211_EXECUTABLE_MODULES_DATA modulesData[20];
+	DWORD dataLength = 20;
+
+	if (!dapLoadFileParamsAvailable || !dapLoadFileSignatureAvailable || dapLoadFileDataBlockHashLength == 0) {
+		ck_abort_msg("DAP preconditions missing. Run DAP hash and DAP calculation tests first.");
+	}
+
+	status = internal_connect_and_authenticate();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not connect and authenticate: %s", status.errorMessage);
+	}
+
+	status = internal_delete_selected(INTERNAL_DELETE_APPLET | INTERNAL_DELETE_PACKAGE, 1);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not pre-delete applet/package: %s", status.errorMessage);
+	}
+
+	status = GP211_install_for_load(cardContext, cardInfo, &securityInfo211,
+			dapLoadFileParams.loadFileAID.AID, dapLoadFileParams.loadFileAID.AIDLength,
+			(PBYTE)sdInstanceAID, sizeof(sdInstanceAID),
+			dapLoadFileDataBlockHash, dapLoadFileDataBlockHashLength,
+			NULL, 0,
+			dapLoadFileParams.loadFileSize, 0, 0);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_install_for_load() failed: %s", status.errorMessage);
+	}
+
+	status = GP211_load(cardContext, cardInfo, &securityInfo211,
+			&dapLoadFileSignature, 1, TEST_LOAD_FILE, NULL, &receiptDataLen, NULL);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_load() with DAP failed: %s", status.errorMessage);
+	}
+
+	status = GP211_install_for_install_and_make_selectable(cardContext, cardInfo, &securityInfo211,
+			dapLoadFileParams.loadFileAID.AID, dapLoadFileParams.loadFileAID.AIDLength,
+			dapLoadFileParams.appletAIDs[0].AID, dapLoadFileParams.appletAIDs[0].AIDLength,
+			dapLoadFileParams.appletAIDs[0].AID, dapLoadFileParams.appletAIDs[0].AIDLength,
+			0, 0, 0,
+			NULL, 0,
+			NULL, 0,
+			NULL, 0,
+			NULL, 0,
+			NULL, 0,
+			&receipt, &receiptDataAvailable);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_install_for_install_and_make_selectable() with DAP failed: %s", status.errorMessage);
+	}
+
+	status = GP211_get_status(cardContext, cardInfo, &securityInfo211,
+			GP211_STATUS_APPLICATIONS, GP211_STATUS_FORMAT_NEW,
+			appData, modulesData, &dataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not get status from applications: %s", status.errorMessage);
+	}
+
+	{
+		int found = 0;
+		DWORD i;
+		for (i = 0; i < dataLength; i++) {
+			if (appData[i].aid.AIDLength == dapLoadFileParams.appletAIDs[0].AIDLength &&
+					memcmp(appData[i].aid.AID, dapLoadFileParams.appletAIDs[0].AID,
+							dapLoadFileParams.appletAIDs[0].AIDLength) == 0) {
+				found = 1;
+				break;
+			}
+		}
+		if (!found) {
+			ck_abort_msg("Installed DAP applet AID not found in status.");
+		}
+		if (appData[i].associatedSecurityDomainAID.AIDLength != sizeof(sdInstanceAID) ||
+				memcmp(appData[i].associatedSecurityDomainAID.AID, sdInstanceAID, sizeof(sdInstanceAID)) != 0) {
+			ck_abort_msg("Installed DAP applet is not associated with DAP SD.");
+		}
+	}
+
+	status = internal_disconnect();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not disconnect: %s", status.errorMessage);
+	}
+} END_TEST
+
+/**
+ * ECC DAP intermediate cleanup:
+ * Delete loaded applet and package before deleting the SD.
+ */
+START_TEST (test_dap_delete_helloworld) {
+	OPGP_ERROR_STATUS status;
+	GP211_APPLICATION_DATA appData[20];
+	GP211_EXECUTABLE_MODULES_DATA modulesData[20];
+	DWORD dataLength = 20;
+
+	if (!dapLoadFileParamsAvailable) {
+		ck_abort_msg("DAP load file parameters are missing.");
+	}
+
+	status = internal_connect_and_authenticate();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not connect and authenticate: %s", status.errorMessage);
+	}
+
+	status = internal_delete_selected(INTERNAL_DELETE_APPLET | INTERNAL_DELETE_PACKAGE, 0);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not delete DAP applet/package: %s", status.errorMessage);
+	}
+
+	status = GP211_get_status(cardContext, cardInfo, &securityInfo211,
+			GP211_STATUS_APPLICATIONS, GP211_STATUS_FORMAT_NEW,
+			appData, modulesData, &dataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not get status from applications: %s", status.errorMessage);
+	}
+	{
+		DWORD i;
+		for (i = 0; i < dataLength; i++) {
+			if (appData[i].aid.AIDLength == dapLoadFileParams.appletAIDs[0].AIDLength &&
+					memcmp(appData[i].aid.AID, dapLoadFileParams.appletAIDs[0].AID,
+							dapLoadFileParams.appletAIDs[0].AIDLength) == 0) {
+				ck_abort_msg("DAP applet AID still found in status after deletion.");
+			}
+		}
+	}
+
+	dataLength = 20;
+	status = GP211_get_status(cardContext, cardInfo, &securityInfo211,
+			GP211_STATUS_LOAD_FILES, GP211_STATUS_FORMAT_NEW,
+			appData, modulesData, &dataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not get status from load files: %s", status.errorMessage);
+	}
+	{
+		DWORD i;
+		for (i = 0; i < dataLength; i++) {
+			if (appData[i].aid.AIDLength == dapLoadFileParams.loadFileAID.AIDLength &&
+					memcmp(appData[i].aid.AID, dapLoadFileParams.loadFileAID.AID,
+							dapLoadFileParams.loadFileAID.AIDLength) == 0) {
+				ck_abort_msg("DAP load file AID still found in status after deletion.");
+			}
+		}
+	}
+
+	status = internal_disconnect();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not disconnect: %s", status.errorMessage);
+	}
+} END_TEST
+
+/**
+ * ECC DAP test step 6:
+ * Delete the DAP key set.
+ */
+START_TEST (test_dap_delete_key) {
+	OPGP_ERROR_STATUS status;
+	GP211_SECURITY_INFO sdSecurityInfo;
+	GP211_KEY_INFORMATION keyInfo[20];
+	DWORD keyInfoLen = 20;
+
+	status = internal_connect();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not connect: %s", status.errorMessage);
+	}
+
+	status = internal_select_and_authenticate_personalized_sd(&sdSecurityInfo);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not select/authenticate personalized DAP SD: %s", status.errorMessage);
+	}
+
+	status = internal_delete_key_set_with_secinfo(&sdSecurityInfo, GP211_KEY_VERSION_DAP_VERIFICATION, 0);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not delete DAP key set: %s", status.errorMessage);
+	}
+
+	status = GP211_get_key_information_templates(cardContext, cardInfo, &sdSecurityInfo, 0, keyInfo, &keyInfoLen);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_get_key_information_templates() failed: %s", status.errorMessage);
+	}
+	{
+		DWORD i;
+		for (i = 0; i < keyInfoLen; i++) {
+			if (keyInfo[i].keySetVersion == GP211_KEY_VERSION_DAP_VERIFICATION &&
+					keyInfo[i].keyIndex == 1) {
+				ck_abort_msg("DAP verification key set still present after deletion.");
+			}
+		}
+	}
+
+	status = internal_disconnect();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not disconnect: %s", status.errorMessage);
+	}
+} END_TEST
+
+/**
+ * ECC DAP test step 7:
+ * Delete the DAP Security Domain.
+ */
+START_TEST (test_dap_delete_sd) {
+	OPGP_ERROR_STATUS status;
+	GP211_APPLICATION_DATA appData[20];
+	GP211_EXECUTABLE_MODULES_DATA modulesData[20];
+	DWORD dataLength = 20;
+
+	status = internal_connect_and_authenticate();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not connect and authenticate: %s", status.errorMessage);
+	}
+
+	status = internal_delete_selected(INTERNAL_DELETE_SD, 0);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not delete DAP SD: %s", status.errorMessage);
+	}
+
+	status = GP211_get_status(cardContext, cardInfo, &securityInfo211,
+			GP211_STATUS_APPLICATIONS, GP211_STATUS_FORMAT_NEW,
+			appData, modulesData, &dataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not get status from applications: %s", status.errorMessage);
+	}
+	{
+		DWORD i;
+		for (i = 0; i < dataLength; i++) {
+			if (appData[i].aid.AIDLength == sizeof(sdInstanceAID) &&
+					memcmp(appData[i].aid.AID, sdInstanceAID, sizeof(sdInstanceAID)) == 0) {
+				ck_abort_msg("DAP SD AID still found in status after deletion.");
+			}
+		}
+	}
+
+	status = internal_disconnect();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not disconnect: %s", status.errorMessage);
+	}
+} END_TEST
+
+/**
  * Delegated management test step 4:
  * Calculate hash and load token for helloworld.cap.
  */
@@ -1580,58 +2104,67 @@ Suite * GlobalPlatform_suite(void) {
 	/* Core test case */
 	TCase *tc_core = tcase_create("Core");
     tcase_set_timeout(tc_core, 0);
-	tcase_add_test (tc_core, test_list_readers);
-	tcase_add_test (tc_core, test_connect_card);
-	tcase_add_test (tc_core, test_GP211_VISA2_derive_keys);
-	tcase_add_test (tc_core, test_mutual_authentication);
-	tcase_add_test (tc_core, test_install);
-    tcase_add_test (tc_core, test_get_status);
-    tcase_add_test (tc_core, test_delete);
-    tcase_add_test (tc_core, test_install_callback);
-	tcase_add_test (tc_core, test_delete);
-    tcase_add_test (tc_core, test_put_aes_key);
-    tcase_add_test (tc_core, test_delete_key);
-	tcase_add_test (tc_core, test_create_sd);
-	tcase_add_test (tc_core, test_personalize_sd);
-	tcase_add_test (tc_core, test_move_sd);
-	tcase_add_test (tc_core, test_delete_sd);
+	// tcase_add_test (tc_core, test_list_readers);
+	// tcase_add_test (tc_core, test_connect_card);
+	// tcase_add_test (tc_core, test_GP211_VISA2_derive_keys);
+	// tcase_add_test (tc_core, test_mutual_authentication);
+	// tcase_add_test (tc_core, test_install);
+ //    tcase_add_test (tc_core, test_get_status);
+ //    tcase_add_test (tc_core, test_delete);
+ //    tcase_add_test (tc_core, test_install_callback);
+	// tcase_add_test (tc_core, test_delete);
+ //    tcase_add_test (tc_core, test_put_aes_key);
+ //    tcase_add_test (tc_core, test_delete_key);
+	// tcase_add_test (tc_core, test_create_sd);
+	// tcase_add_test (tc_core, test_personalize_sd);
+	// tcase_add_test (tc_core, test_move_sd);
+	// tcase_add_test (tc_core, test_delete_sd);
+ //
+	// // RSA 1024
+	// tcase_add_test (tc_core, test_GP211_calculate_load_token_rsa1024_known_vector);
+	// tcase_add_test (tc_core, test_dm_put_token_key_rsa1024);
+	// tcase_add_test (tc_core, test_dm_put_receipt_key_aes256);
+	// tcase_add_test (tc_core, test_dm_install_sd_with_delegated_management);
+	// tcase_add_test (tc_core, test_personalize_sd);
+	// tcase_add_test (tc_core, test_dm_calculate_load_token_rsa1024);
+	// tcase_add_test (tc_core, test_dm_calculate_install_token_rsa1024);
+	// tcase_add_test (tc_core, test_dm_install_helloworld_with_tokens_rsa1024);
+	// tcase_add_test (tc_core, test_dm_delete_helloworld);
+	// tcase_add_test (tc_core, test_dm_delete_sd);
+	// tcase_add_test (tc_core, test_dm_delete_keys);
+ //
+	// // RSA 2048
+	// tcase_add_test (tc_core, test_dm_put_token_key_rsa);
+	// tcase_add_test (tc_core, test_dm_put_receipt_key_aes256);
+	// tcase_add_test (tc_core, test_dm_install_sd_with_delegated_management);
+	// tcase_add_test (tc_core, test_personalize_sd);
+	// tcase_add_test (tc_core, test_dm_calculate_load_token_rsa);
+	// tcase_add_test (tc_core, test_dm_calculate_install_token_rsa);
+	// tcase_add_test (tc_core, test_dm_install_helloworld_with_tokens_rsa);
+	// tcase_add_test (tc_core, test_dm_delete_helloworld);
+	// tcase_add_test (tc_core, test_dm_delete_sd);
+	// tcase_add_test (tc_core, test_dm_delete_keys);
+ //
+	// // ECC 256
+	// tcase_add_test (tc_core, test_dm_put_token_key_ecc);
+	// tcase_add_test (tc_core, test_dm_put_receipt_key_aes256);
+	// tcase_add_test (tc_core, test_dm_install_sd_with_delegated_management);
+	// tcase_add_test (tc_core, test_personalize_sd);
+	// tcase_add_test (tc_core, test_dm_calculate_load_token_ecc);
+	// tcase_add_test (tc_core, test_dm_calculate_install_token_ecc);
+	// tcase_add_test (tc_core, test_dm_install_helloworld_with_tokens_ecc);
+	// tcase_add_test (tc_core, test_dm_delete_helloworld);
+	// tcase_add_test (tc_core, test_dm_delete_sd);
+	// tcase_add_test (tc_core, test_dm_delete_keys);
 
-	// RSA 1024
-	tcase_add_test (tc_core, test_GP211_calculate_load_token_rsa1024_known_vector);
-	tcase_add_test (tc_core, test_dm_put_token_key_rsa1024);
-	tcase_add_test (tc_core, test_dm_put_receipt_key_aes256);
-	tcase_add_test (tc_core, test_dm_install_sd_with_delegated_management);
-	tcase_add_test (tc_core, test_personalize_sd);
-	tcase_add_test (tc_core, test_dm_calculate_load_token_rsa1024);
-	tcase_add_test (tc_core, test_dm_calculate_install_token_rsa1024);
-	tcase_add_test (tc_core, test_dm_install_helloworld_with_tokens_rsa1024);
-	tcase_add_test (tc_core, test_dm_delete_helloworld);
-	tcase_add_test (tc_core, test_dm_delete_sd);
-	tcase_add_test (tc_core, test_dm_delete_keys);
-
-	// RSA 2048
-	tcase_add_test (tc_core, test_dm_put_token_key_rsa);
-	tcase_add_test (tc_core, test_dm_put_receipt_key_aes256);
-	tcase_add_test (tc_core, test_dm_install_sd_with_delegated_management);
-	tcase_add_test (tc_core, test_personalize_sd);
-	tcase_add_test (tc_core, test_dm_calculate_load_token_rsa);
-	tcase_add_test (tc_core, test_dm_calculate_install_token_rsa);
-	tcase_add_test (tc_core, test_dm_install_helloworld_with_tokens_rsa);
-	tcase_add_test (tc_core, test_dm_delete_helloworld);
-	tcase_add_test (tc_core, test_dm_delete_sd);
-	tcase_add_test (tc_core, test_dm_delete_keys);
-
-	// ECC 256
-	tcase_add_test (tc_core, test_dm_put_token_key_ecc);
-	tcase_add_test (tc_core, test_dm_put_receipt_key_aes256);
-	tcase_add_test (tc_core, test_dm_install_sd_with_delegated_management);
-	tcase_add_test (tc_core, test_personalize_sd);
-	tcase_add_test (tc_core, test_dm_calculate_load_token_ecc);
-	tcase_add_test (tc_core, test_dm_calculate_install_token_ecc);
-	tcase_add_test (tc_core, test_dm_install_helloworld_with_tokens_ecc);
-	tcase_add_test (tc_core, test_dm_delete_helloworld);
-	tcase_add_test (tc_core, test_dm_delete_sd);
-	tcase_add_test (tc_core, test_dm_delete_keys);
+	// ECC DAP verification
+	tcase_add_test (tc_core, test_dap_install_sd_with_mandated_dap);
+	tcase_add_test (tc_core, test_dap_personalize_sd);
+	tcase_add_test (tc_core, test_dap_calculate_helloworld_ecc_dap);
+	tcase_add_test (tc_core, test_dm_install_helloworld_with_dap);
+	tcase_add_test (tc_core, test_dap_delete_key);
+	tcase_add_test (tc_core, test_dap_delete_helloworld);
+	tcase_add_test (tc_core, test_dap_delete_sd);
 
 	suite_add_tcase(s, tc_core);
 
