@@ -845,6 +845,11 @@ OPGP_API
 OPGP_ERROR_STATUS GP211_put_ecc_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 				 BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion, OPGP_STRING PEMKeyFileName, char *passPhrase);
 
+//! \brief GlobalPlatform2.3.1: replaces a single public asymmetric key in a key set or adds a new public asymmetric key.
+OPGP_API
+OPGP_ERROR_STATUS GP211_put_asymmetric_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+				 BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion, OPGP_STRING PEMKeyFileName, char *passPhrase, BYTE keyType);
+
 //! \brief GlobalPlatform2.1.1: replaces or adds a secure channel key set consisting of S-ENC, S-MAC and DEK.
 OPGP_API
 OPGP_ERROR_STATUS GP211_put_secure_channel_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -1078,13 +1083,13 @@ OPGP_ERROR_STATUS GP211_put_delegated_management_token_keys(OPGP_CARD_CONTEXT ca
 								   OPGP_STRING PEMKeyFileName, char *passPhrase,
 								   BYTE tokenKeyType);
 
-//! \brief GlobalPlatform2.3.1: Adds a DAP verification key set.
+//! \brief GlobalPlatform2.3.1: Adds a DAP verification key set (asymmetric or symmetric).
 OPGP_API
 OPGP_ERROR_STATUS GP211_put_dap_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 								   BYTE keySetVersion,
 								   BYTE newKeySetVersion,
 								   OPGP_STRING PEMKeyFileName, char *passPhrase,
-								   BYTE keyType);
+								   BYTE keyType, BYTE key[32], DWORD keyLength);
 
 //! \brief GlobalPlatform2.1.1: Adds a receipt generation key set for Delegated Management.
 OPGP_API

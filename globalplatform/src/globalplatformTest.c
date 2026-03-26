@@ -1352,7 +1352,7 @@ START_TEST (test_dap_personalize_sd) {
 
 	status = GP211_put_dap_keys(cardContext, cardInfo, &sdSecurityInfo,
 			0, GP211_KEY_VERSION_DAP_VERIFICATION,
-			TEST_ECC_PUBLIC_KEY, NULL, GP211_KEY_TYPE_ECC);
+			TEST_ECC_PUBLIC_KEY, NULL, GP211_KEY_TYPE_ECC, NULL, 0);
 	if (OPGP_ERROR_CHECK(status)) {
 		ck_abort_msg("GP211_put_dap_keys() failed: %s", status.errorMessage);
 	}

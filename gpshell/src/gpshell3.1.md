@@ -305,7 +305,7 @@ Put (add or replace) a key in a key set.
 
 Synopsis:
 ```
-gpshell3 put-key [--type <3des|aes|rsa>] --kv <ver> --idx <idx> --new-kv <ver> (--key <hex>|--pem <file>[:pass])
+gpshell3 put-key [--type <3des|aes|rsa|ecc>] --kv <ver> --idx <idx> --new-kv <ver> (--key <hex>|--pem <file>[:pass])
 ```
 
 Options:
@@ -314,7 +314,7 @@ Options:
 - `--idx <idx>`: Key index within the set (mandatory).
 - `--new-kv <ver>`: New key set version when replacing keys (mandatory).
 - For `--type aes|3des`: provide the key via `--key <hex>`.
-- For `--type rsa`: provide an RSA public key in PEM via `--pem <file>[:pass]`.
+- For `--type rsa|ecc`: provide a public key in PEM via `--pem <file>[:pass]`.
 
 ## put-dm-token
 
@@ -347,9 +347,26 @@ gpshell3 put-dm-receipt --kv <ver> [--new-kv <ver>] [--receipt-type <aes|des>] <
 Options:
 
 - `--kv <ver>`: Key set version, defaults to 0, 0 means that a new key set is created (optional).
-- `--new-kv <ver>`: New key set version when replacing or creating a new key set, default 0x701 (optional).
+- `--new-kv <ver>`: New key set version when replacing or creating a new key set, default 0x71 (optional).
 - `<receipt-key-hex>`: Receipt key material (last positional parameter).
 - `--receipt-type`: Receipt key type, `aes` or `des` (default `aes`).
+
+## put-dap-key
+
+Put DAP verification key (asymmetric or symmetric).
+
+Synopsis:
+```
+gpshell3 put-dap-key [--kv <ver>] [--new-kv <ver>] [--key-type <ecc|rsa|aes|3des>] <pem-file>[:pass]|<key-hex>
+```
+
+Options:
+
+- `--kv <ver>`: Key set version, defaults to 0, 0 means that a new key set is created (optional).
+- `--new-kv <ver>`: New key set version when replacing or creating a new key set, default 0x73 (optional).
+- `--key-type`: DAP key type, `ecc`, `rsa`, `aes`, or `3des` (default `ecc`).
+- For `--key-type ecc|rsa`: provide public key PEM as `<pem-file>[:pass]`.
+- For `--key-type aes|3des`: provide symmetric key material as `<key-hex>`.
 
 ## del-key
 

@@ -876,16 +876,31 @@ end:
  * \param keySetVersion [in] An existing key set version.
  * \param keyIndex [in] The position of the key in the key set version.
  * \param newKeySetVersion [in] The new key set version.
- * \param PEMKeyFileName [in] A PEM file name with the public RSA key.
+ * \param PEMKeyFileName [in] A PEM file name with the public asymmetric key.
  * \param *passPhrase [in] The passphrase. Must be an ASCII string.
+ * \param keyType [in] The asymmetric key type (RSA or ECC).
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
+OPGP_ERROR_STATUS GP211_put_asymmetric_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+				 BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion,
+				 OPGP_STRING PEMKeyFileName, char *passPhrase, BYTE keyType) {
+	OPGP_ERROR_STATUS status;
+	status = put_asymmetric_keys(cardContext, cardInfo, secInfo, keySetVersion, keyIndex,
+								 newKeySetVersion, PEMKeyFileName, passPhrase, keyType);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	return status;
+}
+
 OPGP_ERROR_STATUS GP211_put_rsa_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 				 BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion,
 				 OPGP_STRING PEMKeyFileName, char *passPhrase) {
 	OPGP_ERROR_STATUS status;
-	status = put_asymmetric_keys(cardContext, cardInfo, secInfo, keySetVersion, keyIndex,
-								 newKeySetVersion, PEMKeyFileName, passPhrase, GP211_KEY_TYPE_RSA);
+	status = GP211_put_asymmetric_keys(cardContext, cardInfo, secInfo, keySetVersion, keyIndex,
+									   newKeySetVersion, PEMKeyFileName, passPhrase, GP211_KEY_TYPE_RSA);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -913,8 +928,8 @@ OPGP_ERROR_STATUS GP211_put_ecc_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 				 BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion,
 				 OPGP_STRING PEMKeyFileName, char *passPhrase) {
 	OPGP_ERROR_STATUS status;
-	status = put_asymmetric_keys(cardContext, cardInfo, secInfo, keySetVersion, keyIndex,
-								 newKeySetVersion, PEMKeyFileName, passPhrase, GP211_KEY_TYPE_ECC);
+	status = GP211_put_asymmetric_keys(cardContext, cardInfo, secInfo, keySetVersion, keyIndex,
+									   newKeySetVersion, PEMKeyFileName, passPhrase, GP211_KEY_TYPE_ECC);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -1707,10 +1722,43 @@ OPGP_ERROR_STATUS GP211_put_delegated_management_token_keys(OPGP_CARD_CONTEXT ca
 OPGP_ERROR_STATUS GP211_put_dap_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 									 BYTE keySetVersion, BYTE newKeySetVersion,
 									 OPGP_STRING PEMKeyFileName, char *passPhrase,
-									 BYTE keyType) {
-	return put_asymmetric_keys(cardContext, cardInfo, secInfo,
-							   keySetVersion, 0x01, newKeySetVersion,
-							   PEMKeyFileName, passPhrase, keyType);
+									 BYTE keyType, BYTE key[32], DWORD keyLength) {
+	OPGP_ERROR_STATUS status;
+	switch (keyType) {
+		case GP211_KEY_TYPE_RSA:
+		case GP211_KEY_TYPE_ECC:
+			status = GP211_put_asymmetric_keys(cardContext, cardInfo, secInfo,
+											   keySetVersion, 0x01, newKeySetVersion,
+											   PEMKeyFileName, passPhrase, keyType);
+			if (OPGP_ERROR_CHECK(status)) {
+				goto end;
+			}
+			break;
+		case GP211_KEY_TYPE_AES:
+		case GP211_KEY_TYPE_3DES:
+			if (key == NULL || keyLength == 0) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, _T("key must be provided for symmetric DAP keys"));
+				goto end;
+			}
+			if (keyLength > 32) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, _T("symmetric DAP key length must be <= 32 bytes"));
+				goto end;
+			}
+			status = GP211_put_symmetric_key(cardContext, cardInfo, secInfo,
+											 keySetVersion, 0x01, newKeySetVersion,
+											 key, keyLength, keyType);
+			if (OPGP_ERROR_CHECK(status)) {
+				goto end;
+			}
+			break;
+		default:
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_WRONG_KEY_TYPE, OPGP_stringify_error(OPGP_ERROR_WRONG_KEY_TYPE));
+			goto end;
+	}
+
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	return status;
 }
 
 OPGP_ERROR_STATUS GP211_put_delegated_management_receipt_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,

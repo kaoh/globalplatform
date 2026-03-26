@@ -205,13 +205,15 @@ static void print_usage(const char *prog) {
         "      --token <hex>: Registry update token for delegated management (optional).\n\n"
         "  move [--token <hex>] <applicationAID> <securityDomainAID>\n"
         "      Move an application to a different Security Domain (extradition).\n\n"
-        "  put-key [--type <3des|aes|rsa>] --kv <ver> --idx <idx> --new-kv <ver> \\\n"
+        "  put-key [--type <3des|aes|rsa|ecc>] --kv <ver> --idx <idx> --new-kv <ver> \\\n"
         "          (--key <hex>|--pem <file>[:pass])\n"
         "      Put (add/replace) a key in a key set.\n"
         "      --kv <ver>: Key set version number to put key into (mandatory).\n"
         "      --idx <idx>: Key index within key set (mandatory).\n"
         "      --new-kv <ver>: New key set version when replacing keys (mandatory).\n"
-        "      --type aes|3des uses --key (hex). --type rsa uses --pem (optionally :pass).\n"
+        "      --type aes|3des uses --key (hex). --type rsa|ecc uses --pem (optionally :pass).\n",
+        stderr);
+    fputs(
         "  put-auth [--type <aes|3des>] [--derive <none|emv|visa2>] --kv <ver> [--new-kv <ver>] \\\n"
         "           [--key <hex> | --enc <hex> --mac <hex> --dek <hex>]\n"
         "      Put secure channel keys (S-ENC/S-MAC/DEK) for a key set.\n"
@@ -221,14 +223,23 @@ static void print_usage(const char *prog) {
         "      --type: Key type (default: aes).\n"
         "      --derive: Key derivation method for single base key (default: none).\n"
         "  put-dm-token --kv <ver> [--new-kv <ver>] [--token-type <rsa|ecc>] <pem-file>[:pass]\n"
+        "      Put delegated management token verification key.\n"
+        "      --kv <ver>: Existing key set version to update (default: 0; create new key set).\n"
+        "      --new-kv <ver>: New key set version (default: 112 / 0x70, token verification).\n"
+        "      --token-type <rsa|ecc>: Token key type (default: rsa).\n"
+        "      <pem-file>[:pass]: Public key PEM path with optional passphrase (mandatory).\n"
         "  put-dm-receipt --kv <ver> [--new-kv <ver>] [--receipt-type <aes|des>] <receipt-key-hex>\n"
-        "      Put delegated management keys.\n"
-        "      --kv <ver>: Key set version number to put delegated management keys into, 0 means that a new key set is created (mandatory).\n"
-        "      --new-kv <ver>: New key set version when replacing keys (mandatory).\n"
-        "      <pem-file>[:pass]: PEM file path with optional passphrase after colon.\n"
+        "      Put delegated management receipt generation key.\n"
+        "      --kv <ver>: Existing key set version to update (default: 0; create new key set).\n"
+        "      --new-kv <ver>: New key set version (default: 113 / 0x71, receipt generation).\n"
+        "      --receipt-type <aes|des>: Receipt key type (default: aes).\n"
         "      <receipt-key-hex>: Receipt key as hex (mandatory, last positional parameter).\n"
-        "      --token-type: Token key type, 'rsa' or 'ecc' (default: rsa).\n"
-        "      --receipt-type: Receipt key type, 'aes' or 'des' (default: aes).\n"
+        "  put-dap-key [--kv <ver>] [--new-kv <ver>] [--key-type <ecc|rsa|aes|3des>] <pem-file>[:pass]|<key-hex>\n"
+        "      Put DAP verification key.\n"
+        "      --kv <ver>: Existing key set version to update (default: 0; create new key set).\n"
+        "      --new-kv <ver>: New key set version (default: 115 / 0x73, DAP verification).\n"
+        "      --key-type <ecc|rsa|aes|3des>: Key type (default: ecc).\n"
+        "      For ecc/rsa use <pem-file>[:pass]. For aes/3des use <key-hex>.\n"
         "  del-key --kv <ver> [--idx <idx>]\n"
         "      Delete a key. If --idx is omitted, deletes all keys in the given key set.\n"
         "      --kv <ver>: Key set version number (mandatory).\n"
@@ -2058,6 +2069,20 @@ static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         }
         return 0;
     }
+    if (strcmp(type, "ecc")==0) {
+        if (!pem) { fprintf(stderr, "put-key ecc: --pem <file>[:pass] required\n"); return -1; }
+        TCHAR pem_t[MAX_PATH_BUF];
+        OPGP_STRING pem_opgp = NULL;
+        if (to_opgp_string(pem, pem_t, ARRAY_SIZE(pem_t)) != 0) {
+            fprintf(stderr, "put-key: pem path too long\n");
+            return -1;
+        }
+        pem_opgp = pem_t;
+        if (!status_ok(GP211_put_ecc_key(ctx, info, sec, setVer, idx, newSetVer, pem_opgp, pass), true)) {
+            return -1;
+        }
+        return 0;
+    }
     if (strcmp(type, "aes")==0) {
         if (!hexkey) { fprintf(stderr, "put-key aes: --key <hex> required\n"); return -1; }
         unsigned char k[32]; size_t klen=sizeof(k);
@@ -2082,7 +2107,7 @@ static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         }
         return 0;
     }
-    fprintf(stderr, "put-key: unsupported --type '%s' (use 3des|aes|rsa). For Secure Channel keys use put-sc-keys.\n", type);
+    fprintf(stderr, "put-key: unsupported --type '%s' (use 3des|aes|rsa|ecc). For Secure Channel keys use put-sc-keys.\n", type);
     return -1;
 }
 
@@ -2289,6 +2314,88 @@ static int cmd_put_dm_receipt(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_
     if (!status_ok(GP211_put_delegated_management_receipt_keys(ctx, info, sec,
                                                                 setVer, newSetVer,
                                                                 receiptKey, keyLength, receiptKeyType), true)) {
+        return -1;
+    }
+    return 0;
+}
+
+static int cmd_put_dap_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
+    BYTE setVer = 0;
+    BYTE newSetVer = (BYTE)GP211_KEY_VERSION_DAP_VERIFICATION;
+    const char *keyTypeStr = "ecc";
+    const char *keyValue = NULL;
+    BYTE keyType = 0;
+    BYTE symmetricKey[32];
+    DWORD keyLength = 0;
+    OPGP_STRING pem_opgp = NULL;
+    char *pass = NULL;
+
+    for (int i = 0; i < argc; i++) {
+        if (strcmp(argv[i], "--kv") == 0 && i + 1 < argc) {
+            setVer = (BYTE)parse_int(argv[++i]);
+        } else if (strcmp(argv[i], "--new-kv") == 0 && i + 1 < argc) {
+            newSetVer = (BYTE)parse_int(argv[++i]);
+        } else if (strcmp(argv[i], "--key-type") == 0 && i + 1 < argc) {
+            keyTypeStr = argv[++i];
+        } else if (!keyValue) {
+            keyValue = argv[i];
+        }
+    }
+
+    if (!keyValue) {
+        fprintf(stderr, "put-dap-key: missing key value (<pem-file>[:pass] or <key-hex>)\n");
+        return -1;
+    }
+
+    if (strcmp(keyTypeStr, "ecc") == 0) {
+        keyType = GP211_KEY_TYPE_ECC;
+    } else if (strcmp(keyTypeStr, "rsa") == 0) {
+        keyType = GP211_KEY_TYPE_RSA;
+    } else if (strcmp(keyTypeStr, "aes") == 0) {
+        keyType = GP211_KEY_TYPE_AES;
+    } else if (strcmp(keyTypeStr, "3des") == 0) {
+        keyType = GP211_KEY_TYPE_3DES;
+    } else {
+        fprintf(stderr, "put-dap-key: unsupported --key-type '%s' (use ecc|rsa|aes|3des)\n", keyTypeStr);
+        return -1;
+    }
+
+    if (keyType == GP211_KEY_TYPE_ECC || keyType == GP211_KEY_TYPE_RSA) {
+        const char *pem = keyValue;
+        char *c = strchr((char *)pem, ':');
+        if (c) {
+            *c = '\0';
+            pass = c + 1;
+        }
+
+        TCHAR pem_t[MAX_PATH_BUF];
+        if (to_opgp_string(pem, pem_t, ARRAY_SIZE(pem_t)) != 0) {
+            fprintf(stderr, "put-dap-key: pem path too long\n");
+            return -1;
+        }
+        pem_opgp = pem_t;
+    } else {
+        size_t len = sizeof(symmetricKey);
+        if (hex_to_bytes(keyValue, symmetricKey, &len) != 0) {
+            fprintf(stderr, "put-dap-key: invalid symmetric key hex\n");
+            return -1;
+        }
+        if (keyType == GP211_KEY_TYPE_AES && (len != 16 && len != 24 && len != 32)) {
+            fprintf(stderr, "put-dap-key: AES key must be 16, 24, or 32 bytes\n");
+            return -1;
+        }
+        if (keyType == GP211_KEY_TYPE_3DES && len != 16) {
+            fprintf(stderr, "put-dap-key: 3DES key must be 16 bytes\n");
+            return -1;
+        }
+        keyLength = (DWORD)len;
+    }
+
+    if (!status_ok(GP211_put_dap_keys(ctx, info, sec,
+                                      setVer, newSetVer,
+                                      pem_opgp, pass,
+                                      keyType,
+                                      keyLength ? symmetricKey : NULL, keyLength), true)) {
         return -1;
     }
     return 0;
@@ -4028,6 +4135,7 @@ int main(int argc, char **argv) {
     else if (!strcmp(cmd, "put-auth")) rc = cmd_put_auth(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "put-dm-token")) rc = cmd_put_dm_token(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "put-dm-receipt")) rc = cmd_put_dm_receipt(ctx, info, &sec, argc - i, &argv[i]);
+    else if (!strcmp(cmd, "put-dap-key")) rc = cmd_put_dap_key(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "del-key")) rc = cmd_del_key(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "apdu")) rc = cmd_apdu(ctx, info, sec_ptr, argc - i, &argv[i]);
     else if (!strcmp(cmd, "status")) rc = cmd_status(ctx, info, &sec, argc - i, &argv[i]);
