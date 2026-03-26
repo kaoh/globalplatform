@@ -179,7 +179,7 @@ static OPGP_ERROR_STATUS internal_mutual_authentication() {
 	status = GP211_mutual_authentication(cardContext, cardInfo, NULL,
 			(PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE) OPGP_VISA_DEFAULT_KEY,
 			(PBYTE) OPGP_VISA_DEFAULT_KEY, sizeof(OPGP_VISA_DEFAULT_KEY), 0, 0, scp, scpImpl,
-			GP211_SCP01_SECURITY_LEVEL_C_MAC, OPGP_DERIVATION_METHOD_NONE, &securityInfo211);
+			GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC, OPGP_DERIVATION_METHOD_NONE, &securityInfo211);
 	if (OPGP_ERROR_CHECK(status)) {
 		return status;
 	}
@@ -2104,58 +2104,58 @@ Suite * GlobalPlatform_suite(void) {
 	/* Core test case */
 	TCase *tc_core = tcase_create("Core");
     tcase_set_timeout(tc_core, 0);
-	// tcase_add_test (tc_core, test_list_readers);
-	// tcase_add_test (tc_core, test_connect_card);
-	// tcase_add_test (tc_core, test_GP211_VISA2_derive_keys);
-	// tcase_add_test (tc_core, test_mutual_authentication);
-	// tcase_add_test (tc_core, test_install);
- //    tcase_add_test (tc_core, test_get_status);
- //    tcase_add_test (tc_core, test_delete);
- //    tcase_add_test (tc_core, test_install_callback);
-	// tcase_add_test (tc_core, test_delete);
- //    tcase_add_test (tc_core, test_put_aes_key);
- //    tcase_add_test (tc_core, test_delete_key);
-	// tcase_add_test (tc_core, test_create_sd);
-	// tcase_add_test (tc_core, test_personalize_sd);
-	// tcase_add_test (tc_core, test_move_sd);
-	// tcase_add_test (tc_core, test_delete_sd);
- //
-	// // RSA 1024
-	// tcase_add_test (tc_core, test_GP211_calculate_load_token_rsa1024_known_vector);
-	// tcase_add_test (tc_core, test_dm_put_token_key_rsa1024);
-	// tcase_add_test (tc_core, test_dm_put_receipt_key_aes256);
-	// tcase_add_test (tc_core, test_dm_install_sd_with_delegated_management);
-	// tcase_add_test (tc_core, test_personalize_sd);
-	// tcase_add_test (tc_core, test_dm_calculate_load_token_rsa1024);
-	// tcase_add_test (tc_core, test_dm_calculate_install_token_rsa1024);
-	// tcase_add_test (tc_core, test_dm_install_helloworld_with_tokens_rsa1024);
-	// tcase_add_test (tc_core, test_dm_delete_helloworld);
-	// tcase_add_test (tc_core, test_dm_delete_sd);
-	// tcase_add_test (tc_core, test_dm_delete_keys);
- //
-	// // RSA 2048
-	// tcase_add_test (tc_core, test_dm_put_token_key_rsa);
-	// tcase_add_test (tc_core, test_dm_put_receipt_key_aes256);
-	// tcase_add_test (tc_core, test_dm_install_sd_with_delegated_management);
-	// tcase_add_test (tc_core, test_personalize_sd);
-	// tcase_add_test (tc_core, test_dm_calculate_load_token_rsa);
-	// tcase_add_test (tc_core, test_dm_calculate_install_token_rsa);
-	// tcase_add_test (tc_core, test_dm_install_helloworld_with_tokens_rsa);
-	// tcase_add_test (tc_core, test_dm_delete_helloworld);
-	// tcase_add_test (tc_core, test_dm_delete_sd);
-	// tcase_add_test (tc_core, test_dm_delete_keys);
- //
-	// // ECC 256
-	// tcase_add_test (tc_core, test_dm_put_token_key_ecc);
-	// tcase_add_test (tc_core, test_dm_put_receipt_key_aes256);
-	// tcase_add_test (tc_core, test_dm_install_sd_with_delegated_management);
-	// tcase_add_test (tc_core, test_personalize_sd);
-	// tcase_add_test (tc_core, test_dm_calculate_load_token_ecc);
-	// tcase_add_test (tc_core, test_dm_calculate_install_token_ecc);
-	// tcase_add_test (tc_core, test_dm_install_helloworld_with_tokens_ecc);
-	// tcase_add_test (tc_core, test_dm_delete_helloworld);
-	// tcase_add_test (tc_core, test_dm_delete_sd);
-	// tcase_add_test (tc_core, test_dm_delete_keys);
+	tcase_add_test (tc_core, test_list_readers);
+	tcase_add_test (tc_core, test_connect_card);
+	tcase_add_test (tc_core, test_GP211_VISA2_derive_keys);
+	tcase_add_test (tc_core, test_mutual_authentication);
+	tcase_add_test (tc_core, test_install);
+    tcase_add_test (tc_core, test_get_status);
+    tcase_add_test (tc_core, test_delete);
+    tcase_add_test (tc_core, test_install_callback);
+	tcase_add_test (tc_core, test_delete);
+    tcase_add_test (tc_core, test_put_aes_key);
+    tcase_add_test (tc_core, test_delete_key);
+	tcase_add_test (tc_core, test_create_sd);
+	tcase_add_test (tc_core, test_personalize_sd);
+	tcase_add_test (tc_core, test_move_sd);
+	tcase_add_test (tc_core, test_delete_sd);
+
+	// RSA 1024
+	tcase_add_test (tc_core, test_GP211_calculate_load_token_rsa1024_known_vector);
+	tcase_add_test (tc_core, test_dm_put_token_key_rsa1024);
+	tcase_add_test (tc_core, test_dm_put_receipt_key_aes256);
+	tcase_add_test (tc_core, test_dm_install_sd_with_delegated_management);
+	tcase_add_test (tc_core, test_personalize_sd);
+	tcase_add_test (tc_core, test_dm_calculate_load_token_rsa1024);
+	tcase_add_test (tc_core, test_dm_calculate_install_token_rsa1024);
+	tcase_add_test (tc_core, test_dm_install_helloworld_with_tokens_rsa1024);
+	tcase_add_test (tc_core, test_dm_delete_helloworld);
+	tcase_add_test (tc_core, test_dm_delete_sd);
+	tcase_add_test (tc_core, test_dm_delete_keys);
+
+	// RSA 2048
+	tcase_add_test (tc_core, test_dm_put_token_key_rsa);
+	tcase_add_test (tc_core, test_dm_put_receipt_key_aes256);
+	tcase_add_test (tc_core, test_dm_install_sd_with_delegated_management);
+	tcase_add_test (tc_core, test_personalize_sd);
+	tcase_add_test (tc_core, test_dm_calculate_load_token_rsa);
+	tcase_add_test (tc_core, test_dm_calculate_install_token_rsa);
+	tcase_add_test (tc_core, test_dm_install_helloworld_with_tokens_rsa);
+	tcase_add_test (tc_core, test_dm_delete_helloworld);
+	tcase_add_test (tc_core, test_dm_delete_sd);
+	tcase_add_test (tc_core, test_dm_delete_keys);
+
+	// ECC 256
+	tcase_add_test (tc_core, test_dm_put_token_key_ecc);
+	tcase_add_test (tc_core, test_dm_put_receipt_key_aes256);
+	tcase_add_test (tc_core, test_dm_install_sd_with_delegated_management);
+	tcase_add_test (tc_core, test_personalize_sd);
+	tcase_add_test (tc_core, test_dm_calculate_load_token_ecc);
+	tcase_add_test (tc_core, test_dm_calculate_install_token_ecc);
+	tcase_add_test (tc_core, test_dm_install_helloworld_with_tokens_ecc);
+	tcase_add_test (tc_core, test_dm_delete_helloworld);
+	tcase_add_test (tc_core, test_dm_delete_sd);
+	tcase_add_test (tc_core, test_dm_delete_keys);
 
 	// ECC DAP verification
 	tcase_add_test (tc_core, test_dap_install_sd_with_mandated_dap);
