@@ -24,14 +24,22 @@ INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/AUTHORS ${CMAKE_CURRENT_SOURCE_DIR}/Ch
               ${CMAKE_CURRENT_SOURCE_DIR}/README.md
               ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE
               ${CMAKE_CURRENT_SOURCE_DIR}/NEWS DESTINATION ${DOCUMENTATION_DIRECTORY})
-INSTALL(FILES examples/helloworld.cap.transf DESTINATION ${DOCUMENTATION_DIRECTORY}/examples)
-INSTALL(FILES examples/helloworld.cap DESTINATION ${DOCUMENTATION_DIRECTORY}/examples)
+INSTALL(FILES examples/gpshell/helloworld.cap.transf DESTINATION ${DOCUMENTATION_DIRECTORY}/examples/gpshell)
+INSTALL(FILES examples/gpshell/helloworld.cap DESTINATION ${DOCUMENTATION_DIRECTORY}/examples/gpshell)
+INSTALL(FILES examples/gpshell3/helloworld.cap DESTINATION ${DOCUMENTATION_DIRECTORY}/examples/gpshell3)
 
-FILE(GLOB samples "${CMAKE_CURRENT_SOURCE_DIR}/examples/*.txt")
-LIST(REMOVE_ITEM samples "${CMAKE_CURRENT_SOURCE_DIR}/description.txt")
-LIST(REMOVE_ITEM samples "${CMAKE_CURRENT_SOURCE_DIR}/CMakeList.txt")
-LIST(REMOVE_ITEM samples "${CMAKE_CURRENT_SOURCE_DIR}/install_manifest.txt")
-INSTALL(FILES ${samples} DESTINATION ${DOCUMENTATION_DIRECTORY}/examples)
+FILE(GLOB gpshell_legacy_samples "${CMAKE_CURRENT_SOURCE_DIR}/examples/gpshell/*.txt")
+LIST(REMOVE_ITEM gpshell_legacy_samples "${CMAKE_CURRENT_SOURCE_DIR}/description.txt")
+LIST(REMOVE_ITEM gpshell_legacy_samples "${CMAKE_CURRENT_SOURCE_DIR}/CMakeList.txt")
+LIST(REMOVE_ITEM gpshell_legacy_samples "${CMAKE_CURRENT_SOURCE_DIR}/install_manifest.txt")
+if(gpshell_legacy_samples)
+  INSTALL(FILES ${gpshell_legacy_samples} DESTINATION ${DOCUMENTATION_DIRECTORY}/examples/gpshell)
+endif()
+
+FILE(GLOB gpshell3_example_scripts "${CMAKE_CURRENT_SOURCE_DIR}/examples/gpshell3/*.sh")
+if(gpshell3_example_scripts)
+  INSTALL(PROGRAMS ${gpshell3_example_scripts} DESTINATION ${DOCUMENTATION_DIRECTORY}/examples/gpshell3)
+endif()
 
 # build a CPack driven installer package
 

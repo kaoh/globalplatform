@@ -22,7 +22,7 @@ Within a script environment variables can be accessed with the syntax `${ENV_VAR
 Reading the commands from stdin allows one to feed in the commands dynamically and use conditionals when using the [Expect](https://en.wikipedia.org/wiki/Expect) pattern. Tools
 are available for a variety of script languages, shells and programming languages. Example are to support environment variables and handle results and output conditionally.
 
-There are several `txt` example scripts provided which gets installed into `usr/local/share/docs` or `/home/linuxbrew/.linuxbrew/opt/globalplatform/share/doc/gpshell1/` or can be found [online](https://github.com/kaoh/globalplatform/tree/master/gpshell/examples).
+There are several `txt` example scripts provided in `gpshell/examples/gpshell`, installed under `/usr/share/doc/gpshell3/examples/gpshell/` (or equivalent prefix, e.g. Homebrew), and available [online](https://github.com/kaoh/globalplatform/tree/master/gpshell/examples/gpshell).
 
 # COMMANDS
 

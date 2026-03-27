@@ -275,19 +275,19 @@ static void print_usage(const char *prog) {
         "  put-dm-token --kv <ver> [--new-kv <ver>] [--token-type <rsa|ecc>] <pem-file>[:pass]\n"
         "      Put delegated management token verification key.\n"
         "      --kv <ver>: Existing key set version to update (default: 0; create new key set).\n"
-        "      --new-kv <ver>: New key set version (default: 112 / 0x70, token verification).\n"
+        "      --new-kv <ver>: New key set version (default: 0x70, token verification).\n"
         "      --token-type <rsa|ecc>: Token key type (default: rsa).\n"
         "      <pem-file>[:pass]: Public key PEM path with optional passphrase (mandatory).\n"
         "  put-dm-receipt --kv <ver> [--new-kv <ver>] [--receipt-type <aes|des>] <receipt-key-hex>\n"
         "      Put delegated management receipt generation key.\n"
         "      --kv <ver>: Existing key set version to update (default: 0; create new key set).\n"
-        "      --new-kv <ver>: New key set version (default: 113 / 0x71, receipt generation).\n"
+        "      --new-kv <ver>: New key set version (default: 0x71, receipt generation).\n"
         "      --receipt-type <aes|des>: Receipt key type (default: aes).\n"
         "      <receipt-key-hex>: Receipt key as hex (mandatory, last positional parameter).\n"
         "  put-dap-key [--kv <ver>] [--new-kv <ver>] [--key-type <ecc|rsa|aes|3des>] <pem-file>[:pass]|<key-hex>\n"
         "      Put DAP verification key.\n"
         "      --kv <ver>: Existing key set version to update (default: 0; create new key set).\n"
-        "      --new-kv <ver>: New key set version (default: 115 / 0x73, DAP verification).\n"
+        "      --new-kv <ver>: New key set version (default: 0x73, DAP verification).\n"
         "      --key-type <ecc|rsa|aes|3des>: Key type (default: ecc).\n"
         "      For ecc/rsa use <pem-file>[:pass]. For aes/3des use <key-hex>.\n"
         "  del-key --kv <ver> [--idx <idx>]\n"
@@ -1882,19 +1882,18 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
                 fprintf(stderr, "Invalid load file hash hex\n");
                 return -1;
             }
-            // Only first 20 bytes are used by GP211_install_for_load
             loadFileHashPtr = loadFileHash;
-            loadFileHashLen = (DWORD)((hash_len > 20) ? 20 : hash_len);
+            loadFileHashLen = (DWORD)hash_len;
         }
 
         // Parse optional load token
-        BYTE loadToken[128]; memset(loadToken, 0, sizeof(loadToken));
+        BYTE loadToken[512]; memset(loadToken, 0, sizeof(loadToken));
         BYTE *loadTokenPtr = NULL;
         DWORD loadTokenLen = 0;
         if (load_token_hex) {
             size_t token_len = sizeof(loadToken);
-            if (hex_to_bytes(load_token_hex, loadToken, &token_len) != 0 || token_len != 128) {
-                fprintf(stderr, "Invalid load token hex (must be 128 bytes)\n");
+            if (hex_to_bytes(load_token_hex, loadToken, &token_len) != 0 || token_len == 0) {
+                fprintf(stderr, "Invalid load token hex\n");
                 return -1;
             }
             loadTokenPtr = loadToken;
@@ -1943,13 +1942,13 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         }
     }
     // Parse optional install token
-    BYTE installToken[128]; memset(installToken,0,sizeof(installToken));
+    BYTE installToken[512]; memset(installToken,0,sizeof(installToken));
     BYTE *installTokenPtr = NULL;
     DWORD installTokenLen = 0;
     if (install_token_hex) {
         size_t token_len = sizeof(installToken);
-        if (hex_to_bytes(install_token_hex, installToken, &token_len) != 0 || token_len != 128) {
-            fprintf(stderr, "Invalid install token hex (must be 128 bytes)\n");
+        if (hex_to_bytes(install_token_hex, installToken, &token_len) != 0 || token_len == 0) {
+            fprintf(stderr, "Invalid install token hex\n");
             return -1;
         }
         installTokenPtr = installToken;
@@ -2277,7 +2276,7 @@ static int cmd_move(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
     const char *token_hex = NULL;
     const char *app_aid_hex = NULL;
     const char *sd_aid_hex = NULL;
-    BYTE token[128];
+    BYTE token[512];
     BYTE *token_ptr = NULL;
     DWORD token_len = 0;
 
@@ -2326,8 +2325,8 @@ static int cmd_move(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
 
     if (token_hex != NULL) {
         size_t token_size = sizeof(token);
-        if (hex_to_bytes(token_hex, token, &token_size) != 0 || token_size != sizeof(token)) {
-            fprintf(stderr, "move: invalid --token hex (expected 128 bytes)\n");
+        if (hex_to_bytes(token_hex, token, &token_size) != 0 || token_size == 0) {
+            fprintf(stderr, "move: invalid --token hex\n");
             return -1;
         }
         token_ptr = token;

@@ -44,8 +44,12 @@ A quick demo video showcasing the most useful features in action:
 
 [![Demo Video](./gpshell/demo/screencast.png)](https://youtu.be/MtZoTkrB41I)
 
-For GPShell1+ there are several script examples available. See the [.txt files](./gpshell/examples) or look into the local file systems
-under `/usr/share/doc/gpshell2` or `/usr/local/share/doc/gpshell2` or `home/linuxbrew/.linuxbrew/share/doc/gpshell2/`.
+For examples:
+
+- GPShell1 scripts: [gpshell/examples/gpshell](./gpshell/examples/gpshell) (`.txt`)
+- GPShell3 scripts: [gpshell/examples/gpshell3](./gpshell/examples/gpshell3) (`.sh`)
+
+Installed examples are available under `/usr/share/doc/gpshell3/examples/`, `/usr/local/share/doc/gpshell3/examples/`, or `/home/linuxbrew/.linuxbrew/share/doc/gpshell3/examples/`.
 
 # Compilation
 

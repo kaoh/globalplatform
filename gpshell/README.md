@@ -50,9 +50,16 @@ so that all needed libraries are found.
 
 ### Example Script Files
 
-In the [examples directory](./examples) of this project several script files are provided as examples. After being installed 
-the sample files can be found in `/usr/share/doc/gpshell2` or `/usr/local/share/doc/gpshell2` or 
-`home/linuxbrew/.linuxbrew/share/doc/gpshell2/`
+In the [examples directory](./examples) of this project:
+
+- [examples/gpshell](./examples/gpshell) contains legacy GPShell1 `.txt` script examples.
+- [examples/gpshell3](./examples/gpshell3) contains GPShell3 `.sh` examples.
+
+After installation these examples can be found under:
+
+- `/usr/share/doc/gpshell3/examples/`
+- `/usr/local/share/doc/gpshell3/examples/`
+- `/home/linuxbrew/.linuxbrew/share/doc/gpshell3/examples/`
 
 ### Command Line Documentation
 

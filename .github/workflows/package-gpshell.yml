@@ -101,17 +101,21 @@ jobs:
           deb_pkg=$(dpkg-deb -f "$deb_dynamic" Package)
           sudo dpkg -i "$deb_dynamic"
           gpshell3 --help
+          test -f /usr/share/doc/gpshell3/examples/gpshell/list.txt
+          test -x /usr/share/doc/gpshell3/examples/gpshell3/dm.sh
           sudo dpkg -P "$deb_pkg"
 
           deb_pkg=$(dpkg-deb -f "$deb_static" Package)
           sudo dpkg -i "$deb_static"
           gpshell3 --help
+          test -f /usr/share/doc/gpshell3/examples/gpshell/list.txt
+          test -x /usr/share/doc/gpshell3/examples/gpshell3/dm.sh
           sudo dpkg -P "$deb_pkg"
 
           docker run --rm -v "$PWD:/work" -w /work fedora:39 bash -lc \
-            "dnf -y install /work/$rpm_dynamic && gpshell3 --help"
+            "dnf -y install /work/$rpm_dynamic && gpshell3 --help && test -f /usr/share/doc/gpshell3/examples/gpshell/list.txt && test -x /usr/share/doc/gpshell3/examples/gpshell3/dm.sh"
           docker run --rm -v "$PWD:/work" -w /work fedora:39 bash -lc \
-            "dnf -y install /work/$rpm_static && gpshell3 --help"
+            "dnf -y install /work/$rpm_static && gpshell3 --help && test -f /usr/share/doc/gpshell3/examples/gpshell/list.txt && test -x /usr/share/doc/gpshell3/examples/gpshell3/dm.sh"
 
           chmod +x "$appimage"
           APPIMAGE_EXTRACT_AND_RUN=1 "./$appimage" --help
@@ -217,6 +221,10 @@ jobs:
           $zipExe = Get-ChildItem $zipDir -Recurse -Filter "gpshell3.exe" | Select-Object -First 1
           if (-not $zipExe) { throw "gpshell3.exe not found in static ZIP" }
           & $zipExe.FullName --help
+          $zipDmScript = Get-ChildItem $zipDir -Recurse -Filter "dm.sh" | Select-Object -First 1
+          if (-not $zipDmScript) { throw "dm.sh not found in static ZIP examples" }
+          $zipLegacyList = Get-ChildItem $zipDir -Recurse -Filter "list.txt" | Select-Object -First 1
+          if (-not $zipLegacyList) { throw "list.txt not found in static ZIP examples" }
 
           $bundle = Get-ChildItem build-dynamic\gpshell-bundle -Filter "gpshell-*-dynamic.zip" | Select-Object -First 1
           if (-not $bundle) { throw "Bundle ZIP not found" }
