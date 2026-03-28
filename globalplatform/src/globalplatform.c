@@ -936,8 +936,11 @@ OPGP_ERROR_STATUS parse_receipt_from_response(PBYTE recvBuffer, DWORD recvBuffer
 		OPGP_ERROR_CREATE_NO_ERROR(status);
 		goto end;
 	}
-	if (receiptData == NULL || receiptDataAvailable == NULL) {
-		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+	if (receiptData == NULL) {
+		if (receiptDataAvailable != NULL) {
+			*receiptDataAvailable = 1;
+		}
+		OPGP_ERROR_CREATE_NO_ERROR(status);
 		goto end;
 	}
 
@@ -946,7 +949,9 @@ OPGP_ERROR_STATUS parse_receipt_from_response(PBYTE recvBuffer, DWORD recvBuffer
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 		goto end;
 	}
-	*receiptDataAvailable = 1;
+	if (receiptDataAvailable != NULL) {
+		*receiptDataAvailable = 1;
+	}
 	OPGP_ERROR_CREATE_NO_ERROR(status);
 end:
 	return status;
