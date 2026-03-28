@@ -3044,6 +3044,7 @@ static int cmd_put_dap_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SEC
     BYTE keyType = 0;
     BYTE symmetricKey[32];
     DWORD keyLength = 0;
+    TCHAR pem_t[MAX_PATH_BUF];
     OPGP_STRING pem_opgp = NULL;
     char *pass = NULL;
 
@@ -3085,7 +3086,6 @@ static int cmd_put_dap_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SEC
             pass = c + 1;
         }
 
-        TCHAR pem_t[MAX_PATH_BUF];
         if (to_opgp_string(pem, pem_t, ARRAY_SIZE(pem_t)) != 0) {
             fprintf(stderr, "put-dap-key: pem path too long\n");
             return -1;
