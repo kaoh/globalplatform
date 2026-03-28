@@ -4597,7 +4597,7 @@ static int cmd_store_iin_cin(const char *cmd, int argc, char **argv,
 
 int main(int argc, char **argv) {
     const char *prog = argv[0];
-    const char *reader=NULL, *protocol="auto", *sd_hex=NULL, *sec_level_opt="mac";
+    const char *reader=NULL, *protocol="auto", *sd_hex=NULL, *sec_level_opt="mac+enc";
     const char *key_hex=NULL, *enc_hex=NULL, *mac_hex=NULL, *dek_hex=NULL;
     int verbose=0, trace=0; BYTE keyset_ver=0, key_index=0; int derivation=0;
     BYTE baseKey[32]={0}, enc_key[32]={0}, mac_key[32]={0}, dek_key[32]={0};
