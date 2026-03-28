@@ -15,7 +15,6 @@ LOAD_FILE_AID="D0D1D2D3D4D501"
 APPLET_AID="D0D1D2D3D4D50101"
 SD_KEY="404142434445464748494A4B4C4D4E40"
 RECEIPT_KEY="101112131415161718191A1B1C1D1E1F202122232425262728292A2B2C2D2E2F"
-NV_CODE_LIMIT="${NV_CODE_LIMIT:-343}"
 
 for required_file in "$CAP_FILE" "$ECC_PUBLIC_KEY" "$ECC_PRIVATE_KEY"; do
     if [[ ! -f "$required_file" ]]; then
@@ -52,8 +51,7 @@ echo "Running delegated-management ECC flow with ${GPSHELL3_BIN}"
 # test_dm_calculate_load_token_ecc
 HASH="$("$GPSHELL3_BIN" hash --sha256 "$CAP_FILE" | tr -d '\n')"
 LOAD_TOKEN="$("$GPSHELL3_BIN" sign-load-token \
-    --nv-code-limit "$NV_CODE_LIMIT" \
-    "$LOAD_FILE_AID" "$SD_AID" "$HASH" "$ECC_PRIVATE_KEY" | tr -d '\n')"
+    "$CAP_FILE" "$SD_AID" "$HASH" "$ECC_PRIVATE_KEY" | tr -d '\n')"
 
 # test_dm_calculate_install_token_ecc
 INSTALL_TOKEN="$("$GPSHELL3_BIN" sign-install-token \

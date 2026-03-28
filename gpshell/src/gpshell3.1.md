@@ -156,7 +156,7 @@ For delegated management, token verification must match both the key material on
 
 Important parameter matching rules:
 
-- `sign-load-token <load-file-aid> <sd-aid> ...`:
+- `sign-load-token <cap-file> <sd-aid> ...`:
   - `<sd-aid>` must be the same SD AID used as `--sd` during `install`.
   - It must also be the target SD AID used in INSTALL [for load].
 - `sign-install-token <load-file-aid> <module-aid> <app-aid> ...`:
@@ -521,8 +521,10 @@ Calculate a Load Token using a private RSA or ECC key.
 
 Synopsis:
 ```
-gpshell3 sign-load-token [--output <file>] [--nv-code-limit <n>] [--v-data-limit <n>] [--nv-data-limit <n>] <load-file-aidhex> <sd-aidhex> <hash-hex> <pem>[:pass]
+gpshell3 sign-load-token [--output <file>] [--v-data-limit <n>] [--nv-data-limit <n>] <cap-file> <sd-aidhex> <hash-hex> <pem>[:pass]
 ```
+
+The executable load file AID and non-volatile code limit are read from `<cap-file>`.
 
 ## sign-install-token
 

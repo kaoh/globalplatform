@@ -134,7 +134,7 @@ static void print_usage(const char *prog) {
         "  --kv <n>                   Key set version for mutual auth (default: 0)\n"
         "  --idx <n>                  Key index within key set for mutual auth (default: 0)\n"
         "  --derive <none|visa2|emv>  Key derivation (default: none)\n"
-        "  --key <hex>                Base key for mutual auth (default: 40..4F)\n"
+        "  --key <hex>                Base key for mutual auth (also used as ENC/MAC/DEK if those are omitted; default: 40..4F)\n"
         "  --enc <hex>                ENC key for mutual auth (default: 40..4F)\n"
         "  --mac <hex>                MAC key for mutual auth (default: 40..4F)\n"
         "  --dek <hex>                DEK key for mutual auth (default: 40..4F)\n"
@@ -196,80 +196,22 @@ static void print_usage(const char *prog) {
         "        all-am    = every SD with AM privilege on the card\n\n"
         "  delete [--token <hex>] <AIDhex>\n"
         "      Delete an application instance or load file by AID.\n"
-        "      --token <hex>: Delete token for delegated management (optional).\n\n"
-        "  update-registry [--sd <AIDhex>] [--priv <p1,p2,...>] [--token <hex>] <AIDhex>\n"
-        "      Update the registry for an application.\n"
-        "      <AIDhex>: Application AID (mandatory, last positional parameter).\n"
-        "      --sd <AIDhex>: Security Domain AID (optional).\n"
-        "      --priv <list>: Comma-separated privileges by short names (see 'Privileges' below) (optional).\n"
-        "      --token <hex>: Registry update token for delegated management (optional).\n\n"
-        "  move [--token <hex>] <applicationAID> <securityDomainAID>\n"
-        "      Move an application to a different Security Domain (extradition).\n\n"
-        "  verify-delete-receipt [--type <des|aes|rsa|ecc>] [--key <hex>|--pem <file>[:pass]] \\\n"
-        "                        --aid <AIDhex> <response-apdu-hex>\n"
-        "      Verify delegated-management Delete receipt from response APDU.\n"
-        "      --aid <AIDhex>: Application instance or Executable Load File AID (mandatory).\n"
-        "      --type <des|aes|rsa|ecc>: Receipt verification key type (default: aes).\n"
-        "      --key <hex>: Symmetric receipt key (mandatory for type des|aes).\n"
-        "      --pem <file>[:pass]: Public key for RSA/ECC verification (mandatory for type rsa|ecc).\n"
-        "      <response-apdu-hex>: Response APDU including trailing 9000 (mandatory, last positional parameter).\n\n"
-        "  verify-load-receipt [--type <des|aes|rsa|ecc>] [--key <hex>|--pem <file>[:pass]] \\\n"
-        "                      --load-file <AIDhex> --sd <AIDhex> <response-apdu-hex>\n"
-        "      Verify delegated-management Load receipt from response APDU.\n"
-        "      --load-file <AIDhex>: Executable Load File AID (mandatory).\n"
-        "      --sd <AIDhex>: Security Domain AID (mandatory).\n"
-        "      --type <des|aes|rsa|ecc>: Receipt verification key type (default: aes).\n"
-        "      --key <hex>: Symmetric receipt key (mandatory for type des|aes).\n"
-        "      --pem <file>[:pass]: Public key for RSA/ECC verification (mandatory for type rsa|ecc).\n"
-        "      <response-apdu-hex>: Response APDU including trailing 9000 (mandatory, last positional parameter).\n\n",
+        "      --token <hex>: Delete token for delegated management (optional).\n\n",
         stderr);
     fputs(
-        "  verify-install-receipt [--type <des|aes|rsa|ecc>] [--key <hex>|--pem <file>[:pass]] \\\n"
-        "                         --load-file <AIDhex> --sd <AIDhex> <response-apdu-hex>\n"
-        "      Verify delegated-management Install receipt from response APDU.\n"
-        "      --load-file <AIDhex>: Executable Load File AID (mandatory).\n"
-        "      --sd <AIDhex>: AID used as second receipt parameter (mandatory).\n"
-        "      --type <des|aes|rsa|ecc>: Receipt verification key type (default: aes).\n"
-        "      --key <hex>: Symmetric receipt key (mandatory for type des|aes).\n"
-        "      --pem <file>[:pass]: Public key for RSA/ECC verification (mandatory for type rsa|ecc).\n"
-        "      <response-apdu-hex>: Response APDU including trailing 9000 (mandatory, last positional parameter).\n\n"
-        "  verify-registry-update-receipt [--type <des|aes|rsa|ecc>] [--key <hex>|--pem <file>[:pass]] \\\n"
-        "                                 --aid <AIDhex> --oldsd <AIDhex> --newsd <AIDhex> --priv <list> <response-apdu-hex>\n"
-        "      Verify delegated-management Registry Update receipt from response APDU.\n"
-        "      --aid <AIDhex>: Application AID (mandatory).\n"
-        "      --oldsd <AIDhex>: Old Security Domain AID (mandatory).\n"
-        "      --newsd <AIDhex>: New Security Domain AID (mandatory).\n"
-        "      --priv <list>: Privileges encoded like install --priv (mandatory).\n"
-        "      --type <des|aes|rsa|ecc>: Receipt verification key type (default: aes).\n"
-        "      --key <hex>: Symmetric receipt key (mandatory for type des|aes).\n"
-        "      --pem <file>[:pass]: Public key for RSA/ECC verification (mandatory for type rsa|ecc).\n"
-        "      <response-apdu-hex>: Response APDU including trailing 9000 (mandatory, last positional parameter).\n\n"
-        "  verify-move-receipt [--type <des|aes|rsa|ecc>] [--key <hex>|--pem <file>[:pass]] \\\n"
-        "                     --aid <AIDhex> --oldsd <AIDhex> --newsd <AIDhex> <response-apdu-hex>\n"
-        "      Verify delegated-management Move/Extradition receipt from response APDU.\n"
-        "      --aid <AIDhex>: Application instance or Executable Load File AID (mandatory).\n"
-        "      --oldsd <AIDhex>: Old Security Domain AID (mandatory).\n"
-        "      --newsd <AIDhex>: New Security Domain AID (mandatory).\n"
-        "      --type <des|aes|rsa|ecc>: Receipt verification key type (default: aes).\n"
-        "      --key <hex>: Symmetric receipt key (mandatory for type des|aes).\n"
-        "      --pem <file>[:pass]: Public key for RSA/ECC verification (mandatory for type rsa|ecc).\n"
-        "      <response-apdu-hex>: Response APDU including trailing 9000 (mandatory, last positional parameter).\n"
-        "      Confirmation Data is extracted from the response APDU and printed before verification.\n\n"
         "  put-key [--type <3des|aes|rsa|ecc>] --kv <ver> --idx <idx> --new-kv <ver> \\\n"
         "          (--key <hex>|--pem <file>[:pass])\n"
         "      Put (add/replace) a key in a key set.\n"
         "      --kv <ver>: Key set version number to put key into (mandatory).\n"
         "      --idx <idx>: Key index within key set (mandatory).\n"
         "      --new-kv <ver>: New key set version when replacing keys (mandatory).\n"
-        "      --type aes|3des uses --key (hex). --type rsa|ecc uses --pem (optionally :pass).\n",
-        stderr);
-    fputs(
+        "      --type aes|3des uses --key (hex). --type rsa|ecc uses --pem (optionally :pass).\n"
         "  put-auth [--type <aes|3des>] [--derive <none|emv|visa2>] --kv <ver> [--new-kv <ver>] \\\n"
         "           [--key <hex> | --enc <hex> --mac <hex> --dek <hex>]\n"
         "      Put secure channel keys (S-ENC/S-MAC/DEK) for a key set.\n"
         "      --kv <ver>: Key set version number to put keys into (default: 1), 0 means that a new key set is created (optional).\n"
         "      --new-kv <ver>: New key set version when replacing keys (default: 1) (optional).\n"
-        "      Use either --key (single base key) OR all of --enc/--mac/--dek.\n"
+        "      Use either --key (single key/base key) OR all of --enc/--mac/--dek.\n"
         "      --type: Key type (default: aes).\n"
         "      --derive: Key derivation method for single base key (default: none).\n"
         "  put-dm-token --kv <ver> [--new-kv <ver>] [--token-type <rsa|ecc>] <pem-file>[:pass]\n"
@@ -293,7 +235,15 @@ static void print_usage(const char *prog) {
         "  del-key --kv <ver> [--idx <idx>]\n"
         "      Delete a key. If --idx is omitted, deletes all keys in the given key set.\n"
         "      --kv <ver>: Key set version number (mandatory).\n"
-        "      --idx <idx>: Key index within key set (optional; if omitted, deletes entire key set).\n",
+        "      --idx <idx>: Key index within key set (optional; if omitted, deletes entire key set).\n"
+        "  update-registry [--sd <AIDhex>] [--priv <p1,p2,...>] [--token <hex>] <AIDhex>\n"
+        "      Update the registry for an application.\n"
+        "      <AIDhex>: Application AID (mandatory, last positional parameter).\n"
+        "      --sd <AIDhex>: Security Domain AID (optional).\n"
+        "      --priv <list>: Comma-separated privileges by short names (see 'Privileges' below) (optional).\n"
+        "      --token <hex>: Registry update token for delegated management (optional).\n\n"
+        "  move [--token <hex>] <applicationAID> <securityDomainAID>\n"
+        "      Move an application to a different Security Domain (extradition).\n\n",
         stderr);
 
     fputs(
@@ -347,8 +297,8 @@ static void print_usage(const char *prog) {
         stderr);
 
     fputs(
-        "  sign-load-token [--output <file>] [--nv-code-limit <n>] [--v-data-limit <n>] [--nv-data-limit <n>] \\\n"
-        "      <load-file-aidhex> <sd-aidhex> <hash-hex> <pem>[:pass]\n"
+        "  sign-load-token [--output <file>] [--v-data-limit <n>] [--nv-data-limit <n>] \\\n"
+        "      <cap-file> <sd-aidhex> <hash-hex> <pem>[:pass]\n"
         "      Calculate a Load Token using the provided private RSA|ECC key.\n"
         "  sign-install-token [--output <file>] [--p1 <n>] [--priv <n>] [--v-data-limit <n>] [--nv-data-limit <n>] \\\n"
         "      [--params <hex>] [--sd-params <hex>] [--uicc-params <hex>] [--sim-params <hex>] \\\n"
@@ -374,6 +324,57 @@ static void print_usage(const char *prog) {
         "        ber:    BER-TLV format\n"
         "      --response: expect response data (default: false)\n"
         "      Data supports flexible hex format (spaces/tabs ignored).\n\n",
+        stderr);
+
+        fputs(
+                "  verify-delete-receipt [--type <des|aes|rsa|ecc>] [--key <hex>|--pem <file>[:pass]] \\\n"
+        "                        --aid <AIDhex> <response-apdu-hex>\n"
+        "      Verify delegated-management Delete receipt from response APDU.\n"
+        "      --aid <AIDhex>: Application instance or Executable Load File AID (mandatory).\n"
+        "      --type <des|aes|rsa|ecc>: Receipt verification key type (default: aes).\n"
+        "      --key <hex>: Symmetric receipt key (mandatory for type des|aes).\n"
+        "      --pem <file>[:pass]: Public key for RSA/ECC verification (mandatory for type rsa|ecc).\n"
+        "      <response-apdu-hex>: Response APDU including trailing 9000 (mandatory, last positional parameter).\n\n"
+        "  verify-load-receipt [--type <des|aes|rsa|ecc>] [--key <hex>|--pem <file>[:pass]] \\\n"
+        "                      --load-file <AIDhex> --sd <AIDhex> <response-apdu-hex>\n"
+        "      Verify delegated-management Load receipt from response APDU.\n"
+        "      --load-file <AIDhex>: Executable Load File AID (mandatory).\n"
+        "      --sd <AIDhex>: Security Domain AID (mandatory).\n"
+        "      --type <des|aes|rsa|ecc>: Receipt verification key type (default: aes).\n"
+        "      --key <hex>: Symmetric receipt key (mandatory for type des|aes).\n"
+        "      --pem <file>[:pass]: Public key for RSA/ECC verification (mandatory for type rsa|ecc).\n"
+        "      <response-apdu-hex>: Response APDU including trailing 9000 (mandatory, last positional parameter).\n\n"
+        "  verify-install-receipt [--type <des|aes|rsa|ecc>] [--key <hex>|--pem <file>[:pass]] \\\n"
+        "                         --load-file <AIDhex> --sd <AIDhex> <response-apdu-hex>\n"
+        "      Verify delegated-management Install receipt from response APDU.\n"
+        "      --load-file <AIDhex>: Executable Load File AID (mandatory).\n"
+        "      --sd <AIDhex>: AID used as second receipt parameter (mandatory).\n"
+        "      --type <des|aes|rsa|ecc>: Receipt verification key type (default: aes).\n"
+        "      --key <hex>: Symmetric receipt key (mandatory for type des|aes).\n"
+        "      --pem <file>[:pass]: Public key for RSA/ECC verification (mandatory for type rsa|ecc).\n"
+        "      <response-apdu-hex>: Response APDU including trailing 9000 (mandatory, last positional parameter).\n\n"
+        "  verify-registry-update-receipt [--type <des|aes|rsa|ecc>] [--key <hex>|--pem <file>[:pass]] \\\n"
+        "                                 --aid <AIDhex> --oldsd <AIDhex> --newsd <AIDhex> --priv <list> <response-apdu-hex>\n"
+        "      Verify delegated-management Registry Update receipt from response APDU.\n"
+        "      --aid <AIDhex>: Application AID (mandatory).\n"
+        "      --oldsd <AIDhex>: Old Security Domain AID (mandatory).\n"
+        "      --newsd <AIDhex>: New Security Domain AID (mandatory).\n"
+        "      --priv <list>: Privileges encoded like install --priv (mandatory).\n"
+        "      --type <des|aes|rsa|ecc>: Receipt verification key type (default: aes).\n"
+        "      --key <hex>: Symmetric receipt key (mandatory for type des|aes).\n"
+        "      --pem <file>[:pass]: Public key for RSA/ECC verification (mandatory for type rsa|ecc).\n"
+        "      <response-apdu-hex>: Response APDU including trailing 9000 (mandatory, last positional parameter).\n\n"
+        "  verify-move-receipt [--type <des|aes|rsa|ecc>] [--key <hex>|--pem <file>[:pass]] \\\n"
+        "                     --aid <AIDhex> --oldsd <AIDhex> --newsd <AIDhex> <response-apdu-hex>\n"
+        "      Verify delegated-management Move/Extradition receipt from response APDU.\n"
+        "      --aid <AIDhex>: Application instance or Executable Load File AID (mandatory).\n"
+        "      --oldsd <AIDhex>: Old Security Domain AID (mandatory).\n"
+        "      --newsd <AIDhex>: New Security Domain AID (mandatory).\n"
+        "      --type <des|aes|rsa|ecc>: Receipt verification key type (default: aes).\n"
+        "      --key <hex>: Symmetric receipt key (mandatory for type des|aes).\n"
+        "      --pem <file>[:pass]: Public key for RSA/ECC verification (mandatory for type rsa|ecc).\n"
+        "      <response-apdu-hex>: Response APDU including trailing 9000 (mandatory, last positional parameter).\n"
+        "      Confirmation Data is extracted from the response APDU and printed before verification.\n\n",
         stderr);
 
     fputs(
@@ -1275,6 +1276,7 @@ static int mutual_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     BYTE secLevel = sec_level_from_option(scp, sec_level_opt);
     BYTE S_ENC[32]={0}, S_MAC[32]={0}, DEK[32]={0}, baseKey[32]={0};
     BYTE keyLength = keyLength_in > 0 ? keyLength_in : 16;
+    int hasBaseOnly = (baseKey_in != NULL && enc_in == NULL && mac_in == NULL && dek_in == NULL);
 
     // Use provided keys or default to VISA default key
     if (baseKey_in) {
@@ -1285,18 +1287,24 @@ static int mutual_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
 
     if (enc_in) {
         memcpy(S_ENC, enc_in, keyLength);
+    } else if (hasBaseOnly) {
+        memcpy(S_ENC, baseKey, keyLength);
     } else {
         memcpy(S_ENC, OPGP_VISA_DEFAULT_KEY, 16);
     }
 
     if (mac_in) {
         memcpy(S_MAC, mac_in, keyLength);
+    } else if (hasBaseOnly) {
+        memcpy(S_MAC, baseKey, keyLength);
     } else {
         memcpy(S_MAC, OPGP_VISA_DEFAULT_KEY, 16);
     }
 
     if (dek_in) {
         memcpy(DEK, dek_in, keyLength);
+    } else if (hasBaseOnly) {
+        memcpy(DEK, baseKey, keyLength);
     } else {
         memcpy(DEK, OPGP_VISA_DEFAULT_KEY, 16);
     }
@@ -2745,6 +2753,16 @@ static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURI
 
     if (base) {
         unsigned char b[32]; size_t blen=sizeof(b);
+        unsigned char master[32] = {0};
+        unsigned char s_enc_key[32] = {0};
+        unsigned char s_mac_key[32] = {0};
+        unsigned char dek_key[32] = {0};
+        BYTE *putBaseKey = NULL;
+        BYTE *putSEnc = NULL;
+        BYTE *putSMac = NULL;
+        BYTE *putDek = NULL;
+        bool requiresThreeKeys = !(sec->secureChannelProtocol == GP211_SCP02 &&
+                                   (sec->secureChannelProtocolImpl & 0x01) == 0);
         if (hex_to_bytes(base, b, &blen)!=0 || (blen!=16 && blen!=24 && blen!=32)) {
             fprintf(stderr, "Invalid base key length\n");
             return -1;
@@ -2752,24 +2770,46 @@ static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURI
 
         // Apply key derivation if requested
         if (derivation == OPGP_DERIVATION_METHOD_EMV_CPS11) {
-            OPGP_ERROR_STATUS s = GP211_EMV_CPS11_derive_keys(ctx, info, sec, b, b, b, b);
+            memcpy(master, b, blen);
+            OPGP_ERROR_STATUS s = GP211_EMV_CPS11_derive_keys(ctx, info, sec, master, s_enc_key, s_mac_key, dek_key);
             if (!status_ok(s, true)) {
                 fprintf(stderr, "EMV CPS11 key derivation failed\n");
                 return -1;
             }
+            putSEnc = s_enc_key;
+            putSMac = s_mac_key;
+            putDek = dek_key;
         } else if (derivation == OPGP_DERIVATION_METHOD_VISA2) {
             if (g_selected_isd_len == 0) {
                 fprintf(stderr, "VISA2 derivation requires a selected ISD AID\n");
                 return -1;
             }
-            OPGP_ERROR_STATUS s = GP211_VISA2_derive_keys(ctx, info, sec, g_selected_isd, g_selected_isd_len, b, b, b, b);
+            memcpy(master, b, blen);
+            OPGP_ERROR_STATUS s = GP211_VISA2_derive_keys(ctx, info, sec, g_selected_isd, g_selected_isd_len, master,
+                                                          s_enc_key, s_mac_key, dek_key);
             if (!status_ok(s, true)) {
                 fprintf(stderr, "VISA2 key derivation failed\n");
                 return -1;
             }
+            putSEnc = s_enc_key;
+            putSMac = s_mac_key;
+            putDek = dek_key;
+        } else if (requiresThreeKeys) {
+            // SCPs that require explicit S-ENC/S-MAC/DEK: reuse the provided single key for all three.
+            memcpy(s_enc_key, b, blen);
+            memcpy(s_mac_key, b, blen);
+            memcpy(dek_key, b, blen);
+            putSEnc = s_enc_key;
+            putSMac = s_mac_key;
+            putDek = dek_key;
+        } else {
+            // SCP02 variants that use a single base key.
+            putBaseKey = b;
         }
 
-        OPGP_ERROR_STATUS s = GP211_put_secure_channel_keys(ctx, info, sec, setVer, newSetVer, b, NULL, NULL, NULL, (DWORD)blen, keyType);
+        OPGP_ERROR_STATUS s = GP211_put_secure_channel_keys(ctx, info, sec, setVer, newSetVer,
+                                                            putBaseKey, putSEnc, putSMac, putDek,
+                                                            (DWORD)blen, keyType);
         if (!status_ok(s, true)) {
             return -1;
         }
@@ -3333,7 +3373,6 @@ static int write_hex_or_binary_output(const BYTE *data, DWORD dataLength, const 
 
 static int cmd_sign_load_token(int argc, char **argv) {
     const char *output_file = NULL;
-    DWORD nv_code_limit = 0;
     DWORD v_data_limit = 0;
     DWORD nv_data_limit = 0;
     int ai = 0;
@@ -3341,8 +3380,6 @@ static int cmd_sign_load_token(int argc, char **argv) {
     while (ai < argc && argv[ai][0] == '-') {
         if (strcmp(argv[ai], "--output") == 0 && ai + 1 < argc) {
             output_file = argv[++ai];
-        } else if (strcmp(argv[ai], "--nv-code-limit") == 0 && ai + 1 < argc) {
-            nv_code_limit = (DWORD)parse_int(argv[++ai]);
         } else if (strcmp(argv[ai], "--v-data-limit") == 0 && ai + 1 < argc) {
             v_data_limit = (DWORD)parse_int(argv[++ai]);
         } else if (strcmp(argv[ai], "--nv-data-limit") == 0 && ai + 1 < argc) {
@@ -3354,11 +3391,11 @@ static int cmd_sign_load_token(int argc, char **argv) {
     }
 
     if (argc - ai < 4) {
-        fprintf(stderr, "sign-load-token [--output <file>] [--nv-code-limit <n>] [--v-data-limit <n>] [--nv-data-limit <n>] <load-file-aidhex> <sd-aidhex> <hash-hex> <pem>[:pass]\n");
+        fprintf(stderr, "sign-load-token [--output <file>] [--v-data-limit <n>] [--nv-data-limit <n>] <cap-file> <sd-aidhex> <hash-hex> <pem>[:pass]\n");
         return -1;
     }
 
-    const char *load_file_hex = argv[ai++];
+    const char *cap_file = argv[ai++];
     const char *sd_hex = argv[ai++];
     const char *hash_hex = argv[ai++];
     const char *pem_arg = argv[ai++];
@@ -3368,10 +3405,17 @@ static int cmd_sign_load_token(int argc, char **argv) {
         return -1;
     }
 
-    BYTE load_file_aid[16];
-    size_t load_file_aid_len = sizeof(load_file_aid);
-    if (hex_to_bytes(load_file_hex, load_file_aid, &load_file_aid_len) != 0) {
-        fprintf(stderr, "sign-load-token: invalid <load-file-aidhex>\n");
+    TCHAR capfile_t[MAX_PATH_BUF];
+    OPGP_STRING capfile_opgp = NULL;
+    OPGP_LOAD_FILE_PARAMETERS lfp;
+    memset(&lfp, 0, sizeof(lfp));
+    if (to_opgp_string(cap_file, capfile_t, ARRAY_SIZE(capfile_t)) != 0) {
+        fprintf(stderr, "sign-load-token: cap file path too long\n");
+        return -1;
+    }
+    capfile_opgp = capfile_t;
+    if (!status_ok(OPGP_read_executable_load_file_parameters(capfile_opgp, &lfp), false)) {
+        fprintf(stderr, "sign-load-token: failed to read CAP load file parameters\n");
         return -1;
     }
 
@@ -3409,10 +3453,10 @@ static int cmd_sign_load_token(int argc, char **argv) {
 
     BYTE token[512];
     DWORD token_len = sizeof(token);
-    if (!status_ok(GP211_calculate_load_token(load_file_aid, (DWORD)load_file_aid_len,
+    if (!status_ok(GP211_calculate_load_token(lfp.loadFileAID.AID, lfp.loadFileAID.AIDLength,
                                               sd_aid, (DWORD)sd_aid_len,
                                               hash, (DWORD)hash_len,
-                                              nv_code_limit, v_data_limit, nv_data_limit,
+                                              lfp.loadFileSize, v_data_limit, nv_data_limit,
                                               token, &token_len,
                                               pem_opgp, pass), false)) {
         fprintf(stderr, "sign-load-token failed\n");
