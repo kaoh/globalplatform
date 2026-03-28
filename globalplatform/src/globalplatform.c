@@ -277,7 +277,7 @@ OPGP_ERROR_STATUS delete_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardI
 
 OPGP_NO_API
 OPGP_ERROR_STATUS delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-				   OPGP_AID *AIDs, DWORD AIDsLength, GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataLength,
+				   OPGP_AID *AIDs, DWORD AIDsLength, GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable,
 				   PBYTE deleteToken, DWORD deleteTokenLength, DWORD mode);
 
 OPGP_NO_API
@@ -924,6 +924,11 @@ OPGP_ERROR_STATUS parse_receipt_from_response(PBYTE recvBuffer, DWORD recvBuffer
 	}
 	if (recvBuffer == NULL || recvBufferLength < 2) {
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+	/* If response starts with 00, no receipt data is available. */
+	if (recvBuffer[0] == 0x00) {
+		OPGP_ERROR_CREATE_NO_ERROR(status);
 		goto end;
 	}
 	receiptPayloadLength = recvBufferLength - 2;
@@ -1990,19 +1995,17 @@ end:
  * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * \param AIDs [in] A pointer to the an array of OPGP_AID structures describing the applications and load files to delete.
  * \param AIDsLength [in] The number of OPGP_AID structures.
- * \param *receiptData [out] A GP211_RECEIPT_DATA array. If the deletion is performed by a
- * security domain with delegated management privilege
- * this structure contains the according data for each deleted application or package.
- * \param receiptDataLength [in, out] A pointer to the length of the receiptData array.
- * If no receiptData is available this length is 0;
+ * \param *receiptData [out] A GP211_RECEIPT_DATA structure. If the deletion is performed by a
+ * security domain with delegated management privilege this structure contains the according data.
+ * \param receiptDataAvailable [out] 0 if no receiptData is available.
  * \param deleteToken [in] Optional delete token value. If present, it is encoded with tag '9F'.
  * \param deleteTokenLength [in] The length of the deleteToken buffer.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-						OPGP_AID *AIDs, DWORD AIDsLength, GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataLength,
+						OPGP_AID *AIDs, DWORD AIDsLength, GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable,
 						PBYTE deleteToken, DWORD deleteTokenLength) {
-	return delete_application(cardContext, cardInfo, secInfo, AIDs, AIDsLength, receiptData, receiptDataLength,
+	return delete_application(cardContext, cardInfo, secInfo, AIDs, AIDsLength, receiptData, receiptDataAvailable,
 		deleteToken, deleteTokenLength, GP_211);
 }
 
@@ -2012,23 +2015,18 @@ OPGP_ERROR_STATUS GP211_delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_C
  * \param *secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
  * \param AIDs [in] A pointer to the an array of OPGP_AID structures describing the applications and load files to delete.
  * \param AIDsLength [in] The number of OPGP_AID structures.
- * \param *receiptData [out] A GP211_RECEIPT_DATA array. If the deletion is performed by a
- * security domain with delegated management privilege
- * this structure contains the according data for each deleted application or package.
- * \param receiptDataLength [in, out] A pointer to the length of the receiptData array.
- * If no receiptData is available this length is 0;
+ * \param *receiptData [out] A GP211_RECEIPT_DATA structure. If the deletion is performed by a
+ * security domain with delegated management privilege this structure contains the according data.
+ * \param receiptDataAvailable [out] 0 if no receiptData is available.
  * \param deleteToken [in] Optional delete token value. If present, it is encoded with tag '9F'.
  * \param deleteTokenLength [in] The length of the deleteToken buffer.
  * \param mode OpenPlatform 2.0.1' or GlobalPlatform 2.1.1 delete command.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
-				   OPGP_AID *AIDs, DWORD AIDsLength, GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataLength,
+				   OPGP_AID *AIDs, DWORD AIDsLength, GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable,
 				   PBYTE deleteToken, DWORD deleteTokenLength, DWORD mode) {
 	OPGP_ERROR_STATUS status;
-	DWORD receiptCapacity = 0;
-	DWORD receiptPayloadLength = 0;
-	DWORD consumed = 0;
 	BYTE deleteTokenSignatureData[1000] = {0};
 	DWORD deleteTokenSignatureDataLength = sizeof(deleteTokenSignatureData);
 	BYTE commandHeader[5] = {0x80, 0xE4, 0x00, 0x00, 0x00};
@@ -2040,21 +2038,21 @@ OPGP_ERROR_STATUS delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_IN
 	PBYTE parsedData = NULL;
 	DWORD parsedDataLength = 0;
 	OPGP_LOG_START(_T("delete_application"));
+	if (receiptDataAvailable != NULL) {
+		*receiptDataAvailable = 0;
+	}
 	if (mode == GP_211) {
 		status = GP211_get_delete_token_signature_data(AIDs, AIDsLength,
 			deleteTokenSignatureData, &deleteTokenSignatureDataLength);
 		if (OPGP_ERROR_CHECK(status)) {
-			*receiptDataLength = 0;
 			goto end;
 		}
 		status = extract_case3_data(deleteTokenSignatureData, deleteTokenSignatureDataLength,
 			&commandHeader[2], &commandHeader[3], &parsedData, &parsedDataLength);
 		if (OPGP_ERROR_CHECK(status)) {
-			*receiptDataLength = 0;
 			goto end;
 		}
 		if (parsedDataLength > sizeof(sendBuffer)) {
-			*receiptDataLength = 0;
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
 		}
 		memcpy(sendBuffer, parsedData, parsedDataLength);
@@ -2062,7 +2060,6 @@ OPGP_ERROR_STATUS delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_IN
 	} else {
 		for (j=0; j< AIDsLength; j++) {
 			if (i + AIDs[j].AIDLength + 2 > sizeof(sendBuffer)) {
-				*receiptDataLength = 0;
 				{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
 			}
 			OPGP_LOG_HEX(_T("delete_application: AID to delete: "), AIDs[j].AID, AIDs[j].AIDLength);
@@ -2074,21 +2071,17 @@ OPGP_ERROR_STATUS delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_IN
 	}
 	if (mode == GP_211 && deleteToken != NULL && deleteTokenLength > 0) {
 		if (deleteTokenLength > 0xFFFF) {
-			*receiptDataLength = 0;
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
 		}
 		if (i + 1 > sizeof(sendBuffer)) {
-			*receiptDataLength = 0;
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
 		}
 		sendBuffer[i++] = 0x9E;
 		lenLen = write_TLV_length(sendBuffer, i, sizeof(sendBuffer) - i, (USHORT)deleteTokenLength);
 		if (lenLen < 0) {
-			*receiptDataLength = 0;
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
 		}
 		if (i + (DWORD)lenLen + deleteTokenLength > sizeof(sendBuffer)) {
-			*receiptDataLength = 0;
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
 		}
 		i += (DWORD)lenLen;
@@ -2100,29 +2093,11 @@ OPGP_ERROR_STATUS delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_IN
 	status = send_chained_data(cardContext, cardInfo, secInfo, commandHeader, 5, sendBuffer, i,
 		recvBuffer, &recvBufferLength, false, false, true);
 	if (OPGP_ERROR_CHECK(status)) {
-		*receiptDataLength = 0;
 		goto end;
 	}
-	if (receiptDataLength != NULL) {
-		receiptCapacity = *receiptDataLength;
-		*receiptDataLength = 0;
-	}
-	if (recvBufferLength < 2) {
-		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+	status = parse_receipt_from_response(recvBuffer, recvBufferLength, receiptData, receiptDataAvailable);
+	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
-	}
-	receiptPayloadLength = recvBufferLength - 2;
-	if (receiptPayloadLength > 0) {
-		if (receiptDataLength == NULL || receiptData == NULL || receiptCapacity == 0) {
-			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
-			goto end;
-		}
-		consumed = fillReceipt(recvBuffer, receiptPayloadLength, receiptData);
-		if (consumed == 0 || consumed != receiptPayloadLength) {
-			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-			goto end;
-		}
-		*receiptDataLength = 1;
 	}
 
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
@@ -5779,7 +5754,7 @@ end:
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code  and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_calculate_load_file_data_block_hash(OPGP_STRING executableLoadFileName,
-                                                            BYTE hash[64], DWORD hashLength, BYTE hashType) {
+                                                            PBYTE hash, DWORD hashLength, BYTE hashType) {
 	OPGP_ERROR_STATUS status;
 	PBYTE loadFileBuf = NULL;
 	DWORD loadFileBufSize;

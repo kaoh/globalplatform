@@ -257,12 +257,12 @@ static OPGP_ERROR_STATUS internal_disconnect() {
 static OPGP_ERROR_STATUS internal_delete_aid(const BYTE *aid, BYTE aidLength, int ignoreErrors) {
 	OPGP_ERROR_STATUS status;
 	GP211_RECEIPT_DATA receiptData;
-	DWORD receiptDataLength = 0;
+	DWORD receiptDataAvailable = 0;
 	OPGP_AID deleteAID;
 
 	memcpy(deleteAID.AID, aid, aidLength);
 	deleteAID.AIDLength = aidLength;
-	status = GP211_delete_application(cardContext, cardInfo, &securityInfo211, &deleteAID, 1, &receiptData, &receiptDataLength, NULL, 0);
+	status = GP211_delete_application(cardContext, cardInfo, &securityInfo211, &deleteAID, 1, &receiptData, &receiptDataAvailable, NULL, 0);
 	if (OPGP_ERROR_CHECK(status)) {
 		if (ignoreErrors) {
 			OPGP_ERROR_CREATE_NO_ERROR(status);

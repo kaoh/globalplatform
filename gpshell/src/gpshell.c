@@ -1490,11 +1490,12 @@ static int handleCommands(FILE *fd)
                 }
                 else if (platform_mode == PLATFORM_MODE_GP_211)
                 {
-                    GP211_RECEIPT_DATA receipt[10];
+                    GP211_RECEIPT_DATA receipt;
+                    DWORD receiptDataAvailable = 0;
                     status = GP211_delete_application(cardContext, cardInfo, &securityInfo211,
                                                   AIDs, 1,
-                                                  (GP211_RECEIPT_DATA *)receipt,
-                                                  &receiptLen,
+                                                  &receipt,
+                                                  &receiptDataAvailable,
                                                   NULL, 0);
 
                 }

@@ -232,7 +232,7 @@ IF(TESTING)
         LINK_LIBRARIES ${LIBRARIES})
       add_custom_command(TARGET scp02Test POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-          ${CMAKE_SOURCE_DIR}/gpshell/examples/helloworld.cap
+          ${CMAKE_CURRENT_SOURCE_DIR}/helloworld.cap
           $<TARGET_FILE_DIR:scp02Test>/helloworld.cap)
 
       add_mocked_test(scp01Test

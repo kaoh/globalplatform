@@ -1044,6 +1044,17 @@ static void print_receipt_confirmation_data(const GP211_RECEIPT_DATA *receiptDat
     }
 }
 
+static void print_received_receipt(const char *operation, const GP211_RECEIPT_DATA *receiptData) {
+    if (!operation || !receiptData) {
+        return;
+    }
+    printf("%s receipt received.\n", operation);
+    printf("Receipt: ");
+    print_hex(receiptData->receipt, receiptData->receiptLength);
+    printf("\n");
+    print_receipt_confirmation_data(receiptData);
+}
+
 static int parse_receipt_verify_key(const char *cmd, const char *typeOpt, const char *keyHex, const char *pemSpec,
                                     RECEIPT_VERIFY_KEY_INPUT *out) {
     const char *type = typeOpt ? typeOpt : "aes";
@@ -1921,6 +1932,9 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         if (!status_ok(GP211_load(ctx, info, sec, dapCount?dapBlocks:NULL, dapCount, capfile_opgp, &receipt, &receiptAvail, NULL), true)) {
             return -1;
         }
+        if (receiptAvail) {
+            print_received_receipt("Load", &receipt);
+        }
         if (load_only) { return 0; }
     }
 
@@ -2005,6 +2019,9 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
                 installTokenPtr, installTokenLen, &rec2, &rec2Avail), true)) {
             return -1;
         }
+        if (rec2Avail) {
+            print_received_receipt("Install", &rec2);
+        }
     } else {
         // Neither provided: iterate over all applets from CAP
         if (install_only) {
@@ -2028,6 +2045,9 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
                     installTokenPtr, installTokenLen, &rec2, &rec2Avail), false)) {
                 fprintf(stderr, "Failed for applet index %d\n", i);
                 return -1;
+            }
+            if (rec2Avail) {
+                print_received_receipt("Install", &rec2);
             }
             i++;
         }
@@ -2189,6 +2209,9 @@ static int cmd_install_sd(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECU
             &rec, &recAvail), true)) {
         return -1;
     }
+    if (recAvail) {
+        print_received_receipt("Install SD", &rec);
+    }
 
     // TODO: add card data
     // // Select the new security domain
@@ -2273,9 +2296,12 @@ static int cmd_delete(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY
     }
 
     OPGP_AID a; memset(&a,0,sizeof(a)); a.AIDLength=(BYTE)alen; memcpy(a.AID, aidb, alen);
-    GP211_RECEIPT_DATA rec; DWORD recLen=0; memset(&rec,0,sizeof(rec));
-    if (!status_ok(GP211_delete_application(ctx, info, sec, &a, 1, &rec, &recLen, delete_token_ptr, delete_token_len), true)) {
+    GP211_RECEIPT_DATA rec; DWORD recAvail = 0; memset(&rec,0,sizeof(rec));
+    if (!status_ok(GP211_delete_application(ctx, info, sec, &a, 1, &rec, &recAvail, delete_token_ptr, delete_token_len), true)) {
         return -1;
+    }
+    if (recAvail) {
+        print_received_receipt("Delete", &rec);
     }
     return 0;
 }
@@ -2350,6 +2376,9 @@ static int cmd_move(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
                                                app_aid_bytes, (DWORD)app_aid_len,
                                                token_ptr, token_len, &rec, &recAvail), true)) {
         return -1;
+    }
+    if (recAvail) {
+        print_received_receipt("Move", &rec);
     }
     return 0;
 }
@@ -3138,7 +3167,7 @@ static int cmd_update_registry(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
     }
 
     if (receiptAvailable) {
-        printf("Registry update receipt received.\n");
+        print_received_receipt("Registry update", &receipt);
     }
 
     return 0;

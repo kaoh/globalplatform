@@ -871,7 +871,7 @@ OPGP_ERROR_STATUS GP211_get_key_information_templates(OPGP_CARD_CONTEXT cardCont
 OPGP_API
 OPGP_ERROR_STATUS GP211_delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 				   OPGP_AID *AIDs, DWORD AIDsLength,
-				   GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataLength,
+				   GP211_RECEIPT_DATA *receiptData, PDWORD receiptDataAvailable,
 				   PBYTE deleteToken, DWORD deleteTokenLength);
 
 //! \brief GlobalPlatform2.1.1: Prepares the card for loading an application.
@@ -999,7 +999,7 @@ OPGP_ERROR_STATUS GP211_build_sd_parameters(GP211_SD_INSTALL_PARAMS *params,
 //! \brief GlobalPlatform2.1.1: Calculates a Load File Data Block Hash.
 OPGP_API
 OPGP_ERROR_STATUS GP211_calculate_load_file_data_block_hash(OPGP_STRING executableLoadFileName,
-                                                            BYTE hash[64], DWORD hashLength, BYTE hashType);
+                                                            PBYTE hash, DWORD hashLength, BYTE hashType);
 
 //! \brief GlobalPlatform2.1.1: Loads a Executable Load File (containing an application) to the card.
 OPGP_API

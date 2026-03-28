@@ -72,7 +72,7 @@ static void delete_application(void **state) {
 	appAid.AIDLength = sizeof(aid);
 
 	GP211_RECEIPT_DATA receiptData;
-	DWORD receiptDataLength;
+	DWORD receiptDataAvailable = 0;
 
 	will_return(__wrap_RAND_bytes, hostChallenge);
 	expect_value(__wrap_RAND_bytes, num, 8);
@@ -99,7 +99,7 @@ static void delete_application(void **state) {
 	will_return(send_APDU, deleteResponse);
 	will_return(send_APDU, &deleteResponseLength);
 
-	status = GP211_delete_application(cardContext, cardInfo, &securityInfo211, &appAid, 1, &receiptData, &receiptDataLength, NULL, 0);
+	status = GP211_delete_application(cardContext, cardInfo, &securityInfo211, &appAid, 1, &receiptData, &receiptDataAvailable, NULL, 0);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 }
 
