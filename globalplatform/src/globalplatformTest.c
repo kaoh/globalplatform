@@ -1434,11 +1434,20 @@ START_TEST (test_dap_calculate_helloworld_ecc_dap) {
 	}
 
 	memset(&dapLoadFileSignature, 0, sizeof(dapLoadFileSignature));
-	status = GP211_calculate_ecc_DAP(dapLoadFileDataBlockHash, dapLoadFileDataBlockHashLength,
-			(PBYTE)sdInstanceAID, sizeof(sdInstanceAID),
-			TEST_ECC_PRIVATE_KEY, NULL, &dapLoadFileSignature);
-	if (OPGP_ERROR_CHECK(status)) {
-		ck_abort_msg("GP211_calculate_ecc_DAP() failed: %s", status.errorMessage);
+	{
+		DWORD signatureLength = sizeof(dapLoadFileSignature.signature);
+		status = GP211_calculate_ecc_DAP(dapLoadFileDataBlockHash, dapLoadFileDataBlockHashLength,
+				TEST_ECC_PRIVATE_KEY, NULL,
+				dapLoadFileSignature.signature, &signatureLength);
+		if (OPGP_ERROR_CHECK(status)) {
+			ck_abort_msg("GP211_calculate_ecc_DAP() failed: %s", status.errorMessage);
+		}
+		if (signatureLength > 255) {
+			ck_abort_msg("ECC DAP signature too long: %lu", (unsigned long)signatureLength);
+		}
+		dapLoadFileSignature.signatureLength = (BYTE)signatureLength;
+		memcpy(dapLoadFileSignature.securityDomainAID, sdInstanceAID, sizeof(sdInstanceAID));
+		dapLoadFileSignature.securityDomainAIDLength = sizeof(sdInstanceAID);
 	}
 	if (dapLoadFileSignature.signatureLength == 0) {
 		ck_abort_msg("ECC DAP calculation returned empty signature.");
@@ -1450,7 +1459,7 @@ START_TEST (test_dap_calculate_helloworld_ecc_dap) {
  * ECC DAP test step 5:
  * Install helloworld.cap with ECC DAP.
  */
-START_TEST (test_dm_install_helloworld_with_dap) {
+START_TEST (test_install_helloworld_with_dap) {
 	OPGP_ERROR_STATUS status;
 	DWORD receiptDataLen = 0;
 	GP211_RECEIPT_DATA receipt;
@@ -2161,7 +2170,7 @@ Suite * GlobalPlatform_suite(void) {
 	tcase_add_test (tc_core, test_dap_install_sd_with_mandated_dap);
 	tcase_add_test (tc_core, test_dap_personalize_sd);
 	tcase_add_test (tc_core, test_dap_calculate_helloworld_ecc_dap);
-	tcase_add_test (tc_core, test_dm_install_helloworld_with_dap);
+	tcase_add_test (tc_core, test_install_helloworld_with_dap);
 	tcase_add_test (tc_core, test_dap_delete_key);
 	tcase_add_test (tc_core, test_dap_delete_helloworld);
 	tcase_add_test (tc_core, test_dap_delete_sd);

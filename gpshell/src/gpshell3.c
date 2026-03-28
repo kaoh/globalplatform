@@ -152,7 +152,7 @@ static void print_usage(const char *prog) {
         stderr);
 
     fputs(
-        "  install [--load-only|--install-only] [--dap <hex>|@<file>] [--load-token <hex>] [--install-token <hex>] \\\n"
+        "  install [--load-only|--install-only] [--dap <hex>|@<file>] [--dap-sd <AIDhex>] [--load-token <hex>] [--install-token <hex>] \\\n"
         "          [--hash <hex>] [--load-file <AIDhex>] [--applet <AIDhex>] [--module <AIDhex>] [--params <hex>] \\\n"
         "          [--v-data-limit <size>] [--nv-data-limit <size>] [--priv <p1,p2,...>] <cap-file>\n"
         "      Load a CAP file, and optionally install/make selectable applet instance(s).\n"
@@ -167,7 +167,8 @@ static void print_usage(const char *prog) {
         "      --install-only: only perform INSTALL [for install and make selectable], skip load phase (optional).\n"
         "                      Requires --load-file, --module, and --applet.\n"
         "      --load-file: AID of the load file (required for --install-only) (optional).\n"
-        "      --dap: DAP signature as hex or @file for binary signature (SD AID taken from --sd) (optional).\n"
+        "      --dap: DAP signature as hex or @file for binary signature (optional).\n"
+        "      --dap-sd <AIDhex>: Security Domain AID to place in the DAP block (this SD verifies the DAP signature; default: --sd) (optional).\n"
         "      --hash: precomputed load-file data block hash (hex) (required for --dap) (optional).\n"
         "      --load-token <hex>: Load token for delegated management (optional).\n"
         "      --install-token <hex>: Install token for delegated management (optional).\n"
@@ -287,9 +288,9 @@ static void print_usage(const char *prog) {
         "      By default, apdu does NOT select ISD or perform mutual authentication; use --auth to enable it.\n\n"
         "  hash <cap-file> [--sha1|--sha256|--sha384|--sha512|--sm3]\n"
         "      Compute the load-file data block hash of a CAP file. Default is sha256.\n\n"
-        "  sign-dap aes [--output <file>] <hash-hex> <sd-aidhex> <hexkey>\n"
-        "  sign-dap rsa [--output <file>] <hash-hex> <sd-aidhex> <pem>[:pass]\n"
-        "  sign-dap ecc [--output <file>] <hash-hex> <sd-aidhex> <pem>[:pass]\n"
+        "  sign-dap aes [--output <file>] <hash-hex> <hexkey>\n"
+        "  sign-dap rsa [--output <file>] <hash-hex> <pem>[:pass]\n"
+        "  sign-dap ecc [--output <file>] <hash-hex> <pem>[:pass]\n"
         "      Generate a DAP signature from a precomputed hash.\n"
         "      Output is signature only (for use with 'install --dap <hex>' or '--dap @file').\n"
         "      ECC signatures are encoded in plain format (TR-03111: r||s).\n"
@@ -1852,7 +1853,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     int load_only = 0;
     int install_only = 0;
     DWORD v_data_limit = 0, nv_data_limit = 0;
-    const char *dap_hex = NULL; const char *applet_aid_hex=NULL; const char *module_aid_hex=NULL; const char *priv_list=NULL; const char *params_hex=NULL;
+    const char *dap_hex = NULL; const char *dap_sd_hex = NULL; const char *applet_aid_hex=NULL; const char *module_aid_hex=NULL; const char *priv_list=NULL; const char *params_hex=NULL;
     const char *load_token_hex = NULL; const char *install_token_hex = NULL; const char *load_file_hash_hex = NULL;
     const char *load_file_aid_hex = NULL;
     int ai = 0;
@@ -1860,6 +1861,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         if (strcmp(argv[ai], "--load-only") == 0) load_only = 1;
         else if (strcmp(argv[ai], "--install-only") == 0) install_only = 1;
         else if (strcmp(argv[ai], "--dap") == 0 && ai+1 < argc) { dap_hex = argv[++ai]; }
+        else if (strcmp(argv[ai], "--dap-sd") == 0 && ai+1 < argc) { dap_sd_hex = argv[++ai]; }
         else if (strcmp(argv[ai], "--load-token") == 0 && ai+1 < argc) { load_token_hex = argv[++ai]; }
         else if (strcmp(argv[ai], "--install-token") == 0 && ai+1 < argc) { install_token_hex = argv[++ai]; }
         else if (strcmp(argv[ai], "--hash") == 0 && ai+1 < argc) { load_file_hash_hex = argv[++ai]; }
@@ -1903,6 +1905,10 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
             return -1;
         }
     }
+    if (dap_sd_hex != NULL && dap_hex == NULL) {
+        fprintf(stderr, "install: --dap-sd requires --dap\n");
+        return -1;
+    }
 
     GP211_DAP_BLOCK dapBlocks[1]; DWORD dapCount = 0;
     // Use the ISD AID that was selected during connection/authentication, without probing via GET DATA.
@@ -1913,6 +1919,16 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     } else {
         memcpy(sdAid, GP231_ISD_AID, 7);
         sdAidLen = 7;
+    }
+    unsigned char dapSdAid[16]; DWORD dapSdAidLen = sdAidLen;
+    memcpy(dapSdAid, sdAid, sdAidLen);
+    if (dap_sd_hex != NULL) {
+        size_t dap_sd_len = sizeof(dapSdAid);
+        if (hex_to_bytes(dap_sd_hex, dapSdAid, &dap_sd_len) != 0) {
+            fprintf(stderr, "install: invalid --dap-sd AID\n");
+            return -1;
+        }
+        dapSdAidLen = (DWORD)dap_sd_len;
     }
 
     // Parse generic DAP signature if provided
@@ -1933,8 +1949,8 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         }
 
         // Fill in DAP block with signature and SD AID
-        memcpy(dapBlocks[0].securityDomainAID, sdAid, sdAidLen);
-        dapBlocks[0].securityDomainAIDLength = (BYTE)sdAidLen;
+        memcpy(dapBlocks[0].securityDomainAID, dapSdAid, dapSdAidLen);
+        dapBlocks[0].securityDomainAIDLength = (BYTE)dapSdAidLen;
         memcpy(dapBlocks[0].signature, sig_buf, sig_len);
         dapBlocks[0].signatureLength = (BYTE)sig_len;
         dapCount = 1;
@@ -3375,11 +3391,11 @@ static int cmd_sign_dap(const char *dap_type, int argc, char **argv) {
     }
 
     if (strcmp(dap_type, "rsa") == 0) {
-        if (argc - ai < 3) { fprintf(stderr, "sign-dap rsa [--output <file>] <hash-hex> <sd-aidhex> <pem>[:pass]\n"); return -1; }
-        const char *hash_hex = argv[ai++]; const char *sd_hex = argv[ai++]; const char *pem = argv[ai++];
+        if (argc - ai < 2) { fprintf(stderr, "sign-dap rsa [--output <file>] <hash-hex> <pem>[:pass]\n"); return -1; }
+        const char *hash_hex = argv[ai++]; const char *pem = argv[ai++];
         unsigned char hash[64]; size_t hashlen=sizeof(hash);
+        unsigned char signature[512]; DWORD signatureLen = sizeof(signature);
         if (hex_to_bytes(hash_hex, hash, &hashlen)!=0) { fprintf(stderr, "Invalid hash hex\n"); return -1; }
-        unsigned char sd[16]; size_t sdlen=sizeof(sd); if (hex_to_bytes(sd_hex, sd, &sdlen)!=0) { fprintf(stderr, "Invalid sd-aid\n"); return -1; }
         char pemcopy[512]; strncpy(pemcopy, pem, sizeof(pemcopy)-1); pemcopy[sizeof(pemcopy)-1]='\0'; char *pass=""; char *c=strchr(pemcopy,':'); if (c){*c='\0'; pass=c+1;}
         TCHAR pem_t[MAX_PATH_BUF];
         OPGP_STRING pem_opgp = NULL;
@@ -3388,23 +3404,23 @@ static int cmd_sign_dap(const char *dap_type, int argc, char **argv) {
             return -1;
         }
         pem_opgp = pem_t;
-        GP211_DAP_BLOCK dap; if (!status_ok(GP211_calculate_rsa_schemeX_DAP(hash, (DWORD)hashlen, sd, (DWORD)sdlen, pem_opgp, pass, &dap), false)) { fprintf(stderr, "calc rsa DAP failed\n"); return -1; }
+        if (!status_ok(GP211_calculate_rsa_schemeX_DAP(hash, (DWORD)hashlen, pem_opgp, pass, signature, &signatureLen), false)) { fprintf(stderr, "calc rsa DAP failed\n"); return -1; }
 
         if (output_file) {
             FILE *f = fopen(output_file, "wb");
             if (!f) { fprintf(stderr, "Failed to open output file: %s\n", output_file); return -1; }
-            fwrite(dap.signature, 1, dap.signatureLength, f);
+            fwrite(signature, 1, signatureLen, f);
             fclose(f);
         } else {
-            print_hex(dap.signature, dap.signatureLength); printf("\n");
+            print_hex(signature, signatureLen); printf("\n");
         }
         return 0;
     } else if (strcmp(dap_type, "ecc") == 0) {
-        if (argc - ai < 3) { fprintf(stderr, "sign-dap ecc [--output <file>] <hash-hex> <sd-aidhex> <pem>[:pass]\n"); return -1; }
-        const char *hash_hex = argv[ai++]; const char *sd_hex = argv[ai++]; const char *pem = argv[ai++];
+        if (argc - ai < 2) { fprintf(stderr, "sign-dap ecc [--output <file>] <hash-hex> <pem>[:pass]\n"); return -1; }
+        const char *hash_hex = argv[ai++]; const char *pem = argv[ai++];
         unsigned char hash[64]; size_t hashlen=sizeof(hash);
+        unsigned char signature[512]; DWORD signatureLen = sizeof(signature);
         if (hex_to_bytes(hash_hex, hash, &hashlen)!=0) { fprintf(stderr, "Invalid hash hex\n"); return -1; }
-        unsigned char sd[16]; size_t sdlen=sizeof(sd); if (hex_to_bytes(sd_hex, sd, &sdlen)!=0) { fprintf(stderr, "Invalid sd-aid\n"); return -1; }
         char pemcopy[512]; strncpy(pemcopy, pem, sizeof(pemcopy)-1); pemcopy[sizeof(pemcopy)-1]='\0'; char *pass=""; char *c=strchr(pemcopy,':'); if (c){*c='\0'; pass=c+1;}
         TCHAR pem_t[MAX_PATH_BUF];
         OPGP_STRING pem_opgp = NULL;
@@ -3413,35 +3429,35 @@ static int cmd_sign_dap(const char *dap_type, int argc, char **argv) {
             return -1;
         }
         pem_opgp = pem_t;
-        GP211_DAP_BLOCK dap; if (!status_ok(GP211_calculate_ecc_DAP(hash, (DWORD)hashlen, sd, (DWORD)sdlen, pem_opgp, pass, &dap), false)) { fprintf(stderr, "calc ecc DAP failed\n"); return -1; }
+        if (!status_ok(GP211_calculate_ecc_DAP(hash, (DWORD)hashlen, pem_opgp, pass, signature, &signatureLen), false)) { fprintf(stderr, "calc ecc DAP failed\n"); return -1; }
 
         if (output_file) {
             FILE *f = fopen(output_file, "wb");
             if (!f) { fprintf(stderr, "Failed to open output file: %s\n", output_file); return -1; }
-            fwrite(dap.signature, 1, dap.signatureLength, f);
+            fwrite(signature, 1, signatureLen, f);
             fclose(f);
         } else {
-            print_hex(dap.signature, dap.signatureLength); printf("\n");
+            print_hex(signature, signatureLen); printf("\n");
         }
         return 0;
     } else {
-        if (argc - ai < 3) { fprintf(stderr, "sign-dap aes [--output <file>] <hash-hex> <sd-aidhex> <hexkey>\n"); return -1; }
-        const char *hash_hex = argv[ai++]; const char *sd_hex = argv[ai++]; const char *hexkey = argv[ai++];
+        if (argc - ai < 2) { fprintf(stderr, "sign-dap aes [--output <file>] <hash-hex> <hexkey>\n"); return -1; }
+        const char *hash_hex = argv[ai++]; const char *hexkey = argv[ai++];
         unsigned char hash[64]; size_t hashlen=sizeof(hash);
+        unsigned char signature[64]; DWORD signatureLen = sizeof(signature);
         if (hex_to_bytes(hash_hex, hash, &hashlen)!=0) { fprintf(stderr, "Invalid hash hex\n"); return -1; }
-        unsigned char sd[16]; size_t sdlen=sizeof(sd); if (hex_to_bytes(sd_hex, sd, &sdlen)!=0) { fprintf(stderr, "Invalid sd-aid\n"); return -1; }
         unsigned char key[32]; size_t klen=sizeof(key); if (hex_to_bytes(hexkey, key, &klen)!=0) { fprintf(stderr, "Invalid hexkey\n"); return -1; }
         // Determine SCP based on hash length
         BYTE scp = (hashlen > 20) ? GP211_SCP03 : GP211_SCP02;
-        GP211_DAP_BLOCK dap; if (!status_ok(GP211_calculate_DAP(hash, (BYTE)hashlen, sd, (DWORD)sdlen, key, (DWORD)klen, &dap, scp), false)) { fprintf(stderr, "calc aes DAP failed\n"); return -1; }
+        if (!status_ok(GP211_calculate_DAP(hash, (BYTE)hashlen, key, (DWORD)klen, signature, &signatureLen, scp), false)) { fprintf(stderr, "calc aes DAP failed\n"); return -1; }
 
         if (output_file) {
             FILE *f = fopen(output_file, "wb");
             if (!f) { fprintf(stderr, "Failed to open output file: %s\n", output_file); return -1; }
-            fwrite(dap.signature, 1, dap.signatureLength, f);
+            fwrite(signature, 1, signatureLen, f);
             fclose(f);
         } else {
-            print_hex(dap.signature, dap.signatureLength); printf("\n");
+            print_hex(signature, signatureLen); printf("\n");
         }
         return 0;
     }

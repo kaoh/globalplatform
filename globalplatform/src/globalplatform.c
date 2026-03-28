@@ -5854,30 +5854,37 @@ end:
  * The loadFileDataBlockHash can be calculated using calculate_load_file_data_block_hash().
  * \param loadFileDataBlockHash [in] The Load File Data Block Hash. Must be a SHA-256, SHA-384 or SHA-512 hash.
  * \param hashLength [in] The length of the hash.
- * \param securityDomainAID [in] A buffer containing the Security Domain AID.
- * \param securityDomainAIDLength [in] The length of the Security Domain AID.
  * \param DAPCalculationKey [in] The key to calculate the DAP.
  * \param keyLength [in] The key length of the DAPCalculationKey.
- * \param *loadFileDataBlockSignature [out] A pointer to the returned GP211_DAP_BLOCK structure.
+ * \param signature [out] Output buffer for the raw DAP signature bytes.
+ * \param signatureLength [in,out] Input: size of signature buffer. Output: generated signature length.
  * \param secureChannelProtocol [in] The Secure Channel Protocol.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
-OPGP_ERROR_STATUS GP211_calculate_DAP(BYTE loadFileDataBlockHash[64], BYTE hashLength, PBYTE securityDomainAID,
-						DWORD securityDomainAIDLength,
-						BYTE DAPCalculationKey[32], DWORD keyLength, GP211_DAP_BLOCK *loadFileDataBlockSignature, BYTE secureChannelProtocol)
+OPGP_ERROR_STATUS GP211_calculate_DAP(BYTE loadFileDataBlockHash[64], BYTE hashLength,
+						BYTE DAPCalculationKey[32], DWORD keyLength,
+						PBYTE signature, PDWORD signatureLength, BYTE secureChannelProtocol)
 {
 	OPGP_ERROR_STATUS status;
+	DWORD requiredLength = (secureChannelProtocol == GP211_SCP02) ? 8 : 16;
 	OPGP_LOG_START(_T("GP211_calculate_aes_DAP"));
+	if (signature == NULL || signatureLength == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, _T("signature and signatureLength must be provided"));
+		goto end;
+	}
+	if (*signatureLength < requiredLength) {
+		*signatureLength = requiredLength;
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		goto end;
+	}
 	if (secureChannelProtocol == GP211_SCP02) {
-		calculate_MAC_des_3des(DAPCalculationKey, loadFileDataBlockHash, 20, NULL, loadFileDataBlockSignature->signature);
-			loadFileDataBlockSignature->signatureLength = 8;
+		calculate_MAC_des_3des(DAPCalculationKey, loadFileDataBlockHash, 20, NULL, signature);
+		*signatureLength = 8;
 	}
 	else {
-		calculate_CMAC_aes(DAPCalculationKey, keyLength, loadFileDataBlockHash, hashLength, NULL, loadFileDataBlockSignature->signature);
-		loadFileDataBlockSignature->signatureLength = 16;
+		calculate_CMAC_aes(DAPCalculationKey, keyLength, loadFileDataBlockHash, hashLength, NULL, signature);
+		*signatureLength = 16;
 	}
-	memcpy(loadFileDataBlockSignature->securityDomainAID, securityDomainAID, securityDomainAIDLength);
-	loadFileDataBlockSignature->securityDomainAIDLength = (BYTE)securityDomainAIDLength;
 
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
@@ -5926,30 +5933,24 @@ end:
  * Uses SHA-256 for RSA keys <= 2048 bits and SHA-512 for RSA keys > 2048 bits.
  * \param loadFileDataBlockHash [in] The Load File Data Block Hash to sign.
  * \param loadFileDataBlockHashLength [in] The length of the Load File Data Block Hash.
- * \param securityDomainAID [in] A buffer containing the Security Domain AID.
- * \param securityDomainAIDLength [in] The length of the Security Domain AID.
  * \param PEMKeyFileName [in] A PEM file name with the private RSA key.
  * \param *passPhrase [in] The passphrase. Must be an ASCII string.
- * \param *loadFileDataBlockSignature [out] A pointer to the returned GP211_DAP_BLOCK structure.
+ * \param signature [out] Output buffer for the raw DAP signature bytes.
+ * \param signatureLength [in,out] Input: size of signature buffer. Output: generated signature length.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_calculate_rsa_schemeX_DAP(PBYTE loadFileDataBlockHash, DWORD loadFileDataBlockHashLength,
-					   PBYTE securityDomainAID, DWORD securityDomainAIDLength,
 					   OPGP_STRING PEMKeyFileName, char *passPhrase,
-					   GP211_DAP_BLOCK *loadFileDataBlockSignature)
+					   PBYTE signature, PDWORD signatureLength)
 {
 	OPGP_ERROR_STATUS status;
-	DWORD signatureLength = sizeof(loadFileDataBlockSignature->signature);
 	OPGP_LOG_START(_T("GP211_calculate_rsa_schemeX_DAP"));
 
 	status = calculate_signature(loadFileDataBlockHash, loadFileDataBlockHashLength, PEMKeyFileName, passPhrase,
-		loadFileDataBlockSignature->signature, &signatureLength);
+		signature, signatureLength);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	loadFileDataBlockSignature->signatureLength = signatureLength;
-	memcpy(loadFileDataBlockSignature->securityDomainAID, securityDomainAID, securityDomainAIDLength);
-	loadFileDataBlockSignature->securityDomainAIDLength = (BYTE)securityDomainAIDLength;
 
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
@@ -5962,30 +5963,24 @@ end:
  * The returned signature is encoded in plain format according to BSI TR-03111 (r||s).
  * \param loadFileDataBlockHash [in] The Load File Data Block Hash to sign.
  * \param loadFileDataBlockHashLength [in] The length of the Load File Data Block Hash.
- * \param securityDomainAID [in] A buffer containing the Security Domain AID.
- * \param securityDomainAIDLength [in] The length of the Security Domain AID.
  * \param PEMKeyFileName [in] A PEM file name with the private ECC key.
  * \param *passPhrase [in] The passphrase. Must be an ASCII string.
- * \param *loadFileDataBlockSignature [out] A pointer to the returned GP211_DAP_BLOCK structure.
+ * \param signature [out] Output buffer for the raw DAP signature bytes.
+ * \param signatureLength [in,out] Input: size of signature buffer. Output: generated signature length.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct
  */
 OPGP_ERROR_STATUS GP211_calculate_ecc_DAP(PBYTE loadFileDataBlockHash, DWORD loadFileDataBlockHashLength,
-					   PBYTE securityDomainAID, DWORD securityDomainAIDLength,
 					   OPGP_STRING PEMKeyFileName, char *passPhrase,
-					   GP211_DAP_BLOCK *loadFileDataBlockSignature)
+					   PBYTE signature, PDWORD signatureLength)
 {
 	OPGP_ERROR_STATUS status;
-	DWORD signatureLength = sizeof(loadFileDataBlockSignature->signature);
 	OPGP_LOG_START(_T("GP211_calculate_ecc_DAP"));
 
 	status = calculate_signature(loadFileDataBlockHash, loadFileDataBlockHashLength, PEMKeyFileName, passPhrase,
-		loadFileDataBlockSignature->signature, &signatureLength);
+		signature, signatureLength);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
-	loadFileDataBlockSignature->signatureLength = signatureLength;
-	memcpy(loadFileDataBlockSignature->securityDomainAID, securityDomainAID, securityDomainAIDLength);
-	loadFileDataBlockSignature->securityDomainAIDLength = (BYTE)securityDomainAIDLength;
 
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:

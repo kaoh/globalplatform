@@ -107,7 +107,7 @@ Load a CAP file and install/make selectable applet instances.
 Synopsis:
 ```
 gpshell3 install [--load-only|--install-only]
-                 [--dap <hex>|@<file>] [--load-token <hex>] [--install-token <hex>]
+                 [--dap <hex>|@<file>] [--dap-sd <AIDhex>] [--load-token <hex>] [--install-token <hex>]
                  [--hash <hex>] [--load-file <AIDhex>] [--applet <AIDhex>] [--module <AIDhex>]
                  [--params <hex>] [--v-data-limit <size>] [--nv-data-limit <size>]
                  [--priv <p1,p2,...>] <cap-file>
@@ -124,7 +124,8 @@ Options:
 - `--load-only`: Perform INSTALL [for load] + LOAD only, skip installation/make-selectable.
 - `--install-only`: Perform only INSTALL [for install] and make-selectable. Requires `--load-file`, `--module`, and `--applet`.
 - `--load-file <AID>`: AID of the load file (required for `--install-only`).
-- `--dap <hex>|@file`: DAP signature as hex or binary file (security domain AID is taken from `--sd`). If used, `--hash` must provide the precomputed load-file data block hash.
+- `--dap <hex>|@file`: DAP signature as hex or binary file. If used, `--hash` must provide the precomputed load-file data block hash.
+- `--dap-sd <AIDhex>`: Security Domain AID to embed into the `GP211_DAP_BLOCK` passed to `LOAD` (this SD verifies the DAP signature; defaults to `--sd`).
 - `--hash <hex>`: Precomputed load-file data block hash (hex) required when `--dap` is supplied.
 - `--load-token <hex>` / `--install-token <hex>`: Tokens for delegated management (optional).
 - Delegated management note: the selected Security Domain (`--sd`, the one used for SCP/authentication) is also used as the target Security Domain AID in INSTALL [for load]. In typical DM flows this means the delegated management SD is also the receiving/associated SD for the loaded package and installed applets.
@@ -507,9 +508,9 @@ Generate a DAP signature from a precomputed hash.
 
 Synopsis:
 ```
-gpshell3 sign-dap aes [--output <file>] <hash-hex> <sd-aidhex> <hexkey>
-gpshell3 sign-dap rsa [--output <file>] <hash-hex> <sd-aidhex> <pem>[:pass]
-gpshell3 sign-dap ecc [--output <file>] <hash-hex> <sd-aidhex> <pem>[:pass]
+gpshell3 sign-dap aes [--output <file>] <hash-hex> <hexkey>
+gpshell3 sign-dap rsa [--output <file>] <hash-hex> <pem>[:pass]
+gpshell3 sign-dap ecc [--output <file>] <hash-hex> <pem>[:pass]
 ```
 
 Writes the signature bytes to stdout unless `--output` is provided.
@@ -782,7 +783,7 @@ put-auth --enc 404142434445464748494a4b4c4d4e4f --mac 404142434445464748494a4b4c
 Compute CAP hash and sign DAP (AES):
 ```
 HASH=$(gpshell3 hash ./helloworld.cap | tr -d '\n')
-gpshell3 sign-dap aes --output dap.sig "$HASH" A000000151000000 00112233445566778899AABBCCDDEEFF
+gpshell3 sign-dap aes --output dap.sig "$HASH" 00112233445566778899AABBCCDDEEFF
 ```
 
 # EXIT CODES

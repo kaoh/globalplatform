@@ -1106,9 +1106,9 @@ OPGP_ERROR_STATUS GP211_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO 
 
 //! \brief GlobalPlatform2.1.1: Calculates a Load File Data Block Signature using AES or 3DES.
 OPGP_API
-OPGP_ERROR_STATUS GP211_calculate_DAP(BYTE loadFileDataBlockHash[64], BYTE hashLength, PBYTE securityDomainAID,
-		DWORD securityDomainAIDLength,
-		BYTE DAPCalculationKey[32], DWORD keyLength, GP211_DAP_BLOCK *loadFileDataBlockSignature, BYTE secureChannelProtocol);
+OPGP_ERROR_STATUS GP211_calculate_DAP(BYTE loadFileDataBlockHash[64], BYTE hashLength,
+		BYTE DAPCalculationKey[32], DWORD keyLength,
+		PBYTE signature, PDWORD signatureLength, BYTE secureChannelProtocol);
 
 //! \brief GlobalPlatform2.1.1: Calculates a Load File Data Block Signature using SHA-1 and PKCS#1 (RSA).
 OPGP_API
@@ -1119,16 +1119,14 @@ OPGP_ERROR_STATUS GP211_calculate_rsa_DAP(BYTE loadFileDataBlockHash[20], PBYTE 
 //! \brief GlobalPlatform2.1.1: Calculates a Load File Data Block Signature using SHA-256/SHA-512 and RSA-PSS (Scheme 2).
 OPGP_API
 OPGP_ERROR_STATUS GP211_calculate_rsa_schemeX_DAP(PBYTE loadFileDataBlockHash, DWORD loadFileDataBlockHashLength,
-				   PBYTE securityDomainAID, DWORD securityDomainAIDLength,
 				   OPGP_STRING PEMKeyFileName, char *passPhrase,
-				   GP211_DAP_BLOCK *loadFileDataBlockSignature);
+				   PBYTE signature, PDWORD signatureLength);
 
 //! \brief GlobalPlatform2.3.1: Calculates an ECC Load File Data Block Signature in plain format (TR-03111 r||s).
 OPGP_API
 OPGP_ERROR_STATUS GP211_calculate_ecc_DAP(PBYTE loadFileDataBlockHash, DWORD loadFileDataBlockHashLength,
-				   PBYTE securityDomainAID, DWORD securityDomainAIDLength,
 				   OPGP_STRING PEMKeyFileName, char *passPhrase,
-				   GP211_DAP_BLOCK *loadFileDataBlockSignature);
+				   PBYTE signature, PDWORD signatureLength);
 
 //! \brief GlobalPlatform2.3.1: Validates a Delete Receipt with symmetric (DES/AES) or asymmetric (RSA/ECC) receipt keys.
 OPGP_API
