@@ -829,6 +829,13 @@ static DWORD parse_receipt_length_ber(PBYTE buf, DWORD bufLength, PDWORD receipt
 		*receiptLength = buf[1];
 		return 2;
 	}
+	if (buf[0] == 0x82) {
+		if (bufLength < 3) {
+			return 0;
+		}
+		*receiptLength = (((DWORD)buf[1]) << 8) | buf[2];
+		return 3;
+	}
 	return 0;
 }
 
@@ -836,6 +843,7 @@ OPGP_NO_API
 DWORD fillReceipt(PBYTE buf, DWORD bufLength, GP211_RECEIPT_DATA *receiptData) {
 	DWORD offset = 0;
 	DWORD receiptLength = 0;
+	DWORD copyLength;
 	DWORD lengthFieldSize;
 
 	if (buf == NULL || receiptData == NULL) {
@@ -844,7 +852,7 @@ DWORD fillReceipt(PBYTE buf, DWORD bufLength, GP211_RECEIPT_DATA *receiptData) {
 	memset(receiptData, 0, sizeof(*receiptData));
 
 	lengthFieldSize = parse_receipt_length_ber(buf, bufLength, &receiptLength);
-	if (lengthFieldSize == 0 || receiptLength > sizeof(receiptData->receipt)) {
+	if (lengthFieldSize == 0) {
 		return 0;
 	}
 	offset += lengthFieldSize;
@@ -852,61 +860,76 @@ DWORD fillReceipt(PBYTE buf, DWORD bufLength, GP211_RECEIPT_DATA *receiptData) {
 		return 0;
 	}
 
-	receiptData->receiptLength = (BYTE)receiptLength;
-	if (receiptLength > 0) {
-		memcpy(receiptData->receipt, buf + offset, receiptLength);
-		offset += receiptLength;
+	copyLength = receiptLength;
+	if (copyLength > sizeof(receiptData->receipt)) {
+		copyLength = sizeof(receiptData->receipt);
 	}
+	receiptData->receiptLength = (BYTE)copyLength;
+	if (copyLength > 0) {
+		memcpy(receiptData->receipt, buf + offset, copyLength);
+	}
+	offset += receiptLength;
 
 	if (bufLength - offset < 1) {
 		return 0;
 	}
-	receiptData->confirmationCounterLength = buf[offset++];
-	if (receiptData->confirmationCounterLength == 0 ||
-		receiptData->confirmationCounterLength > sizeof(receiptData->confirmationCounter) ||
-		bufLength - offset < receiptData->confirmationCounterLength) {
+	copyLength = buf[offset++];
+	if (copyLength == 0 || bufLength - offset < copyLength) {
 		return 0;
+	}
+	receiptData->confirmationCounterLength = (BYTE)copyLength;
+	if (receiptData->confirmationCounterLength > sizeof(receiptData->confirmationCounter)) {
+		receiptData->confirmationCounterLength = sizeof(receiptData->confirmationCounter);
 	}
 	memcpy(receiptData->confirmationCounter, buf + offset, receiptData->confirmationCounterLength);
-	offset += receiptData->confirmationCounterLength;
+	offset += copyLength;
 
 	if (bufLength - offset < 1) {
 		return 0;
 	}
-	receiptData->cardUniqueDataLength = buf[offset++];
-	if (receiptData->cardUniqueDataLength > sizeof(receiptData->cardUniqueData) ||
-		bufLength - offset < receiptData->cardUniqueDataLength) {
+	copyLength = buf[offset++];
+	if (bufLength - offset < copyLength) {
 		return 0;
+	}
+	receiptData->cardUniqueDataLength = (BYTE)copyLength;
+	if (receiptData->cardUniqueDataLength > sizeof(receiptData->cardUniqueData)) {
+		receiptData->cardUniqueDataLength = sizeof(receiptData->cardUniqueData);
 	}
 	if (receiptData->cardUniqueDataLength > 0) {
 		memcpy(receiptData->cardUniqueData, buf + offset, receiptData->cardUniqueDataLength);
-		offset += receiptData->cardUniqueDataLength;
 	}
+	offset += copyLength;
 
 	if (bufLength > offset) {
 		receiptData->tokenIdentifierPresent = 1;
-		receiptData->tokenIdentifierLength = buf[offset++];
-		if (receiptData->tokenIdentifierLength > sizeof(receiptData->tokenIdentifier) ||
-			bufLength - offset < receiptData->tokenIdentifierLength) {
-			return 0;
+		copyLength = buf[offset++];
+		if (bufLength - offset < copyLength) {
+			return offset - 1;
+		}
+		receiptData->tokenIdentifierLength = (BYTE)copyLength;
+		if (receiptData->tokenIdentifierLength > sizeof(receiptData->tokenIdentifier)) {
+			receiptData->tokenIdentifierLength = sizeof(receiptData->tokenIdentifier);
 		}
 		if (receiptData->tokenIdentifierLength > 0) {
 			memcpy(receiptData->tokenIdentifier, buf + offset, receiptData->tokenIdentifierLength);
-			offset += receiptData->tokenIdentifierLength;
 		}
+		offset += copyLength;
 	}
 
 	if (bufLength > offset) {
 		receiptData->tokenDataDigestPresent = 1;
-		receiptData->tokenDataDigestLength = buf[offset++];
-		if (receiptData->tokenDataDigestLength > sizeof(receiptData->tokenDataDigest) ||
-			bufLength - offset < receiptData->tokenDataDigestLength) {
-			return 0;
+		copyLength = buf[offset++];
+		if (bufLength - offset < copyLength) {
+			return offset - 1;
+		}
+		receiptData->tokenDataDigestLength = (BYTE)copyLength;
+		if (receiptData->tokenDataDigestLength > sizeof(receiptData->tokenDataDigest)) {
+			receiptData->tokenDataDigestLength = sizeof(receiptData->tokenDataDigest);
 		}
 		if (receiptData->tokenDataDigestLength > 0) {
 			memcpy(receiptData->tokenDataDigest, buf + offset, receiptData->tokenDataDigestLength);
-			offset += receiptData->tokenDataDigestLength;
 		}
+		offset += copyLength;
 	}
 
 	return offset;
@@ -918,6 +941,9 @@ OPGP_ERROR_STATUS parse_receipt_from_response(PBYTE recvBuffer, DWORD recvBuffer
 	OPGP_ERROR_STATUS status;
 	DWORD consumed;
 	DWORD receiptPayloadLength;
+	DWORD outerPayloadLength = 0;
+	DWORD outerPayloadLengthFieldSize;
+	PBYTE receiptPayload;
 
 	if (receiptDataAvailable != NULL) {
 		*receiptDataAvailable = 0;
@@ -936,6 +962,22 @@ OPGP_ERROR_STATUS parse_receipt_from_response(PBYTE recvBuffer, DWORD recvBuffer
 		OPGP_ERROR_CREATE_NO_ERROR(status);
 		goto end;
 	}
+	receiptPayload = recvBuffer;
+	/*
+	 * Some cards prepend confirmation data with an outer BER length.
+	 * Example: 15 || 10 || <16-byte receipt> || 02 || <counter> || 00
+	 * where 0x15 is the outer confirmation-data length.
+	 */
+	outerPayloadLengthFieldSize = parse_receipt_length_ber(receiptPayload, receiptPayloadLength, &outerPayloadLength);
+	if (outerPayloadLengthFieldSize > 0 &&
+		outerPayloadLengthFieldSize + outerPayloadLength == receiptPayloadLength) {
+		receiptPayload += outerPayloadLengthFieldSize;
+		receiptPayloadLength = outerPayloadLength;
+		if (receiptPayloadLength == 0) {
+			OPGP_ERROR_CREATE_NO_ERROR(status);
+			goto end;
+		}
+	}
 	if (receiptData == NULL) {
 		if (receiptDataAvailable != NULL) {
 			*receiptDataAvailable = 1;
@@ -944,8 +986,8 @@ OPGP_ERROR_STATUS parse_receipt_from_response(PBYTE recvBuffer, DWORD recvBuffer
 		goto end;
 	}
 
-	consumed = fillReceipt(recvBuffer, receiptPayloadLength, receiptData);
-	if (consumed == 0 || consumed != receiptPayloadLength) {
+	consumed = fillReceipt(receiptPayload, receiptPayloadLength, receiptData);
+	if (consumed == 0) {
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 		goto end;
 	}
