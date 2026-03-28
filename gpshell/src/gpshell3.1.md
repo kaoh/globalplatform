@@ -276,7 +276,7 @@ Options:
 - `--type`: Receipt verification key type. Default: `aes`.
 - `--key <hex>`: Symmetric DES/AES receipt key (required for `--type des|aes`).
 - `--pem <file>[:pass]`: Public key PEM (required for `--type rsa|ecc`).
-- `<response-apdu-hex>`: Full response APDU hex including trailing `9000` (mandatory, last positional parameter).
+- `<response-apdu-hex>`: Response APDU hex with or without trailing `9000` (mandatory, last positional parameter).
 
 The command parses and prints Confirmation Data (counter, SD Unique Data, optional token fields) before signature/MAC verification.
 
@@ -296,7 +296,7 @@ Options:
 - `--type`: Receipt verification key type. Default: `aes`.
 - `--key <hex>`: Symmetric DES/AES receipt key (required for `--type des|aes`).
 - `--pem <file>[:pass]`: Public key PEM (required for `--type rsa|ecc`).
-- `<response-apdu-hex>`: Full response APDU hex including trailing `9000` (mandatory, last positional parameter).
+- `<response-apdu-hex>`: Response APDU hex with or without trailing `9000` (mandatory, last positional parameter).
 
 ## verify-install-receipt
 
@@ -304,17 +304,17 @@ Verify an Install receipt from a response APDU.
 
 Synopsis:
 ```
-gpshell3 verify-install-receipt [--type <des|aes|rsa|ecc>] [--key <hex>|--pem <file>[:pass]] --load-file <AIDhex> --sd <AIDhex> <response-apdu-hex>
+gpshell3 verify-install-receipt [--type <des|aes|rsa|ecc>] [--key <hex>|--pem <file>[:pass]] --load-file <AIDhex> --aid <AIDhex> <response-apdu-hex>
 ```
 
 Options:
 
 - `--load-file <AIDhex>`: Executable Load File AID (mandatory).
-- `--sd <AIDhex>`: Second receipt AID parameter (mandatory; for GP Install receipt validation this corresponds to the instance AID value).
+- `--aid <AIDhex>`: Application instance AID (mandatory).
 - `--type`: Receipt verification key type. Default: `aes`.
 - `--key <hex>`: Symmetric DES/AES receipt key (required for `--type des|aes`).
 - `--pem <file>[:pass]`: Public key PEM (required for `--type rsa|ecc`).
-- `<response-apdu-hex>`: Full response APDU hex including trailing `9000` (mandatory, last positional parameter).
+- `<response-apdu-hex>`: Response APDU hex with or without trailing `9000` (mandatory, last positional parameter).
 
 ## verify-move-receipt
 
@@ -333,7 +333,7 @@ Options:
 - `--type`: Receipt verification key type. Default: `aes`.
 - `--key <hex>`: Symmetric DES/AES receipt key (required for `--type des|aes`).
 - `--pem <file>[:pass]`: Public key PEM (required for `--type rsa|ecc`).
-- `<response-apdu-hex>`: Full response APDU hex including trailing `9000` (mandatory, last positional parameter).
+- `<response-apdu-hex>`: Response APDU hex with or without trailing `9000` (mandatory, last positional parameter).
 
 ## verify-registry-update-receipt
 
@@ -353,7 +353,7 @@ Options:
 - `--type`: Receipt verification key type. Default: `aes`.
 - `--key <hex>`: Symmetric DES/AES receipt key (required for `--type des|aes`).
 - `--pem <file>[:pass]`: Public key PEM (required for `--type rsa|ecc`).
-- `<response-apdu-hex>`: Full response APDU hex including trailing `9000` (mandatory, last positional parameter).
+- `<response-apdu-hex>`: Response APDU hex with or without trailing `9000` (mandatory, last positional parameter).
 
 ## status
 
