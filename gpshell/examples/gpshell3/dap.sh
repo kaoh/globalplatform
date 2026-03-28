@@ -44,14 +44,15 @@ echo "Running DAP ECC flow with ${GPSHELL3_BIN}"
 
 # test_dap_calculate_helloworld_ecc_dap
 HASH="$("$GPSHELL3_BIN" hash --sha256 "$CAP_FILE" | tr -d '\n')"
-DAP_SIG="$("$GPSHELL3_BIN" sign-dap ecc "$HASH" "$SD_AID" "$ECC_PRIVATE_KEY" | tr -d '\n')"
+DAP_SIG="$("$GPSHELL3_BIN" sign-dap ecc "$HASH" "$ECC_PRIVATE_KEY" | tr -d '\n')"
 
-# test_dm_install_helloworld_with_dap
+# test_install_helloworld_with_dap
 "$GPSHELL3_BIN" delete "$APPLET_AID" || true
 "$GPSHELL3_BIN" delete "$LOAD_FILE_AID" || true
 "$GPSHELL3_BIN" --sd "$SD_AID" --kv 1 --key "$SD_KEY" install \
     --hash "$HASH" \
     --dap "$DAP_SIG" \
+    --dap-sd "$SD_AID" \
     "$CAP_FILE"
 
 # test_dap_delete_key
