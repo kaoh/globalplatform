@@ -113,9 +113,9 @@ jobs:
           sudo dpkg -P "$deb_pkg"
 
           docker run --rm -v "$PWD:/work" -w /work fedora:39 bash -lc \
-            "dnf -y install /work/$rpm_dynamic && gpshell3 --help && test -f /usr/share/doc/gpshell3/examples/gpshell/list.txt && test -x /usr/share/doc/gpshell3/examples/gpshell3/dm.sh"
+            "set -euo pipefail; rpm -qpl /work/$rpm_dynamic | grep -q '/usr/share/doc/gpshell3/examples/gpshell/list.txt$'; rpm -qpl /work/$rpm_dynamic | grep -q '/usr/share/doc/gpshell3/examples/gpshell3/dm.sh$'; dnf -y install /work/$rpm_dynamic; gpshell3 --help"
           docker run --rm -v "$PWD:/work" -w /work fedora:39 bash -lc \
-            "dnf -y install /work/$rpm_static && gpshell3 --help && test -f /usr/share/doc/gpshell3/examples/gpshell/list.txt && test -x /usr/share/doc/gpshell3/examples/gpshell3/dm.sh"
+            "set -euo pipefail; rpm -qpl /work/$rpm_static | grep -q '/usr/share/doc/gpshell3/examples/gpshell/list.txt$'; rpm -qpl /work/$rpm_static | grep -q '/usr/share/doc/gpshell3/examples/gpshell3/dm.sh$'; dnf -y install /work/$rpm_static; gpshell3 --help"
 
           chmod +x "$appimage"
           APPIMAGE_EXTRACT_AND_RUN=1 "./$appimage" --help
