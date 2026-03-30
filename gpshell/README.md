@@ -30,9 +30,16 @@ Existing solution like [pcsc-relay](https://frankmorgner.github.io/vsmartcard/pc
 
 ## GPShell 3+
 
-A quick demo video showcasing the most useful features in action:
+Several quick demo videos showcasing the most useful features in action:
 
 [![Demo Video](./demo/screencast.png)](https://youtu.be/MtZoTkrB41I)
+
+Other advanced features:
+
+* [Delegated Management and Receipts with ECC](https://youtu.be/jnyjurH8yyE)
+* [Security Domain Management](https://www.youtube.com/watch?v=SSFotz3p30k)
+* [DAP Functionality](https://youtu.be/WhlAlZTJ_5c)
+* [Card Data](https://youtu.be/IcLAxSBznfM)
 
 ### Command Line Documentation
 
