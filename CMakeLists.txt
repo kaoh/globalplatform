@@ -53,6 +53,30 @@ if(TOOLS)
   endif()
 endif()
 
+if(APPLE)
+  install(CODE [[
+    file(GLOB_RECURSE _gp_bin_targets LIST_DIRECTORIES FALSE "${CMAKE_INSTALL_PREFIX}/bin/*")
+    file(GLOB_RECURSE _gp_lib_targets LIST_DIRECTORIES FALSE
+      "${CMAKE_INSTALL_PREFIX}/lib/*.dylib"
+      "${CMAKE_INSTALL_PREFIX}/lib/*.so"
+      "${CMAKE_INSTALL_PREFIX}/lib/*.bundle")
+    set(_gp_codesign_targets ${_gp_bin_targets} ${_gp_lib_targets})
+    list(REMOVE_DUPLICATES _gp_codesign_targets)
+
+    foreach(_gp_target IN LISTS _gp_codesign_targets)
+      execute_process(
+        COMMAND /usr/bin/codesign --force --sign - "${_gp_target}"
+        RESULT_VARIABLE _gp_codesign_result
+        OUTPUT_QUIET
+        ERROR_VARIABLE _gp_codesign_error)
+      if(NOT _gp_codesign_result EQUAL 0)
+        string(STRIP "${_gp_codesign_error}" _gp_codesign_error)
+        message(FATAL_ERROR "Failed to ad-hoc sign ${_gp_target}: ${_gp_codesign_error}")
+      endif()
+    endforeach()
+  ]])
+endif()
+
 IF(TESTING)
     ENABLE_TESTING()
     # Convenience targets to split unit vs integration runs.

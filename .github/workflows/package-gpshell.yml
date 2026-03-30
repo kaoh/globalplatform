@@ -545,6 +545,10 @@ jobs:
               echo "gpshell3 not found in $dmg"
               exit 1
             fi
+            find "$mnt" -type f \( -path "*/bin/*" -o -name "*.dylib" -o -name "*.so" -o -name "*.bundle" \) -print0 |
+              while IFS= read -r -d '' signed; do
+                codesign --verify --strict --verbose=2 "$signed"
+              done
             "$exe" --help
             hdiutil detach "$mnt" >/dev/null
             rm -rf "$mnt"
@@ -577,6 +581,7 @@ jobs:
           mkdir -p release-assets
           cp -v dist/gpshell-linux/build-static/*.deb release-assets/
           cp -v dist/gpshell-linux/build-static/*.rpm release-assets/
+          cp -v dist/gpshell-linux/gpshell3-*.AppImage release-assets/
           cp -v dist/gpshell-windows/build-static/*.msi release-assets/
           cp -v dist/gpshell-windows/build-static/*.msix release-assets/
           cp -v dist/gpshell-windows/build-static/*-static.zip release-assets/

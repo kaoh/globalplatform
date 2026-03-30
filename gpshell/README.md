@@ -15,9 +15,13 @@ __!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!__
 
 # Pre-build Packages
 
-There are Homebrew packages for [Linux and macOS](https://github.com/kaoh/homebrew-globalplatform)
+Prebuild packages for Windows are provided in the [release page](https://github.com/kaoh/globalplatform/releases) as MSI, MSIX and ZIP.
 
-Windows binaries can be downloaded from the [GitHub release page](https://github.com/kaoh/globalplatform/releases) or from [SourceForge](https://sourceforge.net/projects/globalplatform/files/GPShell/).
+Prebuild packages for Linux are provided in the [release page](https://github.com/kaoh/globalplatform/releases) as DEB, RPM and AppImage.
+
+Prebuild packages for macOS are provided in the [release page](https://github.com/kaoh/globalplatform/releases) as DMG.
+
+There are Homebrew packages for [Linux and macOS](https://github.com/kaoh/homebrew-globalplatform).
 
 # Execution
 
