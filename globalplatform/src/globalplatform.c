@@ -52,8 +52,6 @@
 #endif
 #include <errno.h>
 #include "globalplatform/debug.h"
-#include "unzip/unzip.h"
-#include "unzip/zip.h"
 #include "util.h"
 #include "crypto.h"
 #include "loadfile.h"
