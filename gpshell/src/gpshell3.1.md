@@ -80,6 +80,7 @@ List Issuer Security Domains, Security Domains, Applications, Load Files and Exe
 
 - AIDs and life cycle states;
 - associated Security Domain AIDs;
+- a virtual `Unassigned` group for entries that are not linked to any Security Domain;
 - privileges in short-name form like `priv=[sd,cm-lock,...]`.
 
 Example:

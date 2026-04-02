@@ -156,6 +156,7 @@ static void print_usage(const char *prog) {
         "Commands:\n"
         "  list-apps\n"
         "      List security domains, applications, load files and load-file modules.\n"
+        "      Entries without a linked security domain are listed under SD Unassigned.\n"
         "      Privileges are printed in short-name form like: priv=[sd,cm-lock,...]\n"
         "  list-keys\n"
         "      List key information grouped by key set version (kv).\n"
@@ -1533,6 +1534,20 @@ static int aid_equal(const OPGP_AID *a, const OPGP_AID *b) {
     return memcmp(a->AID, b->AID, a->AIDLength) == 0;
 }
 
+static int aid_is_present(const OPGP_AID *a) {
+    return a && a->AIDLength > 0;
+}
+
+static void append_unique_aid(OPGP_AID *aids, DWORD *aid_count, DWORD aid_capacity, const OPGP_AID *aid) {
+    if (!aid_is_present(aid) || !aids || !aid_count) return;
+    for (DWORD i = 0; i < *aid_count; ++i) {
+        if (aid_equal(&aids[i], aid)) return;
+    }
+    if (*aid_count < aid_capacity) {
+        aids[(*aid_count)++] = *aid;
+    }
+}
+
 static void aid_to_hex_str(const OPGP_AID *a, char *out, size_t outlen) {
     if (!out || outlen == 0) return;
     size_t need = (size_t)a->AIDLength * 2 + 1;
@@ -1570,64 +1585,74 @@ static int cmd_list_apps(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECUR
     s = GP211_get_status(ctx, info, sec, GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES, GP211_STATUS_FORMAT_NEW, NULL, mods, &mods_len);
     if (!status_ok(s, true)) { fprintf(stderr, "GET STATUS (load files and executable modules) failed\n"); return -1; }
 
-    // Collect distinct Security Domains (by associatedSecurityDomainAID) from all results.
+    // Collect distinct Security Domains from issuer SD entries and linked content.
     OPGP_AID sds[256];
     DWORD sd_count = 0;
+    bool has_unassigned = false;
 
-    #define ADD_SD_IF_PRESENT(_aid) do { \
-        if ((_aid).AIDLength) { \
-            int found = 0; \
-            for (DWORD _k = 0; _k < sd_count; ++_k) { \
-                if (aid_equal(&sds[_k], &(_aid))) { found = 1; break; } \
-            } \
-            if (!found && sd_count < (DWORD)(sizeof(sds)/sizeof(sds[0]))) { \
-                sds[sd_count++] = (_aid); \
-            } \
-        } \
-    } while(0)
-
-    for (DWORD i = 0; i < apps_len; ++i) ADD_SD_IF_PRESENT(apps[i].associatedSecurityDomainAID);
-    for (DWORD i = 0; i < isds_len; ++i) ADD_SD_IF_PRESENT(isds[i].associatedSecurityDomainAID);
-    for (DWORD i = 0; i < lfs_len;  ++i) ADD_SD_IF_PRESENT(lfs[i].associatedSecurityDomainAID);
-    for (DWORD i = 0; i < mods_len; ++i) ADD_SD_IF_PRESENT(mods[i].associatedSecurityDomainAID);
-
-    #undef ADD_SD_IF_PRESENT
+    for (DWORD i = 0; i < apps_len; ++i) {
+        append_unique_aid(sds, &sd_count, ARRAY_SIZE(sds), &apps[i].associatedSecurityDomainAID);
+        if (!aid_is_present(&apps[i].associatedSecurityDomainAID)) has_unassigned = true;
+    }
+    for (DWORD i = 0; i < isds_len; ++i) {
+        append_unique_aid(sds, &sd_count, ARRAY_SIZE(sds), &isds[i].aid);
+    }
+    for (DWORD i = 0; i < lfs_len; ++i) {
+        append_unique_aid(sds, &sd_count, ARRAY_SIZE(sds), &lfs[i].associatedSecurityDomainAID);
+        if (!aid_is_present(&lfs[i].associatedSecurityDomainAID)) has_unassigned = true;
+    }
+    for (DWORD i = 0; i < mods_len; ++i) {
+        append_unique_aid(sds, &sd_count, ARRAY_SIZE(sds), &mods[i].associatedSecurityDomainAID);
+        if (!aid_is_present(&mods[i].associatedSecurityDomainAID)) has_unassigned = true;
+    }
 
     printf("== security domains ==\n");
-    if (sd_count == 0) {
+    if (sd_count == 0 && !has_unassigned) {
         printf("(none)\n");
         return 0;
     }
 
-    for (DWORD sd_i = 0; sd_i < sd_count; ++sd_i) {
-        char sd_hex[64];
-        aid_to_hex_str(&sds[sd_i], sd_hex, sizeof(sd_hex));
+    for (DWORD sd_i = 0; sd_i < sd_count + (has_unassigned ? 1U : 0U); ++sd_i) {
+        const bool is_unassigned_group = (sd_i == sd_count);
+        const OPGP_AID *group_sd = is_unassigned_group ? NULL : &sds[sd_i];
 
         // Print SD header line; prefer info from ISD listing when matching.
         const GP211_APPLICATION_DATA *sd_info = NULL;
-        for (DWORD i = 0; i < isds_len; ++i) {
-            if (aid_equal(&isds[i].aid, &sds[sd_i]) || aid_equal(&isds[i].associatedSecurityDomainAID, &sds[sd_i])) {
-                sd_info = &isds[i];
-                break;
-            }
-        }
+        if (!is_unassigned_group) {
+            char sd_hex[64];
+            aid_to_hex_str(group_sd, sd_hex, sizeof(sd_hex));
 
-        if (sd_info) {
-            printf("SD %s lc=%s", sd_hex, lc_to_string(sd_info->lifeCycleState, GP211_STATUS_ISSUER_SECURITY_DOMAIN));
-            if (sd_info->privileges) {
-                char pbuf[512];
-                privileges_to_string(sd_info->privileges, pbuf, sizeof(pbuf));
-                printf(" priv=[%s]", pbuf);
+            for (DWORD i = 0; i < isds_len; ++i) {
+                if (aid_equal(&isds[i].aid, group_sd) ||
+                    aid_equal(&isds[i].associatedSecurityDomainAID, group_sd)) {
+                    sd_info = &isds[i];
+                    break;
+                }
             }
-            printf("\n");
+
+            if (sd_info) {
+                printf("SD %s lc=%s", sd_hex, lc_to_string(sd_info->lifeCycleState, GP211_STATUS_ISSUER_SECURITY_DOMAIN));
+                if (sd_info->privileges) {
+                    char pbuf[512];
+                    privileges_to_string(sd_info->privileges, pbuf, sizeof(pbuf));
+                    printf(" priv=[%s]", pbuf);
+                }
+                printf("\n");
+            } else {
+                printf("SD %s\n", sd_hex);
+            }
         } else {
-            printf("SD %s\n", sd_hex);
+            printf("SD Unassigned\n");
         }
 
         // Applications under this SD
         int any_apps = 0;
         for (DWORD i = 0; i < apps_len; ++i) {
-            if (!aid_equal(&apps[i].associatedSecurityDomainAID, &sds[sd_i])) continue;
+            if (is_unassigned_group) {
+                if (aid_is_present(&apps[i].associatedSecurityDomainAID)) continue;
+            } else if (!aid_equal(&apps[i].associatedSecurityDomainAID, group_sd)) {
+                continue;
+            }
             if (!any_apps) { printf("  Applications:\n"); any_apps = 1; }
             printf("    ");
             print_aid(&apps[i].aid);
@@ -1646,7 +1671,11 @@ static int cmd_list_apps(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECUR
         // Load files under this SD (with modules)
         int any_lf = 0;
         for (DWORD i = 0; i < lfs_len; ++i) {
-            if (!aid_equal(&lfs[i].associatedSecurityDomainAID, &sds[sd_i])) continue;
+            if (is_unassigned_group) {
+                if (aid_is_present(&lfs[i].associatedSecurityDomainAID)) continue;
+            } else if (!aid_equal(&lfs[i].associatedSecurityDomainAID, group_sd)) {
+                continue;
+            }
             if (!any_lf) { printf("  Load files:\n"); any_lf = 1; }
 
             printf("    ");
