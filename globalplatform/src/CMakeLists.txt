@@ -5,7 +5,7 @@ INCLUDE(FindPCSC)
 INCLUDE(FindOpenSSL)
 INCLUDE(FindZLIB)
 
-SET(SOURCES connection.c stringify.c crypto.c loadfile.c util.c debug.c init.c globalplatform.c)
+SET(SOURCES connection.c stringify.c crypto.c loadfile.c util.c debug.c init.c globalplatform.c scp.c)
 
 
 INCLUDE(CheckCCompilerFlag)

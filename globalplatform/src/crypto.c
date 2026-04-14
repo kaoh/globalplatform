@@ -34,6 +34,7 @@
  */
 
 #include "crypto.h"
+#include "scp.h"
 #include "globalplatform/connection.h"
 #include "globalplatform/stringify.h"
 #include "globalplatform/errorcodes.h"
@@ -2172,14 +2173,12 @@ OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE
 	PBYTE encryption = NULL;
 	DWORD encryptionLength = 0;
 	BYTE caseAPDU;
-	BYTE C_MAC_ICV[8];
-	DWORD C_MAC_ICVLength = 8;
-	BYTE ENC_ICV[32] = {0};
 	// padding is only needed for encryption
 	DWORD paddingSize = 0;
 	DWORD blockSize = 8;
 	BOOL isExtended = 0;
 	DWORD headerLength = 5;
+	SCP_WRAP_COMMAND_CONTEXT wrapContext;
 
 	OPGP_LOG_START(_T("wrap_command"));
 	if (*wrappedApduCommandLength < apduCommandLength)
@@ -2254,212 +2253,16 @@ OPGP_ERROR_STATUS wrap_command(PBYTE apduCommand, DWORD apduCommandLength, PBYTE
 		goto end;
 	}
 
-	// C_MAC on modified APDU
-	// Philip Wendland: Update the APDU header first, calculate MAC then.
-	if ((secInfo->secureChannelProtocol == GP211_SCP02 &&
-			(secInfo->secureChannelProtocolImpl & 0x02) == 0)
-		|| secInfo->secureChannelProtocol == GP211_SCP03
-		|| secInfo->secureChannelProtocol == GP211_SCP01) {
-		switch (caseAPDU) {
-			case 1:
-			case 2: {
-				if (isExtended) {
-					wrappedApduCommand[4] = 0;
-					wrappedApduCommand[5] = 0;
-					wrappedApduCommand[6] = 0x08;
-				} else {
-					wrappedApduCommand[4] = 0x08;
-				}
-				break;
-			}
-			case 3:
-			case 4: {
-				if (isExtended) {
-					DWORD newLc = ((wrappedApduCommand[5] << 8) | wrappedApduCommand[6]) + 8;
-					wrappedApduCommand[5] = (BYTE)(newLc >> 8);
-					wrappedApduCommand[6] = (BYTE)(newLc & 0xFF);
-				} else {
-					wrappedApduCommand[4] += 8;
-				}
-				break;
-			}
-		}
-		// CLA - indicate security level 1 or 3
-		wrappedApduCommand[0] = apduCommand[0] | 0x04;
-	}
+	wrapContext.caseAPDU = caseAPDU;
+	wrapContext.lc = lc;
+	wrapContext.wrappedLength = wrappedLength;
+	wrapContext.paddingSize = paddingSize;
+	wrapContext.headerLength = headerLength;
+	wrapContext.isExtended = isExtended;
 
-	if (secInfo->secureChannelProtocol == GP211_SCP02) {
-		// ICV set to MAC over AID
-		if ((secInfo->secureChannelProtocolImpl & 0x08) != 0) {
-			memcpy(C_MAC_ICV, secInfo->lastC_MAC, 8);
-		}
-		// ICV encryption
-		if ((secInfo->secureChannelProtocolImpl & 0x10) != 0) {
-			 status = calculate_enc_ecb_single_des(secInfo->C_MACSessionKey,
-				 secInfo->lastC_MAC, 8, C_MAC_ICV, &C_MAC_ICVLength);
-			if (OPGP_ERROR_CHECK(status)) {
-				goto end;
-			}
-		}
-	// Philip Wendland: added SCP01 check as this would apply to SCP03 otherwise.
-	} else if (secInfo->secureChannelProtocol == GP211_SCP01){
-		if (secInfo->secureChannelProtocolImpl == GP211_SCP01_IMPL_i15) {
-			status = calculate_enc_ecb_two_key_triple_des(secInfo->C_MACSessionKey,
-				secInfo->lastC_MAC, 8, C_MAC_ICV, &C_MAC_ICVLength);
-			if (OPGP_ERROR_CHECK(status)) {
-				goto end;
-			}
-		}
-		else {
-			memcpy(C_MAC_ICV, secInfo->lastC_MAC, 8);
-		}
-	}
-	// MAC calculation
-	if (secInfo->secureChannelProtocol == GP211_SCP02) {
-		status = calculate_MAC_des_3des(secInfo->C_MACSessionKey, wrappedApduCommand, wrappedLength-paddingSize-8,
-			C_MAC_ICV, mac);
-		if (OPGP_ERROR_CHECK(status)) {
-			goto end;
-		}
-	}
-	// Philip Wendland: Added SCP01 check as this would apply to SCP03 otherwise.
-	else if (secInfo->secureChannelProtocol == GP211_SCP01) {
-		status = calculate_MAC(secInfo->C_MACSessionKey, wrappedApduCommand, wrappedLength-paddingSize-8,
-			C_MAC_ICV, mac);
-		if (OPGP_ERROR_CHECK(status)) {
-			goto end;
-		}
-	} else if (secInfo->secureChannelProtocol == GP211_SCP03) {
-		// Philip Wendland: Added SCP03 C-MAC calculation.
-
-		// SCP03 with encryption encrypts FIRST, calculates MAC AFTERWARDS
-		if (secInfo->securityLevel == GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC
-				|| secInfo->securityLevel == GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC
-				|| secInfo->securityLevel == GP211_SCP03_SECURITY_LEVEL_C_DEC_R_ENC_C_MAC_R_MAC) {
-			if (caseAPDU != 1 && caseAPDU != 2) {
-				status = calculate_enc_icv_SCP03(secInfo->encryptionSessionKey, secInfo->keyLength,
-						secInfo->sessionEncryptionCounter, ENC_ICV, 0);
-				if (OPGP_ERROR_CHECK(status)) {
-					goto end;
-				}
-				status = calculate_enc_cbc_SCP03(secInfo->encryptionSessionKey, secInfo->keyLength,
-						wrappedApduCommand + headerLength, lc, ENC_ICV, encryption, &encryptionLength);
-				if (OPGP_ERROR_CHECK(status)) {
-					goto end;
-				}
-				memcpy(wrappedApduCommand + headerLength, encryption, encryptionLength);
-				if (isExtended) {
-					DWORD newLc = ((wrappedApduCommand[5] << 8) | wrappedApduCommand[6]) + paddingSize;
-					wrappedApduCommand[5] = (BYTE)(newLc >> 8);
-					wrappedApduCommand[6] = (BYTE)(newLc & 0xFF);
-				} else {
-					wrappedApduCommand[4] += (BYTE)paddingSize;
-				}
-			}
-			secInfo->sessionEncryptionCounter++;
-		}
-		status = calculate_CMAC_aes(secInfo->C_MACSessionKey, secInfo->keyLength, wrappedApduCommand, wrappedLength-8, secInfo->lastC_MAC, mac);
-		if (OPGP_ERROR_CHECK(status)) {
-			goto end;
-		}
-	}
-	/* C_MAC on unmodified APDU */
-	if (secInfo->secureChannelProtocol == GP211_SCP02 &&
-			(secInfo->secureChannelProtocolImpl & 0x02) != 0) {
-		switch (caseAPDU) {
-			case 1:
-			case 2: {
-				if (isExtended) {
-					wrappedApduCommand[4] = 0;
-					wrappedApduCommand[5] = 0;
-					wrappedApduCommand[6] = 0x08;
-				} else {
-					wrappedApduCommand[4] = 0x08;
-				}
-				break;
-			}
-			case 3:
-			case 4: {
-				if (isExtended) {
-					DWORD newLc = ((wrappedApduCommand[5] << 8) | wrappedApduCommand[6]) + 8;
-					wrappedApduCommand[5] = (BYTE)(newLc >> 8);
-					wrappedApduCommand[6] = (BYTE)(newLc & 0xFF);
-				} else {
-					wrappedApduCommand[4] += 8;
-				}
-				break;
-			}
-		} // switch (caseAPDU)
-		wrappedApduCommand[0] = apduCommand[0] | 0x04;
-	}
-	if (secInfo->secureChannelProtocol != GP211_SCP03) {
-		OPGP_LOG_HEX(_T("wrap_command: ICV for MAC: "), C_MAC_ICV, 8);
-		OPGP_LOG_HEX(_T("wrap_command: Generated MAC: "), mac, 8);
-	} else {
-		OPGP_LOG_HEX(_T("wrap_command: ICV for MAC: "), secInfo->lastC_MAC, 16);
-		OPGP_LOG_HEX(_T("wrap_command: Generated MAC: "), mac, 16);
-	}
-
-	// Philip Wendland: added SCP03 case
-	if (secInfo->secureChannelProtocol != GP211_SCP03) {
-		memcpy(secInfo->lastC_MAC, mac, 8);
-	} else {
-		memcpy(secInfo->lastC_MAC, mac, 16);
-	}
-	memcpy(wrappedApduCommand+wrappedLength-8, mac, 8);
-
-	// Philip Wendland: if we have to encrypt for SCP01 and SCP02:
-	if (secInfo->secureChannelProtocol != GP211_SCP03
-		&& (
-			(secInfo->secureChannelProtocol == GP211_SCP01 && secInfo->securityLevel == GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC)
-			|| (secInfo->secureChannelProtocol == GP211_SCP02 &&
-					(secInfo->securityLevel == GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC
-					|| secInfo->securityLevel == GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC))
-			)
-			// SCP01 does not encrypt if no data is contained
-			&& !(secInfo->secureChannelProtocol == GP211_SCP01 && lc == 0)) {
-		if (secInfo->secureChannelProtocol == GP211_SCP02) {
-			status = calculate_enc_cbc_SCP02(secInfo->encryptionSessionKey,
-				wrappedApduCommand + headerLength, lc, encryption, &encryptionLength);
-			if (OPGP_ERROR_CHECK(status)) {
-				goto end;
-			}
-		}
-		else {
-			// SCP01 prepends a length byte
-			DWORD wrappedLc;
-			if (isExtended) {
-				wrappedLc = (wrappedApduCommand[5] << 8) | wrappedApduCommand[6];
-				// SCP01 with extended Lc is theoretically possible but unlikely.
-				// For now assume short Lc for SCP01 as per spec usually.
-				wrappedApduCommand[6] = (BYTE)lc;
-				status = calculate_enc_cbc(secInfo->encryptionSessionKey,
-					wrappedApduCommand + 6, lc + 1, encryption, &encryptionLength);
-			} else {
-				wrappedLc = wrappedApduCommand[4];
-				wrappedApduCommand[4] = (BYTE)lc;
-				status = calculate_enc_cbc(secInfo->encryptionSessionKey,
-					wrappedApduCommand + 4, lc + 1, encryption, &encryptionLength);
-			}
-			if (OPGP_ERROR_CHECK(status)) {
-				goto end;
-			}
-			if (isExtended) {
-				wrappedApduCommand[5] = (BYTE)(wrappedLc >> 8);
-				wrappedApduCommand[6] = (BYTE)(wrappedLc & 0xFF);
-			} else {
-				wrappedApduCommand[4] = (BYTE)wrappedLc;
-			}
-		}
-		if (isExtended) {
-			DWORD newLc = ((wrappedApduCommand[5] << 8) | wrappedApduCommand[6]) + paddingSize;
-			wrappedApduCommand[5] = (BYTE)(newLc >> 8);
-			wrappedApduCommand[6] = (BYTE)(newLc & 0xFF);
-		} else {
-			wrappedApduCommand[4] += (BYTE)paddingSize;
-		}
-		memcpy(wrappedApduCommand + headerLength, encryption, encryptionLength);
-		memcpy(wrappedApduCommand + encryptionLength + headerLength, mac, 8);
+	status = scp_wrap_command_by_protocol(secInfo, apduCommand, wrappedApduCommand, &wrapContext, encryption, &encryptionLength, mac);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
 	}
 
 	// Set Le
@@ -3636,4 +3439,3 @@ end:
 	OPGP_LOG_END(_T("get_random"), status);
 	return status;
 }
-

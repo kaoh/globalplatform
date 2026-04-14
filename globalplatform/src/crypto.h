@@ -110,6 +110,25 @@ OPGP_ERROR_STATUS calculate_MAC(BYTE sessionKey[16], BYTE *message, DWORD messag
 						  BYTE icv[8], BYTE mac[8]);
 
 OPGP_NO_API
+OPGP_ERROR_STATUS calculate_enc_cbc(BYTE key[16], BYTE *message, DWORD messageLength,
+						  BYTE *encryption, DWORD *encryptionLength);
+
+OPGP_NO_API
+OPGP_ERROR_STATUS calculate_enc_cbc_SCP02(BYTE key[16], BYTE *message, DWORD messageLength,
+						  BYTE *encryption, DWORD *encryptionLength);
+
+OPGP_NO_API
+OPGP_ERROR_STATUS calculate_enc_cbc_SCP03(BYTE key[32], DWORD keyLength, BYTE *message, DWORD messageLength,
+						  PBYTE icv, PBYTE encryption, PDWORD encryptionLength);
+
+OPGP_NO_API
+OPGP_ERROR_STATUS calculate_enc_icv_SCP03(PBYTE key, DWORD keyLength, LONG sessionEncryptionCounter, PBYTE icv, BOOL forResponse);
+
+OPGP_NO_API
+OPGP_ERROR_STATUS calculate_enc_ecb_single_des(BYTE key[8], BYTE *message, DWORD messageLength,
+						  BYTE *encryption, DWORD *encryptionLength);
+
+OPGP_NO_API
 OPGP_ERROR_STATUS calculate_card_cryptogram_SCP01(BYTE S_ENCSessionKey[16],
 											BYTE cardChallenge[8],
 											BYTE hostChallenge[8],
