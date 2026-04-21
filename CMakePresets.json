@@ -1,0 +1,26 @@
+{
+    "version": 8,
+    "configurePresets": [
+        {
+            "name": "with-tests",
+            "displayName": "With tests",
+            "description": "Sets Ninja generator, build and install directory",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "TESTING": "ON",
+                "TESTING2": {
+                    "type": "BOOL",
+                    "value": "ON"
+                },
+                "INTEGRATION_TESTING": {
+                    "type": "BOOL",
+                    "value": "ON"
+                },
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}"
+            }
+        }
+
+    ]
+}
