@@ -138,12 +138,12 @@ jobs:
       - name: Download OpenSSL
         run: |
           $client = new-object System.Net.WebClient
-          $client.DownloadFile("https://slproweb.com/download/Win32OpenSSL-3_6_1.msi","C:\Temp\Win32OpenSSL-3_6_1.msi")
+          $client.DownloadFile("https://slproweb.com/download/Win32OpenSSL-3_6_2.msi","C:\Temp\Win32OpenSSL-3_6_2.msi")
       - name: Install dependencies
         shell: cmd
         run: |
           choco install -y doxygen.install graphviz wixtoolset ninja
-          C:\Temp\Win32OpenSSL-3_6_1.msi /quiet
+          C:\Temp\Win32OpenSSL-3_6_2.msi /quiet
           copy "C:\Program Files (x86)\OpenSSL-Win32\lib\VC\x86\MD\*" "C:\Program Files (x86)\OpenSSL-Win32\lib\VC"
       - name: Build dynamic packages
         shell: cmd
