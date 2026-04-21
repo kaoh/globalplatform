@@ -248,7 +248,10 @@ IF(TESTING)
     add_custom_command(TARGET cryptoTest POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${CMAKE_CURRENT_SOURCE_DIR}/rsa_pub_key_test.pem
+        ${CMAKE_CURRENT_SOURCE_DIR}/rsa_public_key.pem
         ${CMAKE_CURRENT_SOURCE_DIR}/rsa_private_key.pem
+        ${CMAKE_CURRENT_SOURCE_DIR}/ecc_public_key_test.pem
+        ${CMAKE_CURRENT_SOURCE_DIR}/ecc_private_key_test.pem
         $<TARGET_FILE_DIR:cryptoTest>)
     
     add_cmocka_test(statusTest
