@@ -197,24 +197,38 @@ end:
 OPGP_ERROR_STATUS DYN_GetAddress(PVOID libraryHandle, PVOID *functionHandle, LPCTSTR functionName)
 {
 	OPGP_ERROR_STATUS errorStatus;
+	char pcFunctionName[256];
+	const char *dlError = NULL;
 
 	OPGP_LOG_START(_T("DYN_GetAddress"));
 
-	char pcFunctionName[256];
+	if (functionHandle == NULL || functionName == NULL) {
+		OPGP_ERROR_CREATE_ERROR(errorStatus, -1, _T("Invalid arguments to DYN_GetAddress"));
+		goto end;
+	}
 
 	/* Some platforms might need a leading underscore for the symbol */
 	snprintf(pcFunctionName, sizeof(pcFunctionName), "_%s", functionName);
 
+	/* Clear stale loader error state before symbol lookup. */
+	dlerror();
 	*functionHandle = NULL;
-	*functionHandle = dlsym(libraryHandle, pcFunctionName);
+	*functionHandle = dlsym(libraryHandle, functionName);
 
-	/* Failed? Try again without the leading underscore */
+	/* Failed? Try again with the leading underscore for legacy platforms. */
 	if (*functionHandle == NULL)
-		*functionHandle = dlsym(libraryHandle, functionName);
+	{
+		dlerror();
+		*functionHandle = dlsym(libraryHandle, pcFunctionName);
+	}
 
 	if (*functionHandle == NULL)
 	{
-		OPGP_ERROR_CREATE_ERROR(errorStatus, -1, dlerror());
+		dlError = dlerror();
+		if (dlError == NULL) {
+			dlError = "Unable to resolve symbol";
+		}
+		OPGP_ERROR_CREATE_ERROR(errorStatus, -1, dlError);
 		goto end;
 	}
 	OPGP_ERROR_CREATE_NO_ERROR(errorStatus);

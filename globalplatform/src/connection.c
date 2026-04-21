@@ -116,10 +116,6 @@ OPGP_ERROR_STATUS OPGP_establish_context(OPGP_CARD_CONTEXT *cardContext) {
 		}
 		ASSIGN_FUNC_PTR(cardContext->connectionFunctions.cardConnect, fn);
 	}
-	errorStatus = DYN_GetAddress(cardContext->libraryHandle, NULL, NULL);
-	if (OPGP_ERROR_CHECK(errorStatus)) {
-		goto end;
-	}
 	{
 		PVOID fn = NULL;
 		errorStatus = DYN_GetAddress(cardContext->libraryHandle, &fn, _T("OPGP_PL_card_disconnect"));
