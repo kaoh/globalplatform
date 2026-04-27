@@ -1321,14 +1321,15 @@ OPGP_ERROR_STATUS GP211_store_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 OPGP_API
 OPGP_ERROR_STATUS GP211_store_data_ecka_certificate(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 				 BYTE keyVersionNumber, BYTE keyIdentifier,
-				 OPGP_STRING PEMKeyFileName, char *passPhrase);
+				 OPGP_STRING certificateStoreFileName);
 
 //! \brief SCP11: STORE DATA for a whitelist linked to a PK.CA-KLOC.ECDSA (section 6.8).
 OPGP_API
 OPGP_ERROR_STATUS GP211_store_data_whitelist(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 				 BYTE keyVersionNumber, BYTE keyIdentifier,
 				 BOOL whitelistCounterPresent, USHORT whitelistCounter,
-				 PBYTE whitelistValue, DWORD whitelistValueLength);
+				 PBYTE *certificateSerialNumbers, PDWORD certificateSerialNumberLengths,
+				 DWORD certificateSerialNumberCount);
 
 //! \brief SCP11: STORE DATA for a CA-KLOC Identifier to PK.CA-KLOC.ECDSA mapping (section 6.9).
 OPGP_API

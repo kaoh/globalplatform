@@ -69,38 +69,57 @@ static BYTE expectedKeyLength;
 
 static int apduCallCount;
 
+typedef enum {
+	SCP11_TEST_MODE_NONE = 0,
+	SCP11_TEST_MODE_PSO_CHAIN,
+	SCP11_TEST_MODE_MUTUAL_NO_CERTIFICATE,
+	SCP11_TEST_MODE_MUTUAL_OCE_CERTIFICATE,
+	SCP11_TEST_MODE_MUTUAL_CERTIFICATE_CHAIN,
+	SCP11_TEST_MODE_STORE_ECKA_CERTIFICATE,
+	SCP11_TEST_MODE_STORE_WHITELIST,
+	SCP11_TEST_MODE_STORE_WHITELIST_EMPTY
+} SCP11_TEST_MODE;
+
+static SCP11_TEST_MODE scp11TestMode;
+
 static const BYTE testKeyVersion = 0x20;
 static const BYTE testKeyIdentifier = 0x11;
+static BYTE testWhitelistCsn1[] = {0x01, 0x02, 0x03};
+static BYTE testWhitelistCsn2[] = {0x10, 0x11, 0x12, 0x13};
+
+static void init_test_scp11_certificate(GP211_SCP11_CERTIFICATE *certificate, const BYTE *keyUsage, DWORD keyUsageLength) {
+	memset(certificate, 0, sizeof(*certificate));
+	certificate->certificateSerialNumber[0] = 0x01;
+	certificate->certificateSerialNumber[1] = 0x02;
+	certificate->certificateSerialNumber[2] = 0x03;
+	certificate->certificateSerialNumberLength = 3;
+	certificate->authorityIdentifier[0] = 0xA1;
+	certificate->authorityIdentifier[1] = 0xA2;
+	certificate->authorityIdentifier[2] = 0xA3;
+	certificate->authorityIdentifierLength = 3;
+	certificate->subjectIdentifier[0] = 0xB1;
+	certificate->subjectIdentifier[1] = 0xB2;
+	certificate->subjectIdentifier[2] = 0xB3;
+	certificate->subjectIdentifierLength = 3;
+	memcpy(certificate->keyUsage, keyUsage, keyUsageLength);
+	certificate->keyUsageLength = keyUsageLength;
+	certificate->effectiveDatePresent = 1;
+	certificate->effectiveDate[0] = 0x20;
+	certificate->effectiveDate[1] = 0x24;
+	certificate->effectiveDate[2] = 0x01;
+	certificate->effectiveDate[3] = 0x01;
+	certificate->expirationDate[0] = 0x20;
+	certificate->expirationDate[1] = 0x30;
+	certificate->expirationDate[2] = 0x12;
+	certificate->expirationDate[3] = 0x31;
+	certificate->expirationDateLength = 4;
+}
 
 static OPGP_ERROR_STATUS build_test_scp11_certificate(const BYTE *keyUsage, DWORD keyUsageLength,
 		PBYTE certificateData, PDWORD certificateDataLength) {
 	GP211_SCP11_CERTIFICATE certificate;
 
-	memset(&certificate, 0, sizeof(certificate));
-	certificate.certificateSerialNumber[0] = 0x01;
-	certificate.certificateSerialNumber[1] = 0x02;
-	certificate.certificateSerialNumber[2] = 0x03;
-	certificate.certificateSerialNumberLength = 3;
-	certificate.authorityIdentifier[0] = 0xA1;
-	certificate.authorityIdentifier[1] = 0xA2;
-	certificate.authorityIdentifier[2] = 0xA3;
-	certificate.authorityIdentifierLength = 3;
-	certificate.subjectIdentifier[0] = 0xB1;
-	certificate.subjectIdentifier[1] = 0xB2;
-	certificate.subjectIdentifier[2] = 0xB3;
-	certificate.subjectIdentifierLength = 3;
-	memcpy(certificate.keyUsage, keyUsage, keyUsageLength);
-	certificate.keyUsageLength = keyUsageLength;
-	certificate.effectiveDatePresent = 1;
-	certificate.effectiveDate[0] = 0x20;
-	certificate.effectiveDate[1] = 0x24;
-	certificate.effectiveDate[2] = 0x01;
-	certificate.effectiveDate[3] = 0x01;
-	certificate.expirationDate[0] = 0x20;
-	certificate.expirationDate[1] = 0x30;
-	certificate.expirationDate[2] = 0x12;
-	certificate.expirationDate[3] = 0x31;
-	certificate.expirationDateLength = 4;
+	init_test_scp11_certificate(&certificate, keyUsage, keyUsageLength);
 	return GP211_build_scp11_certificate(&certificate,
 			_T("ecc_public_key_test.pem"), NULL,
 			_T("ecc_private_key_test.pem"), NULL,
@@ -179,6 +198,20 @@ static OPGP_ERROR_STATUS set_apdu_response(PBYTE rapdu, PDWORD rapduLength, PBYT
 
 	OPGP_ERROR_CREATE_NO_ERROR_WITH_CODE(status, statusCode, OPGP_stringify_error(statusCode));
 	return status;
+}
+
+static int write_test_file(OPGP_STRING fileName, const BYTE *data, DWORD dataLength) {
+	FILE *file = _tfopen(fileName, _T("wb"));
+	size_t writeLength;
+
+	if (file == NULL) {
+		return -1;
+	}
+	writeLength = fwrite(data, 1, dataLength, file);
+	if (fclose(file) != 0) {
+		return -1;
+	}
+	return writeLength == dataLength ? 0 : -1;
 }
 
 static OPGP_ERROR_STATUS load_private_key_bytes_p256(OPGP_STRING keyFileName, PBYTE privateKey, PDWORD privateKeyLength) {
@@ -629,7 +662,10 @@ static OPGP_ERROR_STATUS mock_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 		BYTE expectedCommand[] = {
 				0x80, 0xCA, 0xBF, 0x21, 0x06, 0xA6, 0x04, 0x83, 0x02, testKeyIdentifier, testKeyVersion, 0x00
 		};
-		assert_true(apduCallCount == 0 || apduCallCount == 2);
+		assert_true(scp11TestMode == SCP11_TEST_MODE_MUTUAL_NO_CERTIFICATE
+				|| scp11TestMode == SCP11_TEST_MODE_MUTUAL_OCE_CERTIFICATE
+				|| scp11TestMode == SCP11_TEST_MODE_MUTUAL_CERTIFICATE_CHAIN);
+		assert_int_equal(apduCallCount, 0);
 		assert_int_equal(capduLength, sizeof(expectedCommand));
 		assert_memory_equal(capdu, expectedCommand, sizeof(expectedCommand));
 		apduCallCount++;
@@ -639,20 +675,44 @@ static OPGP_ERROR_STATUS mock_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	if (ins == 0x2A) {
 		DWORD lc;
 		GP211_SCP11_CERTIFICATE certificate;
+		BOOL moreCertificatesExpected;
 
-		assert_true(apduCallCount == 0 || apduCallCount == 1);
 		assert_int_equal(capdu[0], 0x80);
 		assert_int_equal(capdu[2], testKeyVersion);
 		assert_int_equal(capdu[3] & 0x7F, testKeyIdentifier);
-		if (apduCallCount == 0) {
-			assert_true((capdu[3] & 0x80) != 0);
-		} else {
-			assert_true((capdu[3] & 0x80) == 0);
+		moreCertificatesExpected = (capdu[3] & 0x80) != 0;
+		switch (scp11TestMode) {
+			case SCP11_TEST_MODE_PSO_CHAIN:
+				assert_true(apduCallCount == 0 || apduCallCount == 1);
+				assert_true((apduCallCount == 0 && moreCertificatesExpected)
+						|| (apduCallCount == 1 && !moreCertificatesExpected));
+				break;
+			case SCP11_TEST_MODE_MUTUAL_OCE_CERTIFICATE:
+				assert_int_equal(apduCallCount, 1);
+				assert_false(moreCertificatesExpected);
+				break;
+			case SCP11_TEST_MODE_MUTUAL_CERTIFICATE_CHAIN:
+				assert_true(apduCallCount == 1 || apduCallCount == 2);
+				assert_true((apduCallCount == 1 && moreCertificatesExpected)
+						|| (apduCallCount == 2 && !moreCertificatesExpected));
+				break;
+			default:
+				assert_true(0);
+				break;
 		}
 		lc = capdu[4];
 		assert_int_equal(capduLength, lc + 5);
 		status = GP211_parse_scp11_certificate(capdu + 5, lc, &certificate);
 		assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+		if (moreCertificatesExpected) {
+			assert_int_equal(certificate.keyUsageLength, sizeof(GP211_SCP11_KEY_USAGE_DIGITAL_SIGNATURE_VERIFICATION));
+			assert_memory_equal(certificate.keyUsage, GP211_SCP11_KEY_USAGE_DIGITAL_SIGNATURE_VERIFICATION,
+					sizeof(GP211_SCP11_KEY_USAGE_DIGITAL_SIGNATURE_VERIFICATION));
+		} else {
+			assert_int_equal(certificate.keyUsageLength, sizeof(GP211_SCP11_KEY_USAGE_KEY_AGREEMENT));
+			assert_memory_equal(certificate.keyUsage, GP211_SCP11_KEY_USAGE_KEY_AGREEMENT,
+					sizeof(GP211_SCP11_KEY_USAGE_KEY_AGREEMENT));
+		}
 		apduCallCount++;
 		return set_apdu_response(rapdu, rapduLength, NULL, 0, 0x9000);
 	}
@@ -663,7 +723,20 @@ static OPGP_ERROR_STATUS mock_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 		DWORD lc;
 		const BYTE *commandData;
 
-		assert_true(apduCallCount == 1 || apduCallCount == 3);
+		switch (scp11TestMode) {
+			case SCP11_TEST_MODE_MUTUAL_NO_CERTIFICATE:
+				assert_int_equal(apduCallCount, 1);
+				break;
+			case SCP11_TEST_MODE_MUTUAL_OCE_CERTIFICATE:
+				assert_int_equal(apduCallCount, 2);
+				break;
+			case SCP11_TEST_MODE_MUTUAL_CERTIFICATE_CHAIN:
+				assert_int_equal(apduCallCount, 3);
+				break;
+			default:
+				assert_true(0);
+				break;
+		}
 		assert_int_equal(capdu[0], 0x80);
 		assert_int_equal(capdu[2], testKeyVersion);
 		assert_int_equal(capdu[3], testKeyIdentifier);
@@ -676,6 +749,84 @@ static OPGP_ERROR_STATUS mock_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 		assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 		apduCallCount++;
 		return set_apdu_response(rapdu, rapduLength, responseData, responseDataLength, 0x9000);
+	}
+
+	if (ins == 0xE2) {
+		DWORD lc;
+		GP_SIMPLE_TLV crtTlv;
+		GP_SIMPLE_TLV keyReferenceTlv;
+		GP_SIMPLE_TLV certificateStoreTlv;
+		GP_SIMPLE_TLV expectedCertificateStoreTlv;
+		GP_SIMPLE_TLV whitelistCounterTlv;
+		GP_SIMPLE_TLV whitelistTlv;
+		GP_SIMPLE_TLV csnTlv;
+		DWORD offset;
+		DWORD whitelistOffset;
+
+		assert_true(scp11TestMode == SCP11_TEST_MODE_STORE_ECKA_CERTIFICATE
+				|| scp11TestMode == SCP11_TEST_MODE_STORE_WHITELIST
+				|| scp11TestMode == SCP11_TEST_MODE_STORE_WHITELIST_EMPTY);
+		assert_int_equal(apduCallCount, 0);
+		assert_int_equal(capdu[0], 0x80);
+		assert_int_equal(capdu[2], STORE_DATA_FORMAT_BER_TLV | 0x80);
+		assert_int_equal(capdu[3], 0x00);
+		lc = capdu[4];
+		assert_int_equal(capduLength, lc + 5);
+
+		assert_true(parse_simple_tlv(capdu + 5, lc, &crtTlv) > 0);
+		assert_int_equal(crtTlv.tag, 0xA6);
+		assert_true(parse_simple_tlv(crtTlv.value, crtTlv.length, &keyReferenceTlv) > 0);
+		assert_int_equal(keyReferenceTlv.tag, 0x83);
+		assert_int_equal(keyReferenceTlv.length, 2);
+		assert_int_equal(keyReferenceTlv.value[0], testKeyIdentifier);
+		assert_int_equal(keyReferenceTlv.value[1], testKeyVersion);
+
+		offset = crtTlv.tlvLength;
+		if (scp11TestMode == SCP11_TEST_MODE_STORE_ECKA_CERTIFICATE) {
+			assert_true(parse_simple_tlv(capdu + 5 + offset, lc - offset, &certificateStoreTlv) > 0);
+			assert_int_equal(certificateStoreTlv.tag, 0xBF21);
+			assert_int_equal(offset + certificateStoreTlv.tlvLength, lc);
+			assert_true(parse_simple_tlv(sdCertificateStore, sdCertificateStoreLength, &expectedCertificateStoreTlv) > 0);
+			assert_int_equal(expectedCertificateStoreTlv.tag, 0xBF21);
+			assert_int_equal(certificateStoreTlv.length, expectedCertificateStoreTlv.length);
+			assert_memory_equal(certificateStoreTlv.value, expectedCertificateStoreTlv.value, expectedCertificateStoreTlv.length);
+		} else {
+			if (scp11TestMode == SCP11_TEST_MODE_STORE_WHITELIST) {
+				assert_true(parse_simple_tlv(capdu + 5 + offset, lc - offset, &whitelistCounterTlv) > 0);
+				assert_int_equal(whitelistCounterTlv.tag, 0x92);
+				assert_int_equal(whitelistCounterTlv.length, 2);
+				assert_int_equal(whitelistCounterTlv.value[0], 0x12);
+				assert_int_equal(whitelistCounterTlv.value[1], 0x34);
+				offset += whitelistCounterTlv.tlvLength;
+			}
+
+			assert_true(parse_simple_tlv(capdu + 5 + offset, lc - offset, &whitelistTlv) > 0);
+			assert_int_equal(whitelistTlv.tag, 0x70);
+			assert_int_equal(offset + whitelistTlv.tlvLength, lc);
+
+			if (scp11TestMode == SCP11_TEST_MODE_STORE_WHITELIST_EMPTY) {
+				assert_int_equal(whitelistTlv.length, 0);
+			} else {
+				whitelistOffset = 0;
+				assert_true(parse_simple_tlv(whitelistTlv.value + whitelistOffset,
+							whitelistTlv.length - whitelistOffset, &csnTlv) > 0);
+				assert_int_equal(csnTlv.tag, 0x93);
+				assert_int_equal(csnTlv.length, sizeof(testWhitelistCsn1));
+				assert_memory_equal(csnTlv.value, testWhitelistCsn1, sizeof(testWhitelistCsn1));
+				whitelistOffset += csnTlv.tlvLength;
+
+				assert_true(parse_simple_tlv(whitelistTlv.value + whitelistOffset,
+							whitelistTlv.length - whitelistOffset, &csnTlv) > 0);
+				assert_int_equal(csnTlv.tag, 0x93);
+				assert_int_equal(csnTlv.length, sizeof(testWhitelistCsn2));
+				assert_memory_equal(csnTlv.value, testWhitelistCsn2, sizeof(testWhitelistCsn2));
+				whitelistOffset += csnTlv.tlvLength;
+				assert_int_equal(whitelistOffset, whitelistTlv.length);
+			}
+		}
+
+		apduCallCount++;
+		return set_apdu_response(rapdu, rapduLength, NULL, 0, 0x9000);
 	}
 
 	assert_true(0);
@@ -691,6 +842,7 @@ static void reset_scp11a_test_state(void) {
 	memset(expectedSdek, 0, sizeof(expectedSdek));
 	expectedKeyLength = 0;
 	apduCallCount = 0;
+	scp11TestMode = SCP11_TEST_MODE_NONE;
 }
 
 static void assert_scp11a_security_info(int expectedApduCallCount) {
@@ -740,6 +892,38 @@ static void scp11_certificate_parse_and_build(void **state) {
 	assert_int_equal(certificate.signatureLength, 64);
 }
 
+static void scp11_certificate_build_with_embedded_public_key(void **state) {
+	OPGP_ERROR_STATUS status;
+	BYTE certificateData[512];
+	DWORD certificateDataLength = sizeof(certificateData);
+	GP211_SCP11_CERTIFICATE certificate;
+	GP211_SCP11_CERTIFICATE parsedCertificate;
+
+	(void)state;
+
+	init_test_scp11_certificate(&certificate, GP211_SCP11_KEY_USAGE_KEY_AGREEMENT,
+			sizeof(GP211_SCP11_KEY_USAGE_KEY_AGREEMENT));
+	memcpy(certificate.publicKey, oceStaticPublicKey, oceStaticPublicKeyLength);
+	certificate.publicKeyLength = oceStaticPublicKeyLength;
+	certificate.keyParameterReference[0] = GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_P256;
+	certificate.keyParameterReferenceLength = 1;
+
+	status = GP211_build_scp11_certificate(&certificate,
+			NULL, NULL,
+			_T("ecc_private_key_test.pem"), NULL,
+			certificateData, &certificateDataLength);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+	assert_int_equal(certificate.signatureLength, 64);
+
+	status = GP211_parse_scp11_certificate(certificateData, certificateDataLength, &parsedCertificate);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+	assert_int_equal(parsedCertificate.publicKeyLength, oceStaticPublicKeyLength);
+	assert_memory_equal(parsedCertificate.publicKey, oceStaticPublicKey, oceStaticPublicKeyLength);
+	assert_int_equal(parsedCertificate.keyParameterReferenceLength, 1);
+	assert_int_equal(parsedCertificate.keyParameterReference[0], GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_P256);
+	assert_int_equal(parsedCertificate.signatureLength, 64);
+}
+
 static void perform_security_operation_certificate_chain(void **state) {
 	OPGP_ERROR_STATUS status;
 	BYTE certificateChain[1024];
@@ -751,10 +935,121 @@ static void perform_security_operation_certificate_chain(void **state) {
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 
 	apduCallCount = 0;
+	scp11TestMode = SCP11_TEST_MODE_PSO_CHAIN;
 	status = GP211_perform_security_operation_certificate_chain(cardContext, cardInfo, NULL,
 			testKeyVersion, testKeyIdentifier, certificateChain, certificateChainLength);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 	assert_int_equal(apduCallCount, 2);
+}
+
+static void store_data_ecka_certificate_with_certificate_list(void **state) {
+	OPGP_ERROR_STATUS status;
+	GP_SIMPLE_TLV certificateStoreTlv;
+	OPGP_STRING certificateStoreFileName = _T("scp11_certificate_list_test.bin");
+
+	(void)state;
+	reset_scp11a_test_state();
+	scp11TestMode = SCP11_TEST_MODE_STORE_ECKA_CERTIFICATE;
+
+	assert_true(parse_simple_tlv(sdCertificateStore, sdCertificateStoreLength, &certificateStoreTlv) > 0);
+	assert_int_equal(certificateStoreTlv.tag, 0xBF21);
+	assert_int_equal(write_test_file(certificateStoreFileName, certificateStoreTlv.value, certificateStoreTlv.length), 0);
+
+	status = GP211_store_data_ecka_certificate(cardContext, cardInfo, NULL,
+			testKeyVersion, testKeyIdentifier, certificateStoreFileName);
+	remove("scp11_certificate_list_test.bin");
+
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+	assert_int_equal(apduCallCount, 1);
+}
+
+static void store_data_ecka_certificate_with_certificate_store(void **state) {
+	OPGP_ERROR_STATUS status;
+	OPGP_STRING certificateStoreFileName = _T("scp11_certificate_store_test.bin");
+
+	(void)state;
+	reset_scp11a_test_state();
+	scp11TestMode = SCP11_TEST_MODE_STORE_ECKA_CERTIFICATE;
+
+	assert_int_equal(write_test_file(certificateStoreFileName, sdCertificateStore, sdCertificateStoreLength), 0);
+
+	status = GP211_store_data_ecka_certificate(cardContext, cardInfo, NULL,
+			testKeyVersion, testKeyIdentifier, certificateStoreFileName);
+	remove("scp11_certificate_store_test.bin");
+
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+	assert_int_equal(apduCallCount, 1);
+}
+
+static void store_data_ecka_certificate_rejects_raw_certificate_bytes(void **state) {
+	OPGP_ERROR_STATUS status;
+	BYTE rawCertificateBytes[] = {0x30, 0x03, 0x01, 0x02, 0x03};
+	OPGP_STRING certificateStoreFileName = _T("scp11_raw_certificate_test.bin");
+
+	(void)state;
+	reset_scp11a_test_state();
+	scp11TestMode = SCP11_TEST_MODE_STORE_ECKA_CERTIFICATE;
+
+	assert_int_equal(write_test_file(certificateStoreFileName, rawCertificateBytes, sizeof(rawCertificateBytes)), 0);
+
+	status = GP211_store_data_ecka_certificate(cardContext, cardInfo, NULL,
+			testKeyVersion, testKeyIdentifier, certificateStoreFileName);
+	remove("scp11_raw_certificate_test.bin");
+
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_FAILURE);
+	assert_int_equal(status.errorCode, OPGP_ERROR_INVALID_RESPONSE_DATA);
+	assert_int_equal(apduCallCount, 0);
+}
+
+static void store_data_whitelist_with_certificate_serial_numbers(void **state) {
+	OPGP_ERROR_STATUS status;
+	PBYTE certificateSerialNumbers[] = {testWhitelistCsn1, testWhitelistCsn2};
+	DWORD certificateSerialNumberLengths[] = {sizeof(testWhitelistCsn1), sizeof(testWhitelistCsn2)};
+
+	(void)state;
+	reset_scp11a_test_state();
+	scp11TestMode = SCP11_TEST_MODE_STORE_WHITELIST;
+
+	status = GP211_store_data_whitelist(cardContext, cardInfo, NULL,
+			testKeyVersion, testKeyIdentifier, 1, 0x1234,
+			certificateSerialNumbers, certificateSerialNumberLengths,
+			sizeof(certificateSerialNumbers) / sizeof(certificateSerialNumbers[0]));
+
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+	assert_int_equal(apduCallCount, 1);
+}
+
+static void store_data_whitelist_with_empty_certificate_serial_numbers(void **state) {
+	OPGP_ERROR_STATUS status;
+
+	(void)state;
+	reset_scp11a_test_state();
+	scp11TestMode = SCP11_TEST_MODE_STORE_WHITELIST_EMPTY;
+
+	status = GP211_store_data_whitelist(cardContext, cardInfo, NULL,
+			testKeyVersion, testKeyIdentifier, 0, 0,
+			NULL, NULL, 0);
+
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+	assert_int_equal(apduCallCount, 1);
+}
+
+static void store_data_whitelist_rejects_invalid_certificate_serial_number(void **state) {
+	OPGP_ERROR_STATUS status;
+	PBYTE certificateSerialNumbers[] = {testWhitelistCsn1};
+	DWORD certificateSerialNumberLengths[] = {0};
+
+	(void)state;
+	reset_scp11a_test_state();
+	scp11TestMode = SCP11_TEST_MODE_STORE_WHITELIST;
+
+	status = GP211_store_data_whitelist(cardContext, cardInfo, NULL,
+			testKeyVersion, testKeyIdentifier, 0, 0,
+			certificateSerialNumbers, certificateSerialNumberLengths, 1);
+
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_FAILURE);
+	assert_int_equal(status.errorCode, OPGP_ERROR_INVALID_RESPONSE_DATA);
+	assert_int_equal(apduCallCount, 0);
 }
 
 static void mutual_authentication_scp11a(void **state) {
@@ -762,6 +1057,7 @@ static void mutual_authentication_scp11a(void **state) {
 
 	(void)state;
 	reset_scp11a_test_state();
+	scp11TestMode = SCP11_TEST_MODE_MUTUAL_NO_CERTIFICATE;
 
 	status = GP211_mutual_authentication(cardContext, cardInfo,
 			oceStaticPrivateKey, NULL, NULL, NULL,
@@ -774,6 +1070,31 @@ static void mutual_authentication_scp11a(void **state) {
 	assert_scp11a_security_info(2);
 }
 
+static void mutual_authentication_scp11a_with_oce_certificate(void **state) {
+	OPGP_ERROR_STATUS status;
+	BYTE oceCertificate[512];
+	DWORD oceCertificateLength = sizeof(oceCertificate);
+
+	(void)state;
+	reset_scp11a_test_state();
+	scp11TestMode = SCP11_TEST_MODE_MUTUAL_OCE_CERTIFICATE;
+
+	status = build_test_scp11_certificate(GP211_SCP11_KEY_USAGE_KEY_AGREEMENT,
+			sizeof(GP211_SCP11_KEY_USAGE_KEY_AGREEMENT),
+			oceCertificate, &oceCertificateLength);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+
+	status = GP211_mutual_authentication(cardContext, cardInfo,
+			oceStaticPrivateKey, NULL, NULL, NULL,
+			16, testKeyVersion, testKeyIdentifier,
+			GP211_SCP11, 0x00,
+			GP211_SCP03_SECURITY_LEVEL_C_MAC, OPGP_DERIVATION_METHOD_NONE,
+			oceCertificate, oceCertificateLength, &securityInfo211);
+
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+	assert_scp11a_security_info(3);
+}
+
 static void mutual_authentication_scp11a_with_certificate_chain(void **state) {
 	OPGP_ERROR_STATUS status;
 	BYTE certificateChain[1024];
@@ -781,6 +1102,7 @@ static void mutual_authentication_scp11a_with_certificate_chain(void **state) {
 
 	(void)state;
 	reset_scp11a_test_state();
+	scp11TestMode = SCP11_TEST_MODE_MUTUAL_CERTIFICATE_CHAIN;
 
 	status = build_test_scp11_certificate_chain(certificateChain, &certificateChainLength, 1);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
@@ -841,8 +1163,16 @@ static int setup(void **state) {
 int main(void) {
 	const struct CMUnitTest tests[] = {
 			cmocka_unit_test(scp11_certificate_parse_and_build),
+			cmocka_unit_test(scp11_certificate_build_with_embedded_public_key),
 			cmocka_unit_test(perform_security_operation_certificate_chain),
+			cmocka_unit_test(store_data_ecka_certificate_with_certificate_list),
+			cmocka_unit_test(store_data_ecka_certificate_with_certificate_store),
+			cmocka_unit_test(store_data_ecka_certificate_rejects_raw_certificate_bytes),
+			cmocka_unit_test(store_data_whitelist_with_certificate_serial_numbers),
+			cmocka_unit_test(store_data_whitelist_with_empty_certificate_serial_numbers),
+			cmocka_unit_test(store_data_whitelist_rejects_invalid_certificate_serial_number),
 			cmocka_unit_test(mutual_authentication_scp11a),
+			cmocka_unit_test(mutual_authentication_scp11a_with_oce_certificate),
 			cmocka_unit_test(mutual_authentication_scp11a_with_certificate_chain)
 	};
 	return cmocka_run_group_tests_name("SCP11", tests, setup, NULL);
