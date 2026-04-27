@@ -254,6 +254,10 @@ OPGP_ERROR_STATUS validate_registry_update_receipt(PBYTE receiptKey, DWORD keyLe
 OPGP_NO_API
 OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhrase, PBYTE rsaModulus, PDWORD rsaModulusLength, LONG *rsaExponent);
 
+//! \brief Reads a certificate from a PEM or DER file.
+OPGP_NO_API
+OPGP_ERROR_STATUS read_certificate_file(OPGP_STRING PEMKeyFileName, char *passPhrase, PBYTE certificateData, PDWORD certificateDataLength);
+
 typedef struct {
 	BYTE fieldP[512];
 	DWORD fieldPLength;
@@ -275,6 +279,19 @@ OPGP_ERROR_STATUS read_public_ecc_key(OPGP_STRING PEMKeyFileName, char *passPhra
 		PBYTE eccPublicPoint, PDWORD eccPublicPointLength,
 		PBYTE eccKeyComponentType, PBYTE keyParameterReference,
 		GP211_ECC_DOMAIN_PARAMETERS *domainParameters);
+
+//! \brief Generates an ECC key pair for a named OpenSSL curve.
+OPGP_NO_API
+OPGP_ERROR_STATUS generate_ecc_keypair(int curveNid,
+		PBYTE privateKey, PDWORD privateKeyLength,
+		PBYTE publicKey, PDWORD publicKeyLength);
+
+//! \brief Calculates an ECDH shared secret for a named OpenSSL curve.
+OPGP_NO_API
+OPGP_ERROR_STATUS calculate_ecc_shared_secret(int curveNid,
+		PBYTE privateKey, DWORD privateKeyLength,
+		PBYTE peerPublicKey, DWORD peerPublicKeyLength,
+		PBYTE sharedSecret, PDWORD sharedSecretLength);
 
 //! \brief Calculates a SHA-256 hash.
 OPGP_NO_API

@@ -106,6 +106,54 @@ OPGP_ERROR_STATUS scp_wrap_command_by_protocol(
 	PDWORD encryptionLength,
 	PBYTE mac);
 
+OPGP_NO_API
+OPGP_ERROR_STATUS scp11a_generate_ephemeral_keypair(
+	BYTE keyParameterReference,
+	PBYTE privateKey,
+	PDWORD privateKeyLength,
+	PBYTE publicKey,
+	PDWORD publicKeyLength);
+
+OPGP_NO_API
+BYTE map_scp11a_key_usage_qualifier(BYTE securityLevel);
+
+OPGP_NO_API
+BYTE map_scp11a_security_level(BYTE keyUsageQualifier);
+
+OPGP_NO_API
+BYTE map_scp11a_scp03_impl(BYTE keyUsageQualifier);
+
+OPGP_NO_API
+DWORD scp11_private_key_length_from_key_parameter_reference(BYTE keyParameterReference);
+
+OPGP_NO_API
+OPGP_ERROR_STATUS extract_scp11_sd_public_key_from_certificate_store(PBYTE certificateStore, DWORD certificateStoreLength,
+	PBYTE sdPublicKey, PDWORD sdPublicKeyLength, BYTE *keyParameterReference);
+
+OPGP_NO_API
+OPGP_ERROR_STATUS parse_scp11_mutual_authentication_response(PBYTE responseData, DWORD responseDataLength,
+	PBYTE sdEphemeralPublicKey, PDWORD sdEphemeralPublicKeyLength, PBYTE receipt, PDWORD receiptLength);
+
+OPGP_NO_API
+OPGP_ERROR_STATUS scp11a_derive_session_keys_and_verify_receipt(
+	GP211_SECURITY_INFO *secInfo,
+	BYTE keyLength,
+	BYTE keyParameterReference,
+	PBYTE oceStaticPrivateKey,
+	DWORD oceStaticPrivateKeyLength,
+	PBYTE sdStaticPublicKey,
+	DWORD sdStaticPublicKeyLength,
+	PBYTE oceEphemeralPrivateKey,
+	DWORD oceEphemeralPrivateKeyLength,
+	PBYTE sdEphemeralPublicKey,
+	DWORD sdEphemeralPublicKeyLength,
+	PBYTE sharedInfo,
+	DWORD sharedInfoLength,
+	PBYTE receiptInput,
+	DWORD receiptInputLength,
+	PBYTE receipt,
+	DWORD receiptLength);
+
 #ifdef __cplusplus
 }
 #endif

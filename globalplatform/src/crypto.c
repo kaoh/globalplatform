@@ -42,12 +42,15 @@
 #include "globalplatform/debug.h"
 #include "util.h"
 
+#include <errno.h>
+#include <stdio.h>
 #include <string.h>
 
 #include <openssl/err.h>
 #include <openssl/rand.h>
 #include <openssl/evp.h>
 #include <openssl/pem.h>
+#include <openssl/x509.h>
 #include <openssl/aes.h>
 #include <openssl/cmac.h>
 #include <openssl/ec.h>
@@ -2975,6 +2978,252 @@ static BOOL bn_to_minimal_length_bytes(const BIGNUM *value, PBYTE out, DWORD out
 	}
 	*outLength = (DWORD)valueLength;
 	return 1;
+}
+
+OPGP_ERROR_STATUS generate_ecc_keypair(int curveNid,
+		PBYTE privateKey, PDWORD privateKeyLength,
+		PBYTE publicKey, PDWORD publicKeyLength) {
+	OPGP_ERROR_STATUS status;
+	EC_KEY *ec = NULL;
+	const EC_GROUP *group;
+	const EC_POINT *point;
+	const BIGNUM *privateBn;
+	size_t encodedPublicLength;
+	int privateLength;
+
+	OPGP_LOG_START(_T("generate_ecc_keypair"));
+
+	if (curveNid == NID_undef) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_WRONG_KEY_TYPE, OPGP_stringify_error(OPGP_ERROR_WRONG_KEY_TYPE)); goto end; }
+	}
+	if (privateKey == NULL || privateKeyLength == NULL || publicKey == NULL || publicKeyLength == NULL) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA)); goto end; }
+	}
+
+	ec = EC_KEY_new_by_curve_name(curveNid);
+	if (ec == NULL || EC_KEY_generate_key(ec) != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+
+	group = EC_KEY_get0_group(ec);
+	point = EC_KEY_get0_public_key(ec);
+	privateBn = EC_KEY_get0_private_key(ec);
+	if (group == NULL || point == NULL || privateBn == NULL) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+
+	encodedPublicLength = EC_POINT_point2oct(group, point, POINT_CONVERSION_UNCOMPRESSED, NULL, 0, NULL);
+	if (encodedPublicLength == 0 || encodedPublicLength > *publicKeyLength) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+	}
+	if (EC_POINT_point2oct(group, point, POINT_CONVERSION_UNCOMPRESSED,
+			publicKey, *publicKeyLength, NULL) != encodedPublicLength) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	*publicKeyLength = (DWORD)encodedPublicLength;
+
+	privateLength = BN_num_bytes(privateBn);
+	if (privateLength <= 0 || (DWORD)privateLength > *privateKeyLength) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+	}
+	if (BN_bn2bin(privateBn, privateKey) != privateLength) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	*privateKeyLength = (DWORD)privateLength;
+
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	if (ec != NULL) {
+		EC_KEY_free(ec);
+	}
+	OPGP_LOG_END(_T("generate_ecc_keypair"), status);
+	return status;
+}
+
+OPGP_ERROR_STATUS calculate_ecc_shared_secret(int curveNid,
+		PBYTE privateKey, DWORD privateKeyLength,
+		PBYTE peerPublicKey, DWORD peerPublicKeyLength,
+		PBYTE sharedSecret, PDWORD sharedSecretLength) {
+	OPGP_ERROR_STATUS status;
+	EC_KEY *localEc = NULL;
+	EC_KEY *peerEc = NULL;
+	const EC_GROUP *group;
+	BIGNUM *privateBn = NULL;
+	EC_POINT *peerPoint = NULL;
+	EVP_PKEY *localPkey = NULL;
+	EVP_PKEY *peerPkey = NULL;
+	EVP_PKEY_CTX *deriveCtx = NULL;
+	size_t derivedLength;
+	int result;
+
+	OPGP_LOG_START(_T("calculate_ecc_shared_secret"));
+
+	if (curveNid == NID_undef) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_WRONG_KEY_TYPE, OPGP_stringify_error(OPGP_ERROR_WRONG_KEY_TYPE)); goto end; }
+	}
+	if (privateKey == NULL || privateKeyLength == 0 || peerPublicKey == NULL || peerPublicKeyLength == 0
+			|| sharedSecret == NULL || sharedSecretLength == NULL) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA)); goto end; }
+	}
+
+	localEc = EC_KEY_new_by_curve_name(curveNid);
+	peerEc = EC_KEY_new_by_curve_name(curveNid);
+	if (localEc == NULL || peerEc == NULL) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+
+	privateBn = BN_bin2bn(privateKey, (int)privateKeyLength, NULL);
+	if (privateBn == NULL || EC_KEY_set_private_key(localEc, privateBn) != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+
+	group = EC_KEY_get0_group(peerEc);
+	if (group == NULL) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	peerPoint = EC_POINT_new(group);
+	if (peerPoint == NULL || EC_POINT_oct2point(group, peerPoint, peerPublicKey, peerPublicKeyLength, NULL) != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	if (EC_KEY_set_public_key(peerEc, peerPoint) != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+
+	localPkey = EVP_PKEY_new();
+	peerPkey = EVP_PKEY_new();
+	if (localPkey == NULL || peerPkey == NULL
+			|| EVP_PKEY_set1_EC_KEY(localPkey, localEc) != 1
+			|| EVP_PKEY_set1_EC_KEY(peerPkey, peerEc) != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+
+	deriveCtx = EVP_PKEY_CTX_new(localPkey, NULL);
+	if (deriveCtx == NULL) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	result = EVP_PKEY_derive_init(deriveCtx);
+	if (result != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	result = EVP_PKEY_derive_set_peer(deriveCtx, peerPkey);
+	if (result != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	result = EVP_PKEY_derive(deriveCtx, NULL, &derivedLength);
+	if (result != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	if (derivedLength > *sharedSecretLength) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
+	}
+	result = EVP_PKEY_derive(deriveCtx, sharedSecret, &derivedLength);
+	if (result != 1) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT)); goto end; }
+	}
+	*sharedSecretLength = (DWORD)derivedLength;
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+
+end:
+	if (deriveCtx != NULL) {
+		EVP_PKEY_CTX_free(deriveCtx);
+	}
+	if (peerPkey != NULL) {
+		EVP_PKEY_free(peerPkey);
+	}
+	if (localPkey != NULL) {
+		EVP_PKEY_free(localPkey);
+	}
+	if (peerPoint != NULL) {
+		EC_POINT_free(peerPoint);
+	}
+	if (privateBn != NULL) {
+		BN_free(privateBn);
+	}
+	if (peerEc != NULL) {
+		EC_KEY_free(peerEc);
+	}
+	if (localEc != NULL) {
+		EC_KEY_free(localEc);
+	}
+	OPGP_LOG_END(_T("calculate_ecc_shared_secret"), status);
+	return status;
+}
+
+OPGP_ERROR_STATUS read_certificate_file(OPGP_STRING PEMKeyFileName, char *passPhrase, PBYTE certificateData,
+		PDWORD certificateDataLength) {
+	OPGP_ERROR_STATUS status;
+	FILE *certificateFile = NULL;
+	X509 *certificate = NULL;
+	int derLength;
+	unsigned char *writePtr;
+	size_t readLength;
+	long fileLength;
+
+	if (PEMKeyFileName == NULL || _tcslen(PEMKeyFileName) == 0 || certificateData == NULL || certificateDataLength == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_FILENAME, OPGP_stringify_error(OPGP_ERROR_INVALID_FILENAME));
+		return status;
+	}
+
+	certificateFile = _tfopen(PEMKeyFileName, _T("rb"));
+	if (certificateFile == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, errno, OPGP_stringify_error(errno));
+		return status;
+	}
+
+	certificate = PEM_read_X509(certificateFile, NULL, NULL, passPhrase);
+	if (certificate != NULL) {
+		derLength = i2d_X509(certificate, NULL);
+		if (derLength <= 0) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+			goto end;
+		}
+		if ((DWORD)derLength > *certificateDataLength) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+			goto end;
+		}
+		writePtr = certificateData;
+		if (i2d_X509(certificate, &writePtr) != derLength) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+			goto end;
+		}
+		*certificateDataLength = (DWORD)derLength;
+		OPGP_ERROR_CREATE_NO_ERROR(status);
+		goto end;
+	}
+
+	if (fseek(certificateFile, 0, SEEK_END) != 0) {
+		OPGP_ERROR_CREATE_ERROR(status, errno, OPGP_stringify_error(errno));
+		goto end;
+	}
+	fileLength = ftell(certificateFile);
+	if (fileLength < 0) {
+		OPGP_ERROR_CREATE_ERROR(status, errno, OPGP_stringify_error(errno));
+		goto end;
+	}
+	if ((DWORD)fileLength > *certificateDataLength) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		goto end;
+	}
+	if (fseek(certificateFile, 0, SEEK_SET) != 0) {
+		OPGP_ERROR_CREATE_ERROR(status, errno, OPGP_stringify_error(errno));
+		goto end;
+	}
+	readLength = fread(certificateData, 1, (size_t)fileLength, certificateFile);
+	if ((long)readLength != fileLength) {
+		OPGP_ERROR_CREATE_ERROR(status, errno, OPGP_stringify_error(errno));
+		goto end;
+	}
+	*certificateDataLength = (DWORD)readLength;
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+
+end:
+	if (certificate != NULL) {
+		X509_free(certificate);
+	}
+	if (certificateFile != NULL) {
+		fclose(certificateFile);
+	}
+	return status;
 }
 
 /**

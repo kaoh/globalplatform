@@ -191,7 +191,7 @@ static OPGP_ERROR_STATUS internal_mutual_authentication() {
 	status = GP211_mutual_authentication(cardContext, cardInfo, NULL,
 			(PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE) OPGP_VISA_DEFAULT_KEY,
 			(PBYTE) OPGP_VISA_DEFAULT_KEY, sizeof(OPGP_VISA_DEFAULT_KEY), 0, 0, scp, scpImpl,
-			GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC, OPGP_DERIVATION_METHOD_NONE, &securityInfo211);
+			GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC, OPGP_DERIVATION_METHOD_NONE, NULL, 0, &securityInfo211);
 	if (OPGP_ERROR_CHECK(status)) {
 		return status;
 	}
@@ -404,7 +404,7 @@ static OPGP_ERROR_STATUS internal_select_and_authenticate_personalized_sd(GP211_
 	sdSecurityInfo->invokingAidLength = sizeof(sdInstanceAID);
 	status = GP211_mutual_authentication(cardContext, cardInfo, NULL,
 			(PBYTE)sdPersonalizationKey, (PBYTE)sdPersonalizationKey, (PBYTE)sdPersonalizationKey,
-			sizeof(sdPersonalizationKey), 1, 0, 0, 0, GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC, OPGP_DERIVATION_METHOD_NONE, sdSecurityInfo);
+			sizeof(sdPersonalizationKey), 1, 0, 0, 0, GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC, OPGP_DERIVATION_METHOD_NONE, NULL, 0, sdSecurityInfo);
 	if (OPGP_ERROR_CHECK(status)) {
 		return status;
 	}
@@ -920,7 +920,7 @@ START_TEST (test_personalize_sd) {
 	sdSecurityInfo.invokingAidLength = sizeof(sdInstanceAID);
 	status = GP211_mutual_authentication(cardContext, cardInfo, NULL,
 			(PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY,
-			16, 0, 0, 0, 0, GP211_SCP03_SECURITY_LEVEL_C_MAC, OPGP_DERIVATION_METHOD_NONE, &sdSecurityInfo);
+			16, 0, 0, 0, 0, GP211_SCP03_SECURITY_LEVEL_C_MAC, OPGP_DERIVATION_METHOD_NONE, NULL, 0, &sdSecurityInfo);
 	if (OPGP_ERROR_CHECK(status)) {
 		ck_abort_msg("Mutual authentication with new SD failed: %s", status.errorMessage);
 	}
@@ -1340,7 +1340,7 @@ START_TEST (test_dap_personalize_sd) {
 	sdSecurityInfo.invokingAidLength = sizeof(sdInstanceAID);
 	status = GP211_mutual_authentication(cardContext, cardInfo, NULL,
 			(PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY,
-			16, 0, 0, 0, 0, GP211_SCP03_SECURITY_LEVEL_C_MAC, OPGP_DERIVATION_METHOD_NONE, &sdSecurityInfo);
+			16, 0, 0, 0, 0, GP211_SCP03_SECURITY_LEVEL_C_MAC, OPGP_DERIVATION_METHOD_NONE, NULL, 0, &sdSecurityInfo);
 	if (OPGP_ERROR_CHECK(status)) {
 		ck_abort_msg("Mutual authentication with new SD failed: %s", status.errorMessage);
 	}
@@ -1900,7 +1900,7 @@ static void test_dm_install_helloworld_with_tokens(const char *tokenKeyLabel) {
 	sdSecurityInfo.invokingAidLength = sizeof(sdInstanceAID);
 	status = GP211_mutual_authentication(cardContext, cardInfo, NULL,
 			(PBYTE)sdPersonalizationKey, (PBYTE)sdPersonalizationKey, (PBYTE)sdPersonalizationKey,
-			sizeof(sdPersonalizationKey), 1, 0, 0, 0, GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC, OPGP_DERIVATION_METHOD_NONE, &sdSecurityInfo);
+			sizeof(sdPersonalizationKey), 1, 0, 0, 0, GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC, OPGP_DERIVATION_METHOD_NONE, NULL, 0, &sdSecurityInfo);
 	if (OPGP_ERROR_CHECK(status)) {
 		ck_abort_msg("Mutual authentication with personalized delegated SD failed: %s", status.errorMessage);
 	}

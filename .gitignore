@@ -52,3 +52,13 @@ Win32
 cryptoTest
 utilTest
 build
+.ninja_deps
+build.ninja
+default.nix
+build-static-local
+cmake-build-debug
+cmake-build-release
+*.bak
+gpshell/src/gpshell3
+gpshell/src/gpshell3.1
+*.pdf

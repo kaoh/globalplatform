@@ -29,6 +29,8 @@
  */
 
 #include "util.h"
+#include "globalplatform/errorcodes.h"
+#include "globalplatform/stringify.h"
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
@@ -148,6 +150,107 @@ LONG read_TLV(const BYTE *buffer, DWORD length, TLV *tlv) {
 	tlv->tlvLength = result;
 end:
 	return result;
+}
+
+LONG parse_simple_tlv(const BYTE *buffer, DWORD length, GP_SIMPLE_TLV *tlv) {
+	DWORD offset = 0;
+	BYTE firstTagOctet;
+	BYTE firstLengthOctet;
+	DWORD numLengthOctets;
+	DWORD valueLength = 0;
+	DWORD i;
+
+	if (buffer == NULL || tlv == NULL || length < 2) {
+		return -1;
+	}
+
+	firstTagOctet = buffer[offset++];
+	if ((firstTagOctet & 0x1F) == 0x1F) {
+		BYTE secondTagOctet;
+		if (length < offset + 1) {
+			return -1;
+		}
+		secondTagOctet = buffer[offset++];
+		if ((secondTagOctet & 0x80) != 0) {
+			return -1;
+		}
+		tlv->tag = (USHORT)((firstTagOctet << 8) | secondTagOctet);
+	} else {
+		tlv->tag = firstTagOctet;
+	}
+
+	if (length < offset + 1) {
+		return -1;
+	}
+	firstLengthOctet = buffer[offset++];
+	if ((firstLengthOctet & 0x80) != 0) {
+		numLengthOctets = firstLengthOctet & 0x7F;
+		if (numLengthOctets == 0 || numLengthOctets > 2 || length < offset + numLengthOctets) {
+			return -1;
+		}
+		for (i = 0; i < numLengthOctets; i++) {
+			valueLength = (valueLength << 8) | buffer[offset++];
+		}
+	} else {
+		valueLength = firstLengthOctet;
+	}
+
+	if (length < offset + valueLength) {
+		return -1;
+	}
+
+	tlv->value = buffer + offset;
+	tlv->length = valueLength;
+	tlv->tlvLength = offset + valueLength;
+	return (LONG)tlv->tlvLength;
+}
+
+OPGP_ERROR_STATUS append_tlv(PBYTE buffer, DWORD bufferSize, PDWORD offset, USHORT tag, const BYTE *value, DWORD valueLength) {
+	OPGP_ERROR_STATUS status;
+	LONG lengthFieldLength;
+
+	if (buffer == NULL || offset == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+	if (valueLength > 0xFFFF) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE));
+		return status;
+	}
+
+	if (tag > 0xFF) {
+		if (*offset + 2 > bufferSize) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+			return status;
+		}
+		buffer[(*offset)++] = (BYTE)(tag >> 8);
+		buffer[(*offset)++] = (BYTE)(tag & 0xFF);
+	} else {
+		if (*offset + 1 > bufferSize) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+			return status;
+		}
+		buffer[(*offset)++] = (BYTE)tag;
+	}
+
+	lengthFieldLength = write_TLV_length(buffer, *offset, bufferSize - *offset, (USHORT)valueLength);
+	if (lengthFieldLength < 0) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		return status;
+	}
+	*offset += (DWORD)lengthFieldLength;
+
+	if (*offset + valueLength > bufferSize) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		return status;
+	}
+	if (valueLength > 0 && value != NULL) {
+		memcpy(buffer + *offset, value, valueLength);
+	}
+	*offset += valueLength;
+
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+	return status;
 }
 
 LONG parse_apdu_case(PBYTE apduCommand, DWORD apduCommandLength, PBYTE caseAPDU, PDWORD lc, PDWORD le) {

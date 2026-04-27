@@ -50,6 +50,7 @@ extern "C"
 #define GP211_SCP01 0x01 //!< Secure Channel Protocol '01'
 #define GP211_SCP02 0x02 //!< Secure Channel Protocol '02'
 #define GP211_SCP03 0x03 //!< Secure Channel Protocol '03'
+#define GP211_SCP11 0x11 //!< Secure Channel Protocol '11'
 
 /** Secure Channel Protocol '01': "i" '05': Initiation mode explicit, C-MAC on modified APDU,
   * ICV set to zero, no ICV encryption, 3 Secure Channel Keys
@@ -165,6 +166,9 @@ extern "C"
 #define GP211_SCP03_SECURITY_LEVEL_C_MAC_R_MAC 0x11 //!< Secure Channel Protocol '03': C-MAC and R-MAC
 #define GP211_SCP03_SECURITY_LEVEL_R_MAC 0x10 //!< Secure Channel Protocol '03': R-MAC. Used only with BEGIN R-MAC.
 #define GP211_SCP03_SECURITY_LEVEL_R_ENC_R_MAC 0x30 //!< Secure Channel Protocol '03': R-Encryption and R-MAC. Used only with BEGIN R-MAC.
+
+#define GP211_SCP11_KEY_USAGE_QUALIFIER_C_MAC_R_MAC 0x34 //!< SCP11 key usage qualifier: C-MAC + R-MAC.
+#define GP211_SCP11_KEY_USAGE_QUALIFIER_C_DEC_R_ENC_C_MAC_R_MAC 0x3C //!< SCP11 key usage qualifier: C-DECRYPTION + R-ENCRYPTION + C-MAC + R-MAC.
 
 #define GP211_KEY_TYPE_RSA 0xF0 //!< 'F0' Internal key type for a RSA.
 #define GP211_KEY_TYPE_ECC 0xF1 //!< 'F1' Internal key type for ECC.

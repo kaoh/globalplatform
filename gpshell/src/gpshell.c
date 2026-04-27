@@ -1260,6 +1260,8 @@ static int handleCommands(FILE *fd)
                                                      optionStr.scpImpl,
                                                      optionStr.securityLevel,
                                                      optionStr.keyDerivation,
+                                                     NULL,
+                                                     0,
                                                      &securityInfo211);
 
                 }

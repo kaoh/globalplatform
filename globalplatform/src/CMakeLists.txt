@@ -240,6 +240,16 @@ IF(TESTING)
         COMPILE_OPTIONS -I${PCSC_INCLUDE_DIRS} "-fno-lto"
         MOCKS RAND_bytes
         LINK_LIBRARIES ${LIBRARIES})
+
+      add_cmocka_test(scp11Test
+        SOURCES scp11Test.c ${SOURCES}
+        COMPILE_OPTIONS -I${PCSC_INCLUDE_DIRS} "-fno-lto"
+        LINK_LIBRARIES ${LIBRARIES})
+      add_custom_command(TARGET scp11Test POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          ${CMAKE_CURRENT_SOURCE_DIR}/ecc_public_key_test.pem
+          ${CMAKE_CURRENT_SOURCE_DIR}/ecc_private_key_test.pem
+          $<TARGET_FILE_DIR:scp11Test>)
     ENDIF(UNIX AND NOT APPLE)
 
     add_cmocka_test(cryptoTest

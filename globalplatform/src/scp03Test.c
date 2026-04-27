@@ -101,7 +101,7 @@ static void delete_application(void **state) {
 	securityInfo211.invokingAidLength = sizeof(GP231_ISD_AID);
 
 	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, sEnc, sMac, dek, 16, 0, 0,
-			GP211_SCP03, GP211_SCP03_IMPL_i70, GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC, 0, &securityInfo211);
+			GP211_SCP03, GP211_SCP03_IMPL_i70, GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC, 0, NULL, 0, &securityInfo211);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 	assert_memory_equal(securityInfo211.encryptionSessionKey, sessionEnc, 16);
 	assert_memory_equal(securityInfo211.C_MACSessionKey, sessionCMac, 16);
@@ -167,7 +167,7 @@ static void send_apdu_rmac_rencryption(void **state) {
 
 	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY,
 			sizeof(OPGP_VISA_DEFAULT_KEY), 0, 0,
-			GP211_SCP03, GP211_SCP03_IMPL_i70, GP211_SCP03_SECURITY_LEVEL_C_DEC_R_ENC_C_MAC_R_MAC, 0, &securityInfo211);
+			GP211_SCP03, GP211_SCP03_IMPL_i70, GP211_SCP03_SECURITY_LEVEL_C_DEC_R_ENC_C_MAC_R_MAC, 0, NULL, 0, &securityInfo211);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 
 	enqueue_commands(commands, responses, 3);
@@ -230,7 +230,7 @@ static void mutual_auth(void **state) {
 	securityInfo211.invokingAidLength = sizeof(GP231_ISD_AID);
 
 	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, sEnc, sMac, dek, 16, 0, 0,
-			GP211_SCP03, GP211_SCP03_IMPL_i70, GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC, 0, &securityInfo211);
+			GP211_SCP03, GP211_SCP03_IMPL_i70, GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC, 0, NULL, 0, &securityInfo211);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 	assert_memory_equal(securityInfo211.encryptionSessionKey, sessionEnc, 16);
 	assert_memory_equal(securityInfo211.C_MACSessionKey, sessionCMac, 16);
@@ -290,7 +290,7 @@ static void get_status(void **state) {
 	securityInfo211.invokingAidLength = sizeof(GP231_ISD_AID);
 
 	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, sEnc, sMac, dek, 16, 0, 0,
-			GP211_SCP03, GP211_SCP03_IMPL_i70, GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC, 0, &securityInfo211);
+			GP211_SCP03, GP211_SCP03_IMPL_i70, GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC, 0, NULL, 0, &securityInfo211);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 
 	// 80f24002024f0000
@@ -367,7 +367,7 @@ static void get_status_enc_mac(void **state) {
 	will_return(send_APDU, &extAuthResponseLen);
 
 	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, sEnc, sMac, dek, 16, 0, 0,
-			GP211_SCP03, GP211_SCP03_IMPL_i70, GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC, 0, &securityInfo211);
+			GP211_SCP03, GP211_SCP03_IMPL_i70, GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC, 0, NULL, 0, &securityInfo211);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 
 	enqueue_commands(commands, responses, 4);
@@ -494,7 +494,7 @@ static void get_status_aes_192(void **state) {
 	will_return(send_APDU, &extAuthResponseLen);
 
 	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, key, key, key, sizeof(key), 0, 0,
-			GP211_SCP03, GP211_SCP03_IMPL_i10, GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC, 0, &securityInfo211);
+			GP211_SCP03, GP211_SCP03_IMPL_i10, GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC, 0, NULL, 0, &securityInfo211);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 
 	enqueue_commands(commands, responses, 1);

@@ -176,6 +176,8 @@ typedef enum {
 
 static const BYTE GP211_GET_DATA_ISSUER_IDENTIFICATION_NUMBER[2] = {0x00, 0x42}; //!< Issuer Identification Number, if Card Manager selected.
 static const BYTE GP211_GET_DATA_APPLICATION_PROVIDER_IDENTIFICATION_NUMBER[2] = {0x00, 0x42}; //!< Application Provider Identification Number, if Security Domain selected.
+static const BYTE GP211_GET_DATA_ECKA_CERTIFICATE[2] = {0xBF, 0x21}; //!< SCP11: ECKA certificate store.
+static const BYTE GP211_GET_DATA_CA_KLOC_KID_KVN[2] = {0x00, 0x83}; //!< SCP11: CA-KLOC Identifier to KID/KVN mapping.
 
 static const BYTE GP211_GET_DATA_CARD_IMAGE_NUMBER[2] = {0x00, 0x45}; //!< Card Image Number, if Card Manager selected.
 static const BYTE GP211_GET_DATA_SECURITY_DOMAIN_IMAGE_NUMBER[2] = {0x00, 0x45}; //!< Security Domain Image Number, if Security Domain selected.
@@ -521,8 +523,49 @@ typedef struct {
 #define GP211_SIGNATURE_CS_ECDSA_521_SHA512 0x0002
 #define GP211_SIGNATURE_CS_SM2 0x0004
 
+#define GP211_SCP11_CERTIFICATE_MAX_ID_LENGTH 16
+#define GP211_SCP11_CERTIFICATE_MAX_DATE_LENGTH 4
+#define GP211_SCP11_CERTIFICATE_MAX_PUBLIC_KEY_LENGTH 160
+#define GP211_SCP11_CERTIFICATE_MAX_KEY_PARAMETER_REFERENCE_LENGTH 2
+#define GP211_SCP11_CERTIFICATE_MAX_SIGNATURE_LENGTH 160
+#define GP211_SCP11_CERTIFICATE_MAX_DISCRETIONARY_DATA_LENGTH 127
+#define GP211_SCP11_CERTIFICATE_MAX_AUTHORIZATIONS_LENGTH 1024
+
+static const BYTE GP211_SCP11_KEY_USAGE_DIGITAL_SIGNATURE_VERIFICATION[1] = {0x82}; //!< SCP11 certificate key usage for CERT.KA-KLOC.ECDSA.
+static const BYTE GP211_SCP11_KEY_USAGE_KEY_AGREEMENT[2] = {0x00, 0x80}; //!< SCP11 certificate key usage for CERT.OCE.ECKA.
+
 #define GP211_ELF_UPGRADE_SINGLE 0x00
 #define GP211_ELF_UPGRADE_MULTI 0x01
+
+/**
+ * SCP11 certificate (tag '7F21') fields.
+ */
+typedef struct {
+	BYTE certificateSerialNumber[GP211_SCP11_CERTIFICATE_MAX_ID_LENGTH]; //!< Certificate Serial Number (tag '93').
+	DWORD certificateSerialNumberLength; //!< Certificate Serial Number length.
+	BYTE authorityIdentifier[GP211_SCP11_CERTIFICATE_MAX_ID_LENGTH]; //!< CA-KLOC or KA-KLOC Identifier (tag '42').
+	DWORD authorityIdentifierLength; //!< CA-KLOC or KA-KLOC Identifier length.
+	BYTE subjectIdentifier[GP211_SCP11_CERTIFICATE_MAX_ID_LENGTH]; //!< Subject Identifier (tag '5F20').
+	DWORD subjectIdentifierLength; //!< Subject Identifier length.
+	BYTE keyUsage[2]; //!< Key Usage (tag '95').
+	DWORD keyUsageLength; //!< Key Usage length.
+	BOOL effectiveDatePresent; //!< TRUE if Effective Date (tag '5F25') is present.
+	BYTE effectiveDate[GP211_SCP11_CERTIFICATE_MAX_DATE_LENGTH]; //!< Effective Date in YYYYMMDD BCD format.
+	BYTE expirationDate[GP211_SCP11_CERTIFICATE_MAX_DATE_LENGTH]; //!< Expiration Date (tag '5F24') in YYYYMMDD BCD format.
+	DWORD expirationDateLength; //!< Expiration Date length.
+	USHORT discretionaryDataTag; //!< Optional discretionary data tag: 0x53 or 0x73.
+	BYTE discretionaryData[GP211_SCP11_CERTIFICATE_MAX_DISCRETIONARY_DATA_LENGTH]; //!< Optional discretionary data.
+	DWORD discretionaryDataLength; //!< Optional discretionary data length.
+	BOOL authorizationsPresent; //!< TRUE if SCP11c authorizations (tag 'BF20') are present.
+	BYTE authorizations[GP211_SCP11_CERTIFICATE_MAX_AUTHORIZATIONS_LENGTH]; //!< SCP11c authorizations value.
+	DWORD authorizationsLength; //!< SCP11c authorizations value length.
+	BYTE publicKey[GP211_SCP11_CERTIFICATE_MAX_PUBLIC_KEY_LENGTH]; //!< Public Key Q (tag 'B0').
+	DWORD publicKeyLength; //!< Public Key Q length.
+	BYTE keyParameterReference[GP211_SCP11_CERTIFICATE_MAX_KEY_PARAMETER_REFERENCE_LENGTH]; //!< Key Parameter Reference (tag 'F0').
+	DWORD keyParameterReferenceLength; //!< Key Parameter Reference length.
+	BYTE signature[GP211_SCP11_CERTIFICATE_MAX_SIGNATURE_LENGTH]; //!< Certificate signature (tag '5F37').
+	DWORD signatureLength; //!< Certificate signature length.
+} GP211_SCP11_CERTIFICATE;
 
 /**
  * SCP Information inside Card Capability Information (Tag 'A0').
@@ -747,14 +790,48 @@ OPGP_ERROR_STATUS GP211_get_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 OPGP_API
 OPGP_ERROR_STATUS GP211_set_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE statusType, PBYTE AID, DWORD AIDLength, BYTE lifeCycleState);
 
-//! \brief GlobalPlatform2.1.1: Mutual authentication.
+/**
+ * \brief GlobalPlatform2.1.1: Mutual authentication.
+ *
+ * For SCP01, SCP02 and SCP03 the \p baseKeyOrStaticOcePrivateKey parameter is
+ * the Secure Channel base key, or the master key used by the selected key
+ * derivation method. Pass it as NULL when the selected protocol implementation
+ * uses separate Secure Channel keys via \p S_ENC, \p S_MAC and \p DEK.
+ *
+ * For SCP11a the same parameter is the raw static OCE ECKA private key
+ * (SK.OCE.ECKA) used with the card static public key from CERT.SD.ECKA during
+ * key agreement. The SCP11a private key length is determined from the card
+ * certificate key parameter reference; \p keyLength remains the requested AES
+ * session key length (16, 24 or 32 bytes). \p S_ENC, \p S_MAC and \p DEK are not
+ * used for SCP11a.
+ *
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context().
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param baseKeyOrStaticOcePrivateKey [in] SCP01/SCP02/SCP03 base or master key, or SCP11a static OCE ECKA private key.
+ * \param S_ENC [in] Secure Channel Encryption Key for SCP01/SCP02/SCP03 implementations with separate static keys.
+ * \param S_MAC [in] Secure Channel Message Authentication Code Key for SCP01/SCP02/SCP03 implementations with separate static keys.
+ * \param DEK [in] Data Encryption Key for SCP01/SCP02/SCP03 implementations with separate static keys.
+ * \param keyLength [in] Symmetric key length. 16, 24 or 32 bytes.
+ * \param keySetVersion [in] The key set version on the card to use for mutual authentication.
+ * \param keyIndex [in] The key index in the key set version on the card to use for mutual authentication.
+ * \param secureChannelProtocol [in] The Secure Channel Protocol. Use GP211_SCP11 for SCP11a, or 0 for auto detection where supported.
+ * \param secureChannelProtocolImpl [in] The Secure Channel Protocol implementation. For SCP11a this is the SCP parameter byte; the SCP11a variant bits are applied by this function.
+ * \param securityLevel [in] The requested security level. See GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC and others.
+ * \param derivationMethod [in] The derivation method to use. See OPGP_DERIVATION_METHOD_VISA2.
+ * \param certOceEcka [in] Optional SCP11 certificate chain data to submit before mutual authentication. The data must contain one or more 7F21 certificates, optionally wrapped in BF21, and must end with CERT.OCE.ECKA.
+ * \param certOceEckaLength [in] Length of \p certOceEcka.
+ * \param secInfo [out] The returned GP211_SECURITY_INFO structure.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct.
+ */
 OPGP_API
 OPGP_ERROR_STATUS GP211_mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
-                           PBYTE baseKey, PBYTE S_ENC, PBYTE S_MAC,
+                           PBYTE baseKeyOrStaticOcePrivateKey, PBYTE S_ENC, PBYTE S_MAC,
                            PBYTE DEK, DWORD keyLength, BYTE keySetVersion,
                            BYTE keyIndex, BYTE secureChannelProtocol,
                            BYTE secureChannelProtocolImpl,
-                           BYTE securityLevel, BYTE derivationMethod, GP211_SECURITY_INFO *secInfo);
+                           BYTE securityLevel, BYTE derivationMethod,
+                           PBYTE certOceEcka, DWORD certOceEckaLength,
+                           GP211_SECURITY_INFO *secInfo);
 
 //! \brief GlobalPlatform2.1.1: Inits a Secure Channel implicitly.
 OPGP_API
@@ -772,6 +849,31 @@ OPGP_API
 OPGP_ERROR_STATUS GP211_get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 			  BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength);
 
+//! \brief SCP11: Retrieves the ECKA certificate store (GET DATA with tag BF21).
+OPGP_API
+OPGP_ERROR_STATUS GP211_get_ecka_certificate(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+			  BYTE keyVersionNumber, BYTE keyIdentifier, PBYTE recvBuffer, PDWORD recvBufferLength);
+
+//! \brief SCP11: Resolves KID/KVN from a CA-KLOC Identifier (GET DATA with tag 0083).
+OPGP_API
+OPGP_ERROR_STATUS GP211_ca_kloc_kid_kvn(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+			  PBYTE caKlocIdentifier, DWORD caKlocIdentifierLength,
+			  BYTE *keyIdentifier, BYTE *keyVersionNumber);
+
+//! \brief SCP11: Submits CERT.OCE.ECKA (PERFORM SECURITY OPERATION, INS 2A).
+OPGP_API
+OPGP_ERROR_STATUS GP211_perform_security_operation(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+			  BYTE caKlocKeyVersionNumber, BYTE caKlocKeyIdentifier,
+			  PBYTE certificateData, DWORD certificateDataLength,
+			  BOOL moreCertificatesExpected);
+
+//! \brief SCP11: Submits a certificate chain ending in CERT.OCE.ECKA with PERFORM SECURITY OPERATION.
+OPGP_API
+OPGP_ERROR_STATUS GP211_perform_security_operation_certificate_chain(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
+			  GP211_SECURITY_INFO *secInfo,
+			  BYTE caKlocKeyVersionNumber, BYTE caKlocKeyIdentifier,
+			  PBYTE certificateChainData, DWORD certificateChainDataLength);
+
 //! \brief GlobalPlatform2.1.1: Retrieve diversification data (tag 0xCF).
 OPGP_API
 OPGP_ERROR_STATUS GP211_get_diversification_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -788,6 +890,18 @@ OPGP_ERROR_STATUS GP211_get_card_recognition_data(OPGP_CARD_CONTEXT cardContext,
 //! \brief Parses the card recognition data response.
 OPGP_API
 OPGP_ERROR_STATUS GP211_parse_card_recognition_data(const BYTE *data, DWORD dataLength, GP211_CARD_RECOGNITION_DATA *cardData);
+
+//! \brief SCP11: Parses a certificate encoded according to table 6-12.
+OPGP_API
+OPGP_ERROR_STATUS GP211_parse_scp11_certificate(PBYTE certificateData, DWORD certificateDataLength,
+			  GP211_SCP11_CERTIFICATE *certificate);
+
+//! \brief SCP11: Builds and signs a certificate encoded according to table 6-12.
+OPGP_API
+OPGP_ERROR_STATUS GP211_build_scp11_certificate(GP211_SCP11_CERTIFICATE *certificate,
+			  OPGP_STRING subjectPublicKeyFileName, char *subjectPublicKeyPassPhrase,
+			  OPGP_STRING signingPrivateKeyFileName, char *signingPrivateKeyPassPhrase,
+			  PBYTE certificateData, PDWORD certificateDataLength);
 
 //! \brief GlobalPlatform2.3.1: Return the card capability information.
 OPGP_API
@@ -1202,6 +1316,25 @@ OPGP_ERROR_STATUS OPGP_encrypt_sensitive_data(GP211_SECURITY_INFO *secInfo,
 OPGP_API
 OPGP_ERROR_STATUS GP211_store_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 				 BYTE encryptionFlags, BYTE formatFlags, BOOL responseDataExpected, PBYTE data, DWORD dataLength);
+
+//! \brief SCP11: STORE DATA for the ECKA certificate store (section 6.7).
+OPGP_API
+OPGP_ERROR_STATUS GP211_store_data_ecka_certificate(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+				 BYTE keyVersionNumber, BYTE keyIdentifier,
+				 OPGP_STRING PEMKeyFileName, char *passPhrase);
+
+//! \brief SCP11: STORE DATA for a whitelist linked to a PK.CA-KLOC.ECDSA (section 6.8).
+OPGP_API
+OPGP_ERROR_STATUS GP211_store_data_whitelist(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+				 BYTE keyVersionNumber, BYTE keyIdentifier,
+				 BOOL whitelistCounterPresent, USHORT whitelistCounter,
+				 PBYTE whitelistValue, DWORD whitelistValueLength);
+
+//! \brief SCP11: STORE DATA for a CA-KLOC Identifier to PK.CA-KLOC.ECDSA mapping (section 6.9).
+OPGP_API
+OPGP_ERROR_STATUS GP211_store_data_ca_kloc_kid_kvn(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+				 PBYTE caKlocIdentifier, DWORD caKlocIdentifierLength,
+				 BYTE keyIdentifier, BYTE keyVersionNumber);
 
 //! \brief GlobalPlatform2.3.1: Builds STORE DATA encoding for symmetric keys according to section 11.11.4.
 OPGP_API

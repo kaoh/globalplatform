@@ -334,7 +334,7 @@ static void get_status_mac_enc(void **state) {
 
 	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY,
 			sizeof(OPGP_VISA_DEFAULT_KEY), 0, 0,
-			GP211_SCP01, GP211_SCP01_IMPL_i05, GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC, 0, &gpSecurityInfo211);
+			GP211_SCP01, GP211_SCP01_IMPL_i05, GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC, 0, NULL, 0, &gpSecurityInfo211);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 
 	enqueue_commands(commands, responses, 4);

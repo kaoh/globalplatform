@@ -46,6 +46,7 @@ extern "C"
 
 #include "globalplatform/types.h"
 #include "globalplatform/library.h"
+#include "globalplatform/error.h"
 
 /**
  * A TLV object.
@@ -58,9 +59,27 @@ typedef struct {
 	DWORD tlvLength; //!< The length of the whole TLV.
 } TLV;
 
+/**
+ * A lightweight TLV view.
+ **/
+typedef struct {
+	USHORT tag; //!< The Tag.
+	const BYTE *value; //!< Pointer into the source buffer.
+	DWORD length; //!< The length of the value.
+	DWORD tlvLength; //!< The length of the whole TLV.
+} GP_SIMPLE_TLV;
+
 //! \brief Reads a TLV struct from the given buffer
 OPGP_NO_API
 LONG read_TLV(const BYTE *buffer, DWORD length, TLV *tlv);
+
+//! \brief Reads a TLV view from the given buffer without copying the value.
+OPGP_NO_API
+LONG parse_simple_tlv(const BYTE *buffer, DWORD length, GP_SIMPLE_TLV *tlv);
+
+//! \brief Appends a TLV to the given buffer.
+OPGP_NO_API
+OPGP_ERROR_STATUS append_tlv(PBYTE buffer, DWORD bufferSize, PDWORD offset, USHORT tag, const BYTE *value, DWORD valueLength);
 
 //! \brief Converts a ISO 7816-4 Le Byte into its value.
 OPGP_NO_API

@@ -96,7 +96,7 @@ static void get_status_mac_only(void **state) {
 
 	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY,
 			sizeof(OPGP_VISA_DEFAULT_KEY), 0, 0,
-			GP211_SCP02, GP211_SCP02_IMPL_i15, GP211_SCP02_SECURITY_LEVEL_C_MAC, 0, &securityInfo211);
+			GP211_SCP02, GP211_SCP02_IMPL_i15, GP211_SCP02_SECURITY_LEVEL_C_MAC, 0, NULL, 0, &securityInfo211);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 
 	// 80f24002024f0000
@@ -175,7 +175,7 @@ static void install_mac_enc(void **state) {
 
 	status = GP211_mutual_authentication(cardContext, cardInfo, NULL, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY,
 			sizeof(OPGP_VISA_DEFAULT_KEY), 0, 0,
-			GP211_SCP02, GP211_SCP02_IMPL_i15, GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC, 0, &securityInfo211);
+			GP211_SCP02, GP211_SCP02_IMPL_i15, GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC, 0, NULL, 0, &securityInfo211);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 
 	enqueue_commands(commands, responses, 6);

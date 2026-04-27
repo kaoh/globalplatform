@@ -1409,7 +1409,7 @@ static int mutual_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     if (derivation == 1) deriv = OPGP_DERIVATION_METHOD_VISA2;
     else if (derivation == 2) deriv = OPGP_DERIVATION_METHOD_EMV_CPS11;
     OPGP_ERROR_STATUS s2 = GP211_mutual_authentication(ctx, info, baseKey, S_ENC, S_MAC, DEK, keyLength,
-                                                       keyset_ver, key_index, scp, scpImpl, secLevel, deriv, sec);
+                                                       keyset_ver, key_index, scp, scpImpl, secLevel, deriv, NULL, 0, sec);
     if (!status_ok(s2, true)) {
         return -1;
     }
