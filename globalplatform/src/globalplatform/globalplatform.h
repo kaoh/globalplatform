@@ -814,7 +814,7 @@ OPGP_ERROR_STATUS GP211_set_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
  * \param keyLength [in] Symmetric key length. 16, 24 or 32 bytes.
  * \param keySetVersion [in] The key set version on the card to use for mutual authentication.
  * \param keyIndex [in] The key index in the key set version on the card to use for mutual authentication.
- * \param secureChannelProtocol [in] The Secure Channel Protocol. Use GP211_SCP11 for SCP11a, or 0 for auto detection where supported.
+ * \param secureChannelProtocol [in] The Secure Channel Protocol. Use GP211_SCP11 explicitly for SCP11a. Passing 0 only auto-detects SCP01/SCP02/SCP03 via INITIALIZE UPDATE; callers may use GP211_get_secure_channel_protocol_details() before authentication for card-recognition based discovery.
  * \param secureChannelProtocolImpl [in] The Secure Channel Protocol implementation. For SCP11a this is the SCP parameter byte; the SCP11a variant bits are applied by this function.
  * \param securityLevel [in] The requested security level. See GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC and others.
  * \param derivationMethod [in] The derivation method to use. See OPGP_DERIVATION_METHOD_VISA2.

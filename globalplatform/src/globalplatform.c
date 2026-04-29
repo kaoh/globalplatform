@@ -7711,7 +7711,7 @@ end:
  * \param keyLength [in] Symmetric key length. 16, 24 or 32 bytes.
  * \param keySetVersion [in] The key set version on the card to use for mutual authentication.
  * \param keyIndex [in] The key index in the key set version on the card to use for mutual authentication.
- * \param secureChannelProtocol [in] The Secure Channel Protocol. Use GP211_SCP11 for SCP11a, or 0 for auto detection where supported.
+ * \param secureChannelProtocol [in] The Secure Channel Protocol. Use GP211_SCP11 explicitly for SCP11a. Passing 0 only auto-detects SCP01/SCP02/SCP03 via INITIALIZE UPDATE; callers may use GP211_get_secure_channel_protocol_details() before authentication for card-recognition based discovery.
  * \param secureChannelProtocolImpl [in] The Secure Channel Protocol implementation, or SCP11 parameter byte for SCP11a.
  * \param securityLevel [in] The requested security level.
  * \param derivationMethod [in] The derivation method to use.
