@@ -185,6 +185,93 @@ static LONG parse_optional_oid_and_data(const TLV *sourceTlv,
 	return 0;
 }
 
+static int parse_oid_subidentifier(const BYTE *oid, DWORD oidLength, DWORD *offset,
+		DWORD *value, DWORD *encodedStart, DWORD *encodedLength) {
+	DWORD idx;
+	DWORD v = 0;
+	DWORD start;
+
+	if (oid == NULL || offset == NULL || value == NULL || *offset >= oidLength) {
+		return -1;
+	}
+
+	start = *offset;
+	idx = *offset;
+	while (idx < oidLength) {
+		BYTE b = oid[idx++];
+		if (v > (0xFFFFFFFFu >> 7)) {
+			return -1;
+		}
+		v = (v << 7) | (DWORD)(b & 0x7F);
+		if ((b & 0x80) == 0) {
+			*offset = idx;
+			*value = v;
+			if (encodedStart != NULL) {
+				*encodedStart = start;
+			}
+			if (encodedLength != NULL) {
+				*encodedLength = idx - start;
+			}
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+static int parse_card_data_scp_oid(const BYTE *oid, DWORD oidLength,
+		BYTE *scp, BYTE *scpImpl, DWORD *scpImplValue,
+		BYTE *scpImplOidBytes, BYTE *scpImplOidBytesLength) {
+	DWORD offset = 0;
+	DWORD value = 0;
+	DWORD implStart = 0;
+	DWORD implLength = 0;
+	DWORD copyLength = 0;
+
+	if (oid == NULL || scp == NULL || scpImpl == NULL || scpImplValue == NULL
+			|| scpImplOidBytes == NULL || scpImplOidBytesLength == NULL || oidLength == 0) {
+		return -1;
+	}
+
+	/* First byte encodes arcs 1.2 and must be 0x2A for GlobalPlatform OIDs used here. */
+	if (oid[0] != 0x2A) {
+		return -1;
+	}
+	offset = 1;
+
+	if (parse_oid_subidentifier(oid, oidLength, &offset, &value, NULL, NULL) != 0 || value != 840) {
+		return -1;
+	}
+	if (parse_oid_subidentifier(oid, oidLength, &offset, &value, NULL, NULL) != 0 || value != 114283) {
+		return -1;
+	}
+	if (parse_oid_subidentifier(oid, oidLength, &offset, &value, NULL, NULL) != 0 || value != 4) {
+		return -1;
+	}
+
+	/* SCP identifier subidentifier. */
+	if (parse_oid_subidentifier(oid, oidLength, &offset, &value, NULL, NULL) != 0 || value > 0xFF) {
+		return -1;
+	}
+	*scp = (BYTE)value;
+
+	/* SCP implementation option subidentifier (can be multi-byte in BER). */
+	if (parse_oid_subidentifier(oid, oidLength, &offset, &value, &implStart, &implLength) != 0 || implLength == 0) {
+		return -1;
+	}
+	if (offset != oidLength) {
+		return -1;
+	}
+
+	*scpImplValue = value;
+	*scpImpl = oid[implStart + implLength - 1];
+
+	copyLength = min(implLength, (DWORD)GP211_MAX_CARD_RECOGNITION_SCP_IMPL_OID_BYTES);
+	memcpy(scpImplOidBytes, oid + implStart, copyLength);
+	*scpImplOidBytesLength = (BYTE)copyLength;
+	return 0;
+}
+
 static int parse_card_capability_scp_info(const TLV *sourceTlv,
 		GP211_CARD_CAPABILITY_INFORMATION *cardCapabilityInfo) {
 	DWORD offset = 0;
@@ -3047,8 +3134,16 @@ OPGP_ERROR_STATUS GP211_parse_card_recognition_data(const BYTE *data, DWORD data
 			* the Issuer Security Domain and its implementation options
 			*/
 			if (numSCPs < sizeof(cardData->scp)) {
-				cardData->scp[numSCPs] = tlv2.value[tlv2.length-2];
-				cardData->scpImpl[numSCPs++] = tlv2.value[tlv2.length-1];
+				if (parse_card_data_scp_oid(tlv2.value, tlv2.length,
+						&cardData->scp[numSCPs],
+						&cardData->scpImpl[numSCPs],
+						&cardData->scpImplValue[numSCPs],
+						cardData->scpImplOidBytes[numSCPs],
+						&cardData->scpImplOidBytesLength[numSCPs]) != 0) {
+					OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+					return status;
+				}
+				numSCPs++;
 			}
 			OPGP_LOG_HEX(_T("GP211_get_card_data: OIDSecureChannelProtocol: "), tlv2.value, tlv2.length);
 		}
@@ -3773,7 +3868,12 @@ OPGP_ERROR_STATUS GP211_build_card_recognition_data(const GP211_CARD_RECOGNITION
 	// 4. Tag 0x64: Secure Channel Protocol OIDs
 	innerOffset = 0;
 	for (i = 0; i < cardData->scpLength; i++) {
-		snprintf(fullOid, sizeof(fullOid), "1.2.840.114283.4.%d.%d", cardData->scp[i], cardData->scpImpl[i]);
+		DWORD scpImplValue = cardData->scpImplValue[i];
+		if (scpImplValue == 0 && cardData->scpImplOidBytesLength[i] == 0) {
+			scpImplValue = cardData->scpImpl[i];
+		}
+		snprintf(fullOid, sizeof(fullOid), "1.2.840.114283.4.%u.%lu",
+			(unsigned int)cardData->scp[i], (unsigned long)scpImplValue);
 		oidLen = build_OID_numeric_string(fullOid, oidBuf, sizeof(oidBuf));
 		res = write_tlv(0x06, oidBuf, oidLen, innerBuf, sizeof(innerBuf), innerOffset);
 		if (res == -1) goto err_buf;

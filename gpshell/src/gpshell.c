@@ -372,12 +372,19 @@ static void displayCardRecognitionData(GP211_CARD_RECOGNITION_DATA cardData) {
     DWORD i=0;
     TCHAR temp[128];
     TCHAR oidTemp[128];
+    TCHAR scpImplTemp[2 * GP211_MAX_CARD_RECOGNITION_SCP_IMPL_OID_BYTES + 1];
     if (cardData.version[0] != '\0') {
         convertCharToTChar(cardData.version, temp, sizeof(temp)/sizeof(TCHAR));
         _tprintf(_T("Version: %s\n"), temp);
     }
     for (i=0; i<cardData.scpLength; i++) {
-        _tprintf(_T("SCP: %d SCP Impl: %02x\n"), cardData.scp[i], cardData.scpImpl[i]);
+        if (cardData.scpImplOidBytesLength[i] > 0) {
+            convertByteArrayToString(cardData.scpImplOidBytes[i], cardData.scpImplOidBytesLength[i],
+                sizeof(scpImplTemp)/sizeof(TCHAR), scpImplTemp);
+        } else {
+            _stprintf(scpImplTemp, _T("%02x"), cardData.scpImpl[i]);
+        }
+        _tprintf(_T("SCP: %d SCP Impl: %s\n"), cardData.scp[i], scpImplTemp);
     }
     if (cardData.cardConfigurationDetailsOidLength > 0) {
         convertCharToTChar(cardData.cardConfigurationDetailsOid, oidTemp, sizeof(oidTemp)/sizeof(TCHAR));

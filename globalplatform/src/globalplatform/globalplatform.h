@@ -468,10 +468,43 @@ typedef struct {
 /**
  * The Card Recognition Data returned for tag 0x66 with GET DATA.
  */
+#define GP211_MAX_CARD_RECOGNITION_SCP_INFOS 16
+#define GP211_MAX_CARD_RECOGNITION_SCP_IMPL_OID_BYTES 8
+
+/* SCPi bit flags for card-recognition-data SCP implementation options. */
+#define GP211_SCP02_SCPI_THREE_KEYS 0x01 //!< SCP02: 1=3 static keys, 0=1 base key.
+#define GP211_SCP02_SCPI_MODE_MASK 0x0E //!< SCP02: initiation/ICV mode selector.
+#define GP211_SCP02_SCPI_MODE_EXPLICIT 0x04 //!< SCP02: explicit initiation, C-MAC on modified APDU, ICV=0.
+#define GP211_SCP02_SCPI_MODE_IMPLICIT 0x0A //!< SCP02: implicit initiation, C-MAC on unmodified APDU, ICV=MAC(AID).
+#define GP211_SCP02_SCPI_CMAC_ICV_ENCRYPTION 0x10 //!< SCP02: C-MAC ICV encryption enabled.
+#define GP211_SCP02_SCPI_PSEUDO_RANDOM_CARD_CHALLENGE 0x40 //!< SCP02: pseudo-random card challenge algorithm.
+
+#define GP211_SCP03_SCPI_PSEUDO_RANDOM_CARD_CHALLENGE 0x10 //!< SCP03: 1=pseudo-random card challenge, 0=random.
+#define GP211_SCP03_SCPI_RESPONSE_MASK 0x60 //!< SCP03: response protection coding mask.
+#define GP211_SCP03_SCPI_RESPONSE_NONE 0x00 //!< SCP03: no R-MAC / no R-ENC.
+#define GP211_SCP03_SCPI_RESPONSE_R_MAC 0x20 //!< SCP03: R-MAC / no R-ENC.
+#define GP211_SCP03_SCPI_RESPONSE_R_ENC_R_MAC 0x60 //!< SCP03: R-MAC and R-ENC.
+
+#define GP211_SCP11_SCPI_B1_SECOND_BYTE_PRESENT 0x80 //!< SCP11 byte 1: second byte present.
+#define GP211_SCP11_SCPI_B1_S16_MODE 0x40 //!< SCP11 byte 1: 1=S16 secure messaging, 0=S8.
+#define GP211_SCP11_SCPI_B1_SCP11C_AUTH_BF20 0x20 //!< SCP11 byte 1: SCP11c authorization mechanism supported.
+#define GP211_SCP11_SCPI_B1_SCP11C_SUPPORTED 0x10 //!< SCP11 byte 1: SCP11c supported.
+#define GP211_SCP11_SCPI_B1_CERT_CHAIN_SUPPORTED 0x08 //!< SCP11 byte 1: certificate chain supported.
+#define GP211_SCP11_SCPI_B1_SD_PERSISTENT_PK_OCE_ECKA 0x04 //!< SCP11 byte 1: SD persistently stores PK.OCE.ECKA.
+#define GP211_SCP11_SCPI_B1_SCP11B_SUPPORTED 0x02 //!< SCP11 byte 1: SCP11b supported.
+#define GP211_SCP11_SCPI_B1_SCP11A_SUPPORTED 0x01 //!< SCP11 byte 1: SCP11a supported.
+
+#define GP211_SCP11_SCPI_B2_GP_LEGACY_CERT_NOT_SUPPORTED 0x04 //!< SCP11 byte 2: GP legacy format certificates not supported.
+#define GP211_SCP11_SCPI_B2_X509_CERT_SUPPORTED 0x02 //!< SCP11 byte 2: X.509 certificates supported.
+#define GP211_SCP11_SCPI_B2_SCP11A_AUTH_BF20 0x01 //!< SCP11 byte 2: SCP11a authorization mechanism supported.
+
 typedef struct {
 	char version[16]; //!< The GlobalPlatform version string (e.g. "2.1.1").
-	BYTE scp[16]; //!< The secure channel protocols.
-	BYTE scpImpl[16]; //!< The secure channel protocol implementations.
+	BYTE scp[GP211_MAX_CARD_RECOGNITION_SCP_INFOS]; //!< The secure channel protocols.
+	BYTE scpImpl[GP211_MAX_CARD_RECOGNITION_SCP_INFOS]; //!< The SCP implementation trailing byte (backward compatible for one-byte 'i').
+	DWORD scpImplValue[GP211_MAX_CARD_RECOGNITION_SCP_INFOS]; //!< The numeric SCP implementation OID subidentifier value.
+	BYTE scpImplOidBytes[GP211_MAX_CARD_RECOGNITION_SCP_INFOS][GP211_MAX_CARD_RECOGNITION_SCP_IMPL_OID_BYTES]; //!< BER-encoded SCP implementation OID subidentifier bytes.
+	BYTE scpImplOidBytesLength[GP211_MAX_CARD_RECOGNITION_SCP_INFOS]; //!< Length of BER-encoded SCP implementation OID subidentifier bytes.
 	DWORD scpLength; //!< The length of the SCP.
 	char cardConfigurationDetailsOid[128]; //!< Card configuration details OID as numeric string.
 	DWORD cardConfigurationDetailsOidLength; //!< Card configuration details OID length.

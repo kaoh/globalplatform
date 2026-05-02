@@ -209,6 +209,32 @@ static void test_parse_card_recognition_vector_2(void **state) {
 	assert_string_equal(data.cardChipDetailsOid, "1.3.6.1.4.1.42.2.110.1.3");
 }
 
+static void test_parse_card_recognition_vector_multibyte_scp_impl(void **state) {
+	OPGP_ERROR_STATUS status;
+	GP211_CARD_RECOGNITION_DATA data;
+	const BYTE expectedImpl0[] = {0x60};
+	const BYTE expectedImpl1[] = {0x9B, 0x06};
+	BYTE buffer[128];
+	DWORD bufferLength = sizeof(buffer);
+
+	hex_to_byte_array("663F733D06072A864886FC6B01600C060A2A864886FC6B02020301630906072A864886FC6B03640B06092A864886FC6B040360640C060A2A864886FC6B04119B06",
+		buffer, &bufferLength);
+	status = GP211_parse_card_recognition_data(buffer, bufferLength, &data);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+	assert_string_equal(data.version, "2.3.1");
+	assert_int_equal(data.scpLength, 2);
+	assert_int_equal(data.scp[0], 0x03);
+	assert_int_equal(data.scpImpl[0], 0x60);
+	assert_int_equal(data.scpImplValue[0], 0x60);
+	assert_int_equal(data.scpImplOidBytesLength[0], 1);
+	assert_memory_equal(data.scpImplOidBytes[0], expectedImpl0, sizeof(expectedImpl0));
+	assert_int_equal(data.scp[1], 0x11);
+	assert_int_equal(data.scpImpl[1], 0x06);
+	assert_int_equal(data.scpImplValue[1], 3462);
+	assert_int_equal(data.scpImplOidBytesLength[1], 2);
+	assert_memory_equal(data.scpImplOidBytes[1], expectedImpl1, sizeof(expectedImpl1));
+}
+
 static void test_build_parse_card_recognition_roundtrip(void **state) {
 	OPGP_ERROR_STATUS status;
 	GP211_CARD_RECOGNITION_DATA input = {0};
@@ -234,6 +260,40 @@ static void test_build_parse_card_recognition_roundtrip(void **state) {
 	assert_int_equal(parsed.scpImpl[0], input.scpImpl[0]);
 	assert_string_equal(parsed.cardConfigurationDetailsOid, input.cardConfigurationDetailsOid);
 	assert_string_equal(parsed.cardChipDetailsOid, input.cardChipDetailsOid);
+}
+
+static void test_build_parse_card_recognition_roundtrip_multibyte_scp_impl(void **state) {
+	OPGP_ERROR_STATUS status;
+	GP211_CARD_RECOGNITION_DATA input = {0};
+	GP211_CARD_RECOGNITION_DATA parsed;
+	const BYTE expectedImpl1[] = {0x9B, 0x06};
+	BYTE buffer[512];
+	DWORD bufferLength = sizeof(buffer);
+
+	strcpy(input.version, "2.3.1");
+	input.scpLength = 2;
+	input.scp[0] = 0x03;
+	input.scpImpl[0] = 0x60;
+	input.scpImplValue[0] = 0x60;
+	input.scp[1] = 0x11;
+	input.scpImpl[1] = 0x06;
+	input.scpImplValue[1] = 3462;
+
+	status = GP211_build_card_recognition_data(&input, buffer, &bufferLength);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+
+	status = GP211_parse_card_recognition_data(buffer, bufferLength, &parsed);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+	assert_string_equal(parsed.version, input.version);
+	assert_int_equal(parsed.scpLength, input.scpLength);
+	assert_int_equal(parsed.scp[0], input.scp[0]);
+	assert_int_equal(parsed.scpImpl[0], input.scpImpl[0]);
+	assert_int_equal(parsed.scpImplValue[0], input.scpImplValue[0]);
+	assert_int_equal(parsed.scp[1], input.scp[1]);
+	assert_int_equal(parsed.scpImpl[1], input.scpImpl[1]);
+	assert_int_equal(parsed.scpImplValue[1], input.scpImplValue[1]);
+	assert_int_equal(parsed.scpImplOidBytesLength[1], 2);
+	assert_memory_equal(parsed.scpImplOidBytes[1], expectedImpl1, sizeof(expectedImpl1));
 }
 
 static void test_parse_card_capability_vector_1(void **state) {
@@ -284,7 +344,9 @@ int main(void) {
 		cmocka_unit_test(test_parse_extended_card_resources),
 		cmocka_unit_test(test_parse_card_recognition_vector_1),
 		cmocka_unit_test(test_parse_card_recognition_vector_2),
+		cmocka_unit_test(test_parse_card_recognition_vector_multibyte_scp_impl),
 		cmocka_unit_test(test_build_parse_card_recognition_roundtrip),
+		cmocka_unit_test(test_build_parse_card_recognition_roundtrip_multibyte_scp_impl),
 		cmocka_unit_test(test_parse_card_capability_vector_1),
 		cmocka_unit_test(test_parse_card_capability_vector_2_invalid),
 	};

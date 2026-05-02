@@ -442,6 +442,227 @@ static void print_hex(const unsigned char *buf, size_t len) {
     for (size_t i=0;i<len;i++) printf("%02X", buf[i]);
 }
 
+static void scp_impl_to_hex(const GP211_CARD_RECOGNITION_DATA *data, DWORD index, char *out, size_t outlen) {
+    size_t pos = 0;
+    BYTE implLength = 0;
+
+    if (out == NULL || outlen == 0 || data == NULL) return;
+    out[0] = '\0';
+
+    implLength = data->scpImplOidBytesLength[index];
+    if (implLength > 0) {
+        for (BYTE j = 0; j < implLength && pos + 2 < outlen; j++) {
+            int written = snprintf(out + pos, outlen - pos, "%02X", data->scpImplOidBytes[index][j]);
+            if (written < 0) {
+                out[pos] = '\0';
+                return;
+            }
+            if ((size_t)written >= outlen - pos) {
+                pos = outlen - 1;
+                out[pos] = '\0';
+                return;
+            }
+            pos += (size_t)written;
+        }
+        return;
+    }
+
+    snprintf(out, outlen, "%02X", data->scpImpl[index]);
+}
+
+static void append_csv_token(char *out, size_t outlen, const char *token) {
+    size_t used = 0;
+    if (!out || outlen == 0 || !token || token[0] == '\0') return;
+    used = strlen(out);
+    if (used + 1 >= outlen) return;
+
+    if (used > 0) {
+        if (used + 2 >= outlen) return;
+        out[used++] = ',';
+        out[used++] = ' ';
+    }
+
+    for (const char *p = token; *p && used + 1 < outlen; ++p) {
+        out[used++] = *p;
+    }
+    out[used] = '\0';
+}
+
+static void append_scpi_unknown_bits(char *out, size_t outlen, BYTE bits) {
+    char buf[16];
+    if (bits == 0) return;
+    snprintf(buf, sizeof(buf), "rfu=0x%02X", bits);
+    append_csv_token(out, outlen, buf);
+}
+
+static size_t scp_impl_to_bytes(const GP211_CARD_RECOGNITION_DATA *data, DWORD index, BYTE *out, size_t outlen) {
+    size_t copyLen = 0;
+    BYTE implLength = 0;
+    if (!data || !out || outlen == 0) return 0;
+
+    implLength = data->scpImplOidBytesLength[index];
+    if (implLength == 0) {
+        out[0] = data->scpImpl[index];
+        return 1;
+    }
+
+    copyLen = (size_t)implLength;
+    if (copyLen > outlen) copyLen = outlen;
+    memcpy(out, data->scpImplOidBytes[index], copyLen);
+    return copyLen;
+}
+
+static void scpi_scp02_to_string(const BYTE *impl, size_t implLen, char *out, size_t outlen) {
+    BYTE i = 0;
+    BYTE mode = 0;
+    BYTE knownMask = 0;
+    if (!out || outlen == 0) return;
+    out[0] = '\0';
+
+    if (!impl || implLen != 1) {
+        snprintf(out, outlen, "unexpected-length=%u", (unsigned int)implLen);
+        return;
+    }
+
+    i = impl[0];
+    mode = (BYTE)(i & GP211_SCP02_SCPI_MODE_MASK);
+
+    switch (mode) {
+        case GP211_SCP02_SCPI_MODE_EXPLICIT:
+            append_csv_token(out, outlen, "explicit-init");
+            append_csv_token(out, outlen, "cmac=modified-apdu");
+            append_csv_token(out, outlen, "icv=zero");
+            break;
+        case GP211_SCP02_SCPI_MODE_IMPLICIT:
+            append_csv_token(out, outlen, "implicit-init");
+            append_csv_token(out, outlen, "cmac=unmodified-apdu");
+            append_csv_token(out, outlen, "icv=mac(aid)");
+            break;
+        default: {
+            char modeBuf[16];
+            snprintf(modeBuf, sizeof(modeBuf), "mode=0x%02X", mode);
+            append_csv_token(out, outlen, modeBuf);
+            break;
+        }
+    }
+
+    append_csv_token(out, outlen,
+        (i & GP211_SCP02_SCPI_CMAC_ICV_ENCRYPTION) ? "cmac-icv-encrypted" : "cmac-icv-plain");
+    append_csv_token(out, outlen,
+        (i & GP211_SCP02_SCPI_PSEUDO_RANDOM_CARD_CHALLENGE) ? "challenge=pseudo-random" : "challenge=unspecified");
+    append_csv_token(out, outlen,
+        (i & GP211_SCP02_SCPI_THREE_KEYS) ? "keys=3-static" : "keys=1-base");
+
+    knownMask = (BYTE)(GP211_SCP02_SCPI_THREE_KEYS | GP211_SCP02_SCPI_MODE_MASK
+        | GP211_SCP02_SCPI_CMAC_ICV_ENCRYPTION | GP211_SCP02_SCPI_PSEUDO_RANDOM_CARD_CHALLENGE);
+    append_scpi_unknown_bits(out, outlen, (BYTE)(i & (BYTE)~knownMask));
+}
+
+static void scpi_scp03_to_string(const BYTE *impl, size_t implLen, char *out, size_t outlen) {
+    BYTE i = 0;
+    BYTE response = 0;
+    BYTE knownMask = 0;
+    if (!out || outlen == 0) return;
+    out[0] = '\0';
+
+    if (!impl || implLen != 1) {
+        snprintf(out, outlen, "unexpected-length=%u", (unsigned int)implLen);
+        return;
+    }
+
+    i = impl[0];
+    response = (BYTE)(i & GP211_SCP03_SCPI_RESPONSE_MASK);
+
+    append_csv_token(out, outlen,
+        (i & GP211_SCP03_SCPI_PSEUDO_RANDOM_CARD_CHALLENGE) ? "challenge=pseudo-random" : "challenge=random");
+
+    switch (response) {
+        case GP211_SCP03_SCPI_RESPONSE_NONE:
+            append_csv_token(out, outlen, "response=no-rmac/no-renc");
+            break;
+        case GP211_SCP03_SCPI_RESPONSE_R_MAC:
+            append_csv_token(out, outlen, "response=rmac");
+            break;
+        case GP211_SCP03_SCPI_RESPONSE_R_ENC_R_MAC:
+            append_csv_token(out, outlen, "response=rmac+renc");
+            break;
+        default: {
+            char modeBuf[24];
+            snprintf(modeBuf, sizeof(modeBuf), "response=0x%02X", response);
+            append_csv_token(out, outlen, modeBuf);
+            break;
+        }
+    }
+
+    knownMask = (BYTE)(GP211_SCP03_SCPI_PSEUDO_RANDOM_CARD_CHALLENGE | GP211_SCP03_SCPI_RESPONSE_MASK);
+    append_scpi_unknown_bits(out, outlen, (BYTE)(i & (BYTE)~knownMask));
+}
+
+static void scpi_scp11_to_string(const BYTE *impl, size_t implLen, char *out, size_t outlen) {
+    BYTE b1 = 0;
+    if (!out || outlen == 0) return;
+    out[0] = '\0';
+
+    if (!impl || implLen == 0) {
+        snprintf(out, outlen, "unexpected-length=0");
+        return;
+    }
+
+    b1 = impl[0];
+
+    if ((b1 & GP211_SCP11_SCPI_B1_SCP11A_SUPPORTED) != 0) append_csv_token(out, outlen, "scp11a");
+    if ((b1 & GP211_SCP11_SCPI_B1_SCP11B_SUPPORTED) != 0) append_csv_token(out, outlen, "scp11b");
+    if ((b1 & GP211_SCP11_SCPI_B1_SCP11C_SUPPORTED) != 0) append_csv_token(out, outlen, "scp11c");
+
+    append_csv_token(out, outlen,
+        (b1 & GP211_SCP11_SCPI_B1_S16_MODE) ? "sm=s16" : "sm=s8");
+
+    if ((b1 & GP211_SCP11_SCPI_B1_SCP11C_AUTH_BF20) != 0) append_csv_token(out, outlen, "scp11c-bf20-auth");
+    if ((b1 & GP211_SCP11_SCPI_B1_CERT_CHAIN_SUPPORTED) != 0) append_csv_token(out, outlen, "cert-chain");
+    if ((b1 & GP211_SCP11_SCPI_B1_SD_PERSISTENT_PK_OCE_ECKA) != 0) append_csv_token(out, outlen, "sd-stores-pk.oce.ecka");
+
+    if ((b1 & GP211_SCP11_SCPI_B1_SECOND_BYTE_PRESENT) != 0) {
+        if (implLen >= 2) {
+            BYTE b2 = impl[1];
+            BYTE knownMask = (BYTE)(GP211_SCP11_SCPI_B2_GP_LEGACY_CERT_NOT_SUPPORTED
+                | GP211_SCP11_SCPI_B2_X509_CERT_SUPPORTED | GP211_SCP11_SCPI_B2_SCP11A_AUTH_BF20);
+            if ((b2 & GP211_SCP11_SCPI_B2_SCP11A_AUTH_BF20) != 0) append_csv_token(out, outlen, "scp11a-bf20-auth");
+            if ((b2 & GP211_SCP11_SCPI_B2_X509_CERT_SUPPORTED) != 0) append_csv_token(out, outlen, "x509-cert");
+            if ((b2 & GP211_SCP11_SCPI_B2_GP_LEGACY_CERT_NOT_SUPPORTED) != 0) append_csv_token(out, outlen, "no-gp-legacy-cert");
+            append_scpi_unknown_bits(out, outlen, (BYTE)(b2 & (BYTE)~knownMask));
+
+            if (implLen > 2) {
+                char extraBuf[24];
+                snprintf(extraBuf, sizeof(extraBuf), "extra-bytes=%u", (unsigned int)(implLen - 2));
+                append_csv_token(out, outlen, extraBuf);
+            }
+        } else {
+            append_csv_token(out, outlen, "byte2-missing");
+        }
+    } else if (implLen >= 2) {
+        append_csv_token(out, outlen, "byte2-present-without-flag");
+    }
+}
+
+static void scpi_to_string(BYTE scp, const BYTE *impl, size_t implLen, char *out, size_t outlen) {
+    if (!out || outlen == 0) return;
+    out[0] = '\0';
+
+    switch (scp) {
+        case GP211_SCP02:
+            scpi_scp02_to_string(impl, implLen, out, outlen);
+            break;
+        case GP211_SCP03:
+            scpi_scp03_to_string(impl, implLen, out, outlen);
+            break;
+        case GP211_SCP11:
+            scpi_scp11_to_string(impl, implLen, out, outlen);
+            break;
+        default:
+            break;
+    }
+}
+
 static void print_aid(const OPGP_AID *aid) { print_hex(aid->AID, aid->AIDLength); }
 
 static int cplc_date_to_dmy(const BYTE *data, int *day, int *month, int *year) {
@@ -4401,10 +4622,25 @@ static int cmd_card_info(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECUR
         printf("SCP List : (none)\n");
     } else {
         for (DWORD i = 0; i < data.scpLength; i++) {
+            BYTE implBytes[GP211_MAX_CARD_RECOGNITION_SCP_IMPL_OID_BYTES];
+            size_t implLen = 0;
+            char implHex[2 * GP211_MAX_CARD_RECOGNITION_SCP_IMPL_OID_BYTES + 1];
+            char scpiDetails[256];
+            implLen = scp_impl_to_bytes(&data, i, implBytes, sizeof(implBytes));
+            scp_impl_to_hex(&data, i, implHex, sizeof(implHex));
+            scpi_to_string(data.scp[i], implBytes, implLen, scpiDetails, sizeof(scpiDetails));
             if (data.scpLength == 1) {
-                printf("SCP : SCP%02X i=%02X\n", data.scp[i], data.scpImpl[i]);
+                if (scpiDetails[0] != '\0') {
+                    printf("SCP : SCP%02X i=%s [%s]\n", data.scp[i], implHex, scpiDetails);
+                } else {
+                    printf("SCP : SCP%02X i=%s\n", data.scp[i], implHex);
+                }
             } else {
-                printf("SCP #%u : SCP%02X i=%02X\n", (unsigned int)i, data.scp[i], data.scpImpl[i]);
+                if (scpiDetails[0] != '\0') {
+                    printf("SCP #%u : SCP%02X i=%s [%s]\n", (unsigned int)i, data.scp[i], implHex, scpiDetails);
+                } else {
+                    printf("SCP #%u : SCP%02X i=%s\n", (unsigned int)i, data.scp[i], implHex);
+                }
             }
         }
     }
