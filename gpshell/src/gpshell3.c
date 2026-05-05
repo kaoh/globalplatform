@@ -139,8 +139,8 @@ static void print_usage(const char *prog) {
         "  -r, --reader <name|num>    PC/SC reader name or number (1-based) (default: auto first present)\n"
         "  --protocol <auto|t0|t1>    Transport protocol (default: auto)\n"
         "  --sd <aidhex>             ISD AID hex; default tries A000000151000000 then A0000001510000 then A000000003000000 then A0000000030000\n"
-        "  --sec <mac|mac+enc|mac+enc+rmac>\n"
-        "                            Secure channel security level (default: mac+enc)\n"
+        "  --sec <auto|mac|mac+enc|mac+enc+rmac>\n"
+        "                            Secure channel security level (default: auto)\n"
         "  --scp <protocol>           SCP protocol as digit (e.g., 1, 2, 3)\n"
         "  --scp-impl <impl>          SCP implementation as hex (e.g., 15, 55)\n"
         "  --kv <n>                   Key set version for mutual auth (default: 0)\n"
@@ -920,17 +920,41 @@ static void gp211_signature_cs_to_string(USHORT suites, char *out, size_t outlen
     }
 }
 
-static BYTE sec_level_from_option(BYTE proto, const char *opt) {
-    if (!opt || strcmp(opt, "mac+enc") == 0) {
+static BYTE sec_level_auto(BYTE proto, BYTE scpImpl) {
+    if (proto == GP211_SCP03) {
+        BYTE responseMode = (BYTE)(scpImpl & GP211_SCP03_SCPI_RESPONSE_MASK);
+        if (responseMode == GP211_SCP03_SCPI_RESPONSE_R_ENC_R_MAC) {
+            return GP211_SCP03_SECURITY_LEVEL_C_DEC_R_ENC_C_MAC_R_MAC;
+        }
+        if (responseMode == GP211_SCP03_SCPI_RESPONSE_R_MAC) {
+            return GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC;
+        }
+        return GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC;
+    }
+    return GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC;
+}
+
+static BYTE sec_level_from_option(BYTE proto, BYTE scpImpl, const char *opt) {
+    if (!opt || strcmp(opt, "auto") == 0) {
+        return sec_level_auto(proto, scpImpl);
+    }
+    if (strcmp(opt, "mac+enc") == 0) {
         return (proto == GP211_SCP03) ? GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC : GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC;
     }
     if (strcmp(opt, "mac") == 0) {
         return (proto == GP211_SCP03) ? GP211_SCP03_SECURITY_LEVEL_C_MAC : GP211_SCP02_SECURITY_LEVEL_C_MAC;
     }
     if (strcmp(opt, "mac+enc+rmac") == 0) {
-        return (proto == GP211_SCP03) ? GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC : GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC;
+        if (proto == GP211_SCP03) {
+            BYTE responseMode = (BYTE)(scpImpl & GP211_SCP03_SCPI_RESPONSE_MASK);
+            if (responseMode == GP211_SCP03_SCPI_RESPONSE_R_MAC) {
+                return GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC;
+            }
+            return GP211_SCP03_SECURITY_LEVEL_C_DEC_R_ENC_C_MAC_R_MAC;
+        }
+        return GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC_R_MAC;
     }
-    return (proto == GP211_SCP03) ? GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC : GP211_SCP02_SECURITY_LEVEL_C_DEC_C_MAC;
+    return sec_level_auto(proto, scpImpl);
 }
 
 // Parse comma-separated privilege names into a DWORD privilege bitfield
@@ -1586,7 +1610,7 @@ static int mutual_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
             if (verbose) fprintf(stderr, "Failed to get SCP details, trying to auto-detect\n");
         }
     }
-    BYTE secLevel = sec_level_from_option(scp, sec_level_opt);
+    BYTE secLevel = sec_level_from_option(scp, scpImpl, sec_level_opt);
     BYTE S_ENC[32]={0}, S_MAC[32]={0}, DEK[32]={0}, baseKey[32]={0};
     BYTE keyLength = keyLength_in > 0 ? keyLength_in : 16;
     int hasBaseOnly = (baseKey_in != NULL && enc_in == NULL && mac_in == NULL && dek_in == NULL);
@@ -4957,7 +4981,7 @@ static int cmd_store_iin_cin(const char *cmd, int argc, char **argv,
 
 int main(int argc, char **argv) {
     const char *prog = argv[0];
-    const char *reader=NULL, *protocol="auto", *sd_hex=NULL, *sec_level_opt="mac+enc";
+    const char *reader=NULL, *protocol="auto", *sd_hex=NULL, *sec_level_opt="auto";
     const char *key_hex=NULL, *enc_hex=NULL, *mac_hex=NULL, *dek_hex=NULL;
     int verbose=0, trace=0; BYTE keyset_ver=0, key_index=0; int derivation=0;
     BYTE baseKey[32]={0}, enc_key[32]={0}, mac_key[32]={0}, dek_key[32]={0};
