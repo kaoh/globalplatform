@@ -1805,6 +1805,93 @@ static void aid_to_hex_str(const OPGP_AID *a, char *out, size_t outlen) {
     out[pos] = '\0';
 }
 
+static int status_is_get_status_unsupported(OPGP_ERROR_STATUS s) {
+    return s.errorCode == OPGP_ISO7816_ERROR_INVALID_INS
+        || s.errorCode == OPGP_ISO7816_ERROR_WRONG_CLA
+        || s.errorCode == OPGP_ISO7816_ERROR_FUNC_NOT_SUPPORTED;
+}
+
+static int list_apps_probe_common_aids(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info) {
+    static const BYTE YK_AID_OTP[] = { 0xA0, 0x00, 0x00, 0x05, 0x27, 0x20, 0x01 };
+    static const BYTE YK_AID_MANAGEMENT[] = { 0xA0, 0x00, 0x00, 0x05, 0x27, 0x47, 0x11, 0x17 };
+    static const BYTE YK_AID_OPENPGP[] = { 0xD2, 0x76, 0x00, 0x01, 0x24, 0x01 };
+    static const BYTE YK_AID_OATH[] = { 0xA0, 0x00, 0x00, 0x05, 0x27, 0x21, 0x01 };
+    static const BYTE YK_AID_PIV[] = { 0xA0, 0x00, 0x00, 0x03, 0x08 };
+    static const BYTE YK_AID_FIDO[] = { 0xA0, 0x00, 0x00, 0x06, 0x47, 0x2F, 0x00, 0x01 };
+    static const BYTE YK_AID_HSMAUTH[] = { 0xA0, 0x00, 0x00, 0x05, 0x27, 0x21, 0x07, 0x01 };
+
+    struct aid_probe {
+        const BYTE *aid;
+        BYTE aid_len;
+        const char *label;
+    };
+
+    struct aid_probe probes[] = {
+        { GP231_ISD_AID, (BYTE)sizeof(GP231_ISD_AID), "ISD (GP231)" },
+        { GP211_CARD_MANAGER_AID, (BYTE)sizeof(GP211_CARD_MANAGER_AID), "Card Manager" },
+        { GP211_CARD_MANAGER_AID_ALT1, (BYTE)sizeof(GP211_CARD_MANAGER_AID_ALT1), "Card Manager (Alt1)" },
+        { GP211_CARD_MANAGER_AID_ALT2, (BYTE)sizeof(GP211_CARD_MANAGER_AID_ALT2), "Card Manager (Alt2)" },
+        { GP211_CARD_MANAGER_AID_GEMPLUS, (BYTE)sizeof(GP211_CARD_MANAGER_AID_GEMPLUS), "Card Manager (Gemplus)" },
+        { YK_AID_OTP, (BYTE)sizeof(YK_AID_OTP), "YubiKey OTP" },
+        { YK_AID_MANAGEMENT, (BYTE)sizeof(YK_AID_MANAGEMENT), "YubiKey Management" },
+        { YK_AID_OPENPGP, (BYTE)sizeof(YK_AID_OPENPGP), "YubiKey OpenPGP" },
+        { YK_AID_OATH, (BYTE)sizeof(YK_AID_OATH), "YubiKey OATH" },
+        { YK_AID_PIV, (BYTE)sizeof(YK_AID_PIV), "YubiKey PIV" },
+        { YK_AID_FIDO, (BYTE)sizeof(YK_AID_FIDO), "YubiKey FIDO" },
+        { YK_AID_HSMAUTH, (BYTE)sizeof(YK_AID_HSMAUTH), "YubiKey HSMAuth" },
+    };
+
+    OPGP_AID tried[64];
+    DWORD tried_count = 0;
+    int found = 0;
+
+    printf("== applications (select probe) ==\n");
+
+    // If we know what was selected for SCP, probe it first.
+    if (g_selected_isd_len > 0 && g_selected_isd_len <= sizeof(tried[0].AID)) {
+        OPGP_AID selected = { 0 };
+        OPGP_ERROR_STATUS s;
+        selected.AIDLength = (BYTE)g_selected_isd_len;
+        memcpy(selected.AID, g_selected_isd, g_selected_isd_len);
+        append_unique_aid(tried, &tried_count, ARRAY_SIZE(tried), &selected);
+        s = OPGP_select_application(ctx, info, NULL, selected.AID, selected.AIDLength);
+        if (status_ok(s, false)) {
+            char aid_hex[64];
+            aid_to_hex_str(&selected, aid_hex, sizeof(aid_hex));
+            printf("  %s  [%s]\n", aid_hex, "Selected ISD");
+            found = 1;
+        }
+    }
+
+    for (size_t i = 0; i < ARRAY_SIZE(probes); ++i) {
+        OPGP_AID a = { 0 };
+        DWORD before;
+        OPGP_ERROR_STATUS s;
+        if (probes[i].aid_len > sizeof(a.AID)) continue;
+        a.AIDLength = probes[i].aid_len;
+        memcpy(a.AID, probes[i].aid, probes[i].aid_len);
+
+        before = tried_count;
+        append_unique_aid(tried, &tried_count, ARRAY_SIZE(tried), &a);
+        if (tried_count == before) {
+            continue;
+        }
+
+        s = OPGP_select_application(ctx, info, NULL, a.AID, a.AIDLength);
+        if (status_ok(s, false)) {
+            char aid_hex[64];
+            aid_to_hex_str(&a, aid_hex, sizeof(aid_hex));
+            printf("  %s  [%s]\n", aid_hex, probes[i].label);
+            found = 1;
+        }
+    }
+
+    if (!found) {
+        printf("  (no known applet AIDs responded to SELECT)\n");
+    }
+    return 0;
+}
+
 static int cmd_list_apps(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
     GP211_APPLICATION_DATA apps[256];
     GP211_APPLICATION_DATA isds[64];
@@ -1815,19 +1902,36 @@ static int cmd_list_apps(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECUR
     DWORD isds_len = sizeof(isds)/sizeof(isds[0]);
     DWORD lfs_len  = sizeof(lfs)/sizeof(lfs[0]);
     DWORD mods_len = sizeof(mods)/sizeof(mods[0]);
+    BYTE status_format = GP211_STATUS_FORMAT_NEW;
 
     OPGP_ERROR_STATUS s;
 
-    s = GP211_get_status(ctx, info, sec, GP211_STATUS_APPLICATIONS, GP211_STATUS_FORMAT_NEW, apps, NULL, &apps_len);
-    if (!status_ok(s, true)) { fprintf(stderr, "GET STATUS (applications) failed\n"); return -1; }
+    s = GP211_get_status(ctx, info, sec, GP211_STATUS_APPLICATIONS, status_format, apps, NULL, &apps_len);
+    if (!status_ok(s, false)) {
+        DWORD apps_len_legacy = sizeof(apps)/sizeof(apps[0]);
+        OPGP_ERROR_STATUS s_legacy = GP211_get_status(ctx, info, sec, GP211_STATUS_APPLICATIONS,
+                                                      GP211_STATUS_FORMAT_DEPRECATED, apps, NULL, &apps_len_legacy);
+        if (status_ok(s_legacy, false)) {
+            status_format = GP211_STATUS_FORMAT_DEPRECATED;
+            apps_len = apps_len_legacy;
+        } else if (status_is_get_status_unsupported(s) || status_is_get_status_unsupported(s_legacy)) {
+            fprintf(stderr, "GET STATUS is not supported by the selected Security Domain (SW=0x%04X). Falling back to SELECT probing.\n",
+                    (unsigned int)((s_legacy.errorCode != 0 ? s_legacy.errorCode : s.errorCode) & 0xFFFF));
+            return list_apps_probe_common_aids(ctx, info);
+        } else {
+            status_ok(s, true);
+            fprintf(stderr, "GET STATUS (applications) failed\n");
+            return -1;
+        }
+    }
 
-    s = GP211_get_status(ctx, info, sec, GP211_STATUS_ISSUER_SECURITY_DOMAIN, GP211_STATUS_FORMAT_NEW, isds, NULL, &isds_len);
+    s = GP211_get_status(ctx, info, sec, GP211_STATUS_ISSUER_SECURITY_DOMAIN, status_format, isds, NULL, &isds_len);
     if (!status_ok(s, true)) { fprintf(stderr, "GET STATUS (issuer security domain) failed\n"); return -1; }
 
-    s = GP211_get_status(ctx, info, sec, GP211_STATUS_LOAD_FILES, GP211_STATUS_FORMAT_NEW, lfs, NULL, &lfs_len);
+    s = GP211_get_status(ctx, info, sec, GP211_STATUS_LOAD_FILES, status_format, lfs, NULL, &lfs_len);
     if (!status_ok(s, true)) { fprintf(stderr, "GET STATUS (load files) failed\n"); return -1; }
 
-    s = GP211_get_status(ctx, info, sec, GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES, GP211_STATUS_FORMAT_NEW, NULL, mods, &mods_len);
+    s = GP211_get_status(ctx, info, sec, GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES, status_format, NULL, mods, &mods_len);
     if (!status_ok(s, true)) { fprintf(stderr, "GET STATUS (load files and executable modules) failed\n"); return -1; }
 
     // Collect distinct Security Domains from issuer SD entries and linked content.
