@@ -2063,19 +2063,33 @@ static int cmd_list_apps(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECUR
 
 static const char* key_type_to_string(BYTE type) {
     switch (type) {
-        case 0x80: return "DES";
-        case 0x85: return "Pre-Shared Key TLS";
-        case 0x88: return "AES";
-        case 0x89: return "SM4";
-        case 0xA0: return "RSA Public Key - e";
-        case 0xA1: return "RSA Public Key - N";
-        case 0xA2: return "RSA Private Key - N";
-        case 0xA3: return "RSA Private Key - d";
-        case 0xA4: return "RSA Private Key - CR P";
-        case 0xA5: return "RSA Private Key - CR Q";
-        case 0xA6: return "RSA Private Key - CR PQ";
-        case 0xA7: return "RSA Private Key - CR DP1";
-        case 0xA8: return "RSA Private Key - CR DQ1";
+        case GP211_KEY_TYPE_DES: return "DES";
+        case GP211_KEY_TYPE_3DES: return "3DES";
+        case GP211_KEY_TYPE_3DES_CBC: return "3DES-CBC";
+        case GP211_KEY_TYPE_DES_ECB: return "DES-ECB";
+        case GP211_KEY_TYPE_DES_CBC: return "DES-CBC";
+        case GP211_KEY_TYPE_PSK_TLS: return "Pre-Shared Key TLS";
+        case GP211_KEY_TYPE_AES: return "AES";
+        case GP211_KEY_TYPE_SM4: return "SM4";
+        case GP211_KEY_TYPE_RSA_PUB_E: return "RSA Public Key - e";
+        case GP211_KEY_TYPE_RSA_PUB_N: return "RSA Public Key - N";
+        case GP211_KEY_TYPE_RSA_PRIV_ENC_N: return "RSA Private Key - N";
+        case GP211_KEY_TYPE_RSA_PRIV_D: return "RSA Private Key - d";
+        case GP211_KEY_TYPE_RSA_PRIV_P: return "RSA Private Key - CR P";
+        case GP211_KEY_TYPE_RSA_PRIV_Q: return "RSA Private Key - CR Q";
+        case GP211_KEY_TYPE_RSA_PRIV_PQ: return "RSA Private Key - CR PQ";
+        case GP211_KEY_TYPE_RSA_PRIV_DP1: return "RSA Private Key - CR DP1";
+        case GP211_KEY_TYPE_RSA_PRIV_DQ1: return "RSA Private Key - CR DQ1";
+        case GP211_KEY_TYPE_ECC_PUBLIC_OR_PRIVATE: return "ECC Public Key";
+        case GP211_KEY_TYPE_ECC_PRIVATE: return "ECC Private Key";
+        case GP211_KEY_TYPE_ECC_FIELD_PARAMETER_P: return "ECC Field Parameter P";
+        case GP211_KEY_TYPE_ECC_FIELD_PARAMETER_A: return "ECC Field Parameter A";
+        case GP211_KEY_TYPE_ECC_FIELD_PARAMETER_B: return "ECC Field Parameter B";
+        case GP211_KEY_TYPE_ECC_FIELD_PARAMETER_G: return "ECC Field Parameter G";
+        case GP211_KEY_TYPE_ECC_FIELD_PARAMETER_N: return "ECC Field Parameter N";
+        case GP211_KEY_TYPE_ECC_SM2_PUBLIC_OR_PRIVATE: return "SM2 Public/Private Key";
+        case GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE: return "ECC Key Parameter Reference";
+        case GP211_KEY_TYPE_ECC: return "ECC";
         default: return NULL;
     }
 }

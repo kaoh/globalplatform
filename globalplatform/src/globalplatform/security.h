@@ -170,7 +170,7 @@ extern "C"
 #define GP211_SCP11_KEY_USAGE_QUALIFIER_C_MAC_R_MAC 0x34 //!< SCP11 key usage qualifier: C-MAC + R-MAC.
 #define GP211_SCP11_KEY_USAGE_QUALIFIER_C_DEC_R_ENC_C_MAC_R_MAC 0x3C //!< SCP11 key usage qualifier: C-DECRYPTION + R-ENCRYPTION + C-MAC + R-MAC.
 
-#define GP211_KEY_TYPE_RSA 0xF0 //!< 'F0' Internal key type for a RSA.
+#define GP211_KEY_TYPE_RSA 0xF0 //!< 'F0' Internal API selector for RSA (context-specific; not a key component tag).
 #define GP211_KEY_TYPE_ECC 0xF1 //!< 'F1' Internal key type for ECC.
 #define GP211_KEY_TYPE_RSA_PUB_E 0xA0 //!< 'A0' RSA Public Key - public exponent e component (clear text)
 #define GP211_KEY_TYPE_RSA_PUB_N 0xA1 //!< 'A1' RSA Public Key - modulus N component (clear text).
@@ -182,8 +182,14 @@ extern "C"
 #define GP211_KEY_TYPE_RSA_PRIV_DP1 0xA7 //!< 'A7' RSA Private Key - Chinese Remainder DP1 component
 #define GP211_KEY_TYPE_RSA_PRIV_DQ1 0xA8 //!< 'A8' RSA Private Key - Chinese Remainder DQ1 component
 #define GP211_KEY_TYPE_ECC_PUBLIC_OR_PRIVATE 0xB0 //!< 'B0' ECC public or private key component.
+#define GP211_KEY_TYPE_ECC_PRIVATE 0xB1 //!< 'B1' ECC private key component.
+#define GP211_KEY_TYPE_ECC_FIELD_PARAMETER_P 0xB2 //!< 'B2' ECC field parameter P component.
+#define GP211_KEY_TYPE_ECC_FIELD_PARAMETER_A 0xB3 //!< 'B3' ECC field parameter A component.
+#define GP211_KEY_TYPE_ECC_FIELD_PARAMETER_B 0xB4 //!< 'B4' ECC field parameter B component.
+#define GP211_KEY_TYPE_ECC_FIELD_PARAMETER_G 0xB5 //!< 'B5' ECC field parameter G component.
+#define GP211_KEY_TYPE_ECC_FIELD_PARAMETER_N 0xB6 //!< 'B6' ECC field parameter N component.
 #define GP211_KEY_TYPE_ECC_SM2_PUBLIC_OR_PRIVATE 0xB7 //!< 'B7' SM2 public or private key component.
-#define GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE 0xF0 //!< 'F0' ECC key parameter reference component.
+#define GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE 0xF0 //!< 'F0' ECC key parameter reference component tag (same codepoint as GP211_KEY_TYPE_RSA, context-dependent).
 #define GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_P256 0x00 //!< '00' NIST P-256.
 #define GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_P384 0x01 //!< '01' NIST P-384.
 #define GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_P521 0x02 //!< '02' NIST P-521.
