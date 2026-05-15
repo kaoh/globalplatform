@@ -3637,13 +3637,22 @@ OPGP_ERROR_STATUS GP211_build_scp11_certificate(GP211_SCP11_CERTIFICATE *certifi
 static BOOL is_scp11_certificate_list(PBYTE certificateData, DWORD certificateDataLength) {
 	GP_SIMPLE_TLV certificateTlv;
 	DWORD offset = 0;
+	USHORT certificateTag = 0;
 
 	if (certificateData == NULL || certificateDataLength == 0) {
 		return 0;
 	}
 	while (offset < certificateDataLength) {
 		LONG result = parse_simple_tlv(certificateData + offset, certificateDataLength - offset, &certificateTlv);
-		if (result < 0 || certificateTlv.tag != 0x7F21) {
+		if (result < 0) {
+			return 0;
+		}
+		if (certificateTag == 0) {
+			if (certificateTlv.tag != 0x7F21 && certificateTlv.tag != 0x30) {
+				return 0;
+			}
+			certificateTag = certificateTlv.tag;
+		} else if (certificateTlv.tag != certificateTag) {
 			return 0;
 		}
 		offset += certificateTlv.tlvLength;
@@ -8389,10 +8398,13 @@ OPGP_ERROR_STATUS GP211_store_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 
 /**
  * Stores an SCP11 ECKA certificate store using STORE DATA.
- * The input file must contain an SCP11 certificate store encoded according to
- * section 6.2, Table 6-4: either a complete BF21 certificate store or one or
- * more consecutive 7F21 certificates. The command data also includes a Control
- * Reference Template for KID/KVN.
+ * The input file must contain either DER or PEM encoded certificate data.
+ * For PEM input, CERTIFICATE blocks are converted to DER first.
+ * The resulting data must contain either a complete BF21 certificate store TLV or
+ * a certificate list value for BF21 according to section 7.2 table 7-4.
+ * The certificate list must contain homogeneous certificates in either legacy
+ * GP format (7F21) or X.509 DER format (30), but not both.
+ * The command data also includes a Control Reference Template for KID/KVN.
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context().
  * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
  * \param secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication().
@@ -8406,6 +8418,9 @@ OPGP_ERROR_STATUS GP211_store_data_ecka_certificate(OPGP_CARD_CONTEXT cardContex
 	OPGP_ERROR_STATUS status;
 	BYTE certificateBuffer[4096];
 	DWORD certificateBufferLength = sizeof(certificateBuffer);
+	BYTE certificateDerBuffer[4096];
+	PBYTE certificateData = certificateBuffer;
+	DWORD certificateDataLength = 0;
 	BYTE commandData[4600];
 	DWORD commandDataLength = 0;
 	BYTE crtValue[8];
@@ -8419,6 +8434,16 @@ OPGP_ERROR_STATUS GP211_store_data_ecka_certificate(OPGP_CARD_CONTEXT cardContex
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
+	certificateDataLength = certificateBufferLength;
+	if (contains_pem_certificate_header(certificateBuffer, certificateBufferLength)) {
+		certificateDataLength = sizeof(certificateDerBuffer);
+		status = convert_pem_certificate_list_to_der(certificateBuffer, certificateBufferLength,
+				certificateDerBuffer, &certificateDataLength);
+		if (OPGP_ERROR_CHECK(status)) {
+			goto end;
+		}
+		certificateData = certificateDerBuffer;
+	}
 
 	status = append_tlv(crtValue, sizeof(crtValue), &crtValueLength, 0x83, keyReference, sizeof(keyReference));
 	if (OPGP_ERROR_CHECK(status)) {
@@ -8429,8 +8454,8 @@ OPGP_ERROR_STATUS GP211_store_data_ecka_certificate(OPGP_CARD_CONTEXT cardContex
 		goto end;
 	}
 
-	if (parse_simple_tlv(certificateBuffer, certificateBufferLength, &certificateStoreTlv) > 0
-			&& certificateStoreTlv.tlvLength == certificateBufferLength && certificateStoreTlv.tag == 0xBF21) {
+	if (parse_simple_tlv(certificateData, certificateDataLength, &certificateStoreTlv) > 0
+			&& certificateStoreTlv.tlvLength == certificateDataLength && certificateStoreTlv.tag == 0xBF21) {
 		if (!is_scp11_certificate_list((PBYTE)certificateStoreTlv.value, certificateStoreTlv.length)) {
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 			goto end;
@@ -8440,9 +8465,9 @@ OPGP_ERROR_STATUS GP211_store_data_ecka_certificate(OPGP_CARD_CONTEXT cardContex
 		if (OPGP_ERROR_CHECK(status)) {
 			goto end;
 		}
-	} else if (is_scp11_certificate_list(certificateBuffer, certificateBufferLength)) {
+	} else if (is_scp11_certificate_list(certificateData, certificateDataLength)) {
 		status = append_tlv(commandData, sizeof(commandData), &commandDataLength, 0xBF21,
-				certificateBuffer, certificateBufferLength);
+				certificateData, certificateDataLength);
 		if (OPGP_ERROR_CHECK(status)) {
 			goto end;
 		}

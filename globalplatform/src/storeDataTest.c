@@ -35,6 +35,20 @@
 #include "globalplatform/globalplatform.h"
 #include "testUtil.h"
 
+static int write_test_file(OPGP_STRING fileName, const BYTE *data, DWORD dataLength) {
+	FILE *file = _tfopen(fileName, _T("wb"));
+	size_t writeLength;
+
+	if (file == NULL) {
+		return -1;
+	}
+	writeLength = fwrite(data, 1, dataLength, file);
+	if (fclose(file) != 0) {
+		return -1;
+	}
+	return writeLength == dataLength ? 0 : -1;
+}
+
 /**
  * Test encoding of STORE DATA for symmetric keys with 3 AES-128 keys (S-ENC, S-MAC, DEK)
  * for SCP03 with key version 0x01 and SD-only access.
@@ -323,6 +337,92 @@ static void test_build_store_data_keys_dap_purpose(void **state) {
 	assert_memory_equal(output, expected, sizeof(expected));
 }
 
+/**
+ * Test accepting an SCP11 certificate list in X.509 (DER) format for STORE DATA.
+ * A valid list shall pass format validation and only fail later due missing card connection.
+ */
+static void test_store_data_ecka_certificate_accepts_x509_certificate_list(void **state) {
+	OPGP_ERROR_STATUS status;
+	OPGP_CARD_CONTEXT cardContext;
+	OPGP_CARD_INFO cardInfo;
+	OPGP_STRING certificateStoreFileName = _T("store_data_ecka_x509_list_test.bin");
+	BYTE x509CertificateList[] = {
+		0x30, 0x06, 0x02, 0x01, 0x01, 0x02, 0x01, 0x02,
+		0x30, 0x03, 0x02, 0x01, 0x03
+	};
+
+	(void)state;
+	memset(&cardContext, 0, sizeof(cardContext));
+	memset(&cardInfo, 0, sizeof(cardInfo));
+
+	assert_int_equal(write_test_file(certificateStoreFileName, x509CertificateList, sizeof(x509CertificateList)), 0);
+
+	status = GP211_store_data_ecka_certificate(cardContext, cardInfo, NULL,
+			0x01, 0x02, certificateStoreFileName);
+	remove("store_data_ecka_x509_list_test.bin");
+
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_FAILURE);
+	assert_int_not_equal(status.errorCode, OPGP_ERROR_INVALID_RESPONSE_DATA);
+}
+
+/**
+ * Test accepting PEM encoded CERTIFICATE blocks by converting them to DER.
+ */
+static void test_store_data_ecka_certificate_accepts_pem_certificate_list(void **state) {
+	OPGP_ERROR_STATUS status;
+	OPGP_CARD_CONTEXT cardContext;
+	OPGP_CARD_INFO cardInfo;
+	OPGP_STRING certificateStoreFileName = _T("store_data_ecka_pem_list_test.pem");
+	BYTE pemCertificateList[] =
+		"-----BEGIN CERTIFICATE-----\n"
+		"MAYCAQECAQI=\n"
+		"-----END CERTIFICATE-----\n"
+		"-----BEGIN CERTIFICATE-----\n"
+		"MAMCAQM=\n"
+		"-----END CERTIFICATE-----\n";
+
+	(void)state;
+	memset(&cardContext, 0, sizeof(cardContext));
+	memset(&cardInfo, 0, sizeof(cardInfo));
+
+	assert_int_equal(write_test_file(certificateStoreFileName, pemCertificateList, sizeof(pemCertificateList) - 1), 0);
+
+	status = GP211_store_data_ecka_certificate(cardContext, cardInfo, NULL,
+			0x01, 0x02, certificateStoreFileName);
+	remove("store_data_ecka_pem_list_test.pem");
+
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_FAILURE);
+	assert_int_not_equal(status.errorCode, OPGP_ERROR_INVALID_RESPONSE_DATA);
+}
+
+/**
+ * Test rejecting mixed legacy GP and X.509 certificates inside one certificate store.
+ */
+static void test_store_data_ecka_certificate_rejects_mixed_certificate_formats(void **state) {
+	OPGP_ERROR_STATUS status;
+	OPGP_CARD_CONTEXT cardContext;
+	OPGP_CARD_INFO cardInfo;
+	OPGP_STRING certificateStoreFileName = _T("store_data_ecka_mixed_list_test.bin");
+	BYTE mixedCertificateStore[] = {
+		0xBF, 0x21, 0x07,
+		0x7F, 0x21, 0x00,
+		0x30, 0x03, 0x02, 0x01, 0x01
+	};
+
+	(void)state;
+	memset(&cardContext, 0, sizeof(cardContext));
+	memset(&cardInfo, 0, sizeof(cardInfo));
+
+	assert_int_equal(write_test_file(certificateStoreFileName, mixedCertificateStore, sizeof(mixedCertificateStore)), 0);
+
+	status = GP211_store_data_ecka_certificate(cardContext, cardInfo, NULL,
+			0x01, 0x02, certificateStoreFileName);
+	remove("store_data_ecka_mixed_list_test.bin");
+
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_FAILURE);
+	assert_int_equal(status.errorCode, OPGP_ERROR_INVALID_RESPONSE_DATA);
+}
+
 int main(void) {
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test(test_build_store_data_keys_scp03_aes128),
@@ -330,6 +430,9 @@ int main(void) {
 		cmocka_unit_test(test_build_store_data_keys_scp04),
 		cmocka_unit_test(test_build_store_data_keys_no_keys_error),
 		cmocka_unit_test(test_build_store_data_keys_dap_purpose),
+		cmocka_unit_test(test_store_data_ecka_certificate_accepts_x509_certificate_list),
+		cmocka_unit_test(test_store_data_ecka_certificate_accepts_pem_certificate_list),
+		cmocka_unit_test(test_store_data_ecka_certificate_rejects_mixed_certificate_formats),
 	};
 
 	return cmocka_run_group_tests_name("storeData", tests, NULL, NULL);

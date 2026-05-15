@@ -258,6 +258,15 @@ OPGP_ERROR_STATUS read_public_rsa_key(OPGP_STRING PEMKeyFileName, char *passPhra
 OPGP_NO_API
 OPGP_ERROR_STATUS read_certificate_file(OPGP_STRING PEMKeyFileName, char *passPhrase, PBYTE certificateData, PDWORD certificateDataLength);
 
+//! \brief Checks whether data contains a PEM CERTIFICATE header.
+OPGP_NO_API
+BOOL contains_pem_certificate_header(const BYTE *data, DWORD dataLength);
+
+//! \brief Converts one or more PEM CERTIFICATE blocks to concatenated DER certificates.
+OPGP_NO_API
+OPGP_ERROR_STATUS convert_pem_certificate_list_to_der(const BYTE *pemData, DWORD pemDataLength,
+		PBYTE derData, PDWORD derDataLength);
+
 typedef struct {
 	BYTE fieldP[512];
 	DWORD fieldPLength;

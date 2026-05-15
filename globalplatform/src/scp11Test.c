@@ -60,6 +60,8 @@ static DWORD sdStaticPublicKeyLength;
 
 static BYTE sdCertificateStore[256];
 static DWORD sdCertificateStoreLength;
+static BYTE expectedStoreData[256];
+static DWORD expectedStoreDataLength;
 
 static BYTE expectedSEnc[32];
 static BYTE expectedSMac[32];
@@ -783,10 +785,11 @@ static OPGP_ERROR_STATUS mock_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 
 		offset = crtTlv.tlvLength;
 		if (scp11TestMode == SCP11_TEST_MODE_STORE_ECKA_CERTIFICATE) {
+			assert_true(expectedStoreDataLength > 0);
 			assert_true(parse_simple_tlv(capdu + 5 + offset, lc - offset, &certificateStoreTlv) > 0);
 			assert_int_equal(certificateStoreTlv.tag, 0xBF21);
 			assert_int_equal(offset + certificateStoreTlv.tlvLength, lc);
-			assert_true(parse_simple_tlv(sdCertificateStore, sdCertificateStoreLength, &expectedCertificateStoreTlv) > 0);
+			assert_true(parse_simple_tlv(expectedStoreData, expectedStoreDataLength, &expectedCertificateStoreTlv) > 0);
 			assert_int_equal(expectedCertificateStoreTlv.tag, 0xBF21);
 			assert_int_equal(certificateStoreTlv.length, expectedCertificateStoreTlv.length);
 			assert_memory_equal(certificateStoreTlv.value, expectedCertificateStoreTlv.value, expectedCertificateStoreTlv.length);
@@ -841,6 +844,7 @@ static void reset_scp11a_test_state(void) {
 	memset(expectedRMac, 0, sizeof(expectedRMac));
 	memset(expectedSdek, 0, sizeof(expectedSdek));
 	expectedKeyLength = 0;
+	expectedStoreDataLength = 0;
 	apduCallCount = 0;
 	scp11TestMode = SCP11_TEST_MODE_NONE;
 }
@@ -954,6 +958,9 @@ static void store_data_ecka_certificate_with_certificate_list(void **state) {
 	assert_true(parse_simple_tlv(sdCertificateStore, sdCertificateStoreLength, &certificateStoreTlv) > 0);
 	assert_int_equal(certificateStoreTlv.tag, 0xBF21);
 	assert_int_equal(write_test_file(certificateStoreFileName, certificateStoreTlv.value, certificateStoreTlv.length), 0);
+	assert_true(sdCertificateStoreLength <= sizeof(expectedStoreData));
+	memcpy(expectedStoreData, sdCertificateStore, sdCertificateStoreLength);
+	expectedStoreDataLength = sdCertificateStoreLength;
 
 	status = GP211_store_data_ecka_certificate(cardContext, cardInfo, NULL,
 			testKeyVersion, testKeyIdentifier, certificateStoreFileName);
@@ -972,6 +979,9 @@ static void store_data_ecka_certificate_with_certificate_store(void **state) {
 	scp11TestMode = SCP11_TEST_MODE_STORE_ECKA_CERTIFICATE;
 
 	assert_int_equal(write_test_file(certificateStoreFileName, sdCertificateStore, sdCertificateStoreLength), 0);
+	assert_true(sdCertificateStoreLength <= sizeof(expectedStoreData));
+	memcpy(expectedStoreData, sdCertificateStore, sdCertificateStoreLength);
+	expectedStoreDataLength = sdCertificateStoreLength;
 
 	status = GP211_store_data_ecka_certificate(cardContext, cardInfo, NULL,
 			testKeyVersion, testKeyIdentifier, certificateStoreFileName);
@@ -981,24 +991,30 @@ static void store_data_ecka_certificate_with_certificate_store(void **state) {
 	assert_int_equal(apduCallCount, 1);
 }
 
-static void store_data_ecka_certificate_rejects_raw_certificate_bytes(void **state) {
+static void store_data_ecka_certificate_with_pem_certificate_list(void **state) {
 	OPGP_ERROR_STATUS status;
-	BYTE rawCertificateBytes[] = {0x30, 0x03, 0x01, 0x02, 0x03};
-	OPGP_STRING certificateStoreFileName = _T("scp11_raw_certificate_test.bin");
+	BYTE expectedDerCertificateList[] = {0x30, 0x03, 0x01, 0x02, 0x03};
+	BYTE pemCertificateList[] =
+		"-----BEGIN CERTIFICATE-----\n"
+		"MAMBAgM=\n"
+		"-----END CERTIFICATE-----\n";
+	OPGP_STRING certificateStoreFileName = _T("scp11_raw_certificate_test.pem");
 
 	(void)state;
 	reset_scp11a_test_state();
 	scp11TestMode = SCP11_TEST_MODE_STORE_ECKA_CERTIFICATE;
 
-	assert_int_equal(write_test_file(certificateStoreFileName, rawCertificateBytes, sizeof(rawCertificateBytes)), 0);
+	assert_int_equal(write_test_file(certificateStoreFileName, pemCertificateList, sizeof(pemCertificateList) - 1), 0);
+	expectedStoreDataLength = 0;
+	assert_int_equal(append_tlv(expectedStoreData, sizeof(expectedStoreData), &expectedStoreDataLength,
+			0xBF21, expectedDerCertificateList, sizeof(expectedDerCertificateList)).errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 
 	status = GP211_store_data_ecka_certificate(cardContext, cardInfo, NULL,
 			testKeyVersion, testKeyIdentifier, certificateStoreFileName);
-	remove("scp11_raw_certificate_test.bin");
+	remove("scp11_raw_certificate_test.pem");
 
-	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_FAILURE);
-	assert_int_equal(status.errorCode, OPGP_ERROR_INVALID_RESPONSE_DATA);
-	assert_int_equal(apduCallCount, 0);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+	assert_int_equal(apduCallCount, 1);
 }
 
 static void store_data_whitelist_with_certificate_serial_numbers(void **state) {
@@ -1167,7 +1183,7 @@ int main(void) {
 			cmocka_unit_test(perform_security_operation_certificate_chain),
 			cmocka_unit_test(store_data_ecka_certificate_with_certificate_list),
 			cmocka_unit_test(store_data_ecka_certificate_with_certificate_store),
-			cmocka_unit_test(store_data_ecka_certificate_rejects_raw_certificate_bytes),
+			cmocka_unit_test(store_data_ecka_certificate_with_pem_certificate_list),
 			cmocka_unit_test(store_data_whitelist_with_certificate_serial_numbers),
 			cmocka_unit_test(store_data_whitelist_with_empty_certificate_serial_numbers),
 			cmocka_unit_test(store_data_whitelist_rejects_invalid_certificate_serial_number),

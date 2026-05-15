@@ -3149,6 +3149,118 @@ end:
 	return status;
 }
 
+static BOOL is_ascii_whitespace(BYTE value) {
+	return value == 0x20 || value == 0x09 || value == 0x0A || value == 0x0D || value == 0x0B || value == 0x0C;
+}
+
+BOOL contains_pem_certificate_header(const BYTE *data, DWORD dataLength) {
+	static const char pemHeader[] = "-----BEGIN CERTIFICATE-----";
+	DWORD i;
+	size_t headerLength = sizeof(pemHeader) - 1;
+
+	if (data == NULL || dataLength < headerLength) {
+		return 0;
+	}
+	for (i = 0; i <= dataLength - headerLength; i++) {
+		if (memcmp(data + i, pemHeader, headerLength) == 0) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+OPGP_ERROR_STATUS convert_pem_certificate_list_to_der(const BYTE *pemData, DWORD pemDataLength,
+		PBYTE derData, PDWORD derDataLength) {
+	OPGP_ERROR_STATUS status;
+	BIO *bio = NULL;
+	DWORD outputOffset = 0;
+	DWORD certificateCount = 0;
+	size_t pending;
+	BYTE trailingData[128];
+
+	if (pemData == NULL || pemDataLength == 0 || derData == NULL || derDataLength == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+
+	bio = BIO_new_mem_buf(pemData, (int)pemDataLength);
+	if (bio == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+		goto end;
+	}
+
+	while (1) {
+		char *name = NULL;
+		char *header = NULL;
+		unsigned char *decoded = NULL;
+		long decodedLength = 0;
+		int decodeResult = PEM_read_bio(bio, &name, &header, &decoded, &decodedLength);
+
+		if (decodeResult != 1) {
+			OPENSSL_free(name);
+			OPENSSL_free(header);
+			OPENSSL_free(decoded);
+			break;
+		}
+
+		if (name == NULL || strcmp(name, "CERTIFICATE") != 0 || decoded == NULL || decodedLength <= 0) {
+			OPENSSL_free(name);
+			OPENSSL_free(header);
+			OPENSSL_free(decoded);
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+
+		if ((DWORD)decodedLength > *derDataLength - outputOffset) {
+			OPENSSL_free(name);
+			OPENSSL_free(header);
+			OPENSSL_free(decoded);
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+			goto end;
+		}
+
+		memcpy(derData + outputOffset, decoded, (size_t)decodedLength);
+		outputOffset += (DWORD)decodedLength;
+		certificateCount++;
+
+		OPENSSL_free(name);
+		OPENSSL_free(header);
+		OPENSSL_free(decoded);
+	}
+
+	if (certificateCount == 0) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+
+	pending = BIO_ctrl_pending(bio);
+	while (pending > 0) {
+		int readLength = BIO_read(bio, trailingData, sizeof(trailingData));
+		DWORD i;
+		if (readLength <= 0) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+		for (i = 0; i < (DWORD)readLength; i++) {
+			if (!is_ascii_whitespace(trailingData[i])) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+				goto end;
+			}
+		}
+		pending = BIO_ctrl_pending(bio);
+	}
+
+	*derDataLength = outputOffset;
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+
+end:
+	if (bio != NULL) {
+		BIO_free(bio);
+	}
+	ERR_clear_error();
+	return status;
+}
+
 OPGP_ERROR_STATUS read_certificate_file(OPGP_STRING PEMKeyFileName, char *passPhrase, PBYTE certificateData,
 		PDWORD certificateDataLength) {
 	OPGP_ERROR_STATUS status;
