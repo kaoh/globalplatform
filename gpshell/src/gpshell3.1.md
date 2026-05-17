@@ -668,6 +668,33 @@ Example:
 gpshell3 cin
 ```
 
+## scp11-auth-data
+
+Read SCP11 authentication-related data:
+
+- ECKA certificate store (GET DATA `BF21`) using CRT key reference from global `--kv` (KVN) and `--idx` (KID),
+- supported CA-KLOC identifiers (GET DATA `FF33`),
+- supported CA-KLCC identifiers (GET DATA `FF34`),
+- resolved KID/KVN for each CA-KLOC identifier (GET DATA `0083`).
+
+Synopsis:
+```
+gpshell3 [global-options] scp11-auth-data
+```
+
+Options:
+
+- `--kv <n>`: Key Version Number used for ECKA certificate store retrieval (global option, default `0`).
+- `--idx <n>`: Key Identifier used for ECKA certificate store retrieval (global option, default `0`).
+
+This command does not require authentication.
+
+Examples:
+```
+gpshell3 scp11-auth-data
+gpshell3 --kv 0x20 --idx 0x11 scp11-auth-data
+```
+
 ## card-info
 
 Read and decode GlobalPlatform Card Recognition Data (Card Data tag `0x66`). This command does not require authentication.

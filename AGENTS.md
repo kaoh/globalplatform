@@ -95,6 +95,9 @@ Unit-test coverage is mainly in `globalplatform/src/*Test.c`. Linux unit tests i
 ## Documentation And Packaging
 
 - Source manuals are `gpshell/src/gpshell.1.md` and `gpshell/src/gpshell3.1.md`; generated man pages are build artifacts.
+- Keep command implementations and manuals in sync:
+  - when adding or changing commands in `gpshell/src/gpshell3.c`, update `gpshell/src/gpshell3.1.md` in the same change.
+  - when adding or changing commands in `gpshell/src/gpshell.c`, update `gpshell/src/gpshell.1.md` in the same change.
 - Doxygen source configuration is under `globalplatform/`; generated HTML API docs are in `docs/api/`.
 - Jekyll documentation content is under `docs/`.
 - Packaging uses CPack. Typical package commands are run from a configured build directory, for example `cpack -G DEB`, `cpack -G RPM`, `cpack -G ZIP`, or `cpack -G WIX` depending on platform.

@@ -380,6 +380,11 @@ OPGP_ERROR_STATUS get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInf
 			  BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength);
 
 OPGP_NO_API
+OPGP_ERROR_STATUS get_data_with_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+			  BYTE identifier[2], PBYTE dataObject, DWORD dataObjectLength,
+			  PBYTE recvBuffer, PDWORD recvBufferLength);
+
+OPGP_NO_API
 OPGP_ERROR_STATUS put_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, BYTE identifier[2], PBYTE dataObject, DWORD dataObjectLength);
 
 OPGP_NO_API
@@ -2413,13 +2418,6 @@ OPGP_ERROR_STATUS GP211_get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO c
 OPGP_ERROR_STATUS GP211_get_ecka_certificate(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 			  BYTE keyVersionNumber, BYTE keyIdentifier, PBYTE recvBuffer, PDWORD recvBufferLength) {
 	OPGP_ERROR_STATUS status;
-	BYTE sendBuffer[16];
-	BYTE response[APDU_RESPONSE_LEN];
-	DWORD responseLength;
-	DWORD sendBufferLength = 0;
-	DWORD totalResponseLength = 0;
-	DWORD apduErrorCode;
-	DWORD i = 0;
 	const BYTE crt[] = {0xA6, 0x04, 0x83, 0x02, keyIdentifier, keyVersionNumber};
 
 	if (recvBuffer == NULL || recvBufferLength == NULL) {
@@ -2428,52 +2426,8 @@ OPGP_ERROR_STATUS GP211_get_ecka_certificate(OPGP_CARD_CONTEXT cardContext, OPGP
 	}
 
 	OPGP_LOG_START(_T("GP211_get_ecka_certificate"));
-
-	sendBuffer[i++] = 0x80;
-	sendBuffer[i++] = 0xCA;
-	sendBuffer[i++] = GP211_GET_DATA_ECKA_CERTIFICATE[0];
-	sendBuffer[i++] = GP211_GET_DATA_ECKA_CERTIFICATE[1];
-	sendBuffer[i++] = (BYTE)sizeof(crt);
-	memcpy(sendBuffer + i, crt, sizeof(crt));
-	i += sizeof(crt);
-	sendBuffer[i++] = 0x00;
-	sendBufferLength = i;
-
-	do {
-		responseLength = sizeof(response);
-		status = OPGP_send_APDU(cardContext, cardInfo, secInfo, sendBuffer, sendBufferLength, response, &responseLength);
-		if (OPGP_ERROR_CHECK(status) && status.errorCode != OPGP_ISO7816_ERROR_MORE_DATA_AVAILABLE) {
-			*recvBufferLength = 0;
-			goto end;
-		}
-		if (responseLength < 2) {
-			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-			goto end;
-		}
-		if (status.errorCode != OPGP_ISO7816_ERROR_MORE_DATA_AVAILABLE) {
-			CHECK_SW_9000(response, responseLength, status);
-		}
-
-		if (totalResponseLength + responseLength - 2 > *recvBufferLength) {
-			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
-			goto end;
-		}
-		memcpy(recvBuffer + totalResponseLength, response, responseLength - 2);
-		totalResponseLength += responseLength - 2;
-
-		apduErrorCode = status.errorCode;
-		sendBuffer[0] = 0x00;
-		sendBuffer[1] = 0xC0;
-		sendBuffer[2] = 0x00;
-		sendBuffer[3] = 0x00;
-		sendBuffer[4] = 0x00;
-		sendBufferLength = 5;
-	} while (apduErrorCode == OPGP_ISO7816_ERROR_MORE_DATA_AVAILABLE);
-
-	*recvBufferLength = totalResponseLength;
-	OPGP_ERROR_CREATE_NO_ERROR(status);
-
-end:
+	status = get_data_with_data(cardContext, cardInfo, secInfo, (BYTE *)GP211_GET_DATA_ECKA_CERTIFICATE,
+			(PBYTE)crt, sizeof(crt), recvBuffer, recvBufferLength);
 	OPGP_LOG_END(_T("GP211_get_ecka_certificate"), status);
 	return status;
 }
@@ -2494,13 +2448,10 @@ end:
 OPGP_ERROR_STATUS GP211_ca_kloc_kid_kvn(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 			  PBYTE caKlocIdentifier, DWORD caKlocIdentifierLength, BYTE *keyIdentifier, BYTE *keyVersionNumber) {
 	OPGP_ERROR_STATUS status;
-	BYTE sendBuffer[280];
-	BYTE response[APDU_RESPONSE_LEN];
+	BYTE response[APDU_RESPONSE_LEN * 2];
 	DWORD responseLength = sizeof(response);
 	BYTE crt[260];
 	DWORD crtLength = 0;
-	DWORD sendBufferLength = 0;
-	DWORD i = 0;
 	GP_SIMPLE_TLV responseTlv;
 
 	if (caKlocIdentifier == NULL || caKlocIdentifierLength == 0 || keyIdentifier == NULL || keyVersionNumber == NULL) {
@@ -2521,29 +2472,14 @@ OPGP_ERROR_STATUS GP211_ca_kloc_kid_kvn(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 		if (OPGP_ERROR_CHECK(status)) {
 			goto end;
 		}
-
-		sendBuffer[i++] = 0x80;
-		sendBuffer[i++] = 0xCA;
-		sendBuffer[i++] = GP211_GET_DATA_CA_KLOC_KID_KVN[0];
-		sendBuffer[i++] = GP211_GET_DATA_CA_KLOC_KID_KVN[1];
-		sendBuffer[i++] = (BYTE)wrappedCrtLength;
-		memcpy(sendBuffer + i, wrappedCrt, wrappedCrtLength);
-		i += wrappedCrtLength;
-		sendBuffer[i++] = 0x00;
-		sendBufferLength = i;
+		status = get_data_with_data(cardContext, cardInfo, secInfo, (BYTE *)GP211_GET_DATA_CA_KLOC_KID_KVN,
+				wrappedCrt, wrappedCrtLength, response, &responseLength);
+		if (OPGP_ERROR_CHECK(status)) {
+			goto end;
+		}
 	}
 
-	status = OPGP_send_APDU(cardContext, cardInfo, secInfo, sendBuffer, sendBufferLength, response, &responseLength);
-	if (OPGP_ERROR_CHECK(status)) {
-		goto end;
-	}
-	CHECK_SW_9000(response, responseLength, status);
-	if (responseLength < 2) {
-		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-		goto end;
-	}
-
-	if (parse_simple_tlv(response, responseLength - 2, &responseTlv) < 0
+	if (parse_simple_tlv(response, responseLength, &responseTlv) < 0
 			|| responseTlv.tag != 0x83 || responseTlv.length != 2) {
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 		goto end;
@@ -2556,6 +2492,25 @@ OPGP_ERROR_STATUS GP211_ca_kloc_kid_kvn(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 end:
 	OPGP_LOG_END(_T("GP211_ca_kloc_kid_kvn"), status);
 	return status;
+}
+
+/**
+ * Retrieves SCP11 supported CA identifiers with GET DATA tags FF33 (CA-KLOC)
+ * and FF34 (CA-KLCC).
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context().
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication(), or NULL if the command is sent without secure messaging.
+ * \param returnCaKlccIdentifiers [in] FALSE for FF33 (CA-KLOC), TRUE for FF34 (CA-KLCC).
+ * \param recvBuffer [out] The buffer for the response data.
+ * \param recvBufferLength [in, out] The length of recvBuffer and, on success, the number of bytes copied.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct.
+ */
+OPGP_ERROR_STATUS GP211_get_supported_ca_identifiers(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+			  BOOL returnCaKlccIdentifiers, PBYTE recvBuffer, PDWORD recvBufferLength) {
+	const BYTE *identifier = returnCaKlccIdentifiers
+			? GP211_GET_DATA_SUPPORTED_CA_KLCC_IDENTIFIERS
+			: GP211_GET_DATA_SUPPORTED_CA_KLOC_IDENTIFIERS;
+	return get_data(cardContext, cardInfo, secInfo, (BYTE *)identifier, recvBuffer, recvBufferLength);
 }
 
 /**
@@ -2604,16 +2559,21 @@ OPGP_ERROR_STATUS GP211_perform_security_operation(OPGP_CARD_CONTEXT cardContext
 
 /**
  * Submits an SCP11 certificate chain with PERFORM SECURITY OPERATION.
- * The input must contain either one or more consecutive CERT.KA-KLOC.ECDSA /
- * CERT.OCE.ECKA certificates (tag 7F21), or a BF21 wrapper containing those
- * certificates. Each certificate is submitted separately; P2.b8 is set for every
- * intermediate certificate and cleared for the final CERT.OCE.ECKA.
+ * The input must contain either one or more consecutive certificates, or a BF21
+ * wrapper containing those certificates. Supported certificate formats are
+ * legacy GP (tag 7F21) and X.509 DER (tag 30). The chain must contain exactly
+ * one format; mixed chains are rejected. For legacy GP certificates, key usage
+ * is validated locally (intermediate certificates must be digital signature
+ * verification; the final certificate must be key agreement). For X.509 chains,
+ * local key usage parsing is not performed and the chain is forwarded as-is.
+ * Each certificate is submitted separately; P2.b8 is set for every intermediate
+ * certificate and cleared for the final certificate.
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context().
  * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
  * \param secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication(), or NULL if the command is sent without secure messaging.
  * \param caKlocKeyVersionNumber [in] CA-KLOC Key Version Number (KVN) used for verifying the first certificate.
  * \param caKlocKeyIdentifier [in] CA-KLOC Key Identifier (KID) used for verifying the first certificate.
- * \param certificateChainData [in] One or more 7F21 certificates, optionally wrapped in BF21.
+ * \param certificateChainData [in] One or more 7F21 or 30 certificates, optionally wrapped in BF21.
  * \param certificateChainDataLength [in] The length of certificateChainData.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct.
  */
@@ -2627,6 +2587,7 @@ OPGP_ERROR_STATUS GP211_perform_security_operation_certificate_chain(OPGP_CARD_C
 	const BYTE *certificateList;
 	DWORD certificateListLength;
 	DWORD offset = 0;
+	USHORT certificateTag = 0;
 
 	OPGP_LOG_START(_T("GP211_perform_security_operation_certificate_chain"));
 
@@ -2646,27 +2607,39 @@ OPGP_ERROR_STATUS GP211_perform_security_operation_certificate_chain(OPGP_CARD_C
 
 	while (offset < certificateListLength) {
 		BOOL moreCertificatesExpected;
-		GP211_SCP11_CERTIFICATE parsedCertificate;
 		LONG result = parse_simple_tlv(certificateList + offset, certificateListLength - offset, &certificateTlv);
-		if (result < 0 || certificateTlv.tag != 0x7F21) {
+		if (result < 0) {
 			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 			goto end;
 		}
-		status = GP211_parse_scp11_certificate((PBYTE)(certificateList + offset), certificateTlv.tlvLength, &parsedCertificate);
-		if (OPGP_ERROR_CHECK(status)) {
+		if (certificateTag == 0) {
+			if (certificateTlv.tag != 0x7F21 && certificateTlv.tag != 0x30) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+				goto end;
+			}
+			certificateTag = certificateTlv.tag;
+		} else if (certificateTlv.tag != certificateTag) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 			goto end;
 		}
 		moreCertificatesExpected = (offset + certificateTlv.tlvLength < certificateListLength);
-		if ((moreCertificatesExpected
-					&& (parsedCertificate.keyUsageLength != sizeof(GP211_SCP11_KEY_USAGE_DIGITAL_SIGNATURE_VERIFICATION)
-						|| memcmp(parsedCertificate.keyUsage, GP211_SCP11_KEY_USAGE_DIGITAL_SIGNATURE_VERIFICATION,
-							sizeof(GP211_SCP11_KEY_USAGE_DIGITAL_SIGNATURE_VERIFICATION)) != 0))
-				|| (!moreCertificatesExpected
-					&& (parsedCertificate.keyUsageLength != sizeof(GP211_SCP11_KEY_USAGE_KEY_AGREEMENT)
-						|| memcmp(parsedCertificate.keyUsage, GP211_SCP11_KEY_USAGE_KEY_AGREEMENT,
-							sizeof(GP211_SCP11_KEY_USAGE_KEY_AGREEMENT)) != 0))) {
-			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-			goto end;
+		if (certificateTag == 0x7F21) {
+			GP211_SCP11_CERTIFICATE parsedCertificate;
+			status = GP211_parse_scp11_certificate((PBYTE)(certificateList + offset), certificateTlv.tlvLength, &parsedCertificate);
+			if (OPGP_ERROR_CHECK(status)) {
+				goto end;
+			}
+			if ((moreCertificatesExpected
+						&& (parsedCertificate.keyUsageLength != sizeof(GP211_SCP11_KEY_USAGE_DIGITAL_SIGNATURE_VERIFICATION)
+							|| memcmp(parsedCertificate.keyUsage, GP211_SCP11_KEY_USAGE_DIGITAL_SIGNATURE_VERIFICATION,
+								sizeof(GP211_SCP11_KEY_USAGE_DIGITAL_SIGNATURE_VERIFICATION)) != 0))
+					|| (!moreCertificatesExpected
+						&& (parsedCertificate.keyUsageLength != sizeof(GP211_SCP11_KEY_USAGE_KEY_AGREEMENT)
+							|| memcmp(parsedCertificate.keyUsage, GP211_SCP11_KEY_USAGE_KEY_AGREEMENT,
+								sizeof(GP211_SCP11_KEY_USAGE_KEY_AGREEMENT)) != 0))) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+				goto end;
+			}
 		}
 		status = GP211_perform_security_operation(cardContext, cardInfo, secInfo,
 				caKlocKeyVersionNumber, caKlocKeyIdentifier,
@@ -2912,33 +2885,96 @@ end:
 
 OPGP_ERROR_STATUS get_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 			  BYTE identifier[2], PBYTE recvBuffer, PDWORD recvBufferLength) {
+	return get_data_with_data(cardContext, cardInfo, secInfo, identifier, NULL, 0, recvBuffer, recvBufferLength);
+}
+
+OPGP_ERROR_STATUS get_data_with_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+			  BYTE identifier[2], PBYTE dataObject, DWORD dataObjectLength,
+			  PBYTE recvBuffer, PDWORD recvBufferLength) {
 	OPGP_ERROR_STATUS status;
-	BYTE sendBuffer[5];
-	DWORD sendBufferLength = 5;
-	BYTE cardData[256];
-	DWORD cardDataLength = 256;
+	BYTE sendBuffer[APDU_COMMAND_LEN];
+	DWORD sendBufferLength = 0;
+	BYTE cardData[APDU_RESPONSE_LEN];
+	DWORD cardDataLength = APDU_RESPONSE_LEN;
+	DWORD recvBufferCapacity = 0;
+	DWORD totalResponseLength = 0;
+	BOOL moreDataAvailable = 0;
 	DWORD i=0;
+	BYTE sw1 = 0;
+	BYTE sw2 = 0;
+
 	OPGP_LOG_START(_T("get_data"));
+
+	if (identifier == NULL || recvBuffer == NULL || recvBufferLength == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+	if (dataObjectLength > 255) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE));
+		goto end;
+	}
+	if (dataObjectLength > 0 && dataObject == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+
+	recvBufferCapacity = *recvBufferLength;
+	*recvBufferLength = 0;
+
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xCA;
 	sendBuffer[i++] = identifier[0];
 	sendBuffer[i++] = identifier[1];
-	sendBuffer[i] = 0x00;
-
-	status = OPGP_send_APDU(cardContext, cardInfo, secInfo, sendBuffer, sendBufferLength, cardData, &cardDataLength);
-	if (OPGP_ERROR_CHECK(status)) {
-		*recvBufferLength = 0;
-		goto end;
+	if (dataObjectLength > 0) {
+		sendBuffer[i++] = (BYTE)dataObjectLength;
+		memcpy(sendBuffer + i, dataObject, dataObjectLength);
+		i += dataObjectLength;
 	}
-	CHECK_SW_9000(cardData, cardDataLength, status);
+	sendBuffer[i++] = 0x00;
+	sendBufferLength = i;
 
-	if (cardDataLength-2 > *recvBufferLength) {
-		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
-	}
-	memcpy(recvBuffer, cardData, cardDataLength-2);
-	*recvBufferLength = cardDataLength-2;
+	do {
+		cardDataLength = APDU_RESPONSE_LEN;
+		status = OPGP_send_APDU(cardContext, cardInfo, secInfo, sendBuffer, sendBufferLength, cardData, &cardDataLength);
+		if (OPGP_ERROR_CHECK(status)) {
+			goto end;
+		}
+		if (cardDataLength < 2) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+
+		sw1 = cardData[cardDataLength-2];
+		sw2 = cardData[cardDataLength-1];
+		moreDataAvailable = (sw1 == 0x61);
+		if (!moreDataAvailable && (sw1 != 0x90 || sw2 != 0x00)) {
+			OPGP_ERROR_CREATE_ERROR(status, status.errorCode, OPGP_stringify_error(status.errorCode));
+			goto end;
+		}
+
+		if (totalResponseLength + cardDataLength - 2 > recvBufferCapacity) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+			goto end;
+		}
+		memcpy(recvBuffer + totalResponseLength, cardData, cardDataLength - 2);
+		totalResponseLength += cardDataLength - 2;
+
+		if (moreDataAvailable) {
+			sendBuffer[0] = 0x00;
+			sendBuffer[1] = 0xC0;
+			sendBuffer[2] = 0x00;
+			sendBuffer[3] = 0x00;
+			sendBuffer[4] = sw2;
+			sendBufferLength = 5;
+		}
+	} while (moreDataAvailable);
+
+	*recvBufferLength = totalResponseLength;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
+	if (OPGP_ERROR_CHECK(status) && recvBufferLength != NULL) {
+		*recvBufferLength = 0;
+	}
 	OPGP_LOG_END(_T("get_data"), status);
 	return status;
 }

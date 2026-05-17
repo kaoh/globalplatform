@@ -178,6 +178,8 @@ static const BYTE GP211_GET_DATA_ISSUER_IDENTIFICATION_NUMBER[2] = {0x00, 0x42};
 static const BYTE GP211_GET_DATA_APPLICATION_PROVIDER_IDENTIFICATION_NUMBER[2] = {0x00, 0x42}; //!< Application Provider Identification Number, if Security Domain selected.
 static const BYTE GP211_GET_DATA_ECKA_CERTIFICATE[2] = {0xBF, 0x21}; //!< SCP11: ECKA certificate store.
 static const BYTE GP211_GET_DATA_CA_KLOC_KID_KVN[2] = {0x00, 0x83}; //!< SCP11: CA-KLOC Identifier to KID/KVN mapping.
+static const BYTE GP211_GET_DATA_SUPPORTED_CA_KLOC_IDENTIFIERS[2] = {0xFF, 0x33}; //!< SCP11: Supported CA-KLOC identifiers.
+static const BYTE GP211_GET_DATA_SUPPORTED_CA_KLCC_IDENTIFIERS[2] = {0xFF, 0x34}; //!< SCP11: Supported CA-KLCC identifiers.
 
 static const BYTE GP211_GET_DATA_CARD_IMAGE_NUMBER[2] = {0x00, 0x45}; //!< Card Image Number, if Card Manager selected.
 static const BYTE GP211_GET_DATA_SECURITY_DOMAIN_IMAGE_NUMBER[2] = {0x00, 0x45}; //!< Security Domain Image Number, if Security Domain selected.
@@ -892,6 +894,12 @@ OPGP_API
 OPGP_ERROR_STATUS GP211_ca_kloc_kid_kvn(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 			  PBYTE caKlocIdentifier, DWORD caKlocIdentifierLength,
 			  BYTE *keyIdentifier, BYTE *keyVersionNumber);
+
+//! \brief SCP11: Retrieves supported CA identifiers (GET DATA with tag FF33 or FF34).
+OPGP_API
+OPGP_ERROR_STATUS GP211_get_supported_ca_identifiers(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
+			  GP211_SECURITY_INFO *secInfo, BOOL returnCaKlccIdentifiers,
+			  PBYTE recvBuffer, PDWORD recvBufferLength);
 
 //! \brief SCP11: Submits CERT.OCE.ECKA (PERFORM SECURITY OPERATION, INS 2A).
 OPGP_API

@@ -277,6 +277,9 @@ static void print_usage(const char *prog) {
         "      Read the Issuer Identification Number / SD Provider Identification Number (tag 0x42).\n"
         "  cin\n"
         "      Read the Card Image Number / SD Image Number (tag 0x45).\n"
+        "  scp11-auth-data\n"
+        "      Read SCP11 authentication data summary: ECKA certificate store, supported CA identifiers,\n"
+        "      and CA-KLOC KID/KVN mappings. Uses global --kv and --idx for certificate-store lookup.\n"
         "  store-iin <IIN>\n"
         "      Store the Issuer Identification Number (tag 0x42) using BCD encoding.\n"
         "  store-cin <CIN>\n"
@@ -440,6 +443,65 @@ static int hex_to_bytes(const char *hex, unsigned char *out, size_t *outlen) {
 
 static void print_hex(const unsigned char *buf, size_t len) {
     for (size_t i=0;i<len;i++) printf("%02X", buf[i]);
+}
+
+typedef struct {
+    unsigned short tag;
+    const unsigned char *value;
+    size_t length;
+    size_t tlv_length;
+} simple_tlv_view_t;
+
+static int parse_simple_tlv_view(const unsigned char *buffer, size_t length, simple_tlv_view_t *tlv) {
+    size_t offset = 0;
+    unsigned char firstTagOctet;
+    unsigned char firstLengthOctet;
+    size_t numLengthOctets;
+    size_t valueLength = 0;
+
+    if (buffer == NULL || tlv == NULL || length < 2) {
+        return -1;
+    }
+
+    firstTagOctet = buffer[offset++];
+    if ((firstTagOctet & 0x1F) == 0x1F) {
+        unsigned char secondTagOctet;
+        if (length < offset + 1) {
+            return -1;
+        }
+        secondTagOctet = buffer[offset++];
+        if ((secondTagOctet & 0x80) != 0) {
+            return -1;
+        }
+        tlv->tag = (unsigned short)((firstTagOctet << 8) | secondTagOctet);
+    } else {
+        tlv->tag = firstTagOctet;
+    }
+
+    if (length < offset + 1) {
+        return -1;
+    }
+    firstLengthOctet = buffer[offset++];
+    if ((firstLengthOctet & 0x80) != 0) {
+        numLengthOctets = (size_t)(firstLengthOctet & 0x7F);
+        if (numLengthOctets == 0 || numLengthOctets > 2 || length < offset + numLengthOctets) {
+            return -1;
+        }
+        for (size_t i = 0; i < numLengthOctets; i++) {
+            valueLength = (valueLength << 8) | buffer[offset++];
+        }
+    } else {
+        valueLength = firstLengthOctet;
+    }
+
+    if (length < offset + valueLength) {
+        return -1;
+    }
+
+    tlv->value = buffer + offset;
+    tlv->length = valueLength;
+    tlv->tlv_length = offset + valueLength;
+    return 0;
 }
 
 static void scp_impl_to_hex(const GP211_CARD_RECOGNITION_DATA *data, DWORD index, char *out, size_t outlen) {
@@ -2221,7 +2283,7 @@ static int cmd_list_keys(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECUR
             printf("kv=0x%02x:\n", current_kv);
         }
 
-        printf("  idx=%u ", all[i].keyIndex);
+        printf("  idx=%u (0x%02X) ", all[i].keyIndex, all[i].keyIndex);
         for (BYTE k = 0; k < all[i].numKeyComponents; k++) {
             if (k > 0) printf("         ");
             const char *typeStr = key_type_to_string(all[i].keyComponents[k].keyType);
@@ -5053,6 +5115,96 @@ static int cmd_card_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECUR
     return rc;
 }
 
+static int cmd_scp11_auth_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec,
+                               BYTE keyVersionNumber, BYTE keyIdentifier) {
+    int rc = 0;
+    BYTE certificateStore[4096];
+    DWORD certificateStoreLength = sizeof(certificateStore);
+    BYTE supportedCaData[4096];
+    DWORD supportedCaDataLength;
+
+    printf("== ecka-certificate-store ==\n");
+    if (!status_ok(GP211_get_ecka_certificate(ctx, info, sec, keyVersionNumber, keyIdentifier,
+                                              certificateStore, &certificateStoreLength), false)) {
+        fprintf(stderr, "scp11-auth-data: GP211_get_ecka_certificate failed\n");
+        rc = -1;
+    } else {
+        printf("Length : %lu\n", (unsigned long)certificateStoreLength);
+        printf("Data   : ");
+        print_hex(certificateStore, certificateStoreLength);
+        printf("\n");
+    }
+
+    for (int caType = 0; caType < 2; caType++) {
+        BOOL isKlcc = (caType == 1);
+        unsigned short expectedOuterTag = isKlcc ? 0xFF34 : 0xFF33;
+        const char *title = isKlcc ? "supported-ca-klcc-identifiers" : "supported-ca-kloc-identifiers";
+        size_t offset = 0;
+        size_t entry = 0;
+        simple_tlv_view_t outer;
+
+        supportedCaDataLength = sizeof(supportedCaData);
+        printf("\n== %s ==\n", title);
+        if (!status_ok(GP211_get_supported_ca_identifiers(ctx, info, sec, isKlcc,
+                                                          supportedCaData, &supportedCaDataLength), false)) {
+            fprintf(stderr, "scp11-auth-data: GP211_get_supported_ca_identifiers failed (%s)\n", title);
+            rc = -1;
+            continue;
+        }
+
+        if (parse_simple_tlv_view(supportedCaData, (size_t)supportedCaDataLength, &outer) != 0
+            || outer.tag != expectedOuterTag) {
+            fprintf(stderr, "scp11-auth-data: could not parse %s response\n", title);
+            rc = -1;
+            continue;
+        }
+
+        while (offset < outer.length) {
+            simple_tlv_view_t caIdTlv;
+            size_t nextOffset;
+
+            if (parse_simple_tlv_view(outer.value + offset, outer.length - offset, &caIdTlv) != 0) {
+                fprintf(stderr, "scp11-auth-data: malformed %s entry\n", title);
+                rc = -1;
+                break;
+            }
+
+            if (caIdTlv.tag == 0x42) {
+                printf("CA[%lu] : ", (unsigned long)entry++);
+                print_hex(caIdTlv.value, caIdTlv.length);
+
+                nextOffset = offset + caIdTlv.tlv_length;
+                if (nextOffset < outer.length) {
+                    simple_tlv_view_t kidKvnTlv;
+                    if (parse_simple_tlv_view(outer.value + nextOffset, outer.length - nextOffset, &kidKvnTlv) == 0
+                        && kidKvnTlv.tag == 0x83 && kidKvnTlv.length == 2) {
+                        printf("  listed-kid=0x%02X listed-kvn=0x%02X",
+                               kidKvnTlv.value[0], kidKvnTlv.value[1]);
+                    }
+                }
+
+                if (!isKlcc) {
+                    BYTE resolvedKid = 0;
+                    BYTE resolvedKvn = 0;
+                    if (status_ok(GP211_ca_kloc_kid_kvn(ctx, info, sec,
+                                                        (PBYTE)caIdTlv.value, (DWORD)caIdTlv.length,
+                                                        &resolvedKid, &resolvedKvn), false)) {
+                        printf("  resolved-kid=0x%02X resolved-kvn=0x%02X", resolvedKid, resolvedKvn);
+                    } else {
+                        printf("  resolved-kid-kvn=error");
+                        rc = -1;
+                    }
+                }
+                printf("\n");
+            }
+
+            offset += caIdTlv.tlv_length;
+        }
+    }
+
+    return rc;
+}
+
 static int cmd_store_iin_cin(const char *cmd, int argc, char **argv,
                              const char *reader, const char *protocol, int trace, int verbose,
                              BYTE keyset_ver, BYTE key_index, int derivation, const char *sec_level_opt,
@@ -5230,7 +5382,8 @@ int main(int argc, char **argv) {
     }
     if (!strcmp(cmd, "card-data") || !strcmp(cmd, "iin") || !strcmp(cmd, "cin")
         || !strcmp(cmd, "card-info") || !strcmp(cmd, "card-cap") || !strcmp(cmd, "card-resources") || !strcmp(cmd, "div-data")
-        || !strcmp(cmd, "seq-counter") || !strcmp(cmd, "confirm-counter")) {
+        || !strcmp(cmd, "seq-counter") || !strcmp(cmd, "confirm-counter")
+        || !strcmp(cmd, "scp11-auth-data")) {
         need_auth = 0;
     }
     // Parse key options if provided
@@ -5299,6 +5452,7 @@ int main(int argc, char **argv) {
     else if (!strcmp(cmd, "div-data")) rc = cmd_diversification(ctx, info, &sec);
     else if (!strcmp(cmd, "seq-counter")) rc = cmd_seq_counter(ctx, info, &sec);
     else if (!strcmp(cmd, "confirm-counter")) rc = cmd_confirm_counter(ctx, info, &sec);
+    else if (!strcmp(cmd, "scp11-auth-data")) rc = cmd_scp11_auth_data(ctx, info, &sec, keyset_ver, key_index);
     else if (!strcmp(cmd, "install")) rc = cmd_install(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "install-sd")) rc = cmd_install_sd(ctx, info, &sec, argc - i, &argv[i],
                                                              keyset_ver, key_index, derivation, sec_level_opt, verbose,
