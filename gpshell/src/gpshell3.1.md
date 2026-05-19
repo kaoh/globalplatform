@@ -672,10 +672,12 @@ gpshell3 cin
 
 Read SCP11 authentication-related data:
 
-- ECKA certificate store (GET DATA `BF21`) using CRT key reference from global `--kv` (KVN) and `--idx` (KID),
 - supported CA-KLOC identifiers (GET DATA `FF33`),
 - supported CA-KLCC identifiers (GET DATA `FF34`),
-- resolved KID/KVN for each CA-KLOC identifier (GET DATA `0083`).
+- ECKA certificate store (GET DATA `BF21`) using CRT key reference from global `--kv` (KVN) and `--idx` (KID), only when at least one KLCC identifier is returned.
+
+The command first retrieves and prints supported CA identifiers.  
+If no KLCC identifier is returned, ECKA certificate store retrieval is skipped.
 
 Synopsis:
 ```

@@ -5118,22 +5118,11 @@ static int cmd_card_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECUR
 static int cmd_scp11_auth_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec,
                                BYTE keyVersionNumber, BYTE keyIdentifier) {
     int rc = 0;
+    int klccIdentifierFound = 0;
     BYTE certificateStore[4096];
     DWORD certificateStoreLength = sizeof(certificateStore);
     BYTE supportedCaData[4096];
     DWORD supportedCaDataLength;
-
-    printf("== ecka-certificate-store ==\n");
-    if (!status_ok(GP211_get_ecka_certificate(ctx, info, sec, keyVersionNumber, keyIdentifier,
-                                              certificateStore, &certificateStoreLength), false)) {
-        fprintf(stderr, "scp11-auth-data: GP211_get_ecka_certificate failed\n");
-        rc = -1;
-    } else {
-        printf("Length : %lu\n", (unsigned long)certificateStoreLength);
-        printf("Data   : ");
-        print_hex(certificateStore, certificateStoreLength);
-        printf("\n");
-    }
 
     for (int caType = 0; caType < 2; caType++) {
         BOOL isKlcc = (caType == 1);
@@ -5182,24 +5171,31 @@ static int cmd_scp11_auth_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
                                kidKvnTlv.value[0], kidKvnTlv.value[1]);
                     }
                 }
-
-                if (!isKlcc) {
-                    BYTE resolvedKid = 0;
-                    BYTE resolvedKvn = 0;
-                    if (status_ok(GP211_ca_kloc_kid_kvn(ctx, info, sec,
-                                                        (PBYTE)caIdTlv.value, (DWORD)caIdTlv.length,
-                                                        &resolvedKid, &resolvedKvn), false)) {
-                        printf("  resolved-kid=0x%02X resolved-kvn=0x%02X", resolvedKid, resolvedKvn);
-                    } else {
-                        printf("  resolved-kid-kvn=error");
-                        rc = -1;
-                    }
+                if (isKlcc) {
+                    klccIdentifierFound = 1;
                 }
                 printf("\n");
             }
 
             offset += caIdTlv.tlv_length;
         }
+    }
+
+    printf("\n== ecka-certificate-store ==\n");
+    if (!klccIdentifierFound) {
+        printf("(skipped: no KLCC identifier returned)\n");
+        return rc;
+    }
+
+    if (!status_ok(GP211_get_ecka_certificate(ctx, info, sec, keyVersionNumber, keyIdentifier,
+                                              certificateStore, &certificateStoreLength), false)) {
+        fprintf(stderr, "scp11-auth-data: GP211_get_ecka_certificate failed\n");
+        rc = -1;
+    } else {
+        printf("Length : %lu\n", (unsigned long)certificateStoreLength);
+        printf("Data   : ");
+        print_hex(certificateStore, certificateStoreLength);
+        printf("\n");
     }
 
     return rc;
