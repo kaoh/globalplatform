@@ -2894,14 +2894,9 @@ OPGP_ERROR_STATUS get_data_with_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_IN
 	OPGP_ERROR_STATUS status;
 	BYTE sendBuffer[APDU_COMMAND_LEN];
 	DWORD sendBufferLength = 0;
-	BYTE cardData[APDU_RESPONSE_LEN];
-	DWORD cardDataLength = APDU_RESPONSE_LEN;
+	DWORD cardDataLength = 0;
 	DWORD recvBufferCapacity = 0;
-	DWORD totalResponseLength = 0;
-	BOOL moreDataAvailable = 0;
 	DWORD i=0;
-	BYTE sw1 = 0;
-	BYTE sw2 = 0;
 
 	OPGP_LOG_START(_T("get_data"));
 
@@ -2920,6 +2915,10 @@ OPGP_ERROR_STATUS get_data_with_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_IN
 
 	recvBufferCapacity = *recvBufferLength;
 	*recvBufferLength = 0;
+	if (recvBufferCapacity == 0) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		goto end;
+	}
 
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xCA;
@@ -2933,43 +2932,21 @@ OPGP_ERROR_STATUS get_data_with_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_IN
 	sendBuffer[i++] = 0x00;
 	sendBufferLength = i;
 
-	do {
-		cardDataLength = APDU_RESPONSE_LEN;
-		status = OPGP_send_APDU(cardContext, cardInfo, secInfo, sendBuffer, sendBufferLength, cardData, &cardDataLength);
-		if (OPGP_ERROR_CHECK(status)) {
-			goto end;
-		}
-		if (cardDataLength < 2) {
-			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-			goto end;
-		}
+	cardDataLength = recvBufferCapacity;
+	status = OPGP_send_APDU(cardContext, cardInfo, secInfo, sendBuffer, sendBufferLength, recvBuffer, &cardDataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	if (cardDataLength < 2) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+	if (recvBuffer[cardDataLength-2] != 0x90 || recvBuffer[cardDataLength-1] != 0x00) {
+		OPGP_ERROR_CREATE_ERROR(status, status.errorCode, OPGP_stringify_error(status.errorCode));
+		goto end;
+	}
 
-		sw1 = cardData[cardDataLength-2];
-		sw2 = cardData[cardDataLength-1];
-		moreDataAvailable = (sw1 == 0x61);
-		if (!moreDataAvailable && (sw1 != 0x90 || sw2 != 0x00)) {
-			OPGP_ERROR_CREATE_ERROR(status, status.errorCode, OPGP_stringify_error(status.errorCode));
-			goto end;
-		}
-
-		if (totalResponseLength + cardDataLength - 2 > recvBufferCapacity) {
-			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
-			goto end;
-		}
-		memcpy(recvBuffer + totalResponseLength, cardData, cardDataLength - 2);
-		totalResponseLength += cardDataLength - 2;
-
-		if (moreDataAvailable) {
-			sendBuffer[0] = 0x00;
-			sendBuffer[1] = 0xC0;
-			sendBuffer[2] = 0x00;
-			sendBuffer[3] = 0x00;
-			sendBuffer[4] = sw2;
-			sendBufferLength = 5;
-		}
-	} while (moreDataAvailable);
-
-	*recvBufferLength = totalResponseLength;
+	*recvBufferLength = cardDataLength - 2;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
 	if (OPGP_ERROR_CHECK(status) && recvBufferLength != NULL) {

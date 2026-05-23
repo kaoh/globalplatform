@@ -756,20 +756,23 @@ OPGP_ERROR_STATUS OPGP_PL_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 
 	} // if (if T=1 or else T=0)
 
-	// if the case 3 command is actually a case 4 command and the cards wants to responds something.
-
-	if (responseData[offset] == 0x61) {
+	// if the case 3 command is actually a case 4 command and the cards wants to respond something.
+	// Keep draining SW1=61 chains until final status.
+	while (responseData[offset] == 0x61) {
+		if (offset + 2 > *rapduLength) {
+			HANDLE_STATUS(status, OPGP_ERROR_INSUFFICIENT_BUFFER);
+			goto end;
+		}
 
 		la = responseData[offset + 1];
 
-		capdu[0] = 0x00;;
+		capdu[0] = 0x00;
 		capdu[1] = 0xC0; // INS (Get Response)
 		capdu[2] = 0x00; // P1
 		capdu[3] = 0x00; // P2
 		capdu[4] = la;
 		capduLength = 5;
 		le = la;
-		// T=0 transmission (command w/ La)
 
 		responseDataLength = *rapduLength - offset;
 		result = SCardTransmit(GET_PCSC_CARD_INFO_SPECIFIC(cardInfo)->cardHandle,
@@ -783,9 +786,13 @@ OPGP_ERROR_STATUS OPGP_PL_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 		if ( SCARD_S_SUCCESS != result) {
 			HANDLE_STATUS(status, result);
 			goto end;
-		} // if ( SCARD_S_SUCCESS != result)
+		}
+		if (responseDataLength < 2) {
+			HANDLE_STATUS(status, OPGP_ERROR_INVALID_RESPONSE_DATA);
+			goto end;
+		}
 		offset += responseDataLength - 2;
-	} // if (61)
+	} // while (61)
 
 	memcpy(rapdu, responseData, offset + 2);
 	*rapduLength = offset + 2;

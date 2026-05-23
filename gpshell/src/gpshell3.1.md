@@ -674,7 +674,7 @@ Read SCP11 authentication-related data:
 
 - supported CA-KLOC identifiers (GET DATA `FF33`),
 - supported CA-KLCC identifiers (GET DATA `FF34`),
-- ECKA certificate store (GET DATA `BF21`) using CRT key reference from global `--kv` (KVN) and `--idx` (KID), only when at least one KLCC identifier is returned.
+- ECKA certificate store(s) (GET DATA `BF21`) using key references (`KID/KVN`) discovered from supported CA-KLCC identifiers.
 
 The command first retrieves and prints supported CA identifiers.  
 If no KLCC identifier is returned, ECKA certificate store retrieval is skipped.
@@ -684,17 +684,11 @@ Synopsis:
 gpshell3 [global-options] scp11-auth-data
 ```
 
-Options:
-
-- `--kv <n>`: Key Version Number used for ECKA certificate store retrieval (global option, default `0`).
-- `--idx <n>`: Key Identifier used for ECKA certificate store retrieval (global option, default `0`).
-
 This command does not require authentication.
 
 Examples:
 ```
 gpshell3 scp11-auth-data
-gpshell3 --kv 0x20 --idx 0x11 scp11-auth-data
 ```
 
 ## card-info

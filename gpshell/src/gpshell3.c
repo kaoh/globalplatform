@@ -278,8 +278,7 @@ static void print_usage(const char *prog) {
         "  cin\n"
         "      Read the Card Image Number / SD Image Number (tag 0x45).\n"
         "  scp11-auth-data\n"
-        "      Read SCP11 authentication data summary: ECKA certificate store, supported CA identifiers,\n"
-        "      and CA-KLOC KID/KVN mappings. Uses global --kv and --idx for certificate-store lookup.\n"
+        "      Read SCP11 authentication data summary: ECKA certificate stores and supported CA identifiers.\n"
         "  store-iin <IIN>\n"
         "      Store the Issuer Identification Number (tag 0x42) using BCD encoding.\n"
         "  store-cin <CIN>\n"
@@ -5115,12 +5114,16 @@ static int cmd_card_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECUR
     return rc;
 }
 
-static int cmd_scp11_auth_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec,
-                               BYTE keyVersionNumber, BYTE keyIdentifier) {
+static int cmd_scp11_auth_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
+    typedef struct {
+        BYTE keyIdentifier;
+        BYTE keyVersionNumber;
+    } key_ref_t;
+
     int rc = 0;
-    int klccIdentifierFound = 0;
+    key_ref_t klccKeyRefs[64];
+    size_t klccKeyRefCount = 0;
     BYTE certificateStore[4096];
-    DWORD certificateStoreLength = sizeof(certificateStore);
     BYTE supportedCaData[4096];
     DWORD supportedCaDataLength;
 
@@ -5134,11 +5137,15 @@ static int cmd_scp11_auth_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
 
         supportedCaDataLength = sizeof(supportedCaData);
         printf("\n== %s ==\n", title);
-        if (!status_ok(GP211_get_supported_ca_identifiers(ctx, info, sec, isKlcc,
-                                                          supportedCaData, &supportedCaDataLength), false)) {
-            fprintf(stderr, "scp11-auth-data: GP211_get_supported_ca_identifiers failed (%s)\n", title);
-            rc = -1;
-            continue;
+        {
+            OPGP_ERROR_STATUS status = GP211_get_supported_ca_identifiers(ctx, info, sec, isKlcc,
+                                                                           supportedCaData, &supportedCaDataLength);
+            if (!status_ok(status, false)) {
+                fprintf(stderr, "scp11-auth-data: GP211_get_supported_ca_identifiers failed (%s): 0x%08X (%s)\n",
+                        title, (unsigned int)status.errorCode, status.errorMessage);
+                rc = -1;
+                continue;
+            }
         }
 
         if (parse_simple_tlv_view(supportedCaData, (size_t)supportedCaDataLength, &outer) != 0
@@ -5159,6 +5166,9 @@ static int cmd_scp11_auth_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
             }
 
             if (caIdTlv.tag == 0x42) {
+                int hasKidKvn = 0;
+                BYTE listedKid = 0;
+                BYTE listedKvn = 0;
                 printf("CA[%lu] : ", (unsigned long)entry++);
                 print_hex(caIdTlv.value, caIdTlv.length);
 
@@ -5167,12 +5177,31 @@ static int cmd_scp11_auth_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
                     simple_tlv_view_t kidKvnTlv;
                     if (parse_simple_tlv_view(outer.value + nextOffset, outer.length - nextOffset, &kidKvnTlv) == 0
                         && kidKvnTlv.tag == 0x83 && kidKvnTlv.length == 2) {
+                        hasKidKvn = 1;
+                        listedKid = kidKvnTlv.value[0];
+                        listedKvn = kidKvnTlv.value[1];
                         printf("  listed-kid=0x%02X listed-kvn=0x%02X",
-                               kidKvnTlv.value[0], kidKvnTlv.value[1]);
+                               listedKid, listedKvn);
                     }
                 }
-                if (isKlcc) {
-                    klccIdentifierFound = 1;
+                if (isKlcc && hasKidKvn) {
+                    int duplicate = 0;
+                    for (size_t i = 0; i < klccKeyRefCount; i++) {
+                        if (klccKeyRefs[i].keyIdentifier == listedKid
+                            && klccKeyRefs[i].keyVersionNumber == listedKvn) {
+                            duplicate = 1;
+                            break;
+                        }
+                    }
+                    if (!duplicate) {
+                        if (klccKeyRefCount < ARRAY_SIZE(klccKeyRefs)) {
+                            klccKeyRefs[klccKeyRefCount].keyIdentifier = listedKid;
+                            klccKeyRefs[klccKeyRefCount].keyVersionNumber = listedKvn;
+                            klccKeyRefCount++;
+                        } else {
+                            fprintf(stderr, "scp11-auth-data: too many KLCC key references, truncating\n");
+                        }
+                    }
                 }
                 printf("\n");
             }
@@ -5182,16 +5211,33 @@ static int cmd_scp11_auth_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
     }
 
     printf("\n== ecka-certificate-store ==\n");
-    if (!klccIdentifierFound) {
-        printf("(skipped: no KLCC identifier returned)\n");
+    if (klccKeyRefCount == 0) {
+        printf("(skipped: no KLCC identifier with key reference returned)\n");
         return rc;
     }
 
-    if (!status_ok(GP211_get_ecka_certificate(ctx, info, sec, keyVersionNumber, keyIdentifier,
-                                              certificateStore, &certificateStoreLength), false)) {
-        fprintf(stderr, "scp11-auth-data: GP211_get_ecka_certificate failed\n");
-        rc = -1;
-    } else {
+    for (size_t i = 0; i < klccKeyRefCount; i++) {
+        DWORD certificateStoreLength = sizeof(certificateStore);
+        BYTE keyIdentifier = klccKeyRefs[i].keyIdentifier;
+        BYTE keyVersionNumber = klccKeyRefs[i].keyVersionNumber;
+
+        if (i > 0) {
+            printf("\n");
+        }
+        printf("KID=0x%02X KVN=0x%02X\n", keyIdentifier, keyVersionNumber);
+
+        {
+            OPGP_ERROR_STATUS status = GP211_get_ecka_certificate(ctx, info, sec, keyVersionNumber, keyIdentifier,
+                                                                  certificateStore, &certificateStoreLength);
+            if (!status_ok(status, false)) {
+                fprintf(stderr,
+                        "scp11-auth-data: GP211_get_ecka_certificate failed (kid=0x%02X kvn=0x%02X): 0x%08X (%s)\n",
+                        keyIdentifier, keyVersionNumber, (unsigned int)status.errorCode, status.errorMessage);
+                rc = -1;
+                continue;
+            }
+        }
+
         printf("Length : %lu\n", (unsigned long)certificateStoreLength);
         printf("Data   : ");
         print_hex(certificateStore, certificateStoreLength);
@@ -5448,7 +5494,7 @@ int main(int argc, char **argv) {
     else if (!strcmp(cmd, "div-data")) rc = cmd_diversification(ctx, info, &sec);
     else if (!strcmp(cmd, "seq-counter")) rc = cmd_seq_counter(ctx, info, &sec);
     else if (!strcmp(cmd, "confirm-counter")) rc = cmd_confirm_counter(ctx, info, &sec);
-    else if (!strcmp(cmd, "scp11-auth-data")) rc = cmd_scp11_auth_data(ctx, info, &sec, keyset_ver, key_index);
+    else if (!strcmp(cmd, "scp11-auth-data")) rc = cmd_scp11_auth_data(ctx, info, &sec);
     else if (!strcmp(cmd, "install")) rc = cmd_install(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "install-sd")) rc = cmd_install_sd(ctx, info, &sec, argc - i, &argv[i],
                                                              keyset_ver, key_index, derivation, sec_level_opt, verbose,
