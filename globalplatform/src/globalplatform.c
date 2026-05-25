@@ -3487,6 +3487,88 @@ OPGP_ERROR_STATUS GP211_parse_scp11_certificate(PBYTE certificateData, DWORD cer
 	return status;
 }
 
+OPGP_ERROR_STATUS GP211_parse_certificate_store(const BYTE *certificateStoreData, DWORD certificateStoreDataLength,
+			  PBYTE parsedCertificateStore, PDWORD parsedCertificateStoreLength) {
+	OPGP_ERROR_STATUS status;
+	GP_SIMPLE_TLV certificateStoreTlv;
+	const BYTE *certificateList;
+	DWORD certificateListLength;
+	DWORD offset = 0;
+	DWORD outputOffset = 0;
+	USHORT certificateTag = 0;
+
+	if (certificateStoreData == NULL || certificateStoreDataLength == 0
+			|| parsedCertificateStore == NULL || parsedCertificateStoreLength == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+
+	if (parse_simple_tlv(certificateStoreData, certificateStoreDataLength, &certificateStoreTlv) < 0
+			|| certificateStoreTlv.tag != 0xBF21 || certificateStoreTlv.tlvLength != certificateStoreDataLength) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+
+	certificateList = certificateStoreTlv.value;
+	certificateListLength = certificateStoreTlv.length;
+
+	while (offset < certificateListLength) {
+		GP_SIMPLE_TLV certificateTlv;
+		LONG parseResult = parse_simple_tlv(certificateList + offset, certificateListLength - offset, &certificateTlv);
+
+		if (parseResult < 0 || certificateTlv.tlvLength == 0) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			return status;
+		}
+
+		if (certificateTag == 0) {
+			certificateTag = certificateTlv.tag;
+			if (certificateTag != 0x7F21 && certificateTag != 0x30) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+				return status;
+			}
+		} else if (certificateTlv.tag != certificateTag) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			return status;
+		}
+
+		if (certificateTag == 0x7F21) {
+			GP211_SCP11_CERTIFICATE certificate;
+			status = GP211_parse_scp11_certificate((PBYTE)(certificateList + offset), certificateTlv.tlvLength, &certificate);
+			if (OPGP_ERROR_CHECK(status)) {
+				return status;
+			}
+			if (*parsedCertificateStoreLength - outputOffset < sizeof(certificate)) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+				return status;
+			}
+			memcpy(parsedCertificateStore + outputOffset, &certificate, sizeof(certificate));
+			outputOffset += sizeof(certificate);
+		}
+
+		offset += certificateTlv.tlvLength;
+	}
+
+	if (certificateTag == 0 || offset != certificateListLength) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+
+	if (certificateTag == 0x30) {
+		DWORD pemLength = *parsedCertificateStoreLength;
+		status = convert_der_certificate_list_to_pem(certificateList, certificateListLength,
+				parsedCertificateStore, &pemLength);
+		if (OPGP_ERROR_CHECK(status)) {
+			return status;
+		}
+		outputOffset = pemLength;
+	}
+
+	*parsedCertificateStoreLength = outputOffset;
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+	return status;
+}
+
 static OPGP_ERROR_STATUS build_scp11_certificate_signed_data(GP211_SCP11_CERTIFICATE *certificate,
 		PBYTE signedData, DWORD signedDataSize, PDWORD signedDataLength) {
 	OPGP_ERROR_STATUS status;

@@ -267,6 +267,11 @@ OPGP_NO_API
 OPGP_ERROR_STATUS convert_pem_certificate_list_to_der(const BYTE *pemData, DWORD pemDataLength,
 		PBYTE derData, PDWORD derDataLength);
 
+//! \brief Converts one or more concatenated DER X.509 certificates to PEM CERTIFICATE blocks.
+OPGP_NO_API
+OPGP_ERROR_STATUS convert_der_certificate_list_to_pem(const BYTE *derData, DWORD derDataLength,
+		PBYTE pemData, PDWORD pemDataLength);
+
 typedef struct {
 	BYTE fieldP[512];
 	DWORD fieldPLength;

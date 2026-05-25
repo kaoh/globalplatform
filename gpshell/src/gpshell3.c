@@ -444,6 +444,51 @@ static void print_hex(const unsigned char *buf, size_t len) {
     for (size_t i=0;i<len;i++) printf("%02X", buf[i]);
 }
 
+static void print_scp11_certificate_hex_field(const char *label, const BYTE *value, DWORD valueLength) {
+    printf("%s : ", label);
+    if (valueLength == 0 || value == NULL) {
+        printf("(none)");
+    } else {
+        print_hex(value, valueLength);
+    }
+    printf("\n");
+}
+
+static void print_scp11_certificate(const GP211_SCP11_CERTIFICATE *certificate, size_t certificateIndex) {
+    printf("CERT[%lu] : GP legacy (7F21)\n", (unsigned long)certificateIndex);
+    print_scp11_certificate_hex_field("  serial-number", certificate->certificateSerialNumber,
+                                      certificate->certificateSerialNumberLength);
+    print_scp11_certificate_hex_field("  authority-identifier", certificate->authorityIdentifier,
+                                      certificate->authorityIdentifierLength);
+    print_scp11_certificate_hex_field("  subject-identifier", certificate->subjectIdentifier,
+                                      certificate->subjectIdentifierLength);
+    print_scp11_certificate_hex_field("  key-usage", certificate->keyUsage, certificate->keyUsageLength);
+    if (certificate->effectiveDatePresent) {
+        print_scp11_certificate_hex_field("  effective-date", certificate->effectiveDate,
+                                          GP211_SCP11_CERTIFICATE_MAX_DATE_LENGTH);
+    } else {
+        print_scp11_certificate_hex_field("  effective-date", NULL, 0);
+    }
+    print_scp11_certificate_hex_field("  expiration-date", certificate->expirationDate,
+                                      certificate->expirationDateLength);
+    print_scp11_certificate_hex_field("  key-parameter-reference", certificate->keyParameterReference,
+                                      certificate->keyParameterReferenceLength);
+    print_scp11_certificate_hex_field("  public-key", certificate->publicKey,
+                                      certificate->publicKeyLength);
+    if (certificate->discretionaryDataTag != 0) {
+        char label[48];
+        snprintf(label, sizeof(label), "  discretionary-data-%04X", certificate->discretionaryDataTag);
+        print_scp11_certificate_hex_field(label, certificate->discretionaryData,
+                                          certificate->discretionaryDataLength);
+    }
+    if (certificate->authorizationsPresent) {
+        print_scp11_certificate_hex_field("  authorizations", certificate->authorizations,
+                                          certificate->authorizationsLength);
+    }
+    print_scp11_certificate_hex_field("  signature", certificate->signature,
+                                      certificate->signatureLength);
+}
+
 typedef struct {
     unsigned short tag;
     const unsigned char *value;
@@ -5218,8 +5263,15 @@ static int cmd_scp11_auth_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
 
     for (size_t i = 0; i < klccKeyRefCount; i++) {
         DWORD certificateStoreLength = sizeof(certificateStore);
+        BYTE parsedCertificateStore[16384];
+        DWORD parsedCertificateStoreLength = sizeof(parsedCertificateStore);
         BYTE keyIdentifier = klccKeyRefs[i].keyIdentifier;
         BYTE keyVersionNumber = klccKeyRefs[i].keyVersionNumber;
+        int parsed = 1;
+        simple_tlv_view_t certificateStoreTlv;
+        size_t certificateOffset = 0;
+        size_t certificateIndex = 0;
+        unsigned short certificateTag = 0;
 
         if (i > 0) {
             printf("\n");
@@ -5239,9 +5291,81 @@ static int cmd_scp11_auth_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
         }
 
         printf("Length : %lu\n", (unsigned long)certificateStoreLength);
-        printf("Data   : ");
-        print_hex(certificateStore, certificateStoreLength);
-        printf("\n");
+        if (parse_simple_tlv_view(certificateStore, (size_t)certificateStoreLength, &certificateStoreTlv) != 0
+            || certificateStoreTlv.tag != 0xBF21
+            || certificateStoreTlv.tlv_length != (size_t)certificateStoreLength) {
+            parsed = 0;
+        }
+
+        while (parsed && certificateOffset < certificateStoreTlv.length) {
+            simple_tlv_view_t certificateTlv;
+            if (parse_simple_tlv_view(certificateStoreTlv.value + certificateOffset,
+                                      certificateStoreTlv.length - certificateOffset, &certificateTlv) != 0
+                || certificateTlv.tlv_length == 0) {
+                parsed = 0;
+                break;
+            }
+
+            if (certificateTag == 0) {
+                certificateTag = certificateTlv.tag;
+                if (certificateTag != 0x7F21 && certificateTag != 0x30) {
+                    parsed = 0;
+                    break;
+                }
+            } else if (certificateTlv.tag != certificateTag) {
+                parsed = 0;
+                break;
+            }
+
+            if (certificateTag == 0x7F21) {
+                GP211_SCP11_CERTIFICATE certificate;
+                OPGP_ERROR_STATUS status = GP211_parse_scp11_certificate((PBYTE)(certificateStoreTlv.value + certificateOffset),
+                                                                         (DWORD)certificateTlv.tlv_length, &certificate);
+                if (!status_ok(status, false)) {
+                    fprintf(stderr,
+                            "scp11-auth-data: GP211_parse_scp11_certificate failed (kid=0x%02X kvn=0x%02X): 0x%08X (%s)\n",
+                            keyIdentifier, keyVersionNumber, (unsigned int)status.errorCode, status.errorMessage);
+                    parsed = 0;
+                    break;
+                }
+                if (certificateIndex > 0) {
+                    printf("\n");
+                }
+                print_scp11_certificate(&certificate, certificateIndex);
+            }
+
+            certificateOffset += certificateTlv.tlv_length;
+            certificateIndex++;
+        }
+
+        if (parsed && (certificateTag == 0 || certificateOffset != certificateStoreTlv.length)) {
+            parsed = 0;
+        }
+
+        if (parsed && certificateTag == 0x30) {
+            OPGP_ERROR_STATUS status = GP211_parse_certificate_store(certificateStore, certificateStoreLength,
+                                                                     parsedCertificateStore, &parsedCertificateStoreLength);
+            if (!status_ok(status, false)) {
+                fprintf(stderr,
+                        "scp11-auth-data: GP211_parse_certificate_store failed (kid=0x%02X kvn=0x%02X): 0x%08X (%s)\n",
+                        keyIdentifier, keyVersionNumber, (unsigned int)status.errorCode, status.errorMessage);
+                parsed = 0;
+            } else {
+                fwrite(parsedCertificateStore, 1, parsedCertificateStoreLength, stdout);
+            }
+        }
+
+        if (parsed && certificateTag == 0x30
+            && (parsedCertificateStoreLength == 0 || parsedCertificateStore[parsedCertificateStoreLength - 1] != '\n')) {
+            printf("\n");
+        }
+
+        if (!parsed) {
+            printf("Data   : ");
+            print_hex(certificateStore, certificateStoreLength);
+            printf("\n");
+            rc = -1;
+        }
     }
 
     return rc;

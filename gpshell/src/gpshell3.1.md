@@ -676,6 +676,10 @@ Read SCP11 authentication-related data:
 - supported CA-KLCC identifiers (GET DATA `FF34`),
 - ECKA certificate store(s) (GET DATA `BF21`) using key references (`KID/KVN`) discovered from supported CA-KLCC identifiers.
 
+For each `BF21` certificate store:
+- GP legacy certificates (`7F21`) are decoded per certificate using `GP211_parse_scp11_certificate`.
+- X.509 DER certificate chains (`30`) are printed as PEM.
+
 The command first retrieves and prints supported CA identifiers.  
 If no KLCC identifier is returned, ECKA certificate store retrieval is skipped.
 

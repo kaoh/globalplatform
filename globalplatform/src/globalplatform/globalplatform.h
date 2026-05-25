@@ -937,6 +937,13 @@ OPGP_API
 OPGP_ERROR_STATUS GP211_parse_scp11_certificate(PBYTE certificateData, DWORD certificateDataLength,
 			  GP211_SCP11_CERTIFICATE *certificate);
 
+//! \brief SCP11: Parses a BF21 certificate store.
+//! For legacy GP certificates (tag '7F21') the output contains a contiguous array of GP211_SCP11_CERTIFICATE structures.
+//! For X.509 DER certificates (tag '30') the output contains PEM encoded CERTIFICATE blocks.
+OPGP_API
+OPGP_ERROR_STATUS GP211_parse_certificate_store(const BYTE *certificateStoreData, DWORD certificateStoreDataLength,
+			  PBYTE parsedCertificateStore, PDWORD parsedCertificateStoreLength);
+
 //! \brief SCP11: Builds and signs a certificate encoded according to table 6-12.
 OPGP_API
 OPGP_ERROR_STATUS GP211_build_scp11_certificate(GP211_SCP11_CERTIFICATE *certificate,
