@@ -39,10 +39,13 @@ Unless otherwise specified, `gpshell3` will:
 :  Secure Channel security level. Default: `mac+enc`.
 
 --scp <protocol>
-:  Secure Channel Protocol number, e.g. `1`, `2`, `3`. Normally auto-detected.
+:  Secure Channel Protocol number, e.g. `1`, `2`, `3`, `11`. Normally auto-detected.
 
 --scp-impl <impl>
 :  SCP implementation as a hex value (e.g., `15`, `55`). Normally auto-detected.
+
+--scp11-cert <file>
+:  Optional SCP11 OCE certificate chain file submitted via PERFORM SECURITY OPERATION before SCP11 mutual authentication. The file must contain DER TLV certificates (`30` or `7F21`), optionally wrapped in `BF21`.
 
 --kv <n>
 :  Key set version to use for mutual authentication. Default: `0`.
@@ -668,7 +671,7 @@ Example:
 gpshell3 cin
 ```
 
-## scp11-auth-data
+## scp11-cert-data
 
 Read SCP11 authentication-related data:
 
@@ -685,14 +688,56 @@ If no KLCC identifier is returned, ECKA certificate store retrieval is skipped.
 
 Synopsis:
 ```
-gpshell3 [global-options] scp11-auth-data
+gpshell3 [global-options] scp11-cert-data
 ```
 
 This command does not require authentication.
 
 Examples:
 ```
-gpshell3 scp11-auth-data
+gpshell3 scp11-cert-data
+```
+
+## scp11-store-cert
+
+Store or replace an SCP11 certificate store (`BF21`) linked to a specific `SK.SD.ECKA` key reference (`KID/KVN`), using SCP11 section 7.8 encoding.
+
+Synopsis:
+```
+gpshell3 [global-options] scp11-store-cert --kv <ver> --idx <idx> <certificate-store-file>
+```
+
+Options:
+
+- `--kv <ver>`: Key Version Number (`KVN`) of `SK.SD.ECKA` to link.
+- `--idx <idx>`: Key Identifier (`KID`) of `SK.SD.ECKA` to link.
+- `<certificate-store-file>`: File containing the certificate store value (`BF21` value) or full `BF21` TLV. DER and PEM inputs accepted by `GP211_store_data_ecka_certificate`.
+
+Example:
+```
+gpshell3 --scp 3 --key 404142434445464748494A4B4C4D4E4F \
+    scp11-store-cert --kv 0x01 --idx 0x13 CERT.SD.ECKA.CHAIN.pem
+```
+
+## scp11-store-ca-id
+
+Store or replace a CA-KLOC Identifier mapping (`CA Identifier -> PK.CA-KLOC.ECDSA KID/KVN`) using SCP11 section 7.10 encoding.
+
+Synopsis:
+```
+gpshell3 [global-options] scp11-store-ca-id --ca-id <hex> --kv <ver> --idx <idx>
+```
+
+Options:
+
+- `--ca-id <hex>`: CA Identifier value (hex, variable length; commonly 20-byte SHA-1).
+- `--kv <ver>`: Key Version Number (`KVN`) of `PK.CA-KLOC.ECDSA`.
+- `--idx <idx>`: Key Identifier (`KID`) of `PK.CA-KLOC.ECDSA`.
+
+Example:
+```
+gpshell3 --scp 3 --key 404142434445464748494A4B4C4D4E4F \
+    scp11-store-ca-id --ca-id CE5B7EABBC6828DD16133A5B008C3A3F185F8AE2 --kv 0x01 --idx 0x10
 ```
 
 ## card-info

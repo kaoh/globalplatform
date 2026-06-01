@@ -141,8 +141,9 @@ static void print_usage(const char *prog) {
         "  --sd <aidhex>             ISD AID hex; default tries A000000151000000 then A0000001510000 then A000000003000000 then A0000000030000\n"
         "  --sec <auto|mac|mac+enc|mac+enc+rmac>\n"
         "                            Secure channel security level (default: auto)\n"
-        "  --scp <protocol>           SCP protocol as digit (e.g., 1, 2, 3)\n"
+        "  --scp <protocol>           SCP protocol as digit (e.g., 1, 2, 3, 11)\n"
         "  --scp-impl <impl>          SCP implementation as hex (e.g., 15, 55)\n"
+        "  --scp11-cert <file>        SCP11 OCE certificate chain file for PERFORM SECURITY OPERATION (DER TLV chain/BF21)\n"
         "  --kv <n>                   Key set version for mutual auth (default: 0)\n"
         "  --idx <n>                  Key index within key set for mutual auth (default: 0)\n"
         "  --derive <none|visa2|emv>  Key derivation (default: none)\n"
@@ -277,8 +278,13 @@ static void print_usage(const char *prog) {
         "      Read the Issuer Identification Number / SD Provider Identification Number (tag 0x42).\n"
         "  cin\n"
         "      Read the Card Image Number / SD Image Number (tag 0x45).\n"
-        "  scp11-auth-data\n"
+        "  scp11-cert-data\n"
         "      Read SCP11 authentication data summary: ECKA certificate stores and supported CA identifiers.\n"
+        "  scp11-store-cert --kv <ver> --idx <idx> <certificate-store-file>\n"
+        "      Store/replace SCP11 certificate store (BF21 payload) for SK.SD.ECKA referenced by KID/KVN.\n"
+        "      Input file may be DER or PEM certificate chain accepted by GP211_store_data_ecka_certificate.\n"
+        "  scp11-store-ca-id --ca-id <hex> --kv <ver> --idx <idx>\n"
+        "      Store/replace CA-KLOC Identifier to PK.CA-KLOC.ECDSA mapping (section 7.10).\n"
         "  store-iin <IIN>\n"
         "      Store the Issuer Identification Number (tag 0x42) using BCD encoding.\n"
         "  store-cin <CIN>\n"
@@ -438,6 +444,33 @@ static int hex_to_bytes(const char *hex, unsigned char *out, size_t *outlen) {
         out[j++] = (unsigned char)((v1 << 4) | v2);
     }
     *outlen = j; return 0;
+}
+
+static int read_binary_file_into_buffer(const char *path, BYTE *out, size_t *outLen) {
+    FILE *f;
+    size_t readLen;
+    int extra;
+
+    if (!path || !out || !outLen || *outLen == 0) {
+        return -1;
+    }
+    f = fopen(path, "rb");
+    if (!f) {
+        return -1;
+    }
+    readLen = fread(out, 1, *outLen, f);
+    if (ferror(f)) {
+        fclose(f);
+        return -1;
+    }
+    extra = fgetc(f);
+    if (extra != EOF) {
+        fclose(f);
+        return -2;
+    }
+    fclose(f);
+    *outLen = readLen;
+    return 0;
 }
 
 static void print_hex(const unsigned char *buf, size_t len) {
@@ -1686,8 +1719,12 @@ static int connect_pcsc(OPGP_CARD_CONTEXT *pctx, OPGP_CARD_INFO *pinfo, const ch
 static int mutual_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec,
                        BYTE keyset_ver, BYTE key_index, int derivation, const char *sec_level_opt, int verbose,
                        const BYTE *baseKey_in, const BYTE *enc_in, const BYTE *mac_in, const BYTE *dek_in, BYTE keyLength_in,
-                       const char *scp_protocol, const char *scp_impl) {
+                       const char *scp_protocol, const char *scp_impl, const char *scp11_cert_file) {
     BYTE scp = 0, scpImpl = 0;
+    BYTE scp11CertificateData[16384];
+    size_t scp11CertificateDataLength = sizeof(scp11CertificateData);
+    PBYTE certOceEcka = NULL;
+    DWORD certOceEckaLength = 0;
 
     // Parse SCP protocol if provided
     if (scp_protocol) {
@@ -1717,6 +1754,26 @@ static int mutual_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         }
     }
     BYTE secLevel = sec_level_from_option(scp, scpImpl, sec_level_opt);
+
+    if (scp11_cert_file && scp11_cert_file[0] != '\0') {
+        if (scp != GP211_SCP11) {
+            fprintf(stderr, "--scp11-cert requires SCP11 (use --scp 11 or card SCP11 auto-detection)\n");
+            return -1;
+        }
+        if (read_binary_file_into_buffer(scp11_cert_file, scp11CertificateData, &scp11CertificateDataLength) != 0
+            || scp11CertificateDataLength == 0) {
+            fprintf(stderr, "Failed to read --scp11-cert file: %s\n", scp11_cert_file);
+            return -1;
+        }
+        certOceEcka = scp11CertificateData;
+        certOceEckaLength = (DWORD)scp11CertificateDataLength;
+    }
+
+    if (scp == GP211_SCP11 && baseKey_in == NULL) {
+        fprintf(stderr, "SCP11 requires --key with SK.OCE.ECKA as raw private key hex\n");
+        return -1;
+    }
+
     BYTE S_ENC[32]={0}, S_MAC[32]={0}, DEK[32]={0}, baseKey[32]={0};
     BYTE keyLength = keyLength_in > 0 ? keyLength_in : 16;
     int hasBaseOnly = (baseKey_in != NULL && enc_in == NULL && mac_in == NULL && dek_in == NULL);
@@ -1760,7 +1817,8 @@ static int mutual_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     if (derivation == 1) deriv = OPGP_DERIVATION_METHOD_VISA2;
     else if (derivation == 2) deriv = OPGP_DERIVATION_METHOD_EMV_CPS11;
     OPGP_ERROR_STATUS s2 = GP211_mutual_authentication(ctx, info, baseKey, S_ENC, S_MAC, DEK, keyLength,
-                                                       keyset_ver, key_index, scp, scpImpl, secLevel, deriv, NULL, 0, sec);
+                                                       keyset_ver, key_index, scp, scpImpl, secLevel, deriv,
+                                                       certOceEcka, certOceEckaLength, sec);
     if (!status_ok(s2, true)) {
         return -1;
     }
@@ -5159,7 +5217,7 @@ static int cmd_card_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECUR
     return rc;
 }
 
-static int cmd_scp11_auth_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
+static int cmd_scp11_cert_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
     typedef struct {
         BYTE keyIdentifier;
         BYTE keyVersionNumber;
@@ -5186,7 +5244,7 @@ static int cmd_scp11_auth_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
             OPGP_ERROR_STATUS status = GP211_get_supported_ca_identifiers(ctx, info, sec, isKlcc,
                                                                            supportedCaData, &supportedCaDataLength);
             if (!status_ok(status, false)) {
-                fprintf(stderr, "scp11-auth-data: GP211_get_supported_ca_identifiers failed (%s): 0x%08X (%s)\n",
+                fprintf(stderr, "scp11-cert-data: GP211_get_supported_ca_identifiers failed (%s): 0x%08X (%s)\n",
                         title, (unsigned int)status.errorCode, status.errorMessage);
                 rc = -1;
                 continue;
@@ -5195,7 +5253,7 @@ static int cmd_scp11_auth_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
 
         if (parse_simple_tlv_view(supportedCaData, (size_t)supportedCaDataLength, &outer) != 0
             || outer.tag != expectedOuterTag) {
-            fprintf(stderr, "scp11-auth-data: could not parse %s response\n", title);
+            fprintf(stderr, "scp11-cert-data: could not parse %s response\n", title);
             rc = -1;
             continue;
         }
@@ -5205,7 +5263,7 @@ static int cmd_scp11_auth_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
             size_t nextOffset;
 
             if (parse_simple_tlv_view(outer.value + offset, outer.length - offset, &caIdTlv) != 0) {
-                fprintf(stderr, "scp11-auth-data: malformed %s entry\n", title);
+                fprintf(stderr, "scp11-cert-data: malformed %s entry\n", title);
                 rc = -1;
                 break;
             }
@@ -5244,7 +5302,7 @@ static int cmd_scp11_auth_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
                             klccKeyRefs[klccKeyRefCount].keyVersionNumber = listedKvn;
                             klccKeyRefCount++;
                         } else {
-                            fprintf(stderr, "scp11-auth-data: too many KLCC key references, truncating\n");
+                            fprintf(stderr, "scp11-cert-data: too many KLCC key references, truncating\n");
                         }
                     }
                 }
@@ -5283,7 +5341,7 @@ static int cmd_scp11_auth_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
                                                                   certificateStore, &certificateStoreLength);
             if (!status_ok(status, false)) {
                 fprintf(stderr,
-                        "scp11-auth-data: GP211_get_ecka_certificate failed (kid=0x%02X kvn=0x%02X): 0x%08X (%s)\n",
+                        "scp11-cert-data: GP211_get_ecka_certificate failed (kid=0x%02X kvn=0x%02X): 0x%08X (%s)\n",
                         keyIdentifier, keyVersionNumber, (unsigned int)status.errorCode, status.errorMessage);
                 rc = -1;
                 continue;
@@ -5323,7 +5381,7 @@ static int cmd_scp11_auth_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
                                                                          (DWORD)certificateTlv.tlv_length, &certificate);
                 if (!status_ok(status, false)) {
                     fprintf(stderr,
-                            "scp11-auth-data: GP211_parse_scp11_certificate failed (kid=0x%02X kvn=0x%02X): 0x%08X (%s)\n",
+                            "scp11-cert-data: GP211_parse_scp11_certificate failed (kid=0x%02X kvn=0x%02X): 0x%08X (%s)\n",
                             keyIdentifier, keyVersionNumber, (unsigned int)status.errorCode, status.errorMessage);
                     parsed = 0;
                     break;
@@ -5347,7 +5405,7 @@ static int cmd_scp11_auth_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
                                                                      parsedCertificateStore, &parsedCertificateStoreLength);
             if (!status_ok(status, false)) {
                 fprintf(stderr,
-                        "scp11-auth-data: GP211_parse_certificate_store failed (kid=0x%02X kvn=0x%02X): 0x%08X (%s)\n",
+                        "scp11-cert-data: GP211_parse_certificate_store failed (kid=0x%02X kvn=0x%02X): 0x%08X (%s)\n",
                         keyIdentifier, keyVersionNumber, (unsigned int)status.errorCode, status.errorMessage);
                 parsed = 0;
             } else {
@@ -5371,11 +5429,105 @@ static int cmd_scp11_auth_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
     return rc;
 }
 
+static int cmd_scp11_store_cert(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
+    BYTE keyVersionNumber = 0;
+    BYTE keyIdentifier = 0;
+    int haveKeyVersionNumber = 0;
+    int haveKeyIdentifier = 0;
+    const char *certificateStoreFile = NULL;
+    TCHAR certificateStoreFileName[MAX_PATH_BUF];
+    OPGP_ERROR_STATUS status;
+
+    for (int i = 0; i < argc; i++) {
+        if (strcmp(argv[i], "--kv") == 0 && i + 1 < argc) {
+            keyVersionNumber = (BYTE)parse_int(argv[++i]);
+            haveKeyVersionNumber = 1;
+        } else if (strcmp(argv[i], "--idx") == 0 && i + 1 < argc) {
+            keyIdentifier = (BYTE)parse_int(argv[++i]);
+            haveKeyIdentifier = 1;
+        } else if (argv[i][0] == '-') {
+            fprintf(stderr, "scp11-store-cert: unknown option '%s'\n", argv[i]);
+            return -1;
+        } else if (certificateStoreFile == NULL) {
+            certificateStoreFile = argv[i];
+        } else {
+            fprintf(stderr, "scp11-store-cert: unexpected argument '%s'\n", argv[i]);
+            return -1;
+        }
+    }
+
+    if (!haveKeyVersionNumber || !haveKeyIdentifier || certificateStoreFile == NULL) {
+        fprintf(stderr, "Usage: scp11-store-cert --kv <ver> --idx <idx> <certificate-store-file>\n");
+        return -1;
+    }
+    if (to_opgp_string(certificateStoreFile, certificateStoreFileName, ARRAY_SIZE(certificateStoreFileName)) != 0) {
+        fprintf(stderr, "scp11-store-cert: certificate file path too long\n");
+        return -1;
+    }
+
+    status = GP211_store_data_ecka_certificate(ctx, info, sec, keyVersionNumber, keyIdentifier, certificateStoreFileName);
+    if (!status_ok(status, false)) {
+        fprintf(stderr,
+                "scp11-store-cert: GP211_store_data_ecka_certificate failed (kid=0x%02X kvn=0x%02X): 0x%08X (%s)\n",
+                keyIdentifier, keyVersionNumber, (unsigned int)status.errorCode, status.errorMessage);
+        return -1;
+    }
+    return 0;
+}
+
+static int cmd_scp11_store_ca_id(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
+    BYTE keyVersionNumber = 0;
+    BYTE keyIdentifier = 0;
+    int haveKeyVersionNumber = 0;
+    int haveKeyIdentifier = 0;
+    const char *caIdHex = NULL;
+    BYTE caId[128];
+    size_t caIdLength = sizeof(caId);
+    OPGP_ERROR_STATUS status;
+
+    for (int i = 0; i < argc; i++) {
+        if (strcmp(argv[i], "--ca-id") == 0 && i + 1 < argc) {
+            caIdHex = argv[++i];
+        } else if (strcmp(argv[i], "--kv") == 0 && i + 1 < argc) {
+            keyVersionNumber = (BYTE)parse_int(argv[++i]);
+            haveKeyVersionNumber = 1;
+        } else if (strcmp(argv[i], "--idx") == 0 && i + 1 < argc) {
+            keyIdentifier = (BYTE)parse_int(argv[++i]);
+            haveKeyIdentifier = 1;
+        } else if (argv[i][0] == '-') {
+            fprintf(stderr, "scp11-store-ca-id: unknown option '%s'\n", argv[i]);
+            return -1;
+        } else {
+            fprintf(stderr, "scp11-store-ca-id: unexpected argument '%s'\n", argv[i]);
+            return -1;
+        }
+    }
+
+    if (caIdHex == NULL || !haveKeyVersionNumber || !haveKeyIdentifier) {
+        fprintf(stderr, "Usage: scp11-store-ca-id --ca-id <hex> --kv <ver> --idx <idx>\n");
+        return -1;
+    }
+    if (hex_to_bytes(caIdHex, caId, &caIdLength) != 0 || caIdLength == 0) {
+        fprintf(stderr, "scp11-store-ca-id: invalid --ca-id\n");
+        return -1;
+    }
+
+    status = GP211_store_data_ca_kloc_kid_kvn(ctx, info, sec, caId, (DWORD)caIdLength, keyIdentifier, keyVersionNumber);
+    if (!status_ok(status, false)) {
+        fprintf(stderr,
+                "scp11-store-ca-id: GP211_store_data_ca_kloc_kid_kvn failed (kid=0x%02X kvn=0x%02X): 0x%08X (%s)\n",
+                keyIdentifier, keyVersionNumber, (unsigned int)status.errorCode, status.errorMessage);
+        return -1;
+    }
+    return 0;
+}
+
 static int cmd_store_iin_cin(const char *cmd, int argc, char **argv,
                              const char *reader, const char *protocol, int trace, int verbose,
                              BYTE keyset_ver, BYTE key_index, int derivation, const char *sec_level_opt,
                              const BYTE *baseKey, const BYTE *enc_key, const BYTE *mac_key, const BYTE *dek_key,
-                             BYTE keyLength, const char *scp_protocol, const char *scp_impl) {
+                             BYTE keyLength, const char *scp_protocol, const char *scp_impl,
+                             const char *scp11_cert_file) {
     if (strcmp(cmd, "store-iin") != 0 && strcmp(cmd, "store-cin") != 0) {
         return -1;
     }
@@ -5402,7 +5554,7 @@ static int cmd_store_iin_cin(const char *cmd, int argc, char **argv,
     OPGP_CARD_CONTEXT ctx; OPGP_CARD_INFO info; GP211_SECURITY_INFO sec;
     if (connect_pcsc(&ctx, &info, reader, protocol, trace, verbose) != 0) return 1;
     if (mutual_auth(ctx, info, &sec, keyset_ver, key_index, derivation, sec_level_opt, verbose,
-                    baseKey, enc_key, mac_key, dek_key, keyLength, scp_protocol, scp_impl) != 0) {
+                    baseKey, enc_key, mac_key, dek_key, keyLength, scp_protocol, scp_impl, scp11_cert_file) != 0) {
         return 1;
     }
 
@@ -5423,6 +5575,7 @@ int main(int argc, char **argv) {
     BYTE baseKey[32]={0}, enc_key[32]={0}, mac_key[32]={0}, dek_key[32]={0};
     BYTE keyLength=0;
     const char *scp_protocol=NULL, *scp_impl=NULL;
+    const char *scp11_cert_file=NULL;
     int i=1; for (; i<argc; ++i) {
         if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) { print_usage(prog); return 0; }
 
@@ -5436,6 +5589,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--protocol") && i+1<argc) { protocol=argv[++i]; }
         else if (!strcmp(argv[i], "--scp") && i+1<argc) { scp_protocol=argv[++i]; }
         else if (!strcmp(argv[i], "--scp-impl") && i+1<argc) { scp_impl=argv[++i]; }
+        else if (!strcmp(argv[i], "--scp11-cert") && i+1<argc) { scp11_cert_file=argv[++i]; }
         else if (!strcmp(argv[i], "--kv") && i+1<argc) { keyset_ver=(BYTE)parse_int(argv[++i]); }
         else if (!strcmp(argv[i], "--idx") && i+1<argc) { key_index=(BYTE)parse_int(argv[++i]); }
         else if (!strcmp(argv[i], "--derive") && i+1<argc) { const char *d=argv[++i]; if (!strcmp(d,"visa2")) derivation=1; else if (!strcmp(d,"emv")) derivation=2; else derivation=0; }
@@ -5517,7 +5671,7 @@ int main(int argc, char **argv) {
                                      reader, protocol, trace, verbose,
                                      keyset_ver, key_index, derivation, sec_level_opt,
                                      baseKey, enc_key, mac_key, dek_key, keyLength,
-                                     scp_protocol, scp_impl);
+                                     scp_protocol, scp_impl, scp11_cert_file);
     if (store_rc != -1) {
         return store_rc;
     }
@@ -5549,7 +5703,7 @@ int main(int argc, char **argv) {
     if (!strcmp(cmd, "card-data") || !strcmp(cmd, "iin") || !strcmp(cmd, "cin")
         || !strcmp(cmd, "card-info") || !strcmp(cmd, "card-cap") || !strcmp(cmd, "card-resources") || !strcmp(cmd, "div-data")
         || !strcmp(cmd, "seq-counter") || !strcmp(cmd, "confirm-counter")
-        || !strcmp(cmd, "scp11-auth-data")) {
+        || !strcmp(cmd, "scp11-cert-data")) {
         need_auth = 0;
     }
     // Parse key options if provided
@@ -5597,7 +5751,7 @@ int main(int argc, char **argv) {
     if (need_auth) {
         if (mutual_auth(ctx, info, &sec, keyset_ver, key_index, derivation, sec_level_opt, verbose,
                         baseKeyPtr, encKeyPtr, macKeyPtr, dekKeyPtr, keyLength,
-                        scp_protocol, scp_impl) != 0) {
+                        scp_protocol, scp_impl, scp11_cert_file) != 0) {
             fprintf(stderr, "Mutual authentication failed\n");
             cleanup_and_exit(5);
         }
@@ -5618,7 +5772,9 @@ int main(int argc, char **argv) {
     else if (!strcmp(cmd, "div-data")) rc = cmd_diversification(ctx, info, &sec);
     else if (!strcmp(cmd, "seq-counter")) rc = cmd_seq_counter(ctx, info, &sec);
     else if (!strcmp(cmd, "confirm-counter")) rc = cmd_confirm_counter(ctx, info, &sec);
-    else if (!strcmp(cmd, "scp11-auth-data")) rc = cmd_scp11_auth_data(ctx, info, &sec);
+    else if (!strcmp(cmd, "scp11-cert-data")) rc = cmd_scp11_cert_data(ctx, info, &sec);
+    else if (!strcmp(cmd, "scp11-store-cert")) rc = cmd_scp11_store_cert(ctx, info, &sec, argc - i, &argv[i]);
+    else if (!strcmp(cmd, "scp11-store-ca-id")) rc = cmd_scp11_store_ca_id(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "install")) rc = cmd_install(ctx, info, &sec, argc - i, &argv[i]);
     else if (!strcmp(cmd, "install-sd")) rc = cmd_install_sd(ctx, info, &sec, argc - i, &argv[i],
                                                              keyset_ver, key_index, derivation, sec_level_opt, verbose,
