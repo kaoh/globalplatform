@@ -6,7 +6,7 @@
 
 # SYNOPSIS
 
-| **gpshell3** [global-options] <command> [command-args]
+| **gpshell3** [global-options] \<command\> [command-args] [**then** \<command\> [command-args] ...]
 
 # DESCRIPTION
 
@@ -404,7 +404,7 @@ Put (add or replace) a key in a key set.
 
 Synopsis:
 ```
-gpshell3 put-key [--type <3des|aes|rsa|ecc>] --kv <ver> --idx <idx> --new-kv <ver> (--key <hex>|--pem <file>[:pass])
+gpshell3 put-key [--type <3des|aes|rsa|ecc>] --kv <ver> --idx <idx> --new-kv <ver> [--ecc-curve <explicit|reference>] (--key <hex>|--pem <file>[:pass])
 ```
 
 Options:
@@ -414,6 +414,7 @@ Options:
 - `--new-kv <ver>`: New key set version when replacing keys (mandatory).
 - For `--type aes|3des`: provide the key via `--key <hex>`.
 - For `--type rsa|ecc`: provide a public key in PEM via `--pem <file>[:pass]`.
+- `--ecc-curve <explicit|reference>`: For ECC keys, embed the curve parameters from the PEM file (`explicit`, default) or send the curve parameter reference derived from the PEM curve (`reference`).
 
 ## put-dm-token
 
@@ -820,6 +821,21 @@ Privileges are reported by `list-apps` as `priv=[...]` and can be supplied to `i
 - `contactless-self-activation` — Application is capable of activating itself on the contactless interface without a prior request to the Application with the Contactless Activation privilege
 
 **Note**: Not all privileges are applicable to all element types. Refer to the GlobalPlatform Card Specification v2.3.1 for details.
+
+# COMMAND CHAINING
+
+Multiple commands can be executed in a single authenticated session by separating them with the keyword **then**. Global options (authentication, reader, etc.) are specified once before the first command. All chained commands share the same secure channel session.
+
+This is essential when a command modifies the card's key store in a way that would prevent re-authentication. For example, on YubiKey 5 NFC, provisioning an SCP11 CA-KLOC key via `put-key` removes the SCP03 key set, making it impossible to re-authenticate in a separate invocation. By chaining `put-key` and `scp11-store-ca-id` with `then`, both operations complete within the session established before any key modifications.
+
+```
+gpshell3 --scp 3 --kv 0xFF --key 404142434445464748494A4B4C4D4E4F \
+  put-key --type ecc --ecc-curve reference --kv 0 --idx 0x10 --new-kv 0x01 --pem ca.pem \
+  then scp11-store-ca-id --ca-id AABBCCDD --kv 0x01 --idx 0x10 \
+  then scp11-store-cert --kv 0x01 --idx 0x13 cert-store.bin
+```
+
+If any chained command fails, execution stops immediately (subsequent `then` commands are not run).
 
 # EXAMPLES
 

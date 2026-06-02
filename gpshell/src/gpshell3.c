@@ -132,7 +132,7 @@ static void cleanup_and_exit(int exit_code) {
 }
 
 static void print_usage(const char *prog) {
-    fprintf(stderr, "Usage: %s [global-options] <command> [command-args]\n\n", prog);
+    fprintf(stderr, "Usage: %s [global-options] <command> [command-args] [then <command> [command-args] ...]\n\n", prog);
 
     fputs(
         "Global options:\n"
@@ -221,6 +221,7 @@ static void print_usage(const char *prog) {
         "      --idx <idx>: Key index within key set (mandatory).\n"
         "      --new-kv <ver>: New key set version when replacing keys (mandatory).\n"
         "      --type aes|3des uses --key (hex). --type rsa|ecc uses --pem (optionally :pass).\n"
+        "      --ecc-curve reference|explicit: ECC curve parameter encoding (default: explicit).\n"
         "  put-auth [--type <aes|3des>] [--derive <none|emv|visa2>] --kv <ver> [--new-kv <ver>] \\\n"
         "           [--key <hex> | --enc <hex> --mac <hex> --dek <hex>]\n"
         "      Put secure channel keys (S-ENC/S-MAC/DEK) for a key set.\n"
@@ -421,7 +422,16 @@ static void print_usage(const char *prog) {
         "    ciphered-load-file-data-block (ciphered-load) - Requires ciphered Load File\n"
         "    contactless-activation       - Can activate/deactivate apps on contactless interface\n"
         "    contactless-self-activation  - Can activate itself on contactless interface\n"
-        "  Multiple privileges can be combined: --priv sd,cm-lock,trusted-path\n",
+        "  Multiple privileges can be combined: --priv sd,cm-lock,trusted-path\n\n"
+        "Command chaining with 'then':\n"
+        "  Multiple commands can be chained in a single session using 'then' as separator.\n"
+        "  Authentication happens once; all chained commands share the same secure channel.\n"
+        "  This is essential when a command (e.g. put-key) modifies the card's key store in a\n"
+        "  way that would prevent re-authentication for subsequent commands.\n"
+        "  Example:\n"
+        "    gpshell3 --scp 3 --kv 0xFF --key 404142434445464748494A4B4C4D4E4F \\\n"
+        "      put-key --type ecc --kv 0 --idx 0x10 --new-kv 0x01 --pem ca.pem \\\n"
+        "      then scp11-store-ca-id --ca-id AABB --kv 0x01 --idx 0x10\n",
         stderr);
 }
 
@@ -3313,7 +3323,7 @@ static int cmd_verify_registry_update_receipt(int argc, char **argv) {
 static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
     BYTE setVer=0, idx=0, newSetVer=0;
     int kvSet=0, newKvSet=0;
-    const char *type="aes"; const char *hexkey=NULL; const char *pem=NULL; char *pass=NULL;
+    const char *type="aes"; const char *hexkey=NULL; const char *pem=NULL; char *pass=NULL; const char *eccCurve="explicit";
     for (int i=0;i<argc;i++) {
         if (strcmp(argv[i], "--kv")==0 && i+1<argc) { setVer=(BYTE)parse_int(argv[++i]); kvSet=1; }
         else if (strcmp(argv[i], "--idx")==0 && i+1<argc) idx=(BYTE)parse_int(argv[++i]);
@@ -3321,6 +3331,7 @@ static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         else if (strcmp(argv[i], "--type")==0 && i+1<argc) type=argv[++i];
         else if (strcmp(argv[i], "--key")==0 && i+1<argc) hexkey=argv[++i];
         else if (strcmp(argv[i], "--pem")==0 && i+1<argc) { pem=argv[++i]; char *c=strchr((char*)pem, ':'); if (c){ *c='\0'; pass=c+1; } }
+        else if ((strcmp(argv[i], "--ecc-curve")==0 || strcmp(argv[i], "--ecc-params")==0) && i+1<argc) eccCurve=argv[++i];
     }
     if (!kvSet) { fprintf(stderr, "put-key: missing --kv <ver>\n"); return -1; }
     if (!newKvSet) { fprintf(stderr, "put-key: missing --new-kv <ver>\n"); return -1; }
@@ -3347,7 +3358,16 @@ static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
             return -1;
         }
         pem_opgp = pem_t;
-        if (!status_ok(GP211_put_ecc_key(ctx, info, sec, setVer, idx, newSetVer, pem_opgp, pass), true)) {
+        if (strcmp(eccCurve, "reference") == 0 || strcmp(eccCurve, "ref") == 0 || strcmp(eccCurve, "referenced") == 0) {
+            if (!status_ok(GP211_put_ecc_key_with_curve_parameter_reference(ctx, info, sec, setVer, idx, newSetVer, pem_opgp, pass), true)) {
+                return -1;
+            }
+        } else if (strcmp(eccCurve, "explicit") == 0 || strcmp(eccCurve, "full") == 0 || strcmp(eccCurve, "params") == 0) {
+            if (!status_ok(GP211_put_ecc_key(ctx, info, sec, setVer, idx, newSetVer, pem_opgp, pass), true)) {
+                return -1;
+            }
+        } else {
+            fprintf(stderr, "put-key ecc: unsupported --ecc-curve '%s' (use reference|explicit)\n", eccCurve);
             return -1;
         }
         return 0;
@@ -5759,43 +5779,66 @@ int main(int argc, char **argv) {
         sec_ptr = NULL; // no secure channel for raw APDU by default
     }
 
+    // Command chaining loop: execute one or more commands separated by "then".
+    // All chained commands share the same authenticated session.
     int rc = 0;
-    if (!strcmp(cmd, "list-apps")) rc = cmd_list_apps(ctx, info, &sec);
-    else if (!strcmp(cmd, "list-keys")) rc = cmd_list_keys(ctx, info, &sec);
-    else if (!strcmp(cmd, "cplc")) rc = cmd_cplc(ctx, info, &sec);
-    else if (!strcmp(cmd, "card-data")) rc = cmd_card_data(ctx, info, &sec);
-    else if (!strcmp(cmd, "iin")) rc = cmd_iin(ctx, info, &sec);
-    else if (!strcmp(cmd, "cin")) rc = cmd_cin(ctx, info, &sec);
-    else if (!strcmp(cmd, "card-info")) rc = cmd_card_info(ctx, info, &sec);
-    else if (!strcmp(cmd, "card-cap")) rc = cmd_card_capability(ctx, info, &sec);
-    else if (!strcmp(cmd, "card-resources")) rc = cmd_card_resources(ctx, info, &sec);
-    else if (!strcmp(cmd, "div-data")) rc = cmd_diversification(ctx, info, &sec);
-    else if (!strcmp(cmd, "seq-counter")) rc = cmd_seq_counter(ctx, info, &sec);
-    else if (!strcmp(cmd, "confirm-counter")) rc = cmd_confirm_counter(ctx, info, &sec);
-    else if (!strcmp(cmd, "scp11-cert-data")) rc = cmd_scp11_cert_data(ctx, info, &sec);
-    else if (!strcmp(cmd, "scp11-store-cert")) rc = cmd_scp11_store_cert(ctx, info, &sec, argc - i, &argv[i]);
-    else if (!strcmp(cmd, "scp11-store-ca-id")) rc = cmd_scp11_store_ca_id(ctx, info, &sec, argc - i, &argv[i]);
-    else if (!strcmp(cmd, "install")) rc = cmd_install(ctx, info, &sec, argc - i, &argv[i]);
-    else if (!strcmp(cmd, "install-sd")) rc = cmd_install_sd(ctx, info, &sec, argc - i, &argv[i],
-                                                             keyset_ver, key_index, derivation, sec_level_opt, verbose,
-                                                             baseKeyPtr, encKeyPtr, macKeyPtr, dekKeyPtr, keyLength,
-                                                             scp_protocol, scp_impl);
-    else if (!strcmp(cmd, "delete")) rc = cmd_delete(ctx, info, &sec, argc - i, &argv[i]);
-    else if (!strcmp(cmd, "update-registry")) rc = cmd_update_registry(ctx, info, &sec, argc - i, &argv[i]);
-    else if (!strcmp(cmd, "move")) rc = cmd_move(ctx, info, &sec, argc - i, &argv[i]);
-    else if (!strcmp(cmd, "put-key")) rc = cmd_put_key(ctx, info, &sec, argc - i, &argv[i]);
-    else if (!strcmp(cmd, "put-auth")) rc = cmd_put_auth(ctx, info, &sec, argc - i, &argv[i]);
-    else if (!strcmp(cmd, "put-dm-token")) rc = cmd_put_dm_token(ctx, info, &sec, argc - i, &argv[i]);
-    else if (!strcmp(cmd, "put-dm-receipt")) rc = cmd_put_dm_receipt(ctx, info, &sec, argc - i, &argv[i]);
-    else if (!strcmp(cmd, "put-dap-key")) rc = cmd_put_dap_key(ctx, info, &sec, argc - i, &argv[i]);
-    else if (!strcmp(cmd, "del-key")) rc = cmd_del_key(ctx, info, &sec, argc - i, &argv[i]);
-    else if (!strcmp(cmd, "apdu")) rc = cmd_apdu(ctx, info, sec_ptr, argc - i, &argv[i]);
-    else if (!strcmp(cmd, "status")) rc = cmd_status(ctx, info, &sec, argc - i, &argv[i]);
-    else if (!strcmp(cmd, "store")) rc = cmd_store(ctx, info, &sec, argc - i, &argv[i]);
-    else { fprintf(stderr, "Unknown command: %s\n", cmd); rc=-1; }
+    while (1) {
+        // Find the end of this command's arguments (next "then" or end of argv).
+        int cmd_end = argc;
+        for (int j = i; j < argc; j++) {
+            if (!strcmp(argv[j], "then")) {
+                cmd_end = j;
+                break;
+            }
+        }
+        int cmd_argc = cmd_end - i;
 
-    if (rc != 0) {
-        cleanup_and_exit(10);
+        if (!strcmp(cmd, "list-apps")) rc = cmd_list_apps(ctx, info, &sec);
+        else if (!strcmp(cmd, "list-keys")) rc = cmd_list_keys(ctx, info, &sec);
+        else if (!strcmp(cmd, "cplc")) rc = cmd_cplc(ctx, info, &sec);
+        else if (!strcmp(cmd, "card-data")) rc = cmd_card_data(ctx, info, &sec);
+        else if (!strcmp(cmd, "iin")) rc = cmd_iin(ctx, info, &sec);
+        else if (!strcmp(cmd, "cin")) rc = cmd_cin(ctx, info, &sec);
+        else if (!strcmp(cmd, "card-info")) rc = cmd_card_info(ctx, info, &sec);
+        else if (!strcmp(cmd, "card-cap")) rc = cmd_card_capability(ctx, info, &sec);
+        else if (!strcmp(cmd, "card-resources")) rc = cmd_card_resources(ctx, info, &sec);
+        else if (!strcmp(cmd, "div-data")) rc = cmd_diversification(ctx, info, &sec);
+        else if (!strcmp(cmd, "seq-counter")) rc = cmd_seq_counter(ctx, info, &sec);
+        else if (!strcmp(cmd, "confirm-counter")) rc = cmd_confirm_counter(ctx, info, &sec);
+        else if (!strcmp(cmd, "scp11-cert-data")) rc = cmd_scp11_cert_data(ctx, info, &sec);
+        else if (!strcmp(cmd, "scp11-store-cert")) rc = cmd_scp11_store_cert(ctx, info, &sec, cmd_argc, &argv[i]);
+        else if (!strcmp(cmd, "scp11-store-ca-id")) rc = cmd_scp11_store_ca_id(ctx, info, &sec, cmd_argc, &argv[i]);
+        else if (!strcmp(cmd, "install")) rc = cmd_install(ctx, info, &sec, cmd_argc, &argv[i]);
+        else if (!strcmp(cmd, "install-sd")) rc = cmd_install_sd(ctx, info, &sec, cmd_argc, &argv[i],
+                                                                 keyset_ver, key_index, derivation, sec_level_opt, verbose,
+                                                                 baseKeyPtr, encKeyPtr, macKeyPtr, dekKeyPtr, keyLength,
+                                                                 scp_protocol, scp_impl);
+        else if (!strcmp(cmd, "delete")) rc = cmd_delete(ctx, info, &sec, cmd_argc, &argv[i]);
+        else if (!strcmp(cmd, "update-registry")) rc = cmd_update_registry(ctx, info, &sec, cmd_argc, &argv[i]);
+        else if (!strcmp(cmd, "move")) rc = cmd_move(ctx, info, &sec, cmd_argc, &argv[i]);
+        else if (!strcmp(cmd, "put-key")) rc = cmd_put_key(ctx, info, &sec, cmd_argc, &argv[i]);
+        else if (!strcmp(cmd, "put-auth")) rc = cmd_put_auth(ctx, info, &sec, cmd_argc, &argv[i]);
+        else if (!strcmp(cmd, "put-dm-token")) rc = cmd_put_dm_token(ctx, info, &sec, cmd_argc, &argv[i]);
+        else if (!strcmp(cmd, "put-dm-receipt")) rc = cmd_put_dm_receipt(ctx, info, &sec, cmd_argc, &argv[i]);
+        else if (!strcmp(cmd, "put-dap-key")) rc = cmd_put_dap_key(ctx, info, &sec, cmd_argc, &argv[i]);
+        else if (!strcmp(cmd, "del-key")) rc = cmd_del_key(ctx, info, &sec, cmd_argc, &argv[i]);
+        else if (!strcmp(cmd, "apdu")) rc = cmd_apdu(ctx, info, sec_ptr, cmd_argc, &argv[i]);
+        else if (!strcmp(cmd, "status")) rc = cmd_status(ctx, info, &sec, cmd_argc, &argv[i]);
+        else if (!strcmp(cmd, "store")) rc = cmd_store(ctx, info, &sec, cmd_argc, &argv[i]);
+        else { fprintf(stderr, "Unknown command: %s\n", cmd); rc=-1; }
+
+        if (rc != 0) {
+            cleanup_and_exit(10);
+        }
+
+        // Check for a chained command after "then"
+        if (cmd_end >= argc) break; // no more commands
+        i = cmd_end + 1; // skip past "then"
+        if (i >= argc) {
+            fprintf(stderr, "Error: 'then' at end of command line without a following command\n");
+            cleanup_and_exit(2);
+        }
+        cmd = argv[i++]; // next command name
     }
 
     OPGP_card_disconnect(ctx, &info);

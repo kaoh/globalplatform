@@ -1019,6 +1019,12 @@ OPGP_API
 OPGP_ERROR_STATUS GP211_put_ecc_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 				 BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion, OPGP_STRING PEMKeyFileName, char *passPhrase);
 
+//! \brief GlobalPlatform2.3.1: replaces or adds a public ECC key using a curve parameter reference.
+OPGP_API
+OPGP_ERROR_STATUS GP211_put_ecc_key_with_curve_parameter_reference(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
+				 GP211_SECURITY_INFO *secInfo, BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion,
+				 OPGP_STRING PEMKeyFileName, char *passPhrase);
+
 //! \brief GlobalPlatform2.3.1: replaces a single public asymmetric key in a key set or adds a new public asymmetric key.
 OPGP_API
 OPGP_ERROR_STATUS GP211_put_asymmetric_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,

@@ -348,7 +348,7 @@ OPGP_NO_API
 OPGP_ERROR_STATUS put_asymmetric_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 									  BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion,
 									  OPGP_STRING PEMKeyFileName, char *passPhrase,
-									  BYTE keyType);
+									  BYTE keyType, BOOL includeEccDomainParameters);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS put_delegated_management_receipt_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
@@ -1201,7 +1201,7 @@ OPGP_ERROR_STATUS GP211_put_asymmetric_keys(OPGP_CARD_CONTEXT cardContext, OPGP_
 				 OPGP_STRING PEMKeyFileName, char *passPhrase, BYTE keyType) {
 	OPGP_ERROR_STATUS status;
 	status = put_asymmetric_keys(cardContext, cardInfo, secInfo, keySetVersion, keyIndex,
-								 newKeySetVersion, PEMKeyFileName, passPhrase, keyType);
+								 newKeySetVersion, PEMKeyFileName, passPhrase, keyType, true);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -1259,6 +1259,23 @@ OPGP_ERROR_STATUS GP211_put_ecc_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 	OPGP_ERROR_STATUS status;
 	status = GP211_put_asymmetric_keys(cardContext, cardInfo, secInfo, keySetVersion, keyIndex,
 									   newKeySetVersion, PEMKeyFileName, passPhrase, GP211_KEY_TYPE_ECC);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
+end:
+	return status;
+}
+
+/**
+ * Adds or replaces an ECC public key using a curve parameter reference instead of embedding the curve parameters.
+ */
+OPGP_ERROR_STATUS GP211_put_ecc_key_with_curve_parameter_reference(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
+				 GP211_SECURITY_INFO *secInfo, BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion,
+				 OPGP_STRING PEMKeyFileName, char *passPhrase) {
+	OPGP_ERROR_STATUS status;
+	status = put_asymmetric_keys(cardContext, cardInfo, secInfo, keySetVersion, keyIndex,
+								 newKeySetVersion, PEMKeyFileName, passPhrase, GP211_KEY_TYPE_ECC, false);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -1902,7 +1919,7 @@ end:
 OPGP_ERROR_STATUS put_asymmetric_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 									  BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion,
 									  OPGP_STRING PEMKeyFileName, char *passPhrase,
-									  BYTE keyType) {
+									  BYTE keyType, BOOL includeEccDomainParameters) {
 	OPGP_ERROR_STATUS status;
 	BYTE sendBuffer[1000];
 	DWORD recvBufferLength=APDU_RESPONSE_LEN;
@@ -1921,7 +1938,6 @@ OPGP_ERROR_STATUS put_asymmetric_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_I
 	BYTE token_verification_ecc_key_component_type;
 	BYTE token_verification_ecc_key_parameter_reference;
 	GP211_ECC_DOMAIN_PARAMETERS token_verification_ecc_domain_parameters;
-	BOOL withEccParams = true;
 
 	OPGP_LOG_START(_T("put_asymmetric_keys"));
 
@@ -1955,13 +1971,14 @@ OPGP_ERROR_STATUS put_asymmetric_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_I
 			status = read_public_ecc_key(PEMKeyFileName, passPhrase,
 				token_verification_ecc_public_point, &ecc_public_point_length,
 				&token_verification_ecc_key_component_type, &token_verification_ecc_key_parameter_reference,
-				&token_verification_ecc_domain_parameters);
+				includeEccDomainParameters ? &token_verification_ecc_domain_parameters : NULL);
 			if (OPGP_ERROR_CHECK(status)) {
 				goto end;
 			}
 			status = add_ecc_key_data(secInfo, token_verification_ecc_public_point, ecc_public_point_length,
 				token_verification_ecc_key_component_type, token_verification_ecc_key_parameter_reference,
-				&token_verification_ecc_domain_parameters, withEccParams,
+				includeEccDomainParameters ? &token_verification_ecc_domain_parameters : NULL,
+				includeEccDomainParameters,
 				keyDataField, &keyDataFieldLength, keyCheckValue);
 			if (OPGP_ERROR_CHECK(status)) {
 				goto end;
@@ -2073,7 +2090,7 @@ OPGP_ERROR_STATUS GP211_put_delegated_management_token_keys(OPGP_CARD_CONTEXT ca
                                                             BYTE tokenKeyType) {
 	return put_asymmetric_keys(cardContext, cardInfo, secInfo,
 							   keySetVersion, 0x01, newKeySetVersion,
-							   PEMKeyFileName, passPhrase, tokenKeyType);
+							   PEMKeyFileName, passPhrase, tokenKeyType, true);
 }
 
 /**
@@ -9163,7 +9180,7 @@ OPGP_ERROR_STATUS OP201_put_rsa_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 	GP211_SECURITY_INFO gp211secInfo;
 	mapOP201ToGP211SecurityInfo(*secInfo, &gp211secInfo);
 	status = put_asymmetric_keys(cardContext, cardInfo, &gp211secInfo, keySetVersion, keyIndex,
-								 newKeySetVersion, PEMKeyFileName, passPhrase, GP211_KEY_TYPE_RSA);
+								 newKeySetVersion, PEMKeyFileName, passPhrase, GP211_KEY_TYPE_RSA, true);
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 	return status;
 }
@@ -9247,7 +9264,7 @@ OPGP_ERROR_STATUS OP201_put_delegated_management_keys(OPGP_CARD_CONTEXT cardCont
 
 	if (PEMKeyFileName != NULL) {
 		status = put_asymmetric_keys(cardContext, cardInfo, &gp211secInfo, currentKeySetVersion, 0x01,
-									 newKeySetVersion, PEMKeyFileName, passPhrase, OP201_KEY_TYPE_RSA);
+									 newKeySetVersion, PEMKeyFileName, passPhrase, OP201_KEY_TYPE_RSA, true);
 		if (OPGP_ERROR_CHECK(status)) {
 			goto end;
 		}
