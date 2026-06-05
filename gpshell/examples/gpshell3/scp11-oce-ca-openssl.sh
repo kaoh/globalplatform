@@ -14,9 +14,9 @@ Outputs (GlobalPlatform naming convention):
   PK.OCE.ECKA.pem
   CERT.OCE.ECKA.pem
   CERT.OCE.ECKA.der
-  CERT.OCE.ECKA.CHAIN.pem      (CERT.OCE.ECKA + CERT.CA-KLOC.ECDSA)
-  CERT.OCE.ECKA.CHAIN.der      (concatenated DER: OCE then CA)
-  CA-KLOC.ID.hex               (SHA-1 over CA subject public key info)
+  CERT.OCE.ECKA.CHAIN.pem      (CERT.CA-KLOC.ECDSA + CERT.OCE.ECKA)
+  CERT.OCE.ECKA.CHAIN.der      (concatenated DER: CA then OCE)
+  CA-KLOC.ID.hex               (CA Subject Key Identifier)
 
 Usage:
   scp11-oce-ca-openssl.sh [options]
@@ -229,18 +229,20 @@ openssl x509 -req -sha256 -days "$DAYS" \
 
 openssl x509 -in "$OCE_CERT_PEM" -outform DER -out "$OCE_CERT_DER"
 
-cat "$OCE_CERT_PEM" "$CA_CERT_PEM" > "$OCE_CHAIN_PEM"
-cat "$OCE_CERT_DER" "$CA_CERT_DER" > "$OCE_CHAIN_DER"
+cat "$CA_CERT_PEM" "$OCE_CERT_PEM" > "$OCE_CHAIN_PEM"
+cat "$CA_CERT_DER" "$OCE_CERT_DER" > "$OCE_CHAIN_DER"
 
 CA_ID_HEX="$(
-    openssl x509 -in "$CA_CERT_PEM" -pubkey -noout \
-        | openssl pkey -pubin -outform DER \
-        | openssl dgst -sha1 -binary \
-        | od -An -vtx1 \
-        | tr -d ' \n' \
-        | tr '[:lower:]' '[:upper:]'
+    openssl x509 -in "$CA_CERT_PEM" -noout -ext subjectKeyIdentifier \
+        | awk '
+            /Subject Key Identifier/ { getline; gsub(/[^0-9A-Fa-f]/, "", $0); print toupper($0); exit }
+        '
 )"
+if [[ -z "$CA_ID_HEX" ]]; then
+    echo "Failed to extract CA Subject Key Identifier from $CA_CERT_PEM" >&2
+    exit 1
+fi
 printf '%s\n' "$CA_ID_HEX" > "$CA_ID_HEX_FILE"
 
 echo "Generated SCP11 OCE + CA material in: $OUT_DIR"
-echo "CA-KLOC Identifier (SHA-1/SPKI): $CA_ID_HEX"
+echo "CA-KLOC Identifier (Subject Key Identifier): $CA_ID_HEX"

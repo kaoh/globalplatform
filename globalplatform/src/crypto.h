@@ -272,6 +272,16 @@ OPGP_NO_API
 OPGP_ERROR_STATUS convert_der_certificate_list_to_pem(const BYTE *derData, DWORD derDataLength,
 		PBYTE pemData, PDWORD pemDataLength);
 
+//! \brief Orders a DER X.509 chain for SCP11 verification and omits a self-issued trust anchor.
+OPGP_NO_API
+OPGP_ERROR_STATUS prepare_scp11_der_x509_certificate_chain(const BYTE *derData, DWORD derDataLength,
+		PBYTE preparedData, PDWORD preparedDataLength);
+
+//! \brief Extracts the CA-KLOC Identifier used to verify the first SCP11 certificate.
+OPGP_NO_API
+OPGP_ERROR_STATUS extract_scp11_ca_kloc_identifier_from_certificate_chain(const BYTE *certificateChainData,
+		DWORD certificateChainDataLength, PBYTE authorityIdentifier, PDWORD authorityIdentifierLength);
+
 typedef struct {
 	BYTE fieldP[512];
 	DWORD fieldPLength;
@@ -293,6 +303,12 @@ OPGP_ERROR_STATUS read_public_ecc_key(OPGP_STRING PEMKeyFileName, char *passPhra
 		PBYTE eccPublicPoint, PDWORD eccPublicPointLength,
 		PBYTE eccKeyComponentType, PBYTE keyParameterReference,
 		GP211_ECC_DOMAIN_PARAMETERS *domainParameters);
+
+//! \brief Extracts a public ECC key from a DER encoded X.509 certificate.
+OPGP_NO_API
+OPGP_ERROR_STATUS read_public_ecc_key_from_der_certificate(const BYTE *certificateData, DWORD certificateDataLength,
+		PBYTE eccPublicPoint, PDWORD eccPublicPointLength,
+		PBYTE eccKeyComponentType, PBYTE keyParameterReference);
 
 //! \brief Generates an ECC key pair for a named OpenSSL curve.
 OPGP_NO_API

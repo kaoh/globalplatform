@@ -71,6 +71,7 @@
 #include "loadfile.h"
 
 #define MAX_APDU_DATA_SIZE(secInfo) (get_max_apdu_data_size(secInfo))
+#define GP211_SCP11_DEFAULT_CA_KLOC_KEY_IDENTIFIER 0x10
 
 #ifndef MAX_PATH
 #define MAX_PATH 257
@@ -2530,6 +2531,61 @@ OPGP_ERROR_STATUS GP211_get_supported_ca_identifiers(OPGP_CARD_CONTEXT cardConte
 	return get_data(cardContext, cardInfo, secInfo, (BYTE *)identifier, recvBuffer, recvBufferLength);
 }
 
+static OPGP_ERROR_STATUS resolve_scp11_ca_kloc_from_supported_identifiers(OPGP_CARD_CONTEXT cardContext,
+			  OPGP_CARD_INFO cardInfo, PBYTE caKlocIdentifier, DWORD caKlocIdentifierLength,
+			  BYTE *keyIdentifier, BYTE *keyVersionNumber) {
+	OPGP_ERROR_STATUS status;
+	BYTE response[APDU_RESPONSE_LEN * 2];
+	DWORD responseLength = sizeof(response);
+	GP_SIMPLE_TLV outer;
+	DWORD offset = 0;
+
+	if (caKlocIdentifier == NULL || caKlocIdentifierLength == 0 || keyIdentifier == NULL || keyVersionNumber == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+
+	status = GP211_get_supported_ca_identifiers(cardContext, cardInfo, NULL, 0, response, &responseLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		return status;
+	}
+
+	if (parse_simple_tlv(response, responseLength, &outer) < 0
+			|| outer.tag != 0xFF33 || outer.tlvLength != responseLength) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+
+	while (offset < outer.length) {
+		GP_SIMPLE_TLV identifierTlv;
+		GP_SIMPLE_TLV keyReferenceTlv;
+
+		if (parse_simple_tlv(outer.value + offset, outer.length - offset, &identifierTlv) < 0
+				|| identifierTlv.tag != 0x42) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			return status;
+		}
+		offset += identifierTlv.tlvLength;
+		if (parse_simple_tlv(outer.value + offset, outer.length - offset, &keyReferenceTlv) < 0
+				|| keyReferenceTlv.tag != 0x83 || keyReferenceTlv.length != 2) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			return status;
+		}
+		offset += keyReferenceTlv.tlvLength;
+
+		if (identifierTlv.length == caKlocIdentifierLength
+				&& memcmp(identifierTlv.value, caKlocIdentifier, caKlocIdentifierLength) == 0) {
+			*keyIdentifier = keyReferenceTlv.value[0];
+			*keyVersionNumber = keyReferenceTlv.value[1];
+			OPGP_ERROR_CREATE_NO_ERROR(status);
+			return status;
+		}
+	}
+
+	OPGP_ERROR_CREATE_ERROR(status, OPGP_ISO7816_ERROR_DATA_NOT_FOUND, OPGP_stringify_error(OPGP_ISO7816_ERROR_DATA_NOT_FOUND));
+	return status;
+}
+
 /**
  * Submits SCP11 certificate data with PERFORM SECURITY OPERATION.
  * This helper is used by the SCP11a flow to submit CERT.OCE.ECKA or certificate
@@ -2581,8 +2637,9 @@ OPGP_ERROR_STATUS GP211_perform_security_operation(OPGP_CARD_CONTEXT cardContext
  * legacy GP (tag 7F21) and X.509 DER (tag 30). The chain must contain exactly
  * one format; mixed chains are rejected. For legacy GP certificates, key usage
  * is validated locally (intermediate certificates must be digital signature
- * verification; the final certificate must be key agreement). For X.509 chains,
- * local key usage parsing is not performed and the chain is forwarded as-is.
+ * verification; the final certificate must be key agreement). X.509 chains are
+ * ordered from issuer to subject and a self-issued trust anchor is omitted.
+ * Local X.509 key usage parsing is not performed.
  * Each certificate is submitted separately; P2.b8 is set for every intermediate
  * certificate and cleared for the final certificate.
  * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context().
@@ -2603,6 +2660,8 @@ OPGP_ERROR_STATUS GP211_perform_security_operation_certificate_chain(OPGP_CARD_C
 	GP_SIMPLE_TLV certificateTlv;
 	const BYTE *certificateList;
 	DWORD certificateListLength;
+	PBYTE preparedCertificateList = NULL;
+	DWORD preparedCertificateListLength = 0;
 	DWORD offset = 0;
 	USHORT certificateTag = 0;
 
@@ -2620,6 +2679,23 @@ OPGP_ERROR_STATUS GP211_perform_security_operation_certificate_chain(OPGP_CARD_C
 	} else {
 		certificateList = certificateChainData;
 		certificateListLength = certificateChainDataLength;
+	}
+
+	if (parse_simple_tlv(certificateList, certificateListLength, &certificateTlv) > 0
+			&& certificateTlv.tag == 0x30) {
+		preparedCertificateList = (PBYTE)malloc(certificateListLength);
+		if (preparedCertificateList == NULL) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+			goto end;
+		}
+		preparedCertificateListLength = certificateListLength;
+		status = prepare_scp11_der_x509_certificate_chain(certificateList, certificateListLength,
+				preparedCertificateList, &preparedCertificateListLength);
+		if (OPGP_ERROR_CHECK(status)) {
+			goto end;
+		}
+		certificateList = preparedCertificateList;
+		certificateListLength = preparedCertificateListLength;
 	}
 
 	while (offset < certificateListLength) {
@@ -2674,6 +2750,9 @@ OPGP_ERROR_STATUS GP211_perform_security_operation_certificate_chain(OPGP_CARD_C
 
 	OPGP_ERROR_CREATE_NO_ERROR(status);
 end:
+	if (preparedCertificateList != NULL) {
+		free(preparedCertificateList);
+	}
 	OPGP_LOG_END(_T("GP211_perform_security_operation_certificate_chain"), status);
 	return status;
 }
@@ -7727,7 +7806,7 @@ end:
  * \param keyIndex [in] The key index in the key set version on the card to use for mutual authentication.
  * \param scpParameters [in] SCP11 parameter byte. The SCP11a variant bits are applied by this function.
  * \param securityLevel [in] The requested security level.
- * \param certOceEcka [in] Optional certificate chain data to submit before mutual authentication. The data must contain one or more 7F21 certificates, optionally wrapped in BF21, and must end with CERT.OCE.ECKA.
+ * \param certOceEcka [in] Optional certificate chain data to submit before mutual authentication. The data must contain one or more 7F21 or X.509 DER certificates, optionally wrapped in BF21, and must end with CERT.OCE.ECKA.
  * \param certOceEckaLength [in] Length of \p certOceEcka.
  * \param secInfo [out] The returned GP211_SECURITY_INFO structure.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct.
@@ -7773,6 +7852,8 @@ static OPGP_ERROR_STATUS mutual_authentication_scp11a(OPGP_CARD_CONTEXT cardCont
 	DWORD expectedStaticPrivateKeyLength;
 	BYTE keyType = GP211_KEY_TYPE_AES;
 	BYTE scpIdentifierAndParameters[2];
+	BYTE caKlocKeyVersionNumber = keySetVersion;
+	BYTE caKlocKeyIdentifier = GP211_SCP11_DEFAULT_CA_KLOC_KEY_IDENTIFIER;
 
 	OPGP_LOG_START(_T("mutual_authentication_scp11a"));
 
@@ -7808,8 +7889,33 @@ static OPGP_ERROR_STATUS mutual_authentication_scp11a(OPGP_CARD_CONTEXT cardCont
 	}
 
 	if (certOceEcka != NULL && certOceEckaLength > 0) {
+		BYTE caKlocIdentifier[64];
+		DWORD caKlocIdentifierLength = sizeof(caKlocIdentifier);
+		OPGP_ERROR_STATUS lookupStatus;
+
+		lookupStatus = extract_scp11_ca_kloc_identifier_from_certificate_chain(certOceEcka, certOceEckaLength,
+				caKlocIdentifier, &caKlocIdentifierLength);
+		if (!OPGP_ERROR_CHECK(lookupStatus)) {
+			BYTE resolvedKeyIdentifier = 0;
+			BYTE resolvedKeyVersionNumber = 0;
+
+			lookupStatus = GP211_ca_kloc_kid_kvn(cardContext, cardInfo, NULL,
+					caKlocIdentifier, caKlocIdentifierLength,
+					&resolvedKeyIdentifier, &resolvedKeyVersionNumber);
+			if (OPGP_ERROR_CHECK(lookupStatus)
+					&& lookupStatus.errorCode == OPGP_ISO7816_ERROR_DATA_NOT_FOUND) {
+				lookupStatus = resolve_scp11_ca_kloc_from_supported_identifiers(cardContext, cardInfo,
+						caKlocIdentifier, caKlocIdentifierLength,
+						&resolvedKeyIdentifier, &resolvedKeyVersionNumber);
+			}
+			if (!OPGP_ERROR_CHECK(lookupStatus)) {
+				caKlocKeyIdentifier = resolvedKeyIdentifier;
+				caKlocKeyVersionNumber = resolvedKeyVersionNumber;
+			}
+		}
+
 		status = GP211_perform_security_operation_certificate_chain(cardContext, cardInfo, NULL,
-				keySetVersion, keyIndex, certOceEcka, certOceEckaLength);
+				caKlocKeyVersionNumber, caKlocKeyIdentifier, certOceEcka, certOceEckaLength);
 		if (OPGP_ERROR_CHECK(status)) {
 			goto end;
 		}
@@ -7936,7 +8042,7 @@ end:
  * \param secureChannelProtocolImpl [in] The Secure Channel Protocol implementation, or SCP11 parameter byte for SCP11a.
  * \param securityLevel [in] The requested security level.
  * \param derivationMethod [in] The derivation method to use.
- * \param certOceEcka [in] Optional SCP11 certificate chain data to submit before mutual authentication. The data must contain one or more 7F21 certificates, optionally wrapped in BF21, and must end with CERT.OCE.ECKA.
+ * \param certOceEcka [in] Optional SCP11 certificate chain data to submit before mutual authentication. The data must contain one or more 7F21 or X.509 DER certificates, optionally wrapped in BF21, and must end with CERT.OCE.ECKA.
  * \param certOceEckaLength [in] Length of certOceEcka.
  * \param secInfo [out] The returned GP211_SECURITY_INFO structure.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct.

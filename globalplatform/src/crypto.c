@@ -51,6 +51,7 @@
 #include <openssl/evp.h>
 #include <openssl/pem.h>
 #include <openssl/x509.h>
+#include <openssl/x509v3.h>
 #include <openssl/aes.h>
 #include <openssl/cmac.h>
 #include <openssl/ec.h>
@@ -3341,6 +3342,288 @@ end:
 	return status;
 }
 
+typedef struct {
+	const BYTE *data;
+	DWORD length;
+	X509 *certificate;
+	BOOL emitted;
+} SCP11_X509_CHAIN_CERTIFICATE;
+
+OPGP_ERROR_STATUS prepare_scp11_der_x509_certificate_chain(const BYTE *derData, DWORD derDataLength,
+		PBYTE preparedData, PDWORD preparedDataLength) {
+	OPGP_ERROR_STATUS status;
+	SCP11_X509_CHAIN_CERTIFICATE *certificates = NULL;
+	DWORD certificateCount = 0;
+	DWORD emittedCertificateCount = 0;
+	DWORD offset = 0;
+	DWORD outputOffset = 0;
+	DWORD i;
+	BOOL parseFailed = 0;
+
+	if (derData == NULL || derDataLength == 0 || preparedData == NULL || preparedDataLength == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+
+	while (offset < derDataLength) {
+		GP_SIMPLE_TLV certificateTlv;
+		LONG parseResult = parse_simple_tlv(derData + offset, derDataLength - offset, &certificateTlv);
+		const unsigned char *parsePtr;
+		SCP11_X509_CHAIN_CERTIFICATE *newCertificates;
+
+		if (parseResult < 0 || certificateTlv.tag != 0x30 || certificateTlv.tlvLength == 0) {
+			parseFailed = 1;
+			break;
+		}
+
+		newCertificates = (SCP11_X509_CHAIN_CERTIFICATE*)realloc(certificates,
+				sizeof(SCP11_X509_CHAIN_CERTIFICATE) * (certificateCount + 1));
+		if (newCertificates == NULL) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+			goto end;
+		}
+		certificates = newCertificates;
+		memset(&certificates[certificateCount], 0, sizeof(certificates[certificateCount]));
+		certificates[certificateCount].data = derData + offset;
+		certificates[certificateCount].length = certificateTlv.tlvLength;
+
+		parsePtr = derData + offset;
+		certificates[certificateCount].certificate = d2i_X509(NULL, &parsePtr, (long)certificateTlv.tlvLength);
+		if (certificates[certificateCount].certificate == NULL
+				|| parsePtr != derData + offset + certificateTlv.tlvLength) {
+			parseFailed = 1;
+			break;
+		}
+
+		offset += certificateTlv.tlvLength;
+		certificateCount++;
+	}
+
+	if (parseFailed || certificateCount <= 1) {
+		if (derDataLength > *preparedDataLength) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+			goto end;
+		}
+		memcpy(preparedData, derData, derDataLength);
+		*preparedDataLength = derDataLength;
+		OPGP_ERROR_CREATE_NO_ERROR(status);
+		goto end;
+	}
+
+	while (emittedCertificateCount < certificateCount) {
+		BOOL found = 0;
+		for (i = 0; i < certificateCount; i++) {
+			DWORD j;
+			BOOL hasIssuerInRemainingChain = 0;
+
+			if (certificates[i].emitted) {
+				continue;
+			}
+			for (j = 0; j < certificateCount; j++) {
+				if (i == j || certificates[j].emitted) {
+					continue;
+				}
+				if (X509_NAME_cmp(X509_get_issuer_name(certificates[i].certificate),
+							X509_get_subject_name(certificates[j].certificate)) == 0) {
+					hasIssuerInRemainingChain = 1;
+					break;
+				}
+			}
+			if (!hasIssuerInRemainingChain) {
+				BOOL selfIssued = X509_NAME_cmp(X509_get_issuer_name(certificates[i].certificate),
+						X509_get_subject_name(certificates[i].certificate)) == 0;
+				certificates[i].emitted = 1;
+				emittedCertificateCount++;
+				found = 1;
+				if (!selfIssued || outputOffset > 0) {
+					if (certificates[i].length > *preparedDataLength - outputOffset) {
+						OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+						goto end;
+					}
+					memcpy(preparedData + outputOffset, certificates[i].data, certificates[i].length);
+					outputOffset += certificates[i].length;
+				}
+				break;
+			}
+		}
+		if (!found) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+	}
+
+	if (outputOffset == 0) {
+		if (derDataLength > *preparedDataLength) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+			goto end;
+		}
+		memcpy(preparedData, derData, derDataLength);
+		outputOffset = derDataLength;
+	}
+
+	*preparedDataLength = outputOffset;
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+
+end:
+	if (certificates != NULL) {
+		for (i = 0; i < certificateCount; i++) {
+			if (certificates[i].certificate != NULL) {
+				X509_free(certificates[i].certificate);
+			}
+		}
+		free(certificates);
+	}
+	ERR_clear_error();
+	return status;
+}
+
+static OPGP_ERROR_STATUS extract_scp11_legacy_authority_identifier(const BYTE *certificateData,
+		DWORD certificateDataLength, PBYTE authorityIdentifier, PDWORD authorityIdentifierLength) {
+	OPGP_ERROR_STATUS status;
+	GP_SIMPLE_TLV certificateTlv;
+	GP_SIMPLE_TLV innerTlv;
+	DWORD offset = 0;
+
+	if (parse_simple_tlv(certificateData, certificateDataLength, &certificateTlv) < 0
+			|| certificateTlv.tag != 0x7F21 || certificateTlv.tlvLength != certificateDataLength) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+
+	while (offset < certificateTlv.length) {
+		LONG result = parse_simple_tlv(certificateTlv.value + offset, certificateTlv.length - offset, &innerTlv);
+		if (result < 0) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			return status;
+		}
+		if (innerTlv.tag == 0x42) {
+			if (innerTlv.length == 0 || innerTlv.length > *authorityIdentifierLength) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+				return status;
+			}
+			memcpy(authorityIdentifier, innerTlv.value, innerTlv.length);
+			*authorityIdentifierLength = innerTlv.length;
+			OPGP_ERROR_CREATE_NO_ERROR(status);
+			return status;
+		}
+		offset += innerTlv.tlvLength;
+	}
+
+	OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+	return status;
+}
+
+static OPGP_ERROR_STATUS extract_x509_authority_key_identifier(const BYTE *certificateData,
+		DWORD certificateDataLength, PBYTE authorityIdentifier, PDWORD authorityIdentifierLength) {
+	OPGP_ERROR_STATUS status;
+	X509 *certificate = NULL;
+	AUTHORITY_KEYID *authorityKeyIdentifier = NULL;
+	const unsigned char *parsePtr;
+
+	parsePtr = certificateData;
+	certificate = d2i_X509(NULL, &parsePtr, (long)certificateDataLength);
+	if (certificate == NULL || parsePtr != certificateData + certificateDataLength) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+
+	authorityKeyIdentifier = X509_get_ext_d2i(certificate, NID_authority_key_identifier, NULL, NULL);
+	if (authorityKeyIdentifier == NULL || authorityKeyIdentifier->keyid == NULL
+			|| authorityKeyIdentifier->keyid->length <= 0) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+
+	if ((DWORD)authorityKeyIdentifier->keyid->length > *authorityIdentifierLength) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		goto end;
+	}
+	memcpy(authorityIdentifier, authorityKeyIdentifier->keyid->data,
+			(size_t)authorityKeyIdentifier->keyid->length);
+	*authorityIdentifierLength = (DWORD)authorityKeyIdentifier->keyid->length;
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+
+end:
+	if (authorityKeyIdentifier != NULL) {
+		AUTHORITY_KEYID_free(authorityKeyIdentifier);
+	}
+	if (certificate != NULL) {
+		X509_free(certificate);
+	}
+	ERR_clear_error();
+	return status;
+}
+
+OPGP_ERROR_STATUS extract_scp11_ca_kloc_identifier_from_certificate_chain(const BYTE *certificateChainData,
+		DWORD certificateChainDataLength, PBYTE authorityIdentifier, PDWORD authorityIdentifierLength) {
+	OPGP_ERROR_STATUS status;
+	GP_SIMPLE_TLV outerTlv;
+	GP_SIMPLE_TLV firstCertificateTlv;
+	const BYTE *certificateList;
+	DWORD certificateListLength;
+	PBYTE preparedCertificateList = NULL;
+	DWORD preparedCertificateListLength = 0;
+
+	if (certificateChainData == NULL || certificateChainDataLength == 0
+			|| authorityIdentifier == NULL || authorityIdentifierLength == NULL
+			|| *authorityIdentifierLength == 0) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		return status;
+	}
+
+	if (parse_simple_tlv(certificateChainData, certificateChainDataLength, &outerTlv) > 0
+			&& outerTlv.tag == 0xBF21 && outerTlv.tlvLength == certificateChainDataLength) {
+		certificateList = outerTlv.value;
+		certificateListLength = outerTlv.length;
+	} else {
+		certificateList = certificateChainData;
+		certificateListLength = certificateChainDataLength;
+	}
+
+	if (parse_simple_tlv(certificateList, certificateListLength, &firstCertificateTlv) < 0) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+
+	if (firstCertificateTlv.tag == 0x30) {
+		preparedCertificateList = (PBYTE)malloc(certificateListLength);
+		if (preparedCertificateList == NULL) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+			goto end;
+		}
+		preparedCertificateListLength = certificateListLength;
+		status = prepare_scp11_der_x509_certificate_chain(certificateList, certificateListLength,
+				preparedCertificateList, &preparedCertificateListLength);
+		if (OPGP_ERROR_CHECK(status)) {
+			goto end;
+		}
+		certificateList = preparedCertificateList;
+		certificateListLength = preparedCertificateListLength;
+		if (parse_simple_tlv(certificateList, certificateListLength, &firstCertificateTlv) < 0
+				|| firstCertificateTlv.tag != 0x30) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+		status = extract_x509_authority_key_identifier(certificateList,
+				firstCertificateTlv.tlvLength, authorityIdentifier, authorityIdentifierLength);
+		goto end;
+	}
+
+	if (firstCertificateTlv.tag == 0x7F21) {
+		status = extract_scp11_legacy_authority_identifier(certificateList,
+				firstCertificateTlv.tlvLength, authorityIdentifier, authorityIdentifierLength);
+		goto end;
+	}
+
+	OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+
+end:
+	if (preparedCertificateList != NULL) {
+		free(preparedCertificateList);
+	}
+	return status;
+}
+
 OPGP_ERROR_STATUS read_certificate_file(OPGP_STRING PEMKeyFileName, char *passPhrase, PBYTE certificateData,
 		PDWORD certificateDataLength) {
 	OPGP_ERROR_STATUS status;
@@ -3538,6 +3821,125 @@ end:
         fclose(PEMKeyFile);
     }
 	OPGP_LOG_END(_T("read_public_rsa_key"), status);
+	return status;
+}
+
+static OPGP_ERROR_STATUS extract_public_ecc_key_from_evp_pkey(EVP_PKEY *key,
+		PBYTE eccPublicPoint, PDWORD eccPublicPointLength,
+		PBYTE eccKeyComponentType, PBYTE keyParameterReference) {
+	OPGP_ERROR_STATUS status;
+	EC_KEY *ec = NULL;
+	const EC_GROUP *group = NULL;
+	const EC_POINT *point = NULL;
+	const char *curveName = NULL;
+	int curveNid;
+	size_t encodedPointLength;
+
+	if (key == NULL || eccPublicPoint == NULL || eccPublicPointLength == NULL
+			|| eccKeyComponentType == NULL || keyParameterReference == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+
+#if defined(EVP_PKEY_SM2)
+	if (EVP_PKEY_base_id(key) != EVP_PKEY_EC && EVP_PKEY_base_id(key) != EVP_PKEY_SM2) {
+#else
+	if (EVP_PKEY_base_id(key) != EVP_PKEY_EC) {
+#endif
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_WRONG_KEY_TYPE, OPGP_stringify_error(OPGP_ERROR_WRONG_KEY_TYPE));
+		goto end;
+	}
+	ec = EVP_PKEY_get1_EC_KEY(key);
+	if (ec == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+		goto end;
+	}
+	group = EC_KEY_get0_group(ec);
+	point = EC_KEY_get0_public_key(ec);
+	if (group == NULL || point == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+		goto end;
+	}
+	curveNid = EC_GROUP_get_curve_name(group);
+	if (curveNid == NID_undef) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_WRONG_KEY_TYPE, _T("Unsupported ECC curve"));
+		goto end;
+	}
+	curveName = OBJ_nid2sn(curveNid);
+	if (!get_ecc_key_parameter_reference(curveName, eccKeyComponentType, keyParameterReference)) {
+		curveName = OBJ_nid2ln(curveNid);
+		if (!get_ecc_key_parameter_reference(curveName, eccKeyComponentType, keyParameterReference)) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_WRONG_KEY_TYPE, _T("Unsupported ECC curve"));
+			goto end;
+		}
+	}
+
+	encodedPointLength = EC_POINT_point2oct(group, point, POINT_CONVERSION_UNCOMPRESSED, NULL, 0, NULL);
+	if (encodedPointLength == 0) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+		goto end;
+	}
+	if (encodedPointLength > *eccPublicPointLength) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		goto end;
+	}
+	if (EC_POINT_point2oct(group, point, POINT_CONVERSION_UNCOMPRESSED,
+			eccPublicPoint, *eccPublicPointLength, NULL) != encodedPointLength) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+		goto end;
+	}
+	*eccPublicPointLength = (DWORD)encodedPointLength;
+
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+
+end:
+	if (ec != NULL) {
+		EC_KEY_free(ec);
+	}
+	return status;
+}
+
+OPGP_ERROR_STATUS read_public_ecc_key_from_der_certificate(const BYTE *certificateData, DWORD certificateDataLength,
+		PBYTE eccPublicPoint, PDWORD eccPublicPointLength,
+		PBYTE eccKeyComponentType, PBYTE keyParameterReference) {
+	OPGP_ERROR_STATUS status;
+	X509 *certificate = NULL;
+	EVP_PKEY *key = NULL;
+	const unsigned char *parsePtr;
+
+	OPGP_LOG_START(_T("read_public_ecc_key_from_der_certificate"));
+
+	if (certificateData == NULL || certificateDataLength == 0 || eccPublicPoint == NULL
+			|| eccPublicPointLength == NULL || eccKeyComponentType == NULL || keyParameterReference == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+
+	parsePtr = certificateData;
+	certificate = d2i_X509(NULL, &parsePtr, (long)certificateDataLength);
+	if (certificate == NULL || parsePtr != certificateData + certificateDataLength) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+
+	key = X509_get_pubkey(certificate);
+	if (key == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_CRYPT, OPGP_stringify_error(OPGP_ERROR_CRYPT));
+		goto end;
+	}
+
+	status = extract_public_ecc_key_from_evp_pkey(key, eccPublicPoint, eccPublicPointLength,
+			eccKeyComponentType, keyParameterReference);
+
+end:
+	if (key != NULL) {
+		EVP_PKEY_free(key);
+	}
+	if (certificate != NULL) {
+		X509_free(certificate);
+	}
+	ERR_clear_error();
+	OPGP_LOG_END(_T("read_public_ecc_key_from_der_certificate"), status);
 	return status;
 }
 

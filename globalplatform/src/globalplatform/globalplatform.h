@@ -853,7 +853,7 @@ OPGP_ERROR_STATUS GP211_set_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
  * \param secureChannelProtocolImpl [in] The Secure Channel Protocol implementation. For SCP11a this is the SCP parameter byte; the SCP11a variant bits are applied by this function.
  * \param securityLevel [in] The requested security level. See GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC and others.
  * \param derivationMethod [in] The derivation method to use. See OPGP_DERIVATION_METHOD_VISA2.
- * \param certOceEcka [in] Optional SCP11 certificate chain data to submit before mutual authentication. The data must contain one or more 7F21 certificates, optionally wrapped in BF21, and must end with CERT.OCE.ECKA.
+ * \param certOceEcka [in] Optional SCP11 certificate chain data to submit before mutual authentication. The data must contain one or more 7F21 or X.509 DER certificates, optionally wrapped in BF21, and must end with CERT.OCE.ECKA.
  * \param certOceEckaLength [in] Length of \p certOceEcka.
  * \param secInfo [out] The returned GP211_SECURITY_INFO structure.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct.

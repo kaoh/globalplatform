@@ -141,7 +141,7 @@ static void print_usage(const char *prog) {
         "  --sd <aidhex>             ISD AID hex; default tries A000000151000000 then A0000001510000 then A000000003000000 then A0000000030000\n"
         "  --sec <auto|mac|mac+enc|mac+enc+rmac>\n"
         "                            Secure channel security level (default: auto)\n"
-        "  --scp <protocol>           SCP protocol as digit (e.g., 1, 2, 3, 11)\n"
+        "  --scp <protocol>           SCP protocol as digit (e.g., 1, 2, 3, 11; 0x11 also accepted)\n"
         "  --scp-impl <impl>          SCP implementation as hex (e.g., 15, 55)\n"
         "  --scp11-cert <file>        SCP11 OCE certificate chain file for PERFORM SECURITY OPERATION (DER TLV chain/BF21)\n"
         "  --kv <n>                   Key set version for mutual auth (default: 0)\n"
@@ -1745,6 +1745,7 @@ static int mutual_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         }
         else if (scp == 2) scp = GP211_SCP02;
         else if (scp == 3) scp = GP211_SCP03;
+        else if (scp == 11) scp = GP211_SCP11;
     }
 
     // Parse SCP implementation if provided

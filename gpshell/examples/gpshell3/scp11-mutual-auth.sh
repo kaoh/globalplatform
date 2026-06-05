@@ -8,7 +8,13 @@ KEY_DIR="${KEY_DIR:-${SCRIPT_DIR}/scp11-oce-ca}"
 
 SCP11_KVN="${SCP11_KVN:-0x01}"
 SCP11_KID="${SCP11_KID:-0x13}"
-SCP11_IMPL="${SCP11_IMPL:-}"
+SCP11_IMPL="${SCP11_IMPL:-00}"
+SCP11_IMPL="${SCP11_IMPL#0x}"
+SCP11_IMPL="${SCP11_IMPL#0X}"
+if [[ ! "$SCP11_IMPL" =~ ^[0-9A-Fa-f]{2}$ ]]; then
+    echo "SCP11_IMPL must be one byte of hex, for example 00 or 3C" >&2
+    exit 1
+fi
 
 OCE_CERT_CHAIN_FILE="${OCE_CERT_CHAIN_FILE:-${KEY_DIR}/CERT.OCE.ECKA.CHAIN.der}"
 SK_OCE_ECKA_PEM="${SK_OCE_ECKA_PEM:-${KEY_DIR}/SK.OCE.ECKA.pem}"
@@ -55,16 +61,14 @@ fi
 
 CMD=(
     "$GPSHELL3_BIN"
-    --scp 11
+    -t
+    --scp 0x11
     --kv "$SCP11_KVN"
     --idx "$SCP11_KID"
     --key "$SK_OCE_ECKA_HEX"
+    --scp-impl "$SCP11_IMPL"
     --scp11-cert "$OCE_CERT_CHAIN_FILE"
 )
-
-if [[ -n "$SCP11_IMPL" ]]; then
-    CMD+=(--scp-impl "$SCP11_IMPL")
-fi
 
 if [[ $# -gt 0 ]]; then
     CMD+=("$@")

@@ -176,7 +176,7 @@ Purpose:
 - Creates an OCE ECKA key pair and an OCE certificate signed by the CA-KLOC key.
 - Exports PEM and DER certificates.
 - Builds OCE certificate chains in PEM and concatenated DER form.
-- Computes `CA-KLOC.ID.hex` as SHA-1 over the DER-encoded CA subject public key info.
+- Computes `CA-KLOC.ID.hex` from the CA certificate Subject Key Identifier, matching the OCE certificate Authority Key Identifier.
 
 Inputs and defaults:
 
@@ -265,7 +265,7 @@ Purpose:
 
 - Demonstrates SCP11 mutual authentication using the generated OCE certificate chain and OCE private key.
 - Extracts the raw OCE private-key bytes from `SK.OCE.ECKA.pem` with OpenSSL unless `SK_OCE_ECKA_HEX` is provided directly.
-- Runs `gpshell3 --scp 11` with the configured KVN, KID, private key, and OCE certificate chain.
+- Runs `gpshell3 --scp 0x11 --scp-impl <impl>` with the configured SD ECKA KVN/KID, private key, and OCE certificate chain.
 - Executes either the command-line arguments passed to the script or the default `list-apps` command.
 
 Inputs and defaults:
@@ -274,7 +274,7 @@ Inputs and defaults:
 - `KEY_DIR`: `scp11-oce-ca` in this directory
 - `SCP11_KVN`: `0x01`
 - `SCP11_KID`: `0x13`
-- `SCP11_IMPL`: unset by default
+- `SCP11_IMPL`: `00` by default, one byte of hex accepted with or without `0x`
 - `OCE_CERT_CHAIN_FILE`: `$KEY_DIR/CERT.OCE.ECKA.CHAIN.der`
 - `SK_OCE_ECKA_PEM`: `$KEY_DIR/SK.OCE.ECKA.pem`
 - `SK_OCE_ECKA_HEX`: unset by default
@@ -286,14 +286,14 @@ Examples:
 bash ./scp11-mutual-auth.sh
 bash ./scp11-mutual-auth.sh list-apps
 bash ./scp11-mutual-auth.sh card-info
-SCP11_IMPL=0x3C bash ./scp11-mutual-auth.sh list-apps
+SCP11_IMPL=3C bash ./scp11-mutual-auth.sh list-apps
 ```
 
 Prerequisites and assumptions:
 
 - The OCE certificate chain and private key exist, usually from `scp11-oce-ca-openssl.sh`.
 - The card has been provisioned with the matching CA-KLOC trust data and supports the configured SCP11 mode.
-- `SCP11_KID` and `SCP11_KVN` identify the card's SCP11 ECKA key material.
+- `SCP11_KID` and `SCP11_KVN` identify the card's SD ECKA key material. The PSO CA-KLOC reference is resolved from the certificate CA identifier when the card provides that mapping; otherwise the library falls back to the standard CA-KLOC KID `0x10` with the same KVN.
 - OpenSSL is available if `SK_OCE_ECKA_HEX` is not supplied directly.
 
 Outcome:

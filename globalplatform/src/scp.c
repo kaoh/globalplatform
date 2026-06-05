@@ -125,11 +125,15 @@ OPGP_ERROR_STATUS extract_scp11_sd_public_key_from_certificate_store(PBYTE certi
 	GP_SIMPLE_TLV publicKeyTlv;
 	const BYTE *certificateListValue;
 	DWORD certificateListLength;
+	const BYTE *lastCertificateTlv = NULL;
+	DWORD lastCertificateTlvLength = 0;
 	const BYTE *lastCertificate = NULL;
 	DWORD lastCertificateLength = 0;
 	DWORD offset;
+	USHORT certificateTag = 0;
 	BYTE parsedKeyParameterReference = GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_P256;
 	BOOL keyParameterReferenceFound = 0;
+	BOOL publicKeyFound = 0;
 
 	if (certificateStore == NULL || sdPublicKey == NULL || sdPublicKeyLength == NULL || keyParameterReference == NULL) {
 		return scp_create_error(OPGP_ERROR_INVALID_RESPONSE_DATA);
@@ -146,17 +150,41 @@ OPGP_ERROR_STATUS extract_scp11_sd_public_key_from_certificate_store(PBYTE certi
 	offset = 0;
 	while (offset < certificateListLength) {
 		LONG result = parse_simple_tlv(certificateListValue + offset, certificateListLength - offset, &current);
-		if (result < 0) {
+		if (result < 0 || current.tlvLength == 0) {
 			return scp_create_error(OPGP_ERROR_INVALID_RESPONSE_DATA);
 		}
-		if (current.tag == 0x7F21) {
-			lastCertificate = current.value;
-			lastCertificateLength = current.length;
+		if (certificateTag == 0) {
+			certificateTag = current.tag;
+			if (certificateTag != 0x7F21 && certificateTag != 0x30) {
+				return scp_create_error(OPGP_ERROR_INVALID_RESPONSE_DATA);
+			}
+		} else if (current.tag != certificateTag) {
+			return scp_create_error(OPGP_ERROR_INVALID_RESPONSE_DATA);
 		}
+		lastCertificateTlv = certificateListValue + offset;
+		lastCertificateTlvLength = current.tlvLength;
+		lastCertificate = current.value;
+		lastCertificateLength = current.length;
 		offset += current.tlvLength;
 	}
 	if (lastCertificate == NULL || lastCertificateLength == 0) {
 		return scp_create_error(OPGP_ERROR_INVALID_RESPONSE_DATA);
+	}
+
+	if (certificateTag == 0x30) {
+		OPGP_ERROR_STATUS status;
+		BYTE eccKeyComponentType;
+
+		status = read_public_ecc_key_from_der_certificate(lastCertificateTlv, lastCertificateTlvLength,
+				sdPublicKey, sdPublicKeyLength, &eccKeyComponentType, keyParameterReference);
+		if (OPGP_ERROR_CHECK(status)) {
+			return status;
+		}
+		if (eccKeyComponentType != GP211_KEY_TYPE_ECC_PUBLIC_OR_PRIVATE
+				&& eccKeyComponentType != GP211_KEY_TYPE_ECC_SM2_PUBLIC_OR_PRIVATE) {
+			return scp_create_error(OPGP_ERROR_WRONG_KEY_TYPE);
+		}
+		return status;
 	}
 
 	offset = 0;
@@ -188,6 +216,7 @@ OPGP_ERROR_STATUS extract_scp11_sd_public_key_from_certificate_store(PBYTE certi
 			}
 			memcpy(sdPublicKey, certInner.value, certInner.length);
 			*sdPublicKeyLength = certInner.length;
+			publicKeyFound = 1;
 		}
 		if (certInner.tag == 0xF0 && certInner.length > 0) {
 			parsedKeyParameterReference = certInner.value[certInner.length - 1];
@@ -195,7 +224,7 @@ OPGP_ERROR_STATUS extract_scp11_sd_public_key_from_certificate_store(PBYTE certi
 		}
 		offset += certInner.tlvLength;
 	}
-	if (*sdPublicKeyLength == 0) {
+	if (!publicKeyFound) {
 		return scp_create_error(OPGP_ERROR_INVALID_RESPONSE_DATA);
 	}
 	if (!keyParameterReferenceFound) {

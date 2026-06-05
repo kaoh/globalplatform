@@ -533,6 +533,14 @@ OPGP_ERROR_STATUS OPGP_send_chained_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CAR
 
 			free(capduChunk);
 			if (OPGP_ERROR_CHECK(status)) { goto end; }
+			if (!isLast && tmpRespLen >= 2
+					&& (tmpResp[tmpRespLen - 2] != 0x90 || tmpResp[tmpRespLen - 1] != 0x00)) {
+				status.errorCode = OPGP_ISO7816_ERROR_PREFIX
+						| ((DWORD)tmpResp[tmpRespLen - 2] << 8)
+						| tmpResp[tmpRespLen - 1];
+				*rapduLength = tmpRespLen;
+				goto end;
+			}
 			// For intermediate chunks, ignore response. For last, store result in caller's buffer
 			if (isLast) {
 				errorCode = status.errorCode;

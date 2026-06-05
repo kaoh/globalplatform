@@ -39,7 +39,7 @@ Unless otherwise specified, `gpshell3` will:
 :  Secure Channel security level. Default: `mac+enc`.
 
 --scp <protocol>
-:  Secure Channel Protocol number, e.g. `1`, `2`, `3`, `11`. Normally auto-detected.
+:  Secure Channel Protocol number, e.g. `1`, `2`, `3`, `11`. `0x11` is also accepted for SCP11. Normally auto-detected.
 
 --scp-impl <impl>
 :  SCP implementation as a hex value (e.g., `15`, `55`). Normally auto-detected.
