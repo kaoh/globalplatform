@@ -2586,22 +2586,8 @@ static OPGP_ERROR_STATUS resolve_scp11_ca_kloc_from_supported_identifiers(OPGP_C
 	return status;
 }
 
-/**
- * Submits SCP11 certificate data with PERFORM SECURITY OPERATION.
- * This helper is used by the SCP11a flow to submit CERT.OCE.ECKA or certificate
- * chain data before mutual authentication. The CA-KLOC KVN and KID are encoded
- * in P1 and P2; the high bit of P2 is set when more certificates are expected.
- * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context().
- * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
- * \param secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication(), or NULL if the command is sent without secure messaging.
- * \param caKlocKeyVersionNumber [in] CA-KLOC Key Version Number (KVN).
- * \param caKlocKeyIdentifier [in] CA-KLOC Key Identifier (KID).
- * \param certificateData [in] The certificate data to submit.
- * \param certificateDataLength [in] The length of certificateData.
- * \param moreCertificatesExpected [in] TRUE if another certificate follows, otherwise FALSE.
- * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct.
- */
-OPGP_ERROR_STATUS GP211_perform_security_operation(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+static OPGP_ERROR_STATUS perform_security_operation_single_certificate(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
+			  GP211_SECURITY_INFO *secInfo,
 			  BYTE caKlocKeyVersionNumber, BYTE caKlocKeyIdentifier, PBYTE certificateData, DWORD certificateDataLength,
 			  BOOL moreCertificatesExpected) {
 	OPGP_ERROR_STATUS status;
@@ -2626,6 +2612,143 @@ OPGP_ERROR_STATUS GP211_perform_security_operation(OPGP_CARD_CONTEXT cardContext
 
 	status = send_chained_data(cardContext, cardInfo, secInfo, commandHeader, 5, certificateData, certificateDataLength,
 			recvBuffer, &recvBufferLength, false, false, false);
+	OPGP_LOG_END(_T("GP211_perform_security_operation"), status);
+	return status;
+}
+
+/**
+ * Submits SCP11 certificate data with PERFORM SECURITY OPERATION.
+ * The input may contain a single certificate, consecutive certificates, or a
+ * BF21 wrapper containing those certificates. For certificate lists, P2.b8 is
+ * derived from each certificate's position in the list. For a single
+ * certificate, \p moreCertificatesExpected controls P2.b8.
+ * \param cardContext [in] The valid OPGP_CARD_CONTEXT returned by OPGP_establish_context().
+ * \param cardInfo [in] The OPGP_CARD_INFO structure returned by OPGP_card_connect().
+ * \param secInfo [in, out] The pointer to the GP211_SECURITY_INFO structure returned by GP211_mutual_authentication(), or NULL if the command is sent without secure messaging.
+ * \param caKlocKeyVersionNumber [in] CA-KLOC Key Version Number (KVN).
+ * \param caKlocKeyIdentifier [in] CA-KLOC Key Identifier (KID).
+ * \param certificateData [in] One or more 7F21 or 30 certificates, optionally wrapped in BF21.
+ * \param certificateDataLength [in] The length of certificateData.
+ * \param moreCertificatesExpected [in] TRUE if another certificate follows this single-certificate input, otherwise FALSE. Ignored for multi-certificate inputs.
+ * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct.
+ */
+OPGP_ERROR_STATUS GP211_perform_security_operation(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+			  BYTE caKlocKeyVersionNumber, BYTE caKlocKeyIdentifier, PBYTE certificateData, DWORD certificateDataLength,
+			  BOOL moreCertificatesExpected) {
+	OPGP_ERROR_STATUS status;
+	GP_SIMPLE_TLV outer;
+	GP_SIMPLE_TLV certificateTlv;
+	const BYTE *certificateList;
+	DWORD certificateListLength;
+	PBYTE preparedCertificateList = NULL;
+	DWORD preparedCertificateListLength = 0;
+	DWORD offset = 0;
+	USHORT certificateTag = 0;
+	BOOL inputIsCertificateList = 0;
+
+	OPGP_LOG_START(_T("GP211_perform_security_operation"));
+
+	if (certificateData == NULL || certificateDataLength == 0) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+
+	if (parse_simple_tlv(certificateData, certificateDataLength, &outer) > 0
+			&& outer.tag == 0xBF21 && outer.tlvLength == certificateDataLength) {
+		certificateList = outer.value;
+		certificateListLength = outer.length;
+		inputIsCertificateList = 1;
+	} else {
+		certificateList = certificateData;
+		certificateListLength = certificateDataLength;
+	}
+
+	if (parse_simple_tlv(certificateList, certificateListLength, &certificateTlv) > 0
+			&& certificateTlv.tag == 0x30) {
+		if (certificateTlv.tlvLength < certificateListLength) {
+			inputIsCertificateList = 1;
+		}
+		preparedCertificateList = (PBYTE)malloc(certificateListLength);
+		if (preparedCertificateList == NULL) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+			goto end;
+		}
+		preparedCertificateListLength = certificateListLength;
+		status = prepare_scp11_der_x509_certificate_chain(certificateList, certificateListLength,
+				preparedCertificateList, &preparedCertificateListLength);
+		if (OPGP_ERROR_CHECK(status)) {
+			goto end;
+		}
+		certificateList = preparedCertificateList;
+		certificateListLength = preparedCertificateListLength;
+		if (parse_simple_tlv(certificateList, certificateListLength, &certificateTlv) > 0
+				&& certificateTlv.tlvLength < certificateListLength) {
+			inputIsCertificateList = 1;
+		}
+	}
+
+	while (offset < certificateListLength) {
+		BOOL listHasMoreCertificates;
+		BOOL p2MoreCertificatesExpected;
+		LONG result = parse_simple_tlv(certificateList + offset, certificateListLength - offset, &certificateTlv);
+		if (result < 0) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+		if (certificateTag == 0) {
+			if (certificateTlv.tag != 0x7F21 && certificateTlv.tag != 0x30) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+				goto end;
+			}
+			certificateTag = certificateTlv.tag;
+		} else if (certificateTlv.tag != certificateTag) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+			goto end;
+		}
+
+		listHasMoreCertificates = (offset + certificateTlv.tlvLength < certificateListLength);
+		if (listHasMoreCertificates) {
+			inputIsCertificateList = 1;
+		}
+		p2MoreCertificatesExpected = listHasMoreCertificates
+				|| (!inputIsCertificateList && moreCertificatesExpected);
+		if (certificateTag == 0x7F21) {
+			GP211_SCP11_CERTIFICATE parsedCertificate;
+			status = GP211_parse_scp11_certificate((PBYTE)(certificateList + offset), certificateTlv.tlvLength, &parsedCertificate);
+			if (OPGP_ERROR_CHECK(status)) {
+				goto end;
+			}
+			if ((p2MoreCertificatesExpected
+						&& (parsedCertificate.keyUsageLength != sizeof(GP211_SCP11_KEY_USAGE_DIGITAL_SIGNATURE_VERIFICATION)
+							|| memcmp(parsedCertificate.keyUsage, GP211_SCP11_KEY_USAGE_DIGITAL_SIGNATURE_VERIFICATION,
+								sizeof(GP211_SCP11_KEY_USAGE_DIGITAL_SIGNATURE_VERIFICATION)) != 0))
+					|| (!p2MoreCertificatesExpected
+						&& (parsedCertificate.keyUsageLength != sizeof(GP211_SCP11_KEY_USAGE_KEY_AGREEMENT)
+							|| memcmp(parsedCertificate.keyUsage, GP211_SCP11_KEY_USAGE_KEY_AGREEMENT,
+								sizeof(GP211_SCP11_KEY_USAGE_KEY_AGREEMENT)) != 0))) {
+				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+				goto end;
+			}
+		}
+		status = perform_security_operation_single_certificate(cardContext, cardInfo, secInfo,
+				caKlocKeyVersionNumber, caKlocKeyIdentifier,
+				(PBYTE)(certificateList + offset), certificateTlv.tlvLength,
+				p2MoreCertificatesExpected);
+		if (OPGP_ERROR_CHECK(status)) {
+			goto end;
+		}
+		offset += certificateTlv.tlvLength;
+	}
+	if (offset == 0) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
+	}
+
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+end:
+	if (preparedCertificateList != NULL) {
+		free(preparedCertificateList);
+	}
 	OPGP_LOG_END(_T("GP211_perform_security_operation"), status);
 	return status;
 }
@@ -2656,103 +2779,11 @@ OPGP_ERROR_STATUS GP211_perform_security_operation_certificate_chain(OPGP_CARD_C
 			  BYTE caKlocKeyVersionNumber, BYTE caKlocKeyIdentifier,
 			  PBYTE certificateChainData, DWORD certificateChainDataLength) {
 	OPGP_ERROR_STATUS status;
-	GP_SIMPLE_TLV outer;
-	GP_SIMPLE_TLV certificateTlv;
-	const BYTE *certificateList;
-	DWORD certificateListLength;
-	PBYTE preparedCertificateList = NULL;
-	DWORD preparedCertificateListLength = 0;
-	DWORD offset = 0;
-	USHORT certificateTag = 0;
 
 	OPGP_LOG_START(_T("GP211_perform_security_operation_certificate_chain"));
-
-	if (certificateChainData == NULL || certificateChainDataLength == 0) {
-		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-		goto end;
-	}
-
-	if (parse_simple_tlv(certificateChainData, certificateChainDataLength, &outer) > 0
-			&& outer.tag == 0xBF21 && outer.tlvLength == certificateChainDataLength) {
-		certificateList = outer.value;
-		certificateListLength = outer.length;
-	} else {
-		certificateList = certificateChainData;
-		certificateListLength = certificateChainDataLength;
-	}
-
-	if (parse_simple_tlv(certificateList, certificateListLength, &certificateTlv) > 0
-			&& certificateTlv.tag == 0x30) {
-		preparedCertificateList = (PBYTE)malloc(certificateListLength);
-		if (preparedCertificateList == NULL) {
-			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
-			goto end;
-		}
-		preparedCertificateListLength = certificateListLength;
-		status = prepare_scp11_der_x509_certificate_chain(certificateList, certificateListLength,
-				preparedCertificateList, &preparedCertificateListLength);
-		if (OPGP_ERROR_CHECK(status)) {
-			goto end;
-		}
-		certificateList = preparedCertificateList;
-		certificateListLength = preparedCertificateListLength;
-	}
-
-	while (offset < certificateListLength) {
-		BOOL moreCertificatesExpected;
-		LONG result = parse_simple_tlv(certificateList + offset, certificateListLength - offset, &certificateTlv);
-		if (result < 0) {
-			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-			goto end;
-		}
-		if (certificateTag == 0) {
-			if (certificateTlv.tag != 0x7F21 && certificateTlv.tag != 0x30) {
-				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-				goto end;
-			}
-			certificateTag = certificateTlv.tag;
-		} else if (certificateTlv.tag != certificateTag) {
-			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-			goto end;
-		}
-		moreCertificatesExpected = (offset + certificateTlv.tlvLength < certificateListLength);
-		if (certificateTag == 0x7F21) {
-			GP211_SCP11_CERTIFICATE parsedCertificate;
-			status = GP211_parse_scp11_certificate((PBYTE)(certificateList + offset), certificateTlv.tlvLength, &parsedCertificate);
-			if (OPGP_ERROR_CHECK(status)) {
-				goto end;
-			}
-			if ((moreCertificatesExpected
-						&& (parsedCertificate.keyUsageLength != sizeof(GP211_SCP11_KEY_USAGE_DIGITAL_SIGNATURE_VERIFICATION)
-							|| memcmp(parsedCertificate.keyUsage, GP211_SCP11_KEY_USAGE_DIGITAL_SIGNATURE_VERIFICATION,
-								sizeof(GP211_SCP11_KEY_USAGE_DIGITAL_SIGNATURE_VERIFICATION)) != 0))
-					|| (!moreCertificatesExpected
-						&& (parsedCertificate.keyUsageLength != sizeof(GP211_SCP11_KEY_USAGE_KEY_AGREEMENT)
-							|| memcmp(parsedCertificate.keyUsage, GP211_SCP11_KEY_USAGE_KEY_AGREEMENT,
-								sizeof(GP211_SCP11_KEY_USAGE_KEY_AGREEMENT)) != 0))) {
-				OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-				goto end;
-			}
-		}
-		status = GP211_perform_security_operation(cardContext, cardInfo, secInfo,
-				caKlocKeyVersionNumber, caKlocKeyIdentifier,
-				(PBYTE)(certificateList + offset), certificateTlv.tlvLength,
-				moreCertificatesExpected);
-		if (OPGP_ERROR_CHECK(status)) {
-			goto end;
-		}
-		offset += certificateTlv.tlvLength;
-	}
-	if (offset == 0) {
-		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
-		goto end;
-	}
-
-	OPGP_ERROR_CREATE_NO_ERROR(status);
-end:
-	if (preparedCertificateList != NULL) {
-		free(preparedCertificateList);
-	}
+	status = GP211_perform_security_operation(cardContext, cardInfo, secInfo,
+			caKlocKeyVersionNumber, caKlocKeyIdentifier,
+			certificateChainData, certificateChainDataLength, 0);
 	OPGP_LOG_END(_T("GP211_perform_security_operation_certificate_chain"), status);
 	return status;
 }
