@@ -16,14 +16,31 @@ if [[ ! "$SCP11_IMPL" =~ ^[0-9A-Fa-f]{2}$ ]]; then
     exit 1
 fi
 
-OCE_CERT_CHAIN_FILE="${OCE_CERT_CHAIN_FILE:-${KEY_DIR}/CERT.OCE.ECKA.CHAIN.der}"
+OCE_CERT_CHAIN_FILE="${OCE_CERT_CHAIN_FILE:-}"
+KA_KLOC_CERT_DER="${KA_KLOC_CERT_DER:-${KEY_DIR}/CERT.KA-KLOC.ECDSA.der}"
+OCE_CERT_DER="${OCE_CERT_DER:-${KEY_DIR}/CERT.OCE.ECKA.der}"
 SK_OCE_ECKA_PEM="${SK_OCE_ECKA_PEM:-${KEY_DIR}/SK.OCE.ECKA.pem}"
 SK_OCE_ECKA_HEX="${SK_OCE_ECKA_HEX:-}"
 
 TEST_COMMAND="${TEST_COMMAND:-list-apps}"
+TEMP_OCE_CERT_CHAIN_FILE=""
+
+if [[ -z "$OCE_CERT_CHAIN_FILE" ]]; then
+    if [[ -f "$KA_KLOC_CERT_DER" && -f "$OCE_CERT_DER" ]]; then
+        TEMP_OCE_CERT_CHAIN_FILE="$(mktemp)"
+        OCE_CERT_CHAIN_FILE="$TEMP_OCE_CERT_CHAIN_FILE"
+        trap 'rm -f "$TEMP_OCE_CERT_CHAIN_FILE"' EXIT
+        cat "$KA_KLOC_CERT_DER" "$OCE_CERT_DER" > "$OCE_CERT_CHAIN_FILE"
+    else
+        OCE_CERT_CHAIN_FILE="${KEY_DIR}/CERT.OCE.ECKA.CHAIN.der"
+    fi
+fi
 
 if [[ ! -f "$OCE_CERT_CHAIN_FILE" ]]; then
     echo "Missing OCE certificate chain file: $OCE_CERT_CHAIN_FILE" >&2
+    echo "Expected either that file, or both:" >&2
+    echo "  $KA_KLOC_CERT_DER" >&2
+    echo "  $OCE_CERT_DER" >&2
     exit 1
 fi
 
@@ -69,6 +86,12 @@ CMD=(
     --scp-impl "$SCP11_IMPL"
     --scp11-cert "$OCE_CERT_CHAIN_FILE"
 )
+
+if [[ -n "$TEMP_OCE_CERT_CHAIN_FILE" ]]; then
+    echo "Using generated SCP11 OCE certificate chain: CERT.KA-KLOC.ECDSA + CERT.OCE.ECKA"
+else
+    echo "Using SCP11 OCE certificate chain file: $OCE_CERT_CHAIN_FILE"
+fi
 
 if [[ $# -gt 0 ]]; then
     CMD+=("$@")

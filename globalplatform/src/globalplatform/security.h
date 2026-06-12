@@ -322,8 +322,8 @@ typedef struct {
 } GP211_DAP_BLOCK, GP211_RSA_DAP_BLOCK, GP211_3DES_DAP_BLOCK;
 
 
-//! Maximum receipt length according to GP confirmation BER length encoding ('00'..'7F' or '81 80'..'81 FF').
-#define GP211_RECEIPT_MAX_LENGTH 255
+//! Maximum receipt length.
+#define GP211_RECEIPT_MAX_LENGTH 512
 //! Maximum SD unique data length in confirmation data.
 #define GP211_RECEIPT_SD_UNIQUE_DATA_MAX_LENGTH 255
 //! Maximum token identifier length in confirmation data.

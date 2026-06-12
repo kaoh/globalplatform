@@ -141,11 +141,75 @@ static void build_sd_parameters(void **state) {
 	assert_memory_equal(output, expected, expectedLength);
 }
 
+static void get_extradition_token_signature_data_uses_short_lc(void **state) {
+	OPGP_ERROR_STATUS status;
+	BYTE expected[64];
+	DWORD expectedLength = sizeof(expected);
+	BYTE output[64];
+	DWORD outputLength = sizeof(output);
+	BYTE securityDomainAID[] = {0xD4, 0xD4, 0xD4, 0xD4, 0xD4, 0x01, 0x01, 0x01};
+	BYTE applicationAID[] = {0xD0, 0xD1, 0xD2, 0xD3, 0xD4, 0xD5, 0x01, 0x01};
+
+	hex_to_byte_array("10001508D4D4D4D4D40101010008D0D1D2D3D4D501010000",
+		expected, &expectedLength);
+
+	status = GP211_get_extradition_token_signature_data(securityDomainAID, sizeof(securityDomainAID),
+			applicationAID, sizeof(applicationAID), output, &outputLength);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+	assert_int_equal(outputLength, expectedLength);
+	assert_memory_equal(output, expected, expectedLength);
+}
+
+static void get_delete_token_signature_data_uses_short_lc(void **state) {
+	OPGP_ERROR_STATUS status;
+	BYTE expected[64];
+	DWORD expectedLength = sizeof(expected);
+	BYTE output[64];
+	DWORD outputLength = sizeof(output);
+	OPGP_AID aids[2];
+
+	memset(aids, 0, sizeof(aids));
+	aids[0].AIDLength = 7;
+	memcpy(aids[0].AID, "\xD0\xD1\xD2\xD3\xD4\xD5\x01", aids[0].AIDLength);
+	aids[1].AIDLength = 8;
+	memcpy(aids[1].AID, "\xD0\xD1\xD2\xD3\xD4\xD5\x01\x01", aids[1].AIDLength);
+
+	hex_to_byte_array("0080134F07D0D1D2D3D4D5014F08D0D1D2D3D4D50101",
+		expected, &expectedLength);
+
+	status = GP211_get_delete_token_signature_data(aids, 2, output, &outputLength);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+	assert_int_equal(outputLength, expectedLength);
+	assert_memory_equal(output, expected, expectedLength);
+}
+
+static void get_delete_token_signature_data_rejects_extended_length(void **state) {
+	OPGP_ERROR_STATUS status;
+	BYTE output[APDU_COMMAND_LEN];
+	DWORD outputLength = sizeof(output);
+	OPGP_AID aids[15];
+	size_t i;
+
+	memset(aids, 0, sizeof(aids));
+	for (i = 0; i < sizeof(aids) / sizeof(aids[0]); i++) {
+		aids[i].AIDLength = sizeof(aids[i].AID);
+		memset(aids[i].AID, (int)i, aids[i].AIDLength);
+	}
+
+	status = GP211_get_delete_token_signature_data(aids, sizeof(aids) / sizeof(aids[0]),
+			output, &outputLength);
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_FAILURE);
+	assert_int_equal(status.errorCode, OPGP_ERROR_COMMAND_TOO_LARGE);
+}
+
 int main(void) {
 	const struct CMUnitTest tests[] = {
 			cmocka_unit_test(build_uicc_system_specific_params_toolkit),
 			cmocka_unit_test(build_sim_specific_params),
 			cmocka_unit_test(build_sd_parameters),
+			cmocka_unit_test(get_extradition_token_signature_data_uses_short_lc),
+			cmocka_unit_test(get_delete_token_signature_data_uses_short_lc),
+			cmocka_unit_test(get_delete_token_signature_data_rejects_extended_length),
 	};
 	return cmocka_run_group_tests_name("installData", tests, NULL, NULL);
 }

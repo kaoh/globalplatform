@@ -1531,7 +1531,7 @@ static OPGP_ERROR_STATUS send_chained_data(OPGP_CARD_CONTEXT cardContext, OPGP_C
 								  BYTE *data, DWORD dataLength,
 								  BYTE *recvBuffer, PDWORD recvBufferLength,
 								  BOOL invertedChaining, BOOL incrementBlockNumber,
-								  BOOL responseDataExpected) {
+								  BOOL responseDataExpected, BOOL allowExtendedApdu) {
 	OPGP_ERROR_STATUS status;
 	DWORD preambleLen = (offset > 5) ? (offset - 5) : 0;
 	DWORD lastMaxFirst = MAX_APDU_DATA_SIZE(secInfo) - preambleLen;
@@ -1634,7 +1634,7 @@ static OPGP_ERROR_STATUS send_chained_data(OPGP_CARD_CONTEXT cardContext, OPGP_C
 	}
 
 	// Use connection-level chained sender that wraps once and splits again after wrapping
-	status = OPGP_send_chained_APDU(cardContext, cardInfo, secInfo, chunks, chunkLens, count, recvBuffer, recvBufferLength);
+	status = OPGP_send_chained_APDU_extended(cardContext, cardInfo, secInfo, chunks, chunkLens, count, recvBuffer, recvBufferLength, allowExtendedApdu);
 	if ( OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -1731,9 +1731,9 @@ OPGP_ERROR_STATUS GP211_put_aes_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 OPGP_ERROR_STATUS GP211_put_symmetric_key(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 				  BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion, BYTE key[32], DWORD keyLength, BYTE keyType) {
 	OPGP_ERROR_STATUS status;
-	BYTE sendBuffer[APDU_COMMAND_LEN];
-	DWORD recvBufferLength = APDU_RESPONSE_LEN;
-	BYTE recvBuffer[APDU_RESPONSE_LEN];
+	BYTE sendBuffer[64];
+	BYTE recvBuffer[64];
+	DWORD recvBufferLength = sizeof(recvBuffer);
 	BYTE keyCheckValue[3];
 	BYTE keyDataField[64];
 	DWORD keyDataFieldLength=64;
@@ -1753,13 +1753,16 @@ OPGP_ERROR_STATUS GP211_put_symmetric_key(OPGP_CARD_CONTEXT cardContext, OPGP_CA
 		goto end;
 	}
 
+	if (i + keyDataFieldLength + 1 > sizeof(sendBuffer)) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		goto end;
+	}
 	memcpy(sendBuffer+i, keyDataField, keyDataFieldLength); // key
 	i+=keyDataFieldLength;
 
 	// Lc
 	sendBuffer[4] = i-5;
-	i++;
-	sendBuffer[i] = 0x00; // Le
+	sendBuffer[i++] = 0x00; // Le
 
 	status = OPGP_send_APDU(cardContext, cardInfo, secInfo, sendBuffer, i, recvBuffer, &recvBufferLength);
 	if ( OPGP_ERROR_CHECK(status)) {
@@ -1991,7 +1994,7 @@ OPGP_ERROR_STATUS put_asymmetric_keys(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_I
 
 	status = send_chained_data(cardContext, cardInfo, secInfo, sendBuffer, i,
 							  keyDataField, keyDataFieldLength, recvBuffer, &recvBufferLength,
-							  false, false, true);
+							  false, false, true, false);
 	if ( OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -2007,9 +2010,9 @@ OPGP_ERROR_STATUS put_delegated_management_receipt_keys(OPGP_CARD_CONTEXT cardCo
                                                         BYTE keySetVersion, BYTE newKeySetVersion,
                                                         BYTE receiptKey[32], DWORD keyLength, BYTE receiptKeyType) {
 	OPGP_ERROR_STATUS status;
-	BYTE sendBuffer[APDU_COMMAND_LEN];
-	DWORD recvBufferLength=APDU_RESPONSE_LEN;
-	BYTE recvBuffer[APDU_RESPONSE_LEN];
+	BYTE sendBuffer[64];
+	BYTE recvBuffer[64];
+	DWORD recvBufferLength=sizeof(recvBuffer);
 	BYTE keyCheckValue[8];
 
 	BYTE keyDataField[1024];
@@ -2058,7 +2061,7 @@ OPGP_ERROR_STATUS put_delegated_management_receipt_keys(OPGP_CARD_CONTEXT cardCo
 
 	status = send_chained_data(cardContext, cardInfo, secInfo, sendBuffer, i,
 							  keyDataField, currentKeyDataFieldLength, recvBuffer, &recvBufferLength,
-							  false, false, true);
+							  false, false, true, false);
 	if ( OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -2338,7 +2341,7 @@ OPGP_ERROR_STATUS delete_application(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_IN
 	}
 
 	status = send_chained_data(cardContext, cardInfo, secInfo, commandHeader, 5, sendBuffer, i,
-		recvBuffer, &recvBufferLength, false, false, true);
+		recvBuffer, &recvBufferLength, false, false, true, false);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -2611,7 +2614,7 @@ static OPGP_ERROR_STATUS perform_security_operation_single_certificate(OPGP_CARD
 	commandHeader[4] = 0x00;
 
 	status = send_chained_data(cardContext, cardInfo, secInfo, commandHeader, 5, certificateData, certificateDataLength,
-			recvBuffer, &recvBufferLength, false, false, false);
+			recvBuffer, &recvBufferLength, false, false, false, true);
 	OPGP_LOG_END(_T("GP211_perform_security_operation"), status);
 	return status;
 }
@@ -3019,7 +3022,7 @@ OPGP_ERROR_STATUS get_data_with_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_IN
 			  BYTE identifier[2], PBYTE dataObject, DWORD dataObjectLength,
 			  PBYTE recvBuffer, PDWORD recvBufferLength) {
 	OPGP_ERROR_STATUS status;
-	BYTE sendBuffer[APDU_COMMAND_LEN];
+	BYTE sendBuffer[128];
 	DWORD sendBufferLength = 0;
 	DWORD cardDataLength = 0;
 	DWORD recvBufferCapacity = 0;
@@ -3031,7 +3034,7 @@ OPGP_ERROR_STATUS get_data_with_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_IN
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
 		goto end;
 	}
-	if (dataObjectLength > 255) {
+	if (dataObjectLength > sizeof(sendBuffer) - 6) {
 		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE));
 		goto end;
 	}
@@ -5209,7 +5212,7 @@ OPGP_ERROR_STATUS install_for_load(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
 	}
 
 	status = send_chained_data(cardContext, cardInfo, secInfo, commandHeader, 5, sendBuffer, i,
-		recvBuffer, &recvBufferLength, false, false, true);
+		recvBuffer, &recvBufferLength, false, false, true, false);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -5351,7 +5354,7 @@ OPGP_ERROR_STATUS install_for_install(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_I
 	}
 
 	status = send_chained_data(cardContext, cardInfo, secInfo, commandHeader, 5, sendBuffer, i,
-		recvBuffer, &recvBufferLength, false, false, true);
+		recvBuffer, &recvBufferLength, false, false, true, false);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -5441,8 +5444,8 @@ OPGP_ERROR_STATUS install_for_install_and_make_selectable(OPGP_CARD_CONTEXT card
 						 PDWORD receiptDataAvailable) {
 	OPGP_ERROR_STATUS status;
 	BYTE commandHeader[5] = {0x80, 0xE6, 0x00, 0x00, 0x00};
-	DWORD recvBufferLength = APDU_RESPONSE_LEN;
-	BYTE recvBuffer[APDU_RESPONSE_LEN];
+	BYTE recvBuffer[2048];
+	DWORD recvBufferLength = sizeof(recvBuffer);
 	BYTE sendBuffer[1000];
 	DWORD i=0;
 	BYTE buf[1000];
@@ -5494,7 +5497,7 @@ OPGP_ERROR_STATUS install_for_install_and_make_selectable(OPGP_CARD_CONTEXT card
 	}
 
  	status = send_chained_data(cardContext, cardInfo, secInfo, commandHeader, 5, sendBuffer, i,
-		recvBuffer, &recvBufferLength, false, false, true);
+		recvBuffer, &recvBufferLength, false, false, true, false);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -5584,7 +5587,7 @@ OPGP_ERROR_STATUS GP211_install_for_extradition(OPGP_CARD_CONTEXT cardContext, O
 	}
 
 	status = send_chained_data(cardContext, cardInfo, secInfo, commandHeader, 5, sendBuffer, i,
-		recvBuffer, &recvBufferLength, false, false, true);
+		recvBuffer, &recvBufferLength, false, false, true, false);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -5675,7 +5678,7 @@ OPGP_ERROR_STATUS GP211_install_for_registry_update(OPGP_CARD_CONTEXT cardContex
 	}
 
 	status = send_chained_data(cardContext, cardInfo, secInfo, commandHeader, 5, sendBuffer, i,
-		recvBuffer, &recvBufferLength, false, false, true);
+		recvBuffer, &recvBufferLength, false, false, true, false);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -5703,12 +5706,16 @@ OPGP_ERROR_STATUS GP211_install_for_personalization(OPGP_CARD_CONTEXT cardContex
 						 DWORD applicationAIDLength) {
 	OPGP_ERROR_STATUS status;
 	DWORD sendBufferLength=0;
-	DWORD recvBufferLength=APDU_RESPONSE_LEN;
-	BYTE recvBuffer[APDU_RESPONSE_LEN];
-	BYTE sendBuffer[APDU_COMMAND_LEN];
+	BYTE recvBuffer[16];
+	DWORD recvBufferLength=sizeof(recvBuffer);
+	BYTE sendBuffer[32];
 	DWORD i=0;
 
 	OPGP_LOG_START(_T("install_for_personalization"));
+	if (applicationAIDLength > sizeof(sendBuffer) - 12) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE));
+		goto end;
+	}
 	sendBuffer[i++] = 0x80;
 	sendBuffer[i++] = 0xE6;
 	sendBuffer[i++] = 0x20;
@@ -5823,7 +5830,7 @@ OPGP_ERROR_STATUS install_for_make_selectable(OPGP_CARD_CONTEXT cardContext, OPG
 	}
 
 	status = send_chained_data(cardContext, cardInfo, secInfo, commandHeader, 5, sendBuffer, i,
-		recvBuffer, &recvBufferLength, false, false, true);
+		recvBuffer, &recvBufferLength, false, false, true, false);
 	if (OPGP_ERROR_CHECK(status)) {
 		goto end;
 	}
@@ -6589,18 +6596,20 @@ OPGP_ERROR_STATUS GP211_get_extradition_token_signature_data(PBYTE securityDomai
 										  PBYTE applicationAID, DWORD applicationAIDLength,
 										  PBYTE extraditionTokenSignatureData,
 										  PDWORD extraditionTokenSignatureDataLength) {
-	BYTE buf[260];
+	BYTE buf[64];
 	DWORD i=0;
 	DWORD bodyLength;
 	DWORD encodedLength;
 	OPGP_ERROR_STATUS status;
 
 	OPGP_LOG_START(_T("get_extradition_token_signature_data"));
+	if (securityDomainAIDLength > 0xFF || applicationAIDLength > 0xFF ||
+			securityDomainAIDLength + applicationAIDLength + 5 > 0xFF) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
+	}
 	buf[i++] = 0x10;
 	buf[i++] = 0x00;
-	buf[i++] = 0x00; // Lc dummy (extended)
-	buf[i++] = 0x00; // Lc dummy (extended)
-	buf[i++] = 0x00; // Lc dummy (extended)
+	buf[i++] = 0x00; // Lc dummy
 	buf[i++] = (BYTE)securityDomainAIDLength; // Security Domain AID
 	memcpy(buf+i, securityDomainAID, securityDomainAIDLength);
 	i+=securityDomainAIDLength;
@@ -6612,28 +6621,14 @@ OPGP_ERROR_STATUS GP211_get_extradition_token_signature_data(PBYTE securityDomai
 	buf[i++] = 0x00;
 	buf[i++] = 0x00;
 
-	bodyLength = i - 5;
-	if (bodyLength > 0xFF) {
-		encodedLength = i;
-		buf[2] = 0x00;
-		buf[3] = (BYTE)(bodyLength >> 8);
-		buf[4] = (BYTE)(bodyLength & 0xFF);
-		if (encodedLength > *extraditionTokenSignatureDataLength) {
-			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
-		}
-		memcpy(extraditionTokenSignatureData, buf, encodedLength);
-		*extraditionTokenSignatureDataLength = encodedLength;
-	} else {
-		encodedLength = bodyLength + 3;
-		if (encodedLength > *extraditionTokenSignatureDataLength) {
-			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
-		}
-		extraditionTokenSignatureData[0] = buf[0];
-		extraditionTokenSignatureData[1] = buf[1];
-		extraditionTokenSignatureData[2] = (BYTE)bodyLength;
-		memcpy(extraditionTokenSignatureData + 3, buf + 5, bodyLength);
-		*extraditionTokenSignatureDataLength = encodedLength;
+	bodyLength = i - 3;
+	encodedLength = i;
+	if (encodedLength > *extraditionTokenSignatureDataLength) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
 	}
+	buf[2] = (BYTE)bodyLength;
+	memcpy(extraditionTokenSignatureData, buf, encodedLength);
+	*extraditionTokenSignatureDataLength = encodedLength;
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
 	OPGP_LOG_END(_T("get_extradition_token_signature_data"), status);
@@ -6753,7 +6748,7 @@ end:
 OPGP_ERROR_STATUS GP211_get_delete_token_signature_data(OPGP_AID *AIDs, DWORD AIDsLength,
 										  PBYTE deleteTokenSignatureData,
 										  PDWORD deleteTokenSignatureDataLength) {
-	BYTE buf[1000];
+	BYTE buf[255];
 	DWORD i=0;
 	DWORD j;
 	DWORD bodyLength;
@@ -6763,12 +6758,10 @@ OPGP_ERROR_STATUS GP211_get_delete_token_signature_data(OPGP_AID *AIDs, DWORD AI
 	OPGP_LOG_START(_T("get_delete_token_signature_data"));
 	buf[i++] = 0x00; // P1
 	buf[i++] = 0x80; // P2
-	buf[i++] = 0x00; // Lc dummy (extended)
-	buf[i++] = 0x00; // Lc dummy (extended)
-	buf[i++] = 0x00; // Lc dummy (extended)
+	buf[i++] = 0x00; // Lc dummy
 
 	for (j=0; j<AIDsLength; j++) {
-		if (i + AIDs[j].AIDLength + 2 > sizeof(buf)) {
+		if (i + AIDs[j].AIDLength + 2 - 3 > sizeof(buf)) {
 			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE)); goto end; }
 		}
 		OPGP_LOG_HEX(_T("get_delete_token_signature_data: AID: "), AIDs[j].AID, AIDs[j].AIDLength);
@@ -6778,28 +6771,14 @@ OPGP_ERROR_STATUS GP211_get_delete_token_signature_data(OPGP_AID *AIDs, DWORD AI
 		i+=AIDs[j].AIDLength;
 	}
 
-	bodyLength = i - 5;
-	if (bodyLength > 0xFF) {
-		encodedLength = i;
-		buf[2] = 0x00;
-		buf[3] = (BYTE)(bodyLength >> 8);
-		buf[4] = (BYTE)(bodyLength & 0xFF);
-		if (encodedLength > *deleteTokenSignatureDataLength) {
-			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
-		}
-		memcpy(deleteTokenSignatureData, buf, encodedLength);
-		*deleteTokenSignatureDataLength = encodedLength;
-	} else {
-		encodedLength = bodyLength + 3;
-		if (encodedLength > *deleteTokenSignatureDataLength) {
-			{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
-		}
-		deleteTokenSignatureData[0] = buf[0];
-		deleteTokenSignatureData[1] = buf[1];
-		deleteTokenSignatureData[2] = (BYTE)bodyLength;
-		memcpy(deleteTokenSignatureData + 3, buf + 5, bodyLength);
-		*deleteTokenSignatureDataLength = encodedLength;
+	bodyLength = i - 3;
+	encodedLength = i;
+	if (encodedLength > *deleteTokenSignatureDataLength) {
+		{ OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER)); goto end; }
 	}
+	buf[2] = (BYTE)bodyLength;
+	memcpy(deleteTokenSignatureData, buf, encodedLength);
+	*deleteTokenSignatureDataLength = encodedLength;
 
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
@@ -6878,7 +6857,7 @@ OPGP_ERROR_STATUS GP211_calculate_extradition_token(PBYTE securityDomainAID,
 										  PBYTE extraditionToken, PDWORD extraditionTokenLength,
 										  OPGP_STRING PEMKeyFileName, char *passPhrase) {
 	OPGP_ERROR_STATUS status;
-	BYTE signatureData[APDU_COMMAND_LEN];
+	BYTE signatureData[256];
 	DWORD signatureDataLength = sizeof(signatureData);
 	OPGP_LOG_START(_T("GP211_calculate_extradition_token"));
 	status = GP211_get_extradition_token_signature_data(securityDomainAID, securityDomainAIDLength,
@@ -6920,7 +6899,7 @@ OPGP_ERROR_STATUS GP211_calculate_update_registry_token(PBYTE securityDomainAID,
 										  PBYTE registryUpdateToken, PDWORD registryUpdateTokenLength,
 										  OPGP_STRING PEMKeyFileName, char *passPhrase) {
 	OPGP_ERROR_STATUS status;
-	BYTE signatureData[512];
+	BYTE signatureData[256];
 	DWORD signatureDataLength = sizeof(signatureData);
 	OPGP_LOG_START(_T("GP211_calculate_update_registry_token"));
 	status = GP211_get_registry_update_token_signature_data(securityDomainAID, securityDomainAIDLength,
@@ -6956,7 +6935,7 @@ OPGP_ERROR_STATUS GP211_calculate_delete_token(PBYTE applicationOrExecutableLoad
 										  PBYTE deleteToken, PDWORD deleteTokenLength,
 										  OPGP_STRING PEMKeyFileName, char *passPhrase) {
 	OPGP_ERROR_STATUS status;
-	BYTE signatureData[APDU_COMMAND_LEN];
+	BYTE signatureData[256];
 	DWORD signatureDataLength = sizeof(signatureData);
 	OPGP_AID aid;
 	OPGP_LOG_START(_T("GP211_calculate_delete_token"));
@@ -7870,9 +7849,9 @@ static OPGP_ERROR_STATUS mutual_authentication_scp11a(OPGP_CARD_CONTEXT cardCont
 	DWORD commandDataLength = 0;
 	BYTE crtValue[480];
 	DWORD crtValueLength = 0;
-	BYTE response[APDU_RESPONSE_LEN];
+	BYTE response[256];
 	DWORD responseLength = sizeof(response);
-	BYTE sendBuffer[APDU_COMMAND_LEN];
+	BYTE sendBuffer[256];
 	DWORD sendBufferLength;
 	DWORD i = 0;
 	BYTE keyUsageQualifier;
@@ -7993,6 +7972,10 @@ static OPGP_ERROR_STATUS mutual_authentication_scp11a(OPGP_CARD_CONTEXT cardCont
 	sendBuffer[i++] = 0x82;
 	sendBuffer[i++] = (BYTE)(keySetVersion & 0x7F);
 	sendBuffer[i++] = (BYTE)(keyIndex & 0x7F);
+	if (commandDataLength > sizeof(sendBuffer) - 6) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_COMMAND_TOO_LARGE, OPGP_stringify_error(OPGP_ERROR_COMMAND_TOO_LARGE));
+		goto end;
+	}
 	sendBuffer[i++] = (BYTE)commandDataLength;
 	memcpy(sendBuffer + i, commandData, commandDataLength);
 	i += commandDataLength;
@@ -8127,10 +8110,11 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 	BYTE sEnc[32];
 	BYTE dek[32];
 
-	DWORD sendBufferLength = APDU_COMMAND_LEN;
-	DWORD recvBufferLength = APDU_RESPONSE_LEN;
-	BYTE recvBuffer[APDU_RESPONSE_LEN];
-	BYTE sendBuffer[APDU_COMMAND_LEN];
+	BYTE recvBuffer[64];
+	DWORD recvBufferLength = sizeof(recvBuffer);
+	BYTE sendBuffer[128];
+	DWORD sendBufferLength = sizeof(sendBuffer);
+
 	// random for host challenge
 
 	OPGP_LOG_START(_T("mutual_authentication"));
@@ -8882,9 +8866,9 @@ end:
 static OPGP_ERROR_STATUS store_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 	BYTE encryptionFlags, BYTE formatFlags, BOOL responseDataExpected, PBYTE data, DWORD dataLength) {
 	OPGP_ERROR_STATUS status;
-	DWORD recvBufferLength = APDU_RESPONSE_LEN;
-	BYTE recvBuffer[APDU_RESPONSE_LEN];
-	BYTE sendBuffer[APDU_COMMAND_LEN];
+	BYTE recvBuffer[258];
+	DWORD recvBufferLength = sizeof(recvBuffer);
+	BYTE sendBuffer[16];
 
 	OPGP_LOG_START(_T("store_data"));
 
@@ -8898,7 +8882,7 @@ static OPGP_ERROR_STATUS store_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 
 	status = send_chained_data(cardContext, cardInfo, secInfo, sendBuffer, 5,
 								  data, dataLength, recvBuffer, &recvBufferLength,
-								  true, true, responseDataExpected);
+								  true, true, responseDataExpected, false);
 
 	OPGP_LOG_END(_T("store_data"), status);
 	return status;

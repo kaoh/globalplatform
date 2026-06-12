@@ -72,6 +72,7 @@ typedef OPGP_ERROR_STATUS (*OPGP_CARD_CONNECT_FN)(OPGP_CARD_CONTEXT, OPGP_CSTRIN
 typedef OPGP_ERROR_STATUS (*OPGP_CARD_DISCONNECT_FN)(OPGP_CARD_CONTEXT, OPGP_CARD_INFO *);
 typedef OPGP_ERROR_STATUS (*OPGP_LIST_READERS_FN)(OPGP_CARD_CONTEXT, OPGP_STRING, PDWORD, DWORD);
 typedef OPGP_ERROR_STATUS (*OPGP_SEND_APDU_FN)(OPGP_CARD_CONTEXT, OPGP_CARD_INFO, PBYTE, DWORD, PBYTE, PDWORD);
+typedef OPGP_ERROR_STATUS (*OPGP_SUPPORTS_EXTENDED_APDU_FN)(OPGP_CARD_CONTEXT, OPGP_CARD_INFO, BOOL *);
 
 /**
  * Structure for holding all connection related functions for connection plugin libraries.
@@ -84,6 +85,7 @@ typedef struct
 	OPGP_CARD_DISCONNECT_FN cardDisconnect; //!< Function to disconnect from the card.
 	OPGP_LIST_READERS_FN listReaders; //!< Function to list the readers.
 	OPGP_SEND_APDU_FN sendAPDU; //!< Function to send an APDU.
+	OPGP_SUPPORTS_EXTENDED_APDU_FN supportsExtendedAPDU; //!< Function to report extended APDU support.
 
 } OPGP_CONNECTION_FUNCTIONS;
 
@@ -106,6 +108,7 @@ typedef struct OPGP_CARD_INFO {
 	DWORD ATRLength; //!< The length of the ATR buffer.
 	BYTE logicalChannel; //!< The current logical channel.
 	BYTE specVersion; //!< The specification version, see #OP_201 or #GP_211.
+	BOOL extendedAPDUSupported; //!< TRUE if the connection supports extended APDUs for this card.
 	PVOID librarySpecific; //!< Specific data for the library.
 } OPGP_CARD_INFO;
 
@@ -145,6 +148,8 @@ OPGP_ERROR_STATUS OPGP_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO c
 //! \brief This function sends multiple APDUs that belong to one logical command.
 OPGP_API
 OPGP_ERROR_STATUS OPGP_send_chained_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBYTE capdus[], DWORD capduLengths[], DWORD numCapdus, PBYTE rapdu, PDWORD rapduLength);
+
+OPGP_ERROR_STATUS OPGP_send_chained_APDU_extended(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBYTE capdus[], DWORD capduLengths[], DWORD numCapdus, PBYTE rapdu, PDWORD rapduLength, BOOL allowExtendedApdu);
 
 #ifdef __cplusplus
 }

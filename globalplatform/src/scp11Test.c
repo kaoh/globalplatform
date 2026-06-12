@@ -78,6 +78,8 @@ typedef enum {
 	SCP11_TEST_MODE_PSO_CHAIN,
 	SCP11_TEST_MODE_PSO_CHAIN_X509,
 	SCP11_TEST_MODE_PSO_LARGE_X509,
+	SCP11_TEST_MODE_PSO_LARGE_X509_EXTENDED,
+	SCP11_TEST_MODE_PSO_SMALL_X509_EXTENDED_AVAILABLE,
 	SCP11_TEST_MODE_PSO_LEAF_FIRST_X509_WITH_ROOT,
 	SCP11_TEST_MODE_MUTUAL_NO_CERTIFICATE,
 	SCP11_TEST_MODE_MUTUAL_OCE_CERTIFICATE,
@@ -942,6 +944,36 @@ static OPGP_ERROR_STATUS mock_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 		const BYTE *certificateData;
 		int psoStartCallCount = scp11TestMode == SCP11_TEST_MODE_MUTUAL_CERTIFICATE_CHAIN_CA_LOOKUP_FALLBACK ? 3 : 2;
 
+		if (scp11TestMode == SCP11_TEST_MODE_PSO_LARGE_X509_EXTENDED) {
+			BYTE apduCase;
+			DWORD le;
+
+			assert_int_equal(apduCallCount, 0);
+			assert_int_equal(capdu[0], 0x80);
+			assert_int_equal(capdu[2], testKeyVersion);
+			assert_int_equal(capdu[3], testKeyIdentifier);
+			assert_int_equal(parse_apdu_case(capdu, capduLength, &apduCase, &lc, &le), 0);
+			assert_int_equal(apduCase, 3);
+			assert_int_equal(lc, sizeof(testValidX509Certificate));
+			assert_int_equal(capduLength, lc + 7);
+			assert_memory_equal(capdu + 7, testValidX509Certificate, sizeof(testValidX509Certificate));
+			apduCallCount++;
+			return set_apdu_response(rapdu, rapduLength, NULL, 0, 0x9000);
+		}
+
+		if (scp11TestMode == SCP11_TEST_MODE_PSO_SMALL_X509_EXTENDED_AVAILABLE) {
+			assert_int_equal(apduCallCount, 0);
+			assert_int_equal(capdu[0], 0x80);
+			assert_int_equal(capdu[2], testKeyVersion);
+			assert_int_equal(capdu[3], testKeyIdentifier);
+			lc = capdu[4];
+			assert_int_equal(lc, sizeof(testX509OceCertificate));
+			assert_int_equal(capduLength, lc + 5);
+			assert_memory_equal(capdu + 5, testX509OceCertificate, sizeof(testX509OceCertificate));
+			apduCallCount++;
+			return set_apdu_response(rapdu, rapduLength, NULL, 0, 0x9000);
+		}
+
 		if (scp11TestMode == SCP11_TEST_MODE_PSO_LARGE_X509
 				|| scp11TestMode == SCP11_TEST_MODE_PSO_LEAF_FIRST_X509_WITH_ROOT) {
 			assert_true(apduCallCount == 0 || apduCallCount == 1);
@@ -1338,6 +1370,40 @@ static void perform_security_operation_large_x509_certificate_uses_p1_chaining(v
 	assert_int_equal(apduCallCount, 2);
 }
 
+static void perform_security_operation_large_x509_certificate_uses_extended_apdu_when_supported(void **state) {
+	OPGP_ERROR_STATUS status;
+
+	(void)state;
+
+	apduCallCount = 0;
+	scp11TestMode = SCP11_TEST_MODE_PSO_LARGE_X509_EXTENDED;
+	cardInfo.extendedAPDUSupported = 1;
+	status = GP211_perform_security_operation(cardContext, cardInfo, NULL,
+			testKeyVersion, testKeyIdentifier,
+			(PBYTE)testValidX509Certificate, sizeof(testValidX509Certificate),
+			0);
+	cardInfo.extendedAPDUSupported = 0;
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+	assert_int_equal(apduCallCount, 1);
+}
+
+static void perform_security_operation_small_x509_certificate_uses_short_apdu_when_extended_available(void **state) {
+	OPGP_ERROR_STATUS status;
+
+	(void)state;
+
+	apduCallCount = 0;
+	scp11TestMode = SCP11_TEST_MODE_PSO_SMALL_X509_EXTENDED_AVAILABLE;
+	cardInfo.extendedAPDUSupported = 1;
+	status = GP211_perform_security_operation(cardContext, cardInfo, NULL,
+			testKeyVersion, testKeyIdentifier,
+			(PBYTE)testX509OceCertificate, sizeof(testX509OceCertificate),
+			0);
+	cardInfo.extendedAPDUSupported = 0;
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+	assert_int_equal(apduCallCount, 1);
+}
+
 static void perform_security_operation_leaf_first_x509_chain_omits_root(void **state) {
 	OPGP_ERROR_STATUS status;
 	BYTE oceCertificate[1024];
@@ -1654,6 +1720,8 @@ int main(void) {
 			cmocka_unit_test(perform_security_operation_certificate_chain),
 			cmocka_unit_test(perform_security_operation_x509_certificate_chain),
 			cmocka_unit_test(perform_security_operation_large_x509_certificate_uses_p1_chaining),
+			cmocka_unit_test(perform_security_operation_large_x509_certificate_uses_extended_apdu_when_supported),
+			cmocka_unit_test(perform_security_operation_small_x509_certificate_uses_short_apdu_when_extended_available),
 			cmocka_unit_test(perform_security_operation_leaf_first_x509_chain_omits_root),
 			cmocka_unit_test(store_data_ecka_certificate_with_certificate_list),
 			cmocka_unit_test(store_data_ecka_certificate_with_certificate_store),

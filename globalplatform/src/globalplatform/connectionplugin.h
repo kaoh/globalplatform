@@ -78,6 +78,10 @@ OPGP_ERROR_STATUS OPGP_PL_card_disconnect(OPGP_CARD_CONTEXT cardContext, OPGP_CA
 OPGP_PL_API
 OPGP_ERROR_STATUS OPGP_PL_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, PBYTE capdu, DWORD capduLength, PBYTE rapdu, PDWORD rapduLength);
 
+//! \brief This optional function reports whether the connection supports extended APDUs.
+OPGP_PL_API
+OPGP_ERROR_STATUS OPGP_PL_supports_extended_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BOOL *supported);
+
 #ifdef __cplusplus
 }
 #endif

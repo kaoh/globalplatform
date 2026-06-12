@@ -87,6 +87,7 @@ OPGP_ERROR_STATUS OPGP_establish_context(OPGP_CARD_CONTEXT *cardContext) {
 		OPGP_ERROR_STATUS OPGP_PL_card_disconnect(OPGP_CARD_CONTEXT, OPGP_CARD_INFO *);
 		OPGP_ERROR_STATUS OPGP_PL_list_readers(OPGP_CARD_CONTEXT, OPGP_STRING, PDWORD, DWORD);
 		OPGP_ERROR_STATUS OPGP_PL_send_APDU(OPGP_CARD_CONTEXT, OPGP_CARD_INFO, PBYTE, DWORD, PBYTE, PDWORD);
+		OPGP_ERROR_STATUS OPGP_PL_supports_extended_APDU(OPGP_CARD_CONTEXT, OPGP_CARD_INFO, BOOL *);
 
 		cardContext->libraryHandle = NULL; /* No dlopen handle when static */
 		cardContext->connectionFunctions.cardConnect = OPGP_PL_card_connect;
@@ -95,6 +96,7 @@ OPGP_ERROR_STATUS OPGP_establish_context(OPGP_CARD_CONTEXT *cardContext) {
 		cardContext->connectionFunctions.listReaders = OPGP_PL_list_readers;
 		cardContext->connectionFunctions.releaseContext = OPGP_PL_release_context;
 		cardContext->connectionFunctions.sendAPDU = OPGP_PL_send_APDU;
+		cardContext->connectionFunctions.supportsExtendedAPDU = OPGP_PL_supports_extended_APDU;
 
 		/* call the establish function */
 		plugin_establishContextFunction = cardContext->connectionFunctions.establishContext;
@@ -171,6 +173,20 @@ OPGP_ERROR_STATUS OPGP_establish_context(OPGP_CARD_CONTEXT *cardContext) {
 	if (OPGP_ERROR_CHECK(errorStatus)) {
 		goto end;
 	}
+	{
+		PVOID fn = NULL;
+		errorStatus = DYN_GetAddress(cardContext->libraryHandle, &fn, _T("OPGP_PL_supports_extended_APDU"));
+		if (OPGP_ERROR_CHECK(errorStatus)) {
+			cardContext->connectionFunctions.supportsExtendedAPDU = NULL;
+			OPGP_ERROR_CREATE_NO_ERROR(errorStatus);
+		}
+		else {
+			ASSIGN_FUNC_PTR(cardContext->connectionFunctions.supportsExtendedAPDU, fn);
+		}
+	}
+	if (OPGP_ERROR_CHECK(errorStatus)) {
+		goto end;
+	}
 	OPGP_ERROR_CREATE_NO_ERROR(errorStatus);
 	// call the establish function
 	plugin_establishContextFunction = cardContext->connectionFunctions.establishContext;
@@ -211,6 +227,7 @@ OPGP_ERROR_STATUS OPGP_release_context(OPGP_CARD_CONTEXT *cardContext) {
 	cardContext->connectionFunctions.listReaders = NULL;
 	cardContext->connectionFunctions.releaseContext = NULL;
 	cardContext->connectionFunctions.sendAPDU = NULL;
+	cardContext->connectionFunctions.supportsExtendedAPDU = NULL;
 	OPGP_ERROR_CREATE_NO_ERROR(errorStatus);
 end:
 	OPGP_LOG_END(_T("OPGP_release_context"), errorStatus);
@@ -249,11 +266,24 @@ OPGP_ERROR_STATUS OPGP_list_readers(OPGP_CARD_CONTEXT cardContext, OPGP_STRING r
 OPGP_ERROR_STATUS OPGP_card_connect(OPGP_CARD_CONTEXT cardContext, OPGP_CSTRING readerName, OPGP_CARD_INFO *cardInfo, DWORD protocol) {
 	OPGP_ERROR_STATUS errorStatus;
 	OPGP_ERROR_STATUS(*plugin_cardConnectFunction) (OPGP_CARD_CONTEXT, OPGP_CSTRING, OPGP_CARD_INFO *, DWORD);
+	OPGP_ERROR_STATUS(*plugin_supportsExtendedAPDUFunction) (OPGP_CARD_CONTEXT, OPGP_CARD_INFO, BOOL *);
 	OPGP_LOG_START(_T("OPGP_card_connect"));
 	// set the default spec version
 	cardInfo->specVersion = GP_211;
+	cardInfo->extendedAPDUSupported = 0;
 	plugin_cardConnectFunction = cardContext.connectionFunctions.cardConnect;
 	errorStatus = (*plugin_cardConnectFunction) (cardContext, readerName, cardInfo, protocol);
+	if (!OPGP_ERROR_CHECK(errorStatus)) {
+		plugin_supportsExtendedAPDUFunction = cardContext.connectionFunctions.supportsExtendedAPDU;
+		if (plugin_supportsExtendedAPDUFunction != NULL) {
+			OPGP_ERROR_STATUS capabilityStatus;
+			BOOL supported = 0;
+			capabilityStatus = (*plugin_supportsExtendedAPDUFunction) (cardContext, *cardInfo, &supported);
+			if (!OPGP_ERROR_CHECK(capabilityStatus)) {
+				cardInfo->extendedAPDUSupported = supported;
+			}
+		}
+	}
 	OPGP_LOG_END(_T("OPGP_card_connect"), errorStatus);
 	return errorStatus;
 }
@@ -287,8 +317,8 @@ OPGP_ERROR_STATUS OPGP_card_disconnect(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_
 OPGP_ERROR_STATUS OPGP_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo, PBYTE capdu, DWORD capduLength, PBYTE rapdu, PDWORD rapduLength) {
 	OPGP_ERROR_STATUS errorStatus;
 	OPGP_ERROR_STATUS(*plugin_sendAPDUFunction) (OPGP_CARD_CONTEXT, OPGP_CARD_INFO, PBYTE, DWORD, PBYTE, PDWORD);
-	BYTE apduCommand[APDU_COMMAND_LEN] = {0};
-	DWORD apduCommandLength = APDU_COMMAND_LEN;
+	PBYTE apduCommand = NULL;
+	DWORD apduCommandLength = capduLength + 128;
 	DWORD errorCode;
 	int i=0;
 
@@ -306,12 +336,17 @@ OPGP_ERROR_STATUS OPGP_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO c
 	}
 
 	// wrap command
+	apduCommand = (PBYTE)malloc(apduCommandLength);
+	if (apduCommand == NULL) {
+		OPGP_ERROR_CREATE_ERROR(errorStatus, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+		goto end;
+	}
 	errorStatus = wrap_command(capdu, capduLength, apduCommand, &apduCommandLength, secInfo);
 	if (OPGP_ERROR_CHECK(errorStatus)) {
 		goto end;
 	}
 
-	capdu[0] |= cardInfo.logicalChannel;
+	apduCommand[0] |= cardInfo.logicalChannel;
 
 	if (traceEnable) {
 		_ftprintf(traceFile, _T("Wrapped command --> "));
@@ -358,12 +393,20 @@ OPGP_ERROR_STATUS OPGP_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO c
 	}
 
 end:
+	if (apduCommand) {
+		free(apduCommand);
+	}
 	OPGP_LOG_END(_T("OPGP_send_APDU"), errorStatus);
 	return errorStatus;
 }
 
 OPGP_ERROR_STATUS OPGP_send_chained_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
 		PBYTE capdus[], DWORD capduLengths[], DWORD numCapdus, PBYTE rapdu, PDWORD rapduLength) {
+	return OPGP_send_chained_APDU_extended(cardContext, cardInfo, secInfo, capdus, capduLengths, numCapdus, rapdu, rapduLength, 0);
+}
+
+OPGP_ERROR_STATUS OPGP_send_chained_APDU_extended(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, GP211_SECURITY_INFO *secInfo,
+		PBYTE capdus[], DWORD capduLengths[], DWORD numCapdus, PBYTE rapdu, PDWORD rapduLength, BOOL allowExtendedApdu) {
 	OPGP_ERROR_STATUS status;
 	OPGP_ERROR_STATUS(*plugin_sendAPDUFunction) (OPGP_CARD_CONTEXT, OPGP_CARD_INFO, PBYTE, DWORD, PBYTE, PDWORD);
 	DWORD i;
@@ -484,6 +527,45 @@ OPGP_ERROR_STATUS OPGP_send_chained_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CAR
 		// Overwrite CLA in output with wrapped CLA incl. security/channel bits
 	}
 
+	if (allowExtendedApdu && cardInfo.extendedAPDUSupported && wrappedLc > 255) {
+		DWORD tmpRespLen = *rapduLength;
+		wrapped[0] |= cardInfo.logicalChannel;
+
+		if (traceEnable) {
+			_ftprintf(traceFile, _T("Extended command --> "));
+			for (i = 0; i < wrappedLen; i++) {
+				_ftprintf(traceFile, _T("%02X"), wrapped[i] & 0x00FF);
+			}
+			_ftprintf(traceFile, _T("\n"));
+		}
+
+		status = (*plugin_sendAPDUFunction)(cardContext, cardInfo, wrapped, wrappedLen, rapdu, &tmpRespLen);
+
+		if (traceEnable) {
+			_ftprintf(traceFile, _T("Extended response <-- "));
+			for (i = 0; i < tmpRespLen; i++) {
+				_ftprintf(traceFile, _T("%02X"), rapdu[i] & 0x00FF);
+			}
+			_ftprintf(traceFile, _T("\n"));
+		}
+
+		if (OPGP_ERROR_CHECK(status)) { goto end; }
+		errorCode = status.errorCode;
+		*rapduLength = tmpRespLen;
+		status = unwrap_command(concat, concatLen, rapdu, tmpRespLen, rapdu, rapduLength, secInfo);
+		if (OPGP_ERROR_CHECK(status)) { goto end; }
+
+		status.errorCode = errorCode;
+		if (traceEnable) {
+			_ftprintf(traceFile, _T("Unwrapped response <-- "));
+			for (i = 0; i < *rapduLength; i++) {
+				_ftprintf(traceFile, _T("%02X"), rapdu[i] & 0x00FF);
+			}
+			_ftprintf(traceFile, _T("\n"));
+		}
+		goto end;
+	}
+
 	// Now split the wrapped APDU into "short" chunks and send via plugin
 	{
 		DWORD remaining = wrappedLc;
@@ -541,7 +623,7 @@ OPGP_ERROR_STATUS OPGP_send_chained_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CAR
 				*rapduLength = tmpRespLen;
 				goto end;
 			}
-			// For intermediate chunks, ignore response. For last, store result in caller's buffer
+			// For intermediate chunks, ignore response. For last, store the result in caller's buffer
 			if (isLast) {
 				errorCode = status.errorCode;
 

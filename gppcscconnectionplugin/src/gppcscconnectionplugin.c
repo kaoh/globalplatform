@@ -36,6 +36,22 @@
 #include <string.h>
 #include "util.h"
 
+#ifndef SCARD_CTL_CODE
+#define SCARD_CTL_CODE(code) (0x42000000 + (code))
+#endif
+
+#ifndef CM_IOCTL_GET_FEATURE_REQUEST
+#define CM_IOCTL_GET_FEATURE_REQUEST SCARD_CTL_CODE(3400)
+#endif
+
+#ifndef FEATURE_GET_TLV_PROPERTIES
+#define FEATURE_GET_TLV_PROPERTIES 0x12
+#endif
+
+#ifndef PCSCv2_PART10_PROPERTY_dwMaxAPDUDataSize
+#define PCSCv2_PART10_PROPERTY_dwMaxAPDUDataSize 0x0A
+#endif
+
 
 #define CHECK_CARD_CONTEXT_INITIALIZATION(cardContext, status)	if (cardContext.librarySpecific == NULL) { OPGP_ERROR_CREATE_ERROR(status, OPGP_PL_ERROR_NO_CARD_CONTEXT_INITIALIZED, OPGP_PL_stringify_error(OPGP_PL_ERROR_NO_CARD_CONTEXT_INITIALIZED)); goto end;}
 
@@ -74,6 +90,26 @@
 * @param pCardInfo The pointer to a OPGP_CARD_INFO struct.
 */
 #define GET_PCSC_CARD_INFO_SPECIFIC(cardInfo) ((PCSC_CARD_INFO_SPECIFIC *)(cardInfo.librarySpecific))
+
+static DWORD read_uint32_be(const BYTE *data) {
+	return ((DWORD)data[0] << 24) | ((DWORD)data[1] << 16) | ((DWORD)data[2] << 8) | data[3];
+}
+
+static DWORD read_uint32_le(const BYTE *data) {
+	return ((DWORD)data[3] << 24) | ((DWORD)data[2] << 16) | ((DWORD)data[1] << 8) | data[0];
+}
+
+static DWORD read_pcsc_tlv_property_uint32(const BYTE *data) {
+	DWORD value = read_uint32_be(data);
+	if (value > 0 && value <= 65536) {
+		return value;
+	}
+	value = read_uint32_le(data);
+	if (value > 0 && value <= 65536) {
+		return value;
+	}
+	return 0;
+}
 
 /**
 * Memory is allocated in this method for the card context. It must be freed with a call to #OPGP_PL_release_context.
@@ -390,6 +426,98 @@ OPGP_ERROR_STATUS OPGP_PL_card_disconnect(OPGP_CARD_CONTEXT cardContext, OPGP_CA
 	cardInfo->ATRLength = 0;
 end:
 	OPGP_LOG_END(_T("OPGP_PL_card_disconnect"), status);
+	return status;
+}
+
+/**
+* \param cardContext [in] The valid OPGP_CARDCONTEXT returned by establish_context()
+* \param cardInfo [in] The OPGP_CARD_INFO structure returned by card_connect().
+* \param supported [out] TRUE if the reader/card connection supports extended APDUs.
+* \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs.
+*/
+OPGP_ERROR_STATUS OPGP_PL_supports_extended_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo, BOOL *supported) {
+	OPGP_ERROR_STATUS status;
+	LONG result = SCARD_S_SUCCESS;
+	BYTE featureBuffer[256];
+	DWORD featureBufferLength = sizeof(featureBuffer);
+	DWORD propertiesControlCode = 0;
+	BYTE propertiesBuffer[256];
+	DWORD propertiesBufferLength = sizeof(propertiesBuffer);
+	DWORD offset;
+
+	memset(&status, 0, sizeof(OPGP_ERROR_STATUS));
+	OPGP_LOG_START(_T("OPGP_PL_supports_extended_APDU"));
+	if (supported == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, EINVAL, OPGP_stringify_error(EINVAL));
+		goto end;
+	}
+	*supported = 0;
+	CHECK_CARD_CONTEXT_INITIALIZATION(cardContext, status)
+	CHECK_CARD_INFO_INITIALIZATION(cardInfo, status)
+
+	if (GET_PCSC_CARD_INFO_SPECIFIC(cardInfo)->protocol == SCARD_PROTOCOL_T0) {
+		OPGP_ERROR_CREATE_NO_ERROR(status);
+		goto end;
+	}
+
+	result = SCardControl(GET_PCSC_CARD_INFO_SPECIFIC(cardInfo)->cardHandle,
+			CM_IOCTL_GET_FEATURE_REQUEST,
+			NULL,
+			0,
+			featureBuffer,
+			featureBufferLength,
+			&featureBufferLength);
+	if (result != SCARD_S_SUCCESS) {
+		OPGP_ERROR_CREATE_NO_ERROR(status);
+		goto end;
+	}
+
+	for (offset = 0; offset + 2 <= featureBufferLength;) {
+		BYTE tag = featureBuffer[offset];
+		BYTE length = featureBuffer[offset + 1];
+		if (offset + 2 + length > featureBufferLength) {
+			break;
+		}
+		if (tag == FEATURE_GET_TLV_PROPERTIES && length == 4) {
+			propertiesControlCode = read_uint32_be(featureBuffer + offset + 2);
+			break;
+		}
+		offset += 2 + length;
+	}
+	if (propertiesControlCode == 0) {
+		OPGP_ERROR_CREATE_NO_ERROR(status);
+		goto end;
+	}
+
+	result = SCardControl(GET_PCSC_CARD_INFO_SPECIFIC(cardInfo)->cardHandle,
+			propertiesControlCode,
+			NULL,
+			0,
+			propertiesBuffer,
+			propertiesBufferLength,
+			&propertiesBufferLength);
+	if (result != SCARD_S_SUCCESS) {
+		OPGP_ERROR_CREATE_NO_ERROR(status);
+		goto end;
+	}
+
+	for (offset = 0; offset + 2 <= propertiesBufferLength;) {
+		BYTE tag = propertiesBuffer[offset];
+		BYTE length = propertiesBuffer[offset + 1];
+		if (offset + 2 + length > propertiesBufferLength) {
+			break;
+		}
+		if (tag == PCSCv2_PART10_PROPERTY_dwMaxAPDUDataSize && length == 4) {
+			DWORD maxApduDataSize = read_pcsc_tlv_property_uint32(propertiesBuffer + offset + 2);
+			*supported = maxApduDataSize > 255;
+			break;
+		}
+		offset += 2 + length;
+	}
+
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+end:
+	OPGP_LOG_END(_T("OPGP_PL_supports_extended_APDU"), status);
 	return status;
 }
 

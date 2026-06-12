@@ -10,13 +10,18 @@ Outputs (GlobalPlatform naming convention):
   PK.CA-KLOC.ECDSA.pem
   CERT.CA-KLOC.ECDSA.pem
   CERT.CA-KLOC.ECDSA.der
+  SK.KA-KLOC.ECDSA.pem
+  PK.KA-KLOC.ECDSA.pem
+  CERT.KA-KLOC.ECDSA.pem
+  CERT.KA-KLOC.ECDSA.der
   SK.OCE.ECKA.pem
   PK.OCE.ECKA.pem
   CERT.OCE.ECKA.pem
   CERT.OCE.ECKA.der
-  CERT.OCE.ECKA.CHAIN.pem      (CERT.CA-KLOC.ECDSA + CERT.OCE.ECKA)
-  CERT.OCE.ECKA.CHAIN.der      (concatenated DER: CA then OCE)
+  CERT.OCE.ECKA.CHAIN.pem      (CERT.KA-KLOC.ECDSA + CERT.OCE.ECKA)
+  CERT.OCE.ECKA.CHAIN.der      (concatenated DER: KA-KLOC then OCE)
   CA-KLOC.ID.hex               (CA Subject Key Identifier)
+  KA-KLOC.ID.hex               (KA Subject Key Identifier)
 
 Usage:
   scp11-oce-ca-openssl.sh [options]
@@ -31,6 +36,11 @@ Options:
   --ou <value>             CA subject OU (default: GP Trust Network)
   --org <value>            CA subject O  (default: GP)
   --country <value>        CA subject C  (default: UK)
+
+  --ka-cn <value>          KA-KLOC subject CN (default: GP KA-KLOC)
+  --ka-ou <value>          KA-KLOC subject OU (default: same as CA OU)
+  --ka-org <value>         KA-KLOC subject O  (default: same as CA O)
+  --ka-country <value>     KA-KLOC subject C  (default: same as CA C)
 
   --oce-cn <value>         OCE subject CN (default: GP OCE)
   --oce-ou <value>         OCE subject OU (default: same as CA OU)
@@ -61,6 +71,11 @@ CA_CN="GP CA"
 CA_OU="GP Trust Network"
 CA_O="GP"
 CA_C="UK"
+
+KA_CN="GP KA-KLOC"
+KA_OU=""
+KA_O=""
+KA_C=""
 
 OCE_CN="GP OCE"
 OCE_OU=""
@@ -108,6 +123,26 @@ while [[ $# -gt 0 ]]; do
             CA_C="$2"
             shift 2
             ;;
+        --ka-cn)
+            require_arg "$@"
+            KA_CN="$2"
+            shift 2
+            ;;
+        --ka-ou)
+            require_arg "$@"
+            KA_OU="$2"
+            shift 2
+            ;;
+        --ka-org)
+            require_arg "$@"
+            KA_O="$2"
+            shift 2
+            ;;
+        --ka-country)
+            require_arg "$@"
+            KA_C="$2"
+            shift 2
+            ;;
         --oce-cn)
             require_arg "$@"
             OCE_CN="$2"
@@ -150,6 +185,9 @@ if [[ ! "$DAYS" =~ ^[0-9]+$ ]] || [[ "$DAYS" -lt 1 ]]; then
     exit 2
 fi
 
+if [[ -z "$KA_OU" ]]; then KA_OU="$CA_OU"; fi
+if [[ -z "$KA_O" ]]; then KA_O="$CA_O"; fi
+if [[ -z "$KA_C" ]]; then KA_C="$CA_C"; fi
 if [[ -z "$OCE_OU" ]]; then OCE_OU="$CA_OU"; fi
 if [[ -z "$OCE_O" ]]; then OCE_O="$CA_O"; fi
 if [[ -z "$OCE_C" ]]; then OCE_C="$CA_C"; fi
@@ -172,6 +210,7 @@ cleanup() {
 trap cleanup EXIT
 
 CA_SUBJ="/CN=${CA_CN}/OU=${CA_OU}/O=${CA_O}/C=${CA_C}"
+KA_SUBJ="/CN=${KA_CN}/OU=${KA_OU}/O=${KA_O}/C=${KA_C}"
 OCE_SUBJ="/CN=${OCE_CN}/OU=${OCE_OU}/O=${OCE_O}/C=${OCE_C}"
 
 CA_KEY_PEM="${OUT_DIR}/SK.CA-KLOC.ECDSA.pem"
@@ -181,6 +220,13 @@ CA_CERT_DER="${OUT_DIR}/CERT.CA-KLOC.ECDSA.der"
 CA_SERIAL="${OUT_DIR}/CERT.CA-KLOC.ECDSA.srl"
 CA_ID_HEX_FILE="${OUT_DIR}/CA-KLOC.ID.hex"
 
+KA_KEY_PEM="${OUT_DIR}/SK.KA-KLOC.ECDSA.pem"
+KA_PUB_PEM="${OUT_DIR}/PK.KA-KLOC.ECDSA.pem"
+KA_CERT_PEM="${OUT_DIR}/CERT.KA-KLOC.ECDSA.pem"
+KA_CERT_DER="${OUT_DIR}/CERT.KA-KLOC.ECDSA.der"
+KA_SERIAL="${OUT_DIR}/CERT.KA-KLOC.ECDSA.srl"
+KA_ID_HEX_FILE="${OUT_DIR}/KA-KLOC.ID.hex"
+
 OCE_KEY_PEM="${OUT_DIR}/SK.OCE.ECKA.pem"
 OCE_PUB_PEM="${OUT_DIR}/PK.OCE.ECKA.pem"
 OCE_CERT_PEM="${OUT_DIR}/CERT.OCE.ECKA.pem"
@@ -189,17 +235,29 @@ OCE_CHAIN_PEM="${OUT_DIR}/CERT.OCE.ECKA.CHAIN.pem"
 OCE_CHAIN_DER="${OUT_DIR}/CERT.OCE.ECKA.CHAIN.der"
 
 cat >"${TMP_DIR}/ca.ext.cnf" <<'EOF'
-basicConstraints=critical,CA:TRUE,pathlen:0
-keyUsage=critical,digitalSignature,keyCertSign,cRLSign
+# GP SCP11 Amendment F Table 6-5: CERT.CA-KLOC.ECDSA.
+basicConstraints=critical,CA:TRUE,pathlen:1
+keyUsage=critical,keyCertSign,cRLSign
+certificatePolicies=critical,1.2.840.114283.100.0.1.2.1.20
 subjectKeyIdentifier=hash
 authorityKeyIdentifier=keyid:always
 EOF
 
-cat >"${TMP_DIR}/oce.ext.cnf" <<'EOF'
-basicConstraints=critical,CA:FALSE
-keyUsage=critical,keyAgreement
-subjectKeyIdentifier=hash
+cat >"${TMP_DIR}/ka.ext.cnf" <<'EOF'
+# GP SCP11 Amendment F Table 6-6: CERT.KA-KLOC.ECDSA.
+basicConstraints=critical,CA:TRUE,pathlen:0
+keyUsage=critical,keyCertSign
 authorityKeyIdentifier=keyid,issuer
+certificatePolicies=critical,1.2.840.114283.100.0.1.2.1.40,1.2.840.114283.100.0.10.2.1.40,1.2.840.114283.100.0.10.2.1.0
+subjectKeyIdentifier=hash
+EOF
+
+cat >"${TMP_DIR}/oce.ext.cnf" <<'EOF'
+# GP SCP11 Amendment F Table 6-7: CERT.OCE.ECKA.
+keyUsage=critical,keyAgreement
+authorityKeyIdentifier=keyid,issuer
+certificatePolicies=critical,1.2.840.114283.100.0.1.2.1.0,1.2.840.114283.100.0.10.2.1.0
+subjectKeyIdentifier=hash
 EOF
 
 openssl genpkey -algorithm EC -pkeyopt "ec_paramgen_curve:${CURVE}" -out "$CA_KEY_PEM"
@@ -214,23 +272,38 @@ openssl x509 -req -sha256 -days "$DAYS" \
 
 openssl x509 -in "$CA_CERT_PEM" -outform DER -out "$CA_CERT_DER"
 
+openssl genpkey -algorithm EC -pkeyopt "ec_paramgen_curve:${CURVE}" -out "$KA_KEY_PEM"
+openssl pkey -in "$KA_KEY_PEM" -pubout -out "$KA_PUB_PEM"
+
+openssl req -new -sha256 -key "$KA_KEY_PEM" -subj "$KA_SUBJ" -out "${TMP_DIR}/ka.csr.pem"
+openssl x509 -req -sha256 -days "$DAYS" \
+    -in "${TMP_DIR}/ka.csr.pem" \
+    -CA "$CA_CERT_PEM" \
+    -CAkey "$CA_KEY_PEM" \
+    -CAcreateserial \
+    -CAserial "$CA_SERIAL" \
+    -extfile "${TMP_DIR}/ka.ext.cnf" \
+    -out "$KA_CERT_PEM"
+
+openssl x509 -in "$KA_CERT_PEM" -outform DER -out "$KA_CERT_DER"
+
 openssl genpkey -algorithm EC -pkeyopt "ec_paramgen_curve:${CURVE}" -out "$OCE_KEY_PEM"
 openssl pkey -in "$OCE_KEY_PEM" -pubout -out "$OCE_PUB_PEM"
 
 openssl req -new -sha256 -key "$OCE_KEY_PEM" -subj "$OCE_SUBJ" -out "${TMP_DIR}/oce.csr.pem"
 openssl x509 -req -sha256 -days "$DAYS" \
     -in "${TMP_DIR}/oce.csr.pem" \
-    -CA "$CA_CERT_PEM" \
-    -CAkey "$CA_KEY_PEM" \
+    -CA "$KA_CERT_PEM" \
+    -CAkey "$KA_KEY_PEM" \
     -CAcreateserial \
-    -CAserial "$CA_SERIAL" \
+    -CAserial "$KA_SERIAL" \
     -extfile "${TMP_DIR}/oce.ext.cnf" \
     -out "$OCE_CERT_PEM"
 
 openssl x509 -in "$OCE_CERT_PEM" -outform DER -out "$OCE_CERT_DER"
 
-cat "$CA_CERT_PEM" "$OCE_CERT_PEM" > "$OCE_CHAIN_PEM"
-cat "$CA_CERT_DER" "$OCE_CERT_DER" > "$OCE_CHAIN_DER"
+cat "$KA_CERT_PEM" "$OCE_CERT_PEM" > "$OCE_CHAIN_PEM"
+cat "$KA_CERT_DER" "$OCE_CERT_DER" > "$OCE_CHAIN_DER"
 
 CA_ID_HEX="$(
     openssl x509 -in "$CA_CERT_PEM" -noout -ext subjectKeyIdentifier \
@@ -244,5 +317,18 @@ if [[ -z "$CA_ID_HEX" ]]; then
 fi
 printf '%s\n' "$CA_ID_HEX" > "$CA_ID_HEX_FILE"
 
+KA_ID_HEX="$(
+    openssl x509 -in "$KA_CERT_PEM" -noout -ext subjectKeyIdentifier \
+        | awk '
+            /Subject Key Identifier/ { getline; gsub(/[^0-9A-Fa-f]/, "", $0); print toupper($0); exit }
+        '
+)"
+if [[ -z "$KA_ID_HEX" ]]; then
+    echo "Failed to extract KA Subject Key Identifier from $KA_CERT_PEM" >&2
+    exit 1
+fi
+printf '%s\n' "$KA_ID_HEX" > "$KA_ID_HEX_FILE"
+
 echo "Generated SCP11 OCE + CA material in: $OUT_DIR"
 echo "CA-KLOC Identifier (Subject Key Identifier): $CA_ID_HEX"
+echo "KA-KLOC Identifier (Subject Key Identifier): $KA_ID_HEX"

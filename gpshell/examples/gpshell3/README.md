@@ -173,10 +173,12 @@ Purpose:
 
 - Generates local SCP11 key and certificate material using OpenSSL.
 - Creates a CA-KLOC ECDSA key pair and self-signed CA certificate.
-- Creates an OCE ECKA key pair and an OCE certificate signed by the CA-KLOC key.
+- Creates an intermediate KA-KLOC ECDSA key pair and certificate signed by the CA-KLOC key.
+- Creates an OCE ECKA key pair and an OCE certificate signed by the KA-KLOC key.
 - Exports PEM and DER certificates.
-- Builds OCE certificate chains in PEM and concatenated DER form.
-- Computes `CA-KLOC.ID.hex` from the CA certificate Subject Key Identifier, matching the OCE certificate Authority Key Identifier.
+- Builds OCE certificate chains in PEM and concatenated DER form (`CERT.KA-KLOC.ECDSA` followed by `CERT.OCE.ECKA`).
+- Computes `CA-KLOC.ID.hex` from the CA certificate Subject Key Identifier, matching the KA-KLOC certificate Authority Key Identifier.
+- Adds the standard SCP11 certificate-policy OIDs plus additional Yubico-compatible policy OIDs observed as required for YubiKey 5 NFC SCP11a certificate validation.
 
 Inputs and defaults:
 
@@ -213,6 +215,12 @@ Outcome:
   CERT.CA-KLOC.ECDSA.der
   CERT.CA-KLOC.ECDSA.srl
   CA-KLOC.ID.hex
+  SK.KA-KLOC.ECDSA.pem
+  PK.KA-KLOC.ECDSA.pem
+  CERT.KA-KLOC.ECDSA.pem
+  CERT.KA-KLOC.ECDSA.der
+  CERT.KA-KLOC.ECDSA.srl
+  KA-KLOC.ID.hex
   SK.OCE.ECKA.pem
   PK.OCE.ECKA.pem
   CERT.OCE.ECKA.pem
