@@ -144,10 +144,14 @@ static void print_usage(const char *prog) {
         "  --scp <protocol>           SCP protocol as digit (e.g., 1, 2, 3, 11; 0x11 also accepted)\n"
         "  --scp-impl <impl>          SCP implementation as hex (e.g., 15, 55)\n"
         "  --scp11-cert <file>        SCP11 OCE certificate chain file for PERFORM SECURITY OPERATION (DER TLV chain/BF21)\n"
+        "  --scp11-sd-public-key <hex|pem>\n"
+        "                            SCP11 SD ECKA public key as PEM file, raw uncompressed EC point, or B0 TLV\n"
+        "  --scp11-session-key-length <n>\n"
+        "                            SCP11 AES session key length: 16, 24 or 32 bytes (default: 16 / 0x10)\n"
         "  --kv <n>                   Key set version for mutual auth (default: 0)\n"
         "  --idx <n>                  Key index within key set for mutual auth (default: 0)\n"
         "  --derive <none|visa2|emv>  Key derivation (default: none)\n"
-        "  --key <hex>                Base key for mutual auth (also used as ENC/MAC/DEK if those are omitted; default: 40..4F)\n"
+        "  --key <hex>                Base key for mutual auth; for SCP11, raw SK.OCE.ECKA private key (default: 40..4F)\n"
         "  --enc <hex>                ENC key for mutual auth (default: 40..4F)\n"
         "  --mac <hex>                MAC key for mutual auth (default: 40..4F)\n"
         "  --dek <hex>                DEK key for mutual auth (default: 40..4F)\n"
@@ -214,13 +218,13 @@ static void print_usage(const char *prog) {
         "      --token <hex>: Delete token for delegated management (optional).\n\n",
         stderr);
     fputs(
-        "  put-key [--type <3des|aes|rsa|ecc>] --kv <ver> --idx <idx> --new-kv <ver> \\\n"
-        "          (--key <hex>|--pem <file>[:pass])\n"
+        "  put-key [--type <3des|aes|rsa|ecc|ecc-private>] --kv <ver> --idx <idx> --new-kv <ver> \\\n"
+          "          (--key <hex>|--pem <file>[:pass])\n"
         "      Put (add/replace) a key in a key set.\n"
         "      --kv <ver>: Key set version number to put key into (mandatory).\n"
         "      --idx <idx>: Key index within key set (mandatory).\n"
         "      --new-kv <ver>: New key set version when replacing keys (mandatory).\n"
-        "      --type aes|3des uses --key (hex). --type rsa|ecc uses --pem (optionally :pass).\n"
+        "      --type aes|3des|ecc-private uses --key (hex). --type rsa|ecc uses --pem (optionally :pass).\n"
         "      --ecc-curve reference|explicit: ECC curve parameter encoding (default: explicit).\n"
         "  put-auth [--type <aes|3des>] [--derive <none|emv|visa2>] --kv <ver> [--new-kv <ver>] \\\n"
         "           [--key <hex> | --enc <hex> --mac <hex> --dek <hex>]\n"
@@ -283,7 +287,7 @@ static void print_usage(const char *prog) {
         "      Read SCP11 authentication data summary: ECKA certificate stores and supported CA identifiers.\n"
         "  scp11-store-cert --kv <ver> --idx <idx> <certificate-store-file>\n"
         "      Store/replace SCP11 certificate store (BF21 payload) for SK.SD.ECKA referenced by KID/KVN.\n"
-        "      Input file may be DER or PEM certificate chain accepted by GP211_store_data_ecka_certificate.\n"
+        "      Input file may contain X.509 certificates in DER or PEM form, or GP certificates.\n"
         "  scp11-store-ca-id --ca-id <hex> --kv <ver> --idx <idx>\n"
         "      Store/replace CA-KLOC Identifier to PK.CA-KLOC.ECDSA mapping (section 7.10).\n"
         "  store-iin <IIN>\n"
@@ -481,6 +485,20 @@ static int read_binary_file_into_buffer(const char *path, BYTE *out, size_t *out
     fclose(f);
     *outLen = readLen;
     return 0;
+}
+
+static int path_is_readable_file(const char *path) {
+    FILE *f;
+
+    if (path == NULL || path[0] == '\0') {
+        return 0;
+    }
+    f = fopen(path, "rb");
+    if (f == NULL) {
+        return 0;
+    }
+    fclose(f);
+    return 1;
 }
 
 static void print_hex(const unsigned char *buf, size_t len) {
@@ -1729,12 +1747,19 @@ static int connect_pcsc(OPGP_CARD_CONTEXT *pctx, OPGP_CARD_INFO *pinfo, const ch
 static int mutual_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec,
                        BYTE keyset_ver, BYTE key_index, int derivation, const char *sec_level_opt, int verbose,
                        const BYTE *baseKey_in, const BYTE *enc_in, const BYTE *mac_in, const BYTE *dek_in, BYTE keyLength_in,
-                       const char *scp_protocol, const char *scp_impl, const char *scp11_cert_file) {
+                       const char *scp_protocol, const char *scp_impl, const char *scp11_cert_file,
+                       const char *scp11_sd_public_key, BYTE scp11SessionKeyLength) {
     BYTE scp = 0, scpImpl = 0;
     BYTE scp11CertificateData[16384];
     size_t scp11CertificateDataLength = sizeof(scp11CertificateData);
+    BYTE scp11SdPublicKey[128];
+    size_t scp11SdPublicKeyLength = sizeof(scp11SdPublicKey);
     PBYTE certOceEcka = NULL;
     DWORD certOceEckaLength = 0;
+    PBYTE sdPublicKey = NULL;
+    DWORD sdPublicKeyLength = 0;
+    TCHAR sdPublicKeyFileName[MAX_PATH_BUF];
+    OPGP_STRING sdPublicKeyFileNamePtr = NULL;
 
     // Parse SCP protocol if provided
     if (scp_protocol) {
@@ -1780,18 +1805,46 @@ static int mutual_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         certOceEckaLength = (DWORD)scp11CertificateDataLength;
     }
 
+    if (scp11_sd_public_key && scp11_sd_public_key[0] != '\0') {
+        if (scp != GP211_SCP11) {
+            fprintf(stderr, "--scp11-sd-public-key requires SCP11 (use --scp 11 or card SCP11 auto-detection)\n");
+            return -1;
+        }
+        if (path_is_readable_file(scp11_sd_public_key)) {
+            if (to_opgp_string(scp11_sd_public_key, sdPublicKeyFileName, MAX_PATH_BUF) != 0) {
+                fprintf(stderr, "Invalid --scp11-sd-public-key path\n");
+                return -1;
+            }
+            sdPublicKeyFileNamePtr = sdPublicKeyFileName;
+        } else {
+            if (hex_to_bytes(scp11_sd_public_key, scp11SdPublicKey, &scp11SdPublicKeyLength) != 0) {
+                fprintf(stderr, "Invalid --scp11-sd-public-key (expected PEM file path or hex-encoded raw/B0-wrapped public key)\n");
+                return -1;
+            }
+            sdPublicKey = scp11SdPublicKey;
+            sdPublicKeyLength = (DWORD)scp11SdPublicKeyLength;
+        }
+    }
+
     if (scp == GP211_SCP11 && baseKey_in == NULL) {
         fprintf(stderr, "SCP11 requires --key with SK.OCE.ECKA as raw private key hex\n");
         return -1;
     }
 
     BYTE S_ENC[32]={0}, S_MAC[32]={0}, DEK[32]={0}, baseKey[32]={0};
-    BYTE keyLength = keyLength_in > 0 ? keyLength_in : 16;
+    BYTE keyLength = (scp == GP211_SCP11)
+            ? (scp11SessionKeyLength > 0 ? scp11SessionKeyLength : 16)
+            : (keyLength_in > 0 ? keyLength_in : 16);
     int hasBaseOnly = (baseKey_in != NULL && enc_in == NULL && mac_in == NULL && dek_in == NULL);
 
     // Use provided keys or default to VISA default key
     if (baseKey_in) {
-        memcpy(baseKey, baseKey_in, keyLength);
+        BYTE baseKeyLength = (scp == GP211_SCP11) ? keyLength_in : keyLength;
+        if (baseKeyLength == 0 || baseKeyLength > sizeof(baseKey)) {
+            fprintf(stderr, "Invalid --key length\n");
+            return -1;
+        }
+        memcpy(baseKey, baseKey_in, baseKeyLength);
     } else {
         memcpy(baseKey, OPGP_VISA_DEFAULT_KEY, 16);
     }
@@ -1827,9 +1880,12 @@ static int mutual_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     BYTE deriv = OPGP_DERIVATION_METHOD_NONE;
     if (derivation == 1) deriv = OPGP_DERIVATION_METHOD_VISA2;
     else if (derivation == 2) deriv = OPGP_DERIVATION_METHOD_EMV_CPS11;
-    OPGP_ERROR_STATUS s2 = GP211_mutual_authentication(ctx, info, baseKey, S_ENC, S_MAC, DEK, keyLength,
-                                                       keyset_ver, key_index, scp, scpImpl, secLevel, deriv,
-                                                       certOceEcka, certOceEckaLength, sec);
+    OPGP_ERROR_STATUS s2;
+    s2 = GP211_mutual_authentication(ctx, info, baseKey, S_ENC, S_MAC, DEK, keyLength,
+                                     keyset_ver, key_index, scp, scpImpl, secLevel, deriv,
+                                     certOceEcka, certOceEckaLength,
+                                     sdPublicKey, sdPublicKeyLength, sdPublicKeyFileNamePtr,
+                                     sec);
     if (!status_ok(s2, true)) {
         return -1;
     }
@@ -3373,6 +3429,18 @@ static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         }
         return 0;
     }
+    if (strcmp(type, "ecc-private")==0 || strcmp(type, "ecc-priv")==0) {
+        if (!hexkey) { fprintf(stderr, "put-key ecc-private: --key <hex> required\n"); return -1; }
+        unsigned char k[32]; size_t klen=sizeof(k);
+        if (hex_to_bytes(hexkey, k, &klen)!=0 || klen!=32) {
+            fprintf(stderr, "put-key ecc-private: key must be 32 bytes hex for P-256\n");
+            return -1;
+        }
+        if (!status_ok(GP211_put_ecc_private_key_with_curve_parameter_reference(ctx, info, sec, setVer, idx, newSetVer, k, (DWORD)klen), true)) {
+            return -1;
+        }
+        return 0;
+    }
     if (strcmp(type, "aes")==0) {
         if (!hexkey) { fprintf(stderr, "put-key aes: --key <hex> required\n"); return -1; }
         unsigned char k[32]; size_t klen=sizeof(k);
@@ -3397,7 +3465,7 @@ static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         }
         return 0;
     }
-    fprintf(stderr, "put-key: unsupported --type '%s' (use 3des|aes|rsa|ecc). For Secure Channel keys use put-sc-keys.\n", type);
+    fprintf(stderr, "put-key: unsupported --type '%s' (use 3des|aes|rsa|ecc|ecc-private). For Secure Channel keys use put-sc-keys.\n", type);
     return -1;
 }
 
@@ -5548,7 +5616,8 @@ static int cmd_store_iin_cin(const char *cmd, int argc, char **argv,
                              BYTE keyset_ver, BYTE key_index, int derivation, const char *sec_level_opt,
                              const BYTE *baseKey, const BYTE *enc_key, const BYTE *mac_key, const BYTE *dek_key,
                              BYTE keyLength, const char *scp_protocol, const char *scp_impl,
-                             const char *scp11_cert_file) {
+                             const char *scp11_cert_file, const char *scp11_sd_public_key,
+                             BYTE scp11SessionKeyLength) {
     if (strcmp(cmd, "store-iin") != 0 && strcmp(cmd, "store-cin") != 0) {
         return -1;
     }
@@ -5575,7 +5644,8 @@ static int cmd_store_iin_cin(const char *cmd, int argc, char **argv,
     OPGP_CARD_CONTEXT ctx; OPGP_CARD_INFO info; GP211_SECURITY_INFO sec;
     if (connect_pcsc(&ctx, &info, reader, protocol, trace, verbose) != 0) return 1;
     if (mutual_auth(ctx, info, &sec, keyset_ver, key_index, derivation, sec_level_opt, verbose,
-                    baseKey, enc_key, mac_key, dek_key, keyLength, scp_protocol, scp_impl, scp11_cert_file) != 0) {
+                    baseKey, enc_key, mac_key, dek_key, keyLength, scp_protocol, scp_impl, scp11_cert_file,
+                    scp11_sd_public_key, scp11SessionKeyLength) != 0) {
         return 1;
     }
 
@@ -5595,8 +5665,10 @@ int main(int argc, char **argv) {
     int verbose=0, trace=0; BYTE keyset_ver=0, key_index=0; int derivation=0;
     BYTE baseKey[32]={0}, enc_key[32]={0}, mac_key[32]={0}, dek_key[32]={0};
     BYTE keyLength=0;
+    BYTE scp11SessionKeyLength=16;
     const char *scp_protocol=NULL, *scp_impl=NULL;
     const char *scp11_cert_file=NULL;
+    const char *scp11_sd_public_key=NULL;
     int i=1; for (; i<argc; ++i) {
         if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) { print_usage(prog); return 0; }
 
@@ -5611,6 +5683,15 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--scp") && i+1<argc) { scp_protocol=argv[++i]; }
         else if (!strcmp(argv[i], "--scp-impl") && i+1<argc) { scp_impl=argv[++i]; }
         else if (!strcmp(argv[i], "--scp11-cert") && i+1<argc) { scp11_cert_file=argv[++i]; }
+        else if (!strcmp(argv[i], "--scp11-sd-public-key") && i+1<argc) { scp11_sd_public_key=argv[++i]; }
+        else if (!strcmp(argv[i], "--scp11-session-key-length") && i+1<argc) {
+            int parsedLength = parse_int(argv[++i]);
+            if (parsedLength != 16 && parsedLength != 24 && parsedLength != 32) {
+                fprintf(stderr, "--scp11-session-key-length must be 16, 24 or 32 bytes\n");
+                return 2;
+            }
+            scp11SessionKeyLength = (BYTE)parsedLength;
+        }
         else if (!strcmp(argv[i], "--kv") && i+1<argc) { keyset_ver=(BYTE)parse_int(argv[++i]); }
         else if (!strcmp(argv[i], "--idx") && i+1<argc) { key_index=(BYTE)parse_int(argv[++i]); }
         else if (!strcmp(argv[i], "--derive") && i+1<argc) { const char *d=argv[++i]; if (!strcmp(d,"visa2")) derivation=1; else if (!strcmp(d,"emv")) derivation=2; else derivation=0; }
@@ -5692,7 +5773,8 @@ int main(int argc, char **argv) {
                                      reader, protocol, trace, verbose,
                                      keyset_ver, key_index, derivation, sec_level_opt,
                                      baseKey, enc_key, mac_key, dek_key, keyLength,
-                                     scp_protocol, scp_impl, scp11_cert_file);
+                                     scp_protocol, scp_impl, scp11_cert_file, scp11_sd_public_key,
+                                     scp11SessionKeyLength);
     if (store_rc != -1) {
         return store_rc;
     }
@@ -5772,7 +5854,8 @@ int main(int argc, char **argv) {
     if (need_auth) {
         if (mutual_auth(ctx, info, &sec, keyset_ver, key_index, derivation, sec_level_opt, verbose,
                         baseKeyPtr, encKeyPtr, macKeyPtr, dekKeyPtr, keyLength,
-                        scp_protocol, scp_impl, scp11_cert_file) != 0) {
+                        scp_protocol, scp_impl, scp11_cert_file, scp11_sd_public_key,
+                        scp11SessionKeyLength) != 0) {
             fprintf(stderr, "Mutual authentication failed\n");
             cleanup_and_exit(5);
         }

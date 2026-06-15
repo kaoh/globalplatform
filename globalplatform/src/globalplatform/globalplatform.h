@@ -834,7 +834,7 @@ OPGP_ERROR_STATUS GP211_set_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
  * uses separate Secure Channel keys via \p S_ENC, \p S_MAC and \p DEK.
  *
  * For SCP11a the same parameter is the raw static OCE ECKA private key
- * (SK.OCE.ECKA) used with the card static public key from CERT.SD.ECKA during
+ * (SK.OCE.ECKA) used with the card SD ECKA public key from CERT.SD.ECKA during
  * key agreement. The SCP11a private key length is determined from the card
  * certificate key parameter reference; \p keyLength remains the requested AES
  * session key length (16, 24 or 32 bytes). \p S_ENC, \p S_MAC and \p DEK are not
@@ -855,6 +855,9 @@ OPGP_ERROR_STATUS GP211_set_status(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO
  * \param derivationMethod [in] The derivation method to use. See OPGP_DERIVATION_METHOD_VISA2.
  * \param certOceEcka [in] Optional SCP11 certificate chain data to submit before mutual authentication. The data must contain one or more 7F21 or X.509 DER certificates, optionally wrapped in BF21, and must end with CERT.OCE.ECKA.
  * \param certOceEckaLength [in] Length of \p certOceEcka.
+ * \param sdPublicKeyOverride [in] Optional SCP11 PK.SD.ECKA public key as raw uncompressed EC point or B0-wrapped point.
+ * \param sdPublicKeyOverrideLength [in] Length of \p sdPublicKeyOverride.
+ * \param sdPublicKeyFileName [in] Optional PEM file containing PK.SD.ECKA. If set, this takes precedence over \p sdPublicKeyOverride.
  * \param secInfo [out] The returned GP211_SECURITY_INFO structure.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct.
  */
@@ -866,6 +869,8 @@ OPGP_ERROR_STATUS GP211_mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPG
                            BYTE secureChannelProtocolImpl,
                            BYTE securityLevel, BYTE derivationMethod,
                            PBYTE certOceEcka, DWORD certOceEckaLength,
+                           PBYTE sdPublicKeyOverride, DWORD sdPublicKeyOverrideLength,
+                           OPGP_STRING sdPublicKeyFileName,
                            GP211_SECURITY_INFO *secInfo);
 
 //! \brief GlobalPlatform2.1.1: Inits a Secure Channel implicitly.
@@ -1024,6 +1029,12 @@ OPGP_API
 OPGP_ERROR_STATUS GP211_put_ecc_key_with_curve_parameter_reference(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
 				 GP211_SECURITY_INFO *secInfo, BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion,
 				 OPGP_STRING PEMKeyFileName, char *passPhrase);
+
+//! \brief GlobalPlatform2.3.1: replaces or adds a raw private ECC key using a curve parameter reference.
+OPGP_API
+OPGP_ERROR_STATUS GP211_put_ecc_private_key_with_curve_parameter_reference(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
+				 GP211_SECURITY_INFO *secInfo, BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion,
+				 BYTE privateKey[32], DWORD privateKeyLength);
 
 //! \brief GlobalPlatform2.3.1: replaces a single public asymmetric key in a key set or adds a new public asymmetric key.
 OPGP_API

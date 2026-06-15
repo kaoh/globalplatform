@@ -464,18 +464,31 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 					   BYTE secureChannelProtocolImpl, BYTE securityLevel,
 					   BYTE derivationMethod,
 					   PBYTE certOceEcka, DWORD certOceEckaLength,
+					   PBYTE sdPublicKeyOverride,
+					   DWORD sdPublicKeyOverrideLength,
+					   OPGP_STRING sdPublicKeyFileName,
 					   GP211_SECURITY_INFO *secInfo);
 
 static OPGP_ERROR_STATUS mutual_authentication_scp11a(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
-					   PBYTE staticOcePrivateKey,
-					   DWORD keyLength,
+						   PBYTE staticOcePrivateKey,
+						   DWORD keyLength,
 					   BYTE keySetVersion,
 					   BYTE keyIndex,
 					   BYTE scpParameters,
 					   BYTE securityLevel,
 					   PBYTE certOceEcka,
-					   DWORD certOceEckaLength,
-					   GP211_SECURITY_INFO *secInfo);
+						   DWORD certOceEckaLength,
+					   PBYTE sdPublicKeyOverride,
+						   DWORD sdPublicKeyOverrideLength,
+						   OPGP_STRING sdPublicKeyFileName,
+						   GP211_SECURITY_INFO *secInfo);
+
+static OPGP_ERROR_STATUS send_chained_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
+								  GP211_SECURITY_INFO *secInfo, BYTE *sendBuffer, DWORD offset,
+								  BYTE *data, DWORD dataLength,
+								  BYTE *recvBuffer, PDWORD recvBufferLength,
+								  BOOL invertedChaining, BOOL incrementBlockNumber,
+								  BOOL responseDataExpected, BOOL allowExtendedApdu);
 
 OPGP_NO_API
 OPGP_ERROR_STATUS get_install_data(BYTE P1, PBYTE executableLoadFileAID, DWORD executableLoadFileAIDLength, PBYTE executableModuleAID,
@@ -1282,6 +1295,68 @@ OPGP_ERROR_STATUS GP211_put_ecc_key_with_curve_parameter_reference(OPGP_CARD_CON
 	}
 	{ OPGP_ERROR_CREATE_NO_ERROR(status); goto end; }
 end:
+	return status;
+}
+
+/**
+ * Adds or replaces an ECC private key using a curve parameter reference.
+ */
+OPGP_ERROR_STATUS GP211_put_ecc_private_key_with_curve_parameter_reference(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INFO cardInfo,
+				 GP211_SECURITY_INFO *secInfo, BYTE keySetVersion, BYTE keyIndex, BYTE newKeySetVersion,
+				 BYTE privateKey[32], DWORD privateKeyLength) {
+	OPGP_ERROR_STATUS status;
+	BYTE sendBuffer[64];
+	BYTE recvBuffer[64];
+	DWORD recvBufferLength = sizeof(recvBuffer);
+	BYTE keyCheckValue[3];
+	BYTE keyDataField[128];
+	DWORD keyDataFieldLength = 0;
+	BYTE keyParameterReference = GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_P256;
+	DWORD i = 0;
+
+	OPGP_LOG_START(_T("GP211_put_ecc_private_key_with_curve_parameter_reference"));
+
+	if (privateKey == NULL || privateKeyLength != 32) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_WRONG_KEY_TYPE, OPGP_stringify_error(OPGP_ERROR_WRONG_KEY_TYPE));
+		goto end;
+	}
+
+	sendBuffer[i++] = 0x80;
+	sendBuffer[i++] = 0xD8;
+	sendBuffer[i++] = keySetVersion;
+	sendBuffer[i++] = keyIndex;
+	sendBuffer[i++] = 0x00;
+	sendBuffer[i++] = newKeySetVersion;
+
+	keyDataFieldLength = sizeof(keyDataField);
+	status = get_key_data_field(secInfo, privateKey, privateKeyLength,
+			GP211_KEY_TYPE_ECC_PRIVATE, keyDataField, &keyDataFieldLength, keyCheckValue, false);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+
+	{
+		DWORD keyParameterDataFieldLength = sizeof(keyDataField) - keyDataFieldLength;
+		status = get_key_data_field(secInfo, &keyParameterReference, sizeof(keyParameterReference),
+				GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE, keyDataField + keyDataFieldLength,
+				&keyParameterDataFieldLength, keyCheckValue, true);
+		if (OPGP_ERROR_CHECK(status)) {
+			goto end;
+		}
+		keyDataFieldLength += keyParameterDataFieldLength;
+	}
+
+	status = send_chained_data(cardContext, cardInfo, secInfo, sendBuffer, i,
+							  keyDataField, keyDataFieldLength, recvBuffer, &recvBufferLength,
+							  false, false, true, false);
+	if (OPGP_ERROR_CHECK(status)) {
+		goto end;
+	}
+
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+
+end:
+	OPGP_LOG_END(_T("GP211_put_ecc_private_key_with_curve_parameter_reference"), status);
 	return status;
 }
 
@@ -7805,6 +7880,43 @@ end:
 	return status;
 }
 
+static OPGP_ERROR_STATUS normalize_scp11_sd_public_key_override(PBYTE sdPublicKeyOverride,
+		DWORD sdPublicKeyOverrideLength, PBYTE sdStaticPublicKey, PDWORD sdStaticPublicKeyLength) {
+	OPGP_ERROR_STATUS status;
+
+	if (sdPublicKeyOverride == NULL || sdPublicKeyOverrideLength == 0
+			|| sdStaticPublicKey == NULL || sdStaticPublicKeyLength == NULL) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_WRONG_KEY_TYPE, OPGP_stringify_error(OPGP_ERROR_WRONG_KEY_TYPE));
+		return status;
+	}
+	if (sdPublicKeyOverrideLength == 65 && sdPublicKeyOverride[0] == 0x04) {
+		if (*sdStaticPublicKeyLength < sdPublicKeyOverrideLength) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+			return status;
+		}
+		memcpy(sdStaticPublicKey, sdPublicKeyOverride, sdPublicKeyOverrideLength);
+		*sdStaticPublicKeyLength = sdPublicKeyOverrideLength;
+		OPGP_ERROR_CREATE_NO_ERROR(status);
+		return status;
+	}
+	if (sdPublicKeyOverrideLength == 67
+			&& sdPublicKeyOverride[0] == 0xB0
+			&& sdPublicKeyOverride[1] == 0x41
+			&& sdPublicKeyOverride[2] == 0x04) {
+		if (*sdStaticPublicKeyLength < 65) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INSUFFICIENT_BUFFER, OPGP_stringify_error(OPGP_ERROR_INSUFFICIENT_BUFFER));
+			return status;
+		}
+		memcpy(sdStaticPublicKey, sdPublicKeyOverride + 2, 65);
+		*sdStaticPublicKeyLength = 65;
+		OPGP_ERROR_CREATE_NO_ERROR(status);
+		return status;
+	}
+
+	OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_WRONG_KEY_TYPE, OPGP_stringify_error(OPGP_ERROR_WRONG_KEY_TYPE));
+	return status;
+}
+
 /**
  * Performs the SCP11a mutual authentication flow.
  *
@@ -7818,6 +7930,9 @@ end:
  * \param securityLevel [in] The requested security level.
  * \param certOceEcka [in] Optional certificate chain data to submit before mutual authentication. The data must contain one or more 7F21 or X.509 DER certificates, optionally wrapped in BF21, and must end with CERT.OCE.ECKA.
  * \param certOceEckaLength [in] Length of \p certOceEcka.
+ * \param sdPublicKeyOverride [in] Optional raw uncompressed or B0-wrapped PK.SD.ECKA public key.
+ * \param sdPublicKeyOverrideLength [in] Length of \p sdPublicKeyOverride.
+ * \param sdPublicKeyFileName [in] Optional PEM file containing PK.SD.ECKA. If set, this takes precedence over \p sdPublicKeyOverride.
  * \param secInfo [out] The returned GP211_SECURITY_INFO structure.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct.
  */
@@ -7830,6 +7945,9 @@ static OPGP_ERROR_STATUS mutual_authentication_scp11a(OPGP_CARD_CONTEXT cardCont
 					   BYTE securityLevel,
 					   PBYTE certOceEcka,
 					   DWORD certOceEckaLength,
+					   PBYTE sdPublicKeyOverride,
+					   DWORD sdPublicKeyOverrideLength,
+					   OPGP_STRING sdPublicKeyFileName,
 					   GP211_SECURITY_INFO *secInfo) {
 	OPGP_ERROR_STATUS status;
 	BYTE sdCertificateStore[2048];
@@ -7880,16 +7998,40 @@ static OPGP_ERROR_STATUS mutual_authentication_scp11a(OPGP_CARD_CONTEXT cardCont
 	scpParameters = (BYTE)((scpParameters & 0xF8) | 0x01);
 	keyUsageQualifier = map_scp11a_key_usage_qualifier(securityLevel);
 
-	status = GP211_get_ecka_certificate(cardContext, cardInfo, NULL, keySetVersion, keyIndex, sdCertificateStore, &sdCertificateStoreLength);
-	if (OPGP_ERROR_CHECK(status)) {
-		goto end;
-	}
+	if (sdPublicKeyFileName != NULL && _tcslen(sdPublicKeyFileName) > 0) {
+		BYTE eccKeyComponentType;
 
-	sdStaticPublicKeyLength = sizeof(sdStaticPublicKey);
-	status = extract_scp11_sd_public_key_from_certificate_store(sdCertificateStore, sdCertificateStoreLength,
-			sdStaticPublicKey, &sdStaticPublicKeyLength, &keyParameterReference);
-	if (OPGP_ERROR_CHECK(status)) {
-		goto end;
+		sdStaticPublicKeyLength = sizeof(sdStaticPublicKey);
+		status = read_public_ecc_key(sdPublicKeyFileName, NULL, sdStaticPublicKey, &sdStaticPublicKeyLength,
+				&eccKeyComponentType, &keyParameterReference, NULL);
+		if (OPGP_ERROR_CHECK(status)) {
+			goto end;
+		}
+		if (eccKeyComponentType != GP211_KEY_TYPE_ECC_PUBLIC_OR_PRIVATE
+				|| sdStaticPublicKeyLength != 65 || sdStaticPublicKey[0] != 0x04) {
+			OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_WRONG_KEY_TYPE, OPGP_stringify_error(OPGP_ERROR_WRONG_KEY_TYPE));
+			goto end;
+		}
+	} else if (sdPublicKeyOverride != NULL && sdPublicKeyOverrideLength > 0) {
+		sdStaticPublicKeyLength = sizeof(sdStaticPublicKey);
+		status = normalize_scp11_sd_public_key_override(sdPublicKeyOverride, sdPublicKeyOverrideLength,
+				sdStaticPublicKey, &sdStaticPublicKeyLength);
+		if (OPGP_ERROR_CHECK(status)) {
+			goto end;
+		}
+		keyParameterReference = GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_P256;
+	} else {
+		status = GP211_get_ecka_certificate(cardContext, cardInfo, NULL, keySetVersion, keyIndex, sdCertificateStore, &sdCertificateStoreLength);
+		if (OPGP_ERROR_CHECK(status)) {
+			goto end;
+		}
+
+		sdStaticPublicKeyLength = sizeof(sdStaticPublicKey);
+		status = extract_scp11_sd_public_key_from_certificate_store(sdCertificateStore, sdCertificateStoreLength,
+				sdStaticPublicKey, &sdStaticPublicKeyLength, &keyParameterReference);
+		if (OPGP_ERROR_CHECK(status)) {
+			goto end;
+		}
 	}
 
 	expectedStaticPrivateKeyLength = scp11_private_key_length_from_key_parameter_reference(keyParameterReference);
@@ -8058,6 +8200,9 @@ end:
  * \param derivationMethod [in] The derivation method to use.
  * \param certOceEcka [in] Optional SCP11 certificate chain data to submit before mutual authentication. The data must contain one or more 7F21 or X.509 DER certificates, optionally wrapped in BF21, and must end with CERT.OCE.ECKA.
  * \param certOceEckaLength [in] Length of certOceEcka.
+ * \param sdPublicKeyOverride [in] Optional SCP11 PK.SD.ECKA public key as raw uncompressed EC point or B0-wrapped point.
+ * \param sdPublicKeyOverrideLength [in] Length of \p sdPublicKeyOverride.
+ * \param sdPublicKeyFileName [in] Optional PEM file containing PK.SD.ECKA. If set, this takes precedence over \p sdPublicKeyOverride.
  * \param secInfo [out] The returned GP211_SECURITY_INFO structure.
  * \return OPGP_ERROR_STATUS struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the OPGP_ERROR_STATUS struct.
  */
@@ -8070,6 +8215,8 @@ OPGP_ERROR_STATUS GP211_mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPG
                            BYTE secureChannelProtocolImpl, BYTE securityLevel,
                            BYTE derivationMethod,
                            PBYTE certOceEcka, DWORD certOceEckaLength,
+                           PBYTE sdPublicKeyOverride, DWORD sdPublicKeyOverrideLength,
+                           OPGP_STRING sdPublicKeyFileName,
                            GP211_SECURITY_INFO *secInfo) {
 	return mutual_authentication(cardContext, cardInfo, baseKeyOrStaticOcePrivateKey,
 						   S_ENC, S_MAC,
@@ -8079,6 +8226,7 @@ OPGP_ERROR_STATUS GP211_mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPG
 						   secureChannelProtocolImpl, securityLevel,
 						   derivationMethod,
 						   certOceEcka, certOceEckaLength,
+						   sdPublicKeyOverride, sdPublicKeyOverrideLength, sdPublicKeyFileName,
 						   secInfo);
 }
 
@@ -8091,6 +8239,8 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
                            BYTE secureChannelProtocolImpl, BYTE securityLevel,
                            BYTE derivationMethod,
                            PBYTE certOceEcka, DWORD certOceEckaLength,
+                           PBYTE sdPublicKeyOverride, DWORD sdPublicKeyOverrideLength,
+                           OPGP_STRING sdPublicKeyFileName,
                            GP211_SECURITY_INFO *secInfo) {
 	OPGP_ERROR_STATUS status;
 	DWORD i=0;
@@ -8121,7 +8271,8 @@ OPGP_ERROR_STATUS mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 
 	if (secureChannelProtocol == GP211_SCP11) {
 		status = mutual_authentication_scp11a(cardContext, cardInfo, baseKeyOrStaticOcePrivateKey, keyLength, keySetVersion, keyIndex,
-				secureChannelProtocolImpl, securityLevel, certOceEcka, certOceEckaLength, secInfo);
+				secureChannelProtocolImpl, securityLevel, certOceEcka, certOceEckaLength,
+				sdPublicKeyOverride, sdPublicKeyOverrideLength, sdPublicKeyFileName, secInfo);
 		goto end;
 	}
 
@@ -8868,22 +9019,55 @@ static OPGP_ERROR_STATUS store_data(OPGP_CARD_CONTEXT cardContext, OPGP_CARD_INF
 	OPGP_ERROR_STATUS status;
 	BYTE recvBuffer[258];
 	DWORD recvBufferLength = sizeof(recvBuffer);
-	BYTE sendBuffer[16];
+	BYTE sendBuffer[5 + 255 + 1];
+	DWORD offset = 0;
+	BYTE blockNumber = 0;
+	DWORD maxBlockDataLength = 255;
 
 	OPGP_LOG_START(_T("store_data"));
 
-	sendBuffer[0] = 0x80;
-	sendBuffer[1] = 0xE2;
-	sendBuffer[2] = encryptionFlags | formatFlags;
-	if (responseDataExpected) {
-		sendBuffer[2] |= 0x01;
+	if (data == NULL && dataLength > 0) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA, OPGP_stringify_error(OPGP_ERROR_INVALID_RESPONSE_DATA));
+		goto end;
 	}
-	sendBuffer[3] = 0x00;
 
-	status = send_chained_data(cardContext, cardInfo, secInfo, sendBuffer, 5,
-								  data, dataLength, recvBuffer, &recvBufferLength,
-								  true, true, responseDataExpected, false);
+	do {
+		DWORD remaining = dataLength - offset;
+		DWORD blockDataLength = remaining > maxBlockDataLength ? maxBlockDataLength : remaining;
+		BOOL lastBlock = (offset + blockDataLength) >= dataLength;
+		DWORD sendBufferLength = 5 + blockDataLength;
 
+		sendBuffer[0] = 0x80;
+		sendBuffer[1] = 0xE2;
+		sendBuffer[2] = encryptionFlags | formatFlags;
+		if (responseDataExpected) {
+			sendBuffer[2] |= 0x01;
+		}
+		if (lastBlock) {
+			sendBuffer[2] |= 0x80;
+		}
+		sendBuffer[3] = blockNumber++;
+		sendBuffer[4] = (BYTE)blockDataLength;
+		if (blockDataLength > 0) {
+			memcpy(sendBuffer + 5, data + offset, blockDataLength);
+		}
+		if (lastBlock && responseDataExpected) {
+			sendBuffer[sendBufferLength++] = 0x00;
+		}
+
+		recvBufferLength = sizeof(recvBuffer);
+		status = OPGP_send_APDU(cardContext, cardInfo, secInfo, sendBuffer, sendBufferLength, recvBuffer, &recvBufferLength);
+		if (OPGP_ERROR_CHECK(status)) {
+			goto end;
+		}
+		CHECK_SW_9000(recvBuffer, recvBufferLength, status);
+
+		offset += blockDataLength;
+	} while (offset < dataLength);
+
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+
+end:
 	OPGP_LOG_END(_T("store_data"), status);
 	return status;
 }
@@ -10585,7 +10769,8 @@ OPGP_ERROR_STATUS OP201_mutual_authentication(OPGP_CARD_CONTEXT cardContext, OPG
 	OPGP_ERROR_STATUS status;
 	GP211_SECURITY_INFO gp211secInfo;
 	status = mutual_authentication(cardContext, cardInfo, baseKey, encKey, macKey, kekKey, 16, keySetVersion,
-		keyIndex, GP211_SCP01, GP211_SCP01_IMPL_i05, securityLevel, derivationMethod, NULL, 0, &gp211secInfo);
+		keyIndex, GP211_SCP01, GP211_SCP01_IMPL_i05, securityLevel, derivationMethod, NULL, 0,
+		NULL, 0, NULL, &gp211secInfo);
 	mapGP211ToOP201SecurityInfo(gp211secInfo, secInfo);
 	return status;
 }

@@ -1269,6 +1269,9 @@ static int handleCommands(FILE *fd)
                                                      optionStr.keyDerivation,
                                                      NULL,
                                                      0,
+                                                     NULL,
+                                                     0,
+                                                     NULL,
                                                      &securityInfo211);
 
                 }

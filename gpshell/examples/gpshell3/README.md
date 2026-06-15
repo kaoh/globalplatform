@@ -175,8 +175,10 @@ Purpose:
 - Creates a CA-KLOC ECDSA key pair and self-signed CA certificate.
 - Creates an intermediate KA-KLOC ECDSA key pair and certificate signed by the CA-KLOC key.
 - Creates an OCE ECKA key pair and an OCE certificate signed by the KA-KLOC key.
+- Creates CA-KLCC, KA-KLCC, and SD ECKA material for provisioning a card-side SCP11a `SK.SD.ECKA`.
 - Exports PEM and DER certificates.
 - Builds OCE certificate chains in PEM and concatenated DER form (`CERT.KA-KLOC.ECDSA` followed by `CERT.OCE.ECKA`).
+- Builds SD ECKA certificate chains in PEM and concatenated DER form (`CERT.CA-KLCC.ECDSA`, `CERT.KA-KLCC.ECDSA`, then `CERT.SD.ECKA`).
 - Computes `CA-KLOC.ID.hex` from the CA certificate Subject Key Identifier, matching the KA-KLOC certificate Authority Key Identifier.
 - Adds the standard SCP11 certificate-policy OIDs plus additional Yubico-compatible policy OIDs observed as required for YubiKey 5 NFC SCP11a certificate validation.
 
@@ -215,18 +217,36 @@ Outcome:
   CERT.CA-KLOC.ECDSA.der
   CERT.CA-KLOC.ECDSA.srl
   CA-KLOC.ID.hex
+  SK.CA-KLCC.ECDSA.pem
+  PK.CA-KLCC.ECDSA.pem
+  CERT.CA-KLCC.ECDSA.pem
+  CERT.CA-KLCC.ECDSA.der
+  CERT.CA-KLCC.ECDSA.srl
+  CA-KLCC.ID.hex
   SK.KA-KLOC.ECDSA.pem
   PK.KA-KLOC.ECDSA.pem
   CERT.KA-KLOC.ECDSA.pem
   CERT.KA-KLOC.ECDSA.der
   CERT.KA-KLOC.ECDSA.srl
   KA-KLOC.ID.hex
+  SK.KA-KLCC.ECDSA.pem
+  PK.KA-KLCC.ECDSA.pem
+  CERT.KA-KLCC.ECDSA.pem
+  CERT.KA-KLCC.ECDSA.der
+  CERT.KA-KLCC.ECDSA.srl
+  KA-KLCC.ID.hex
   SK.OCE.ECKA.pem
   PK.OCE.ECKA.pem
   CERT.OCE.ECKA.pem
   CERT.OCE.ECKA.der
   CERT.OCE.ECKA.CHAIN.pem
   CERT.OCE.ECKA.CHAIN.der
+  SK.SD.ECKA.pem
+  PK.SD.ECKA.pem
+  CERT.SD.ECKA.pem
+  CERT.SD.ECKA.der
+  CERT.SD.ECKA.CHAIN.pem
+  CERT.SD.ECKA.CHAIN.der
   ```
 
 ### `scp11-provision-ca-kloc.sh`
@@ -234,17 +254,18 @@ Outcome:
 Purpose:
 
 - Provisions the generated CA-KLOC public key and CA identifier mapping to a card.
+- Provisions the generated SD ECKA private key used by SCP11a mutual authentication.
 - Uses an existing secure channel, by default SCP03 with sample test credentials.
 - Stores `PK.CA-KLOC.ECDSA.pem` as an ECC public key.
 - Stores the `CA-KLOC.ID.hex` to KID/KVN mapping with `scp11-store-ca-id`.
-- Optionally stores an SD ECKA certificate store when `SD_CERT_STORE_FILE` is set.
+- Stores `SK.SD.ECKA.pem` as an ECC private key at the configured SD ECKA KID/KVN.
 
 Inputs and defaults:
 
 - `GPSHELL3_BIN`: `gpshell3`
 - `KEY_DIR`: `scp11-oce-ca` in this directory
 - `AUTH_SCP`: `3`
-- `AUTH_KV`: `0x00`
+- `AUTH_KV`: `0xFF`
 - `AUTH_IDX`: `0x00`
 - `AUTH_KEY`: `404142434445464748494A4B4C4D4E4F`
 - `CA_KLOC_KID`: `0x10`
@@ -252,20 +273,22 @@ Inputs and defaults:
 - `CA_KLOC_PREV_KV`: `0x00`
 - `CA_PUB_PEM`: `$KEY_DIR/PK.CA-KLOC.ECDSA.pem`
 - `CA_ID_FILE`: `$KEY_DIR/CA-KLOC.ID.hex`
-- `SD_CERT_STORE_FILE`: unset by default
-- `SD_ECKA_KID`: `0x13`
-- `SD_ECKA_KVN`: `0x01`
+- `SD_ECKA_KID`: `0x11`
+- `SD_ECKA_KVN`: `0x03`
+- `SD_ECKA_PREV_KV`: `0x00`
+- `SD_ECKA_PRIVATE_PEM`: `$KEY_DIR/SK.SD.ECKA.pem`
+- `SD_ECKA_PRIVATE_HEX`: unset by default
 
 Prerequisites and assumptions:
 
-- Run `scp11-oce-ca-openssl.sh` first, or provide equivalent `CA_PUB_PEM` and `CA_ID_FILE`.
-- The target card supports ECC public-key provisioning for CA-KLOC and supports the SCP11 CA identifier STORE DATA operation.
+- Run `scp11-oce-ca-openssl.sh` first, or provide equivalent CA-KLOC and SD ECKA material.
+- The target card supports ECC public-key provisioning for CA-KLOC, ECC private-key provisioning for SD ECKA, and the SCP11 CA identifier STORE DATA operation.
 - The authentication key, key version, key index, and SCP protocol are correct for the target card.
-- The chosen CA-KLOC KID/KVN values match the card profile and do not collide with data that must be preserved.
+- The chosen CA-KLOC and SD ECKA KID/KVN values match the card profile and do not collide with data that must be preserved.
 
 Outcome:
 
-- On success, the card contains the CA-KLOC public key and a CA identifier to KID/KVN mapping. If `SD_CERT_STORE_FILE` is set, the card also receives that certificate store at the configured SD ECKA KID/KVN.
+- On success, the card contains the CA-KLOC public key, the CA identifier to KID/KVN mapping, and the SD ECKA private key referenced by SCP11 mutual authentication.
 
 ### `scp11-mutual-auth.sh`
 
@@ -280,12 +303,14 @@ Inputs and defaults:
 
 - `GPSHELL3_BIN`: `gpshell3`
 - `KEY_DIR`: `scp11-oce-ca` in this directory
-- `SCP11_KVN`: `0x01`
-- `SCP11_KID`: `0x13`
+- `SCP11_KVN`: `0x03`
+- `SCP11_KID`: `0x11`
 - `SCP11_IMPL`: `00` by default, one byte of hex accepted with or without `0x`
 - `OCE_CERT_CHAIN_FILE`: `$KEY_DIR/CERT.OCE.ECKA.CHAIN.der`
 - `SK_OCE_ECKA_PEM`: `$KEY_DIR/SK.OCE.ECKA.pem`
 - `SK_OCE_ECKA_HEX`: unset by default
+- `SCP11_SD_PUBLIC_KEY`: unset by default; PEM file path, raw `PK.SD.ECKA` public key hex, or the `B04104...` TLV returned by compatible SD key generation
+- `SCP11_SD_PUBLIC_KEY_HEX`: backward-compatible alias for `SCP11_SD_PUBLIC_KEY`
 - `TEST_COMMAND`: `list-apps`
 
 Examples:
@@ -300,8 +325,9 @@ SCP11_IMPL=3C bash ./scp11-mutual-auth.sh list-apps
 Prerequisites and assumptions:
 
 - The OCE certificate chain and private key exist, usually from `scp11-oce-ca-openssl.sh`.
-- The card has been provisioned with the matching CA-KLOC trust data and supports the configured SCP11 mode.
-- `SCP11_KID` and `SCP11_KVN` identify the card's SD ECKA key material. The PSO CA-KLOC reference is resolved from the certificate CA identifier when the card provides that mapping; otherwise the library falls back to the standard CA-KLOC KID `0x10` with the same KVN.
+- The card has been provisioned with the matching CA-KLOC trust data and SD ECKA private key, and supports the configured SCP11 mode.
+- `SCP11_KID` and `SCP11_KVN` identify the card's SD ECKA key material. The default KVN `0x03` matches the YubiKey-compatible generated SD ECKA key flow used by these examples. The PSO CA-KLOC reference is resolved from the certificate CA identifier when the card provides that mapping; otherwise the library falls back to the standard CA-KLOC KID `0x10` with the same KVN.
+- If `SCP11_SD_PUBLIC_KEY` is set, the public key is passed to mutual authentication directly and `gpshell3` does not retrieve `CERT.SD.ECKA` with `GET DATA BF21`.
 - OpenSSL is available if `SK_OCE_ECKA_HEX` is not supplied directly.
 
 Outcome:
@@ -324,7 +350,7 @@ Use card-specific authentication and SCP11 parameters instead of the sample defa
 AUTH_SCP=3 AUTH_KV=0x01 AUTH_IDX=0x00 AUTH_KEY=<hex> \
 bash ./scp11-provision-ca-kloc.sh
 
-SCP11_KVN=0x01 SCP11_KID=0x13 \
+SCP11_KVN=0x03 SCP11_KID=0x11 SCP11_SD_PUBLIC_KEY=<pem-or-hex> \
 bash ./scp11-mutual-auth.sh list-apps
 ```
 

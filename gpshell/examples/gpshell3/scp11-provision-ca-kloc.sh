@@ -24,10 +24,13 @@ CA_KLOC_PREV_KV="${CA_KLOC_PREV_KV:-0x00}"
 CA_PUB_PEM="${CA_PUB_PEM:-${KEY_DIR}/PK.CA-KLOC.ECDSA.pem}"
 CA_ID_FILE="${CA_ID_FILE:-${KEY_DIR}/CA-KLOC.ID.hex}"
 
-# Optional: also store/replace CERT.SD.ECKA certificate store (section 7.8).
-SD_CERT_STORE_FILE="${SD_CERT_STORE_FILE:-}"
-SD_ECKA_KID="${SD_ECKA_KID:-0x13}"
-SD_ECKA_KVN="${SD_ECKA_KVN:-0x01}"
+SD_ECKA_KID="${SD_ECKA_KID:-0x11}"
+SD_ECKA_KVN="${SD_ECKA_KVN:-0x03}"
+# PUT KEY P1=0x00 means "add a new key". To replace an existing SD ECKA key,
+# set this to that key's current KVN, for example SD_ECKA_PREV_KV=0x03.
+SD_ECKA_PREV_KV="${SD_ECKA_PREV_KV:-0x00}"
+SD_ECKA_PRIVATE_PEM="${SD_ECKA_PRIVATE_PEM:-${KEY_DIR}/SK.SD.ECKA.pem}"
+SD_ECKA_PRIVATE_HEX="${SD_ECKA_PRIVATE_HEX:-}"
 
 if [[ ! -f "$CA_PUB_PEM" ]]; then
     echo "Missing CA public key PEM: $CA_PUB_PEM" >&2
@@ -44,13 +47,45 @@ if [[ -z "$CA_ID_HEX" ]]; then
     exit 1
 fi
 
+if [[ -z "$SD_ECKA_PRIVATE_HEX" ]]; then
+    if [[ ! -f "$SD_ECKA_PRIVATE_PEM" ]]; then
+        echo "Missing SK.SD.ECKA PEM file: $SD_ECKA_PRIVATE_PEM" >&2
+        echo "Provide SD_ECKA_PRIVATE_HEX directly or provide SD_ECKA_PRIVATE_PEM." >&2
+        exit 1
+    fi
+    if ! command -v openssl >/dev/null 2>&1; then
+        echo "openssl not found in PATH" >&2
+        exit 1
+    fi
+    SD_ECKA_PRIVATE_HEX="$(
+        openssl ec -in "$SD_ECKA_PRIVATE_PEM" -noout -text 2>/dev/null \
+            | awk '
+                /^priv:/ {capture=1; next}
+                /^pub:/ {capture=0}
+                capture {
+                    gsub(/[^0-9A-Fa-f]/, "", $0);
+                    if (length($0) > 0) {
+                        printf "%s", toupper($0);
+                    }
+                }
+                END { printf "\n" }
+            '
+    )"
+fi
+SD_ECKA_PRIVATE_HEX="$(printf '%s' "$SD_ECKA_PRIVATE_HEX" | tr -d '[:space:]:')"
+if [[ ! "$SD_ECKA_PRIVATE_HEX" =~ ^[0-9A-Fa-f]{64}$ ]]; then
+    echo "SD_ECKA_PRIVATE_HEX is not a 32-byte hex private key" >&2
+    exit 1
+fi
+
 # All provisioning steps are chained in a single gpshell3 session using "then".
 # This is critical: the PUT KEY for PK.CA-KLOC.ECDSA at KVN=0x01 may remove
 # the SCP03 key set (KVN=0xFF) on some cards (e.g. YubiKey 5 NFC). By chaining
 # commands, all operations share the same authenticated session established
 # before any key modifications.
 
-# Build the command array: put-key then scp11-store-ca-id [then scp11-store-cert]
+# Build the command array: put CA-KLOC public key, store the CA identifier, then
+# put the SD ECKA private key used by SCP11a MUTUAL AUTHENTICATE.
 CMD=(
     "$GPSHELL3_BIN"
     -t --scp "$AUTH_SCP" --kv "$AUTH_KV" --idx "$AUTH_IDX" --key "$AUTH_KEY"
@@ -64,26 +99,16 @@ CMD=(
         --ca-id "$CA_ID_HEX"
         --kv "$CA_KLOC_KVN"
         --idx "$CA_KLOC_KID"
+    then put-key --type ecc-private
+        --kv "$SD_ECKA_PREV_KV"
+        --idx "$SD_ECKA_KID"
+        --new-kv "$SD_ECKA_KVN"
+        --key "$SD_ECKA_PRIVATE_HEX"
 )
-
-if [[ -n "$SD_CERT_STORE_FILE" ]]; then
-    if [[ ! -f "$SD_CERT_STORE_FILE" ]]; then
-        echo "Missing SD certificate store file: $SD_CERT_STORE_FILE" >&2
-        exit 1
-    fi
-    CMD+=(
-        then scp11-store-cert
-            --kv "$SD_ECKA_KVN"
-            --idx "$SD_ECKA_KID"
-            "$SD_CERT_STORE_FILE"
-    )
-fi
 
 echo "Provisioning PK.CA-KLOC.ECDSA (KID=${CA_KLOC_KID}, KVN=${CA_KLOC_KVN})"
 echo "  + CA-KLOC Identifier mapping (${CA_ID_HEX})"
-if [[ -n "$SD_CERT_STORE_FILE" ]]; then
-    echo "  + CERT.SD.ECKA certificate store (KID=${SD_ECKA_KID}, KVN=${SD_ECKA_KVN})"
-fi
+echo "  + SK.SD.ECKA private key (KID=${SD_ECKA_KID}, KVN=${SD_ECKA_KVN})"
 
 "${CMD[@]}"
 

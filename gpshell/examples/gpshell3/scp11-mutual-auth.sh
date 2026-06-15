@@ -6,8 +6,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GPSHELL3_BIN="${GPSHELL3_BIN:-gpshell3}"
 KEY_DIR="${KEY_DIR:-${SCRIPT_DIR}/scp11-oce-ca}"
 
-SCP11_KVN="${SCP11_KVN:-0x01}"
-SCP11_KID="${SCP11_KID:-0x13}"
+SCP11_KVN="${SCP11_KVN:-0x03}"
+SCP11_KID="${SCP11_KID:-0x11}"
 SCP11_IMPL="${SCP11_IMPL:-00}"
 SCP11_IMPL="${SCP11_IMPL#0x}"
 SCP11_IMPL="${SCP11_IMPL#0X}"
@@ -21,6 +21,7 @@ KA_KLOC_CERT_DER="${KA_KLOC_CERT_DER:-${KEY_DIR}/CERT.KA-KLOC.ECDSA.der}"
 OCE_CERT_DER="${OCE_CERT_DER:-${KEY_DIR}/CERT.OCE.ECKA.der}"
 SK_OCE_ECKA_PEM="${SK_OCE_ECKA_PEM:-${KEY_DIR}/SK.OCE.ECKA.pem}"
 SK_OCE_ECKA_HEX="${SK_OCE_ECKA_HEX:-}"
+SCP11_SD_PUBLIC_KEY="${SCP11_SD_PUBLIC_KEY:-${SCP11_SD_PUBLIC_KEY_HEX:-}}"
 
 TEST_COMMAND="${TEST_COMMAND:-list-apps}"
 TEMP_OCE_CERT_CHAIN_FILE=""
@@ -76,6 +77,14 @@ if [[ ! "$SK_OCE_ECKA_HEX" =~ ^[0-9A-Fa-f]+$ ]]; then
     exit 1
 fi
 
+if [[ -n "$SCP11_SD_PUBLIC_KEY" && ! -f "$SCP11_SD_PUBLIC_KEY" ]]; then
+    SCP11_SD_PUBLIC_KEY="$(printf '%s' "$SCP11_SD_PUBLIC_KEY" | tr -d '[:space:]:')"
+    if [[ ! "$SCP11_SD_PUBLIC_KEY" =~ ^[0-9A-Fa-f]+$ ]]; then
+        echo "SCP11_SD_PUBLIC_KEY is neither an existing PEM file nor valid hex" >&2
+        exit 1
+    fi
+fi
+
 CMD=(
     "$GPSHELL3_BIN"
     -t
@@ -86,6 +95,11 @@ CMD=(
     --scp-impl "$SCP11_IMPL"
     --scp11-cert "$OCE_CERT_CHAIN_FILE"
 )
+
+if [[ -n "$SCP11_SD_PUBLIC_KEY" ]]; then
+    CMD+=(--scp11-sd-public-key "$SCP11_SD_PUBLIC_KEY")
+    echo "Using provided SCP11 SD public key instead of retrieving CERT.SD.ECKA from the card"
+fi
 
 if [[ -n "$TEMP_OCE_CERT_CHAIN_FILE" ]]; then
     echo "Using generated SCP11 OCE certificate chain: CERT.KA-KLOC.ECDSA + CERT.OCE.ECKA"

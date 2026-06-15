@@ -86,6 +86,7 @@ typedef enum {
 	SCP11_TEST_MODE_MUTUAL_CERTIFICATE_CHAIN,
 	SCP11_TEST_MODE_MUTUAL_CERTIFICATE_CHAIN_CA_LOOKUP_FALLBACK,
 	SCP11_TEST_MODE_MUTUAL_X509_CERTIFICATE_STORE,
+	SCP11_TEST_MODE_MUTUAL_SD_PUBLIC_KEY,
 	SCP11_TEST_MODE_STORE_ECKA_CERTIFICATE,
 	SCP11_TEST_MODE_STORE_WHITELIST,
 	SCP11_TEST_MODE_STORE_WHITELIST_EMPTY
@@ -1060,6 +1061,9 @@ static OPGP_ERROR_STATUS mock_send_APDU(OPGP_CARD_CONTEXT cardContext, OPGP_CARD
 			case SCP11_TEST_MODE_MUTUAL_X509_CERTIFICATE_STORE:
 				assert_int_equal(apduCallCount, 1);
 				break;
+			case SCP11_TEST_MODE_MUTUAL_SD_PUBLIC_KEY:
+				assert_int_equal(apduCallCount, 0);
+				break;
 			case SCP11_TEST_MODE_MUTUAL_OCE_CERTIFICATE:
 				assert_int_equal(apduCallCount, 3);
 				break;
@@ -1568,7 +1572,7 @@ static void mutual_authentication_scp11a(void **state) {
 			16, testKeyVersion, testKeyIdentifier,
 			GP211_SCP11, 0x00,
 			GP211_SCP03_SECURITY_LEVEL_C_MAC, OPGP_DERIVATION_METHOD_NONE,
-			NULL, 0, &securityInfo211);
+			NULL, 0, NULL, 0, NULL, &securityInfo211);
 
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 	assert_scp11a_security_info(2);
@@ -1593,7 +1597,7 @@ static void mutual_authentication_scp11a_with_oce_certificate(void **state) {
 			16, testKeyVersion, testKeyIdentifier,
 			GP211_SCP11, 0x00,
 			GP211_SCP03_SECURITY_LEVEL_C_MAC, OPGP_DERIVATION_METHOD_NONE,
-			oceCertificate, oceCertificateLength, &securityInfo211);
+			oceCertificate, oceCertificateLength, NULL, 0, NULL, &securityInfo211);
 
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 	assert_scp11a_security_info(4);
@@ -1616,7 +1620,7 @@ static void mutual_authentication_scp11a_with_certificate_chain(void **state) {
 			16, testKeyVersion, testKeyIdentifier,
 			GP211_SCP11, 0x00,
 			GP211_SCP03_SECURITY_LEVEL_C_MAC, OPGP_DERIVATION_METHOD_NONE,
-			certificateChain, certificateChainLength, &securityInfo211);
+			certificateChain, certificateChainLength, NULL, 0, NULL, &securityInfo211);
 
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 	assert_scp11a_security_info(5);
@@ -1639,7 +1643,7 @@ static void mutual_authentication_scp11a_with_ca_lookup_fallback(void **state) {
 			16, testKeyVersion, testKeyIdentifier,
 			GP211_SCP11, 0x00,
 			GP211_SCP03_SECURITY_LEVEL_C_MAC, OPGP_DERIVATION_METHOD_NONE,
-			certificateChain, certificateChainLength, &securityInfo211);
+			certificateChain, certificateChainLength, NULL, 0, NULL, &securityInfo211);
 
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 	assert_scp11a_security_info(6);
@@ -1660,13 +1664,32 @@ static void mutual_authentication_scp11a_with_x509_sd_certificate_store(void **s
 			16, testKeyVersion, testKeyIdentifier,
 			GP211_SCP11, 0x00,
 			GP211_SCP03_SECURITY_LEVEL_C_MAC, OPGP_DERIVATION_METHOD_NONE,
-			NULL, 0, &securityInfo211);
+			NULL, 0, NULL, 0, NULL, &securityInfo211);
 
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
 	assert_scp11a_security_info(2);
 
 	status = build_sd_certificate_store(GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_P256);
 	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+}
+
+static void mutual_authentication_scp11a_with_sd_public_key(void **state) {
+	OPGP_ERROR_STATUS status;
+
+	(void)state;
+	reset_scp11a_test_state();
+	scp11TestMode = SCP11_TEST_MODE_MUTUAL_SD_PUBLIC_KEY;
+
+	status = GP211_mutual_authentication(cardContext, cardInfo,
+			oceStaticPrivateKey, NULL, NULL, NULL,
+			16, testKeyVersion, testKeyIdentifier,
+			GP211_SCP11, 0x00,
+			GP211_SCP03_SECURITY_LEVEL_C_MAC, OPGP_DERIVATION_METHOD_NONE,
+			NULL, 0, sdStaticPublicKey, sdStaticPublicKeyLength, NULL,
+			&securityInfo211);
+
+	assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+	assert_scp11a_security_info(1);
 }
 
 static int setup(void **state) {
@@ -1733,7 +1756,8 @@ int main(void) {
 			cmocka_unit_test(mutual_authentication_scp11a_with_oce_certificate),
 			cmocka_unit_test(mutual_authentication_scp11a_with_certificate_chain),
 			cmocka_unit_test(mutual_authentication_scp11a_with_ca_lookup_fallback),
-			cmocka_unit_test(mutual_authentication_scp11a_with_x509_sd_certificate_store)
+			cmocka_unit_test(mutual_authentication_scp11a_with_x509_sd_certificate_store),
+			cmocka_unit_test(mutual_authentication_scp11a_with_sd_public_key)
 	};
 	return cmocka_run_group_tests_name("SCP11", tests, setup, NULL);
 }

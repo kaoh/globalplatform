@@ -47,6 +47,12 @@ Unless otherwise specified, `gpshell3` will:
 --scp11-cert <file>
 :  Optional SCP11 OCE certificate chain file submitted via PERFORM SECURITY OPERATION before SCP11 mutual authentication. The file must contain DER TLV certificates (`30` or `7F21`), optionally wrapped in `BF21`.
 
+--scp11-sd-public-key <hex|pem>
+:  Optional SCP11 SD ECKA public key (`PK.SD.ECKA`) supplied out-of-band for SCP11a. The value may be a PEM public-key file, a PEM private-key file containing the corresponding public key, a raw uncompressed P-256 EC point starting with `04`, or the `B0 41 04...` TLV returned by compatible SD key-generation flows. When this option is present, `gpshell3` does not retrieve `CERT.SD.ECKA` with `GET DATA BF21` during SCP11a mutual authentication.
+
+--scp11-session-key-length <n>
+:  Requested SCP11 AES session key length in bytes. Valid values are `16`, `24`, and `32`; `0x10`, `0x18`, and `0x20` are also accepted. Default: `16`. This controls the SCP11 key agreement data tag `81` and is independent of the raw OCE private key length passed with `--key`.
+
 --kv <n>
 :  Key set version to use for mutual authentication. Default: `0`.
 
@@ -61,7 +67,7 @@ Unless otherwise specified, `gpshell3` will:
 - `emv`: EMV CPS 1.1 derivation.
 
 --key <hex>
-:  Base key (hex) used to derive ENC/MAC/DEK when `--derive` is not `none`. If `--enc/--mac/--dek` are not provided and no derivation is provided, this base key is also used directly for SCP02. Default: bytes `40..4F` (16 bytes).
+:  Base key (hex) used to derive ENC/MAC/DEK when `--derive` is not `none`. If `--enc/--mac/--dek` are not provided and no derivation is provided, this base key is also used directly for SCP02. For SCP11, this is the raw `SK.OCE.ECKA` private key; use `--scp11-session-key-length` to choose the requested AES session key length. Default: bytes `40..4F` (16 bytes).
 
 --enc <hex>, --mac <hex>, --dek <hex>
 :  Explicit S-ENC, S-MAC and DEK keys (hex) for mutual authentication. If provided together, `--key` is ignored.
@@ -404,7 +410,7 @@ Put (add or replace) a key in a key set.
 
 Synopsis:
 ```
-gpshell3 put-key [--type <3des|aes|rsa|ecc>] --kv <ver> --idx <idx> --new-kv <ver> [--ecc-curve <explicit|reference>] (--key <hex>|--pem <file>[:pass])
+gpshell3 put-key [--type <3des|aes|rsa|ecc|ecc-private>] --kv <ver> --idx <idx> --new-kv <ver> [--ecc-curve <explicit|reference>] (--key <hex>|--pem <file>[:pass])
 ```
 
 Options:
@@ -412,7 +418,7 @@ Options:
 - `--kv <ver>`: Key set version (mandatory).
 - `--idx <idx>`: Key index within the set (mandatory).
 - `--new-kv <ver>`: New key set version when replacing keys (mandatory).
-- For `--type aes|3des`: provide the key via `--key <hex>`.
+- For `--type aes|3des|ecc-private`: provide the key via `--key <hex>`.
 - For `--type rsa|ecc`: provide a public key in PEM via `--pem <file>[:pass]`.
 - `--ecc-curve <explicit|reference>`: For ECC keys, embed the curve parameters from the PEM file (`explicit`, default) or send the curve parameter reference derived from the PEM curve (`reference`).
 
@@ -712,7 +718,7 @@ Options:
 
 - `--kv <ver>`: Key Version Number (`KVN`) of `SK.SD.ECKA` to link.
 - `--idx <idx>`: Key Identifier (`KID`) of `SK.SD.ECKA` to link.
-- `<certificate-store-file>`: File containing the certificate store value (`BF21` value) or full `BF21` TLV. DER and PEM inputs accepted by `GP211_store_data_ecka_certificate`.
+- `<certificate-store-file>`: File containing the certificate store value (`BF21` value) or full `BF21` TLV. X.509 certificates in DER and PEM form are supported, as are GP certificates.
 
 Example:
 ```
