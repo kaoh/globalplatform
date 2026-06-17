@@ -309,7 +309,7 @@ Inputs and defaults:
 - `OCE_CERT_CHAIN_FILE`: `$KEY_DIR/CERT.OCE.ECKA.CHAIN.der`
 - `SK_OCE_ECKA_PEM`: `$KEY_DIR/SK.OCE.ECKA.pem`
 - `SK_OCE_ECKA_HEX`: unset by default
-- `SCP11_SD_PUBLIC_KEY`: unset by default; PEM file path, raw `PK.SD.ECKA` public key hex, or the `B04104...` TLV returned by compatible SD key generation
+- `SCP11_SD_PUBLIC_KEY`: `$KEY_DIR/PK.SD.ECKA.pem` by default; PEM file path, raw `PK.SD.ECKA` public key hex, or the `B04104...` TLV returned by compatible SD key generation. Set it to an empty value to force retrieval of `CERT.SD.ECKA` from the card.
 - `SCP11_SD_PUBLIC_KEY_HEX`: backward-compatible alias for `SCP11_SD_PUBLIC_KEY`
 - `TEST_COMMAND`: `list-apps`
 
