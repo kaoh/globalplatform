@@ -3,6 +3,23 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+usage() {
+    cat <<'EOF'
+Run the SCP11 mutual authentication example.
+
+Usage:
+  scp11-mutual-auth.sh [options] [gpshell3-command [command-args] ...]
+
+Options:
+  --use-sd-public-key     Pass PK.SD.ECKA explicitly to mutual authentication (default).
+  --no-sd-public-key      Do not pass PK.SD.ECKA; retrieve CERT.SD.ECKA from the card.
+  -h, --help              Show this help.
+
+Environment:
+  SCP11_USE_SD_PUBLIC_KEY=0  Same as --no-sd-public-key.
+EOF
+}
+
 GPSHELL3_BIN="${GPSHELL3_BIN:-gpshell3}"
 KEY_DIR="${KEY_DIR:-${SCRIPT_DIR}/scp11-oce-ca}"
 
@@ -22,9 +39,34 @@ OCE_CERT_DER="${OCE_CERT_DER:-${KEY_DIR}/CERT.OCE.ECKA.der}"
 SK_OCE_ECKA_PEM="${SK_OCE_ECKA_PEM:-${KEY_DIR}/SK.OCE.ECKA.pem}"
 SK_OCE_ECKA_HEX="${SK_OCE_ECKA_HEX:-}"
 SCP11_SD_PUBLIC_KEY="${SCP11_SD_PUBLIC_KEY-${SCP11_SD_PUBLIC_KEY_HEX:-${KEY_DIR}/PK.SD.ECKA.pem}}"
+SCP11_USE_SD_PUBLIC_KEY="${SCP11_USE_SD_PUBLIC_KEY:-1}"
 
 TEST_COMMAND="${TEST_COMMAND:-list-apps}"
 TEMP_OCE_CERT_CHAIN_FILE=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --use-sd-public-key)
+            SCP11_USE_SD_PUBLIC_KEY=1
+            shift
+            ;;
+        --no-sd-public-key)
+            SCP11_USE_SD_PUBLIC_KEY=0
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
 
 if [[ -z "$OCE_CERT_CHAIN_FILE" ]]; then
     if [[ -f "$KA_KLOC_CERT_DER" && -f "$OCE_CERT_DER" ]]; then
@@ -75,6 +117,15 @@ SK_OCE_ECKA_HEX="$(printf '%s' "$SK_OCE_ECKA_HEX" | tr -d '[:space:]:')"
 if [[ ! "$SK_OCE_ECKA_HEX" =~ ^[0-9A-Fa-f]+$ ]]; then
     echo "SK_OCE_ECKA_HEX is not valid hex" >&2
     exit 1
+fi
+
+if [[ "$SCP11_USE_SD_PUBLIC_KEY" != "0" && "$SCP11_USE_SD_PUBLIC_KEY" != "1" ]]; then
+    echo "SCP11_USE_SD_PUBLIC_KEY must be 0 or 1" >&2
+    exit 2
+fi
+
+if [[ "$SCP11_USE_SD_PUBLIC_KEY" == "0" ]]; then
+    SCP11_SD_PUBLIC_KEY=""
 fi
 
 if [[ -n "$SCP11_SD_PUBLIC_KEY" && ! -f "$SCP11_SD_PUBLIC_KEY" ]]; then

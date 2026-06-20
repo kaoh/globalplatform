@@ -11,8 +11,8 @@ Do not run these scripts against a production card or an unknown card. Confirm t
 - `put-auth.sh`: exercises AES key creation and deletion with `put-key` and `del-key`.
 - `dap.sh`: installs `helloworld.cap` through a Security Domain that mandates DAP verification.
 - `dm.sh`: installs `helloworld.cap` using delegated-management load and install tokens.
-- `scp11-oce-ca-openssl.sh`: generates SCP11 OCE and CA-KLOC key/certificate material with OpenSSL.
-- `scp11-provision-ca-kloc.sh`: provisions the generated CA-KLOC public key and CA identifier mapping to a card.
+- `scp11-cert-creation.sh`: generates SCP11 OCE and CA-KLOC key/certificate material with OpenSSL.
+- `scp11-provision.sh`: provisions the generated CA-KLOC trust data and SD ECKA private key to a card.
 - `scp11-mutual-auth.sh`: opens an SCP11 secure channel with the generated OCE material and runs a test command.
 
 ## Common Prerequisites
@@ -39,7 +39,7 @@ The checked-in scripts are examples, not a universal provisioning recipe. Adapt 
 
 ## Running From This Directory
 
-Run the scripts from `gpshell/examples/gpshell3` unless you set all paths explicitly. This is especially important for the SCP11 flow: `scp11-oce-ca-openssl.sh` writes its default output directory relative to the current working directory, while the SCP11 provision and authentication scripts look for `scp11-oce-ca` next to the scripts.
+Run the scripts from `gpshell/examples/gpshell3` unless you set all paths explicitly. This is especially important for the SCP11 flow: `scp11-cert-creation.sh` writes its default output directory relative to the current working directory, while the SCP11 provision and authentication scripts look for `scp11-oce-ca` next to the scripts.
 
 ## Script Details
 
@@ -167,7 +167,7 @@ Outcome:
 
 - On success, the script validates an ECC delegated-management load/install flow. It then deletes the temporary applet, load file, delegated-management keys, and Security Domain.
 
-### `scp11-oce-ca-openssl.sh`
+### `scp11-cert-creation.sh`
 
 Purpose:
 
@@ -193,10 +193,10 @@ Inputs and defaults:
 Useful options:
 
 ```sh
-bash ./scp11-oce-ca-openssl.sh --help
-bash ./scp11-oce-ca-openssl.sh -o ./scp11-oce-ca
-bash ./scp11-oce-ca-openssl.sh -o ./scp11-oce-ca --cn "My GP CA" --oce-cn "My OCE"
-bash ./scp11-oce-ca-openssl.sh -f
+bash ./scp11-cert-creation.sh --help
+bash ./scp11-cert-creation.sh -o ./scp11-oce-ca
+bash ./scp11-cert-creation.sh -o ./scp11-oce-ca --cn "My GP CA" --oce-cn "My OCE"
+bash ./scp11-cert-creation.sh -f
 ```
 
 Prerequisites and assumptions:
@@ -249,7 +249,7 @@ Outcome:
   CERT.SD.ECKA.CHAIN.der
   ```
 
-### `scp11-provision-ca-kloc.sh`
+### `scp11-provision.sh`
 
 Purpose:
 
@@ -259,6 +259,7 @@ Purpose:
 - Stores `PK.CA-KLOC.ECDSA.pem` as an ECC public key.
 - Stores the `CA-KLOC.ID.hex` to KID/KVN mapping with `scp11-store-ca-id`.
 - Stores `SK.SD.ECKA.pem` as an ECC private key at the configured SD ECKA KID/KVN.
+- Optionally stores `CERT.SD.ECKA.CHAIN.pem` as the `CERT.SD.ECKA` certificate store with `scp11-store-cert`.
 
 Inputs and defaults:
 
@@ -278,17 +279,29 @@ Inputs and defaults:
 - `SD_ECKA_PREV_KV`: `0x00`
 - `SD_ECKA_PRIVATE_PEM`: `$KEY_DIR/SK.SD.ECKA.pem`
 - `SD_ECKA_PRIVATE_HEX`: unset by default
+- `SD_CERT_CHAIN_FILE`: `$KEY_DIR/CERT.SD.ECKA.CHAIN.pem`
+- `STORE_SD_CERT_CHAIN`: `0` by default; set to `1` or pass `--store-cert-chain` to exercise STORE DATA Certificate Store provisioning
+
+Useful options:
+
+```sh
+bash ./scp11-provision.sh --help
+bash ./scp11-provision.sh
+bash ./scp11-provision.sh --store-cert-chain
+STORE_SD_CERT_CHAIN=1 bash ./scp11-provision.sh
+```
 
 Prerequisites and assumptions:
 
-- Run `scp11-oce-ca-openssl.sh` first, or provide equivalent CA-KLOC and SD ECKA material.
+- Run `scp11-cert-creation.sh` first, or provide equivalent CA-KLOC and SD ECKA material.
 - The target card supports ECC public-key provisioning for CA-KLOC, ECC private-key provisioning for SD ECKA, and the SCP11 CA identifier STORE DATA operation.
+- `--store-cert-chain` additionally requires the card to accept the SCP11 Certificate Store STORE DATA command for the configured SD ECKA KID/KVN.
 - The authentication key, key version, key index, and SCP protocol are correct for the target card.
 - The chosen CA-KLOC and SD ECKA KID/KVN values match the card profile and do not collide with data that must be preserved.
 
 Outcome:
 
-- On success, the card contains the CA-KLOC public key, the CA identifier to KID/KVN mapping, and the SD ECKA private key referenced by SCP11 mutual authentication.
+- On success, the card contains the CA-KLOC public key, the CA identifier to KID/KVN mapping, and the SD ECKA private key referenced by SCP11 mutual authentication. With `--store-cert-chain`, it also contains the SD ECKA certificate store.
 
 ### `scp11-mutual-auth.sh`
 
@@ -311,6 +324,7 @@ Inputs and defaults:
 - `SK_OCE_ECKA_HEX`: unset by default
 - `SCP11_SD_PUBLIC_KEY`: `$KEY_DIR/PK.SD.ECKA.pem` by default; PEM file path, raw `PK.SD.ECKA` public key hex, or the `B04104...` TLV returned by compatible SD key generation. Set it to an empty value to force retrieval of `CERT.SD.ECKA` from the card.
 - `SCP11_SD_PUBLIC_KEY_HEX`: backward-compatible alias for `SCP11_SD_PUBLIC_KEY`
+- `SCP11_USE_SD_PUBLIC_KEY`: `1` by default; set to `0` or pass `--no-sd-public-key` to retrieve `CERT.SD.ECKA` from the card instead
 - `TEST_COMMAND`: `list-apps`
 
 Examples:
@@ -319,15 +333,18 @@ Examples:
 bash ./scp11-mutual-auth.sh
 bash ./scp11-mutual-auth.sh list-apps
 bash ./scp11-mutual-auth.sh card-info
+SCP11_USE_SD_PUBLIC_KEY=0 bash ./scp11-mutual-auth.sh list-apps
 SCP11_IMPL=3C bash ./scp11-mutual-auth.sh list-apps
+bash ./scp11-mutual-auth.sh --no-sd-public-key list-apps
 ```
 
 Prerequisites and assumptions:
 
-- The OCE certificate chain and private key exist, usually from `scp11-oce-ca-openssl.sh`.
+- The OCE certificate chain and private key exist, usually from `scp11-cert-creation.sh`.
 - The card has been provisioned with the matching CA-KLOC trust data and SD ECKA private key, and supports the configured SCP11 mode.
 - `SCP11_KID` and `SCP11_KVN` identify the card's SD ECKA key material. The default KVN `0x03` matches the YubiKey-compatible generated SD ECKA key flow used by these examples. The PSO CA-KLOC reference is resolved from the certificate CA identifier when the card provides that mapping; otherwise the library falls back to the standard CA-KLOC KID `0x10` with the same KVN.
-- If `SCP11_SD_PUBLIC_KEY` is set, the public key is passed to mutual authentication directly and `gpshell3` does not retrieve `CERT.SD.ECKA` with `GET DATA BF21`.
+- If explicit SD public-key use is enabled, the public key is passed to mutual authentication directly and `gpshell3` does not retrieve `CERT.SD.ECKA` with `GET DATA BF21`.
+- If `--no-sd-public-key` or `SCP11_USE_SD_PUBLIC_KEY=0` is used, `gpshell3` retrieves `CERT.SD.ECKA` from the card. This requires the certificate store to have been provisioned successfully.
 - OpenSSL is available if `SK_OCE_ECKA_HEX` is not supplied directly.
 
 Outcome:
@@ -339,8 +356,8 @@ Outcome:
 From this directory:
 
 ```sh
-bash ./scp11-oce-ca-openssl.sh -o ./scp11-oce-ca
-bash ./scp11-provision-ca-kloc.sh
+bash ./scp11-cert-creation.sh -o ./scp11-oce-ca
+bash ./scp11-provision.sh
 bash ./scp11-mutual-auth.sh list-apps
 ```
 
@@ -348,7 +365,7 @@ Use card-specific authentication and SCP11 parameters instead of the sample defa
 
 ```sh
 AUTH_SCP=3 AUTH_KV=0x01 AUTH_IDX=0x00 AUTH_KEY=<hex> \
-bash ./scp11-provision-ca-kloc.sh
+bash ./scp11-provision.sh
 
 SCP11_KVN=0x03 SCP11_KID=0x11 SCP11_SD_PUBLIC_KEY=<pem-or-hex> \
 bash ./scp11-mutual-auth.sh list-apps

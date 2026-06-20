@@ -40,7 +40,7 @@ Outputs (GlobalPlatform naming convention):
   KA-KLCC.ID.hex               (KA-KLCC Subject Key Identifier)
 
 Usage:
-  scp11-oce-ca-openssl.sh [options]
+  scp11-cert-creation.sh [options]
 
 Options:
   -o, --out-dir <dir>      Output directory (default: ./scp11-oce-ca)
@@ -70,8 +70,8 @@ Options:
   -h, --help               Show this help
 
 Examples:
-  scp11-oce-ca-openssl.sh
-  scp11-oce-ca-openssl.sh -o out/scp11 --cn "My GP CA" --oce-cn "My OCE"
+  scp11-cert-creation.sh
+  scp11-cert-creation.sh -o out/scp11 --cn "My GP CA" --oce-cn "My OCE"
 EOF
 }
 

@@ -3,6 +3,23 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+usage() {
+    cat <<'EOF'
+Provision SCP11 example material to a card.
+
+Usage:
+  scp11-provision.sh [options]
+
+Options:
+  --store-cert-chain       Also store CERT.SD.ECKA certificate chain with scp11-store-cert.
+  --no-store-cert-chain    Do not store CERT.SD.ECKA certificate chain (default).
+  -h, --help              Show this help.
+
+Environment:
+  STORE_SD_CERT_CHAIN=1    Same as --store-cert-chain.
+EOF
+}
+
 GPSHELL3_BIN="${GPSHELL3_BIN:-gpshell3}"
 KEY_DIR="${KEY_DIR:-${SCRIPT_DIR}/scp11-oce-ca}"
 
@@ -31,6 +48,30 @@ SD_ECKA_KVN="${SD_ECKA_KVN:-0x03}"
 SD_ECKA_PREV_KV="${SD_ECKA_PREV_KV:-0x00}"
 SD_ECKA_PRIVATE_PEM="${SD_ECKA_PRIVATE_PEM:-${KEY_DIR}/SK.SD.ECKA.pem}"
 SD_ECKA_PRIVATE_HEX="${SD_ECKA_PRIVATE_HEX:-}"
+SD_CERT_CHAIN_FILE="${SD_CERT_CHAIN_FILE:-${KEY_DIR}/CERT.SD.ECKA.CHAIN.pem}"
+STORE_SD_CERT_CHAIN="${STORE_SD_CERT_CHAIN:-0}"
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --store-cert-chain)
+            STORE_SD_CERT_CHAIN=1
+            shift
+            ;;
+        --no-store-cert-chain)
+            STORE_SD_CERT_CHAIN=0
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1" >&2
+            usage >&2
+            exit 2
+            ;;
+    esac
+done
 
 if [[ ! -f "$CA_PUB_PEM" ]]; then
     echo "Missing CA public key PEM: $CA_PUB_PEM" >&2
@@ -77,6 +118,14 @@ if [[ ! "$SD_ECKA_PRIVATE_HEX" =~ ^[0-9A-Fa-f]{64}$ ]]; then
     echo "SD_ECKA_PRIVATE_HEX is not a 32-byte hex private key" >&2
     exit 1
 fi
+if [[ "$STORE_SD_CERT_CHAIN" != "0" && "$STORE_SD_CERT_CHAIN" != "1" ]]; then
+    echo "STORE_SD_CERT_CHAIN must be 0 or 1" >&2
+    exit 2
+fi
+if [[ "$STORE_SD_CERT_CHAIN" == "1" && ! -f "$SD_CERT_CHAIN_FILE" ]]; then
+    echo "Missing SD ECKA certificate chain file: $SD_CERT_CHAIN_FILE" >&2
+    exit 1
+fi
 
 # All provisioning steps are chained in a single gpshell3 session using "then".
 # This is critical: the PUT KEY for PK.CA-KLOC.ECDSA at KVN=0x01 may remove
@@ -106,9 +155,21 @@ CMD=(
         --key "$SD_ECKA_PRIVATE_HEX"
 )
 
+if [[ "$STORE_SD_CERT_CHAIN" == "1" ]]; then
+    CMD+=(
+        then scp11-store-cert
+            --kv "$SD_ECKA_KVN"
+            --idx "$SD_ECKA_KID"
+            "$SD_CERT_CHAIN_FILE"
+    )
+fi
+
 echo "Provisioning PK.CA-KLOC.ECDSA (KID=${CA_KLOC_KID}, KVN=${CA_KLOC_KVN})"
 echo "  + CA-KLOC Identifier mapping (${CA_ID_HEX})"
 echo "  + SK.SD.ECKA private key (KID=${SD_ECKA_KID}, KVN=${SD_ECKA_KVN})"
+if [[ "$STORE_SD_CERT_CHAIN" == "1" ]]; then
+    echo "  + CERT.SD.ECKA certificate store (${SD_CERT_CHAIN_FILE})"
+fi
 
 "${CMD[@]}"
 
