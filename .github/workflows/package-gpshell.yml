@@ -132,18 +132,48 @@ jobs:
 
   build-windows:
     runs-on: windows-2022
+    env:
+      OPENSSL_MAJOR: "3"
     steps:
       - name: Set up Git repository
         uses: actions/checkout@v4
       - name: Download OpenSSL
+        shell: pwsh
         run: |
-          $client = new-object System.Net.WebClient
-          $client.DownloadFile("https://slproweb.com/download/Win32OpenSSL-3_6_2.msi","C:\Temp\Win32OpenSSL-3_6_2.msi")
+          $ErrorActionPreference = "Stop"
+          $indexUrl = "https://github.com/slproweb/opensslhashes/raw/master/win32_openssl_hashes.json"
+          $opensslIndex = (Invoke-WebRequest -Uri $indexUrl).Content | ConvertFrom-Json
+          $installer = $opensslIndex.files.PSObject.Properties |
+            ForEach-Object {
+              $_.Value | Add-Member -NotePropertyName Name -NotePropertyValue $_.Name -PassThru
+            } |
+            Where-Object {
+              $_.bits -eq 32 -and
+              -not $_.light -and
+              $_.installer -eq "msi" -and
+              $_.basever -like "$env:OPENSSL_MAJOR.*"
+            } |
+            Sort-Object -Property @{ Expression = { [System.Version]$_.basever }; Descending = $true } |
+            Select-Object -First 1
+
+          if (-not $installer) {
+            throw "No Win32 OpenSSL $env:OPENSSL_MAJOR.x MSI found in $indexUrl"
+          }
+
+          New-Item -ItemType Directory -Force -Path "C:\Temp" | Out-Null
+          $outFile = "C:\Temp\Win32OpenSSL.msi"
+          Write-Host "Downloading $($installer.Name) from $($installer.url)"
+          Invoke-WebRequest -Uri $installer.url -OutFile $outFile
+
+          $actualHash = (Get-FileHash -Algorithm SHA256 -Path $outFile).Hash.ToLowerInvariant()
+          if ($actualHash -ne $installer.sha256.ToLowerInvariant()) {
+            throw "SHA256 mismatch for $($installer.Name): expected $($installer.sha256), got $actualHash"
+          }
       - name: Install dependencies
         shell: cmd
         run: |
           choco install -y doxygen.install graphviz wixtoolset ninja
-          C:\Temp\Win32OpenSSL-3_6_2.msi /quiet
+          msiexec /i "C:\Temp\Win32OpenSSL.msi" /quiet /norestart
           copy "C:\Program Files (x86)\OpenSSL-Win32\lib\VC\x86\MD\*" "C:\Program Files (x86)\OpenSSL-Win32\lib\VC"
       - name: Build dynamic packages
         shell: cmd
