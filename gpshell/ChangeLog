@@ -1,6 +1,12 @@
 History
 =======
 
+08/14/2026     3.0.0    Karsten Ohme
+                        GPShell3 is the preferred command-line interface
+                        SCP11a, delegated management, DAP, and receipt workflows
+                        Signed Windows x86 and x64 shared-library SDK archives
+                        Legacy GPShell remains available for existing scripts
+
 07/31/2025     2.4.2    Karsten Ohme
                         Compiled against GlobalPlatform 7.4.1
 
@@ -84,4 +90,3 @@ History
 
 8/4/2005        1.0.0   Initial Release
                         CVS Tag "Release-1-0-0"
-

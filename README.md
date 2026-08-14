@@ -44,6 +44,9 @@ A quick demo video showcasing the most useful features in action:
 
 [![Demo Video](./gpshell/demo/screencast.png)](https://youtu.be/MtZoTkrB41I)
 
+The current GPShell3 walkthroughs are collected in the
+[GPShell YouTube playlist](https://www.youtube.com/watch?v=igqlIvuOB5o&list=PLg46pyBZ2z-wF8acSL1nWvWFU0WPmhwlD).
+
 For examples:
 
 - GPShell1 scripts: [gpshell/examples/gpshell](./gpshell/examples/gpshell) (`.txt`)
