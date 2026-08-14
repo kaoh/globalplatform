@@ -101,6 +101,11 @@ IF(USE_SYSTEM_MINIZIP)
   INCLUDE_DIRECTORIES(${MINIZIP_INCLUDE_DIRS})
 ENDIF(USE_SYSTEM_MINIZIP)
 
+# Public headers include the bundled PC/SC declarations with angle includes.
+# Install them next to the exported include root for standalone SDK consumers.
+file(GLOB _gp_pcsclite_public_headers "${CMAKE_CURRENT_SOURCE_DIR}/pcsclite-includes/*.h")
+install(FILES ${_gp_pcsclite_public_headers} DESTINATION include COMPONENT dev)
+
 # without this the compilation in the homebrew docker image does not work
 IF(UNIX)
   link_directories(${PCSC_LIBDIR})
@@ -157,7 +162,9 @@ IF(USE_SYSTEM_MINIZIP)
 ENDIF(USE_SYSTEM_MINIZIP)
 
 if(GP_BUILD_SHARED)
-  TARGET_LINK_LIBRARIES(globalplatform PUBLIC ${LIBRARIES})
+  # Shared-library consumers only link the import library; keep implementation
+  # dependencies private so installed CMake packages remain relocatable.
+  TARGET_LINK_LIBRARIES(globalplatform PRIVATE ${LIBRARIES})
 endif()
 if(GP_BUILD_STATIC)
   TARGET_LINK_LIBRARIES(globalplatformStatic PUBLIC ${LIBRARIES})

@@ -2,15 +2,16 @@
 
 include(CMakeFindDependencyMacro)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
-
-find_dependency(PCSC)
-find_dependency(OpenSSL)
-find_dependency(ZLIB)
-
 include("${CMAKE_CURRENT_LIST_DIR}/globalplatformTargets.cmake")
 
-if(PCSC_INCLUDE_DIRS)
+if(TARGET globalplatform::globalplatformStatic)
+  list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
+  find_dependency(PCSC)
+  find_dependency(OpenSSL)
+  find_dependency(ZLIB)
+endif()
+
+if(TARGET globalplatform::globalplatformStatic AND PCSC_INCLUDE_DIRS)
   if(TARGET globalplatform::globalplatformStatic)
     set_property(TARGET globalplatform::globalplatformStatic APPEND PROPERTY
       INTERFACE_INCLUDE_DIRECTORIES "${PCSC_INCLUDE_DIRS}")

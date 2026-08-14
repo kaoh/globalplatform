@@ -6,6 +6,32 @@ on:
       - '**'
 
 jobs:
+  test-linux-i386:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Set up Git repository
+        uses: actions/checkout@v4
+      - name: Install 32-bit test dependencies
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake gcc-multilib libc6-dev-i386 pkg-config \
+            libcmocka-dev:i386 libpcsclite-dev:i386 libssl-dev:i386 zlib1g-dev:i386
+      - name: Build and run 32-bit unit tests
+        env:
+          PKG_CONFIG_LIBDIR: /usr/lib/i386-linux-gnu/pkgconfig:/usr/share/pkgconfig
+        run: |
+          cmake -S . -B build-i386 \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DTESTING=ON \
+            -DTOOLS=OFF \
+            -DCMAKE_C_FLAGS=-m32 \
+            -DCMAKE_EXE_LINKER_FLAGS=-m32 \
+            -DCMAKE_SHARED_LINKER_FLAGS=-m32
+          cmake --build build-i386 -- -j"$(nproc)"
+          ctest --test-dir build-i386 -LE integration --output-on-failure
+
   build-linux:
     runs-on: ubuntu-22.04
     steps:
@@ -180,7 +206,7 @@ jobs:
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
           if exist build-dynamic rmdir /S /Q build-dynamic
-          cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release -B build-dynamic -DOPENSSL_ROOT_DIR="C:\Program Files (x86)\OpenSSL-Win32" -DZLIB_ROOT="%cd%\zlib-1.2.8\win32-build"
+          cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release -B build-dynamic -DOPENSSL_ROOT_DIR="C:\Program Files (x86)\OpenSSL-Win32" -DZLIB_ROOT="%cd%\zlib-1.3.1\win32-build"
           cmake --build build-dynamic -- -v
           cmake --build build-dynamic --target doc -- -v
           cd build-dynamic
@@ -204,7 +230,7 @@ jobs:
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
           if exist build-static rmdir /S /Q build-static
-          cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release -B build-static -DSTATIC=ON -DOPENSSL_ROOT_DIR="C:\Program Files (x86)\OpenSSL-Win32" -DZLIB_ROOT="%cd%\zlib-1.2.8\win32-build"
+          cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release -B build-static -DSTATIC=ON -DOPENSSL_ROOT_DIR="C:\Program Files (x86)\OpenSSL-Win32" -DZLIB_ROOT="%cd%\zlib-1.3.1\win32-build"
           cmake --build build-static -- -v
           cmake --build build-static --target doc -- -v
           cd build-static
@@ -328,11 +354,11 @@ jobs:
             }
 
             # gpshell3.exe depends on zlib on Windows. Ensure the DLL is present inside the package.
-            $zlibDll = Join-Path $pwd "zlib-1.2.8\\win32-build\\zlibwapi.dll"
+            $zlibDll = Join-Path $pwd "zlib-1.3.1\\win32-build\\zlib.dll"
             if (Test-Path $zlibDll) {
               Copy-Item -Path $zlibDll -Destination $exe.DirectoryName -Force
             } else {
-              Write-Warning "zlibwapi.dll not found at $zlibDll; gpshell3.exe may fail to start."
+              Write-Warning "zlib.dll not found at $zlibDll; gpshell3.exe may fail to start."
             }
 
             # If OpenSSL is dynamically linked, ship the runtime DLLs inside the package.
@@ -512,7 +538,7 @@ jobs:
           api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
           organization-id: 'e7b823d7-2b0c-486f-9562-fba743965cbf'
           project-slug: 'globalplatform'
-          signing-policy-slug: 'test-signing'
+          signing-policy-slug: ${{ github.ref_type == 'tag' && !contains(github.ref_name, '-') && 'release-signing' || 'test-signing' }}
           github-artifact-id: '${{ steps.upload-unsigned-artifact.outputs.artifact-id }}'
           wait-for-completion: true
           output-artifact-directory: 'signed-artifacts'
@@ -521,6 +547,162 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: gpshell-windows
+          path: signed-artifacts
+
+  build-windows-sdk:
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86
+            openssl_bits: 32
+            openssl_root: 'C:\Program Files (x86)\OpenSSL-Win32'
+            vs_arch: x86
+          - arch: x64
+            openssl_bits: 64
+            openssl_root: 'C:\Program Files\OpenSSL-Win64'
+            vs_arch: x64
+    env:
+      OPENSSL_MAJOR: '3'
+      OPENSSL_ROOT_DIR: ${{ matrix.openssl_root }}
+    steps:
+      - name: Set up Git repository
+        uses: actions/checkout@v4
+      - name: Download OpenSSL
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $indexUrl = 'https://github.com/slproweb/opensslhashes/raw/master/win32_openssl_hashes.json'
+          $opensslIndex = (Invoke-WebRequest -Uri $indexUrl).Content | ConvertFrom-Json
+          $installer = $opensslIndex.files.PSObject.Properties |
+            ForEach-Object { $_.Value | Add-Member -NotePropertyName Name -NotePropertyValue $_.Name -PassThru } |
+            Where-Object {
+              $_.bits -eq ${{ matrix.openssl_bits }} -and
+              -not $_.light -and
+              $_.installer -eq 'msi' -and
+              $_.basever -like "$env:OPENSSL_MAJOR.*"
+            } |
+            Sort-Object -Property @{ Expression = { [System.Version]$_.basever }; Descending = $true } |
+            Select-Object -First 1
+          if (-not $installer) { throw "No OpenSSL ${{ matrix.openssl_bits }}-bit MSI found in $indexUrl" }
+
+          New-Item -ItemType Directory -Force -Path 'C:\Temp' | Out-Null
+          $outFile = 'C:\Temp\OpenSSL-${{ matrix.arch }}.msi'
+          Invoke-WebRequest -Uri $installer.url -OutFile $outFile
+          $actualHash = (Get-FileHash -Algorithm SHA256 -Path $outFile).Hash.ToLowerInvariant()
+          if ($actualHash -ne $installer.sha256.ToLowerInvariant()) {
+            throw "SHA256 mismatch for $($installer.Name): expected $($installer.sha256), got $actualHash"
+          }
+      - name: Install build dependencies
+        shell: cmd
+        run: |
+          choco install -y ninja
+          msiexec /i "C:\Temp\OpenSSL-${{ matrix.arch }}.msi" /quiet /norestart
+      - name: Build the shared SDK
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=${{ matrix.vs_arch }} -host_arch=x64
+          if exist build-sdk rmdir /S /Q build-sdk
+          if exist sdk-zlib rmdir /S /Q sdk-zlib
+          if "${{ matrix.arch }}"=="x64" (
+            cmake -S zlib-1.3.1 -B build-zlib -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DZLIB_BUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX="%cd%\sdk-zlib"
+            cmake --build build-zlib -- -v
+            cmake --install build-zlib
+            set "SDK_ZLIB_ROOT=%cd%\sdk-zlib"
+          ) else (
+            set "SDK_ZLIB_ROOT=%cd%\zlib-1.3.1\win32-build"
+          )
+          cmake -S . -B build-sdk -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DTOOLS=OFF -DOPENSSL_ROOT_DIR="%OPENSSL_ROOT_DIR%" -DZLIB_ROOT="%SDK_ZLIB_ROOT%"
+          cmake --build build-sdk -- -v
+          cmake --install build-sdk --prefix "%cd%\sdk-stage"
+      - name: Assemble and test the SDK archive
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $versionMatch = Select-String -Path CMakeLists.txt -Pattern 'set\(GPSHELL_VERSION\s+([0-9.]+)\)'
+          if (-not $versionMatch) { throw 'Unable to determine GPShell version' }
+          $version = $versionMatch.Matches[0].Groups[1].Value
+          $sdkName = "globalplatform-sdk-$version-windows-${{ matrix.arch }}"
+          $sdkDir = Join-Path $pwd $sdkName
+          if (Test-Path $sdkDir) { Remove-Item -Recurse -Force $sdkDir }
+          New-Item -ItemType Directory -Path $sdkDir | Out-Null
+          Copy-Item -Path (Join-Path $pwd 'sdk-stage\*') -Destination $sdkDir -Recurse -Force
+          New-Item -ItemType Directory -Path (Join-Path $sdkDir 'bin') -Force | Out-Null
+
+          $libDir = Join-Path $sdkDir 'lib'
+          Get-ChildItem -Path $libDir -Filter '*.dll' -File | ForEach-Object {
+            Copy-Item -Path $_.FullName -Destination (Join-Path $sdkDir 'bin') -Force
+          }
+
+          $zlibRoot = if ('${{ matrix.arch }}' -eq 'x64') { Join-Path $pwd 'sdk-zlib' } else { Join-Path $pwd 'zlib-1.3.1\win32-build' }
+          $zlibDll = @(
+            (Join-Path $zlibRoot 'bin\zlib.dll'),
+            (Join-Path $zlibRoot 'zlib.dll')
+          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $zlibDll) { throw "zlib.dll not found under $zlibRoot" }
+          Copy-Item -Path $zlibDll -Destination $libDir -Force
+          Copy-Item -Path $zlibDll -Destination (Join-Path $sdkDir 'bin') -Force
+
+          $opensslDirs = @($env:OPENSSL_ROOT_DIR, (Join-Path $env:OPENSSL_ROOT_DIR 'bin')) |
+            Where-Object { Test-Path $_ }
+          foreach ($dir in $opensslDirs) {
+            foreach ($pattern in @('libcrypto*.dll', 'libssl*.dll', 'legacy*.dll')) {
+              Get-ChildItem -Path $dir -File -Filter $pattern | ForEach-Object {
+                Copy-Item -Path $_.FullName -Destination $libDir -Force
+                Copy-Item -Path $_.FullName -Destination (Join-Path $sdkDir 'bin') -Force
+              }
+            }
+          }
+          foreach ($providerDir in @(
+            (Join-Path $env:OPENSSL_ROOT_DIR 'ossl-modules'),
+            (Join-Path $env:OPENSSL_ROOT_DIR 'bin\ossl-modules')
+          )) {
+            if (Test-Path $providerDir) {
+              Copy-Item -Path $providerDir -Destination (Join-Path $sdkDir 'bin\ossl-modules') -Recurse -Force
+            }
+          }
+
+          $redistBase = 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC'
+          $redistVersion = Get-ChildItem -Path $redistBase -Directory | Sort-Object Name -Descending | Select-Object -First 1
+          if ($redistVersion) {
+            $crtArch = if ('${{ matrix.arch }}' -eq 'x64') { 'x64' } else { 'x86' }
+            $crtDir = Join-Path $redistVersion.FullName "$crtArch\Microsoft.VC143.CRT"
+            if (Test-Path $crtDir) {
+              Get-ChildItem -Path $crtDir -Filter '*.dll' -File | ForEach-Object {
+                Copy-Item -Path $_.FullName -Destination (Join-Path $sdkDir 'bin') -Force
+              }
+            }
+          }
+
+          Copy-Item -Path examples\windows-sdk -Destination (Join-Path $sdkDir 'example') -Recurse -Force
+          cmake -S examples\windows-sdk -B sdk-smoke -G Ninja -DCMAKE_PREFIX_PATH="$sdkDir"
+          cmake --build sdk-smoke -- -v
+          $env:PATH = "$libDir;$(Join-Path $sdkDir 'bin');$env:PATH"
+          & (Join-Path $pwd 'sdk-smoke\globalplatform_sdk_example.exe')
+          if ($LASTEXITCODE -ne 0) { throw "SDK consumer smoke test failed with exit code $LASTEXITCODE" }
+
+          Compress-Archive -Path $sdkDir -DestinationPath (Join-Path $pwd "$sdkName.zip") -Force
+      - name: Upload unsigned SDK archive
+        id: upload-unsigned-sdk
+        uses: actions/upload-artifact@v4
+        with:
+          name: globalplatform-windows-sdk-${{ matrix.arch }}-unsigned
+          path: globalplatform-sdk-*-windows-${{ matrix.arch }}.zip
+      - name: Sign SDK archive
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
+          organization-id: 'e7b823d7-2b0c-486f-9562-fba743965cbf'
+          project-slug: 'globalplatform'
+          signing-policy-slug: ${{ github.ref_type == 'tag' && !contains(github.ref_name, '-') && 'release-signing' || 'test-signing' }}
+          github-artifact-id: '${{ steps.upload-unsigned-sdk.outputs.artifact-id }}'
+          wait-for-completion: true
+          output-artifact-directory: 'signed-artifacts'
+      - name: Save signed SDK archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: globalplatform-windows-sdk-${{ matrix.arch }}
           path: signed-artifacts
 
   build-macos:
@@ -594,8 +776,10 @@ jobs:
   publish-release:
     runs-on: ubuntu-22.04
     needs:
+      - test-linux-i386
       - build-linux
       - build-windows
+      - build-windows-sdk
       - build-macos
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
@@ -615,6 +799,8 @@ jobs:
           cp -v dist/gpshell-windows/build-static/*.msi release-assets/
           cp -v dist/gpshell-windows/build-static/*.msix release-assets/
           cp -v dist/gpshell-windows/build-static/*-static.zip release-assets/
+          cp -v dist/globalplatform-windows-sdk-x86/**/globalplatform-sdk-*-windows-x86.zip release-assets/
+          cp -v dist/globalplatform-windows-sdk-x64/**/globalplatform-sdk-*-windows-x64.zip release-assets/
           cp -v dist/gpshell-macos/build-static/*.dmg release-assets/
       - name: Generate SHA256 checksums
         run: |
