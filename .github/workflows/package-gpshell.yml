@@ -822,8 +822,8 @@ jobs:
           cp -v dist/gpshell-windows/build-static/*.msi release-assets/
           cp -v dist/gpshell-windows/build-static/*.msix release-assets/
           cp -v dist/gpshell-windows/build-static/*-static.zip release-assets/
-          cp -v dist/globalplatform-windows-sdk-x86/**/globalplatform-sdk-*-windows-x86.zip release-assets/
-          cp -v dist/globalplatform-windows-sdk-x64/**/globalplatform-sdk-*-windows-x64.zip release-assets/
+          cp -v dist/globalplatform-windows-sdk-x86/globalplatform-sdk-*-windows-x86.zip release-assets/
+          cp -v dist/globalplatform-windows-sdk-x64/globalplatform-sdk-*-windows-x64.zip release-assets/
           cp -v dist/gpshell-macos/build-static/*.dmg release-assets/
       - name: Generate SHA256 checksums
         run: |
@@ -837,8 +837,8 @@ jobs:
           set -euo pipefail
           if gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "Release $TAG_NAME already exists; uploading assets without changing prerelease status."
-            gh release upload "$TAG_NAME" release-assets/** --clobber --repo "$GITHUB_REPOSITORY"
+            gh release upload "$TAG_NAME" release-assets/* --clobber --repo "$GITHUB_REPOSITORY"
           else
-            echo "Release $TAG_NAME does not exist; creating a draft release with assets."
-            gh release create "$TAG_NAME" release-assets/** --draft --title "$TAG_NAME" --repo "$GITHUB_REPOSITORY"
+            echo "Release $TAG_NAME does not exist; creating a release with assets."
+            gh release create "$TAG_NAME" release-assets/* --title "$TAG_NAME" --repo "$GITHUB_REPOSITORY"
           fi
