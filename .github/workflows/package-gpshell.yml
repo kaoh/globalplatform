@@ -603,7 +603,12 @@ jobs:
         run: |
           choco install -y ninja
           msiexec /i "C:\Temp\OpenSSL-${{ matrix.arch }}.msi" /quiet /norestart
-          if not exist "%OPENSSL_ROOT_DIR%\lib\VC\${{ matrix.vs_arch }}\MD\libcrypto.lib" exit /b 1
+          set "OPENSSL_IMPORT_LIB_DIR=%OPENSSL_ROOT_DIR%\lib\VC\${{ matrix.vs_arch }}\MD"
+          if not exist "%OPENSSL_IMPORT_LIB_DIR%\libcrypto.lib" (
+            echo Expected OpenSSL import library is missing: %OPENSSL_IMPORT_LIB_DIR%\libcrypto.lib
+            dir /b /s "%OPENSSL_ROOT_DIR%\*.lib"
+            exit /b 1
+          )
           copy /Y "%OPENSSL_ROOT_DIR%\lib\VC\${{ matrix.vs_arch }}\MD\*" "%OPENSSL_ROOT_DIR%\lib\VC"
       - name: Build the shared SDK
         shell: cmd
