@@ -24,7 +24,7 @@ description: >- # this means to ignore newlines until "baseurl:"
   C library and command-line for Open- and GlobalPlatform smart cards
 logo: images/touch-icon.png
 show_downloads: false
-repository: kaoh/globalplatform.github.io
+repository: kaoh/globalplatform
 github: [metadata]
 
 # Build settings

@@ -1,56 +1,84 @@
 ---
-# Feel free to add content and custom Front Matter to this file.
-# To modify the layout, see https://jekyllrb.com/docs/themes/#overriding-theme-defaults
 ---
 
-# Overview
+# GlobalPlatform 3.0.0
 
-The GlobalPlatform card specification is a standard for the management of the contents on a smart card. Mainly this comprises the installation and the removal of applications. Practically these applications are always [JavaCard applets](http://www.oracle.com/technetwork/java/javacard/overview/index.html).
+GlobalPlatform is an open-source C library and command-line tooling for managing
+OpenPlatform and GlobalPlatform smart cards. It is used to inspect cards, manage
+Security Domains and keys, load Java Card CAP files, and exchange APDUs through
+PC/SC readers.
 
-[This project](https://github.com/kaoh/globalplatform) offers a C library and a command line shell.
+## Features
 
-Features:
+- Secure channels SCP01, SCP02, SCP03, and SCP11a, including SCP11 certificate,
+  CA-KLOC, and public-key provisioning workflows.
+- GPShell3 commands for application, load-file, executable-module, Security
+  Domain, lifecycle, key, and card-data management.
+- Delegated management: token generation and provisioning, DAP verification,
+  and AES, DES, RSA, and ECC receipt verification.
+- Card Recognition Data, CPLC, extended card-resource, and secure-channel
+  capability decoding.
+- Extended-length APDUs, multi-command sessions, raw APDU exchange, and a
+  PC/SC connection plugin with an extensible plugin interface.
 
-* Install Java Card applets
-* Delete Java Java Applet
-* List Applications
-* Get data
-* Manage keys
-* Send APDUs
+## GPShell
 
-You can support this project with donations. The money will be used for the support of the ongoing development. [Donate](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=YPFHYP9P2UK5U&source=url) using PayPal.
+[GPShell3](https://github.com/kaoh/globalplatform/blob/master/gpshell/src/gpshell3.1.md)
+is the preferred, task-oriented command-line interface. It is suitable for
+interactive use, shell scripts, and CI workflows. The full manual covers SCP11,
+delegated management, DAP, receipts, Security Domains, card data, and all
+commands.
 
-# GPShell
+The script-driven [legacy GPShell manual](https://github.com/kaoh/globalplatform/blob/master/gpshell/src/gpshell.1.md)
+remains available for established automation and existing `.txt` scripts.
 
-GPShell is the command line utility which can be used to execute the most useful functions.
+[GPShell3 demonstration playlist](https://www.youtube.com/watch?v=igqlIvuOB5o&list=PLg46pyBZ2z-wF8acSL1nWvWFU0WPmhwlD)
 
-Inspect the [manual](https://github.com/kaoh/globalplatform/blob/master/gpshell/src/gpshell.1.md) for GPShell.
+## Library And SDK
 
-# GlobalPlatform Library
+The [C API documentation](api/index.html) is generated from the release source.
+The library and its PC/SC plugin are available as CMake packages for developers
+embedding GlobalPlatform into their own applications.
 
-The C library is called GlobalPlatform. This library is intended for developers who want to integrate it in their own programs using the provided [API](api/index.html).
+The Windows 3.0.0 release includes signed x86 and x64 shared-library SDK ZIP
+archives. Each archive contains headers, import libraries, CMake package files,
+the GlobalPlatform and PC/SC plugin DLLs, required runtime dependencies, and a
+minimal CMake consumer example.
 
-The most prominent features of the Open and GlobalPlatform specification are implemented supporting the secure channel protocols SCP01, SCP02 and SCP03.
-Support for delegated management and DAP verification is implemented in the library but because of missing test data and incomplete card support this might not work.
+## Installation
 
-This [article](globalPlatformSpecification.md) provides an overview of the functions defined in the GlobalPlatform specification.
+Install from [GitHub Releases](https://github.com/kaoh/globalplatform/releases)
+for signed Windows installers, Windows SDK archives, Linux DEB/RPM/AppImage
+packages, and macOS DMG packages.
 
-# Connection Plugins
+For C and CMake projects, use the
+[GlobalPlatform vcpkg registry](https://github.com/kaoh/globalplatform-vcpkg-registry).
+For macOS and Linux command-line installations, use the
+[Homebrew tap](https://github.com/kaoh/homebrew-globalplatform). Manual build
+instructions are in the repository [README](https://github.com/kaoh/globalplatform).
 
-The GlobalPlatform Library supports different connection plugins. There is a default implementation provided for [PC/SC](http://en.wikipedia.org/wiki/PC/SC) which is the standard for accessing local card readers. See [PC-SC Connection Plugin](connectionPlugins.md). GPShell uses this default implementation. But it is also possible to implement other connection libraries, e.g. to remotely forward APDUs over a socket connection or using a [virtual card reader](http://frankmorgner.github.io/vsmartcard/index.html).
+## Connection Plugins
 
-# Installation
+The default [PC/SC connection plugin](connectionPlugins.md) supports local smart
+card readers. Applications may provide another connection plugin when APDUs are
+transported through a remote reader or a virtual-card-reader environment.
 
-There are Homebrew package for [Linux and MacOS](https://github.com/kaoh/homebrew-globalplatform)
+## Support And Consulting
 
-For a manual compilation consult the [Readme](https://github.com/kaoh/globalplatform).
+Financial support helps maintain the library, GPShell, release infrastructure,
+and documentation:
 
-Windows binaries can be downloaded from the [GitHub release page](https://github.com/kaoh/globalplatform/releases) or from [SourceForge](https://sourceforge.net/projects/globalplatform/files/GPShell/).
+- [PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=YPFHYP9P2UK5U&source=url)
+- [Patreon](https://www.patreon.com/KarstenOhme)
+- [GitHub Sponsors](https://github.com/sponsors/kaoh)
+- [FLOSS/Fund](https://dir.floss.fund/view/project/@github.com/kaoh/globalplatform)
 
-__NOTE:__ The [Microsoft Visual C++ 2015 Redistributable](https://www.microsoft.com/en-us/download/confirmation.aspx?id=52685) must be also installed.
+Consulting for GlobalPlatform integration, smart-card deployment, and secure
+channel workflows is available at [k_o_@users.sourceforge.net](mailto:k_o_@users.sourceforge.net).
 
-# Issues
+## Help And Issues
 
-For issues please use the [GitHub issue tracker](https://github.com/kaoh/globalplatform/issues).
-
-You can also use the [Mailing List](https://sourceforge.net/p/globalplatform/mailman/) or ask a question on Stack Overflow assigning the tags `gpshell` or `globalplatform`.
+Report defects through the [GitHub issue tracker](https://github.com/kaoh/globalplatform/issues).
+The [SourceForge mailing list](https://sourceforge.net/p/globalplatform/mailman/)
+and Stack Overflow tags `gpshell` and `globalplatform` remain available for
+community discussion.
