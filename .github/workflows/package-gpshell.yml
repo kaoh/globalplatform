@@ -584,15 +584,15 @@ jobs:
               $_.bits -eq ${{ matrix.openssl_bits }} -and
               $_.Name -like '${{ matrix.openssl_name_prefix }}*' -and
               -not $_.light -and
-              $_.installer -eq 'msi' -and
+              $_.installer -eq 'exe' -and
               $_.basever -like "$env:OPENSSL_MAJOR.*"
             } |
             Sort-Object -Property @{ Expression = { [System.Version]$_.basever }; Descending = $true } |
             Select-Object -First 1
-          if (-not $installer) { throw "No OpenSSL ${{ matrix.openssl_bits }}-bit MSI found in $indexUrl" }
+          if (-not $installer) { throw "No OpenSSL ${{ matrix.openssl_bits }}-bit installer found in $indexUrl" }
 
           New-Item -ItemType Directory -Force -Path 'C:\Temp' | Out-Null
-          $outFile = 'C:\Temp\OpenSSL-${{ matrix.arch }}.msi'
+          $outFile = 'C:\Temp\OpenSSL-${{ matrix.arch }}.exe'
           Invoke-WebRequest -Uri $installer.url -OutFile $outFile
           $actualHash = (Get-FileHash -Algorithm SHA256 -Path $outFile).Hash.ToLowerInvariant()
           if ($actualHash -ne $installer.sha256.ToLowerInvariant()) {
@@ -602,13 +602,9 @@ jobs:
         shell: cmd
         run: |
           choco install -y ninja
-          msiexec /i "C:\Temp\OpenSSL-${{ matrix.arch }}.msi" /quiet /norestart
-          set "OPENSSL_IMPORT_LIB_DIR=%OPENSSL_ROOT_DIR%\lib\VC\${{ matrix.vs_arch }}\MD"
-          if not exist "%OPENSSL_IMPORT_LIB_DIR%\libcrypto.lib" (
-            echo Expected OpenSSL import library is missing: %OPENSSL_IMPORT_LIB_DIR%\libcrypto.lib
-            dir /b /s "%OPENSSL_ROOT_DIR%\*.lib"
-            exit /b 1
-          )
+          "C:\Temp\OpenSSL-${{ matrix.arch }}.exe" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+          if errorlevel 1 exit /b %errorlevel%
+          if not exist "%OPENSSL_ROOT_DIR%\lib\VC\${{ matrix.vs_arch }}\MD\libcrypto.lib" exit /b 1
           copy /Y "%OPENSSL_ROOT_DIR%\lib\VC\${{ matrix.vs_arch }}\MD\*" "%OPENSSL_ROOT_DIR%\lib\VC"
       - name: Build the shared SDK
         shell: cmd
