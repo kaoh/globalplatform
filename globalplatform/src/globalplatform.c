@@ -33,7 +33,9 @@
  * \author Karsten Ohme
  * \section intro_sec Introduction
  *
- * This library offers functions to manage a Open Platform 2.0.1' and GlobalPlatform 2.1.1 conforming card.
+ * This library provides C APIs for managing OpenPlatform 2.0.1' and GlobalPlatform smart cards.
+ * It implements GlobalPlatform 2.1.1 APIs and supports SCP01, SCP02, SCP03, and SCP11a secure
+ * channels, delegated management, DAP verification, and PC/SC connection plugins.
  *
  * <h2>Note</h2>
  * <p>

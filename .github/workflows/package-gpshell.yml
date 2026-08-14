@@ -541,6 +541,7 @@ jobs:
           signing-policy-slug: ${{ github.ref_type == 'tag' && !contains(github.ref_name, '-') && 'release-signing' || 'test-signing' }}
           github-artifact-id: '${{ steps.upload-unsigned-artifact.outputs.artifact-id }}'
           wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 3600
           output-artifact-directory: 'signed-artifacts'
 
       - name: Save signed Windows artifacts
@@ -557,10 +558,12 @@ jobs:
         include:
           - arch: x86
             openssl_bits: 32
+            openssl_name_prefix: Win32OpenSSL-
             openssl_root: 'C:\Program Files (x86)\OpenSSL-Win32'
             vs_arch: x86
           - arch: x64
             openssl_bits: 64
+            openssl_name_prefix: Win64OpenSSL-
             openssl_root: 'C:\Program Files\OpenSSL-Win64'
             vs_arch: x64
     env:
@@ -579,6 +582,7 @@ jobs:
             ForEach-Object { $_.Value | Add-Member -NotePropertyName Name -NotePropertyValue $_.Name -PassThru } |
             Where-Object {
               $_.bits -eq ${{ matrix.openssl_bits }} -and
+              $_.Name -like '${{ matrix.openssl_name_prefix }}*' -and
               -not $_.light -and
               $_.installer -eq 'msi' -and
               $_.basever -like "$env:OPENSSL_MAJOR.*"
@@ -620,6 +624,13 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
+          $vsDevCmd = 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat'
+          cmd.exe /c "`"$vsDevCmd`" -arch=${{ matrix.vs_arch }} -host_arch=x64 >nul && set" |
+            ForEach-Object {
+              if ($_ -match '^(.*?)=(.*)$') {
+                [Environment]::SetEnvironmentVariable($matches[1], $matches[2], 'Process')
+              }
+            }
           $versionMatch = Select-String -Path CMakeLists.txt -Pattern 'set\(GPSHELL_VERSION\s+([0-9.]+)\)'
           if (-not $versionMatch) { throw 'Unable to determine GPShell version' }
           $version = $versionMatch.Matches[0].Groups[1].Value
@@ -698,6 +709,7 @@ jobs:
           signing-policy-slug: ${{ github.ref_type == 'tag' && !contains(github.ref_name, '-') && 'release-signing' || 'test-signing' }}
           github-artifact-id: '${{ steps.upload-unsigned-sdk.outputs.artifact-id }}'
           wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 3600
           output-artifact-directory: 'signed-artifacts'
       - name: Save signed SDK archive
         uses: actions/upload-artifact@v4
