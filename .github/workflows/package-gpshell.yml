@@ -601,9 +601,11 @@ jobs:
       - name: Install build dependencies
         shell: cmd
         run: |
-          choco install -y ninja
-          "C:\Temp\OpenSSL-${{ matrix.arch }}.exe" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+          choco install -y ninja innoextract
+          innoextract --output-dir "C:\Temp\OpenSSL-${{ matrix.arch }}-extracted" "C:\Temp\OpenSSL-${{ matrix.arch }}.exe"
           if errorlevel 1 exit /b %errorlevel%
+          robocopy "C:\Temp\OpenSSL-${{ matrix.arch }}-extracted\app" "%OPENSSL_ROOT_DIR%" /E
+          if errorlevel 8 exit /b %errorlevel%
           if not exist "%OPENSSL_ROOT_DIR%\lib\VC\${{ matrix.vs_arch }}\MD\libcrypto.lib" exit /b 1
           copy /Y "%OPENSSL_ROOT_DIR%\lib\VC\${{ matrix.vs_arch }}\MD\*" "%OPENSSL_ROOT_DIR%\lib\VC"
       - name: Build the shared SDK
