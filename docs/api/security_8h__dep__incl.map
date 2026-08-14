@@ -1,11 +1,13 @@
 <map id="security.h" name="security.h">
-<area shape="rect" id="node1" title=" " alt="" coords="223,5,307,32"/>
-<area shape="rect" id="node2" href="$crypto_8h.html" title=" " alt="" coords="80,80,155,107"/>
-<area shape="rect" id="node5" href="$connection_8h.html" title=" " alt="" coords="213,80,318,107"/>
-<area shape="rect" id="node7" href="$globalplatform_8h.html" title=" " alt="" coords="325,155,456,181"/>
-<area shape="rect" id="node3" href="$crypto_8c.html" title="This implements all crypto functions." alt="" coords="5,155,80,181"/>
-<area shape="rect" id="node4" href="$globalplatform_8c.html" title="This implements all Open&#45; and GlobalPlatform functions." alt="" coords="194,304,323,331"/>
-<area shape="rect" id="node6" href="$connectionplugin_8h.html" title=" " alt="" coords="155,155,301,181"/>
-<area shape="rect" id="node8" href="$loadfile_8h.html" title=" " alt="" coords="296,229,379,256"/>
-<area shape="rect" id="node9" href="$testUtil_8h_source.html" title=" " alt="" coords="403,229,485,256"/>
+<area shape="rect" id="node1" title=" " alt="" coords="249,5,333,32"/>
+<area shape="rect" id="node2" href="$crypto_8h.html" title=" " alt="" coords="452,80,527,107"/>
+<area shape="rect" id="node6" href="$connection_8h.html" title=" " alt="" coords="183,80,289,107"/>
+<area shape="rect" id="node8" href="$globalplatform_8h.html" title=" " alt="" coords="5,155,136,181"/>
+<area shape="rect" id="node11" href="$scp_8h.html" title=" " alt="" coords="335,80,391,107"/>
+<area shape="rect" id="node3" href="$crypto_8c.html" title="This implements all crypto functions." alt="" coords="381,155,456,181"/>
+<area shape="rect" id="node4" href="$globalplatform_8c.html" title="This implements all Open&#45; and GlobalPlatform functions." alt="" coords="239,304,369,331"/>
+<area shape="rect" id="node5" href="$scp_8c.html" title=" " alt="" coords="481,155,535,181"/>
+<area shape="rect" id="node7" href="$connectionplugin_8h.html" title=" " alt="" coords="161,155,306,181"/>
+<area shape="rect" id="node9" href="$loadfile_8h.html" title=" " alt="" coords="219,229,301,256"/>
+<area shape="rect" id="node10" href="$testUtil_8h_source.html" title=" " alt="" coords="108,229,191,256"/>
 </map>

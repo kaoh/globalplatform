@@ -1,13 +1,13 @@
 <map id="connectionplugin.h" name="connectionplugin.h">
-<area shape="rect" id="node1" title=" " alt="" coords="344,5,489,32"/>
-<area shape="rect" id="node2" href="$connection_8h.html" title=" " alt="" coords="273,80,379,107"/>
-<area shape="rect" id="node8" href="$library_8h.html" title=" " alt="" coords="371,155,446,181"/>
-<area shape="rect" id="node10" href="$error_8h.html" title=" " alt="" coords="471,155,536,181"/>
-<area shape="rect" id="node3" title=" " alt="" coords="230,155,297,181"/>
-<area shape="rect" id="node4" href="$winscard_8h.html" title="This handles smartcard reader communications." alt="" coords="5,155,97,181"/>
-<area shape="rect" id="node7" href="$types_8h.html" title=" " alt="" coords="128,229,199,256"/>
-<area shape="rect" id="node9" href="$security_8h.html" title=" " alt="" coords="121,155,205,181"/>
-<area shape="rect" id="node5" href="$pcsclite_8h.html" title="This keeps a list of defines for pcsc&#45;lite." alt="" coords="15,229,99,256"/>
-<area shape="rect" id="node6" href="$wintypes_8h.html" title="This keeps a list of Windows(R) types." alt="" coords="61,304,154,331"/>
-<area shape="rect" id="node11" href="$unicode_8h.html" title=" " alt="" coords="461,229,546,256"/>
+<area shape="rect" id="node1" title=" " alt="" coords="207,5,352,32"/>
+<area shape="rect" id="node2" href="$connection_8h.html" title=" " alt="" coords="227,80,332,107"/>
+<area shape="rect" id="node9" href="$library_8h.html" title=" " alt="" coords="514,155,589,181"/>
+<area shape="rect" id="node11" href="$error_8h.html" title=" " alt="" coords="5,155,71,181"/>
+<area shape="rect" id="node3" title=" " alt="" coords="95,155,162,181"/>
+<area shape="rect" id="node4" href="$winscard_8h.html" title="This handles smartcard reader communications." alt="" coords="397,155,489,181"/>
+<area shape="rect" id="node7" href="$unicode_8h.html" title=" " alt="" coords="77,229,162,256"/>
+<area shape="rect" id="node8" href="$types_8h.html" title=" " alt="" coords="307,229,377,256"/>
+<area shape="rect" id="node10" href="$security_8h.html" title=" " alt="" coords="237,155,321,181"/>
+<area shape="rect" id="node5" href="$pcsclite_8h.html" title="This keeps a list of defines for pcsc&#45;lite." alt="" coords="401,229,485,256"/>
+<area shape="rect" id="node6" href="$wintypes_8h.html" title="This keeps a list of Windows(R) types." alt="" coords="346,304,439,331"/>
 </map>

@@ -1,10 +1,11 @@
 <map id="pcsclite.h" name="pcsclite.h">
-<area shape="rect" id="node1" title="This keeps a list of defines for pcsc&#45;lite." alt="" coords="117,5,201,32"/>
-<area shape="rect" id="node2" href="$winscard_8h.html" title="This handles smartcard reader communications." alt="" coords="113,80,205,107"/>
-<area shape="rect" id="node3" href="$connection_8h.html" title=" " alt="" coords="107,155,212,181"/>
-<area shape="rect" id="node4" href="$connectionplugin_8h.html" title=" " alt="" coords="5,229,151,256"/>
-<area shape="rect" id="node5" href="$globalplatform_8h.html" title=" " alt="" coords="175,229,306,256"/>
-<area shape="rect" id="node6" href="$globalplatform_8c.html" title="This implements all Open&#45; and GlobalPlatform functions." alt="" coords="136,379,265,405"/>
-<area shape="rect" id="node7" href="$loadfile_8h.html" title=" " alt="" coords="199,304,282,331"/>
-<area shape="rect" id="node8" href="$testUtil_8h_source.html" title=" " alt="" coords="306,304,389,331"/>
+<area shape="rect" id="node1" title="This keeps a list of defines for pcsc&#45;lite." alt="" coords="135,5,219,32"/>
+<area shape="rect" id="node2" href="$winscard_8h.html" title="This handles smartcard reader communications." alt="" coords="131,80,223,107"/>
+<area shape="rect" id="node3" href="$connection_8h.html" title=" " alt="" coords="125,155,230,181"/>
+<area shape="rect" id="node4" href="$crypto_8c.html" title="This implements all crypto functions." alt="" coords="5,229,80,256"/>
+<area shape="rect" id="node5" href="$connectionplugin_8h.html" title=" " alt="" coords="105,229,250,256"/>
+<area shape="rect" id="node6" href="$globalplatform_8h.html" title=" " alt="" coords="275,229,405,256"/>
+<area shape="rect" id="node7" href="$globalplatform_8c.html" title="This implements all Open&#45; and GlobalPlatform functions." alt="" coords="235,379,365,405"/>
+<area shape="rect" id="node8" href="$loadfile_8h.html" title=" " alt="" coords="299,304,381,331"/>
+<area shape="rect" id="node9" href="$testUtil_8h_source.html" title=" " alt="" coords="405,304,488,331"/>
 </map>

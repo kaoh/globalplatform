@@ -38,20 +38,23 @@ $(function() {
 <div id="main-nav"></div>
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="dir_a9ec1ef424966475f993eb98877e3088.html">projects</a></li><li class="navelem"><a class="el" href="dir_d2855c70ce395bda03f135615cc88b22.html">globalplatform</a></li><li class="navelem"><a class="el" href="dir_9496c7299f14604a38c1a3524a5ff8d1.html">globalplatform</a></li><li class="navelem"><a class="el" href="dir_fd0b57fd3ed57527b85ebfae9eebb31f.html">src</a></li><li class="navelem"><a class="el" href="dir_9e72b5f49bc74c50ec4f3407aeef3feb.html">globalplatform</a></li>  </ul>
+<li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a class="el" href="dir_851c8b38e3ce26afbd436c83a941741e.html">globalplatform</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Data Structures</a> &#124;
 <a href="#define-members">Macros</a> &#124;
-<a href="#func-members">Functions</a>  </div>
+<a href="#typedef-members">Typedefs</a> &#124;
+<a href="#func-members">Functions</a> &#124;
+<a href="#var-members">Variables</a>  </div>
   <div class="headertitle">
 <div class="title">connection.h File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &lt;stdio.h&gt;</code><br />
 <code>#include &lt;<a class="el" href="winscard_8h_source.html">winscard.h</a>&gt;</code><br />
+<code>#include &quot;<a class="el" href="unicode_8h_source.html">unicode.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="types_8h_source.html">types.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="library_8h_source.html">library.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="security_8h_source.html">security.h</a>&quot;</code><br />
@@ -61,16 +64,16 @@ Include dependency graph for connection.h:</div>
 <div class="dyncontent">
 <div class="center"><img src="connection_8h__incl.png" border="0" usemap="#aconnection_8h" alt=""/></div>
 <map name="aconnection_8h" id="aconnection_8h">
-<area shape="rect" title=" " alt="" coords="211,5,317,32"/>
+<area shape="rect" title=" " alt="" coords="217,5,322,32"/>
 <area shape="rect" title=" " alt="" coords="5,80,72,107"/>
-<area shape="rect" href="winscard_8h.html" title="This handles smartcard reader communications." alt="" coords="97,80,189,107"/>
-<area shape="rect" href="types_8h.html" title=" " alt="" coords="209,155,279,181"/>
-<area shape="rect" href="library_8h.html" title=" " alt="" coords="264,80,339,107"/>
-<area shape="rect" href="security_8h.html" title=" " alt="" coords="363,80,447,107"/>
-<area shape="rect" href="error_8h.html" title=" " alt="" coords="471,80,537,107"/>
-<area shape="rect" href="pcsclite_8h.html" title="This keeps a list of defines for pcsc&#45;lite." alt="" coords="101,155,185,181"/>
-<area shape="rect" href="wintypes_8h.html" title="This keeps a list of Windows(R) types." alt="" coords="147,229,240,256"/>
-<area shape="rect" href="unicode_8h.html" title=" " alt="" coords="461,155,547,181"/>
+<area shape="rect" href="winscard_8h.html" title="This handles smartcard reader communications." alt="" coords="495,80,587,107"/>
+<area shape="rect" href="unicode_8h.html" title=" " alt="" coords="319,155,404,181"/>
+<area shape="rect" href="types_8h.html" title=" " alt="" coords="154,155,225,181"/>
+<area shape="rect" href="library_8h.html" title=" " alt="" coords="307,80,381,107"/>
+<area shape="rect" href="security_8h.html" title=" " alt="" coords="147,80,231,107"/>
+<area shape="rect" href="error_8h.html" title=" " alt="" coords="406,80,471,107"/>
+<area shape="rect" href="pcsclite_8h.html" title="This keeps a list of defines for pcsc&#45;lite." alt="" coords="463,155,547,181"/>
+<area shape="rect" href="wintypes_8h.html" title="This keeps a list of Windows(R) types." alt="" coords="248,229,341,256"/>
 </map>
 </div>
 </div><div class="textblock"><div class="dynheader">
@@ -78,12 +81,13 @@ This graph shows which files directly or indirectly include this file:</div>
 <div class="dyncontent">
 <div class="center"><img src="connection_8h__dep__incl.png" border="0" usemap="#aconnection_8hdep" alt=""/></div>
 <map name="aconnection_8hdep" id="aconnection_8hdep">
-<area shape="rect" title=" " alt="" coords="107,5,212,32"/>
-<area shape="rect" href="connectionplugin_8h.html" title=" " alt="" coords="5,80,151,107"/>
-<area shape="rect" href="globalplatform_8h.html" title=" " alt="" coords="175,80,306,107"/>
-<area shape="rect" href="globalplatform_8c.html" title="This implements all Open&#45; and GlobalPlatform functions." alt="" coords="136,229,265,256"/>
-<area shape="rect" href="loadfile_8h.html" title=" " alt="" coords="199,155,282,181"/>
-<area shape="rect" href="testUtil_8h_source.html" title=" " alt="" coords="306,155,389,181"/>
+<area shape="rect" title=" " alt="" coords="125,5,230,32"/>
+<area shape="rect" href="crypto_8c.html" title="This implements all crypto functions." alt="" coords="5,80,80,107"/>
+<area shape="rect" href="connectionplugin_8h.html" title=" " alt="" coords="105,80,250,107"/>
+<area shape="rect" href="globalplatform_8h.html" title=" " alt="" coords="275,80,405,107"/>
+<area shape="rect" href="globalplatform_8c.html" title="This implements all Open&#45; and GlobalPlatform functions." alt="" coords="235,229,365,256"/>
+<area shape="rect" href="loadfile_8h.html" title=" " alt="" coords="299,155,381,181"/>
+<area shape="rect" href="testUtil_8h_source.html" title=" " alt="" coords="405,155,488,181"/>
 </map>
 </div>
 </div>
@@ -121,6 +125,34 @@ Macros</h2></td></tr>
 <tr class="memdesc:ae1e1f8a5e8d67027127c15bf6413e23c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transport protocol T=1. <br /></td></tr>
 <tr class="separator:ae1e1f8a5e8d67027127c15bf6413e23c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
+Typedefs</h2></td></tr>
+<tr class="memitem:af25f4da0bc5d1d4591c926f83b51b2b5"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="structOPGP__CARD__CONTEXT.html">OPGP_CARD_CONTEXT</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="connection_8h.html#af25f4da0bc5d1d4591c926f83b51b2b5">OPGP_CARD_CONTEXT</a></td></tr>
+<tr class="separator:af25f4da0bc5d1d4591c926f83b51b2b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1a166525daa646d282c179af9f47fc81"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="structOPGP__CARD__INFO.html">OPGP_CARD_INFO</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="connection_8h.html#a1a166525daa646d282c179af9f47fc81">OPGP_CARD_INFO</a></td></tr>
+<tr class="separator:a1a166525daa646d282c179af9f47fc81"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af02a0f59994cf598364d1b8a5f934123"><td class="memItemLeft" align="right" valign="top"><a id="af02a0f59994cf598364d1b8a5f934123"></a>
+typedef <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>(*&#160;</td><td class="memItemRight" valign="bottom"><b>OPGP_ESTABLISH_CONTEXT_FN</b>) (<a class="el" href="structOPGP__CARD__CONTEXT.html">OPGP_CARD_CONTEXT</a> *)</td></tr>
+<tr class="separator:af02a0f59994cf598364d1b8a5f934123"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa9f871832c15e89699417b8ba066be80"><td class="memItemLeft" align="right" valign="top"><a id="aa9f871832c15e89699417b8ba066be80"></a>
+typedef <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>(*&#160;</td><td class="memItemRight" valign="bottom"><b>OPGP_RELEASE_CONTEXT_FN</b>) (<a class="el" href="structOPGP__CARD__CONTEXT.html">OPGP_CARD_CONTEXT</a> *)</td></tr>
+<tr class="separator:aa9f871832c15e89699417b8ba066be80"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0495027c439b847533726cdaa0fa958d"><td class="memItemLeft" align="right" valign="top"><a id="a0495027c439b847533726cdaa0fa958d"></a>
+typedef <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>(*&#160;</td><td class="memItemRight" valign="bottom"><b>OPGP_CARD_CONNECT_FN</b>) (<a class="el" href="structOPGP__CARD__CONTEXT.html">OPGP_CARD_CONTEXT</a>, <a class="el" href="types_8h.html#ae4e9bc4479c6a80be7a2f023bedf7464">OPGP_CSTRING</a>, <a class="el" href="structOPGP__CARD__INFO.html">OPGP_CARD_INFO</a> *, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a>)</td></tr>
+<tr class="separator:a0495027c439b847533726cdaa0fa958d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a00c37f063f215a91d14fa96341dfac95"><td class="memItemLeft" align="right" valign="top"><a id="a00c37f063f215a91d14fa96341dfac95"></a>
+typedef <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>(*&#160;</td><td class="memItemRight" valign="bottom"><b>OPGP_CARD_DISCONNECT_FN</b>) (<a class="el" href="structOPGP__CARD__CONTEXT.html">OPGP_CARD_CONTEXT</a>, <a class="el" href="structOPGP__CARD__INFO.html">OPGP_CARD_INFO</a> *)</td></tr>
+<tr class="separator:a00c37f063f215a91d14fa96341dfac95"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9d1ace0bea35b0e714667360f84978cd"><td class="memItemLeft" align="right" valign="top"><a id="a9d1ace0bea35b0e714667360f84978cd"></a>
+typedef <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>(*&#160;</td><td class="memItemRight" valign="bottom"><b>OPGP_LIST_READERS_FN</b>) (<a class="el" href="structOPGP__CARD__CONTEXT.html">OPGP_CARD_CONTEXT</a>, <a class="el" href="types_8h.html#a88d56175458160f0a49ab97a45681f1f">OPGP_STRING</a>, <a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a>, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a>)</td></tr>
+<tr class="separator:a9d1ace0bea35b0e714667360f84978cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0db148cfa79507992aa1aca6d098d770"><td class="memItemLeft" align="right" valign="top"><a id="a0db148cfa79507992aa1aca6d098d770"></a>
+typedef <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>(*&#160;</td><td class="memItemRight" valign="bottom"><b>OPGP_SEND_APDU_FN</b>) (<a class="el" href="structOPGP__CARD__CONTEXT.html">OPGP_CARD_CONTEXT</a>, <a class="el" href="structOPGP__CARD__INFO.html">OPGP_CARD_INFO</a>, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a>, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a>, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a>, <a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a>)</td></tr>
+<tr class="separator:a0db148cfa79507992aa1aca6d098d770"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a73c29d9a29366659b1f93925ff506b78"><td class="memItemLeft" align="right" valign="top"><a id="a73c29d9a29366659b1f93925ff506b78"></a>
+typedef <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>(*&#160;</td><td class="memItemRight" valign="bottom"><b>OPGP_SUPPORTS_EXTENDED_APDU_FN</b>) (<a class="el" href="structOPGP__CARD__CONTEXT.html">OPGP_CARD_CONTEXT</a>, <a class="el" href="structOPGP__CARD__INFO.html">OPGP_CARD_INFO</a>, BOOL *)</td></tr>
+<tr class="separator:a73c29d9a29366659b1f93925ff506b78"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:a94970905b5232e50c22d7227990d4030"><td class="memItemLeft" align="right" valign="top">OPGP_API void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="connection_8h.html#a94970905b5232e50c22d7227990d4030">OPGP_enable_trace_mode</a> (<a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> enable, FILE *out)</td></tr>
@@ -132,9 +164,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a1194b0781003b0ba4f0f00f906b93ba5"><td class="memItemLeft" align="right" valign="top">OPGP_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="connection_8h.html#a1194b0781003b0ba4f0f00f906b93ba5">OPGP_release_context</a> (<a class="el" href="structOPGP__CARD__CONTEXT.html">OPGP_CARD_CONTEXT</a> *cardContext)</td></tr>
 <tr class="memdesc:a1194b0781003b0ba4f0f00f906b93ba5"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function releases the context to the connection layer established by <a class="el" href="connection_8h.html#affa67c882fb6dd41183fa235adac78a9" title="This function establishes a context to connection layer.">OPGP_establish_context()</a>.  <a href="connection_8h.html#a1194b0781003b0ba4f0f00f906b93ba5">More...</a><br /></td></tr>
 <tr class="separator:a1194b0781003b0ba4f0f00f906b93ba5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a77f5524a15ad76ba7989cd06f9d32e79"><td class="memItemLeft" align="right" valign="top">OPGP_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="connection_8h.html#a77f5524a15ad76ba7989cd06f9d32e79">OPGP_list_readers</a> (<a class="el" href="structOPGP__CARD__CONTEXT.html">OPGP_CARD_CONTEXT</a> cardContext, <a class="el" href="types_8h.html#a88d56175458160f0a49ab97a45681f1f">OPGP_STRING</a> readerNames, <a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a> readerNamesLength)</td></tr>
-<tr class="memdesc:a77f5524a15ad76ba7989cd06f9d32e79"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function returns a list of currently available readers.  <a href="connection_8h.html#a77f5524a15ad76ba7989cd06f9d32e79">More...</a><br /></td></tr>
-<tr class="separator:a77f5524a15ad76ba7989cd06f9d32e79"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad6d3f0f6726ca41d19a01210212b48dd"><td class="memItemLeft" align="right" valign="top">OPGP_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="connection_8h.html#ad6d3f0f6726ca41d19a01210212b48dd">OPGP_list_readers</a> (<a class="el" href="structOPGP__CARD__CONTEXT.html">OPGP_CARD_CONTEXT</a> cardContext, <a class="el" href="types_8h.html#a88d56175458160f0a49ab97a45681f1f">OPGP_STRING</a> readerNames, <a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a> readerNamesLength, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> presentOnly)</td></tr>
+<tr class="memdesc:ad6d3f0f6726ca41d19a01210212b48dd"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function returns a list of currently available readers.  <a href="connection_8h.html#ad6d3f0f6726ca41d19a01210212b48dd">More...</a><br /></td></tr>
+<tr class="separator:ad6d3f0f6726ca41d19a01210212b48dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a047ceb7132c4e4267288fb63f1a176ea"><td class="memItemLeft" align="right" valign="top">OPGP_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="connection_8h.html#a047ceb7132c4e4267288fb63f1a176ea">OPGP_card_connect</a> (<a class="el" href="structOPGP__CARD__CONTEXT.html">OPGP_CARD_CONTEXT</a> cardContext, <a class="el" href="types_8h.html#ae4e9bc4479c6a80be7a2f023bedf7464">OPGP_CSTRING</a> readerName, <a class="el" href="structOPGP__CARD__INFO.html">OPGP_CARD_INFO</a> *cardInfo, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> protocol)</td></tr>
 <tr class="memdesc:a047ceb7132c4e4267288fb63f1a176ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function connects to a reader.  <a href="connection_8h.html#a047ceb7132c4e4267288fb63f1a176ea">More...</a><br /></td></tr>
 <tr class="separator:a047ceb7132c4e4267288fb63f1a176ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -144,10 +176,59 @@ Functions</h2></td></tr>
 <tr class="memitem:a1ec2582ab16e2020052c19135c11f56e"><td class="memItemLeft" align="right" valign="top">OPGP_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="connection_8h.html#a1ec2582ab16e2020052c19135c11f56e">OPGP_send_APDU</a> (<a class="el" href="structOPGP__CARD__CONTEXT.html">OPGP_CARD_CONTEXT</a> cardContext, <a class="el" href="structOPGP__CARD__INFO.html">OPGP_CARD_INFO</a> cardInfo, <a class="el" href="structGP211__SECURITY__INFO.html">GP211_SECURITY_INFO</a> *secInfo, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> capdu, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> capduLength, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> rapdu, <a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a> rapduLength)</td></tr>
 <tr class="memdesc:a1ec2582ab16e2020052c19135c11f56e"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function sends an APDU.  <a href="connection_8h.html#a1ec2582ab16e2020052c19135c11f56e">More...</a><br /></td></tr>
 <tr class="separator:a1ec2582ab16e2020052c19135c11f56e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5afbaf82e0dfeac1599b83add7cc1f73"><td class="memItemLeft" align="right" valign="top"><a id="a5afbaf82e0dfeac1599b83add7cc1f73"></a>
+OPGP_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="connection_8h.html#a5afbaf82e0dfeac1599b83add7cc1f73">OPGP_send_chained_APDU</a> (<a class="el" href="structOPGP__CARD__CONTEXT.html">OPGP_CARD_CONTEXT</a> cardContext, <a class="el" href="structOPGP__CARD__INFO.html">OPGP_CARD_INFO</a> cardInfo, <a class="el" href="structGP211__SECURITY__INFO.html">GP211_SECURITY_INFO</a> *secInfo, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> capdus[], <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> capduLengths[], <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> numCapdus, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> rapdu, <a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a> rapduLength)</td></tr>
+<tr class="memdesc:a5afbaf82e0dfeac1599b83add7cc1f73"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function sends multiple APDUs that belong to one logical command. <br /></td></tr>
+<tr class="separator:a5afbaf82e0dfeac1599b83add7cc1f73"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0d13cf8f61aa08a00eb4fc6349f79b02"><td class="memItemLeft" align="right" valign="top"><a id="a0d13cf8f61aa08a00eb4fc6349f79b02"></a>
+<a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><b>OPGP_send_chained_APDU_extended</b> (<a class="el" href="structOPGP__CARD__CONTEXT.html">OPGP_CARD_CONTEXT</a> cardContext, <a class="el" href="structOPGP__CARD__INFO.html">OPGP_CARD_INFO</a> cardInfo, <a class="el" href="structGP211__SECURITY__INFO.html">GP211_SECURITY_INFO</a> *secInfo, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> capdus[], <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> capduLengths[], <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> numCapdus, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> rapdu, <a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a> rapduLength, BOOL allowExtendedApdu)</td></tr>
+<tr class="separator:a0d13cf8f61aa08a00eb4fc6349f79b02"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:ab598a1ecc3f004fce11b5fab8d48cc3b"><td class="memItemLeft" align="right" valign="top"><a id="ab598a1ecc3f004fce11b5fab8d48cc3b"></a>
+<a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="connection_8h.html#ab598a1ecc3f004fce11b5fab8d48cc3b">traceEnable</a></td></tr>
+<tr class="memdesc:ab598a1ecc3f004fce11b5fab8d48cc3b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enable trace mode. <br /></td></tr>
+<tr class="separator:ab598a1ecc3f004fce11b5fab8d48cc3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab41efdedad5f82128d421dd9e4f5ae44"><td class="memItemLeft" align="right" valign="top"><a id="ab41efdedad5f82128d421dd9e4f5ae44"></a>
+FILE *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="connection_8h.html#ab41efdedad5f82128d421dd9e4f5ae44">traceFile</a></td></tr>
+<tr class="memdesc:ab41efdedad5f82128d421dd9e4f5ae44"><td class="mdescLeft">&#160;</td><td class="mdescRight">The trace file for trace mode. <br /></td></tr>
+<tr class="separator:ab41efdedad5f82128d421dd9e4f5ae44"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>This file contains all connection related functions. The real functionality is implemented by plugins. </p>
-</div><h2 class="groupheader">Function Documentation</h2>
+</div><h2 class="groupheader">Typedef Documentation</h2>
+<a id="af25f4da0bc5d1d4591c926f83b51b2b5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af25f4da0bc5d1d4591c926f83b51b2b5">&#9670;&nbsp;</a></span>OPGP_CARD_CONTEXT</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef struct <a class="el" href="structOPGP__CARD__CONTEXT.html">OPGP_CARD_CONTEXT</a> <a class="el" href="structOPGP__CARD__CONTEXT.html">OPGP_CARD_CONTEXT</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Card context necessary for <a class="el" href="connection_8h.html#affa67c882fb6dd41183fa235adac78a9" title="This function establishes a context to connection layer.">OPGP_establish_context()</a>. </p>
+
+</div>
+</div>
+<a id="a1a166525daa646d282c179af9f47fc81"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1a166525daa646d282c179af9f47fc81">&#9670;&nbsp;</a></span>OPGP_CARD_INFO</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef struct <a class="el" href="structOPGP__CARD__INFO.html">OPGP_CARD_INFO</a> <a class="el" href="structOPGP__CARD__INFO.html">OPGP_CARD_INFO</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The card information returned by a <a class="el" href="connection_8h.html#a047ceb7132c4e4267288fb63f1a176ea" title="This function connects to a reader.">OPGP_card_connect()</a> and modified by select_channel(). </p>
+
+</div>
+</div>
+<h2 class="groupheader">Function Documentation</h2>
 <a id="a047ceb7132c4e4267288fb63f1a176ea"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a047ceb7132c4e4267288fb63f1a176ea">&#9670;&nbsp;</a></span>OPGP_card_connect()</h2>
 
@@ -309,8 +390,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a77f5524a15ad76ba7989cd06f9d32e79"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a77f5524a15ad76ba7989cd06f9d32e79">&#9670;&nbsp;</a></span>OPGP_list_readers()</h2>
+<a id="ad6d3f0f6726ca41d19a01210212b48dd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad6d3f0f6726ca41d19a01210212b48dd">&#9670;&nbsp;</a></span>OPGP_list_readers()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -331,7 +412,13 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a>&#160;</td>
-          <td class="paramname"><em>readerNamesLength</em>&#160;</td>
+          <td class="paramname"><em>readerNamesLength</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a>&#160;</td>
+          <td class="paramname"><em>presentOnly</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -347,6 +434,7 @@ Functions</h2></td></tr>
     <tr><td class="paramname">cardContext</td><td>[in] The valid <a class="el" href="structOPGP__CARD__CONTEXT.html">OPGP_CARD_CONTEXT</a> returned by establish_context() </td></tr>
     <tr><td class="paramname">readerNames</td><td>[out] The reader names will be a multi-string and separated by a NULL character and ended by a double NULL. (ReaderA\0ReaderB\0\0). If this value is NULL, list_readers ignores the buffer length supplied in readerNamesLength, writes the length of the multi-string that would have been returned if this parameter had not been NULL to readerNamesLength. </td></tr>
     <tr><td class="paramname">readerNamesLength</td><td>[in, out] The length of the multi-string including all trailing null characters. </td></tr>
+    <tr><td class="paramname">presentOnly</td><td>If non-zero, only readers with a smart card inserted are returned. </td></tr>
   </table>
   </dd>
 </dl>
@@ -442,7 +530,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">cardContext</td><td>[in] The valid <a class="el" href="structOPGP__CARD__CONTEXT.html">OPGP_CARD_CONTEXT</a> returned by <a class="el" href="connection_8h.html#affa67c882fb6dd41183fa235adac78a9" title="This function establishes a context to connection layer.">OPGP_establish_context()</a> </td></tr>
     <tr><td class="paramname">cardInfo</td><td>[in] The <a class="el" href="structOPGP__CARD__INFO.html">OPGP_CARD_INFO</a> structure returned by <a class="el" href="connection_8h.html#a047ceb7132c4e4267288fb63f1a176ea" title="This function connects to a reader.">OPGP_card_connect()</a>. </td></tr>
-    <tr><td class="paramname">*secInfo</td><td>[in, out] The pointer to the <a class="el" href="structGP211__SECURITY__INFO.html">GP211_SECURITY_INFO</a> structure returned by <a class="el" href="globalplatform_8h.html#a0ce351b91aa2bb6c6b709b38919f481a" title="GlobalPlatform2.1.1: Mutual authentication.">GP211_mutual_authentication()</a>. </td></tr>
+    <tr><td class="paramname">*secInfo</td><td>[in, out] The pointer to the <a class="el" href="structGP211__SECURITY__INFO.html">GP211_SECURITY_INFO</a> structure returned by <a class="el" href="globalplatform_8h.html#a067380f45227704c6dac1ffe332d078b" title="GlobalPlatform2.1.1: Mutual authentication.">GP211_mutual_authentication()</a>. </td></tr>
     <tr><td class="paramname">capdu</td><td>[in] The command APDU. </td></tr>
     <tr><td class="paramname">capduLength</td><td>[in] The length of the command APDU. </td></tr>
     <tr><td class="paramname">rapdu</td><td>[out] The response APDU. </td></tr>

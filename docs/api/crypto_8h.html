@@ -38,11 +38,12 @@ $(function() {
 <div id="main-nav"></div>
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="dir_a9ec1ef424966475f993eb98877e3088.html">projects</a></li><li class="navelem"><a class="el" href="dir_d2855c70ce395bda03f135615cc88b22.html">globalplatform</a></li><li class="navelem"><a class="el" href="dir_9496c7299f14604a38c1a3524a5ff8d1.html">globalplatform</a></li><li class="navelem"><a class="el" href="dir_fd0b57fd3ed57527b85ebfae9eebb31f.html">src</a></li>  </ul>
+<li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Data Structures</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">crypto.h File Reference</div>  </div>
@@ -72,44 +73,68 @@ This graph shows which files directly or indirectly include this file:</div>
 <div class="dyncontent">
 <div class="center"><img src="crypto_8h__dep__incl.png" border="0" usemap="#acrypto_8hdep" alt=""/></div>
 <map name="acrypto_8hdep" id="acrypto_8hdep">
-<area shape="rect" title=" " alt="" coords="68,5,143,32"/>
+<area shape="rect" title=" " alt="" coords="132,5,207,32"/>
 <area shape="rect" href="crypto_8c.html" title="This implements all crypto functions." alt="" coords="5,80,80,107"/>
 <area shape="rect" href="globalplatform_8c.html" title="This implements all Open&#45; and GlobalPlatform functions." alt="" coords="105,80,234,107"/>
+<area shape="rect" href="scp_8c.html" title=" " alt="" coords="258,80,313,107"/>
 </map>
 </div>
 </div>
 <p><a href="crypto_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Data Structures</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGP211__ECC__DOMAIN__PARAMETERS.html">GP211_ECC_DOMAIN_PARAMETERS</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:abace419f3ad90b9069352ae6180be07b"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#abace419f3ad90b9069352ae6180be07b">calculate_CMAC_aes</a> (<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> sMacKey[32], <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> keyLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> *message, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> messageLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> chainingValue[16], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> mac[16])</td></tr>
-<tr class="memdesc:abace419f3ad90b9069352ae6180be07b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a MAC for commands (APDUs) using CMAC AES. This is used by SCP03. The MAC for the message are the first 8 Bytes of mac. The next chainingValue are the full 16 Bytes of mac. Save this value for the next command MAC calculation.  <a href="crypto_8h.html#abace419f3ad90b9069352ae6180be07b">More...</a><br /></td></tr>
-<tr class="separator:abace419f3ad90b9069352ae6180be07b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae881fca3c4969f4f90bf1975daaa5e1e"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#ae881fca3c4969f4f90bf1975daaa5e1e">calculate_CMAC_aes</a> (<a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> sMacKey, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> keyLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> *message, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> messageLength, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> chainingValue, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> mac)</td></tr>
+<tr class="memdesc:ae881fca3c4969f4f90bf1975daaa5e1e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a MAC for commands (APDUs) using CMAC AES. This is used by SCP03. The MAC for the message is the first 8 Bytes of mac. The next chainingValue is the full 16 Bytes of mac. Save this value for the next command MAC calculation.  <a href="crypto_8h.html#ae881fca3c4969f4f90bf1975daaa5e1e">More...</a><br /></td></tr>
+<tr class="separator:ae881fca3c4969f4f90bf1975daaa5e1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3486310e5e16c11b246f82eccf900950"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#a3486310e5e16c11b246f82eccf900950">calculate_key_check_value</a> (<a class="el" href="structGP211__SECURITY__INFO.html">GP211_SECURITY_INFO</a> *secInfo, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> keyType, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> keyData, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> keyDataLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> keyCheckValue[3])</td></tr>
 <tr class="separator:a3486310e5e16c11b246f82eccf900950"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8f74edf08a931a87702ab8caeca97bd8"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#a8f74edf08a931a87702ab8caeca97bd8">encrypt_sensitive_data</a> (<a class="el" href="structGP211__SECURITY__INFO.html">GP211_SECURITY_INFO</a> *secInfo, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> data, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> dataLength, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> encryptedData, <a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a> encryptedDataLength)</td></tr>
 <tr class="separator:a8f74edf08a931a87702ab8caeca97bd8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae3030f0ef13b90d30c3f6073c9284cb8"><td class="memItemLeft" align="right" valign="top"><a id="ae3030f0ef13b90d30c3f6073c9284cb8"></a>
-OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><b>get_key_data_field</b> (<a class="el" href="structGP211__SECURITY__INFO.html">GP211_SECURITY_INFO</a> *secInfo, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> keyData, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> keyDataLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> keyType, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> isSensitive, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> keyDataField, <a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a> keyDataFieldLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> keyCheckValue[3])</td></tr>
-<tr class="separator:ae3030f0ef13b90d30c3f6073c9284cb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:affb292b3131bef6cd64f430ab228703b"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#affb292b3131bef6cd64f430ab228703b">create_session_key_SCP01</a> (<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> key[16], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> cardChallenge[8], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> hostChallenge[8], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> sessionKey[16])</td></tr>
-<tr class="separator:affb292b3131bef6cd64f430ab228703b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8cd67bd366eeaacc169db17cd004f7d8"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#a8cd67bd366eeaacc169db17cd004f7d8">create_session_key_SCP02</a> (<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> key[16], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> constant[2], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> sequenceCounter[2], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> sessionKey[16])</td></tr>
-<tr class="separator:a8cd67bd366eeaacc169db17cd004f7d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a444649bd7d4829f2b5a96a8baff8ec79"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#a444649bd7d4829f2b5a96a8baff8ec79">calculate_rsa_signature</a> (<a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> message, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> messageLength, <a class="el" href="types_8h.html#a88d56175458160f0a49ab97a45681f1f">OPGP_STRING</a> PEMKeyFileName, char *passPhrase, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> signature[128])</td></tr>
-<tr class="separator:a444649bd7d4829f2b5a96a8baff8ec79"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af83ddff26bd4a0fe0e7c4a4bc988264b"><td class="memItemLeft" align="right" valign="top"><a id="af83ddff26bd4a0fe0e7c4a4bc988264b"></a>
+OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><b>get_key_data_field</b> (<a class="el" href="structGP211__SECURITY__INFO.html">GP211_SECURITY_INFO</a> *secInfo, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> keyData, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> keyDataLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> keyType, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> keyDataField, <a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a> keyDataFieldLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> keyCheckValue[3], BOOL includeKeyCheckValue)</td></tr>
+<tr class="separator:af83ddff26bd4a0fe0e7c4a4bc988264b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a790f247c1be980e93b3e45301be70bac"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#a790f247c1be980e93b3e45301be70bac">create_session_key_SCP01</a> (<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> key[16], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> cardChallenge[8], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> hostChallenge[8], <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> sessionKey)</td></tr>
+<tr class="separator:a790f247c1be980e93b3e45301be70bac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a62a54f5ee2e7e8d61f4f787be144bcbf"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#a62a54f5ee2e7e8d61f4f787be144bcbf">create_session_key_SCP02</a> (<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> key[16], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> constant[2], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> sequenceCounter[2], <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> sessionKey)</td></tr>
+<tr class="separator:a62a54f5ee2e7e8d61f4f787be144bcbf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4a69996f1fcb04598b947fe4370c0acd"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#a4a69996f1fcb04598b947fe4370c0acd">calculate_rsa_signature</a> (<a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> message, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> messageLength, <a class="el" href="types_8h.html#a88d56175458160f0a49ab97a45681f1f">OPGP_STRING</a> PEMKeyFileName, char *passPhrase, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> signature, <a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a> signatureLength)</td></tr>
+<tr class="separator:a4a69996f1fcb04598b947fe4370c0acd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5667ea746e36ebcb4ecbccd357dbf4a1"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#a5667ea746e36ebcb4ecbccd357dbf4a1">calculate_ecc_signature</a> (<a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> message, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> messageLength, <a class="el" href="types_8h.html#a88d56175458160f0a49ab97a45681f1f">OPGP_STRING</a> PEMKeyFileName, char *passPhrase, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> signature, <a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a> signatureLength)</td></tr>
+<tr class="separator:a5667ea746e36ebcb4ecbccd357dbf4a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af907009731b327dc0f15512e6fe5a350"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#af907009731b327dc0f15512e6fe5a350">calculate_signature</a> (<a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> message, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> messageLength, <a class="el" href="types_8h.html#a88d56175458160f0a49ab97a45681f1f">OPGP_STRING</a> PEMKeyFileName, char *passPhrase, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> signature, <a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a> signatureLength)</td></tr>
+<tr class="separator:af907009731b327dc0f15512e6fe5a350"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a21e9cf20d2e2e2381898937e28506352"><td class="memItemLeft" align="right" valign="top"><a id="a21e9cf20d2e2e2381898937e28506352"></a>
+OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><b>validate_signature</b> (<a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> message, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> messageLength, <a class="el" href="types_8h.html#a88d56175458160f0a49ab97a45681f1f">OPGP_STRING</a> PEMKeyFileName, char *passPhrase, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> signature, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> signatureLength)</td></tr>
+<tr class="separator:a21e9cf20d2e2e2381898937e28506352"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0c8b56f4dae9ca1ac81e3f3a0a786d32"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#a0c8b56f4dae9ca1ac81e3f3a0a786d32">calculate_MAC</a> (<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> sessionKey[16], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> *message, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> messageLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> icv[8], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> mac[8])</td></tr>
 <tr class="separator:a0c8b56f4dae9ca1ac81e3f3a0a786d32"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a176bd95886a089f02232dd6819865562"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#a176bd95886a089f02232dd6819865562">calculate_enc_cbc</a> (<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> key[16], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> *message, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> messageLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> *encryption, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> *encryptionLength)</td></tr>
+<tr class="separator:a176bd95886a089f02232dd6819865562"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a27cf0e0fe9b32ec0dc75ba53d441a19d"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#a27cf0e0fe9b32ec0dc75ba53d441a19d">calculate_enc_cbc_SCP02</a> (<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> key[16], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> *message, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> messageLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> *encryption, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> *encryptionLength)</td></tr>
+<tr class="separator:a27cf0e0fe9b32ec0dc75ba53d441a19d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a59d49f3ce24052741c11c6572bef8a0e"><td class="memItemLeft" align="right" valign="top"><a id="a59d49f3ce24052741c11c6572bef8a0e"></a>
+OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><b>calculate_enc_cbc_SCP03</b> (<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> key[32], <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> keyLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> *message, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> messageLength, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> icv, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> encryption, <a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a> encryptionLength)</td></tr>
+<tr class="separator:a59d49f3ce24052741c11c6572bef8a0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abebd55aa2542dd8d8ead67f84d7cc599"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#abebd55aa2542dd8d8ead67f84d7cc599">calculate_enc_icv_SCP03</a> (<a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> key, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> keyLength, <a class="el" href="types_8h.html#a2a3e0cda5f1249bef6db47c5eb8e3813">LONG</a> sessionEncryptionCounter, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> icv, BOOL forResponse)</td></tr>
+<tr class="separator:abebd55aa2542dd8d8ead67f84d7cc599"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a373be3c50bb2020248c0f43b5ed660bb"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#a373be3c50bb2020248c0f43b5ed660bb">calculate_enc_ecb_single_des</a> (<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> key[8], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> *message, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> messageLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> *encryption, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> *encryptionLength)</td></tr>
+<tr class="separator:a373be3c50bb2020248c0f43b5ed660bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae20ba4e0977c27b93ea191bdf579d910"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#ae20ba4e0977c27b93ea191bdf579d910">calculate_card_cryptogram_SCP01</a> (<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> S_ENCSessionKey[16], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> cardChallenge[8], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> hostChallenge[8], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> cardCryptogram[8])</td></tr>
 <tr class="separator:ae20ba4e0977c27b93ea191bdf579d910"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1c87adbc4bfb40dae6c1886cd5e1eae2"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#a1c87adbc4bfb40dae6c1886cd5e1eae2">calculate_card_cryptogram_SCP02</a> (<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> S_ENCSessionKey[16], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> sequenceCounter[2], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> cardChallenge[6], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> hostChallenge[8], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> cardCryptogram[8])</td></tr>
-<tr class="separator:a1c87adbc4bfb40dae6c1886cd5e1eae2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad3413ecb7a3672e47c92e94fdaa9199b"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#ad3413ecb7a3672e47c92e94fdaa9199b">calculate_card_cryptogram_SCP02</a> (<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> S_ENCSessionKey[16], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> sequenceCounter[2], <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> cardChallenge, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> hostChallenge[8], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> cardCryptogram[8])</td></tr>
+<tr class="separator:ad3413ecb7a3672e47c92e94fdaa9199b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2be7da782783c4b51a4ebcf81f9eaeec"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#a2be7da782783c4b51a4ebcf81f9eaeec">calculate_host_cryptogram_SCP01</a> (<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> S_ENCSessionKey[16], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> cardChallenge[8], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> hostChallenge[8], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> hostCryptogram[8])</td></tr>
 <tr class="separator:a2be7da782783c4b51a4ebcf81f9eaeec"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5b987c4652a34236acd7440970247059"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#a5b987c4652a34236acd7440970247059">calculate_host_cryptogram_SCP02</a> (<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> S_ENCSessionKey[16], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> sequenceCounter[2], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> cardChallenge[6], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> hostChallenge[8], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> hostCryptogram[8])</td></tr>
-<tr class="separator:a5b987c4652a34236acd7440970247059"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3d97cff49204c24f78c9d2cda9fa7e79"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#a3d97cff49204c24f78c9d2cda9fa7e79">create_session_key_SCP03</a> (<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> key[32], <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> keyLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> derivationConstant, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> cardChallenge[8], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> hostChallenge[8], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> sessionKey[32])</td></tr>
-<tr class="separator:a3d97cff49204c24f78c9d2cda9fa7e79"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7b31fad7d726b36aa7b1a38696fbfd02"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#a7b31fad7d726b36aa7b1a38696fbfd02">calculate_host_cryptogram_SCP02</a> (<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> S_ENCSessionKey[16], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> sequenceCounter[2], <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> cardChallenge, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> hostChallenge[8], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> hostCryptogram[8])</td></tr>
+<tr class="separator:a7b31fad7d726b36aa7b1a38696fbfd02"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abd2013f7dceee1fcdb71e1e6ec78666c"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#abd2013f7dceee1fcdb71e1e6ec78666c">create_session_key_SCP03</a> (<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> key[32], <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> keyLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> derivationConstant, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> cardChallenge[8], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> hostChallenge[8], <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> sessionKey)</td></tr>
+<tr class="separator:abd2013f7dceee1fcdb71e1e6ec78666c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:affbf23da4ff9ba3a317add0d709fdaae"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#affbf23da4ff9ba3a317add0d709fdaae">calculate_card_challenge_SCP03</a> (<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> S_ENC[32], <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> keyLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> sequenceCounter[3], <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> invokingAID, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> invokingAIDLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> cardChallenge[8])</td></tr>
 <tr class="separator:affbf23da4ff9ba3a317add0d709fdaae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3f920b4fd6dc82a7321946224ee8881d"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#a3f920b4fd6dc82a7321946224ee8881d">calculate_card_cryptogram_SCP03</a> (<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> S_MACSessionKey[32], <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> keyLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> cardChallenge[8], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> hostChallenge[8], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> cardCryptogram[8])</td></tr>
@@ -127,28 +152,80 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
 <tr class="separator:a5692e1780d31ec244e060feeff7b391d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad601ce3e16227299c324413bf084e0ec"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#ad601ce3e16227299c324413bf084e0ec">calculate_enc_ecb_two_key_triple_des</a> (<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> key[16], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> *message, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> messageLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> *encryption, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> *encryptionLength)</td></tr>
 <tr class="separator:ad601ce3e16227299c324413bf084e0ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae5869c3c52548c839313f45e79fced81"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#ae5869c3c52548c839313f45e79fced81">validate_receipt</a> (<a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> validationData, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> validationDataLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> receipt[16], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> receiptKey[32], <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> keyLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> secureChannelProtocol)</td></tr>
-<tr class="separator:ae5869c3c52548c839313f45e79fced81"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af2474781ad71c2d39bcd8d65588ab3e6"><td class="memItemLeft" align="right" valign="top"><a id="af2474781ad71c2d39bcd8d65588ab3e6"></a>
+OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><b>validate_receipt</b> (<a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> validationData, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> validationDataLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> receipt[16], <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> receiptKey, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> keyLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> secureChannelProtocol)</td></tr>
+<tr class="separator:af2474781ad71c2d39bcd8d65588ab3e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a90fa0ba47660dad35e3003c820f0f430"><td class="memItemLeft" align="right" valign="top"><a id="a90fa0ba47660dad35e3003c820f0f430"></a>
+OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><b>validate_receipt_ex</b> (<a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> validationData, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> validationDataLength, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> receipt, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> receiptLength, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> receiptKey, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> keyLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> receiptKeyType, <a class="el" href="types_8h.html#a88d56175458160f0a49ab97a45681f1f">OPGP_STRING</a> PEMKeyFileName, char *passPhrase)</td></tr>
+<tr class="separator:a90fa0ba47660dad35e3003c820f0f430"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aecf2e97d30e02f10f25f6b8ea9b2c78c"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#aecf2e97d30e02f10f25f6b8ea9b2c78c">calculate_MAC_des_3des</a> (<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> _3des_key[16], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> *message, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> messageLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> initialICV[8], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> mac[8])</td></tr>
 <tr class="separator:aecf2e97d30e02f10f25f6b8ea9b2c78c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a387e6b34135641f89d5c81e0844e4240"><td class="memItemLeft" align="right" valign="top"><a id="a387e6b34135641f89d5c81e0844e4240"></a>
-OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><b>validate_install_receipt</b> (<a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> confirmationCounter, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> cardUniqueData, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> cardUniqueDataLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> receiptKey[32], <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> keyLength, <a class="el" href="structGP211__RECEIPT__DATA.html">GP211_RECEIPT_DATA</a> receiptData, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> executableLoadFileAID, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> executableLoadFileAIDLength, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> applicationAID, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> applicationAIDLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> secureChannelProtocol)</td></tr>
-<tr class="separator:a387e6b34135641f89d5c81e0844e4240"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a656ef5cfd38b8bbb94c59e790c8cf5fe"><td class="memItemLeft" align="right" valign="top"><a id="a656ef5cfd38b8bbb94c59e790c8cf5fe"></a>
-OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><b>validate_delete_receipt</b> (<a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> confirmationCounter, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> cardUniqueData, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> cardUniqueDataLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> receiptKey[32], <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> keyLength, <a class="el" href="structGP211__RECEIPT__DATA.html">GP211_RECEIPT_DATA</a> receiptData, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> AID, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> AIDLengthv, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> secureChannelProtocol)</td></tr>
-<tr class="separator:a656ef5cfd38b8bbb94c59e790c8cf5fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab3b1f2366dbee41f4cec71505d01ee8b"><td class="memItemLeft" align="right" valign="top"><a id="ab3b1f2366dbee41f4cec71505d01ee8b"></a>
-OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><b>validate_load_receipt</b> (<a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> confirmationCounter, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> cardUniqueData, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> cardUniqueDataLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> receiptKey[32], <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> keyLength, <a class="el" href="structGP211__RECEIPT__DATA.html">GP211_RECEIPT_DATA</a> receiptData, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> executableLoadFileAID, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> executableLoadFileAIDLength, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> securityDomainAID, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> securityDomainAIDLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> secureChannelProtocol)</td></tr>
-<tr class="separator:ab3b1f2366dbee41f4cec71505d01ee8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a52d9c606b6fbc1d281a10632a0770220"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#a52d9c606b6fbc1d281a10632a0770220">read_public_rsa_key</a> (<a class="el" href="types_8h.html#a88d56175458160f0a49ab97a45681f1f">OPGP_STRING</a> PEMKeyFileName, char *passPhrase, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> rsaModulus[128], <a class="el" href="types_8h.html#a2a3e0cda5f1249bef6db47c5eb8e3813">LONG</a> *rsaExponent)</td></tr>
-<tr class="memdesc:a52d9c606b6fbc1d281a10632a0770220"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reads a public RSA key from a file.  <a href="crypto_8h.html#a52d9c606b6fbc1d281a10632a0770220">More...</a><br /></td></tr>
-<tr class="separator:a52d9c606b6fbc1d281a10632a0770220"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8ba593a11075a371ce519460409bc2e9"><td class="memItemLeft" align="right" valign="top"><a id="a8ba593a11075a371ce519460409bc2e9"></a>
+OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><b>validate_install_receipt</b> (<a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> receiptKey, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> keyLength, <a class="el" href="structGP211__RECEIPT__DATA.html">GP211_RECEIPT_DATA</a> receiptData, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> executableLoadFileAID, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> executableLoadFileAIDLength, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> applicationAID, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> applicationAIDLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> receiptKeyType, <a class="el" href="types_8h.html#a88d56175458160f0a49ab97a45681f1f">OPGP_STRING</a> PEMKeyFileName, char *passPhrase)</td></tr>
+<tr class="separator:a8ba593a11075a371ce519460409bc2e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad2874df7c88c4749df7dec0581a55dd7"><td class="memItemLeft" align="right" valign="top"><a id="ad2874df7c88c4749df7dec0581a55dd7"></a>
+OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><b>validate_delete_receipt</b> (<a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> receiptKey, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> keyLength, <a class="el" href="structGP211__RECEIPT__DATA.html">GP211_RECEIPT_DATA</a> receiptData, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> AID, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> AIDLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> receiptKeyType, <a class="el" href="types_8h.html#a88d56175458160f0a49ab97a45681f1f">OPGP_STRING</a> PEMKeyFileName, char *passPhrase)</td></tr>
+<tr class="separator:ad2874df7c88c4749df7dec0581a55dd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a661d71bfd6db74eb05d0413fbbc5eb2c"><td class="memItemLeft" align="right" valign="top"><a id="a661d71bfd6db74eb05d0413fbbc5eb2c"></a>
+OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><b>validate_load_receipt</b> (<a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> receiptKey, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> keyLength, <a class="el" href="structGP211__RECEIPT__DATA.html">GP211_RECEIPT_DATA</a> receiptData, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> executableLoadFileAID, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> executableLoadFileAIDLength, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> securityDomainAID, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> securityDomainAIDLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> receiptKeyType, <a class="el" href="types_8h.html#a88d56175458160f0a49ab97a45681f1f">OPGP_STRING</a> PEMKeyFileName, char *passPhrase)</td></tr>
+<tr class="separator:a661d71bfd6db74eb05d0413fbbc5eb2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adb08715250fb25638e27bbe240f57fa6"><td class="memItemLeft" align="right" valign="top"><a id="adb08715250fb25638e27bbe240f57fa6"></a>
+OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><b>validate_extradition_receipt</b> (<a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> receiptKey, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> keyLength, <a class="el" href="structGP211__RECEIPT__DATA.html">GP211_RECEIPT_DATA</a> receiptData, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> oldSecurityDomainAID, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> oldSecurityDomainAIDLength, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> newSecurityDomainAID, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> newSecurityDomainAIDLength, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> applicationOrExecutableLoadFileAID, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> applicationOrExecutableLoadFileAIDLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> receiptKeyType, <a class="el" href="types_8h.html#a88d56175458160f0a49ab97a45681f1f">OPGP_STRING</a> PEMKeyFileName, char *passPhrase)</td></tr>
+<tr class="separator:adb08715250fb25638e27bbe240f57fa6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a703ede29857aa86cdfccf6deb2adc9fd"><td class="memItemLeft" align="right" valign="top"><a id="a703ede29857aa86cdfccf6deb2adc9fd"></a>
+OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><b>validate_registry_update_receipt</b> (<a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> receiptKey, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> keyLength, <a class="el" href="structGP211__RECEIPT__DATA.html">GP211_RECEIPT_DATA</a> receiptData, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> oldSecurityDomainAID, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> oldSecurityDomainAIDLength, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> applicationAID, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> applicationAIDLength, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> newSecurityDomainAID, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> newSecurityDomainAIDLength, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> applicationPrivileges, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> registryUpdateParameters, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> registryUpdateParametersLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> receiptKeyType, <a class="el" href="types_8h.html#a88d56175458160f0a49ab97a45681f1f">OPGP_STRING</a> PEMKeyFileName, char *passPhrase)</td></tr>
+<tr class="separator:a703ede29857aa86cdfccf6deb2adc9fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aee4f2095b54d7962f811b111ffcca793"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#aee4f2095b54d7962f811b111ffcca793">read_public_rsa_key</a> (<a class="el" href="types_8h.html#a88d56175458160f0a49ab97a45681f1f">OPGP_STRING</a> PEMKeyFileName, char *passPhrase, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> rsaModulus, <a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a> rsaModulusLength, <a class="el" href="types_8h.html#a2a3e0cda5f1249bef6db47c5eb8e3813">LONG</a> *rsaExponent)</td></tr>
+<tr class="memdesc:aee4f2095b54d7962f811b111ffcca793"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reads a public RSA key from a file.  <a href="crypto_8h.html#aee4f2095b54d7962f811b111ffcca793">More...</a><br /></td></tr>
+<tr class="separator:aee4f2095b54d7962f811b111ffcca793"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5000d243dcaff65c4d4d85f065eed900"><td class="memItemLeft" align="right" valign="top"><a id="a5000d243dcaff65c4d4d85f065eed900"></a>
+OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#a5000d243dcaff65c4d4d85f065eed900">read_certificate_file</a> (<a class="el" href="types_8h.html#a88d56175458160f0a49ab97a45681f1f">OPGP_STRING</a> PEMKeyFileName, char *passPhrase, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> certificateData, <a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a> certificateDataLength)</td></tr>
+<tr class="memdesc:a5000d243dcaff65c4d4d85f065eed900"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reads a certificate from a PEM or DER file. <br /></td></tr>
+<tr class="separator:a5000d243dcaff65c4d4d85f065eed900"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a794d9e3985673aa705e98f4418f82681"><td class="memItemLeft" align="right" valign="top"><a id="a794d9e3985673aa705e98f4418f82681"></a>
+OPGP_NO_API BOOL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#a794d9e3985673aa705e98f4418f82681">contains_pem_certificate_header</a> (const <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> *data, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> dataLength)</td></tr>
+<tr class="memdesc:a794d9e3985673aa705e98f4418f82681"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks whether data contains a PEM CERTIFICATE header. <br /></td></tr>
+<tr class="separator:a794d9e3985673aa705e98f4418f82681"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad433a6b665cdac38e9e3d93cc1c9a146"><td class="memItemLeft" align="right" valign="top"><a id="ad433a6b665cdac38e9e3d93cc1c9a146"></a>
+OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#ad433a6b665cdac38e9e3d93cc1c9a146">convert_pem_certificate_list_to_der</a> (const <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> *pemData, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> pemDataLength, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> derData, <a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a> derDataLength)</td></tr>
+<tr class="memdesc:ad433a6b665cdac38e9e3d93cc1c9a146"><td class="mdescLeft">&#160;</td><td class="mdescRight">Converts one or more PEM CERTIFICATE blocks to concatenated DER certificates. <br /></td></tr>
+<tr class="separator:ad433a6b665cdac38e9e3d93cc1c9a146"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac188bcd133885fea245ef1658e2437a3"><td class="memItemLeft" align="right" valign="top"><a id="ac188bcd133885fea245ef1658e2437a3"></a>
+OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#ac188bcd133885fea245ef1658e2437a3">convert_der_certificate_list_to_pem</a> (const <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> *derData, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> derDataLength, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> pemData, <a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a> pemDataLength)</td></tr>
+<tr class="memdesc:ac188bcd133885fea245ef1658e2437a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Converts one or more concatenated DER X.509 certificates to PEM CERTIFICATE blocks. <br /></td></tr>
+<tr class="separator:ac188bcd133885fea245ef1658e2437a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab0ec3c3ba551125275c33b77e595c5b1"><td class="memItemLeft" align="right" valign="top"><a id="ab0ec3c3ba551125275c33b77e595c5b1"></a>
+OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#ab0ec3c3ba551125275c33b77e595c5b1">prepare_scp11_der_x509_certificate_chain</a> (const <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> *derData, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> derDataLength, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> preparedData, <a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a> preparedDataLength)</td></tr>
+<tr class="memdesc:ab0ec3c3ba551125275c33b77e595c5b1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Orders a DER X.509 chain for SCP11 verification and omits a self-issued trust anchor. <br /></td></tr>
+<tr class="separator:ab0ec3c3ba551125275c33b77e595c5b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a76e0492e3e54b4490755b752642eca76"><td class="memItemLeft" align="right" valign="top"><a id="a76e0492e3e54b4490755b752642eca76"></a>
+OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#a76e0492e3e54b4490755b752642eca76">extract_scp11_ca_kloc_identifier_from_certificate_chain</a> (const <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> *certificateChainData, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> certificateChainDataLength, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> authorityIdentifier, <a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a> authorityIdentifierLength)</td></tr>
+<tr class="memdesc:a76e0492e3e54b4490755b752642eca76"><td class="mdescLeft">&#160;</td><td class="mdescRight">Extracts the CA-KLOC Identifier used to verify the first SCP11 certificate. <br /></td></tr>
+<tr class="separator:a76e0492e3e54b4490755b752642eca76"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afc4419ffe7ef5b07e01d7db8d4827408"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#afc4419ffe7ef5b07e01d7db8d4827408">read_public_ecc_key</a> (<a class="el" href="types_8h.html#a88d56175458160f0a49ab97a45681f1f">OPGP_STRING</a> PEMKeyFileName, char *passPhrase, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> eccPublicPoint, <a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a> eccPublicPointLength, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> eccKeyComponentType, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> keyParameterReference, <a class="el" href="structGP211__ECC__DOMAIN__PARAMETERS.html">GP211_ECC_DOMAIN_PARAMETERS</a> *domainParameters)</td></tr>
+<tr class="memdesc:afc4419ffe7ef5b07e01d7db8d4827408"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reads a public ECC key from a file.  <a href="crypto_8h.html#afc4419ffe7ef5b07e01d7db8d4827408">More...</a><br /></td></tr>
+<tr class="separator:afc4419ffe7ef5b07e01d7db8d4827408"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa0dacc36044356e399a645ce6a92ed4d"><td class="memItemLeft" align="right" valign="top"><a id="aa0dacc36044356e399a645ce6a92ed4d"></a>
+OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#aa0dacc36044356e399a645ce6a92ed4d">read_public_ecc_key_from_der_certificate</a> (const <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> *certificateData, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> certificateDataLength, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> eccPublicPoint, <a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a> eccPublicPointLength, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> eccKeyComponentType, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> keyParameterReference)</td></tr>
+<tr class="memdesc:aa0dacc36044356e399a645ce6a92ed4d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Extracts a public ECC key from a DER encoded X.509 certificate. <br /></td></tr>
+<tr class="separator:aa0dacc36044356e399a645ce6a92ed4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8a979f79290f3ee1de2efaa178867e34"><td class="memItemLeft" align="right" valign="top"><a id="a8a979f79290f3ee1de2efaa178867e34"></a>
+OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#a8a979f79290f3ee1de2efaa178867e34">generate_ecc_keypair</a> (int curveNid, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> privateKey, <a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a> privateKeyLength, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> publicKey, <a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a> publicKeyLength)</td></tr>
+<tr class="memdesc:a8a979f79290f3ee1de2efaa178867e34"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generates an ECC key pair for a named OpenSSL curve. <br /></td></tr>
+<tr class="separator:a8a979f79290f3ee1de2efaa178867e34"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae5bea75ddac3427b7dd26af7ab4bf0c5"><td class="memItemLeft" align="right" valign="top"><a id="ae5bea75ddac3427b7dd26af7ab4bf0c5"></a>
+OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#ae5bea75ddac3427b7dd26af7ab4bf0c5">calculate_ecc_shared_secret</a> (int curveNid, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> privateKey, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> privateKeyLength, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> peerPublicKey, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> peerPublicKeyLength, <a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> sharedSecret, <a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a> sharedSecretLength)</td></tr>
+<tr class="memdesc:ae5bea75ddac3427b7dd26af7ab4bf0c5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculates an ECDH shared secret for a named OpenSSL curve. <br /></td></tr>
+<tr class="separator:ae5bea75ddac3427b7dd26af7ab4bf0c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaaf4e315c6647b4e5cf3f7b2c8e8b322"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#aaaf4e315c6647b4e5cf3f7b2c8e8b322">calculate_sha2_hash</a> (<a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> message, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> messageLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> hash[64], <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> hashLength)</td></tr>
 <tr class="memdesc:aaaf4e315c6647b4e5cf3f7b2c8e8b322"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculates a SHA-256 hash.  <a href="crypto_8h.html#aaaf4e315c6647b4e5cf3f7b2c8e8b322">More...</a><br /></td></tr>
 <tr class="separator:aaaf4e315c6647b4e5cf3f7b2c8e8b322"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a53ecdb550bff7f5e6a23822c77fc65e0"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#a53ecdb550bff7f5e6a23822c77fc65e0">calculate_sha1_hash</a> (<a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> message, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> messageLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> hash[20])</td></tr>
 <tr class="memdesc:a53ecdb550bff7f5e6a23822c77fc65e0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculates a SHA-1 hash.  <a href="crypto_8h.html#a53ecdb550bff7f5e6a23822c77fc65e0">More...</a><br /></td></tr>
 <tr class="separator:a53ecdb550bff7f5e6a23822c77fc65e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a06e855ce79dc8644475af47aaf7d8648"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#a06e855ce79dc8644475af47aaf7d8648">calculate_sm3_hash</a> (<a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a> message, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> messageLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> hash[32])</td></tr>
+<tr class="memdesc:a06e855ce79dc8644475af47aaf7d8648"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculates a SM3 hash.  <a href="crypto_8h.html#a06e855ce79dc8644475af47aaf7d8648">More...</a><br /></td></tr>
+<tr class="separator:a06e855ce79dc8644475af47aaf7d8648"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2cc3dcb147a1d8d9a3520e1cd4cb4760"><td class="memItemLeft" align="right" valign="top">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="crypto_8h.html#a2cc3dcb147a1d8d9a3520e1cd4cb4760">calculate_MAC_right_des_3des</a> (<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> key[16], <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> *message, <a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> messageLength, <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> mac[8])</td></tr>
 <tr class="memdesc:a2cc3dcb147a1d8d9a3520e1cd4cb4760"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculates a MAC using first DES and 3DES for the final round when the padding is applied.  <a href="crypto_8h.html#a2cc3dcb147a1d8d9a3520e1cd4cb4760">More...</a><br /></td></tr>
 <tr class="separator:a2cc3dcb147a1d8d9a3520e1cd4cb4760"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -272,8 +349,8 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
 
 </div>
 </div>
-<a id="a1c87adbc4bfb40dae6c1886cd5e1eae2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1c87adbc4bfb40dae6c1886cd5e1eae2">&#9670;&nbsp;</a></span>calculate_card_cryptogram_SCP02()</h2>
+<a id="ad3413ecb7a3672e47c92e94fdaa9199b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad3413ecb7a3672e47c92e94fdaa9199b">&#9670;&nbsp;</a></span>calculate_card_cryptogram_SCP02()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -293,8 +370,8 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td>
-          <td class="paramname"><em>cardChallenge</em>[6], </td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a>&#160;</td>
+          <td class="paramname"><em>cardChallenge</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -386,8 +463,8 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
 
 </div>
 </div>
-<a id="abace419f3ad90b9069352ae6180be07b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abace419f3ad90b9069352ae6180be07b">&#9670;&nbsp;</a></span>calculate_CMAC_aes()</h2>
+<a id="ae881fca3c4969f4f90bf1975daaa5e1e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae881fca3c4969f4f90bf1975daaa5e1e">&#9670;&nbsp;</a></span>calculate_CMAC_aes()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -395,8 +472,8 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
         <tr>
           <td class="memname">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a> calculate_CMAC_aes </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td>
-          <td class="paramname"><em>sMacKey</em>[32], </td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a>&#160;</td>
+          <td class="paramname"><em>sMacKey</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -419,14 +496,14 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td>
-          <td class="paramname"><em>chainingValue</em>[16], </td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a>&#160;</td>
+          <td class="paramname"><em>chainingValue</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td>
-          <td class="paramname"><em>mac</em>[16]&#160;</td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a>&#160;</td>
+          <td class="paramname"><em>mac</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -436,7 +513,7 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
       </table>
 </div><div class="memdoc">
 
-<p>Creates a MAC for commands (APDUs) using CMAC AES. This is used by SCP03. The MAC for the message are the first 8 Bytes of mac. The next chainingValue are the full 16 Bytes of mac. Save this value for the next command MAC calculation. </p>
+<p>Creates a MAC for commands (APDUs) using CMAC AES. This is used by SCP03. The MAC for the message is the first 8 Bytes of mac. The next chainingValue is the full 16 Bytes of mac. Save this value for the next command MAC calculation. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">sMacKey</td><td>[in] The S-MAC key (session MAC key) to use for MAC generation. </td></tr>
@@ -448,6 +525,230 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="a5667ea746e36ebcb4ecbccd357dbf4a1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5667ea746e36ebcb4ecbccd357dbf4a1">&#9670;&nbsp;</a></span>calculate_ecc_signature()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a> calculate_ecc_signature </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a>&#160;</td>
+          <td class="paramname"><em>message</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a>&#160;</td>
+          <td class="paramname"><em>messageLength</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a88d56175458160f0a49ab97a45681f1f">OPGP_STRING</a>&#160;</td>
+          <td class="paramname"><em>PEMKeyFileName</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">char *&#160;</td>
+          <td class="paramname"><em>passPhrase</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a>&#160;</td>
+          <td class="paramname"><em>signature</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a>&#160;</td>
+          <td class="paramname"><em>signatureLength</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Backward compatible wrapper for callers using ECC-specific naming. </p>
+
+</div>
+</div>
+<a id="a176bd95886a089f02232dd6819865562"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a176bd95886a089f02232dd6819865562">&#9670;&nbsp;</a></span>calculate_enc_cbc()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a> calculate_enc_cbc </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td>
+          <td class="paramname"><em>key</em>[16], </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> *&#160;</td>
+          <td class="paramname"><em>message</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a>&#160;</td>
+          <td class="paramname"><em>messageLength</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> *&#160;</td>
+          <td class="paramname"><em>encryption</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> *&#160;</td>
+          <td class="paramname"><em>encryptionLength</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Calculates the encryption of a message in CBC mode. Pads the message with 0x80 and additional 0x00 if message length is not a multiple of 8. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">key</td><td>[in] A 3DES key used to encrypt. </td></tr>
+    <tr><td class="paramname">*message</td><td>[in] The message to encrypt. </td></tr>
+    <tr><td class="paramname">messageLength</td><td>[in] The length of the message. </td></tr>
+    <tr><td class="paramname">*encryption</td><td>[out] The encryption. </td></tr>
+    <tr><td class="paramname">*encryptionLength</td><td>[out] The length of the encryption. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a> struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a> struct </dd></dl>
+
+</div>
+</div>
+<a id="a27cf0e0fe9b32ec0dc75ba53d441a19d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a27cf0e0fe9b32ec0dc75ba53d441a19d">&#9670;&nbsp;</a></span>calculate_enc_cbc_SCP02()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a> calculate_enc_cbc_SCP02 </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td>
+          <td class="paramname"><em>key</em>[16], </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> *&#160;</td>
+          <td class="paramname"><em>message</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a>&#160;</td>
+          <td class="paramname"><em>messageLength</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> *&#160;</td>
+          <td class="paramname"><em>encryption</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> *&#160;</td>
+          <td class="paramname"><em>encryptionLength</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Calculates the encryption of a message in CBC mode for SCP02. Pads the message with 0x80 and additional 0x00 until message length is a multiple of 8. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">key</td><td>[in] A 3DES key used to encrypt. </td></tr>
+    <tr><td class="paramname">*message</td><td>[in] The message to encrypt. </td></tr>
+    <tr><td class="paramname">messageLength</td><td>[in] The length of the message. </td></tr>
+    <tr><td class="paramname">*encryption</td><td>[out] The encryption. </td></tr>
+    <tr><td class="paramname">*encryptionLength</td><td>[out] The length of the encryption. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a> struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a> struct </dd></dl>
+
+</div>
+</div>
+<a id="a373be3c50bb2020248c0f43b5ed660bb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a373be3c50bb2020248c0f43b5ed660bb">&#9670;&nbsp;</a></span>calculate_enc_ecb_single_des()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a> calculate_enc_ecb_single_des </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td>
+          <td class="paramname"><em>key</em>[8], </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> *&#160;</td>
+          <td class="paramname"><em>message</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a>&#160;</td>
+          <td class="paramname"><em>messageLength</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a> *&#160;</td>
+          <td class="paramname"><em>encryption</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a> *&#160;</td>
+          <td class="paramname"><em>encryptionLength</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Calculates the encryption of a message in ECB mode with single DES. Pads the message with 0x80 and additional 0x00 if message length is not a multiple of 8. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">key</td><td>[in] A DES key used to encrypt. </td></tr>
+    <tr><td class="paramname">*message</td><td>[in] The message to encrypt. </td></tr>
+    <tr><td class="paramname">messageLength</td><td>[in] The length of the message. </td></tr>
+    <tr><td class="paramname">*encryption</td><td>[out] The encryption. </td></tr>
+    <tr><td class="paramname">*encryptionLength</td><td>[out] The length of the encryption. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a> struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a> struct </dd></dl>
 
 </div>
 </div>
@@ -508,6 +809,63 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
 
 </div>
 </div>
+<a id="abebd55aa2542dd8d8ead67f84d7cc599"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abebd55aa2542dd8d8ead67f84d7cc599">&#9670;&nbsp;</a></span>calculate_enc_icv_SCP03()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a> calculate_enc_icv_SCP03 </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a>&#160;</td>
+          <td class="paramname"><em>key</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a>&#160;</td>
+          <td class="paramname"><em>keyLength</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a2a3e0cda5f1249bef6db47c5eb8e3813">LONG</a>&#160;</td>
+          <td class="paramname"><em>sessionEncryptionCounter</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a>&#160;</td>
+          <td class="paramname"><em>icv</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">BOOL&#160;</td>
+          <td class="paramname"><em>forResponse</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Calculates the encryption ICV for SCP03 using AES. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">key</td><td>[in] An AES key used to encrypt. </td></tr>
+    <tr><td class="paramname">keyLength</td><td>[in] The key length. 16, 24 or 32 bytes. </td></tr>
+    <tr><td class="paramname">sessionEncryptionCounter</td><td>[in] The session encryption counter. </td></tr>
+    <tr><td class="paramname">icv</td><td>[out] The ICV to use. </td></tr>
+    <tr><td class="paramname">forResponse</td><td>1 if the calculation is performed for the response. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a> struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a> struct </dd></dl>
+
+</div>
+</div>
 <a id="a2be7da782783c4b51a4ebcf81f9eaeec"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2be7da782783c4b51a4ebcf81f9eaeec">&#9670;&nbsp;</a></span>calculate_host_cryptogram_SCP01()</h2>
 
@@ -558,8 +916,8 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
 
 </div>
 </div>
-<a id="a5b987c4652a34236acd7440970247059"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5b987c4652a34236acd7440970247059">&#9670;&nbsp;</a></span>calculate_host_cryptogram_SCP02()</h2>
+<a id="a7b31fad7d726b36aa7b1a38696fbfd02"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7b31fad7d726b36aa7b1a38696fbfd02">&#9670;&nbsp;</a></span>calculate_host_cryptogram_SCP02()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -579,8 +937,8 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td>
-          <td class="paramname"><em>cardChallenge</em>[6], </td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a>&#160;</td>
+          <td class="paramname"><em>cardChallenge</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -717,7 +1075,7 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
 </div><div class="memdoc">
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">*secInfo</td><td>[in, out] The pointer to the <a class="el" href="structGP211__SECURITY__INFO.html">GP211_SECURITY_INFO</a> structure returned by <a class="el" href="globalplatform_8h.html#a0ce351b91aa2bb6c6b709b38919f481a" title="GlobalPlatform2.1.1: Mutual authentication.">GP211_mutual_authentication()</a>. </td></tr>
+    <tr><td class="paramname">*secInfo</td><td>[in, out] The pointer to the <a class="el" href="structGP211__SECURITY__INFO.html">GP211_SECURITY_INFO</a> structure returned by <a class="el" href="globalplatform_8h.html#a067380f45227704c6dac1ffe332d078b" title="GlobalPlatform2.1.1: Mutual authentication.">GP211_mutual_authentication()</a>. </td></tr>
     <tr><td class="paramname">keyType</td><td>[in] The key type. See GP211_KEY_TYPE_AES. </td></tr>
     <tr><td class="paramname">keyData</td><td>[in] The key data. </td></tr>
     <tr><td class="paramname">keyDataLength</td><td>[in] The key data length. </td></tr>
@@ -895,8 +1253,8 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
 
 </div>
 </div>
-<a id="a444649bd7d4829f2b5a96a8baff8ec79"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a444649bd7d4829f2b5a96a8baff8ec79">&#9670;&nbsp;</a></span>calculate_rsa_signature()</h2>
+<a id="a4a69996f1fcb04598b947fe4370c0acd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4a69996f1fcb04598b947fe4370c0acd">&#9670;&nbsp;</a></span>calculate_rsa_signature()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -928,8 +1286,14 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td>
-          <td class="paramname"><em>signature</em>[128]&#160;</td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a>&#160;</td>
+          <td class="paramname"><em>signature</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a>&#160;</td>
+          <td class="paramname"><em>signatureLength</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -938,16 +1302,7 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Calculates a RSA signature using SHA-1 and PKCS#1. </p><dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">message</td><td>[in] The message to generate the signature for. </td></tr>
-    <tr><td class="paramname">messageLength</td><td>[in] The length of the message buffer. </td></tr>
-    <tr><td class="paramname">PEMKeyFileName</td><td>[in] A PEM file name with the private RSA key. </td></tr>
-    <tr><td class="paramname">*passPhrase</td><td>[in] The passphrase. Must be an ASCII string. </td></tr>
-    <tr><td class="paramname">signature</td><td>The calculated signature. </td></tr>
-  </table>
-  </dd>
-</dl>
+<p>Backward compatible wrapper for callers using RSA-specific naming. </p>
 
 </div>
 </div>
@@ -1046,8 +1401,115 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
 
 </div>
 </div>
-<a id="affb292b3131bef6cd64f430ab228703b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#affb292b3131bef6cd64f430ab228703b">&#9670;&nbsp;</a></span>create_session_key_SCP01()</h2>
+<a id="af907009731b327dc0f15512e6fe5a350"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af907009731b327dc0f15512e6fe5a350">&#9670;&nbsp;</a></span>calculate_signature()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a> calculate_signature </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a>&#160;</td>
+          <td class="paramname"><em>message</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a>&#160;</td>
+          <td class="paramname"><em>messageLength</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a88d56175458160f0a49ab97a45681f1f">OPGP_STRING</a>&#160;</td>
+          <td class="paramname"><em>PEMKeyFileName</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">char *&#160;</td>
+          <td class="paramname"><em>passPhrase</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a>&#160;</td>
+          <td class="paramname"><em>signature</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a>&#160;</td>
+          <td class="paramname"><em>signatureLength</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Calculates a signature using an RSA or ECC private key from a PEM file. RSA and ECC signature encoding rules are selected automatically from the private key type. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">message</td><td>[in] The data to sign. </td></tr>
+    <tr><td class="paramname">messageLength</td><td>[in] The length of the message buffer. </td></tr>
+    <tr><td class="paramname">PEMKeyFileName</td><td>[in] A PEM file name with the private key. </td></tr>
+    <tr><td class="paramname">*passPhrase</td><td>[in] The passphrase. Must be an ASCII string. May be NULL for unencrypted keys. </td></tr>
+    <tr><td class="paramname">signature</td><td>[out] The calculated signature buffer. </td></tr>
+    <tr><td class="paramname">signatureLength</td><td>[in,out] On input: size of signature buffer. On output: actual signature length. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a06e855ce79dc8644475af47aaf7d8648"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a06e855ce79dc8644475af47aaf7d8648">&#9670;&nbsp;</a></span>calculate_sm3_hash()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a> calculate_sm3_hash </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a>&#160;</td>
+          <td class="paramname"><em>message</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a>&#160;</td>
+          <td class="paramname"><em>messageLength</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td>
+          <td class="paramname"><em>hash</em>[32]&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Calculates a SM3 hash. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">message</td><td>[in] The message to generate the hash for. </td></tr>
+    <tr><td class="paramname">messageLength</td><td>[in] The length of the message buffer. </td></tr>
+    <tr><td class="paramname">hash</td><td>[out] The calculated hash (32 bytes for SM3). </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a790f247c1be980e93b3e45301be70bac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a790f247c1be980e93b3e45301be70bac">&#9670;&nbsp;</a></span>create_session_key_SCP01()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1073,8 +1535,8 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td>
-          <td class="paramname"><em>sessionKey</em>[16]&#160;</td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a>&#160;</td>
+          <td class="paramname"><em>sessionKey</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1096,8 +1558,8 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
 
 </div>
 </div>
-<a id="a8cd67bd366eeaacc169db17cd004f7d8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8cd67bd366eeaacc169db17cd004f7d8">&#9670;&nbsp;</a></span>create_session_key_SCP02()</h2>
+<a id="a62a54f5ee2e7e8d61f4f787be144bcbf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a62a54f5ee2e7e8d61f4f787be144bcbf">&#9670;&nbsp;</a></span>create_session_key_SCP02()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1123,8 +1585,8 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td>
-          <td class="paramname"><em>sessionKey</em>[16]&#160;</td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a>&#160;</td>
+          <td class="paramname"><em>sessionKey</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1146,8 +1608,8 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
 
 </div>
 </div>
-<a id="a3d97cff49204c24f78c9d2cda9fa7e79"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3d97cff49204c24f78c9d2cda9fa7e79">&#9670;&nbsp;</a></span>create_session_key_SCP03()</h2>
+<a id="abd2013f7dceee1fcdb71e1e6ec78666c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abd2013f7dceee1fcdb71e1e6ec78666c">&#9670;&nbsp;</a></span>create_session_key_SCP03()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1185,8 +1647,8 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td>
-          <td class="paramname"><em>sessionKey</em>[32]&#160;</td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a>&#160;</td>
+          <td class="paramname"><em>sessionKey</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1255,7 +1717,7 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
 </div><div class="memdoc">
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">*secInfo</td><td>[in, out] The pointer to the <a class="el" href="structGP211__SECURITY__INFO.html">GP211_SECURITY_INFO</a> structure returned by <a class="el" href="globalplatform_8h.html#a0ce351b91aa2bb6c6b709b38919f481a" title="GlobalPlatform2.1.1: Mutual authentication.">GP211_mutual_authentication()</a>. </td></tr>
+    <tr><td class="paramname">*secInfo</td><td>[in, out] The pointer to the <a class="el" href="structGP211__SECURITY__INFO.html">GP211_SECURITY_INFO</a> structure returned by <a class="el" href="globalplatform_8h.html#a067380f45227704c6dac1ffe332d078b" title="GlobalPlatform2.1.1: Mutual authentication.">GP211_mutual_authentication()</a>. </td></tr>
     <tr><td class="paramname">data</td><td>[in] The data to encrypt. </td></tr>
     <tr><td class="paramname">dataLength</td><td>[in] The data length. </td></tr>
     <tr><td class="paramname">encryptedData</td><td>[out] The encrypted data. No length checking is done. The buffer must have sufficient size, e.g. the next block size or twice the data size if unsure. </td></tr>
@@ -1368,7 +1830,7 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
     <tr><td class="paramname">responseApduLength</td><td>[in] The length of the response APDU. </td></tr>
     <tr><td class="paramname">unwrappedResponseApdu</td><td>[out] The buffer for the unwrapped response APDU. </td></tr>
     <tr><td class="paramname">unwrappedResponseApduLength</td><td>[in, out] The available and returned modified length of the unwrappedResponseAPDU buffer. </td></tr>
-    <tr><td class="paramname">*secInfo</td><td>[in] The pointer to the <a class="el" href="structGP211__SECURITY__INFO.html">GP211_SECURITY_INFO</a> structure returned by <a class="el" href="globalplatform_8h.html#a0ce351b91aa2bb6c6b709b38919f481a" title="GlobalPlatform2.1.1: Mutual authentication.">GP211_mutual_authentication()</a>. </td></tr>
+    <tr><td class="paramname">*secInfo</td><td>[in] The pointer to the <a class="el" href="structGP211__SECURITY__INFO.html">GP211_SECURITY_INFO</a> structure returned by <a class="el" href="globalplatform_8h.html#a067380f45227704c6dac1ffe332d078b" title="GlobalPlatform2.1.1: Mutual authentication.">GP211_mutual_authentication()</a>. </td></tr>
   </table>
   </dd>
 </dl>
@@ -1376,8 +1838,80 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
 
 </div>
 </div>
-<a id="a52d9c606b6fbc1d281a10632a0770220"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a52d9c606b6fbc1d281a10632a0770220">&#9670;&nbsp;</a></span>read_public_rsa_key()</h2>
+<a id="afc4419ffe7ef5b07e01d7db8d4827408"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afc4419ffe7ef5b07e01d7db8d4827408">&#9670;&nbsp;</a></span>read_public_ecc_key()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a> read_public_ecc_key </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a88d56175458160f0a49ab97a45681f1f">OPGP_STRING</a>&#160;</td>
+          <td class="paramname"><em>PEMKeyFileName</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">char *&#160;</td>
+          <td class="paramname"><em>passPhrase</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a>&#160;</td>
+          <td class="paramname"><em>eccPublicPoint</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a>&#160;</td>
+          <td class="paramname"><em>eccPublicPointLength</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a>&#160;</td>
+          <td class="paramname"><em>eccKeyComponentType</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a>&#160;</td>
+          <td class="paramname"><em>keyParameterReference</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structGP211__ECC__DOMAIN__PARAMETERS.html">GP211_ECC_DOMAIN_PARAMETERS</a> *&#160;</td>
+          <td class="paramname"><em>domainParameters</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Reads a public ECC key from a file. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">PEMKeyFileName</td><td>[in] The key file. </td></tr>
+    <tr><td class="paramname">*passPhrase</td><td>[in] The passphrase. Must be an ASCII string. </td></tr>
+    <tr><td class="paramname">eccPublicPoint</td><td>[out] The ECC public point in uncompressed form. </td></tr>
+    <tr><td class="paramname">eccPublicPointLength</td><td>[inout] The ECC public point length passed in and returned. </td></tr>
+    <tr><td class="paramname">eccKeyComponentType</td><td>[out] GP211_KEY_TYPE_ECC_PUBLIC_OR_PRIVATE or GP211_KEY_TYPE_ECC_SM2_PUBLIC_OR_PRIVATE. </td></tr>
+    <tr><td class="paramname">keyParameterReference</td><td>[out] ECC key parameter reference (see GP211_KEY_TYPE_ECC_KEY_PARAMETER_REFERENCE_*). </td></tr>
+    <tr><td class="paramname">domainParameters</td><td>[out] Optional ECC domain parameters for own-parameter key loading. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="aee4f2095b54d7962f811b111ffcca793"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aee4f2095b54d7962f811b111ffcca793">&#9670;&nbsp;</a></span>read_public_rsa_key()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1397,8 +1931,14 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td>
-          <td class="paramname"><em>rsaModulus</em>[128], </td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a>&#160;</td>
+          <td class="paramname"><em>rsaModulus</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#a5275a4ecdc7e43cac83633d4df04bb88">PDWORD</a>&#160;</td>
+          <td class="paramname"><em>rsaModulusLength</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -1420,6 +1960,7 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
     <tr><td class="paramname">PEMKeyFileName</td><td>[in] The key file. </td></tr>
     <tr><td class="paramname">*passPhrase</td><td>[in] The passphrase. Must be an ASCII string. </td></tr>
     <tr><td class="paramname">rsaModulus</td><td>[out] The RSA modulus. </td></tr>
+    <tr><td class="paramname">rsaModulusLength</td><td>[inout] The RSA modules length passed in and returned. </td></tr>
     <tr><td class="paramname">rsaExponent</td><td>[out] The RSA exponent. </td></tr>
   </table>
   </dd>
@@ -1492,71 +2033,7 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
     <tr><td class="paramname">responseApduLength</td><td>[in] The length of the response data. </td></tr>
     <tr><td class="paramname">unwrappedResponseApdu</td><td>[out] The buffer for the unwrapped response APDU. </td></tr>
     <tr><td class="paramname">unwrappedResponseApduLength</td><td>[in, out] The available and returned modified length of the unwrappedResponseAPDU buffer. </td></tr>
-    <tr><td class="paramname">*secInfo</td><td>[in] The pointer to the <a class="el" href="structGP211__SECURITY__INFO.html">GP211_SECURITY_INFO</a> structure returned by <a class="el" href="globalplatform_8h.html#a0ce351b91aa2bb6c6b709b38919f481a" title="GlobalPlatform2.1.1: Mutual authentication.">GP211_mutual_authentication()</a>. </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd><a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a> struct with error status OPGP_ERROR_STATUS_SUCCESS if no error occurs, otherwise error code and error message are contained in the <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a> struct </dd></dl>
-
-</div>
-</div>
-<a id="ae5869c3c52548c839313f45e79fced81"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae5869c3c52548c839313f45e79fced81">&#9670;&nbsp;</a></span>validate_receipt()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATUS</a> validate_receipt </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="types_8h.html#a4bd6347187b497cd4ef537426e8b6329">PBYTE</a>&#160;</td>
-          <td class="paramname"><em>validationData</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a>&#160;</td>
-          <td class="paramname"><em>validationDataLength</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td>
-          <td class="paramname"><em>receipt</em>[16], </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td>
-          <td class="paramname"><em>receiptKey</em>[32], </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="types_8h.html#ad342ac907eb044443153a22f964bf0af">DWORD</a>&#160;</td>
-          <td class="paramname"><em>keyLength</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td>
-          <td class="paramname"><em>secureChannelProtocol</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>GlobalPlatform2.1.1: Validates a Receipt. Returns OPGP_ERROR_STATUS_SUCCESS if the receipt is valid. </p><dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">validationData</td><td>[in] The data used to validate the returned receipt. </td></tr>
-    <tr><td class="paramname">validationDataLength</td><td>[in] The length of the validationData buffer. </td></tr>
-    <tr><td class="paramname">receipt</td><td>[in] The receipt. </td></tr>
-    <tr><td class="paramname">receiptKey</td><td>[in] The 3DES or AES key to generate the receipt. </td></tr>
-    <tr><td class="paramname">keyLength</td><td>[in] The key length. 16, 24 or 32 bytes. </td></tr>
-    <tr><td class="paramname">secureChannelProtocol</td><td>[in] The Secure Channel Protocol. </td></tr>
+    <tr><td class="paramname">*secInfo</td><td>[in] The pointer to the <a class="el" href="structGP211__SECURITY__INFO.html">GP211_SECURITY_INFO</a> structure returned by <a class="el" href="globalplatform_8h.html#a067380f45227704c6dac1ffe332d078b" title="GlobalPlatform2.1.1: Mutual authentication.">GP211_mutual_authentication()</a>. </td></tr>
   </table>
   </dd>
 </dl>
@@ -1615,7 +2092,7 @@ OPGP_NO_API <a class="el" href="structOPGP__ERROR__STATUS.html">OPGP_ERROR_STATU
     <tr><td class="paramname">apduCommandLength</td><td>[in] The length of the command APDU. </td></tr>
     <tr><td class="paramname">wrappedApduCommand</td><td>[out] The buffer for the wrapped APDU command. </td></tr>
     <tr><td class="paramname">wrappedApduCommandLength</td><td>[in, out] The available and returned modified length of the wrappedApduCommand buffer. </td></tr>
-    <tr><td class="paramname">*secInfo</td><td>[in] The pointer to the <a class="el" href="structGP211__SECURITY__INFO.html">GP211_SECURITY_INFO</a> structure returned by <a class="el" href="globalplatform_8h.html#a0ce351b91aa2bb6c6b709b38919f481a" title="GlobalPlatform2.1.1: Mutual authentication.">GP211_mutual_authentication()</a>. </td></tr>
+    <tr><td class="paramname">*secInfo</td><td>[in] The pointer to the <a class="el" href="structGP211__SECURITY__INFO.html">GP211_SECURITY_INFO</a> structure returned by <a class="el" href="globalplatform_8h.html#a067380f45227704c6dac1ffe332d078b" title="GlobalPlatform2.1.1: Mutual authentication.">GP211_mutual_authentication()</a>. </td></tr>
   </table>
   </dd>
 </dl>

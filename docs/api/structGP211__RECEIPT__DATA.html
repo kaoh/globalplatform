@@ -53,10 +53,10 @@ Data Fields</h2></td></tr>
 <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGP211__RECEIPT__DATA.html#a00531e8f2ada477e4a95035157dc15d2">receiptLength</a></td></tr>
 <tr class="memdesc:a00531e8f2ada477e4a95035157dc15d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">The length of the receipt DAP. <br /></td></tr>
 <tr class="separator:a00531e8f2ada477e4a95035157dc15d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a11773065b3879e2cc686c9ba52c0ee84"><td class="memItemLeft" align="right" valign="top"><a id="a11773065b3879e2cc686c9ba52c0ee84"></a>
-<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGP211__RECEIPT__DATA.html#a11773065b3879e2cc686c9ba52c0ee84">receipt</a> [8]</td></tr>
-<tr class="memdesc:a11773065b3879e2cc686c9ba52c0ee84"><td class="mdescLeft">&#160;</td><td class="mdescRight">The receipt DAP. <br /></td></tr>
-<tr class="separator:a11773065b3879e2cc686c9ba52c0ee84"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afec2a4b7662a4b6509b8217d8d4154c0"><td class="memItemLeft" align="right" valign="top"><a id="afec2a4b7662a4b6509b8217d8d4154c0"></a>
+<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGP211__RECEIPT__DATA.html#afec2a4b7662a4b6509b8217d8d4154c0">receipt</a> [<a class="el" href="security_8h.html#a0ec70ea13235268001242f977c34b6e3">GP211_RECEIPT_MAX_LENGTH</a>]</td></tr>
+<tr class="memdesc:afec2a4b7662a4b6509b8217d8d4154c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">The receipt signature or MAC. <br /></td></tr>
+<tr class="separator:afec2a4b7662a4b6509b8217d8d4154c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a418fbf58ec54a05949abbca126c5e7d3"><td class="memItemLeft" align="right" valign="top"><a id="a418fbf58ec54a05949abbca126c5e7d3"></a>
 <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGP211__RECEIPT__DATA.html#a418fbf58ec54a05949abbca126c5e7d3">confirmationCounterLength</a></td></tr>
 <tr class="memdesc:a418fbf58ec54a05949abbca126c5e7d3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Length of the confirmation counter buffer. <br /></td></tr>
@@ -67,15 +67,39 @@ Data Fields</h2></td></tr>
 <tr class="separator:a3919c26423b7e230fcdcfefaca885318"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4a066a938a236060625d229fd48a5e32"><td class="memItemLeft" align="right" valign="top"><a id="a4a066a938a236060625d229fd48a5e32"></a>
 <a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGP211__RECEIPT__DATA.html#a4a066a938a236060625d229fd48a5e32">cardUniqueDataLength</a></td></tr>
-<tr class="memdesc:a4a066a938a236060625d229fd48a5e32"><td class="mdescLeft">&#160;</td><td class="mdescRight">The length of the card unique data buffer. <br /></td></tr>
+<tr class="memdesc:a4a066a938a236060625d229fd48a5e32"><td class="mdescLeft">&#160;</td><td class="mdescRight">The length of SD unique data in the confirmation data. <br /></td></tr>
 <tr class="separator:a4a066a938a236060625d229fd48a5e32"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad2a862ceafa127915511f4f31cdb88aa"><td class="memItemLeft" align="right" valign="top"><a id="ad2a862ceafa127915511f4f31cdb88aa"></a>
-<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGP211__RECEIPT__DATA.html#ad2a862ceafa127915511f4f31cdb88aa">cardUniqueData</a> [10]</td></tr>
-<tr class="memdesc:ad2a862ceafa127915511f4f31cdb88aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Card unique data buffer. <br /></td></tr>
-<tr class="separator:ad2a862ceafa127915511f4f31cdb88aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a54d28afd80137b275a2916f82e841a9c"><td class="memItemLeft" align="right" valign="top"><a id="a54d28afd80137b275a2916f82e841a9c"></a>
+<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGP211__RECEIPT__DATA.html#a54d28afd80137b275a2916f82e841a9c">cardUniqueData</a> [<a class="el" href="security_8h.html#ac6c3a12ee19a3735968db0c5fff08eb8">GP211_RECEIPT_SD_UNIQUE_DATA_MAX_LENGTH</a>]</td></tr>
+<tr class="memdesc:a54d28afd80137b275a2916f82e841a9c"><td class="mdescLeft">&#160;</td><td class="mdescRight">SD unique data buffer. <br /></td></tr>
+<tr class="separator:a54d28afd80137b275a2916f82e841a9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a35a133b88815550641d4fcbcd39c80a5"><td class="memItemLeft" align="right" valign="top"><a id="a35a133b88815550641d4fcbcd39c80a5"></a>
+BOOL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGP211__RECEIPT__DATA.html#a35a133b88815550641d4fcbcd39c80a5">tokenIdentifierPresent</a></td></tr>
+<tr class="memdesc:a35a133b88815550641d4fcbcd39c80a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether the optional token identifier length/value field is present. <br /></td></tr>
+<tr class="separator:a35a133b88815550641d4fcbcd39c80a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaf6bfc59a43d3f8838456f59e48e2c53"><td class="memItemLeft" align="right" valign="top"><a id="aaf6bfc59a43d3f8838456f59e48e2c53"></a>
+<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGP211__RECEIPT__DATA.html#aaf6bfc59a43d3f8838456f59e48e2c53">tokenIdentifierLength</a></td></tr>
+<tr class="memdesc:aaf6bfc59a43d3f8838456f59e48e2c53"><td class="mdescLeft">&#160;</td><td class="mdescRight">The length of the token identifier buffer. <br /></td></tr>
+<tr class="separator:aaf6bfc59a43d3f8838456f59e48e2c53"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6e0db760dd668e14fff5184c65b21d0e"><td class="memItemLeft" align="right" valign="top"><a id="a6e0db760dd668e14fff5184c65b21d0e"></a>
+<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGP211__RECEIPT__DATA.html#a6e0db760dd668e14fff5184c65b21d0e">tokenIdentifier</a> [<a class="el" href="security_8h.html#a3c4524baa25c7c8b5706076718e0eb64">GP211_RECEIPT_TOKEN_IDENTIFIER_MAX_LENGTH</a>]</td></tr>
+<tr class="memdesc:a6e0db760dd668e14fff5184c65b21d0e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Token identifier buffer. <br /></td></tr>
+<tr class="separator:a6e0db760dd668e14fff5184c65b21d0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0f69c779a60463997057ecc5a9a91b5f"><td class="memItemLeft" align="right" valign="top"><a id="a0f69c779a60463997057ecc5a9a91b5f"></a>
+BOOL&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGP211__RECEIPT__DATA.html#a0f69c779a60463997057ecc5a9a91b5f">tokenDataDigestPresent</a></td></tr>
+<tr class="memdesc:a0f69c779a60463997057ecc5a9a91b5f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether the optional token data digest length/value field is present. <br /></td></tr>
+<tr class="separator:a0f69c779a60463997057ecc5a9a91b5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a47d81df41f47a0a07331095e736fd5c2"><td class="memItemLeft" align="right" valign="top"><a id="a47d81df41f47a0a07331095e736fd5c2"></a>
+<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGP211__RECEIPT__DATA.html#a47d81df41f47a0a07331095e736fd5c2">tokenDataDigestLength</a></td></tr>
+<tr class="memdesc:a47d81df41f47a0a07331095e736fd5c2"><td class="mdescLeft">&#160;</td><td class="mdescRight">The length of the token data digest buffer. <br /></td></tr>
+<tr class="separator:a47d81df41f47a0a07331095e736fd5c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a739c4ad069ac49472b615243e7b1d66a"><td class="memItemLeft" align="right" valign="top"><a id="a739c4ad069ac49472b615243e7b1d66a"></a>
+<a class="el" href="types_8h.html#a4ae1dab0fb4b072a66584546209e7d58">BYTE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structGP211__RECEIPT__DATA.html#a739c4ad069ac49472b615243e7b1d66a">tokenDataDigest</a> [<a class="el" href="security_8h.html#ac22762444b81dc71e936e3e672065c7e">GP211_RECEIPT_TOKEN_DATA_DIGEST_MAX_LENGTH</a>]</td></tr>
+<tr class="memdesc:a739c4ad069ac49472b615243e7b1d66a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Token data digest buffer. <br /></td></tr>
+<tr class="separator:a739c4ad069ac49472b615243e7b1d66a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>A structure returned in DELETE, LOAD, INSTALL[for load], INSTALL[for install] with delegated management. </p>
+<div class="textblock"><p>A structure returned in DELETE, LOAD, INSTALL[for load], INSTALL[for install], INSTALL[for extradition]. INSTALL[for registry update] with delegated management. </p>
 </div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li><a class="el" href="security_8h_source.html">security.h</a></li>
 </ul>

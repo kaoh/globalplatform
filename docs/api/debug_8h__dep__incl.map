@@ -1,5 +1,6 @@
 <map id="debug.h" name="debug.h">
-<area shape="rect" id="node1" title=" " alt="" coords="68,5,143,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="132,5,207,32"/>
 <area shape="rect" id="node2" href="$crypto_8c.html" title="This implements all crypto functions." alt="" coords="5,80,80,107"/>
 <area shape="rect" id="node3" href="$globalplatform_8c.html" title="This implements all Open&#45; and GlobalPlatform functions." alt="" coords="105,80,234,107"/>
+<area shape="rect" id="node4" href="$scp_8c.html" title=" " alt="" coords="258,80,313,107"/>
 </map>
