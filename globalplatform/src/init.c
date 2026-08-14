@@ -34,6 +34,7 @@
 #define OPENSSL3
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <openssl/provider.h>
 #include <openssl/crypto.h>
 
@@ -41,11 +42,40 @@ OSSL_PROVIDER *legacy;
 OSSL_PROVIDER *deflt;
 
 #ifdef WIN32
+#include <windows.h>
 #include <io.h>
 #define F_OK 0
 #define access _access
 #define LEGACY_DLL "legacy.dll"
 #define OSSL_WIN32_DIR "C:\\Program Files (x86)\\OpenSSL-Win32\\bin\\"
+
+static int setLegacyProviderSearchPathFromModule(void) {
+	HMODULE module;
+	char modulePath[MAX_PATH];
+	char legacyPath[MAX_PATH];
+	char *fileName;
+	DWORD pathLength;
+
+	if (!GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+			GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+			(LPCSTR)&setLegacyProviderSearchPathFromModule, &module)) {
+		return 0;
+	}
+	pathLength = GetModuleFileNameA(module, modulePath, sizeof(modulePath));
+	if (pathLength == 0 || pathLength >= sizeof(modulePath)) {
+		return 0;
+	}
+	fileName = strrchr(modulePath, '\\');
+	if (fileName == NULL) {
+		return 0;
+	}
+	fileName[1] = '\0';
+	if (snprintf(legacyPath, sizeof(legacyPath), "%s%s", modulePath,
+			LEGACY_DLL) < 0 || access(legacyPath, F_OK) != 0) {
+		return 0;
+	}
+	return OSSL_PROVIDER_set_default_search_path(NULL, modulePath);
+}
 #endif
 #endif
 
@@ -56,12 +86,14 @@ CONSTRUCTOR void init(void) {
 #ifdef OPENSSL3
 	OPENSSL_init_crypto(OPENSSL_INIT_NO_ATEXIT, NULL);
 #ifdef WIN32
-	if (access(".\\" LEGACY_DLL, F_OK) == 0) {
+	if (setLegacyProviderSearchPathFromModule()) {
+		/* The provider is bundled alongside globalplatform.dll. */
+	} else if (access(".\\" LEGACY_DLL, F_OK) == 0) {
 		OSSL_PROVIDER_set_default_search_path(NULL, ".\\");
 	} else if (access(OSSL_WIN32_DIR LEGACY_DLL, F_OK) == 0) {
 		OSSL_PROVIDER_set_default_search_path(NULL, OSSL_WIN32_DIR);
 	} else {
-		printf("Could not find '%s' in current or '%s' directory.", LEGACY_DLL, OSSL_WIN32_DIR);
+		printf("Could not find '%s' next to the GlobalPlatform module, in the current directory, or in '%s'.", LEGACY_DLL, OSSL_WIN32_DIR);
 	}
 #endif
 	legacy = OSSL_PROVIDER_load(NULL, "legacy");
@@ -92,4 +124,3 @@ DESTRUCTOR void fini(void) {
 	OPENSSL_cleanup();
 #endif
 }
-
