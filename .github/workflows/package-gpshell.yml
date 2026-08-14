@@ -439,7 +439,12 @@ jobs:
             elseif ($verParts.Count -eq 4) { $msixVersion = $ver3 }
             else { $msixVersion = "0.0.0.0" }
 
-            $publisher = "CN=Test certificate for 'GPShell [OSS]'"
+            $isStableRelease = '${{ github.ref_type }}' -eq 'tag' -and '${{ github.ref_name }}' -notlike '*-*'
+            $publisher = if ($isStableRelease) {
+              'CN=SignPath Foundation, O=SignPath Foundation, L=Lewes, S=Delaware, C=US'
+            } else {
+              "CN=Test certificate for 'GPShell [OSS]'"
+            }
             $manifestPath = Join-Path $msixRoot "AppxManifest.xml"
             @"
           <?xml version="1.0" encoding="utf-8"?>
