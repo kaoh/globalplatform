@@ -1,1 +1,10 @@
-Support for CAT/STK ETSI TS 102 226 installation parameters
+GPShell 3.0.0
+
+* GPShell3 is the preferred command-line interface.
+* Add SCP11a, delegated management, DAP, and receipt workflows.
+* Publish signed Windows x86 and x64 shared-library SDK archives.
+* Keep legacy GPShell available for existing scripts.
+
+Previous releases
+
+* Support for CAT/STK ETSI TS 102 226 installation parameters.

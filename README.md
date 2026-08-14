@@ -47,6 +47,10 @@ A quick demo video showcasing the most useful features in action:
 The current GPShell3 walkthroughs are collected in the
 [GPShell YouTube playlist](https://www.youtube.com/watch?v=igqlIvuOB5o&list=PLg46pyBZ2z-wF8acSL1nWvWFU0WPmhwlD).
 
+# Support and Consulting
+
+Consulting for GlobalPlatform integration, smart-card deployment, and secure channel workflows is available at k_o_@users.sourceforge.net.
+
 For examples:
 
 - GPShell1 scripts: [gpshell/examples/gpshell](./gpshell/examples/gpshell) (`.txt`)

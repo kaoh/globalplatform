@@ -606,7 +606,7 @@ jobs:
       - name: Install build dependencies
         shell: cmd
         run: |
-          choco install -y ninja innoextract
+          choco install -y ninja innoextract doxygen.install graphviz
           innoextract --output-dir "C:\Temp\OpenSSL-${{ matrix.arch }}-extracted" "C:\Temp\OpenSSL-${{ matrix.arch }}.exe"
           if errorlevel 1 exit /b %errorlevel%
           robocopy "C:\Temp\OpenSSL-${{ matrix.arch }}-extracted\app" "%OPENSSL_ROOT_DIR%" /E
@@ -617,6 +617,11 @@ jobs:
         shell: cmd
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=${{ matrix.vs_arch }} -host_arch=x64
+          set "PATH=C:\Program Files\doxygen\bin;C:\Program Files\Graphviz\bin;%PATH%"
+          where doxygen
+          if errorlevel 1 exit /b %errorlevel%
+          where dot
+          if errorlevel 1 exit /b %errorlevel%
           if exist build-sdk rmdir /S /Q build-sdk
           if exist sdk-zlib rmdir /S /Q sdk-zlib
           if "${{ matrix.arch }}"=="x64" (
@@ -627,7 +632,7 @@ jobs:
           ) else (
             set "SDK_ZLIB_ROOT=%cd%\zlib-1.3.1\win32-build"
           )
-          cmake -S . -B build-sdk -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DTOOLS=OFF -DOPENSSL_ROOT_DIR="%OPENSSL_ROOT_DIR%" -DZLIB_ROOT="%SDK_ZLIB_ROOT%"
+          cmake -S . -B build-sdk -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DTOOLS=OFF -DGLOBALPLATFORM_BUILD_DOCS=ON -DOPENSSL_ROOT_DIR="%OPENSSL_ROOT_DIR%" -DZLIB_ROOT="%SDK_ZLIB_ROOT%"
           cmake --build build-sdk -- -v
           cmake --install build-sdk --prefix "%cd%\sdk-stage"
       - name: Assemble and test the SDK archive
@@ -648,6 +653,13 @@ jobs:
           $sdkDir = Join-Path $pwd $sdkName
           if (Test-Path $sdkDir) { Remove-Item -Recurse -Force $sdkDir }
           New-Item -ItemType Directory -Path $sdkDir | Out-Null
+          $apiIndex = Join-Path $pwd 'sdk-stage\doc\html\index.html'
+          if (-not (Test-Path -LiteralPath $apiIndex -PathType Leaf)) {
+            throw "SDK API documentation was not generated: $apiIndex"
+          }
+          if ((Get-Item -LiteralPath $apiIndex).Length -le 0) {
+            throw "SDK API documentation is empty: $apiIndex"
+          }
           Copy-Item -Path (Join-Path $pwd 'sdk-stage\*') -Destination $sdkDir -Recurse -Force
           New-Item -ItemType Directory -Path (Join-Path $sdkDir 'bin') -Force | Out-Null
 
