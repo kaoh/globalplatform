@@ -11,7 +11,7 @@ This repository uses `AGENTS.md` for project-specific guidance to coding agents.
   - `gppcscconnectionplugin/`: PC/SC connection plugin used by the library and tools.
   - `helloworldapplet/`: Java Card example applet built with Maven and Java Card SDKs.
   - `docs/`: Jekyll/docs content plus generated Doxygen API output.
-  - `cmocka-cmocka-1.1.5/`, `zlib-1.2.8/`, `zlib-1.3.1/`: vendored or bundled dependency sources/build assets.
+  - `cmocka-cmocka-1.1.5/`, `zlib-1.3.1/`: vendored or bundled dependency sources/build assets.
 
 ## Worktree Rules
 

@@ -57,7 +57,7 @@ extern "C"
  */
 typedef struct {
 	LONG errorStatus; //!< Identifies, if an error occurred. If no error occurred #OPGP_ERROR_STATUS_SUCCESS must be set. The following fields can be ignored in this case.
-	LONG errorCode; //!< The error code.
+	DWORD errorCode; //!< The error code represented as an unsigned 32-bit value.
 	TCHAR errorMessage[ERROR_MESSAGE_LENGTH+1]; //!< The error message.
 } OPGP_ERROR_STATUS;
 
@@ -98,4 +98,3 @@ typedef struct {
 }
 #endif
 #endif
-

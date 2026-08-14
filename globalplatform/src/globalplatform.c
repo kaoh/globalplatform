@@ -8179,8 +8179,9 @@ end:
 	return status;
 }
 
-/**
- * Performs GlobalPlatform mutual authentication.
+/*
+ * Performs GlobalPlatform mutual authentication. The public header owns the
+ * Doxygen contract for this exported API.
  * For SCP01, SCP02 and SCP03 the first key parameter is the Secure Channel base
  * or master key when the selected implementation uses one key. For SCP11a it is
  * the raw static OCE ECKA private key (SK.OCE.ECKA). See the public header for

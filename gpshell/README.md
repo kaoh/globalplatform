@@ -4,6 +4,9 @@ GPShell (GlobalPlatform Shell) is a script interpreter which talks to a smart ca
 It uses smart card communication protocols ISO-7816-4 and OpenPlatform 2.0.1 and GlobalPlatform 2.1.1 and later.
 It can establish a secure channel with a smart card, load, instantiate, delete, list applications and manage keys on a smart card.
 
+GPShell is licensed under GPL-3.0-or-later. Its distributed license notice and
+source files include the OpenSSL linking exception used for the release builds.
+
 __!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!__
 
 __PLEASE OBEY THAT EVERY CARD GETS LOCKED AFTER A FEW (USUALLY 10) UNSUCCESSFUL MUTUAL AUTHENTICATIONS.
