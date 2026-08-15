@@ -102,6 +102,8 @@ Unit-test coverage is mainly in `globalplatform/src/*Test.c`. Linux unit tests i
 - Jekyll documentation content is under `docs/`.
 - Packaging uses CPack. Typical package commands are run from a configured build directory, for example `cpack -G DEB`, `cpack -G RPM`, `cpack -G ZIP`, or `cpack -G WIX` depending on platform.
 - The GitHub workflow `.github/workflows/package-gpshell.yml` is the best reference for release packaging behavior and artifact sanity checks.
+- For any stable release or release-related packaging/signing change, read and follow `RELEASE.md`.
+- Do not create a stable tag, approve production signing, or publish a public release without explicit user approval.
 
 ## Security Notes
 
