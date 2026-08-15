@@ -224,10 +224,15 @@ must be the already-published core tag before the bottle workflow starts.
    For the final release, set `package_version` and `release_tag` consistently
    and set `prerelease` to `false`. A temporary-branch prerelease run is useful
    for validating bottle generation before the final run.
-3. The workflow creates bottle hashes, commits the Formula update, pushes the
+   A Formula-only repair that reuses the same upstream source tag must use a
+   Homebrew revision such as `3.0.0_1` for both values.
+3. On Linux, Homebrew bottles must use the distribution PC/SC client and must
+   not have a Homebrew `pcsc-lite` RPATH. Validate this with `ldd` and `readelf`;
+   do not use card-facing commands in the bottle workflow.
+4. The workflow creates bottle hashes, commits the Formula update, pushes the
    selected branch, tags `release_tag`, and creates the tap release. Review the
    generated commit, tag, release state, bottle URLs, and macOS/Linux tests.
-4. Install or test the final formula on a supported platform when possible.
+5. Install or test the final formula on a supported platform when possible.
    Record the tap commit, workflow run, and release URL.
 
 ## 6. Verify Documentation And Close Out

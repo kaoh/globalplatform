@@ -30,7 +30,7 @@ Install the dependencies with [`brew`](https://docs.brew.sh/Homebrew-on-Linux) o
 brew:
 
 ~~~shell
-brew install openssl doxygen cmake cmocka zlib graphviz pcsc-lite pkg-config
+brew install openssl doxygen cmake cmocka zlib graphviz pkg-config
 ~~~
 
 Ubuntu:
@@ -53,11 +53,15 @@ make doc
 make install
 ```
 
-__NOTE:__ The Homebrew version of pcsc-lite is not a fully functional version. It is missing the USB drivers and is also not started as a system service. The distribution's version of pcscd should be installed. Under Linux the Homebrew version of pcsc-lite must be unlinked:
+__NOTE:__ On Linux, use the distribution's PC/SC implementation. Homebrew's `pcsc-lite` does not provide the distribution service and reader drivers. On Debian or Ubuntu, install and enable the distribution service:
 
 ~~~shell
-brew remove --ignore-dependencies pcsc-lite
+sudo apt install pcscd libpcsclite1 libccid
+sudo systemctl enable --now pcscd.socket
 ~~~
+
+Source builds also require `libpcsclite-dev` and `pkg-config` from the distribution. Do not link Homebrew's `pcsc-lite` while using the distribution service.
+If it was installed by an older Formula version, run `brew unlink pcsc-lite`.
 
 ###  Set Library Search Directory
 
