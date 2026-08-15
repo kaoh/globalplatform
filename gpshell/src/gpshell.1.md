@@ -559,7 +559,7 @@ Some cards are not supporting the GET DATA command. This command is used by GPSh
 
 # AUTHOR
 
-Karsten Ohme *k_o_@users.sourceforge.net*
+Karsten Ohme *gpshell@ik.me*
 Snit Mo *snitmo@gmail.com*
 
 See the file `AUTHORS` for a complete list.

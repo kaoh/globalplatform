@@ -1,13 +1,71 @@
 # Summary
 
-This is the top level project for the GlobalPlatform library for providing access to OpenPlatform 2.0.1' and GlobalPlatform 2.1.1 conforming smart cards and later, the command line shell GPShell using the GlobalPlatform library and the PC/SC connection plugin for the GlobalPlatform Library.
+GlobalPlatform is an open-source C library and command-line toolkit for
+managing OpenPlatform 2.0.1 and GlobalPlatform 2.1.1 and later smart cards.
+It includes the GlobalPlatform library, GPShell command-line tools, and a PC/SC
+connection plugin.
 
-# Pre-build Packages
+Highlights:
 
-Signed binaries for Linux (deb, rpm), Windows (msi, zip) and macOS (dmg) can be downloaded 
-from the [GitHub release page](https://github.com/kaoh/globalplatform/releases).
+- Complete GPShell3 SCP11a secure-channel workflow, including certificate,
+  CA-KLOC, and elliptic-curve key-agreement provisioning.
+- DAP signing and loading through DAP-verifying Security Domains.
+- Delegated-management token workflows and receipt verification with AES, DES,
+  RSA, and ECC keys.
 
-There are also Homebrew packages for [Linux and MacOS](https://github.com/kaoh/homebrew-globalplatform)
+# GPShell Manual
+
+GPShell3 is the preferred, task-oriented command-line interface for interactive
+use, shell scripts, and CI workflows. The legacy GPShell1 script interpreter
+remains available for established `.txt` automation.
+
+- [GPShell3 manual](./gpshell/src/gpshell3.1.md)
+- [Legacy GPShell1 manual](./gpshell/src/gpshell.1.md)
+
+## Script Examples
+
+- GPShell1 scripts: [gpshell/examples/gpshell](./gpshell/examples/gpshell) (`.txt`)
+- GPShell3 scripts: [gpshell/examples/gpshell3](./gpshell/examples/gpshell3) (`.sh`)
+
+Installed examples are available under `/usr/share/doc/gpshell3/examples/`,
+`/usr/local/share/doc/gpshell3/examples/`, or
+`/home/linuxbrew/.linuxbrew/share/doc/gpshell3/examples/`.
+
+A quick demo video showcasing the most useful features in action:
+
+[![Demo Video](./gpshell/demo/screencast.png)](https://youtu.be/MtZoTkrB41I)
+
+The current GPShell3 walkthroughs are collected in the
+[GPShell YouTube playlist](https://www.youtube.com/watch?v=igqlIvuOB5o&list=PLg46pyBZ2z-wF8acSL1nWvWFU0WPmhwlD).
+
+# Support and Consulting
+
+Consulting for GlobalPlatform integration, smart-card deployment, and secure
+channel workflows is available at [gpshell@ik.me](mailto:gpshell@ik.me).
+
+# Installation
+
+## GitHub Release Packages
+
+Signed [GitHub Release packages](https://github.com/kaoh/globalplatform/releases)
+are available for Windows (MSI, MSIX, and ZIP), Linux (DEB, RPM, and AppImage),
+and macOS (DMG).
+
+## vcpkg for C and CMake Projects
+
+Use the [GlobalPlatform vcpkg registry](https://github.com/kaoh/globalplatform-vcpkg-registry)
+to consume the library from C and CMake projects.
+
+## Windows SDK
+
+The release page provides signed x86 and x64 Windows shared-library SDK ZIPs.
+They contain headers, import libraries, CMake package files, runtime DLLs, API
+documentation, and a minimal CMake consumer example.
+
+## Homebrew for Linux and macOS
+
+Install the command-line tools and library from the
+[Homebrew tap](https://github.com/kaoh/homebrew-globalplatform).
 
 ## Verifying the Signatures of the Signed Binaries
 
@@ -32,31 +90,15 @@ You should see also something like:
 
 gpshell-3.0.0-static.deb: OK
 
-# GPShell Manual
+# The Library And SDK
 
-There are 2 versions of GPShell. The new GPShell 3+, using a concise, task-oriented command line, 
-and the older GPShell 1+ using script files chaining multiple commands into one session.
+The [C API documentation](https://kaoh.github.io/globalplatform/api/index.html)
+is generated from the release source. The library and its PC/SC plugin are
+available as CMake packages for applications embedding GlobalPlatform.
 
-Please read also the [manual of GPShell3](./gpshell/src/gpshell3.1.md) or if used 
-the manual of the [manual of GPShell1](./gpshell/src/gpshell.1.md).
-
-A quick demo video showcasing the most useful features in action:
-
-[![Demo Video](./gpshell/demo/screencast.png)](https://youtu.be/MtZoTkrB41I)
-
-The current GPShell3 walkthroughs are collected in the
-[GPShell YouTube playlist](https://www.youtube.com/watch?v=igqlIvuOB5o&list=PLg46pyBZ2z-wF8acSL1nWvWFU0WPmhwlD).
-
-# Support and Consulting
-
-Consulting for GlobalPlatform integration, smart-card deployment, and secure channel workflows is available at k_o_@users.sourceforge.net.
-
-For examples:
-
-- GPShell1 scripts: [gpshell/examples/gpshell](./gpshell/examples/gpshell) (`.txt`)
-- GPShell3 scripts: [gpshell/examples/gpshell3](./gpshell/examples/gpshell3) (`.sh`)
-
-Installed examples are available under `/usr/share/doc/gpshell3/examples/`, `/usr/local/share/doc/gpshell3/examples/`, or `/home/linuxbrew/.linuxbrew/share/doc/gpshell3/examples/`.
+Use the vcpkg registry for regular C/CMake integration. Native Windows
+developers can instead use the signed shared-library SDK archives described
+above.
 
 # Compilation
 

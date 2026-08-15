@@ -83,7 +83,7 @@ BEGIN
             VALUE "Description", "GPShell for Windows"
             VALUE "FileVersion", "1, 4, 5, 0"
             VALUE "ProductName", "GPShell"
-            VALUE "Info", "k_o_@users.sourceforge.net"
+            VALUE "Info", "gpshell@ik.me"
             VALUE "InternalName", "GPShell"
             VALUE "LegalCopyright", "Copyright (C) 2012, Snit Mo, Karsten Ohme"
             VALUE "License", "GPL"

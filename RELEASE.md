@@ -64,7 +64,7 @@ keys, or production certificates in the repository or workflow logs.
    - Keep the support text current when applicable:
 
      ```text
-     Consulting for GlobalPlatform integration, smart-card deployment, and secure channel workflows is available at k_o_@users.sourceforge.net.
+     Consulting for GlobalPlatform integration, smart-card deployment, and secure channel workflows is available at gpshell@ik.me.
      ```
 
    - Verify README links, API links, GitHub Sponsors, Patreon, and FLOSS Fund

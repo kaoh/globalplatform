@@ -38,7 +38,7 @@ set(CPACK_PACKAGE_FILE_NAME            "${PROJECT_NAME}-${VERSION}")
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${VERSION}")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY    "${PROJECT_NAME}-${VERSION}")
 set(CPACK_PACKAGE_VENDOR               "Karsten Ohme")
-set(CPACK_PACKAGE_CONTACT              "Karsten Ohme <k_o_@users.sourceforge.net>")
+set(CPACK_PACKAGE_CONTACT              "Karsten Ohme <gpshell@ik.me>")
 set(CPACK_PACKAGE_VERSION              "${VERSION}")
 
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING.LESSER")

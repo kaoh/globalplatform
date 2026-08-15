@@ -80,7 +80,7 @@ BEGIN
             VALUE "Comment", "Library for accessing OpenPlatform 2.0.1' and GlobalPlatform 2.1.1 compliant smart cards"
             VALUE "Description", "GlobalPlatform for Windows Library"
             VALUE "FileVersion", "7, 0, 0, 0"
-            VALUE "Info", "k_o_@users.sourceforge.net"
+            VALUE "Info", "gpshell@ik.me"
             VALUE "InternalName", "GlobalPlatform"
             VALUE "LegalCopyright", "Copyright (C) Karsten Ohme 2012"
             VALUE "License", "LGPL"

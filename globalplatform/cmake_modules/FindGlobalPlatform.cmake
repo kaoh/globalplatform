@@ -5,7 +5,7 @@
 #  GLOBALPLATFORM_INCLUDE_DIRS - the GlobalPlatform include directory
 #  GLOBALPLATFORM_LIBRARIES - The libraries needed to use GlobalPlatform
 #
-# Author: Karsten Ohme <k_o_@users.sourceforge.net>
+# Author: Karsten Ohme <gpshell@ik.me>
 # Version: 20130121
 #
 IF(UNIX)

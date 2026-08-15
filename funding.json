@@ -5,7 +5,7 @@
     "type": "individual",
     "role": "owner",
     "name": "Karsten Ohme",
-    "email": "k_o_@users.sourceforge.net",
+    "email": "gpshell@ik.me",
     "description": "I develop security-focused open source software. I created the first open source project for GlobalPlatform smart-card application management and contributed to Bouncy Castle PKI certification-path validation used in TLS and Java enterprise products.",
     "webpageUrl": {
       "url": "https://github.com/kaoh"

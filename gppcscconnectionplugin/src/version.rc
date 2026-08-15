@@ -80,7 +80,7 @@ BEGIN
             VALUE "Comment", "PC/SC Plugin for the GlobalPlatform Library"
             VALUE "Description", "GlobalPlatform PC/SC Plugin for Windows"
             VALUE "FileVersion", "1, 2, 3, 0"
-            VALUE "Info", "k_o_@users.sourceforge.net"
+            VALUE "Info", "gpshell@ik.me"
             VALUE "InternalName", "GlobalPlatform PC/SC Plugin"
             VALUE "LegalCopyright", "Copyright (C) Karsten Ohme 2011"
             VALUE "License", "LGPL"
