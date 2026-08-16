@@ -95,6 +95,9 @@ static const BYTE appletAID[8] = {0xD0,0xD1,0xD2,0xD3,0xD4,0xD5,0x01,0x01};
  */
 static const BYTE sdInstanceAID[8] = {0xD4, 0xD4, 0xD4, 0xD4, 0xD4, 0x01, 0x01, 0x01};
 
+/* Dedicated recipient SD for the delegated-extradition test. */
+static const BYTE sdExtraditionTargetAID[8] = {0xD4, 0xD4, 0xD4, 0xD4, 0xD4, 0x01, 0x01, 0x02};
+
 static const BYTE sdPackageAID[7] = {0xA0, 0x00, 0x00, 0x01, 0x51, 0x53, 0x50};
 static const BYTE sdModuleAID[8] = {0xA0, 0x00, 0x00, 0x01, 0x51, 0x53, 0x50, 0x41};
 static const BYTE sdPersonalizationKey[16] = {
@@ -118,6 +121,7 @@ static DWORD dmInstallTokenLength;
 static int dmLoadFileParamsAvailable = 0;
 static const char *dmLoadTokenKeyLabel = NULL;
 static const char *dmInstallTokenKeyLabel = NULL;
+static int dmExtraditionTargetSdInstalled = 0;
 
 static OPGP_LOAD_FILE_PARAMETERS dapLoadFileParams;
 static BYTE dapLoadFileDataBlockHash[64];
@@ -177,21 +181,42 @@ static OPGP_ERROR_STATUS internal_establish_context() {
 	return status;
 }
 
-static OPGP_ERROR_STATUS internal_mutual_authentication() {
+static OPGP_ERROR_STATUS internal_authenticate(GP211_SECURITY_INFO *secInfo,
+		PBYTE encryptionKey, PBYTE macKey, PBYTE dataEncryptionKey,
+		DWORD keyLength, BYTE keySetVersion, BYTE requestedScp,
+		BYTE requestedScpImpl, BYTE securityLevel) {
 	OPGP_ERROR_STATUS status;
-	BYTE scp;
-	BYTE scpImpl;
-	status = GP211_get_secure_channel_protocol_details(cardContext, cardInfo, &securityInfo211,
-			&scp, &scpImpl);
+	BYTE scp = requestedScp;
+	BYTE scpImpl = requestedScpImpl;
+
+	if (scp == 0) {
+		status = GP211_get_secure_channel_protocol_details(cardContext, cardInfo, secInfo,
+				&scp, &scpImpl);
+		if (OPGP_ERROR_CHECK(status)) {
+			return status;
+		}
+	}
+
+	status = GP211_mutual_authentication(cardContext, cardInfo, NULL,
+			encryptionKey, macKey, dataEncryptionKey, keyLength, keySetVersion, 0,
+			scp, scpImpl, securityLevel, OPGP_DERIVATION_METHOD_NONE,
+			NULL, 0, NULL, 0, NULL, secInfo);
 	if (OPGP_ERROR_CHECK(status)) {
 		return status;
 	}
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+	return status;
+}
+
+static OPGP_ERROR_STATUS internal_mutual_authentication() {
+	OPGP_ERROR_STATUS status;
+
 	memcpy(securityInfo211.invokingAid, GP231_ISD_AID, sizeof(GP231_ISD_AID));
 	securityInfo211.invokingAidLength = sizeof(GP231_ISD_AID);
-	status = GP211_mutual_authentication(cardContext, cardInfo, NULL,
+	status = internal_authenticate(&securityInfo211,
 			(PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE) OPGP_VISA_DEFAULT_KEY,
-			(PBYTE) OPGP_VISA_DEFAULT_KEY, sizeof(OPGP_VISA_DEFAULT_KEY), 0, 0, scp, scpImpl,
-			GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC, OPGP_DERIVATION_METHOD_NONE, NULL, 0, NULL, 0, NULL, &securityInfo211);
+			(PBYTE) OPGP_VISA_DEFAULT_KEY, sizeof(OPGP_VISA_DEFAULT_KEY), 0,
+			0, 0, GP211_SCP01_SECURITY_LEVEL_C_DEC_C_MAC);
 	if (OPGP_ERROR_CHECK(status)) {
 		return status;
 	}
@@ -393,18 +418,138 @@ static OPGP_ERROR_STATUS internal_connect_and_authenticate() {
 	return status;
 }
 
-static OPGP_ERROR_STATUS internal_select_and_authenticate_personalized_sd(GP211_SECURITY_INFO *sdSecurityInfo) {
+static OPGP_ERROR_STATUS internal_select_and_authenticate_sd(GP211_SECURITY_INFO *sdSecurityInfo,
+		const BYTE *sdAID, DWORD sdAIDLength, PBYTE encryptionKey,
+		PBYTE macKey, PBYTE dataEncryptionKey, DWORD keyLength,
+		BYTE keySetVersion, BYTE securityLevel) {
 	OPGP_ERROR_STATUS status;
-	status = OPGP_select_application(cardContext, cardInfo, sdSecurityInfo, (PBYTE)sdInstanceAID, sizeof(sdInstanceAID));
+	status = OPGP_select_application(cardContext, cardInfo, sdSecurityInfo,
+			(PBYTE)sdAID, sdAIDLength);
 	if (OPGP_ERROR_CHECK(status)) {
 		return status;
 	}
 
-	memcpy(sdSecurityInfo->invokingAid, sdInstanceAID, sizeof(sdInstanceAID));
-	sdSecurityInfo->invokingAidLength = sizeof(sdInstanceAID);
-	status = GP211_mutual_authentication(cardContext, cardInfo, NULL,
-			(PBYTE)sdPersonalizationKey, (PBYTE)sdPersonalizationKey, (PBYTE)sdPersonalizationKey,
-			sizeof(sdPersonalizationKey), 1, 0, 0, 0, GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC, OPGP_DERIVATION_METHOD_NONE, NULL, 0, NULL, 0, NULL, sdSecurityInfo);
+	memcpy(sdSecurityInfo->invokingAid, sdAID, sdAIDLength);
+	sdSecurityInfo->invokingAidLength = sdAIDLength;
+	status = internal_authenticate(sdSecurityInfo, encryptionKey, macKey,
+			dataEncryptionKey, keyLength, keySetVersion, GP211_SCP03, 0,
+			securityLevel);
+	if (OPGP_ERROR_CHECK(status)) {
+		return status;
+	}
+
+	OPGP_ERROR_CREATE_NO_ERROR(status);
+	return status;
+}
+
+static OPGP_ERROR_STATUS internal_select_and_authenticate_personalized_sd(GP211_SECURITY_INFO *sdSecurityInfo) {
+	return internal_select_and_authenticate_sd(sdSecurityInfo, sdInstanceAID,
+			sizeof(sdInstanceAID), (PBYTE)sdPersonalizationKey,
+			(PBYTE)sdPersonalizationKey, (PBYTE)sdPersonalizationKey,
+			sizeof(sdPersonalizationKey), 1,
+			GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC);
+}
+
+static OPGP_ERROR_STATUS internal_prepare_dm_extradition_target_sd() {
+	OPGP_ERROR_STATUS status;
+	GP211_SECURITY_INFO targetSecurityInfo;
+	GP211_APPLICATION_DATA appData[20];
+	GP211_EXECUTABLE_MODULES_DATA modulesData[20];
+	GP211_SD_INSTALL_PARAMS sdParams;
+	GP211_RECEIPT_DATA receipt;
+	BYTE sdParamsBuf[100];
+	DWORD sdParamsLen = sizeof(sdParamsBuf);
+	DWORD receiptDataAvailable = 0;
+	DWORD dataLength = 20;
+	DWORD i;
+	int found = 0;
+
+	status = internal_connect_and_authenticate();
+	if (OPGP_ERROR_CHECK(status)) {
+		return status;
+	}
+
+	status = internal_delete_aid(sdExtraditionTargetAID,
+			sizeof(sdExtraditionTargetAID), 1);
+	if (OPGP_ERROR_CHECK(status)) {
+		return status;
+	}
+
+	memset(&sdParams, 0, sizeof(sdParams));
+	sdParams.acceptExtraditionHere[0] = GP211_SD_ACCEPT_DM_UNDER_ANCESTOR_AM;
+	sdParams.acceptExtraditionHere[1] = GP211_SD_ACCEPT_DM_UNDER_ANCESTOR_AM;
+	sdParams.acceptExtraditionHereLength = 2;
+	sdParams.acceptExtraditionAway[0] = GP211_SD_ACCEPT_ISD;
+	sdParams.acceptExtraditionAway[1] = GP211_SD_ACCEPT_ISD;
+	sdParams.acceptExtraditionAwayLength = 2;
+	sdParams.acceptDeletion = GP211_SD_ACCEPT_ISD;
+	sdParams.acceptDeletionLength = 1;
+
+	status = GP211_build_sd_parameters(&sdParams, sdParamsBuf, &sdParamsLen);
+	if (OPGP_ERROR_CHECK(status)) {
+		return status;
+	}
+
+	status = GP211_install_for_install_and_make_selectable(cardContext, cardInfo,
+			&securityInfo211, (PBYTE)sdPackageAID, sizeof(sdPackageAID),
+			(PBYTE)sdModuleAID, sizeof(sdModuleAID),
+			(PBYTE)sdExtraditionTargetAID, sizeof(sdExtraditionTargetAID),
+			GP211_SECURITY_DOMAIN, 0, 0, NULL, 0, sdParamsBuf, sdParamsLen,
+			NULL, 0, NULL, 0, NULL, 0, &receipt, &receiptDataAvailable);
+	if (OPGP_ERROR_CHECK(status)) {
+		return status;
+	}
+	dmExtraditionTargetSdInstalled = 1;
+
+	status = internal_disconnect();
+	if (OPGP_ERROR_CHECK(status)) {
+		return status;
+	}
+
+	status = internal_connect();
+	if (OPGP_ERROR_CHECK(status)) {
+		return status;
+	}
+	status = internal_select_and_authenticate_sd(&targetSecurityInfo,
+			sdExtraditionTargetAID, sizeof(sdExtraditionTargetAID),
+			(PBYTE)OPGP_VISA_DEFAULT_KEY, (PBYTE)OPGP_VISA_DEFAULT_KEY,
+			(PBYTE)OPGP_VISA_DEFAULT_KEY, sizeof(OPGP_VISA_DEFAULT_KEY), 0,
+			GP211_SCP03_SECURITY_LEVEL_C_MAC);
+	if (OPGP_ERROR_CHECK(status)) {
+		return status;
+	}
+
+	status = GP211_put_secure_channel_keys(cardContext, cardInfo,
+			&targetSecurityInfo, 0, 1, NULL,
+			(PBYTE)sdPersonalizationKey, (PBYTE)sdPersonalizationKey,
+			(PBYTE)sdPersonalizationKey, sizeof(sdPersonalizationKey),
+			GP211_KEY_TYPE_AES);
+	if (OPGP_ERROR_CHECK(status)) {
+		return status;
+	}
+
+	status = GP211_get_status(cardContext, cardInfo, &targetSecurityInfo,
+			GP211_STATUS_APPLICATIONS, GP211_STATUS_FORMAT_NEW, appData,
+			modulesData, &dataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		return status;
+	}
+	for (i = 0; i < dataLength; i++) {
+		if (appData[i].aid.AIDLength == sizeof(sdExtraditionTargetAID) &&
+				memcmp(appData[i].aid.AID, sdExtraditionTargetAID,
+						sizeof(sdExtraditionTargetAID)) == 0) {
+			found = 1;
+			break;
+		}
+	}
+	if (!found || appData[i].lifeCycleState !=
+			GP211_LIFE_CYCLE_SECURITY_DOMAIN_PERSONALIZED) {
+		OPGP_ERROR_CREATE_ERROR(status, OPGP_ERROR_INVALID_RESPONSE_DATA,
+				"Extradition target Security Domain was not personalized.");
+		return status;
+	}
+
+	status = internal_disconnect();
 	if (OPGP_ERROR_CHECK(status)) {
 		return status;
 	}
@@ -979,9 +1124,11 @@ START_TEST (test_personalize_sd) {
  */
 START_TEST (test_move_sd) {
 	OPGP_ERROR_STATUS status;
+	OPGP_LOAD_FILE_PARAMETERS loadFileParams;
 	GP211_APPLICATION_DATA appData[20];
 	GP211_EXECUTABLE_MODULES_DATA modulesData[20];
 	DWORD dataLength = 20;
+	DWORD receiptDataLength = 0;
 	GP211_RECEIPT_DATA receipt;
 	DWORD receiptDataAvailable = 0;
 
@@ -994,11 +1141,74 @@ START_TEST (test_move_sd) {
 		ck_abort_msg("Could not do mutual authentication: %s", status.errorMessage);
 	}
 
-	status = GP211_install_for_extradition(cardContext, cardInfo, &securityInfo211, (PBYTE)sdInstanceAID, sizeof(sdInstanceAID), (PBYTE)sdInstanceAID, sizeof(sdInstanceAID), NULL, 0, &receipt, &receiptDataAvailable);
+	status = internal_delete_selected(INTERNAL_DELETE_APPLET | INTERNAL_DELETE_PACKAGE, 1);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not remove existing test applet/package: %s", status.errorMessage);
+	}
+
+	status = OPGP_read_executable_load_file_parameters(TEST_LOAD_FILE, &loadFileParams);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("OPGP_read_executable_load_file_parameters() failed: %s", status.errorMessage);
+	}
+
+	status = GP211_install_for_load(cardContext, cardInfo, &securityInfo211,
+			loadFileParams.loadFileAID.AID, loadFileParams.loadFileAID.AIDLength,
+			(PBYTE)GP231_ISD_AID, sizeof(GP231_ISD_AID),
+			NULL, 0, NULL, 0, loadFileParams.loadFileSize, 0, 2000);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_install_for_load() failed: %s", status.errorMessage);
+	}
+
+	status = GP211_load(cardContext, cardInfo, &securityInfo211, NULL, 0,
+			TEST_LOAD_FILE, NULL, &receiptDataLength, NULL);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_load() failed: %s", status.errorMessage);
+	}
+
+	status = GP211_install_for_install_and_make_selectable(cardContext, cardInfo, &securityInfo211,
+			loadFileParams.loadFileAID.AID, loadFileParams.loadFileAID.AIDLength,
+			loadFileParams.appletAIDs[0].AID, loadFileParams.appletAIDs[0].AIDLength,
+			loadFileParams.appletAIDs[0].AID, loadFileParams.appletAIDs[0].AIDLength,
+			0, 500, 1000, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0,
+			&receipt, &receiptDataAvailable);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_install_for_install_and_make_selectable() failed: %s", status.errorMessage);
+	}
+
+	dataLength = 20;
+	status = GP211_get_status(cardContext, cardInfo, &securityInfo211,
+			GP211_STATUS_APPLICATIONS, GP211_STATUS_FORMAT_NEW, appData, modulesData, &dataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not get application status before extradition: %s", status.errorMessage);
+	}
+	{
+		int found = 0;
+		DWORD i;
+		for (i = 0; i < dataLength; i++) {
+			if (appData[i].aid.AIDLength == loadFileParams.appletAIDs[0].AIDLength &&
+					memcmp(appData[i].aid.AID, loadFileParams.appletAIDs[0].AID,
+							loadFileParams.appletAIDs[0].AIDLength) == 0) {
+				found = 1;
+				break;
+			}
+		}
+		if (!found || appData[i].associatedSecurityDomainAID.AIDLength != sizeof(GP231_ISD_AID) ||
+				memcmp(appData[i].associatedSecurityDomainAID.AID, GP231_ISD_AID,
+						sizeof(GP231_ISD_AID)) != 0) {
+			ck_abort_msg("Test applet is not associated with the ISD before extradition.");
+		}
+	}
+
+	receiptDataAvailable = 0;
+	status = GP211_install_for_extradition(cardContext, cardInfo, &securityInfo211,
+			(PBYTE)sdInstanceAID, sizeof(sdInstanceAID),
+			loadFileParams.appletAIDs[0].AID, loadFileParams.appletAIDs[0].AIDLength,
+			NULL, 0, &receipt, &receiptDataAvailable);
 	if (OPGP_ERROR_CHECK(status)) {
 		ck_abort_msg("GP211_install_for_extradition() failed: %s", status.errorMessage);
 	}
 
+	dataLength = 20;
 	status = GP211_get_status(cardContext, cardInfo, &securityInfo211, GP211_STATUS_APPLICATIONS, GP211_STATUS_FORMAT_NEW, appData, modulesData, &dataLength);
 	if (OPGP_ERROR_CHECK(status)) {
 		ck_abort_msg("Could not get status from applications: %s", status.errorMessage);
@@ -1006,15 +1216,25 @@ START_TEST (test_move_sd) {
 
 	{
 		DWORD i;
-		int sdCount = 0;
+		int found = 0;
 		for (i = 0; i < dataLength; i++) {
-			if (appData[i].privileges & GP211_SECURITY_DOMAIN) {
-				sdCount++;
+			if (appData[i].aid.AIDLength == loadFileParams.appletAIDs[0].AIDLength &&
+					memcmp(appData[i].aid.AID, loadFileParams.appletAIDs[0].AID,
+							loadFileParams.appletAIDs[0].AIDLength) == 0) {
+				found = 1;
+				break;
 			}
 		}
-		if (sdCount != 1) {
-			ck_abort_msg("Expected 1 security domain, found %d", sdCount);
+		if (!found || appData[i].associatedSecurityDomainAID.AIDLength != sizeof(sdInstanceAID) ||
+				memcmp(appData[i].associatedSecurityDomainAID.AID, sdInstanceAID,
+						sizeof(sdInstanceAID)) != 0) {
+			ck_abort_msg("Test applet is not associated with the target SD after extradition.");
 		}
+	}
+
+	status = internal_delete();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not remove extradited test applet/package: %s", status.errorMessage);
 	}
 
 	status = internal_disconnect();
@@ -1165,8 +1385,8 @@ START_TEST (test_dm_install_sd_with_delegated_management) {
 	sdParams.acceptExtraditionHere[0] = GP211_SD_ACCEPT_ISD;
 	sdParams.acceptExtraditionHere[1] = GP211_SD_ACCEPT_ISD;
 	sdParams.acceptExtraditionHereLength = 2;
-	sdParams.acceptExtraditionAway[0] = GP211_SD_ACCEPT_ISD;
-	sdParams.acceptExtraditionAway[1] = GP211_SD_ACCEPT_ISD;
+	sdParams.acceptExtraditionAway[0] = GP211_SD_ACCEPT_DM_UNDER_ANCESTOR_AM;
+	sdParams.acceptExtraditionAway[1] = GP211_SD_ACCEPT_DM_UNDER_ANCESTOR_AM;
 	sdParams.acceptExtraditionAwayLength = 2;
 	sdParams.acceptDeletion = GP211_SD_ACCEPT_ISD;
 	sdParams.acceptDeletionLength = 1;
@@ -1983,6 +2203,114 @@ START_TEST (test_dm_install_helloworld_with_tokens_rsa) {
 
 /**
  * Delegated management test step 7:
+ * Extradite an application using an ECC token and validate the receipt.
+ */
+START_TEST (test_dm_extradition_helloworld_with_token_ecc) {
+	OPGP_ERROR_STATUS status;
+	GP211_SECURITY_INFO sdSecurityInfo;
+	GP211_APPLICATION_DATA appData[20];
+	GP211_EXECUTABLE_MODULES_DATA modulesData[20];
+	GP211_RECEIPT_DATA receipt;
+	BYTE extraditionToken[512];
+	DWORD extraditionTokenLength = sizeof(extraditionToken);
+	DWORD receiptDataAvailable = 0;
+	DWORD dataLength = 20;
+
+	if (!dmLoadFileParamsAvailable || dmLoadFileParams.appletAIDs[0].AIDLength == 0 ||
+			dmLoadTokenKeyLabel == NULL || strcmp(dmLoadTokenKeyLabel, "ECC") != 0 ||
+			dmInstallTokenKeyLabel == NULL || strcmp(dmInstallTokenKeyLabel, "ECC") != 0) {
+		ck_abort_msg("ECC delegated management installation preconditions are missing.");
+	}
+
+	status = internal_prepare_dm_extradition_target_sd();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not provision delegated-extradition target SD: %s",
+				status.errorMessage);
+	}
+
+	status = GP211_calculate_extradition_token((PBYTE)sdExtraditionTargetAID,
+			sizeof(sdExtraditionTargetAID),
+			dmLoadFileParams.appletAIDs[0].AID, dmLoadFileParams.appletAIDs[0].AIDLength,
+			extraditionToken, &extraditionTokenLength, TEST_ECC_PRIVATE_KEY, NULL);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_calculate_extradition_token() failed: %s", status.errorMessage);
+	}
+
+	status = internal_connect();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not connect: %s", status.errorMessage);
+	}
+	status = internal_select_and_authenticate_sd(&sdSecurityInfo, sdInstanceAID,
+			sizeof(sdInstanceAID),
+			(PBYTE)sdPersonalizationKey, (PBYTE)sdPersonalizationKey,
+			(PBYTE)sdPersonalizationKey, sizeof(sdPersonalizationKey), 1,
+			GP211_SCP03_SECURITY_LEVEL_C_DEC_C_MAC);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not do SCP03 mutual authentication with delegated management SD: %s",
+				status.errorMessage);
+	}
+
+	status = GP211_install_for_extradition(cardContext, cardInfo, &sdSecurityInfo,
+			(PBYTE)sdExtraditionTargetAID, sizeof(sdExtraditionTargetAID),
+			dmLoadFileParams.appletAIDs[0].AID, dmLoadFileParams.appletAIDs[0].AIDLength,
+			extraditionToken, extraditionTokenLength, &receipt, &receiptDataAvailable);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Delegated GP211_install_for_extradition() failed: %s", status.errorMessage);
+	}
+	if (!receiptDataAvailable) {
+		ck_abort_msg("Delegated extradition did not return the configured receipt.");
+	}
+
+	status = GP211_validate_extradition_receipt((PBYTE)delegatedReceiptKey,
+			sizeof(delegatedReceiptKey), receipt,
+			(PBYTE)sdInstanceAID, sizeof(sdInstanceAID),
+			(PBYTE)sdExtraditionTargetAID, sizeof(sdExtraditionTargetAID),
+			dmLoadFileParams.appletAIDs[0].AID, dmLoadFileParams.appletAIDs[0].AIDLength,
+			GP211_KEY_TYPE_AES, NULL, NULL);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("GP211_validate_extradition_receipt() failed: %s", status.errorMessage);
+	}
+
+	status = OPGP_select_application(cardContext, cardInfo, &securityInfo211,
+			(PBYTE)GP231_ISD_AID, sizeof(GP231_ISD_AID));
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Selecting ISD failed: %s", status.errorMessage);
+	}
+	status = internal_mutual_authentication();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not do mutual authentication with ISD: %s", status.errorMessage);
+	}
+	status = GP211_get_status(cardContext, cardInfo, &securityInfo211,
+			GP211_STATUS_APPLICATIONS, GP211_STATUS_FORMAT_NEW, appData, modulesData, &dataLength);
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not get application status after delegated extradition: %s", status.errorMessage);
+	}
+	{
+		int found = 0;
+		DWORD i;
+		for (i = 0; i < dataLength; i++) {
+			if (appData[i].aid.AIDLength == dmLoadFileParams.appletAIDs[0].AIDLength &&
+					memcmp(appData[i].aid.AID, dmLoadFileParams.appletAIDs[0].AID,
+							dmLoadFileParams.appletAIDs[0].AIDLength) == 0) {
+				found = 1;
+				break;
+			}
+		}
+		if (!found || appData[i].associatedSecurityDomainAID.AIDLength != sizeof(sdExtraditionTargetAID) ||
+				memcmp(appData[i].associatedSecurityDomainAID.AID,
+						sdExtraditionTargetAID, sizeof(sdExtraditionTargetAID)) != 0) {
+			ck_abort_msg("Delegated applet is not associated with the extradition target SD.");
+		}
+	}
+
+	status = internal_disconnect();
+	if (OPGP_ERROR_CHECK(status)) {
+		ck_abort_msg("Could not disconnect: %s", status.errorMessage);
+	}
+} END_TEST
+
+/**
+ * Delegated management test step 8:
  * Delete the delegated applet and package.
  */
 START_TEST (test_dm_delete_helloworld) {
@@ -2066,6 +2394,16 @@ START_TEST (test_dm_delete_sd) {
 		ck_abort_msg("Could not connect and authenticate: %s", status.errorMessage);
 	}
 
+	if (dmExtraditionTargetSdInstalled) {
+		status = internal_delete_aid(sdExtraditionTargetAID,
+				sizeof(sdExtraditionTargetAID), 0);
+		if (OPGP_ERROR_CHECK(status)) {
+			ck_abort_msg("Could not delete delegated-extradition target SD: %s",
+					status.errorMessage);
+		}
+		dmExtraditionTargetSdInstalled = 0;
+	}
+
 	status = internal_delete_selected(INTERNAL_DELETE_SD, 0);
 	if (OPGP_ERROR_CHECK(status)) {
 		ck_abort_msg("Could not delete delegated management SD: %s", status.errorMessage);
@@ -2083,6 +2421,11 @@ START_TEST (test_dm_delete_sd) {
 			if (appData[i].aid.AIDLength == sizeof(sdInstanceAID) &&
 					memcmp(appData[i].aid.AID, sdInstanceAID, sizeof(sdInstanceAID)) == 0) {
 				ck_abort_msg("Delegated management SD AID still found in status after deletion.");
+			}
+			if (appData[i].aid.AIDLength == sizeof(sdExtraditionTargetAID) &&
+					memcmp(appData[i].aid.AID, sdExtraditionTargetAID,
+							sizeof(sdExtraditionTargetAID)) == 0) {
+				ck_abort_msg("Delegated-extradition target SD AID still found in status after deletion.");
 			}
 		}
 	}
@@ -2174,6 +2517,7 @@ Suite * GlobalPlatform_suite(void) {
 	tcase_add_test (tc_core, test_dm_calculate_load_token_ecc);
 	tcase_add_test (tc_core, test_dm_calculate_install_token_ecc);
 	tcase_add_test (tc_core, test_dm_install_helloworld_with_tokens_ecc);
+	tcase_add_test (tc_core, test_dm_extradition_helloworld_with_token_ecc);
 	tcase_add_test (tc_core, test_dm_delete_helloworld);
 	tcase_add_test (tc_core, test_dm_delete_sd);
 	tcase_add_test (tc_core, test_dm_delete_keys);
