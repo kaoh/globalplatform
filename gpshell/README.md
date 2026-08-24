@@ -146,12 +146,25 @@ cmake -DDEBUG=ON
 
 ## Man Page (Only for UNIXes)
 
-The man page is translated with [pandoc](https://pandoc.org) from markdown to groff syntax. To render a preview of the result use:
+The man pages (`gpshell.1` and `gpshell3.1`) are generated from markdown sources using [pandoc](https://pandoc.org) or [kramdown](https://kramdown.gettalong.org/).
+
+CMake configuration options:
+
+- `-DGPSHELL_BUILD_MAN_PAGE=ON|OFF`: enable or disable man page generation (default `ON` on non-Windows).
+- `-DGPSHELL_MAN_CONVERTER=AUTO|PANDOC|KRAMDOWN|OFF`: specify converter to use (`AUTO` detects pandoc first, then kramdown).
+- `-DDISABLE_PANDOC=ON`: disable pandoc and fall back to kramdown if available.
+
+To render a preview of the result use:
 
 ~~~shell
 cd src
+# with pandoc:
 pandoc --standalone --to man gpshell.1.md | groff -man -Tascii
 pandoc --standalone --to man gpshell3.1.md | groff -man -Tascii
+
+# or with kramdown:
+kramdown -o man gpshell.1.md | groff -man -Tascii
+kramdown -o man gpshell3.1.md | groff -man -Tascii
 ~~~
 
 ## Debug Output

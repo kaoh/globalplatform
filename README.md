@@ -121,7 +121,7 @@ Use a suitable packet manager for your OS or install the programs and libraries 
 * [OpenSSL](http://www.openssl.org/) (Use OpenSSL 3)
 * [zlib](http://www.zlib.net/) (macOS should already bundle this, for Windows a pre-built version is included)
 * [cmocka](https://cmocka.org/) for running the tests
-* [Pandoc](https://pandoc.org/installing.html) for generating the man page the tests
+* [Pandoc](https://pandoc.org/installing.html) or [kramdown](https://kramdown.gettalong.org/) for generating the man pages (optional; can be disabled with `-DGPSHELL_BUILD_MAN_PAGE=OFF` or `-DDISABLE_PANDOC=ON`)
 
 ## Unix
 

@@ -243,57 +243,135 @@ if(WIN32)
   endif()
 endif()
 
-IF(NOT WIN32)
-	# pandoc man page generation
-	
-	if(NOT EXISTS ${PANDOC_EXECUTABLE})
-	    message("-- Checking for pandoc")
-	    find_program(PANDOC_EXECUTABLE pandoc)
-	    mark_as_advanced(PANDOC_EXECUTABLE)
-	    if(NOT EXISTS ${PANDOC_EXECUTABLE})
-	        message(FATAL_ERROR "--   Pandoc not found. Install Pandoc (http://johnmacfarlane.net/pandoc/) or set cache variable PANDOC_EXECUTABLE.")
-	        return()
-	    else()
-	        message("--   Found pandoc")
-	    endif()
-	endif()
-	
-	# Inject version number
-	configure_file(
-		${CMAKE_CURRENT_SOURCE_DIR}/gpshell.1.md
-		${CMAKE_CURRENT_BINARY_DIR}/gpshell.1.md
-		@ONLY
-		)
-
-	# Configure gpshell3 man page markdown
-	configure_file(
-		${CMAKE_CURRENT_SOURCE_DIR}/gpshell3.1.md
-		${CMAKE_CURRENT_BINARY_DIR}/gpshell3.1.md
-		@ONLY
-		)
-
-	add_custom_command(
-	    OUTPUT gpshell.1
-	    COMMAND ${PANDOC_EXECUTABLE} --standalone --to man -o gpshell.1 ${CMAKE_CURRENT_BINARY_DIR}/gpshell.1.md
-	    COMMENT "Creating man page ..."
-	    )
-
-	add_custom_command(
-	    OUTPUT gpshell3.1
-	    COMMAND ${PANDOC_EXECUTABLE} --standalone --to man -o gpshell3.1 ${CMAKE_CURRENT_BINARY_DIR}/gpshell3.1.md
-	    COMMENT "Creating gpshell3 man page ..."
-	    )
-	
-	add_custom_target(gpshell_manpage ALL DEPENDS gpshell.1 gpshell3.1)
-	add_custom_target(gpshell3_manpage ALL DEPENDS gpshell3.1)
+if(WIN32)
+  set(_default_build_man_page OFF)
+else()
+  set(_default_build_man_page ON)
 endif()
 
-file(TO_NATIVE_PATH ${CMAKE_CURRENT_BINARY_DIR}/gpshell.1 native_filepath)
-file(TO_NATIVE_PATH ${CMAKE_CURRENT_BINARY_DIR}/gpshell3.1 native_filepath3)
-get_directory_property(make_clean_files ADDITIONAL_MAKE_CLEAN_FILES)
-set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${make_clean_files};${native_filepath};${native_filepath3}")
+option(GPSHELL_BUILD_MAN_PAGE "Build gpshell man pages (requires pandoc or kramdown)" ${_default_build_man_page})
+option(DISABLE_PANDOC "Disable pandoc for man page generation" OFF)
+set(GPSHELL_MAN_CONVERTER "AUTO" CACHE STRING "Markdown to man converter (AUTO, PANDOC, KRAMDOWN, OFF)")
+set_property(CACHE GPSHELL_MAN_CONVERTER PROPERTY STRINGS "AUTO" "PANDOC" "KRAMDOWN" "OFF")
 
-IF(UNIX)
-  INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/gpshell.1 DESTINATION ${MANPAGE_DIRECTORY}/man1)
-  INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/gpshell3.1 DESTINATION ${MANPAGE_DIRECTORY}/man1)
-ENDIF()
+if(GPSHELL_BUILD_MAN_PAGE)
+  string(TOUPPER "${GPSHELL_MAN_CONVERTER}" _gpshell_converter_upper)
+
+  if(_gpshell_converter_upper STREQUAL "OFF")
+    set(GPSHELL_BUILD_MAN_PAGE OFF)
+    message(STATUS "GPShell man page generation disabled by GPSHELL_MAN_CONVERTER=OFF.")
+  elseif(_gpshell_converter_upper STREQUAL "PANDOC")
+    if(DISABLE_PANDOC)
+      set(GPSHELL_BUILD_MAN_PAGE OFF)
+      message(STATUS "GPShell man page generation disabled because DISABLE_PANDOC is ON.")
+    else()
+      find_program(PANDOC_EXECUTABLE pandoc)
+      mark_as_advanced(PANDOC_EXECUTABLE)
+      if(NOT PANDOC_EXECUTABLE OR NOT EXISTS "${PANDOC_EXECUTABLE}")
+        message(FATAL_ERROR "Pandoc not found (GPSHELL_MAN_CONVERTER=PANDOC). Install pandoc, specify PANDOC_EXECUTABLE, or use -DGPSHELL_MAN_CONVERTER=KRAMDOWN / -DGPSHELL_BUILD_MAN_PAGE=OFF.")
+      else()
+        set(_active_man_converter "PANDOC")
+      endif()
+    endif()
+  elseif(_gpshell_converter_upper STREQUAL "KRAMDOWN")
+    find_program(KRAMDOWN_EXECUTABLE kramdown)
+    mark_as_advanced(KRAMDOWN_EXECUTABLE)
+    if(NOT KRAMDOWN_EXECUTABLE OR NOT EXISTS "${KRAMDOWN_EXECUTABLE}")
+      message(FATAL_ERROR "Kramdown not found (GPSHELL_MAN_CONVERTER=KRAMDOWN). Install kramdown, specify KRAMDOWN_EXECUTABLE, or use -DGPSHELL_MAN_CONVERTER=PANDOC / -DGPSHELL_BUILD_MAN_PAGE=OFF.")
+    else()
+      set(_active_man_converter "KRAMDOWN")
+    endif()
+  elseif(_gpshell_converter_upper STREQUAL "AUTO")
+    set(_active_man_converter "")
+    if(NOT DISABLE_PANDOC)
+      find_program(PANDOC_EXECUTABLE pandoc)
+      mark_as_advanced(PANDOC_EXECUTABLE)
+      if(PANDOC_EXECUTABLE AND EXISTS "${PANDOC_EXECUTABLE}")
+        set(_active_man_converter "PANDOC")
+      endif()
+    endif()
+
+    if(NOT _active_man_converter)
+      find_program(KRAMDOWN_EXECUTABLE kramdown)
+      mark_as_advanced(KRAMDOWN_EXECUTABLE)
+      if(KRAMDOWN_EXECUTABLE AND EXISTS "${KRAMDOWN_EXECUTABLE}")
+        set(_active_man_converter "KRAMDOWN")
+      endif()
+    endif()
+
+    if(NOT _active_man_converter)
+      set(GPSHELL_BUILD_MAN_PAGE OFF)
+      message(STATUS "Neither pandoc nor kramdown was found. Disabling GPShell man page generation.")
+    endif()
+  else()
+    message(FATAL_ERROR "Invalid GPSHELL_MAN_CONVERTER value: '${GPSHELL_MAN_CONVERTER}'. Valid options are AUTO, PANDOC, KRAMDOWN, OFF.")
+  endif()
+endif()
+
+if(GPSHELL_BUILD_MAN_PAGE)
+  message(STATUS "GPShell man page generation enabled using ${_active_man_converter}")
+
+  # Inject version number
+  configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/gpshell.1.md
+    ${CMAKE_CURRENT_BINARY_DIR}/gpshell.1.md
+    @ONLY
+  )
+
+  # Configure gpshell3 man page markdown
+  configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/gpshell3.1.md
+    ${CMAKE_CURRENT_BINARY_DIR}/gpshell3.1.md
+    @ONLY
+  )
+
+  if(_active_man_converter STREQUAL "PANDOC")
+    add_custom_command(
+      OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/gpshell.1
+      COMMAND ${PANDOC_EXECUTABLE} --standalone --to man -o ${CMAKE_CURRENT_BINARY_DIR}/gpshell.1 ${CMAKE_CURRENT_BINARY_DIR}/gpshell.1.md
+      DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gpshell.1.md
+      COMMENT "Creating gpshell man page using pandoc ..."
+    )
+
+    add_custom_command(
+      OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/gpshell3.1
+      COMMAND ${PANDOC_EXECUTABLE} --standalone --to man -o ${CMAKE_CURRENT_BINARY_DIR}/gpshell3.1 ${CMAKE_CURRENT_BINARY_DIR}/gpshell3.1.md
+      DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gpshell3.1.md
+      COMMENT "Creating gpshell3 man page using pandoc ..."
+    )
+  elseif(_active_man_converter STREQUAL "KRAMDOWN")
+    find_program(SH_EXECUTABLE sh)
+    if(NOT SH_EXECUTABLE)
+      set(SH_EXECUTABLE sh)
+    endif()
+
+    add_custom_command(
+      OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/gpshell.1
+      COMMAND ${SH_EXECUTABLE} -c "${KRAMDOWN_EXECUTABLE} -o man '${CMAKE_CURRENT_BINARY_DIR}/gpshell.1.md' > '${CMAKE_CURRENT_BINARY_DIR}/gpshell.1'"
+      DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gpshell.1.md
+      COMMENT "Creating gpshell man page using kramdown ..."
+      VERBATIM
+    )
+
+    add_custom_command(
+      OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/gpshell3.1
+      COMMAND ${SH_EXECUTABLE} -c "${KRAMDOWN_EXECUTABLE} -o man '${CMAKE_CURRENT_BINARY_DIR}/gpshell3.1.md' > '${CMAKE_CURRENT_BINARY_DIR}/gpshell3.1'"
+      DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gpshell3.1.md
+      COMMENT "Creating gpshell3 man page using kramdown ..."
+      VERBATIM
+    )
+  endif()
+
+  add_custom_target(gpshell_manpage ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gpshell.1 ${CMAKE_CURRENT_BINARY_DIR}/gpshell3.1)
+  add_custom_target(gpshell3_manpage ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gpshell3.1)
+
+  file(TO_NATIVE_PATH ${CMAKE_CURRENT_BINARY_DIR}/gpshell.1 native_filepath)
+  file(TO_NATIVE_PATH ${CMAKE_CURRENT_BINARY_DIR}/gpshell3.1 native_filepath3)
+  get_directory_property(make_clean_files ADDITIONAL_MAKE_CLEAN_FILES)
+  set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${make_clean_files};${native_filepath};${native_filepath3}")
+
+  if(UNIX)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/gpshell.1 DESTINATION ${MANPAGE_DIRECTORY}/man1)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/gpshell3.1 DESTINATION ${MANPAGE_DIRECTORY}/man1)
+  endif()
+endif()
