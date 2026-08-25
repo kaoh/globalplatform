@@ -7,5 +7,7 @@ Name: GlobalPlatform Library
 Description: GlobalPlatform Smart Card Management Library
 Version: @VERSION@ 
 Requires: libpcsclite
-Libs: -lglobalplatform
+Requires.private: @GLOBALPLATFORM_PC_REQUIRES_PRIVATE@
+Libs: -L${libdir} -lglobalplatform
+Libs.private: @GLOBALPLATFORM_PC_LIBS_PRIVATE@
 Cflags: -I${includedir}

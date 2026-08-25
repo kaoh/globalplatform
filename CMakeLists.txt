@@ -17,7 +17,22 @@ endif()
 
 option(INTEGRATION_TESTING "Enable integration tests requiring a real test card" OFF)
 option(TOOLS "Build gpshell tools" ON)
+option(BUILD_SHARED_LIBS "Build shared library variants" ON)
+option(BUILD_STATIC_LIBS "Build static library variants" ON)
 option(STATIC "Build static variants only" OFF)
+
+# STATIC is the legacy GPShell packaging mode. It takes precedence over the
+# library-variant options without changing their cached values.
+set(GLOBALPLATFORM_BUILD_SHARED ${BUILD_SHARED_LIBS})
+set(GLOBALPLATFORM_BUILD_STATIC ${BUILD_STATIC_LIBS})
+if(STATIC)
+  set(GLOBALPLATFORM_BUILD_SHARED OFF)
+  set(GLOBALPLATFORM_BUILD_STATIC ON)
+endif()
+
+if(NOT GLOBALPLATFORM_BUILD_SHARED AND NOT GLOBALPLATFORM_BUILD_STATIC)
+  message(FATAL_ERROR "At least one of BUILD_SHARED_LIBS or BUILD_STATIC_LIBS must be enabled")
+endif()
 
 ADD_SUBDIRECTORY(globalplatform)
 

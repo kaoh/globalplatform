@@ -261,6 +261,10 @@ The default log file under Unix systems is `/tmp/GlobalPlatform.log` if syslog i
 
 cpack is used for packaging. 
 
+By default, CMake builds both shared and static library variants. To build
+only the shared libraries, configure with `-DBUILD_STATIC_LIBS=OFF`; to build
+only the static libraries, configure with `-DBUILD_SHARED_LIBS=OFF`.
+
 If only GPShell is in focus, a static build is recommended:
 
 ~~~shell
