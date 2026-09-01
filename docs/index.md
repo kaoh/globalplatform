@@ -1,6 +1,45 @@
 ---
 ---
 
+<style>
+  .ai-assistant-callout {
+    border-left: 5px solid #006d77;
+    background: #e8f4f1;
+    margin: 26px 0;
+    padding: 18px 20px;
+  }
+  .ai-assistant-callout__heading {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .ai-assistant-callout__heading h2 {
+    margin: 0;
+  }
+  .ai-assistant-callout__icon {
+    height: 40px;
+    width: 40px;
+  }
+  .ai-assistant-callout p {
+    margin: 0 0 14px;
+  }
+  .ai-assistant-callout__link {
+    background: #006d77;
+    border-radius: 4px;
+    color: #ffffff;
+    display: inline-block;
+    font-weight: 700;
+    padding: 8px 12px;
+    text-decoration: none;
+  }
+  .ai-assistant-callout__link:hover,
+  .ai-assistant-callout__link:focus {
+    background: #00545c;
+    color: #ffffff;
+  }
+</style>
+
 # GlobalPlatform 3.0.0
 
 ## Summary
@@ -19,6 +58,15 @@ Highlights:
   RSA, and ECC keys.
 - Secure channels SCP01, SCP02, SCP03, and SCP11a; extended-length APDUs;
   multi-command sessions; raw APDU exchange; and an extensible PC/SC plugin.
+
+<section class="ai-assistant-callout" aria-labelledby="ai-assistant-heading">
+  <div class="ai-assistant-callout__heading">
+    <img class="ai-assistant-callout__icon" src="{{ '/images/touch-icon.png' | relative_url }}" alt="">
+    <h2 id="ai-assistant-heading">GPShell3 AI Assistant</h2>
+  </div>
+  <p>Prepare a source-grounded question for your preferred AI assistant, with guidance for setup, GPShell3 operations, PC/SC, C APIs, and GlobalPlatform specifications.</p>
+  <a class="ai-assistant-callout__link" href="{{ '/ai-assistant/' | relative_url }}">Open GPShell3 AI Assistant</a>
+</section>
 
 ## GPShell
 

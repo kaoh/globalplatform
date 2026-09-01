@@ -288,27 +288,59 @@ gpg -u kaoh@users.noreply.github.com> --armor --detach-sign SHA256SUMS
 
 # Generate GitHub Documentation
 
-The GitHub documentation is located under the `docs` folder and is using [Jekyll](https://jekyllrb.com).
+The GitHub documentation is located under the `docs` folder and uses
+[Jekyll](https://jekyllrb.com). The checked-in `docs/Gemfile.lock` pins the
+supported site dependencies; do not uninstall global gems, install a separate
+Jekyll version, or run `bundle update` merely to serve the site locally.
+Use Ruby 3.2 or newer: the locked `github-pages` dependency set requires it.
 
-Installation:
+If `ruby --version` reports an older version, install a separate Ruby runtime
+before continuing. For Debian or Ubuntu, the following uses `rbenv` without
+changing the system Ruby or adding a `.ruby-version` file to the repository:
+
+~~~shell
+sudo apt install rbenv git build-essential libssl-dev zlib1g-dev libreadline-dev
+mkdir -p "$(rbenv root)/plugins"
+if [ -d "$(rbenv root)/plugins/ruby-build/.git" ]; then
+  git -C "$(rbenv root)/plugins/ruby-build" pull --ff-only
+else
+  git clone https://github.com/rbenv/ruby-build.git "$(rbenv root)/plugins/ruby-build"
+fi
+rbenv install 3.3.7
+eval "$(rbenv init - bash)"
+rbenv shell 3.3.7
+gem install bundler -v 2.3.10
+~~~
+
+After this setup, `ruby --version` must report the selected Ruby version and
+`command -v bundle` must resolve to an `rbenv` shim, not a previously installed
+system-wide gem directory. The maintained user-local `ruby-build` plugin is
+used because distribution packages may contain outdated Ruby version definitions.
+
+To test the site without changing globally installed Ruby gems:
 
 ~~~shell
 cd docs
-gem uninstall jekyll
-# select all
-gem install jekyll -v 3.9.0
-gem uninstall bundler
-gem install bundler
-bundle
-bundle update github-pages
+unset GEM_HOME GEM_PATH
+export BUNDLE_PATH=/tmp/globalplatform-jekyll-bundle
+bundle install
+bundle exec jekyll serve --host 127.0.0.1 --port 4000 --no-watch
 ~~~
 
+Open [the local documentation site](http://127.0.0.1:4000/) in a browser. The
+GPShell3 AI prompt assistant is available at
+[http://127.0.0.1:4000/ai-assistant/](http://127.0.0.1:4000/ai-assistant/).
+The `--no-watch` mode avoids Linux inotify resource limits and is sufficient for
+local testing. Restart the server after documentation changes. On systems with
+available inotify capacity, omit `--no-watch` and add `--livereload` to rebuild
+and refresh pages automatically.
 
-Useful commands inside the `docs` folder:
+Useful commands inside the `docs` folder after setting `BUNDLE_PATH`:
 
-* Cleaning local generated site: `bundle exec jekyll clean`
-* Serving site in a local browser updating automatically on content changes: `bundle exec jekyll serve`
-* Update configuration in the Gemfile: `bundle update`
+* Build the generated site once: `bundle exec jekyll build`
+* Clean local generated site output: `bundle exec jekyll clean`
+* Update locked dependencies intentionally: `bundle update` followed by review
+  of `Gemfile.lock`
 
 # Issues
 
