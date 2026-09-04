@@ -332,7 +332,7 @@ permalink: /ai-assistant/
       qwen: { name: 'Qwen', url: 'https://chat.qwen.ai/' },
       kimi: { name: 'Kimi', url: 'https://www.kimi.com/' },
       glm: { name: 'Z.ai GLM', url: 'https://chat.z.ai/' },
-      local: { name: 'a local Open WebUI or Ollama setup', url: 'https://openwebui.com/' }
+      local: { name: 'Open WebUI / Ollama (local)', url: 'http://localhost:8080/' }
     };
 
     var sources = {
@@ -481,7 +481,7 @@ permalink: /ai-assistant/
       var provider = providers[selectedValue('provider')];
       preview.value = buildPrompt();
       providerLink.href = provider.url;
-      providerLink.textContent = selectedValue('provider') === 'local' ? 'Copy prompt and open local setup guide' : 'Copy prompt and open ' + provider.name;
+      providerLink.textContent = selectedValue('provider') === 'local' ? 'Copy prompt and open Open WebUI (localhost:8080)' : 'Copy prompt and open ' + provider.name;
       copyStatus.textContent = '';
     }
 
