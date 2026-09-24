@@ -19,6 +19,10 @@ option(INTEGRATION_TESTING "Enable integration tests requiring a real test card"
 option(TOOLS "Build gpshell tools" ON)
 option(STATIC "Build static variants only" OFF)
 
+IF(TESTING)
+    ENABLE_TESTING()
+ENDIF()
+
 ADD_SUBDIRECTORY(globalplatform)
 
 if(GLOBALPLATFORM_USE_ASAN AND (CMAKE_BUILD_TYPE STREQUAL "Debug" OR DEBUG))

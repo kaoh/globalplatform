@@ -7,7 +7,7 @@ INCLUDE(FindGlobalPlatform)
 find_package(OpenSSL REQUIRED)
 find_package(ZLIB REQUIRED)
 SET(SOURCES gpshell.c)
-SET(SOURCES3 gpshell3.c)
+SET(SOURCES3 gpshell3.c cJSON.c gpshell3_output.c gpshell3_session.c gpshell3_commands.c gpshell3_registry.c gpshell3_mcp.c)
 
 INCLUDE(CheckCCompilerFlag)
 INCLUDE(CMakePushCheckState)
@@ -78,7 +78,7 @@ if(NOT STATIC)
 
   # New simplified CLI
   ADD_EXECUTABLE(gpshell3 ${SOURCES3})
-  TARGET_LINK_LIBRARIES(gpshell3 ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES})
+  TARGET_LINK_LIBRARIES(gpshell3 ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES} OpenSSL::Crypto)
 
   # Allow in-tree execution to find the PC/SC plugin without installing it
   if(UNIX)
@@ -296,4 +296,27 @@ set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${make_clean_fi
 IF(UNIX)
   INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/gpshell.1 DESTINATION ${MANPAGE_DIRECTORY}/man1)
   INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/gpshell3.1 DESTINATION ${MANPAGE_DIRECTORY}/man1)
+ENDIF()
+
+IF(TESTING)
+  INCLUDE(FindCMocka)
+  IF(CMOCKA_FOUND)
+    INCLUDE(AddCMockaTest)
+    add_cmocka_test(gpshell3OutputTest
+      SOURCES gpshell3OutputTest.c cJSON.c gpshell3_output.c
+      COMPILE_OPTIONS -I${PCSC_INCLUDE_DIRS} "-fno-lto"
+      LINK_LIBRARIES ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES} OpenSSL::Crypto)
+    add_cmocka_test(gpshell3RegistryTest
+      SOURCES gpshell3RegistryTest.c cJSON.c gpshell3_output.c gpshell3_session.c gpshell3_commands.c gpshell3_registry.c
+      COMPILE_OPTIONS -I${PCSC_INCLUDE_DIRS} "-fno-lto"
+      LINK_LIBRARIES ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES} OpenSSL::Crypto)
+    add_cmocka_test(gpshell3SessionTest
+      SOURCES gpshell3SessionTest.c cJSON.c gpshell3_output.c gpshell3_session.c gpshell3_commands.c gpshell3_registry.c
+      COMPILE_OPTIONS -I${PCSC_INCLUDE_DIRS} "-fno-lto"
+      LINK_LIBRARIES ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES} OpenSSL::Crypto)
+    add_cmocka_test(gpshell3McpTest
+      SOURCES gpshell3McpTest.c cJSON.c gpshell3_output.c gpshell3_session.c gpshell3_commands.c gpshell3_registry.c gpshell3_mcp.c
+      COMPILE_OPTIONS -I${PCSC_INCLUDE_DIRS} "-fno-lto"
+      LINK_LIBRARIES ${GLOBALPLATFORM_LIBRARIES} ${PCSC_LIBRARIES} OpenSSL::Crypto)
+  ENDIF()
 ENDIF()
