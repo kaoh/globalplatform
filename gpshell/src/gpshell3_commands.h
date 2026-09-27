@@ -51,14 +51,20 @@ int gpshell3_mutual_auth(gpshell3_session_t *session, BYTE keyset_ver, BYTE key_
                          const char *scp11_cert_file, const char *scp11_sd_public_key,
                          BYTE scp11SessionKeyLength);
 
+/* Global error propagation helpers */
+void gpshell3_clear_last_opgp_error(void);
+void gpshell3_set_last_opgp_error(OPGP_ERROR_STATUS status);
+void gpshell3_propagate_last_opgp_error(gpshell3_output_ctx_t *out, const char *default_code, const char *context_msg);
+
 #define DECLARE_GPSHELL3_CMD(name) \
     int gpshell3_cmd_##name##_cli(gpshell3_session_t *session, int argc, char **argv, gpshell3_output_ctx_t *out); \
     int gpshell3_cmd_##name##_cmd(gpshell3_session_t *session, cJSON *args, gpshell3_output_ctx_t *out); \
     cJSON *gpshell3_cmd_##name##_input_schema(void); \
     cJSON *gpshell3_cmd_##name##_output_schema(void);
 
-/* Offline commands (13) */
+/* Offline commands (14) */
 DECLARE_GPSHELL3_CMD(list_readers)
+DECLARE_GPSHELL3_CMD(inspect_card)
 DECLARE_GPSHELL3_CMD(hash)
 DECLARE_GPSHELL3_CMD(sign_dap)
 DECLARE_GPSHELL3_CMD(sign_load_token)

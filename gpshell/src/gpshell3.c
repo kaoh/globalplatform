@@ -210,6 +210,7 @@ int main(int argc, char **argv) {
 
     /* Offline commands that do not require a card connection */
     if (!first_cmd_def->requires_session) {
+        gpshell3_clear_last_opgp_error();
         int rc = first_cmd_def->execute_cli(&session, argc - i, &argv[i], &out);
         gpshell3_output_flush(&out);
         gpshell3_output_cleanup(&out);
@@ -217,6 +218,7 @@ int main(int argc, char **argv) {
     }
 
     /* Establish PC/SC connection */
+    gpshell3_clear_last_opgp_error();
     if (gpshell3_connect_pcsc(&session, reader, protocol, trace, verbose) != 0) {
         gpshell3_report_error(&out, "CONNECTION_FAILED", "Failed to connect to card reader");
         gpshell3_output_flush(&out);
@@ -333,6 +335,7 @@ int main(int argc, char **argv) {
             gpshell3_report_error(&out, "UNKNOWN_COMMAND", "Unknown command: %s", cmd);
             rc = -1;
         } else {
+            gpshell3_clear_last_opgp_error();
             rc = cmd_def->execute_cli(&session, cmd_argc, &argv[i], &out);
         }
 

@@ -96,6 +96,39 @@ static int to_opgp_string(const char *src, TCHAR *dst, size_t dst_len) {
 #endif
 }
 
+
+static OPGP_ERROR_STATUS g_last_opgp_error = { 0 };
+static char g_last_connected_reader[256] = { 0 };
+
+void gpshell3_clear_last_opgp_error(void) {
+    memset(&g_last_opgp_error, 0, sizeof(g_last_opgp_error));
+}
+
+void gpshell3_set_last_opgp_error(OPGP_ERROR_STATUS status) {
+    g_last_opgp_error = status;
+}
+
+void gpshell3_propagate_last_opgp_error(gpshell3_output_ctx_t *out, const char *default_code, const char *context_msg) {
+    if (!out) return;
+    if (g_last_opgp_error.errorCode != 0 || g_last_opgp_error.errorStatus != 0) {
+        gpshell3_report_opgp_error(out, default_code, g_last_opgp_error, "%s", context_msg ? context_msg : "Operation failed");
+    } else {
+        gpshell3_report_error(out, default_code ? default_code : "COMMAND_FAILED", "%s", context_msg ? context_msg : "Command failed");
+    }
+}
+
+static int from_opgp_string(const TCHAR *src, char *dst, size_t dst_len) {
+    if (!src || !dst || dst_len == 0) return -1;
+#ifdef UNICODE
+    wcstombs(dst, src, dst_len - 1);
+    dst[dst_len - 1] = '\0';
+    return 0;
+#else
+    strncpy(dst, src, dst_len - 1);
+    dst[dst_len - 1] = '\0';
+    return 0;
+#endif
+}
 static int status_ok(OPGP_ERROR_STATUS s, bool print_error) {
     if (s.errorStatus != OPGP_ERROR_STATUS_SUCCESS) {
         if (print_error) {
@@ -113,23 +146,6 @@ static DWORD g_selected_isd_len = 0;
 static BYTE g_current_scp = 0;
 static BYTE g_current_scp_impl = 0;
 static int g_current_scp_set = 0;
-
-// Cleanup state tracking
-static OPGP_CARD_CONTEXT *g_cleanup_ctx = NULL;
-static OPGP_CARD_INFO *g_cleanup_info = NULL;
-static int g_cleanup_card_connected = 0;
-
-static void cleanup_and_exit(int exit_code) {
-    if (g_cleanup_card_connected && g_cleanup_ctx && g_cleanup_info) {
-        OPGP_card_disconnect(*g_cleanup_ctx, g_cleanup_info);
-        g_cleanup_card_connected = 0;
-    }
-    if (g_cleanup_ctx) {
-        OPGP_release_context(g_cleanup_ctx);
-        g_cleanup_ctx = NULL;
-    }
-    exit(exit_code);
-}
 
 static int parse_int(const char *s) {
     if (s == NULL) return 0;
@@ -1366,6 +1382,7 @@ static int select_isd(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY
 
 static int connect_pcsc(OPGP_CARD_CONTEXT *pctx, OPGP_CARD_INFO *pinfo, const char *reader, const char *protocol, int trace, int verbose) {
     OPGP_ERROR_STATUS s;
+    g_last_connected_reader[0] = '\0';
     s = OPGP_establish_context(pctx);
     if (!status_ok(s, true)) { fprintf(stderr, "Failed to establish PC/SC context\n"); return -1; }
     if (trace) { OPGP_enable_trace_mode(OPGP_TRACE_MODE_ENABLE, stderr); }
@@ -1432,6 +1449,9 @@ static int connect_pcsc(OPGP_CARD_CONTEXT *pctx, OPGP_CARD_INFO *pinfo, const ch
         // release context on error path to avoid leaks
         OPGP_release_context(pctx);
         return -1;
+    }
+    if (reader_t) {
+        from_opgp_string(reader_t, g_last_connected_reader, sizeof(g_last_connected_reader));
     }
     return 0;
 }
@@ -1827,6 +1847,11 @@ int gpshell3_connect_pcsc(gpshell3_session_t *session, const char *reader, const
     int rc = connect_pcsc(&session->ctx, &session->info, reader, protocol, trace, verbose);
     if (rc == 0) {
         session->is_connected = true;
+        if (g_last_connected_reader[0]) {
+            snprintf(session->connected_reader, sizeof(session->connected_reader), "%s", g_last_connected_reader);
+        } else if (reader && reader[0]) {
+            snprintf(session->connected_reader, sizeof(session->connected_reader), "%s", reader);
+        }
     }
     return rc;
 }
@@ -1858,7 +1883,196 @@ int gpshell3_mutual_auth(gpshell3_session_t *session, BYTE keyset_ver, BYTE key_
     }
     return rc;
 }
-static int cmd_list_apps(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
+
+static void inspect_bytes_to_hex(const BYTE *data, size_t len, char *out, size_t outlen) {
+    if (!out || outlen == 0) return;
+    out[0] = '\0';
+    if (!data || len == 0) return;
+    size_t pos = 0;
+    for (size_t i = 0; i < len && pos + 2 < outlen; ++i) {
+        snprintf(out + pos, outlen - pos, "%02X", data[i]);
+        pos += 2;
+    }
+    out[pos] = '\0';
+}
+
+static void format_cplc_date_iso(USHORT date_ushort, char *out, size_t outlen) {
+    if (!out || outlen == 0) return;
+    out[0] = '\0';
+    if (date_ushort == 0) {
+        snprintf(out, outlen, "none");
+        return;
+    }
+    int day = 0, month = 0, year = 0;
+    BYTE b[2] = { (BYTE)((date_ushort >> 8) & 0xFF), (BYTE)(date_ushort & 0xFF) };
+    cplc_date_to_dmy(b, &day, &month, &year);
+    snprintf(out, outlen, "%04d-%02d-%02d", year, month, day);
+}
+
+static const char* get_ic_fab_name(USHORT id) {
+    switch (id) {
+        case 0x4790: return "NXP Semiconductors";
+        case 0x4090: return "Infineon Technologies";
+        case 0x4070: return "Infineon (Legacy)";
+        case 0x4250: return "Samsung";
+        case 0x3060: return "Renesas";
+        case 0x4180: return "Atmel";
+        case 0x4220: return "Thales (Legacy Gemplus/Gemalto)";
+        case 0x1671: return "Giesecke+Devrient (G+D)";
+        case 0x4750:
+        case 0x2050: return "STMicroelectronics";
+        default: return "Unknown Fabricator";
+    }
+}
+
+static const char* get_ic_type_name(USHORT id) {
+    switch (id) {
+        case 0xD321: return "NXP SmartMX3 P71D321";
+        case 0xD600: return "NXP SmartMX3 P71D600";
+        case 0x5183: return "NXP SmartMX2 (P60-Series)";
+        case 0x5205: return "SmartMX (P5C-Series)";
+        case 0x1915: return "Infineon SLC38-Series";
+        case 0x0062:
+        case 0x6642:
+        case 0x5072: return "Infineon SLE66-Series";
+        case 0x6128:
+        case 0x6162: return "Infineon SLE66PE-Series";
+        case 0x6514: return "Infineon SLE78-Series";
+        case 0x5000: return "STMicroelectronics ST23-Series";
+        case 0x0061: return "STMicroelectronics ST33-Series";
+        default: return "Unknown IC Type";
+    }
+}
+
+static const char* get_os_id_name(USHORT id) {
+    switch (id) {
+        case 0x4090: return "Infineon Technologies";
+        case 0x4700:
+        case 0x4791: return "NXP JCOP";
+        case 0x4051: return "IBM JCOP";
+        case 0x4041: return "Oberthur / IDEMIA OS";
+        case 0xA005: return "Oberthur AuthentIC";
+        case 0x1671: return "G+D Sm@rtCafe";
+        case 0xD001: return "G+D OS";
+        case 0x0011: return "Cyberflex OS";
+        case 0x1981: return "Palmera Protect V5";
+        case 0x1291: return "GemXpresso Pro";
+        default: return "Unknown OS";
+    }
+}
+
+static cJSON* cplc_to_json(const OPGP_CPLC *cplc) {
+    if (!cplc) return NULL;
+    cJSON *obj = cJSON_CreateObject();
+    char buf[128];
+
+    snprintf(buf, sizeof(buf), "%04X", cplc->icFabricator);
+    cJSON_AddStringToObject(obj, "icFabricator", buf);
+    cJSON_AddStringToObject(obj, "icFabricatorName", get_ic_fab_name(cplc->icFabricator));
+
+    snprintf(buf, sizeof(buf), "%04X", cplc->icType);
+    cJSON_AddStringToObject(obj, "icType", buf);
+    cJSON_AddStringToObject(obj, "icTypeName", get_ic_type_name(cplc->icType));
+
+    snprintf(buf, sizeof(buf), "%04X", cplc->operatingSystemId);
+    cJSON_AddStringToObject(obj, "operatingSystemId", buf);
+    cJSON_AddStringToObject(obj, "operatingSystemName", get_os_id_name(cplc->operatingSystemId));
+
+    format_cplc_date_iso(cplc->operatingSystemReleaseDate, buf, sizeof(buf));
+    cJSON_AddStringToObject(obj, "operatingSystemReleaseDate", buf);
+
+    snprintf(buf, sizeof(buf), "%04X", cplc->operatingSystemReleaseLevel);
+    cJSON_AddStringToObject(obj, "operatingSystemReleaseLevel", buf);
+
+    format_cplc_date_iso(cplc->icFabricationDate, buf, sizeof(buf));
+    cJSON_AddStringToObject(obj, "icFabricationDate", buf);
+
+    DWORD serial = ((DWORD)cplc->icSerialNumberHigh << 16) | cplc->icSerialNumberLow;
+    snprintf(buf, sizeof(buf), "%08lX", (unsigned long)serial);
+    cJSON_AddStringToObject(obj, "icSerialNumber", buf);
+
+    snprintf(buf, sizeof(buf), "%04X", cplc->icBatchIdentifier);
+    cJSON_AddStringToObject(obj, "icBatchIdentifier", buf);
+
+    snprintf(buf, sizeof(buf), "%04X", cplc->icModuleFabricator);
+    cJSON_AddStringToObject(obj, "icModuleFabricator", buf);
+
+    format_cplc_date_iso(cplc->icModulePackagingDate, buf, sizeof(buf));
+    cJSON_AddStringToObject(obj, "icModulePackagingDate", buf);
+
+    snprintf(buf, sizeof(buf), "%04X", cplc->iccManufacturer);
+    cJSON_AddStringToObject(obj, "iccManufacturer", buf);
+
+    format_cplc_date_iso(cplc->icEmbeddingDate, buf, sizeof(buf));
+    cJSON_AddStringToObject(obj, "icEmbeddingDate", buf);
+
+    snprintf(buf, sizeof(buf), "%04X", cplc->icPrePersonalizer);
+    cJSON_AddStringToObject(obj, "icPrePersonalizer", buf);
+
+    format_cplc_date_iso(cplc->icPrePersonalizationEquipmentDate, buf, sizeof(buf));
+    cJSON_AddStringToObject(obj, "icPrePersonalizationEquipmentDate", buf);
+
+    snprintf(buf, sizeof(buf), "%08lX", (unsigned long)cplc->icPrePersonalizationEquipmentId);
+    cJSON_AddStringToObject(obj, "icPrePersonalizationEquipmentId", buf);
+
+    snprintf(buf, sizeof(buf), "%04X", cplc->icPersonalizer);
+    cJSON_AddStringToObject(obj, "icPersonalizer", buf);
+
+    format_cplc_date_iso(cplc->icPersonalizationDate, buf, sizeof(buf));
+    cJSON_AddStringToObject(obj, "icPersonalizationDate", buf);
+
+    snprintf(buf, sizeof(buf), "%08lX", (unsigned long)cplc->icPersonalizationEquipmentId);
+    cJSON_AddStringToObject(obj, "icPersonalizationEquipmentId", buf);
+
+    return obj;
+}
+
+static void print_cplc_data(const OPGP_CPLC *cplc) {
+    {
+        const char *name = get_ic_fab_name(cplc->icFabricator);
+        if (strncmp(name, "Unknown", 7) == 0) {
+            printf("IC Fabricator : %04X\n", cplc->icFabricator);
+        } else {
+            printf("IC Fabricator : %s\n", name);
+        }
+    }
+    {
+        const char *name = get_ic_type_name(cplc->icType);
+        if (strncmp(name, "Unknown", 7) == 0) {
+            printf("IC Type       : %04X\n", cplc->icType);
+        } else {
+            printf("IC Type       : %s\n", name);
+        }
+    }
+    {
+        const char *name = get_os_id_name(cplc->operatingSystemId);
+        if (strncmp(name, "Unknown", 7) == 0) {
+            printf("OS ID         : %04X\n", cplc->operatingSystemId);
+        } else {
+            printf("OS ID         : %s\n", name);
+        }
+    }
+
+    print_cplc_date_field_ushort("Operating System release date", cplc->operatingSystemReleaseDate);
+    printf("Operating System release level : %04X\n", cplc->operatingSystemReleaseLevel);
+    print_cplc_date_field_ushort("IC Fabrication Date", cplc->icFabricationDate);
+    {
+        DWORD serial = ((DWORD)cplc->icSerialNumberHigh << 16) | cplc->icSerialNumberLow;
+        printf("IC Serial Number : %u\n", (unsigned int)serial);
+    }
+    printf("IC Batch Identifier : %04X\n", cplc->icBatchIdentifier);
+    printf("IC Module Fabricator : %04X\n", cplc->icModuleFabricator);
+    print_cplc_date_field_ushort("IC Module Packaging Date", cplc->icModulePackagingDate);
+    printf("ICC Manufacturer : %04X\n", cplc->iccManufacturer);
+    print_cplc_date_field_ushort("IC Embedding Date", cplc->icEmbeddingDate);
+    printf("IC Pre-Personalizer : %04X\n", cplc->icPrePersonalizer);
+    print_cplc_date_field_ushort("IC Pre-Perso. Equipment Date", cplc->icPrePersonalizationEquipmentDate);
+    printf("IC Pre-Perso. Equipment ID : %08lX\n", (unsigned long)cplc->icPrePersonalizationEquipmentId);
+    printf("IC Personalizer : %04X\n", cplc->icPersonalizer);
+    print_cplc_date_field_ushort("IC Personalization Date", cplc->icPersonalizationDate);
+    printf("IC Perso. Equipment ID : %08lX\n", (unsigned long)cplc->icPersonalizationEquipmentId);
+}
+static int cmd_list_apps(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, gpshell3_output_ctx_t *out) {
     GP211_APPLICATION_DATA apps[256];
     GP211_APPLICATION_DATA isds[64];
     GP211_APPLICATION_DATA lfs[256];
@@ -1881,24 +2095,43 @@ static int cmd_list_apps(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECUR
             status_format = GP211_STATUS_FORMAT_DEPRECATED;
             apps_len = apps_len_legacy;
         } else if (status_is_get_status_unsupported(s) || status_is_get_status_unsupported(s_legacy)) {
+            if (out && out->mode == OUTPUT_FORMAT_JSON) {
+                gpshell3_output_add_array(out, "securityDomains", cJSON_CreateArray());
+                gpshell3_output_add_array(out, "applications", cJSON_CreateArray());
+                gpshell3_output_add_array(out, "loadFiles", cJSON_CreateArray());
+                return 0;
+            }
             fprintf(stderr, "GET STATUS is not supported by the selected Security Domain (SW=0x%04X). Falling back to SELECT probing.\n",
                     (unsigned int)((s_legacy.errorCode != 0 ? s_legacy.errorCode : s.errorCode) & 0xFFFF));
             return list_apps_probe_common_aids(ctx, info);
         } else {
             status_ok(s, true);
-            fprintf(stderr, "GET STATUS (applications) failed\n");
+            if (out) gpshell3_report_opgp_error(out, NULL, s, "get status (applications) failed");
+            else fprintf(stderr, "GET STATUS (applications) failed\n");
             return -1;
         }
     }
 
     s = GP211_get_status(ctx, info, sec, GP211_STATUS_ISSUER_SECURITY_DOMAIN, status_format, isds, NULL, &isds_len);
-    if (!status_ok(s, true)) { fprintf(stderr, "GET STATUS (issuer security domain) failed\n"); return -1; }
+    if (!status_ok(s, true)) {
+        if (out) gpshell3_report_opgp_error(out, NULL, s, "get status (issuer security domain) failed");
+        else fprintf(stderr, "GET STATUS (issuer security domain) failed\n");
+        return -1;
+    }
 
     s = GP211_get_status(ctx, info, sec, GP211_STATUS_LOAD_FILES, status_format, lfs, NULL, &lfs_len);
-    if (!status_ok(s, true)) { fprintf(stderr, "GET STATUS (load files) failed\n"); return -1; }
+    if (!status_ok(s, true)) {
+        if (out) gpshell3_report_opgp_error(out, NULL, s, "get status (load files) failed");
+        else fprintf(stderr, "GET STATUS (load files) failed\n");
+        return -1;
+    }
 
     s = GP211_get_status(ctx, info, sec, GP211_STATUS_LOAD_FILES_AND_EXECUTABLE_MODULES, status_format, NULL, mods, &mods_len);
-    if (!status_ok(s, true)) { fprintf(stderr, "GET STATUS (load files and executable modules) failed\n"); return -1; }
+    if (!status_ok(s, true)) {
+        if (out) gpshell3_report_opgp_error(out, NULL, s, "get status (load files and executable modules) failed");
+        else fprintf(stderr, "GET STATUS (load files and executable modules) failed\n");
+        return -1;
+    }
 
     // Collect distinct Security Domains from issuer SD entries and linked content.
     OPGP_AID sds[256];
@@ -1921,6 +2154,96 @@ static int cmd_list_apps(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECUR
         if (!aid_is_present(&mods[i].associatedSecurityDomainAID)) has_unassigned = true;
     }
 
+    if (out && out->mode == OUTPUT_FORMAT_JSON) {
+        cJSON *sds_arr = cJSON_CreateArray();
+        cJSON *apps_arr = cJSON_CreateArray();
+        cJSON *lfs_arr = cJSON_CreateArray();
+
+        for (DWORD sd_i = 0; sd_i < sd_count; ++sd_i) {
+            cJSON *sd_obj = cJSON_CreateObject();
+            char sd_hex[64];
+            aid_to_hex_str(&sds[sd_i], sd_hex, sizeof(sd_hex));
+            cJSON_AddStringToObject(sd_obj, "aid", sd_hex);
+
+            const GP211_APPLICATION_DATA *sd_info = NULL;
+            for (DWORD i = 0; i < isds_len; ++i) {
+                if (aid_equal(&isds[i].aid, &sds[sd_i]) ||
+                    aid_equal(&isds[i].associatedSecurityDomainAID, &sds[sd_i])) {
+                    sd_info = &isds[i];
+                    break;
+                }
+            }
+            if (sd_info) {
+                cJSON_AddStringToObject(sd_obj, "lifeCycle", lc_to_string(sd_info->lifeCycleState, GP211_STATUS_ISSUER_SECURITY_DOMAIN));
+                if (sd_info->privileges) {
+                    char pbuf[512];
+                    privileges_to_string(sd_info->privileges, pbuf, sizeof(pbuf));
+                    cJSON_AddStringToObject(sd_obj, "privileges", pbuf);
+                }
+            }
+            cJSON_AddItemToArray(sds_arr, sd_obj);
+        }
+
+        for (DWORD i = 0; i < apps_len; ++i) {
+            cJSON *app_obj = cJSON_CreateObject();
+            char a_hex[64];
+            aid_to_hex_str(&apps[i].aid, a_hex, sizeof(a_hex));
+            cJSON_AddStringToObject(app_obj, "aid", a_hex);
+            cJSON_AddStringToObject(app_obj, "lifeCycle", lc_to_string(apps[i].lifeCycleState, GP211_STATUS_APPLICATIONS));
+            if (apps[i].privileges) {
+                char pbuf[512];
+                privileges_to_string(apps[i].privileges, pbuf, sizeof(pbuf));
+                cJSON_AddStringToObject(app_obj, "privileges", pbuf);
+            }
+            if (apps[i].versionNumber[0] || apps[i].versionNumber[1]) {
+                char vbuf[32];
+                snprintf(vbuf, sizeof(vbuf), "%u.%u", apps[i].versionNumber[0], apps[i].versionNumber[1]);
+                cJSON_AddStringToObject(app_obj, "version", vbuf);
+            }
+            if (aid_is_present(&apps[i].associatedSecurityDomainAID)) {
+                char asd_hex[64];
+                aid_to_hex_str(&apps[i].associatedSecurityDomainAID, asd_hex, sizeof(asd_hex));
+                cJSON_AddStringToObject(app_obj, "associatedSecurityDomainAid", asd_hex);
+            }
+            cJSON_AddItemToArray(apps_arr, app_obj);
+        }
+
+        for (DWORD i = 0; i < lfs_len; ++i) {
+            cJSON *lf_obj = cJSON_CreateObject();
+            char lf_hex[64];
+            aid_to_hex_str(&lfs[i].aid, lf_hex, sizeof(lf_hex));
+            cJSON_AddStringToObject(lf_obj, "aid", lf_hex);
+            cJSON_AddStringToObject(lf_obj, "lifeCycle", lc_to_string(lfs[i].lifeCycleState, GP211_STATUS_LOAD_FILES));
+            if (lfs[i].versionNumber[0] || lfs[i].versionNumber[1]) {
+                char vbuf[32];
+                snprintf(vbuf, sizeof(vbuf), "%u.%u", lfs[i].versionNumber[0], lfs[i].versionNumber[1]);
+                cJSON_AddStringToObject(lf_obj, "version", vbuf);
+            }
+            if (aid_is_present(&lfs[i].associatedSecurityDomainAID)) {
+                char asd_hex[64];
+                aid_to_hex_str(&lfs[i].associatedSecurityDomainAID, asd_hex, sizeof(asd_hex));
+                cJSON_AddStringToObject(lf_obj, "associatedSecurityDomainAid", asd_hex);
+            }
+            cJSON *mods_arr = cJSON_CreateArray();
+            for (DWORD m = 0; m < mods_len; ++m) {
+                if (!aid_equal(&mods[m].aid, &lfs[i].aid)) continue;
+                for (DWORD j = 0; j < mods[m].numExecutableModules && j < (DWORD)(sizeof(mods[m].executableModules)/sizeof(mods[m].executableModules[0])); ++j) {
+                    char m_hex[64];
+                    aid_to_hex_str(&mods[m].executableModules[j], m_hex, sizeof(m_hex));
+                    cJSON_AddItemToArray(mods_arr, cJSON_CreateString(m_hex));
+                }
+                break;
+            }
+            cJSON_AddItemToObject(lf_obj, "executableModules", mods_arr);
+            cJSON_AddItemToArray(lfs_arr, lf_obj);
+        }
+
+        gpshell3_output_add_array(out, "securityDomains", sds_arr);
+        gpshell3_output_add_array(out, "applications", apps_arr);
+        gpshell3_output_add_array(out, "loadFiles", lfs_arr);
+        return 0;
+    }
+
     printf("== security domains ==\n");
     if (sd_count == 0 && !has_unassigned) {
         printf("(none)\n");
@@ -1931,7 +2254,6 @@ static int cmd_list_apps(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECUR
         const bool is_unassigned_group = (sd_i == sd_count);
         const OPGP_AID *group_sd = is_unassigned_group ? NULL : &sds[sd_i];
 
-        // Print SD header line; prefer info from ISD listing when matching.
         const GP211_APPLICATION_DATA *sd_info = NULL;
         if (!is_unassigned_group) {
             char sd_hex[64];
@@ -1960,7 +2282,6 @@ static int cmd_list_apps(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECUR
             printf("SD Unassigned\n");
         }
 
-        // Applications under this SD
         int any_apps = 0;
         for (DWORD i = 0; i < apps_len; ++i) {
             if (is_unassigned_group) {
@@ -1983,7 +2304,6 @@ static int cmd_list_apps(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECUR
             printf("\n");
         }
 
-        // Load files under this SD (with modules)
         int any_lf = 0;
         for (DWORD i = 0; i < lfs_len; ++i) {
             if (is_unassigned_group) {
@@ -2001,7 +2321,6 @@ static int cmd_list_apps(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECUR
             }
             printf("\n");
 
-            // modules for this load file (from GET STATUS 0x10)
             for (DWORD m = 0; m < mods_len; ++m) {
                 if (!aid_equal(&mods[m].aid, &lfs[i].aid)) continue;
                 if (mods[m].numExecutableModules > 0) {
@@ -2026,7 +2345,6 @@ static int cmd_list_apps(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECUR
 
     return 0;
 }
-
 static const char* key_type_to_string(BYTE type) {
     switch (type) {
         case GP211_KEY_TYPE_DES: return "DES";
@@ -2134,40 +2452,76 @@ static int key_info_cmp(const void *pa, const void *pb) {
     return (int)a->keyIndex - (int)b->keyIndex;
 }
 
-static int cmd_list_keys(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
+static int cmd_list_keys(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, gpshell3_output_ctx_t *out) {
     GP211_KEY_INFORMATION infos[64]; DWORD ilen;
     BYTE keyIndex = 0;
     OPGP_ERROR_STATUS s;
 
-    // Collect all keys first so we can sort & group nicely
     GP211_KEY_INFORMATION all[512];
     DWORD all_len = 0;
 
-    // Loop until OPGP_ISO7816_ERROR_DATA_NOT_FOUND is returned
     while (1) {
         ilen = sizeof(infos)/sizeof(infos[0]);
         memset(infos, 0, sizeof(infos));
         s = GP211_get_key_information_templates(ctx, info, sec, keyIndex, infos, &ilen);
 
-        // Check specifically for DATA_NOT_FOUND - this ends the loop normally
         if (s.errorCode == OPGP_ISO7816_ERROR_DATA_NOT_FOUND) {
             break;
         }
 
-        // All other errors should be checked with status_ok
         if (!status_ok(s, true)) {
+            if (out) gpshell3_report_opgp_error(out, NULL, s, "get key information templates failed");
             return -1;
         }
 
-        // Append key information
         for (DWORD i = 0; i < ilen; i++) {
             if (all_len < (DWORD)(sizeof(all) / sizeof(all[0]))) {
                 all[all_len++] = infos[i];
             }
         }
 
-        // Move to next key index for the next iteration
         keyIndex++;
+    }
+
+    if (all_len > 1) {
+        qsort(all, all_len, sizeof(all[0]), key_info_cmp);
+    }
+
+    if (out && out->mode == OUTPUT_FORMAT_JSON) {
+        cJSON *keys_arr = cJSON_CreateArray();
+        for (DWORD i = 0; i < all_len; i++) {
+            for (BYTE k = 0; k < all[i].numKeyComponents; k++) {
+                cJSON *item = cJSON_CreateObject();
+                cJSON_AddNumberToObject(item, "keySetVersion", all[i].keySetVersion);
+                cJSON_AddNumberToObject(item, "keyIndex", all[i].keyIndex);
+
+                const char *t = key_type_to_string(all[i].keyComponents[k].keyType);
+                if (t) cJSON_AddStringToObject(item, "keyType", t);
+                else {
+                    char hex[16]; snprintf(hex, sizeof(hex), "0x%02X", all[i].keyComponents[k].keyType);
+                    cJSON_AddStringToObject(item, "keyType", hex);
+                }
+
+                cJSON_AddNumberToObject(item, "keyLength", (double)all[i].keyComponents[k].keyLength);
+
+                if (all[i].keyComponents[k].extended) {
+                    char ubuf[64];
+                    key_usage_to_string(all[i].keyComponents[k].keyUsage, ubuf, sizeof(ubuf));
+                    cJSON_AddStringToObject(item, "keyUsage", ubuf);
+
+                    const char *a = key_access_to_string(all[i].keyComponents[k].keyAccess);
+                    if (a) cJSON_AddStringToObject(item, "keyAccess", a);
+                    else {
+                        char hex[16]; snprintf(hex, sizeof(hex), "0x%02X", all[i].keyComponents[k].keyAccess);
+                        cJSON_AddStringToObject(item, "keyAccess", hex);
+                    }
+                }
+
+                cJSON_AddItemToArray(keys_arr, item);
+            }
+        }
+        gpshell3_output_add_array(out, "keys", keys_arr);
+        return 0;
     }
 
     printf("== keys ==\n");
@@ -2176,10 +2530,6 @@ static int cmd_list_keys(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECUR
         return 0;
     }
 
-
-    qsort(all, all_len, sizeof(all[0]), key_info_cmp);
-
-    // Print grouped by KV
     int current_kv = -1;
     for (DWORD i = 0; i < all_len; i++) {
         if (current_kv != (int)all[i].keySetVersion) {
@@ -2217,7 +2567,6 @@ static int cmd_list_keys(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECUR
 
     return 0;
 }
-
 static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec,
                        int argc, char **argv) {
     int load_only = 0;
@@ -2226,6 +2575,7 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     const char *dap_hex = NULL; const char *dap_sd_hex = NULL; const char *applet_aid_hex=NULL; const char *module_aid_hex=NULL; const char *priv_list=NULL; const char *params_hex=NULL;
     const char *load_token_hex = NULL; const char *install_token_hex = NULL; const char *load_file_hash_hex = NULL;
     const char *load_file_aid_hex = NULL;
+    const char *capfile = NULL;
     int ai = 0;
     for (; ai < argc; ++ai) {
         if (strcmp(argv[ai], "--load-only") == 0) load_only = 1;
@@ -2235,24 +2585,30 @@ static int cmd_install(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
         else if (strcmp(argv[ai], "--load-token") == 0 && ai+1 < argc) { load_token_hex = argv[++ai]; }
         else if (strcmp(argv[ai], "--install-token") == 0 && ai+1 < argc) { install_token_hex = argv[++ai]; }
         else if (strcmp(argv[ai], "--hash") == 0 && ai+1 < argc) { load_file_hash_hex = argv[++ai]; }
-        else if (strcmp(argv[ai], "--load-file") == 0 && ai+1 < argc) { load_file_aid_hex = argv[++ai]; }
-        else if (strcmp(argv[ai], "--applet") == 0 && ai+1 < argc) { applet_aid_hex = argv[++ai]; }
-        else if (strcmp(argv[ai], "--module") == 0 && ai+1 < argc) { module_aid_hex = argv[++ai]; }
-        else if (strcmp(argv[ai], "--priv") == 0 && ai+1 < argc) { priv_list = argv[++ai]; }
+        else if ((strcmp(argv[ai], "--load-file") == 0 || strcmp(argv[ai], "--load-file-aid") == 0) && ai+1 < argc) { load_file_aid_hex = argv[++ai]; }
+        else if ((strcmp(argv[ai], "--applet") == 0 || strcmp(argv[ai], "--applet-aid") == 0) && ai+1 < argc) { applet_aid_hex = argv[++ai]; }
+        else if ((strcmp(argv[ai], "--module") == 0 || strcmp(argv[ai], "--module-aid") == 0) && ai+1 < argc) { module_aid_hex = argv[++ai]; }
+        else if ((strcmp(argv[ai], "--priv") == 0 || strcmp(argv[ai], "--privileges") == 0) && ai+1 < argc) { priv_list = argv[++ai]; }
         else if (strcmp(argv[ai], "--v-data-limit") == 0 && ai+1 < argc) { v_data_limit = (DWORD)parse_int(argv[++ai]); }
         else if (strcmp(argv[ai], "--nv-data-limit") == 0 && ai+1 < argc) { nv_data_limit = (DWORD)parse_int(argv[++ai]); }
         else if (strcmp(argv[ai], "--params") == 0 && ai+1 < argc) { params_hex = argv[++ai]; }
+        else if (strcmp(argv[ai], "--cap-file") == 0 && ai+1 < argc) { capfile = argv[++ai]; }
+        else if (argv[ai][0] != '-' && !capfile) { capfile = argv[ai]; }
         else break;
     }
-    if (ai >= argc) { fprintf(stderr, "install: missing <cap-file>\n"); return -1; }
-    const char *capfile = argv[ai++];
+    if (!capfile && ai < argc && argv[ai][0] != '-') {
+        capfile = argv[ai++];
+    }
+    if (!capfile && !install_only) { fprintf(stderr, "install: missing <cap-file>\n"); return -1; }
     TCHAR capfile_t[MAX_PATH_BUF];
     OPGP_STRING capfile_opgp = NULL;
-    if (to_opgp_string(capfile, capfile_t, ARRAY_SIZE(capfile_t)) != 0) {
-        fprintf(stderr, "install: cap file path too long\n");
-        return -1;
+    if (capfile) {
+        if (to_opgp_string(capfile, capfile_t, ARRAY_SIZE(capfile_t)) != 0) {
+            fprintf(stderr, "install: cap file path too long\n");
+            return -1;
+        }
+        capfile_opgp = capfile_t;
     }
-    capfile_opgp = capfile_t;
 
     // Validate mutually exclusive flags
     if (load_only && install_only) {
@@ -2714,12 +3070,11 @@ static int cmd_delete(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY
     DWORD delete_token_len = 0;
 
     for (int i = 0; i < argc; i++) {
-        if (strcmp(argv[i], "--token") == 0) {
-            if (i + 1 >= argc) {
-                fprintf(stderr, "delete: --token requires <hex>\n");
-                return -1;
-            }
+        if (strcmp(argv[i], "--token") == 0 && i + 1 < argc) {
             token_hex = argv[++i];
+        }
+        else if (strcmp(argv[i], "--aid") == 0 && i + 1 < argc) {
+            aid_hex = argv[++i];
         }
         else if (argv[i][0] == '-') {
             fprintf(stderr, "delete: unknown option %s\n", argv[i]);
@@ -2768,12 +3123,14 @@ static int cmd_move(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
     DWORD token_len = 0;
 
     for (int i = 0; i < argc; i++) {
-        if (strcmp(argv[i], "--token") == 0) {
-            if (i + 1 >= argc) {
-                fprintf(stderr, "move: --token requires <hex>\n");
-                return -1;
-            }
+        if (strcmp(argv[i], "--token") == 0 && i + 1 < argc) {
             token_hex = argv[++i];
+        }
+        else if (strcmp(argv[i], "--aid") == 0 && i + 1 < argc) {
+            app_aid_hex = argv[++i];
+        }
+        else if ((strcmp(argv[i], "--new-sd") == 0 || strcmp(argv[i], "--sd-aid") == 0) && i + 1 < argc) {
+            sd_aid_hex = argv[++i];
         }
         else if (argv[i][0] == '-') {
             fprintf(stderr, "move: unknown option %s\n", argv[i]);
@@ -3117,10 +3474,10 @@ static int cmd_put_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURIT
     int kvSet=0, newKvSet=0;
     const char *type="aes"; const char *hexkey=NULL; const char *pem=NULL; char *pass=NULL; const char *eccCurve="explicit";
     for (int i=0;i<argc;i++) {
-        if (strcmp(argv[i], "--kv")==0 && i+1<argc) { setVer=(BYTE)parse_int(argv[++i]); kvSet=1; }
-        else if (strcmp(argv[i], "--idx")==0 && i+1<argc) idx=(BYTE)parse_int(argv[++i]);
-        else if (strcmp(argv[i], "--new-kv")==0 && i+1<argc) { newSetVer=(BYTE)parse_int(argv[++i]); newKvSet=1; }
-        else if (strcmp(argv[i], "--type")==0 && i+1<argc) type=argv[++i];
+        if ((strcmp(argv[i], "--kv")==0 || strcmp(argv[i], "--key-set-version")==0) && i+1<argc) { setVer=(BYTE)parse_int(argv[++i]); kvSet=1; }
+        else if ((strcmp(argv[i], "--idx")==0 || strcmp(argv[i], "--key-index")==0) && i+1<argc) idx=(BYTE)parse_int(argv[++i]);
+        else if ((strcmp(argv[i], "--new-kv")==0 || strcmp(argv[i], "--new-key-set-version")==0) && i+1<argc) { newSetVer=(BYTE)parse_int(argv[++i]); newKvSet=1; }
+        else if ((strcmp(argv[i], "--type")==0 || strcmp(argv[i], "--key-type")==0) && i+1<argc) type=argv[++i];
         else if (strcmp(argv[i], "--key")==0 && i+1<argc) hexkey=argv[++i];
         else if (strcmp(argv[i], "--pem")==0 && i+1<argc) { pem=argv[++i]; char *c=strchr((char*)pem, ':'); if (c){ *c='\0'; pass=c+1; } }
         else if ((strcmp(argv[i], "--ecc-curve")==0 || strcmp(argv[i], "--ecc-params")==0) && i+1<argc) eccCurve=argv[++i];
@@ -3208,14 +3565,14 @@ static int cmd_put_auth(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURI
     BYTE setVer=1, newSetVer=1; const char *base=NULL, *enc=NULL, *mac=NULL, *dek=NULL;
     const char *type="aes", *derive="none";
     for (int i=0;i<argc;i++) {
-        if (strcmp(argv[i], "--kv")==0 && i+1<argc) setVer=(BYTE)parse_int(argv[++i]);
-        else if (strcmp(argv[i], "--new-kv")==0 && i+1<argc) newSetVer=(BYTE)parse_int(argv[++i]);
+        if ((strcmp(argv[i], "--kv")==0 || strcmp(argv[i], "--key-set-version")==0) && i+1<argc) setVer=(BYTE)parse_int(argv[++i]);
+        else if ((strcmp(argv[i], "--new-kv")==0 || strcmp(argv[i], "--new-key-set-version")==0) && i+1<argc) newSetVer=(BYTE)parse_int(argv[++i]);
         else if (strcmp(argv[i], "--base")==0 && i+1<argc) base=argv[++i];
         else if (strcmp(argv[i], "--key")==0 && i+1<argc) base=argv[++i];
         else if (strcmp(argv[i], "--enc")==0 && i+1<argc) enc=argv[++i];
         else if (strcmp(argv[i], "--mac")==0 && i+1<argc) mac=argv[++i];
         else if (strcmp(argv[i], "--dek")==0 && i+1<argc) dek=argv[++i];
-        else if (strcmp(argv[i], "--type")==0 && i+1<argc) type=argv[++i];
+        else if ((strcmp(argv[i], "--type")==0 || strcmp(argv[i], "--key-type")==0) && i+1<argc) type=argv[++i];
         else if (strcmp(argv[i], "--derive")==0 && i+1<argc) derive=argv[++i];
     }
     if (base && (enc || mac || dek)) {
@@ -3529,8 +3886,8 @@ static int cmd_put_dap_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SEC
 static int cmd_del_key(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
     BYTE setVer=0; BYTE idx=0xFF; // 0xFF => delete all keys in set
     for (int i=0;i<argc;i++) {
-        if (strcmp(argv[i], "--kv")==0 && i+1<argc) setVer=(BYTE)parse_int(argv[++i]);
-        else if (strcmp(argv[i], "--idx")==0 && i+1<argc) idx=(BYTE)parse_int(argv[++i]);
+        if ((strcmp(argv[i], "--kv")==0 || strcmp(argv[i], "--key-set-version")==0) && i+1<argc) setVer=(BYTE)parse_int(argv[++i]);
+        else if ((strcmp(argv[i], "--idx")==0 || strcmp(argv[i], "--key-index")==0) && i+1<argc) idx=(BYTE)parse_int(argv[++i]);
     }
     if (!status_ok(GP211_delete_key(ctx, info, sec, setVer, idx), true)) {
         return -1;
@@ -3549,14 +3906,14 @@ static int cmd_update_registry(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
     DWORD privileges = 0;
 
     for (int i = 0; i < argc; i++) {
-        if (strcmp(argv[i], "--priv") == 0) {
+        if (strcmp(argv[i], "--priv") == 0 || strcmp(argv[i], "--privileges") == 0) {
             if (i + 1 >= argc) {
                 fprintf(stderr, "update-registry: --priv requires <p1,p2,...>\n");
                 return -1;
             }
             priv_list = argv[++i];
         }
-        else if (strcmp(argv[i], "--sd") == 0) {
+        else if (strcmp(argv[i], "--sd") == 0 || strcmp(argv[i], "--sd-aid") == 0) {
             if (i + 1 >= argc) {
                 fprintf(stderr, "update-registry: --sd requires <AIDhex>\n");
                 return -1;
@@ -3569,6 +3926,13 @@ static int cmd_update_registry(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
                 return -1;
             }
             token_hex = argv[++i];
+        }
+        else if (strcmp(argv[i], "--aid") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "update-registry: --aid requires <AIDhex>\n");
+                return -1;
+            }
+            aid_hex = argv[++i];
         }
         else if (argv[i][0] == '-') {
             fprintf(stderr, "update-registry: unknown option %s\n", argv[i]);
@@ -3673,8 +4037,12 @@ static int is_hex_byte_token(const char *s) {
     return 1;
 }
 
-static int cmd_apdu(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv) {
-    if (argc < 1) { fprintf(stderr, "apdu: missing arguments\n"); return -1; }
+static int cmd_apdu(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, int argc, char **argv, gpshell3_output_ctx_t *out) {
+    if (argc < 1) {
+        if (out) gpshell3_report_error(out, "INVALID_ARGUMENT", "Missing APDU argument");
+        else fprintf(stderr, "apdu: missing arguments\n");
+        return -1;
+    }
     int nostop = 0;
     enum { MAX_APDUS = 256 };
     char *apdus[MAX_APDUS]; int napdus=0;
@@ -3682,13 +4050,19 @@ static int cmd_apdu(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
         const char *a = argv[i];
         if (strcmp(a, "--nostop")==0 || strcmp(a, "--ignore-errors")==0) { nostop=1; continue; }
         if (strcmp(a, "--auth")==0 || strcmp(a, "--secure")==0) { /* handled in main; skip here */ continue; }
+        if (strcmp(a, "--apdu")==0) { continue; }
+        if (strcmp(a, "--session-id")==0 || strcmp(a, "--sessionId")==0 || strcmp(a, "--session")==0) { i++; continue; }
         // Case 1: sequence of hex byte tokens across argv -> one APDU
         if (is_hex_byte_token(a)) {
             char buf[4096]; buf[0]='\0'; size_t bl=0;
             while (i<argc && is_hex_byte_token(argv[i])) {
                 const char *b = argv[i];
                 size_t bn = strlen(b);
-                if (bl + bn >= sizeof(buf)-1) { fprintf(stderr, "APDU too long\n"); return -1; }
+                if (bl + bn >= sizeof(buf)-1) {
+                    if (out) gpshell3_report_error(out, "INVALID_ARGUMENT", "APDU too long");
+                    else fprintf(stderr, "APDU too long\n");
+                    return -1;
+                }
                 for (size_t t=0;t<bn;t++) buf[bl++] = (char)toupper((unsigned char)b[t]);
                 i++;
             }
@@ -3699,7 +4073,11 @@ static int cmd_apdu(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
         }
         // Case 2: split by ';' or ',' within the same argument
         char *dup = strdup(a);
-        if (!dup) { fprintf(stderr, "oom\n"); return -1; }
+        if (!dup) {
+            if (out) gpshell3_report_error(out, "INTERNAL_ERROR", "Out of memory");
+            else fprintf(stderr, "oom\n");
+            return -1;
+        }
         char *save=NULL; char *tok = strtok_r(dup, ";,", &save);
         while (tok) {
             if (napdus < MAX_APDUS) {
@@ -3710,33 +4088,86 @@ static int cmd_apdu(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_I
         free(dup);
         if (napdus >= MAX_APDUS) break;
     }
-    if (napdus == 0) { fprintf(stderr, "apdu: no APDUs provided\n"); return -1; }
+    if (napdus == 0) {
+        if (out) gpshell3_report_error(out, "INVALID_ARGUMENT", "No APDUs provided");
+        else fprintf(stderr, "apdu: no APDUs provided\n");
+        return -1;
+    }
 
     int rc = 0;
+    cJSON *responses_arr = (out && out->mode == OUTPUT_FORMAT_JSON && napdus > 1) ? cJSON_CreateArray() : NULL;
+
     for (int k=0;k<napdus;k++) {
         char hexbuf[4096];
         if (compact_hex(apdus[k], hexbuf, sizeof(hexbuf)) != 0) {
-            fprintf(stderr, "Invalid hex in APDU %d\n", k+1);
+            if (out) {
+                if (napdus == 1) gpshell3_report_error(out, "INVALID_ARGUMENT", "Invalid hex in APDU: %s", apdus[k]);
+                else gpshell3_report_error(out, "INVALID_ARGUMENT", "Invalid hex in APDU %d: %s", k+1, apdus[k]);
+            } else {
+                fprintf(stderr, "Invalid hex in APDU %d\n", k+1);
+            }
             rc = -1; if (!nostop) { break; } else { continue; }
         }
         unsigned char capdu[APDU_COMMAND_LEN]; size_t clen=sizeof(capdu);
         if (hex_to_bytes(hexbuf, capdu, &clen)!=0) {
-            fprintf(stderr, "Invalid hex length in APDU %d\n", k+1);
+            if (out) {
+                if (napdus == 1) gpshell3_report_error(out, "INVALID_ARGUMENT", "Invalid hex length in APDU: %s", apdus[k]);
+                else gpshell3_report_error(out, "INVALID_ARGUMENT", "Invalid hex length in APDU %d: %s", k+1, apdus[k]);
+            } else {
+                fprintf(stderr, "Invalid hex length in APDU %d\n", k+1);
+            }
             rc = -1; if (!nostop) { break; } else { continue; }
         }
         unsigned char rapdu[APDU_RESPONSE_LEN]; DWORD rlen=sizeof(rapdu);
         OPGP_ERROR_STATUS s = GP211_send_APDU(ctx, info, sec, capdu, (DWORD)clen, rapdu, &rlen);
         if (!status_ok(s, true)) {
-            _ftprintf(stderr, _T("APDU %d send failed: 0x%08X (%s)\n"), k+1, (unsigned int)s.errorCode, s.errorMessage);
+            if (out) gpshell3_report_opgp_error(out, NULL, s, "APDU %d send failed", k+1);
+            else _ftprintf(stderr, _T("APDU %d send failed: 0x%08X (%s)\n"), k+1, (unsigned int)s.errorCode, s.errorMessage);
             rc = -1; if (!nostop) { break; } else { continue; }
         }
-        print_hex(rapdu, rlen); printf("\n");
+
+        char full_resp[APDU_RESPONSE_LEN * 2 + 1];
+        inspect_bytes_to_hex(rapdu, rlen, full_resp, sizeof(full_resp));
+
+        char sw_str[5] = { 0 };
+        char data_str[APDU_RESPONSE_LEN * 2 + 1] = { 0 };
+        if (rlen >= 2) {
+            snprintf(sw_str, sizeof(sw_str), "%02X%02X", rapdu[rlen-2], rapdu[rlen-1]);
+            inspect_bytes_to_hex(rapdu, rlen - 2, data_str, sizeof(data_str));
+        }
+
+        if (out && out->mode == OUTPUT_FORMAT_JSON) {
+            if (napdus == 1) {
+                gpshell3_output_add_string(out, "response", full_resp);
+                if (sw_str[0]) gpshell3_output_add_string(out, "statusWord", sw_str);
+                gpshell3_output_add_string(out, "data", data_str);
+            } else if (responses_arr) {
+                cJSON *resp_item = cJSON_CreateObject();
+                cJSON_AddStringToObject(resp_item, "response", full_resp);
+                if (sw_str[0]) cJSON_AddStringToObject(resp_item, "statusWord", sw_str);
+                cJSON_AddStringToObject(resp_item, "data", data_str);
+                cJSON_AddItemToArray(responses_arr, resp_item);
+
+                if (k == napdus - 1) {
+                    gpshell3_output_add_string(out, "response", full_resp);
+                    if (sw_str[0]) gpshell3_output_add_string(out, "statusWord", sw_str);
+                    gpshell3_output_add_string(out, "data", data_str);
+                }
+            }
+        } else {
+            print_hex(rapdu, rlen); printf("\n");
+        }
     }
+
+    if (responses_arr) {
+        gpshell3_output_add_array(out, "responses", responses_arr);
+    }
+
     for (int k=0;k<napdus;k++) free(apdus[k]);
     return rc;
 }
 
-static int cmd_hash(int argc, char **argv) {
+static int cmd_hash(int argc, char **argv, gpshell3_output_ctx_t *out) {
     const char *hash_alg = "sha256"; // default
     int ai = 0;
     for (; ai < argc; ++ai) {
@@ -3747,12 +4178,17 @@ static int cmd_hash(int argc, char **argv) {
         else if (strcmp(argv[ai], "--sm3") == 0) { hash_alg = "sm3"; }
         else break;
     }
-    if (ai >= argc) { fprintf(stderr, "hash: missing <cap-file>\n"); return -1; }
+    if (ai >= argc) {
+        if (out) gpshell3_report_error(out, "MISSING_ARGUMENT", "Missing CAP file argument for hash");
+        else fprintf(stderr, "hash: missing <cap-file>\n");
+        return -1;
+    }
     const char *cap = argv[ai++];
     TCHAR cap_t[MAX_PATH_BUF];
     OPGP_STRING cap_opgp = NULL;
     if (to_opgp_string(cap, cap_t, ARRAY_SIZE(cap_t)) != 0) {
-        fprintf(stderr, "hash: cap file path too long\n");
+        if (out) gpshell3_report_error(out, "INVALID_ARGUMENT", "CAP file path too long");
+        else fprintf(stderr, "hash: cap file path too long\n");
         return -1;
     }
     cap_opgp = cap_t;
@@ -3766,13 +4202,22 @@ static int cmd_hash(int argc, char **argv) {
     else if (strcmp(hash_alg, "sm3") == 0) { hashType = GP211_HASH_SM3; hash_len = 32; }
 
     BYTE hash[64]; memset(hash, 0, sizeof(hash));
-    if (!status_ok(GP211_calculate_load_file_data_block_hash(cap_opgp, hash, hash_len, hashType), false)) {
-        fprintf(stderr, "hash failed\n"); return -1;
+    OPGP_ERROR_STATUS s = GP211_calculate_load_file_data_block_hash(cap_opgp, hash, hash_len, hashType);
+    if (!status_ok(s, false)) {
+        if (out) gpshell3_report_opgp_error(out, NULL, s, "calculate load file data block hash failed");
+        else fprintf(stderr, "hash failed\n");
+        return -1;
+    }
+    if (out && out->mode == OUTPUT_FORMAT_JSON) {
+        char hhex[130];
+        inspect_bytes_to_hex(hash, hash_len, hhex, sizeof(hhex));
+        gpshell3_output_add_string(out, "hash", hhex);
+        gpshell3_output_add_string(out, "algorithm", hash_alg);
+        return 0;
     }
     print_hex(hash, hash_len); printf("\n");
     return 0;
 }
-
 static int cmd_sign_dap(const char *dap_type, int argc, char **argv) {
     // Parse optional flags
     const char *output_file = NULL;
@@ -4592,156 +5037,95 @@ static int cmd_store(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_
     return 0;
 }
 
-static int cmd_list_readers(void) {
-    // Establish a temporary PC/SC context and enumerate all readers (like gpshell.c:list_readers)
-    OPGP_CARD_CONTEXT ctx; memset(&ctx, 0, sizeof(ctx));
-    _tcsncpy(ctx.libraryName, _T("gppcscconnectionplugin"), _tcslen(_T("gppcscconnectionplugin"))+1);
-    _tcsncpy(ctx.libraryVersion, _T("1"), _tcslen(_T("1"))+1);
-    OPGP_ERROR_STATUS s = OPGP_establish_context(&ctx);
-    if (!status_ok(s, true)) { fprintf(stderr, "list-readers: failed to establish PC/SC context\n"); return -1; }
 
-    TCHAR buf[MAX_READERS_BUF];
-    DWORD len = (DWORD)ARRAY_SIZE(buf);
-    s = OPGP_list_readers(ctx, buf, &len, 0);
-    if (!status_ok(s, true)) {
-        _ftprintf(stderr, _T("list-readers failed with error 0x%08X (%s)\n"), (unsigned int)s.errorCode, s.errorMessage);
-        OPGP_release_context(&ctx);
-        return -1;
-    }
-    for (DWORD j = 0; j < len; ) {
-        if (buf[j] == _T('\0')) break; // end of multi-string
-        _tprintf(_T("* reader name %s\n"), &buf[j]);
-        j += (DWORD)_tcslen(&buf[j]) + 1;
-    }
-    OPGP_release_context(&ctx);
-    return 0;
-}
-
-
-static const char* get_ic_fab_name(USHORT id) {
-    switch (id) {
-        case 0x4790: return "NXP Semiconductors";
-        case 0x4090: return "Infineon Technologies";
-        case 0x4070: return "Infineon (Legacy)";
-        case 0x4250: return "Samsung";
-        case 0x3060: return "Renesas";
-        case 0x4180: return "Atmel";
-        case 0x4220: return "Thales (Legacy Gemplus/Gemalto)";
-        case 0x1671: return "Giesecke+Devrient (G+D)";
-        case 0x4750:
-        case 0x2050: return "STMicroelectronics";
-        default: return "Unknown Fabricator";
-    }
-}
-
-static const char* get_ic_type_name(USHORT id) {
-    switch (id) {
-        // NXP SmartMX3 (P71 Family)
-        case 0xD321: return "NXP SmartMX3 P71D321";
-        case 0xD600: return "NXP SmartMX3 P71D600";
-
-            // NXP SmartMX2 (P60 Family)
-        case 0x5183: return "NXP SmartMX2 (P60-Series)";
-            // NXP Legacy
-        case 0x5205: return "SmartMX (P5C-Series)";
-            // Infineon
-        case 0x1915: return "Infineon SLC38-Series";
-        case 0x0062:
-        case 0x6642:
-        case 0x5072: return "Infineon SLE66-Series";
-        case 0x6128:
-        case 0x6162: return "Infineon SLE66PE-Series";
-        case 0x6514: return "Infineon SLE78-Series";
-
-            // STMicroelectronics
-        case 0x5000: return "STMicroelectronics ST23-Series";
-        case 0x0061: return "STMicroelectronics ST33-Series";
-
-        default: return "Unknown IC Type";
-    }
-}
-
-static const char* get_os_id_name(USHORT id) {
-    switch (id) {
-        case 0x4090: return "Infineon Technologies";
-        case 0x4700:
-        case 0x4791: return "NXP JCOP";
-        case 0x4051: return "IBM JCOP";
-        case 0x4041: return "Oberthur / IDEMIA OS";
-        case 0xA005: return "Oberthur AuthentIC";
-        case 0x1671: return "G+D Sm@rtCafe";
-        case 0xD001: return "G+D OS";
-        case 0x0011: return "Cyberflex OS";
-        case 0x1981: return "Palmera Protect V5";
-        case 0x1291: return "GemXpresso Pro";
-        default: return "Unknown OS";
-    }
-}
-
-static int cmd_cplc(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
+static int cmd_cplc(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, gpshell3_output_ctx_t *out) {
     OPGP_CPLC cplc_data;
+    OPGP_ERROR_STATUS s = OPGP_get_cplc(ctx, info, sec, &cplc_data);
 
-    if (!status_ok(OPGP_get_cplc(ctx, info, sec, &cplc_data), false)) {
-        fprintf(stderr, "clpc: OPGP_get_cplc failed\n");
+    if (!status_ok(s, false)) {
+        if (out) gpshell3_report_opgp_error(out, NULL, s, "get CPLC failed");
+        else fprintf(stderr, "clpc: OPGP_get_cplc failed\n");
         return -1;
     }
 
-    {
-        const char *name = get_ic_fab_name(cplc_data.icFabricator);
-        if (strncmp(name, "Unknown", 7) == 0) {
-            printf("IC Fabricator : %04X\n", cplc_data.icFabricator);
-        } else {
-            printf("IC Fabricator : %s\n", name);
-        }
-    }
-    {
-        const char *name = get_ic_type_name(cplc_data.icType);
-        if (strncmp(name, "Unknown", 7) == 0) {
-            printf("IC Type       : %04X\n", cplc_data.icType);
-        } else {
-            printf("IC Type       : %s\n", name);
-        }
-    }
-    {
-        const char *name = get_os_id_name(cplc_data.operatingSystemId);
-        if (strncmp(name, "Unknown", 7) == 0) {
-            printf("OS ID         : %04X\n", cplc_data.operatingSystemId);
-        } else {
-            printf("OS ID         : %s\n", name);
-        }
+    if (out && out->mode == OUTPUT_FORMAT_JSON) {
+        gpshell3_output_add_object(out, "cplc", cplc_to_json(&cplc_data));
+        BYTE wire_bytes[42];
+        gpshell3_cplc_to_wire_bytes(&cplc_data, wire_bytes);
+        char raw_hex[42 * 2 + 1];
+        inspect_bytes_to_hex(wire_bytes, sizeof(wire_bytes), raw_hex, sizeof(raw_hex));
+        gpshell3_output_add_string(out, "raw", raw_hex);
+        return 0;
     }
 
-    print_cplc_date_field_ushort("Operating System release date", cplc_data.operatingSystemReleaseDate);
-    printf("Operating System release level : %04X\n", cplc_data.operatingSystemReleaseLevel);
-    print_cplc_date_field_ushort("IC Fabrication Date", cplc_data.icFabricationDate);
-    {
-        DWORD serial = ((DWORD)cplc_data.icSerialNumberHigh << 16) | cplc_data.icSerialNumberLow;
-        printf("IC Serial Number : %u\n", (unsigned int)serial);
-    }
-    printf("IC Batch Identifier : %04X\n", cplc_data.icBatchIdentifier);
-    printf("IC Module Fabricator : %04X\n", cplc_data.icModuleFabricator);
-    print_cplc_date_field_ushort("IC Module Packaging Date", cplc_data.icModulePackagingDate);
-    printf("ICC Manufacturer : %04X\n", cplc_data.iccManufacturer);
-    print_cplc_date_field_ushort("IC Embedding Date", cplc_data.icEmbeddingDate);
-    printf("IC Pre-Personalizer : %04X\n", cplc_data.icPrePersonalizer);
-    print_cplc_date_field_ushort("IC Pre-Perso. Equipment Date", cplc_data.icPrePersonalizationEquipmentDate);
-    {
-        printf("IC Pre-Perso. Equipment ID : %08lX", (unsigned long)cplc_data.icPrePersonalizationEquipmentId);
-        printf("\n");
-    }
-    printf("IC Personalizer : %04X\n", cplc_data.icPersonalizer);
-    print_cplc_date_field_ushort("IC Personalization Date", cplc_data.icPersonalizationDate);
-    {
-        printf("IC Perso. Equipment ID : %08lX\n", (unsigned long)cplc_data.icPersonalizationEquipmentId);
-    }
+    print_cplc_data(&cplc_data);
     return 0;
 }
 
-static int cmd_card_info(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
+static int cmd_card_info(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, gpshell3_output_ctx_t *out) {
     GP211_CARD_RECOGNITION_DATA data;
-    if (!status_ok(GP211_get_card_recognition_data(ctx, info, sec, &data), false)) {
-        fprintf(stderr, "card-info: GP211_get_card_recognition_data failed\n");
+    OPGP_ERROR_STATUS s = GP211_get_card_recognition_data(ctx, info, sec, &data);
+    if (!status_ok(s, false)) {
+        if (out) gpshell3_report_opgp_error(out, NULL, s, "get card recognition data failed");
+        else fprintf(stderr, "card-info: GP211_get_card_recognition_data failed\n");
         return -1;
+    }
+
+    if (out && out->mode == OUTPUT_FORMAT_JSON) {
+        if (data.version[0] != '\0') {
+            gpshell3_output_add_string(out, "globalPlatformVersion", data.version);
+        }
+        cJSON *scp_arr = cJSON_CreateArray();
+        for (DWORD i = 0; i < data.scpLength; i++) {
+            cJSON *scp_obj = cJSON_CreateObject();
+            cJSON_AddNumberToObject(scp_obj, "scp", data.scp[i]);
+            BYTE implBytes[GP211_MAX_CARD_RECOGNITION_SCP_IMPL_OID_BYTES];
+            size_t implLen = scp_impl_to_bytes(&data, i, implBytes, sizeof(implBytes));
+            char implHex[2 * GP211_MAX_CARD_RECOGNITION_SCP_IMPL_OID_BYTES + 1];
+            scp_impl_to_hex(&data, i, implHex, sizeof(implHex));
+            cJSON_AddStringToObject(scp_obj, "implementation", implHex);
+            char scpiDetails[256];
+            scpi_to_string(data.scp[i], implBytes, implLen, scpiDetails, sizeof(scpiDetails));
+            if (scpiDetails[0] != '\0') {
+                cJSON_AddStringToObject(scp_obj, "details", scpiDetails);
+            }
+            cJSON_AddItemToArray(scp_arr, scp_obj);
+        }
+        gpshell3_output_add_array(out, "scpList", scp_arr);
+
+        if (data.cardConfigurationDetailsOidLength > 0 && data.cardConfigurationDetailsOid[0] != '\0') {
+            gpshell3_output_add_string(out, "cardConfigurationDetailsOid", data.cardConfigurationDetailsOid);
+        }
+        if (data.cardConfigurationDetailsLength > 0) {
+            char hex[2 * sizeof(data.cardConfigurationDetails) + 1];
+            inspect_bytes_to_hex(data.cardConfigurationDetails, data.cardConfigurationDetailsLength, hex, sizeof(hex));
+            gpshell3_output_add_string(out, "cardConfigurationDetails", hex);
+        }
+        if (data.cardChipDetailsOidLength > 0 && data.cardChipDetailsOid[0] != '\0') {
+            gpshell3_output_add_string(out, "cardChipDetailsOid", data.cardChipDetailsOid);
+        }
+        if (data.cardChipDetailsLength > 0) {
+            char hex[2 * sizeof(data.cardChipDetails) + 1];
+            inspect_bytes_to_hex(data.cardChipDetails, data.cardChipDetailsLength, hex, sizeof(hex));
+            gpshell3_output_add_string(out, "cardChipDetails", hex);
+        }
+        if (data.issuerSecurityDomainsTrustPointCertificateInformationOidLength > 0 && data.issuerSecurityDomainsTrustPointCertificateInformationOid[0] != '\0') {
+            gpshell3_output_add_string(out, "issuerSecurityDomainsTrustPointCertificateInformationOid", data.issuerSecurityDomainsTrustPointCertificateInformationOid);
+        }
+        if (data.issuerSecurityDomainsTrustPointCertificateInformationLength > 0) {
+            char hex[2 * sizeof(data.issuerSecurityDomainsTrustPointCertificateInformation) + 1];
+            inspect_bytes_to_hex(data.issuerSecurityDomainsTrustPointCertificateInformation, data.issuerSecurityDomainsTrustPointCertificateInformationLength, hex, sizeof(hex));
+            gpshell3_output_add_string(out, "issuerSecurityDomainsTrustPointCertificateInformation", hex);
+        }
+        if (data.issuerSecurityDomainCertificateInformationOidLength > 0 && data.issuerSecurityDomainCertificateInformationOid[0] != '\0') {
+            gpshell3_output_add_string(out, "issuerSecurityDomainCertificateInformationOid", data.issuerSecurityDomainCertificateInformationOid);
+        }
+        if (data.issuerSecurityDomainCertificateInformationLength > 0) {
+            char hex[2 * sizeof(data.issuerSecurityDomainCertificateInformation) + 1];
+            inspect_bytes_to_hex(data.issuerSecurityDomainCertificateInformation, data.issuerSecurityDomainCertificateInformationLength, hex, sizeof(hex));
+            gpshell3_output_add_string(out, "issuerSecurityDomainCertificateInformation", hex);
+        }
+        return 0;
     }
 
     if (data.version[0] != '\0') {
@@ -4817,11 +5201,62 @@ static int cmd_card_info(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECUR
     return 0;
 }
 
-static int cmd_card_capability(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
+static int cmd_card_capability(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, gpshell3_output_ctx_t *out) {
     GP211_CARD_CAPABILITY_INFORMATION data;
-    if (!status_ok(GP211_get_card_capability_information(ctx, info, sec, &data), false)) {
-        fprintf(stderr, "card-cap: GP211_get_card_capability_information failed\n");
+    OPGP_ERROR_STATUS s = GP211_get_card_capability_information(ctx, info, sec, &data);
+    if (!status_ok(s, false)) {
+        if (out) gpshell3_report_opgp_error(out, NULL, s, "get card capability information failed");
+        else fprintf(stderr, "card-cap: GP211_get_card_capability_information failed\n");
         return -1;
+    }
+
+    if (out && out->mode == OUTPUT_FORMAT_JSON) {
+        cJSON *scp_arr = cJSON_CreateArray();
+        for (DWORD i = 0; i < data.scpInformationLength; i++) {
+            cJSON *scp_obj = cJSON_CreateObject();
+            cJSON_AddNumberToObject(scp_obj, "scpIdentifier", data.scpInformation[i].scpIdentifier);
+            if (data.scpInformation[i].scpOptionsLength > 0) {
+                char hex[128];
+                inspect_bytes_to_hex(data.scpInformation[i].scpOptions, data.scpInformation[i].scpOptionsLength, hex, sizeof(hex));
+                cJSON_AddStringToObject(scp_obj, "scpOptions", hex);
+            }
+            if (data.scpInformation[i].supportedKeySizes != 0) {
+                char kbuf[64];
+                gp211_scp_supported_key_sizes_to_string(data.scpInformation[i].supportedKeySizes, kbuf, sizeof(kbuf));
+                cJSON_AddStringToObject(scp_obj, "supportedKeySizes", kbuf);
+            }
+            cJSON_AddItemToArray(scp_arr, scp_obj);
+        }
+        gpshell3_output_add_array(out, "scpList", scp_arr);
+
+        if (data.ssdPrivileges[0] || data.ssdPrivileges[1] || data.ssdPrivileges[2]) {
+            DWORD p = gp211_privileges_3bytes_to_dword(data.ssdPrivileges);
+            char pbuf[512];
+            privileges_to_string(p, pbuf, sizeof(pbuf));
+            gpshell3_output_add_string(out, "ssdPrivileges", pbuf);
+        }
+        if (data.appPrivileges[0] || data.appPrivileges[1] || data.appPrivileges[2]) {
+            DWORD p = gp211_privileges_3bytes_to_dword(data.appPrivileges);
+            char pbuf[512];
+            privileges_to_string(p, pbuf, sizeof(pbuf));
+            gpshell3_output_add_string(out, "appPrivileges", pbuf);
+        }
+        if (data.tokenCipherSuites != 0) {
+            char sbuf[256];
+            gp211_signature_cs_to_string(data.tokenCipherSuites, sbuf, sizeof(sbuf));
+            gpshell3_output_add_string(out, "tokenCipherSuites", sbuf);
+        }
+        if (data.receiptCipherSuites != 0) {
+            char sbuf[256];
+            gp211_signature_cs_to_string(data.receiptCipherSuites, sbuf, sizeof(sbuf));
+            gpshell3_output_add_string(out, "receiptCipherSuites", sbuf);
+        }
+        if (data.dapCipherSuites != 0) {
+            char sbuf[256];
+            gp211_signature_cs_to_string(data.dapCipherSuites, sbuf, sizeof(sbuf));
+            gpshell3_output_add_string(out, "dapCipherSuites", sbuf);
+        }
+        return 0;
     }
 
     for (DWORD i = 0; i < data.scpInformationLength; i++) {
@@ -4940,11 +5375,20 @@ static int cmd_card_capability(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211
     return 0;
 }
 
-static int cmd_card_resources(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
+static int cmd_card_resources(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, gpshell3_output_ctx_t *out) {
     OPGP_EXTENDED_CARD_RESOURCE_INFORMATION data;
-    if (!status_ok(OPGP_get_extended_card_resources_information(ctx, info, sec, &data), false)) {
-        fprintf(stderr, "card-resources: OPGP_get_extended_card_resources_information failed\n");
+    OPGP_ERROR_STATUS s = OPGP_get_extended_card_resources_information(ctx, info, sec, &data);
+    if (!status_ok(s, false)) {
+        if (out) gpshell3_report_opgp_error(out, NULL, s, "get extended card resources information failed");
+        else fprintf(stderr, "card-resources: OPGP_get_extended_card_resources_information failed\n");
         return -1;
+    }
+
+    if (out && out->mode == OUTPUT_FORMAT_JSON) {
+        gpshell3_output_add_int(out, "numInstalledApplications", (int)data.numInstalledApplications);
+        gpshell3_output_add_int(out, "freeNonVolatileMemory", (int)data.freeNonVolatileMemory);
+        gpshell3_output_add_int(out, "freeVolatileMemory", (int)data.freeVolatileMemory);
+        return 0;
     }
 
     printf("Num Applications : %lu\n", (unsigned long)data.numInstalledApplications);
@@ -4953,94 +5397,129 @@ static int cmd_card_resources(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_
     return 0;
 }
 
-static int cmd_diversification(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
+static int cmd_diversification(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, gpshell3_output_ctx_t *out) {
     BYTE data[256];
     DWORD dataLen = sizeof(data);
-    if (!status_ok(GP211_get_diversification_data(ctx, info, sec, data, &dataLen), false)) {
-        fprintf(stderr, "diversification: GP211_get_diversification_data failed\n");
+    OPGP_ERROR_STATUS s = GP211_get_diversification_data(ctx, info, sec, data, &dataLen);
+    if (!status_ok(s, false)) {
+        if (out) gpshell3_report_opgp_error(out, NULL, s, "get diversification data failed");
+        else fprintf(stderr, "diversification: GP211_get_diversification_data failed\n");
         return -1;
+    }
+    if (out && out->mode == OUTPUT_FORMAT_JSON) {
+        char hex[514];
+        inspect_bytes_to_hex(data, dataLen, hex, sizeof(hex));
+        gpshell3_output_add_string(out, "diversificationData", hex);
+        return 0;
     }
     print_hex(data, dataLen);
     printf("\n");
     return 0;
 }
 
-static int cmd_iin(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
+static int cmd_iin(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, gpshell3_output_ctx_t *out) {
     BYTE data[256];
     DWORD dataLen = sizeof(data);
-    if (!status_ok(GP211_get_data(ctx, info, sec, (BYTE *)GP211_GET_DATA_ISSUER_IDENTIFICATION_NUMBER, data, &dataLen), false)) {
-        fprintf(stderr, "iin: GP211_get_data failed\n");
+    OPGP_ERROR_STATUS s = GP211_get_data(ctx, info, sec, (BYTE *)GP211_GET_DATA_ISSUER_IDENTIFICATION_NUMBER, data, &dataLen);
+    if (!status_ok(s, false)) {
+        if (out) gpshell3_report_opgp_error(out, NULL, s, "get IIN failed");
+        else fprintf(stderr, "iin: GP211_get_data failed\n");
         return -1;
+    }
+    if (out && out->mode == OUTPUT_FORMAT_JSON) {
+        char hex[514];
+        inspect_bytes_to_hex(data, dataLen, hex, sizeof(hex));
+        gpshell3_output_add_string(out, "iin", hex);
+        return 0;
     }
     print_hex(data, dataLen);
     printf("\n");
     return 0;
 }
 
-static int cmd_cin(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
+static int cmd_cin(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, gpshell3_output_ctx_t *out) {
     BYTE data[256];
     DWORD dataLen = sizeof(data);
-    if (!status_ok(GP211_get_data(ctx, info, sec, (BYTE *)GP211_GET_DATA_CARD_IMAGE_NUMBER, data, &dataLen), false)) {
-        fprintf(stderr, "cin: GP211_get_data failed\n");
+    OPGP_ERROR_STATUS s = GP211_get_data(ctx, info, sec, (BYTE *)GP211_GET_DATA_CARD_IMAGE_NUMBER, data, &dataLen);
+    if (!status_ok(s, false)) {
+        if (out) gpshell3_report_opgp_error(out, NULL, s, "get CIN failed");
+        else fprintf(stderr, "cin: GP211_get_data failed\n");
         return -1;
+    }
+    if (out && out->mode == OUTPUT_FORMAT_JSON) {
+        char hex[514];
+        inspect_bytes_to_hex(data, dataLen, hex, sizeof(hex));
+        gpshell3_output_add_string(out, "cin", hex);
+        return 0;
     }
     print_hex(data, dataLen);
     printf("\n");
     return 0;
 }
 
-static int cmd_seq_counter(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
+static int cmd_seq_counter(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, gpshell3_output_ctx_t *out) {
     DWORD counter = 0;
-    if (!status_ok(GP211_get_sequence_counter(ctx, info, sec, &counter), false)) {
-        fprintf(stderr, "seq-counter: GP211_get_sequence_counter failed\n");
+    OPGP_ERROR_STATUS s = GP211_get_sequence_counter(ctx, info, sec, &counter);
+    if (!status_ok(s, false)) {
+        if (out) gpshell3_report_opgp_error(out, NULL, s, "get sequence counter failed");
+        else fprintf(stderr, "seq-counter: GP211_get_sequence_counter failed\n");
         return -1;
+    }
+    if (out && out->mode == OUTPUT_FORMAT_JSON) {
+        gpshell3_output_add_int(out, "sequenceCounter", (int)counter);
+        return 0;
     }
     printf("Sequence Counter : %lu\n", (unsigned long)counter);
     return 0;
 }
 
-static int cmd_confirm_counter(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
+static int cmd_confirm_counter(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, gpshell3_output_ctx_t *out) {
     DWORD counter = 0;
-    if (!status_ok(GP211_get_confirmation_counter(ctx, info, sec, &counter), false)) {
-        fprintf(stderr, "confirm-counter: GP211_get_confirmation_counter failed\n");
+    OPGP_ERROR_STATUS s = GP211_get_confirmation_counter(ctx, info, sec, &counter);
+    if (!status_ok(s, false)) {
+        if (out) gpshell3_report_opgp_error(out, NULL, s, "get confirmation counter failed");
+        else fprintf(stderr, "confirm-counter: GP211_get_confirmation_counter failed\n");
         return -1;
+    }
+    if (out && out->mode == OUTPUT_FORMAT_JSON) {
+        gpshell3_output_add_int(out, "confirmationCounter", (int)counter);
+        return 0;
     }
     printf("Confirmation Counter : %lu\n", (unsigned long)counter);
     return 0;
 }
 
-static int cmd_card_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
+static int cmd_card_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec, gpshell3_output_ctx_t *out) {
     int rc = 0;
 
-    printf("== iin ==\n");
-    rc = cmd_iin(ctx, info, sec);
+    if (!out || out->mode != OUTPUT_FORMAT_JSON) printf("== iin ==\n");
+    rc = cmd_iin(ctx, info, sec, out);
 
-    printf("\n== cin ==\n");
-    rc |= cmd_cin(ctx, info, sec);
+    if (!out || out->mode != OUTPUT_FORMAT_JSON) printf("\n== cin ==\n");
+    rc |= cmd_cin(ctx, info, sec, out);
 
-    printf("\n== cplc ==\n");
-    rc |= cmd_cplc(ctx, info, sec);
+    if (!out || out->mode != OUTPUT_FORMAT_JSON) printf("\n== cplc ==\n");
+    rc |= cmd_cplc(ctx, info, sec, out);
 
-    printf("\n== card-info ==\n");
-    rc |= cmd_card_info(ctx, info, sec);
+    if (!out || out->mode != OUTPUT_FORMAT_JSON) printf("\n== card-info ==\n");
+    rc |= cmd_card_info(ctx, info, sec, out);
 
-    printf("\n== card-cap ==\n");
-    rc |= cmd_card_capability(ctx, info, sec);
+    if (!out || out->mode != OUTPUT_FORMAT_JSON) printf("\n== card-cap ==\n");
+    rc |= cmd_card_capability(ctx, info, sec, out);
 
-    printf("\n== card-resources ==\n");
-    rc |= cmd_card_resources(ctx, info, sec);
+    if (!out || out->mode != OUTPUT_FORMAT_JSON) printf("\n== card-resources ==\n");
+    rc |= cmd_card_resources(ctx, info, sec, out);
 
-    printf("\n== confirm-counter ==\n");
-    rc |= cmd_confirm_counter(ctx, info, sec);
+    if (!out || out->mode != OUTPUT_FORMAT_JSON) printf("\n== confirm-counter ==\n");
+    rc |= cmd_confirm_counter(ctx, info, sec, out);
 
-    printf("\n== seq-counter ==\n");
-    rc |= cmd_seq_counter(ctx, info, sec);
+    if (!out || out->mode != OUTPUT_FORMAT_JSON) printf("\n== seq-counter ==\n");
+    rc |= cmd_seq_counter(ctx, info, sec, out);
 
-    printf("\n== div-data ==\n");
-    rc |= cmd_diversification(ctx, info, sec);
+    if (!out || out->mode != OUTPUT_FORMAT_JSON) printf("\n== div-data ==\n");
+    rc |= cmd_diversification(ctx, info, sec, out);
     return rc;
 }
-
 static int cmd_scp11_cert_data(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP211_SECURITY_INFO *sec) {
     typedef struct {
         BYTE keyIdentifier;
@@ -5346,56 +5825,6 @@ static int cmd_scp11_store_ca_id(OPGP_CARD_CONTEXT ctx, OPGP_CARD_INFO info, GP2
     return 0;
 }
 
-static int cmd_store_iin_cin(const char *cmd, int argc, char **argv,
-                             const char *reader, const char *protocol, int trace, int verbose,
-                             BYTE keyset_ver, BYTE key_index, int derivation, const char *sec_level_opt,
-                             const BYTE *baseKey, const BYTE *enc_key, const BYTE *mac_key, const BYTE *dek_key,
-                             BYTE keyLength, const char *scp_protocol, const char *scp_impl,
-                             const char *scp11_cert_file, const char *scp11_sd_public_key,
-                             BYTE scp11SessionKeyLength) {
-    if (strcmp(cmd, "store-iin") != 0 && strcmp(cmd, "store-cin") != 0) {
-        return -1;
-    }
-    if (argc < 1) {
-        fprintf(stderr, "%s: missing identification number\n", cmd);
-        return 1;
-    }
-    const char *id_str = argv[0];
-    BYTE bcd[64];
-    DWORD bcdLen = sizeof(bcd);
-    OPGP_ERROR_STATUS status = OPGP_build_bcd_encoding(id_str, bcd, &bcdLen);
-    if (!status_ok(status, false)) {
-        fprintf(stderr, "%s: BCD encoding failed\n", cmd);
-        return 1;
-    }
-
-    BYTE tlv[128];
-    DWORD tlvLen = 0;
-    tlv[tlvLen++] = (strcmp(cmd, "store-iin") == 0) ? 0x42 : 0x45;
-    tlv[tlvLen++] = (BYTE)bcdLen;
-    memcpy(tlv + tlvLen, bcd, bcdLen);
-    tlvLen += bcdLen;
-
-    OPGP_CARD_CONTEXT ctx; OPGP_CARD_INFO info; GP211_SECURITY_INFO sec;
-    if (connect_pcsc(&ctx, &info, reader, protocol, trace, verbose) != 0) return 1;
-    if (mutual_auth(ctx, info, &sec, keyset_ver, key_index, derivation, sec_level_opt, verbose,
-                    baseKey, enc_key, mac_key, dek_key, keyLength, scp_protocol, scp_impl, scp11_cert_file,
-                    scp11_sd_public_key, scp11SessionKeyLength) != 0) {
-        return 1;
-    }
-
-    status = GP211_store_data(ctx, info, &sec, STORE_DATA_ENCRYPTION_NO_INFORMATION,
-                              STORE_DATA_FORMAT_BER_TLV, false, tlv, tlvLen);
-    if (!status_ok(status, false)) {
-        fprintf(stderr, "%s: GP211_store_data failed\n", cmd);
-        return 1;
-    }
-    return 0;
-}
-
-
-/* --- Dispatcher Adapters & JSON Schemas --- */
-
 static void sync_session_globals_to(const gpshell3_session_t *session) {
     if (session) {
         if (session->selected_isd_len > 0) {
@@ -5425,12 +5854,11 @@ static void sync_session_globals_from(gpshell3_session_t *session) {
 
 
 /* ========================================================================= */
-/* --- Command Adapters and Schemas (44 Commands) ---                        */
+/* --- Command Adapters and Schemas (45 Commands) ---                        */
 /* ========================================================================= */
 
 #define GEN_SCHEMA_STUBS(name)
 
-/* Helper to convert cJSON args to argv */
 static char** json_to_argv(cJSON *args, int *argc_out) {
     if (!args || !cJSON_IsObject(args)) {
         *argc_out = 0;
@@ -5439,18 +5867,27 @@ static char** json_to_argv(cJSON *args, int *argc_out) {
     int count = 0;
     cJSON *item = NULL;
     cJSON_ArrayForEach(item, args) {
+        const char *k = item->string;
+        if (k && (!strcmp(k, "sessionId") || !strcmp(k, "session_id"))) {
+            continue;
+        }
         if (cJSON_IsBool(item)) {
             if (cJSON_IsTrue(item)) count += 1;
         } else if (cJSON_IsNumber(item)) {
             count += 2;
         } else if (cJSON_IsString(item)) {
             count += 2;
+        } else if (cJSON_IsArray(item)) {
+            count += 2;
         }
     }
-    char **argv = (char **)calloc(count + 1, sizeof(char *));
+    char **argv = (char **)calloc(count * 2 + 10, sizeof(char *));
     int i = 0;
     cJSON_ArrayForEach(item, args) {
         const char *k = item->string;
+        if (k && (!strcmp(k, "sessionId") || !strcmp(k, "session_id"))) {
+            continue;
+        }
         char flag[128];
         flag[0] = '\0';
         if (k) {
@@ -5477,12 +5914,25 @@ static char** json_to_argv(cJSON *args, int *argc_out) {
             snprintf(numbuf, sizeof(numbuf), "%ld", (long)item->valuedouble);
             argv[i++] = strdup(numbuf);
         } else if (cJSON_IsString(item)) {
-            if (!strcmp(k, "capFile") || !strcmp(k, "dataFile") || !strcmp(k, "pemFile") || !strcmp(k, "keyFile") || !strcmp(k, "certFile") || !strcmp(k, "data") || !strcmp(k, "aid") || !strcmp(k, "instanceAid") || !strcmp(k, "apdu")) {
+            if (!strcmp(k, "capFile") || !strcmp(k, "dataFile") || !strcmp(k, "pemFile") || !strcmp(k, "keyFile") || !strcmp(k, "certFile") || !strcmp(k, "apdu")) {
                 argv[i++] = strdup(item->valuestring);
             } else {
                 argv[i++] = strdup(flag);
                 argv[i++] = strdup(item->valuestring);
             }
+        } else if (cJSON_IsArray(item)) {
+            argv[i++] = strdup(flag);
+            char jbuf[1024] = { 0 };
+            size_t jlen = 0;
+            cJSON *arr_elem = NULL;
+            cJSON_ArrayForEach(arr_elem, item) {
+                if (cJSON_IsString(arr_elem)) {
+                    if (jlen > 0 && jlen + 1 < sizeof(jbuf)) jbuf[jlen++] = ',';
+                    snprintf(jbuf + jlen, sizeof(jbuf) - jlen, "%s", arr_elem->valuestring);
+                    jlen = strlen(jbuf);
+                }
+            }
+            argv[i++] = strdup(jbuf);
         }
     }
     *argc_out = i;
@@ -5498,7 +5948,9 @@ static void free_argv(int argc, char **argv) {
 }
 
 /* 1. list-readers */
-cJSON *gpshell3_cmd_list_readers_input_schema(void) { return gpshell3_schema_object(); }
+cJSON *gpshell3_cmd_list_readers_input_schema(void) {
+    return gpshell3_schema_object();
+}
 cJSON *gpshell3_cmd_list_readers_output_schema(void) {
     cJSON *s = gpshell3_schema_object();
     gpshell3_schema_add_prop_array(s, "readers", "List of smart card reader names", "string", true);
@@ -5507,101 +5959,300 @@ cJSON *gpshell3_cmd_list_readers_output_schema(void) {
 int gpshell3_cmd_list_readers_cli(gpshell3_session_t *session, int argc, char **argv, gpshell3_output_ctx_t *out) {
     (void)session; (void)argc; (void)argv;
     gpshell3_output_set_command(out, "gpshell3_list_readers");
-    if (out && out->mode == OUTPUT_FORMAT_JSON) {
-        OPGP_CARD_CONTEXT local_ctx; memset(&local_ctx, 0, sizeof(local_ctx));
-        _tcsncpy(local_ctx.libraryName, _T("gppcscconnectionplugin"), _tcslen(_T("gppcscconnectionplugin")) + 1);
-        _tcsncpy(local_ctx.libraryVersion, _T("1"), _tcslen(_T("1")) + 1);
-        OPGP_CARD_CONTEXT *pctx = (session && session->is_connected) ? &session->ctx : &local_ctx;
-        if (!session || !session->is_connected) {
-            OPGP_ERROR_STATUS s = OPGP_establish_context(pctx);
-            if (!status_ok(s, false)) { gpshell3_report_opgp_error(out, NULL, s, "Failed to establish context"); return -1; }
-        }
-        TCHAR rlist[MAX_READERS_BUF]; DWORD rlen = (DWORD)ARRAY_SIZE(rlist);
-        OPGP_ERROR_STATUS s = OPGP_list_readers(*pctx, rlist, &rlen, 0);
-        if (!session || !session->is_connected) OPGP_release_context(pctx);
-        if (!status_ok(s, false)) { gpshell3_report_opgp_error(out, NULL, s, "Failed to list readers"); return -1; }
-        cJSON *arr = cJSON_CreateArray();
-        DWORD j = 0;
-        while (j < rlen && rlist[j] != _T('\0')) {
-            char rname[256];
-#if defined(_WIN32) && defined(UNICODE)
-            WideCharToMultiByte(CP_UTF8, 0, &rlist[j], -1, rname, sizeof(rname), NULL, NULL);
-#else
-            strncpy(rname, &rlist[j], sizeof(rname) - 1); rname[sizeof(rname) - 1] = '\0';
-#endif
-            cJSON_AddItemToArray(arr, cJSON_CreateString(rname));
-            j += (DWORD)_tcslen(&rlist[j]) + 1;
-        }
-        gpshell3_output_add_array(out, "readers", arr);
-        return 0;
+    OPGP_CARD_CONTEXT ctx; memset(&ctx, 0, sizeof(ctx));
+    _tcsncpy(ctx.libraryName, _T("gppcscconnectionplugin"), _tcslen(_T("gppcscconnectionplugin"))+1);
+    _tcsncpy(ctx.libraryVersion, _T("1"), _tcslen(_T("1"))+1);
+    OPGP_ERROR_STATUS s = OPGP_establish_context(&ctx);
+    if (!status_ok(s, true)) {
+        if (out) gpshell3_report_opgp_error(out, NULL, s, "establish PC/SC context failed");
+        else fprintf(stderr, "list-readers: failed to establish PC/SC context\n");
+        return -1;
     }
-    return cmd_list_readers();
+
+    TCHAR buf[MAX_READERS_BUF];
+    DWORD len = (DWORD)ARRAY_SIZE(buf);
+    s = OPGP_list_readers(ctx, buf, &len, 0);
+    if (!status_ok(s, true)) {
+        if (out) gpshell3_report_opgp_error(out, NULL, s, "list readers failed");
+        else _ftprintf(stderr, _T("list-readers failed with error 0x%08X (%s)\n"), (unsigned int)s.errorCode, s.errorMessage);
+        OPGP_release_context(&ctx);
+        return -1;
+    }
+
+    cJSON *readers_arr = (out && out->mode == OUTPUT_FORMAT_JSON) ? cJSON_CreateArray() : NULL;
+    for (DWORD j = 0; j < len; ) {
+        if (buf[j] == _T('\0')) break;
+        char r_utf8[256];
+        from_opgp_string(&buf[j], r_utf8, sizeof(r_utf8));
+        if (readers_arr) {
+            cJSON_AddItemToArray(readers_arr, cJSON_CreateString(r_utf8));
+        } else {
+            _tprintf(_T("* reader name %s\n"), &buf[j]);
+        }
+        j += (DWORD)_tcslen(&buf[j]) + 1;
+    }
+    if (readers_arr) {
+        gpshell3_output_add_array(out, "readers", readers_arr);
+    }
+    OPGP_release_context(&ctx);
+    return 0;
 }
 int gpshell3_cmd_list_readers_cmd(gpshell3_session_t *session, cJSON *args, gpshell3_output_ctx_t *out) {
     (void)args;
     return gpshell3_cmd_list_readers_cli(session, 0, NULL, out);
 }
 
-/* 2. hash */
+static int cmd_inspect_card(const char *reader_opt, gpshell3_output_ctx_t *out) {
+    OPGP_CARD_CONTEXT ctx; memset(&ctx, 0, sizeof(ctx));
+    _tcsncpy(ctx.libraryName, _T("gppcscconnectionplugin"), _tcslen(_T("gppcscconnectionplugin"))+1);
+    _tcsncpy(ctx.libraryVersion, _T("1"), _tcslen(_T("1"))+1);
+    OPGP_ERROR_STATUS s = OPGP_establish_context(&ctx);
+    if (!status_ok(s, true)) {
+        if (out && out->mode == OUTPUT_FORMAT_JSON) {
+            gpshell3_output_add_bool(out, "cardPresent", false);
+            cJSON *arr = cJSON_CreateArray();
+            gpshell3_output_add_array(out, "readers", arr);
+            gpshell3_output_add_string(out, "message", "Failed to establish PC/SC smart card context");
+            return 0;
+        }
+        fprintf(stderr, "inspect-card: failed to establish PC/SC context\n");
+        return -1;
+    }
+
+    TCHAR buf[MAX_READERS_BUF];
+    DWORD len = (DWORD)ARRAY_SIZE(buf);
+    s = OPGP_list_readers(ctx, buf, &len, 1 /* SCARD_STATE_PRESENT */);
+
+    char *readers_with_card[64];
+    int count = 0;
+    if (status_ok(s, true)) {
+        for (DWORD j = 0; j < len; ) {
+            if (buf[j] == _T('\0')) break;
+            char r_utf8[256];
+            from_opgp_string(&buf[j], r_utf8, sizeof(r_utf8));
+            readers_with_card[count++] = strdup(r_utf8);
+            j += (DWORD)_tcslen(&buf[j]) + 1;
+            if (count >= 64) break;
+        }
+    }
+
+    if (count == 0 && reader_opt == NULL) {
+        if (out && out->mode == OUTPUT_FORMAT_JSON) {
+            gpshell3_output_add_bool(out, "cardPresent", false);
+            cJSON *arr = cJSON_CreateArray();
+            gpshell3_output_add_array(out, "readers", arr);
+            gpshell3_output_add_string(out, "message", "No smart card readers with an inserted card found");
+        } else {
+            printf("No smart card readers with an inserted card found.\n");
+        }
+        OPGP_release_context(&ctx);
+        return 0;
+    }
+
+    if (count > 1 && reader_opt == NULL) {
+        if (out && out->mode == OUTPUT_FORMAT_JSON) {
+            gpshell3_output_add_bool(out, "cardPresent", false);
+            gpshell3_output_add_bool(out, "multipleCards", true);
+            cJSON *arr = cJSON_CreateArray();
+            for (int k = 0; k < count; k++) {
+                cJSON_AddItemToArray(arr, cJSON_CreateString(readers_with_card[k]));
+            }
+            gpshell3_output_add_array(out, "readers", arr);
+            gpshell3_output_add_string(out, "message", "Multiple cards detected. Please specify a reader.");
+        } else {
+            printf("Multiple cards detected:\n");
+            for (int k = 0; k < count; k++) {
+                printf("  [%d] %s\n", k, readers_with_card[k]);
+            }
+            printf("Please specify a reader with --reader <name>.\n");
+        }
+        for (int k = 0; k < count; k++) free(readers_with_card[k]);
+        OPGP_release_context(&ctx);
+        return 0;
+    }
+
+    const char *target_reader = reader_opt ? reader_opt : (count > 0 ? readers_with_card[0] : NULL);
+
+    OPGP_CARD_INFO card_info; memset(&card_info, 0, sizeof(card_info));
+    OPGP_release_context(&ctx);
+
+    if (connect_pcsc(&ctx, &card_info, target_reader, NULL, 0, 0) != 0) {
+        if (out && out->mode == OUTPUT_FORMAT_JSON) {
+            gpshell3_output_add_bool(out, "cardPresent", false);
+            if (target_reader) gpshell3_output_add_string(out, "reader", target_reader);
+            gpshell3_output_add_string(out, "message", "Failed to connect to card in reader");
+        } else {
+            fprintf(stderr, "Failed to connect to card in reader %s\n", target_reader ? target_reader : "default");
+        }
+        for (int k = 0; k < count; k++) free(readers_with_card[k]);
+        return 0;
+    }
+
+    char connected_reader_utf8[256] = { 0 };
+    if (g_last_connected_reader[0]) {
+        snprintf(connected_reader_utf8, sizeof(connected_reader_utf8), "%s", g_last_connected_reader);
+    } else if (target_reader) {
+        snprintf(connected_reader_utf8, sizeof(connected_reader_utf8), "%s", target_reader);
+    }
+
+    select_isd(ctx, card_info, NULL, NULL);
+
+    char isd_hex[64] = { 0 };
+    if (g_selected_isd_len > 0) {
+        inspect_bytes_to_hex(g_selected_isd, g_selected_isd_len, isd_hex, sizeof(isd_hex));
+    }
+
+    OPGP_CPLC cplc_data;
+    bool has_cplc = status_ok(OPGP_get_cplc(ctx, card_info, NULL, &cplc_data), false);
+
+    GP211_CARD_RECOGNITION_DATA rec_data;
+    bool has_rec = status_ok(GP211_get_card_recognition_data(ctx, card_info, NULL, &rec_data), false);
+
+    BYTE iin_data[64]; DWORD iin_len = sizeof(iin_data);
+    bool has_iin = status_ok(GP211_get_data(ctx, card_info, NULL, (BYTE *)GP211_GET_DATA_ISSUER_IDENTIFICATION_NUMBER, iin_data, &iin_len), false);
+
+    BYTE cin_data[64]; DWORD cin_len = sizeof(cin_data);
+    bool has_cin = status_ok(GP211_get_data(ctx, card_info, NULL, (BYTE *)GP211_GET_DATA_CARD_IMAGE_NUMBER, cin_data, &cin_len), false);
+
+    GP211_APPLICATION_DATA apps[64]; DWORD apps_len = sizeof(apps)/sizeof(apps[0]);
+    OPGP_ERROR_STATUS s_apps = GP211_get_status(ctx, card_info, NULL, GP211_STATUS_APPLICATIONS, GP211_STATUS_FORMAT_NEW, apps, NULL, &apps_len);
+    bool requires_auth = false;
+    if (!status_ok(s_apps, false)) {
+        DWORD apps_len_legacy = sizeof(apps)/sizeof(apps[0]);
+        OPGP_ERROR_STATUS s_apps_leg = GP211_get_status(ctx, card_info, NULL, GP211_STATUS_APPLICATIONS, GP211_STATUS_FORMAT_DEPRECATED, apps, NULL, &apps_len_legacy);
+        if (status_ok(s_apps_leg, false)) {
+            apps_len = apps_len_legacy;
+        } else {
+            requires_auth = true;
+            apps_len = 0;
+        }
+    }
+
+    if (out && out->mode == OUTPUT_FORMAT_JSON) {
+        gpshell3_output_add_bool(out, "cardPresent", true);
+        if (connected_reader_utf8[0]) gpshell3_output_add_string(out, "reader", connected_reader_utf8);
+        if (isd_hex[0]) gpshell3_output_add_string(out, "selectedIsd", isd_hex);
+        gpshell3_output_add_bool(out, "requiresAuthentication", requires_auth);
+        gpshell3_output_add_string(out, "applicationsStatus", requires_auth ? "AUTHENTICATION_REQUIRED" : "AVAILABLE");
+
+        if (has_cplc) {
+            gpshell3_output_add_object(out, "cplc", cplc_to_json(&cplc_data));
+        }
+
+        cJSON *card_data_obj = cJSON_CreateObject();
+        if (has_iin && iin_len > 0) {
+            char hex[128]; inspect_bytes_to_hex(iin_data, iin_len, hex, sizeof(hex));
+            cJSON_AddStringToObject(card_data_obj, "iin", hex);
+        }
+        if (has_cin && cin_len > 0) {
+            char hex[128]; inspect_bytes_to_hex(cin_data, cin_len, hex, sizeof(hex));
+            cJSON_AddStringToObject(card_data_obj, "cin", hex);
+        }
+        if (has_rec && rec_data.version[0]) {
+            cJSON_AddStringToObject(card_data_obj, "cardRecognitionVersion", rec_data.version);
+        }
+        gpshell3_output_add_object(out, "cardData", card_data_obj);
+
+        cJSON *apps_arr = cJSON_CreateArray();
+        for (DWORD i = 0; i < apps_len; i++) {
+            cJSON *app = cJSON_CreateObject();
+            char a_hex[64]; aid_to_hex_str(&apps[i].aid, a_hex, sizeof(a_hex));
+            cJSON_AddStringToObject(app, "aid", a_hex);
+            cJSON_AddStringToObject(app, "lifeCycle", lc_to_string(apps[i].lifeCycleState, GP211_STATUS_APPLICATIONS));
+            cJSON_AddItemToArray(apps_arr, app);
+        }
+        gpshell3_output_add_array(out, "applications", apps_arr);
+    } else {
+        printf("Card present in reader : %s\n", connected_reader_utf8);
+        if (isd_hex[0]) printf("Selected ISD AID       : %s\n", isd_hex);
+        printf("Requires Authentication: %s\n", requires_auth ? "yes (SW 6982)" : "no");
+        printf("Applications Status    : %s\n", requires_auth ? "AUTHENTICATION_REQUIRED" : "AVAILABLE");
+        if (has_cplc) {
+            printf("\n== CPLC ==\n");
+            print_cplc_data(&cplc_data);
+        }
+        if (has_rec && rec_data.version[0]) {
+            printf("\nGP Version             : %s\n", rec_data.version);
+        }
+    }
+
+    OPGP_card_disconnect(ctx, &card_info);
+    OPGP_release_context(&ctx);
+    for (int k = 0; k < count; k++) free(readers_with_card[k]);
+    return 0;
+}
+
+/* 2. inspect-card */
+cJSON *gpshell3_cmd_inspect_card_input_schema(void) {
+    cJSON *s = gpshell3_schema_object();
+    gpshell3_schema_add_prop_string(s, "reader", "Optional. Smart card reader name or index. Omit to auto-detect.", false);
+    return s;
+}
+cJSON *gpshell3_cmd_inspect_card_output_schema(void) {
+    cJSON *s = gpshell3_schema_object();
+    gpshell3_schema_add_prop_bool(s, "cardPresent", "Whether a card is present", true);
+    gpshell3_schema_add_prop_string(s, "reader", "Connected reader name", false);
+    gpshell3_schema_add_prop_string(s, "selectedIsd", "Selected ISD AID (hex)", false);
+    gpshell3_schema_add_prop_bool(s, "requiresAuthentication", "Whether card requires authenticated session for further ops", false);
+    gpshell3_schema_add_prop_string(s, "applicationsStatus", "Status of application list retrieval ('AVAILABLE', 'AUTHENTICATION_REQUIRED')", false);
+    gpshell3_schema_add_prop_object(s, "cplc", "CPLC hardware data", false);
+    gpshell3_schema_add_prop_object(s, "cardData", "Card recognition and identification data", false);
+    gpshell3_schema_add_prop_array(s, "applications", "Accessible applications", "object", false);
+    gpshell3_schema_add_prop_bool(s, "multipleCards", "Whether multiple cards were detected", false);
+    gpshell3_schema_add_prop_array(s, "readers", "Available readers", "string", false);
+    gpshell3_schema_add_prop_string(s, "message", "Status or guidance message", false);
+    return s;
+}
+int gpshell3_cmd_inspect_card_cli(gpshell3_session_t *session, int argc, char **argv, gpshell3_output_ctx_t *out) {
+    (void)session;
+    gpshell3_output_set_command(out, "gpshell3_inspect_card");
+    const char *reader_opt = NULL;
+    for (int i = 0; i < argc; i++) {
+        if (!strcmp(argv[i], "--reader") && i + 1 < argc) {
+            reader_opt = argv[++i];
+        } else if (argv[i][0] != '-') {
+            reader_opt = argv[i];
+        }
+    }
+    return cmd_inspect_card(reader_opt, out);
+}
+int gpshell3_cmd_inspect_card_cmd(gpshell3_session_t *session, cJSON *args, gpshell3_output_ctx_t *out) {
+    const char *reader_opt = NULL;
+    if (args && cJSON_IsObject(args)) {
+        cJSON *r = cJSON_GetObjectItem(args, "reader");
+        if (r && cJSON_IsString(r)) reader_opt = r->valuestring;
+    }
+    gpshell3_output_set_command(out, "gpshell3_inspect_card");
+    return cmd_inspect_card(reader_opt, out);
+}
+
+/* 3. hash */
 cJSON *gpshell3_cmd_hash_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
     gpshell3_schema_add_prop_string(s, "capFile", "Path to the Java Card CAP file", true);
-    const char *algs[] = {"sha1", "sha256"};
-    gpshell3_schema_add_prop_enum(s, "algorithm", "Hash algorithm (sha1 or sha256)", algs, 2, false);
+    const char *algs[] = {"sha1", "sha256", "sha384", "sha512", "sm3"};
+    gpshell3_schema_add_prop_enum(s, "algorithm", "Hash algorithm (default: sha256)", algs, 5, false);
     return s;
 }
 cJSON *gpshell3_cmd_hash_output_schema(void) {
     cJSON *s = gpshell3_schema_object();
     gpshell3_schema_add_prop_string(s, "hash", "Hex-encoded cryptographic hash", true);
+    gpshell3_schema_add_prop_string(s, "algorithm", "Hash algorithm used", true);
     return s;
 }
 int gpshell3_cmd_hash_cli(gpshell3_session_t *session, int argc, char **argv, gpshell3_output_ctx_t *out) {
     (void)session;
     gpshell3_output_set_command(out, "gpshell3_hash");
-    if (out && out->mode == OUTPUT_FORMAT_JSON) {
-        const char *hash_alg = "sha256";
-        int ai = 0;
-        for (; ai < argc; ai++) {
-            if (!strcmp(argv[ai], "--sha1")) hash_alg = "sha1";
-            else if (!strcmp(argv[ai], "--sha256") || !strcmp(argv[ai], "--sha2-256")) hash_alg = "sha256";
-            else if (!strcmp(argv[ai], "--sha384") || !strcmp(argv[ai], "--sha2-384")) hash_alg = "sha384";
-            else if (!strcmp(argv[ai], "--sha512") || !strcmp(argv[ai], "--sha2-512")) hash_alg = "sha512";
-            else if (!strcmp(argv[ai], "--sm3")) hash_alg = "sm3";
-            else break;
-        }
-        if (ai >= argc) { gpshell3_report_error(out, "MISSING_ARGUMENT", "Missing CAP file"); return -1; }
-        TCHAR cap_t[MAX_PATH_BUF];
-        if (to_opgp_string(argv[ai], cap_t, ARRAY_SIZE(cap_t)) != 0) { gpshell3_report_error(out, "INVALID_PATH", "Path too long"); return -1; }
-        BYTE hashType = GP211_HASH_SHA256;
-        DWORD hash_len = 32;
-        if (!strcmp(hash_alg, "sha1")) { hashType = GP211_HASH_SHA1; hash_len = 20; }
-        else if (!strcmp(hash_alg, "sha256")) { hashType = GP211_HASH_SHA256; hash_len = 32; }
-        else if (!strcmp(hash_alg, "sha384")) { hashType = GP211_HASH_SHA384; hash_len = 48; }
-        else if (!strcmp(hash_alg, "sha512")) { hashType = GP211_HASH_SHA512; hash_len = 64; }
-        else if (!strcmp(hash_alg, "sm3")) { hashType = GP211_HASH_SM3; hash_len = 32; }
-
-        BYTE hash[64]; memset(hash, 0, sizeof(hash));
-        if (!status_ok(GP211_calculate_load_file_data_block_hash(cap_t, hash, hash_len, hashType), false)) {
-            gpshell3_report_error(out, "HASH_FAILED", "Failed to calculate hash");
-            return -1;
-        }
-        gpshell3_output_add_hex(out, "hash", hash, hash_len);
-        return 0;
-    }
-    return cmd_hash(argc, argv);
+    return cmd_hash(argc, argv, out);
 }
 int gpshell3_cmd_hash_cmd(gpshell3_session_t *session, cJSON *args, gpshell3_output_ctx_t *out) {
-    if (!args) {
-        gpshell3_report_error(out, "MISSING_ARGUMENT", "Missing arguments for hash");
-        return -1;
-    }
     int argc = 0; char **argv = json_to_argv(args, &argc);
     int rc = gpshell3_cmd_hash_cli(session, argc, argv, out);
     free_argv(argc, argv);
     return rc;
 }
 
-/* 3. sign-dap */
+/* 4. sign-dap */
 cJSON *gpshell3_cmd_sign_dap_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
     const char *types[] = {"rsa", "ecc", "aes"};
@@ -5636,7 +6287,7 @@ int gpshell3_cmd_sign_dap_cmd(gpshell3_session_t *session, cJSON *args, gpshell3
     return rc;
 }
 
-/* 4. sign-load-token */
+/* 5. sign-load-token */
 cJSON *gpshell3_cmd_sign_load_token_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
     gpshell3_schema_add_prop_string(s, "key", "Private key (PEM path)", true);
@@ -5662,7 +6313,7 @@ int gpshell3_cmd_sign_load_token_cmd(gpshell3_session_t *session, cJSON *args, g
     return rc;
 }
 
-/* 5. sign-install-token */
+/* 6. sign-install-token */
 cJSON *gpshell3_cmd_sign_install_token_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
     gpshell3_schema_add_prop_string(s, "key", "Private key (PEM path)", true);
@@ -5689,7 +6340,7 @@ int gpshell3_cmd_sign_install_token_cmd(gpshell3_session_t *session, cJSON *args
     return rc;
 }
 
-/* 6. sign-extradition-token */
+/* 7. sign-extradition-token */
 cJSON *gpshell3_cmd_sign_extradition_token_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
     gpshell3_schema_add_prop_string(s, "key", "Private key (PEM path)", true);
@@ -5714,12 +6365,13 @@ int gpshell3_cmd_sign_extradition_token_cmd(gpshell3_session_t *session, cJSON *
     return rc;
 }
 
-/* 7. sign-update-registry-token */
+/* 8. sign-update-registry-token */
 cJSON *gpshell3_cmd_sign_update_registry_token_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
     gpshell3_schema_add_prop_string(s, "key", "Private key (PEM path)", true);
+    gpshell3_schema_add_prop_string(s, "targetSd", "Target Security Domain AID (hex)", true);
     gpshell3_schema_add_prop_string(s, "applet", "Application AID (hex)", true);
-    gpshell3_schema_add_prop_string(s, "privileges", "New privileges (hex)", true);
+    gpshell3_schema_add_prop_string(s, "privileges", "Privileges bitfield (hex)", true);
     return s;
 }
 cJSON *gpshell3_cmd_sign_update_registry_token_output_schema(void) {
@@ -5739,11 +6391,11 @@ int gpshell3_cmd_sign_update_registry_token_cmd(gpshell3_session_t *session, cJS
     return rc;
 }
 
-/* 8. sign-delete-token */
+/* 9. sign-delete-token */
 cJSON *gpshell3_cmd_sign_delete_token_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
     gpshell3_schema_add_prop_string(s, "key", "Private key (PEM path)", true);
-    gpshell3_schema_add_prop_string(s, "aid", "Application or Load File AID (hex)", true);
+    gpshell3_schema_add_prop_string(s, "aid", "Target AID to delete (hex)", true);
     return s;
 }
 cJSON *gpshell3_cmd_sign_delete_token_output_schema(void) {
@@ -5763,7 +6415,7 @@ int gpshell3_cmd_sign_delete_token_cmd(gpshell3_session_t *session, cJSON *args,
     return rc;
 }
 
-/* 9. verify-delete-receipt */
+/* 10. verify-delete-receipt */
 cJSON *gpshell3_cmd_verify_delete_receipt_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
     const char *types[] = {"aes", "des", "rsa", "ecc"};
@@ -5781,7 +6433,9 @@ cJSON *gpshell3_cmd_verify_delete_receipt_output_schema(void) {
 int gpshell3_cmd_verify_delete_receipt_cli(gpshell3_session_t *session, int argc, char **argv, gpshell3_output_ctx_t *out) {
     (void)session;
     gpshell3_output_set_command(out, "gpshell3_verify_delete_receipt");
-    return cmd_verify_delete_receipt(argc, argv);
+    int rc = cmd_verify_delete_receipt(argc, argv);
+    if (rc == 0 && out && out->mode == OUTPUT_FORMAT_JSON) gpshell3_output_add_bool(out, "valid", true);
+    return rc;
 }
 int gpshell3_cmd_verify_delete_receipt_cmd(gpshell3_session_t *session, cJSON *args, gpshell3_output_ctx_t *out) {
     int argc = 0; char **argv = json_to_argv(args, &argc);
@@ -5790,7 +6444,7 @@ int gpshell3_cmd_verify_delete_receipt_cmd(gpshell3_session_t *session, cJSON *a
     return rc;
 }
 
-/* 10. verify-load-receipt */
+/* 11. verify-load-receipt */
 cJSON *gpshell3_cmd_verify_load_receipt_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
     const char *types[] = {"aes", "des", "rsa", "ecc"};
@@ -5809,7 +6463,9 @@ cJSON *gpshell3_cmd_verify_load_receipt_output_schema(void) {
 int gpshell3_cmd_verify_load_receipt_cli(gpshell3_session_t *session, int argc, char **argv, gpshell3_output_ctx_t *out) {
     (void)session;
     gpshell3_output_set_command(out, "gpshell3_verify_load_receipt");
-    return cmd_verify_load_receipt(argc, argv);
+    int rc = cmd_verify_load_receipt(argc, argv);
+    if (rc == 0 && out && out->mode == OUTPUT_FORMAT_JSON) gpshell3_output_add_bool(out, "valid", true);
+    return rc;
 }
 int gpshell3_cmd_verify_load_receipt_cmd(gpshell3_session_t *session, cJSON *args, gpshell3_output_ctx_t *out) {
     int argc = 0; char **argv = json_to_argv(args, &argc);
@@ -5818,7 +6474,7 @@ int gpshell3_cmd_verify_load_receipt_cmd(gpshell3_session_t *session, cJSON *arg
     return rc;
 }
 
-/* 11. verify-install-receipt */
+/* 12. verify-install-receipt */
 cJSON *gpshell3_cmd_verify_install_receipt_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
     const char *types[] = {"aes", "des", "rsa", "ecc"};
@@ -5837,7 +6493,9 @@ cJSON *gpshell3_cmd_verify_install_receipt_output_schema(void) {
 int gpshell3_cmd_verify_install_receipt_cli(gpshell3_session_t *session, int argc, char **argv, gpshell3_output_ctx_t *out) {
     (void)session;
     gpshell3_output_set_command(out, "gpshell3_verify_install_receipt");
-    return cmd_verify_install_receipt(argc, argv);
+    int rc = cmd_verify_install_receipt(argc, argv);
+    if (rc == 0 && out && out->mode == OUTPUT_FORMAT_JSON) gpshell3_output_add_bool(out, "valid", true);
+    return rc;
 }
 int gpshell3_cmd_verify_install_receipt_cmd(gpshell3_session_t *session, cJSON *args, gpshell3_output_ctx_t *out) {
     int argc = 0; char **argv = json_to_argv(args, &argc);
@@ -5846,7 +6504,7 @@ int gpshell3_cmd_verify_install_receipt_cmd(gpshell3_session_t *session, cJSON *
     return rc;
 }
 
-/* 12. verify-move-receipt */
+/* 13. verify-move-receipt */
 cJSON *gpshell3_cmd_verify_move_receipt_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
     const char *types[] = {"aes", "des", "rsa", "ecc"};
@@ -5867,7 +6525,9 @@ cJSON *gpshell3_cmd_verify_move_receipt_output_schema(void) {
 int gpshell3_cmd_verify_move_receipt_cli(gpshell3_session_t *session, int argc, char **argv, gpshell3_output_ctx_t *out) {
     (void)session;
     gpshell3_output_set_command(out, "gpshell3_verify_move_receipt");
-    return cmd_verify_move_receipt(argc, argv);
+    int rc = cmd_verify_move_receipt(argc, argv);
+    if (rc == 0 && out && out->mode == OUTPUT_FORMAT_JSON) gpshell3_output_add_bool(out, "valid", true);
+    return rc;
 }
 int gpshell3_cmd_verify_move_receipt_cmd(gpshell3_session_t *session, cJSON *args, gpshell3_output_ctx_t *out) {
     int argc = 0; char **argv = json_to_argv(args, &argc);
@@ -5876,7 +6536,7 @@ int gpshell3_cmd_verify_move_receipt_cmd(gpshell3_session_t *session, cJSON *arg
     return rc;
 }
 
-/* 13. verify-registry-update-receipt */
+/* 14. verify-registry-update-receipt */
 cJSON *gpshell3_cmd_verify_registry_update_receipt_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
     const char *types[] = {"aes", "des", "rsa", "ecc"};
@@ -5898,7 +6558,9 @@ cJSON *gpshell3_cmd_verify_registry_update_receipt_output_schema(void) {
 int gpshell3_cmd_verify_registry_update_receipt_cli(gpshell3_session_t *session, int argc, char **argv, gpshell3_output_ctx_t *out) {
     (void)session;
     gpshell3_output_set_command(out, "gpshell3_verify_registry_update_receipt");
-    return cmd_verify_registry_update_receipt(argc, argv);
+    int rc = cmd_verify_registry_update_receipt(argc, argv);
+    if (rc == 0 && out && out->mode == OUTPUT_FORMAT_JSON) gpshell3_output_add_bool(out, "valid", true);
+    return rc;
 }
 int gpshell3_cmd_verify_registry_update_receipt_cmd(gpshell3_session_t *session, cJSON *args, gpshell3_output_ctx_t *out) {
     int argc = 0; char **argv = json_to_argv(args, &argc);
@@ -5907,7 +6569,7 @@ int gpshell3_cmd_verify_registry_update_receipt_cmd(gpshell3_session_t *session,
     return rc;
 }
 
-/* 14. list-apps */
+/* 15. list-apps */
 cJSON *gpshell3_cmd_list_apps_input_schema(void) { return gpshell3_schema_object(); }
 cJSON *gpshell3_cmd_list_apps_output_schema(void) {
     cJSON *s = gpshell3_schema_object();
@@ -5921,7 +6583,7 @@ int gpshell3_cmd_list_apps_cli(gpshell3_session_t *session, int argc, char **arg
     gpshell3_output_set_command(out, "gpshell3_list_apps");
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "list-apps requires active session"); return -1; }
     sync_session_globals_to(session);
-    int rc = cmd_list_apps(session->ctx, session->info, &session->sec);
+    int rc = cmd_list_apps(session->ctx, session->info, &session->sec, out);
     sync_session_globals_from(session);
     return rc;
 }
@@ -5930,7 +6592,7 @@ int gpshell3_cmd_list_apps_cmd(gpshell3_session_t *session, cJSON *args, gpshell
     return gpshell3_cmd_list_apps_cli(session, 0, NULL, out);
 }
 
-/* 15. list-keys */
+/* 16. list-keys */
 cJSON *gpshell3_cmd_list_keys_input_schema(void) { return gpshell3_schema_object(); }
 cJSON *gpshell3_cmd_list_keys_output_schema(void) {
     cJSON *s = gpshell3_schema_object();
@@ -5942,7 +6604,7 @@ int gpshell3_cmd_list_keys_cli(gpshell3_session_t *session, int argc, char **arg
     gpshell3_output_set_command(out, "gpshell3_list_keys");
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "list-keys requires active session"); return -1; }
     sync_session_globals_to(session);
-    int rc = cmd_list_keys(session->ctx, session->info, &session->sec);
+    int rc = cmd_list_keys(session->ctx, session->info, &session->sec, out);
     sync_session_globals_from(session);
     return rc;
 }
@@ -5951,11 +6613,12 @@ int gpshell3_cmd_list_keys_cmd(gpshell3_session_t *session, cJSON *args, gpshell
     return gpshell3_cmd_list_keys_cli(session, 0, NULL, out);
 }
 
-/* 16. cplc */
+/* 17. cplc */
 cJSON *gpshell3_cmd_cplc_input_schema(void) { return gpshell3_schema_object(); }
 cJSON *gpshell3_cmd_cplc_output_schema(void) {
     cJSON *s = gpshell3_schema_object();
-    gpshell3_schema_add_prop_string(s, "cplc", "Raw CPLC data (hex)", true);
+    gpshell3_schema_add_prop_object(s, "cplc", "Parsed CPLC information", false);
+    gpshell3_schema_add_prop_string(s, "raw", "Raw CPLC data (hex)", false);
     return s;
 }
 int gpshell3_cmd_cplc_cli(gpshell3_session_t *session, int argc, char **argv, gpshell3_output_ctx_t *out) {
@@ -5963,7 +6626,7 @@ int gpshell3_cmd_cplc_cli(gpshell3_session_t *session, int argc, char **argv, gp
     gpshell3_output_set_command(out, "gpshell3_cplc");
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "cplc requires active session"); return -1; }
     sync_session_globals_to(session);
-    int rc = cmd_cplc(session->ctx, session->info, &session->sec);
+    int rc = cmd_cplc(session->ctx, session->info, &session->sec, out);
     sync_session_globals_from(session);
     return rc;
 }
@@ -5972,11 +6635,11 @@ int gpshell3_cmd_cplc_cmd(gpshell3_session_t *session, cJSON *args, gpshell3_out
     return gpshell3_cmd_cplc_cli(session, 0, NULL, out);
 }
 
-/* 17. card-data */
+/* 18. card-data */
 cJSON *gpshell3_cmd_card_data_input_schema(void) { return gpshell3_schema_object(); }
 cJSON *gpshell3_cmd_card_data_output_schema(void) {
     cJSON *s = gpshell3_schema_object();
-    gpshell3_schema_add_prop_string(s, "cardData", "Card data (tag 0x0066)", true);
+    gpshell3_schema_add_prop_string(s, "cardData", "Card data (tag 0x0066)", false);
     return s;
 }
 int gpshell3_cmd_card_data_cli(gpshell3_session_t *session, int argc, char **argv, gpshell3_output_ctx_t *out) {
@@ -5984,7 +6647,7 @@ int gpshell3_cmd_card_data_cli(gpshell3_session_t *session, int argc, char **arg
     gpshell3_output_set_command(out, "gpshell3_card_data");
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "card-data requires active session"); return -1; }
     sync_session_globals_to(session);
-    int rc = cmd_card_data(session->ctx, session->info, &session->sec);
+    int rc = cmd_card_data(session->ctx, session->info, &session->sec, out);
     sync_session_globals_from(session);
     return rc;
 }
@@ -5993,7 +6656,7 @@ int gpshell3_cmd_card_data_cmd(gpshell3_session_t *session, cJSON *args, gpshell
     return gpshell3_cmd_card_data_cli(session, 0, NULL, out);
 }
 
-/* 18. iin */
+/* 19. iin */
 cJSON *gpshell3_cmd_iin_input_schema(void) { return gpshell3_schema_object(); }
 cJSON *gpshell3_cmd_iin_output_schema(void) {
     cJSON *s = gpshell3_schema_object();
@@ -6005,7 +6668,7 @@ int gpshell3_cmd_iin_cli(gpshell3_session_t *session, int argc, char **argv, gps
     gpshell3_output_set_command(out, "gpshell3_iin");
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "iin requires active session"); return -1; }
     sync_session_globals_to(session);
-    int rc = cmd_iin(session->ctx, session->info, &session->sec);
+    int rc = cmd_iin(session->ctx, session->info, &session->sec, out);
     sync_session_globals_from(session);
     return rc;
 }
@@ -6014,7 +6677,7 @@ int gpshell3_cmd_iin_cmd(gpshell3_session_t *session, cJSON *args, gpshell3_outp
     return gpshell3_cmd_iin_cli(session, 0, NULL, out);
 }
 
-/* 19. cin */
+/* 20. cin */
 cJSON *gpshell3_cmd_cin_input_schema(void) { return gpshell3_schema_object(); }
 cJSON *gpshell3_cmd_cin_output_schema(void) {
     cJSON *s = gpshell3_schema_object();
@@ -6026,7 +6689,7 @@ int gpshell3_cmd_cin_cli(gpshell3_session_t *session, int argc, char **argv, gps
     gpshell3_output_set_command(out, "gpshell3_cin");
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "cin requires active session"); return -1; }
     sync_session_globals_to(session);
-    int rc = cmd_cin(session->ctx, session->info, &session->sec);
+    int rc = cmd_cin(session->ctx, session->info, &session->sec, out);
     sync_session_globals_from(session);
     return rc;
 }
@@ -6035,11 +6698,14 @@ int gpshell3_cmd_cin_cmd(gpshell3_session_t *session, cJSON *args, gpshell3_outp
     return gpshell3_cmd_cin_cli(session, 0, NULL, out);
 }
 
-/* 20. card-info */
+/* 21. card-info */
 cJSON *gpshell3_cmd_card_info_input_schema(void) { return gpshell3_schema_object(); }
 cJSON *gpshell3_cmd_card_info_output_schema(void) {
     cJSON *s = gpshell3_schema_object();
-    gpshell3_schema_add_prop_string(s, "cardRecognitionData", "Card recognition data", true);
+    gpshell3_schema_add_prop_string(s, "globalPlatformVersion", "GlobalPlatform specification version", false);
+    gpshell3_schema_add_prop_array(s, "scpList", "Supported SCP protocols and implementations", "object", false);
+    gpshell3_schema_add_prop_string(s, "cardConfigurationDetails", "Card configuration details (hex)", false);
+    gpshell3_schema_add_prop_string(s, "cardChipDetails", "Card/chip details (hex)", false);
     return s;
 }
 int gpshell3_cmd_card_info_cli(gpshell3_session_t *session, int argc, char **argv, gpshell3_output_ctx_t *out) {
@@ -6047,7 +6713,7 @@ int gpshell3_cmd_card_info_cli(gpshell3_session_t *session, int argc, char **arg
     gpshell3_output_set_command(out, "gpshell3_card_info");
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "card-info requires active session"); return -1; }
     sync_session_globals_to(session);
-    int rc = cmd_card_info(session->ctx, session->info, &session->sec);
+    int rc = cmd_card_info(session->ctx, session->info, &session->sec, out);
     sync_session_globals_from(session);
     return rc;
 }
@@ -6056,11 +6722,13 @@ int gpshell3_cmd_card_info_cmd(gpshell3_session_t *session, cJSON *args, gpshell
     return gpshell3_cmd_card_info_cli(session, 0, NULL, out);
 }
 
-/* 21. card-cap */
+/* 22. card-cap */
 cJSON *gpshell3_cmd_card_cap_input_schema(void) { return gpshell3_schema_object(); }
 cJSON *gpshell3_cmd_card_cap_output_schema(void) {
     cJSON *s = gpshell3_schema_object();
-    gpshell3_schema_add_prop_string(s, "capabilities", "Card capability data", true);
+    gpshell3_schema_add_prop_array(s, "scpList", "SCP capabilities", "object", false);
+    gpshell3_schema_add_prop_string(s, "ssdPrivileges", "SSD privileges", false);
+    gpshell3_schema_add_prop_string(s, "appPrivileges", "Application privileges", false);
     return s;
 }
 int gpshell3_cmd_card_cap_cli(gpshell3_session_t *session, int argc, char **argv, gpshell3_output_ctx_t *out) {
@@ -6068,7 +6736,7 @@ int gpshell3_cmd_card_cap_cli(gpshell3_session_t *session, int argc, char **argv
     gpshell3_output_set_command(out, "gpshell3_card_cap");
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "card-cap requires active session"); return -1; }
     sync_session_globals_to(session);
-    int rc = cmd_card_capability(session->ctx, session->info, &session->sec);
+    int rc = cmd_card_capability(session->ctx, session->info, &session->sec, out);
     sync_session_globals_from(session);
     return rc;
 }
@@ -6077,11 +6745,13 @@ int gpshell3_cmd_card_cap_cmd(gpshell3_session_t *session, cJSON *args, gpshell3
     return gpshell3_cmd_card_cap_cli(session, 0, NULL, out);
 }
 
-/* 22. card-resources */
+/* 23. card-resources */
 cJSON *gpshell3_cmd_card_resources_input_schema(void) { return gpshell3_schema_object(); }
 cJSON *gpshell3_cmd_card_resources_output_schema(void) {
     cJSON *s = gpshell3_schema_object();
-    gpshell3_schema_add_prop_string(s, "resources", "Card resources data", true);
+    gpshell3_schema_add_prop_int(s, "numInstalledApplications", "Number of installed applications", false);
+    gpshell3_schema_add_prop_int(s, "freeNonVolatileMemory", "Free non-volatile memory in bytes", false);
+    gpshell3_schema_add_prop_int(s, "freeVolatileMemory", "Free volatile memory in bytes", false);
     return s;
 }
 int gpshell3_cmd_card_resources_cli(gpshell3_session_t *session, int argc, char **argv, gpshell3_output_ctx_t *out) {
@@ -6089,7 +6759,7 @@ int gpshell3_cmd_card_resources_cli(gpshell3_session_t *session, int argc, char 
     gpshell3_output_set_command(out, "gpshell3_card_resources");
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "card-resources requires active session"); return -1; }
     sync_session_globals_to(session);
-    int rc = cmd_card_resources(session->ctx, session->info, &session->sec);
+    int rc = cmd_card_resources(session->ctx, session->info, &session->sec, out);
     sync_session_globals_from(session);
     return rc;
 }
@@ -6098,11 +6768,11 @@ int gpshell3_cmd_card_resources_cmd(gpshell3_session_t *session, cJSON *args, gp
     return gpshell3_cmd_card_resources_cli(session, 0, NULL, out);
 }
 
-/* 23. div-data */
+/* 24. div-data */
 cJSON *gpshell3_cmd_div_data_input_schema(void) { return gpshell3_schema_object(); }
 cJSON *gpshell3_cmd_div_data_output_schema(void) {
     cJSON *s = gpshell3_schema_object();
-    gpshell3_schema_add_prop_string(s, "diversificationData", "Diversification data", true);
+    gpshell3_schema_add_prop_string(s, "diversificationData", "Diversification data (hex)", true);
     return s;
 }
 int gpshell3_cmd_div_data_cli(gpshell3_session_t *session, int argc, char **argv, gpshell3_output_ctx_t *out) {
@@ -6110,7 +6780,7 @@ int gpshell3_cmd_div_data_cli(gpshell3_session_t *session, int argc, char **argv
     gpshell3_output_set_command(out, "gpshell3_div_data");
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "div-data requires active session"); return -1; }
     sync_session_globals_to(session);
-    int rc = cmd_diversification(session->ctx, session->info, &session->sec);
+    int rc = cmd_diversification(session->ctx, session->info, &session->sec, out);
     sync_session_globals_from(session);
     return rc;
 }
@@ -6119,11 +6789,11 @@ int gpshell3_cmd_div_data_cmd(gpshell3_session_t *session, cJSON *args, gpshell3
     return gpshell3_cmd_div_data_cli(session, 0, NULL, out);
 }
 
-/* 24. seq-counter */
+/* 25. seq-counter */
 cJSON *gpshell3_cmd_seq_counter_input_schema(void) { return gpshell3_schema_object(); }
 cJSON *gpshell3_cmd_seq_counter_output_schema(void) {
     cJSON *s = gpshell3_schema_object();
-    gpshell3_schema_add_prop_string(s, "sequenceCounter", "Sequence counter hex", true);
+    gpshell3_schema_add_prop_int(s, "sequenceCounter", "Sequence counter", true);
     return s;
 }
 int gpshell3_cmd_seq_counter_cli(gpshell3_session_t *session, int argc, char **argv, gpshell3_output_ctx_t *out) {
@@ -6131,7 +6801,7 @@ int gpshell3_cmd_seq_counter_cli(gpshell3_session_t *session, int argc, char **a
     gpshell3_output_set_command(out, "gpshell3_seq_counter");
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "seq-counter requires active session"); return -1; }
     sync_session_globals_to(session);
-    int rc = cmd_seq_counter(session->ctx, session->info, &session->sec);
+    int rc = cmd_seq_counter(session->ctx, session->info, &session->sec, out);
     sync_session_globals_from(session);
     return rc;
 }
@@ -6140,11 +6810,11 @@ int gpshell3_cmd_seq_counter_cmd(gpshell3_session_t *session, cJSON *args, gpshe
     return gpshell3_cmd_seq_counter_cli(session, 0, NULL, out);
 }
 
-/* 25. confirm-counter */
+/* 26. confirm-counter */
 cJSON *gpshell3_cmd_confirm_counter_input_schema(void) { return gpshell3_schema_object(); }
 cJSON *gpshell3_cmd_confirm_counter_output_schema(void) {
     cJSON *s = gpshell3_schema_object();
-    gpshell3_schema_add_prop_string(s, "confirmationCounter", "Confirmation counter hex", true);
+    gpshell3_schema_add_prop_int(s, "confirmationCounter", "Confirmation counter", true);
     return s;
 }
 int gpshell3_cmd_confirm_counter_cli(gpshell3_session_t *session, int argc, char **argv, gpshell3_output_ctx_t *out) {
@@ -6152,7 +6822,7 @@ int gpshell3_cmd_confirm_counter_cli(gpshell3_session_t *session, int argc, char
     gpshell3_output_set_command(out, "gpshell3_confirm_counter");
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "confirm-counter requires active session"); return -1; }
     sync_session_globals_to(session);
-    int rc = cmd_confirm_counter(session->ctx, session->info, &session->sec);
+    int rc = cmd_confirm_counter(session->ctx, session->info, &session->sec, out);
     sync_session_globals_from(session);
     return rc;
 }
@@ -6161,11 +6831,11 @@ int gpshell3_cmd_confirm_counter_cmd(gpshell3_session_t *session, cJSON *args, g
     return gpshell3_cmd_confirm_counter_cli(session, 0, NULL, out);
 }
 
-/* 26. scp11-cert-data */
+/* 27. scp11-cert-data */
 cJSON *gpshell3_cmd_scp11_cert_data_input_schema(void) { return gpshell3_schema_object(); }
 cJSON *gpshell3_cmd_scp11_cert_data_output_schema(void) {
     cJSON *s = gpshell3_schema_object();
-    gpshell3_schema_add_prop_string(s, "scp11CertData", "SCP11 certificate data", true);
+    gpshell3_schema_add_prop_string(s, "certificates", "SCP11 certificate data", true);
     return s;
 }
 int gpshell3_cmd_scp11_cert_data_cli(gpshell3_session_t *session, int argc, char **argv, gpshell3_output_ctx_t *out) {
@@ -6182,7 +6852,7 @@ int gpshell3_cmd_scp11_cert_data_cmd(gpshell3_session_t *session, cJSON *args, g
     return gpshell3_cmd_scp11_cert_data_cli(session, 0, NULL, out);
 }
 
-/* 27. store-iin */
+/* 28. store-iin */
 cJSON *gpshell3_cmd_store_iin_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
     gpshell3_schema_add_prop_string(s, "iin", "Issuer Identification Number (hex)", true);
@@ -6215,7 +6885,7 @@ int gpshell3_cmd_store_iin_cmd(gpshell3_session_t *session, cJSON *args, gpshell
     return rc;
 }
 
-/* 28. store-cin */
+/* 29. store-cin */
 cJSON *gpshell3_cmd_store_cin_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
     gpshell3_schema_add_prop_string(s, "cin", "Card Image Number (hex)", true);
@@ -6248,7 +6918,7 @@ int gpshell3_cmd_store_cin_cmd(gpshell3_session_t *session, cJSON *args, gpshell
     return rc;
 }
 
-/* 29. scp11-store-cert */
+/* 30. scp11-store-cert */
 cJSON *gpshell3_cmd_scp11_store_cert_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
     gpshell3_schema_add_prop_string(s, "certFile", "Path to certificate file", true);
@@ -6264,6 +6934,7 @@ int gpshell3_cmd_scp11_store_cert_cli(gpshell3_session_t *session, int argc, cha
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "scp11-store-cert requires active session"); return -1; }
     sync_session_globals_to(session);
     int rc = cmd_scp11_store_cert(session->ctx, session->info, &session->sec, argc, argv);
+    if (rc == 0 && out && out->mode == OUTPUT_FORMAT_JSON) gpshell3_output_add_bool(out, "stored", true);
     sync_session_globals_from(session);
     return rc;
 }
@@ -6274,7 +6945,7 @@ int gpshell3_cmd_scp11_store_cert_cmd(gpshell3_session_t *session, cJSON *args, 
     return rc;
 }
 
-/* 30. scp11-store-ca-id */
+/* 31. scp11-store-ca-id */
 cJSON *gpshell3_cmd_scp11_store_ca_id_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
     gpshell3_schema_add_prop_string(s, "caKeyId", "CA Key Identifier (hex)", true);
@@ -6290,6 +6961,7 @@ int gpshell3_cmd_scp11_store_ca_id_cli(gpshell3_session_t *session, int argc, ch
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "scp11-store-ca-id requires active session"); return -1; }
     sync_session_globals_to(session);
     int rc = cmd_scp11_store_ca_id(session->ctx, session->info, &session->sec, argc, argv);
+    if (rc == 0 && out && out->mode == OUTPUT_FORMAT_JSON) gpshell3_output_add_bool(out, "stored", true);
     sync_session_globals_from(session);
     return rc;
 }
@@ -6300,7 +6972,7 @@ int gpshell3_cmd_scp11_store_ca_id_cmd(gpshell3_session_t *session, cJSON *args,
     return rc;
 }
 
-/* 31. install */
+/* 32. install */
 cJSON *gpshell3_cmd_install_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
     gpshell3_schema_add_prop_string(s, "capFile", "Path to CAP file", false);
@@ -6323,6 +6995,7 @@ int gpshell3_cmd_install_cli(gpshell3_session_t *session, int argc, char **argv,
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "install requires active session"); return -1; }
     sync_session_globals_to(session);
     int rc = cmd_install(session->ctx, session->info, &session->sec, argc, argv);
+    if (rc == 0 && out && out->mode == OUTPUT_FORMAT_JSON) gpshell3_output_add_bool(out, "installed", true);
     sync_session_globals_from(session);
     return rc;
 }
@@ -6333,7 +7006,7 @@ int gpshell3_cmd_install_cmd(gpshell3_session_t *session, cJSON *args, gpshell3_
     return rc;
 }
 
-/* 32. install-sd */
+/* 33. install-sd */
 cJSON *gpshell3_cmd_install_sd_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
     gpshell3_schema_add_prop_string(s, "instanceAid", "Security Domain instance AID (hex)", true);
@@ -6350,6 +7023,7 @@ int gpshell3_cmd_install_sd_cli(gpshell3_session_t *session, int argc, char **ar
     sync_session_globals_to(session);
     int rc = cmd_install_sd(session->ctx, session->info, &session->sec, argc, argv,
                             1, 0, 0, "mac+enc", 0, NULL, NULL, NULL, NULL, 16, NULL, NULL);
+    if (rc == 0 && out && out->mode == OUTPUT_FORMAT_JSON) gpshell3_output_add_bool(out, "installed", true);
     sync_session_globals_from(session);
     return rc;
 }
@@ -6360,7 +7034,7 @@ int gpshell3_cmd_install_sd_cmd(gpshell3_session_t *session, cJSON *args, gpshel
     return rc;
 }
 
-/* 33. delete */
+/* 34. delete */
 cJSON *gpshell3_cmd_delete_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
     gpshell3_schema_add_prop_string(s, "aid", "Application or Package AID (hex)", true);
@@ -6376,6 +7050,7 @@ int gpshell3_cmd_delete_cli(gpshell3_session_t *session, int argc, char **argv, 
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "delete requires active session"); return -1; }
     sync_session_globals_to(session);
     int rc = cmd_delete(session->ctx, session->info, &session->sec, argc, argv);
+    if (rc == 0 && out && out->mode == OUTPUT_FORMAT_JSON) gpshell3_output_add_bool(out, "deleted", true);
     sync_session_globals_from(session);
     return rc;
 }
@@ -6386,10 +7061,13 @@ int gpshell3_cmd_delete_cmd(gpshell3_session_t *session, cJSON *args, gpshell3_o
     return rc;
 }
 
-/* 34. update-registry */
+/* 35. update-registry */
 cJSON *gpshell3_cmd_update_registry_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
-    gpshell3_schema_add_prop_string(s, "aid", "Target AID (hex)", true);
+    gpshell3_schema_add_prop_string(s, "aid", "Required. Application AID (hex)", true);
+    gpshell3_schema_add_prop_string(s, "sdAid", "Optional. Associated Security Domain AID (hex)", false);
+    gpshell3_schema_add_prop_string(s, "privileges", "Optional. New privileges list (comma-separated or hex)", false);
+    gpshell3_schema_add_prop_string(s, "token", "Optional. Delegated Management Update Registry Token (hex)", false);
     return s;
 }
 cJSON *gpshell3_cmd_update_registry_output_schema(void) {
@@ -6402,6 +7080,7 @@ int gpshell3_cmd_update_registry_cli(gpshell3_session_t *session, int argc, char
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "update-registry requires active session"); return -1; }
     sync_session_globals_to(session);
     int rc = cmd_update_registry(session->ctx, session->info, &session->sec, argc, argv);
+    if (rc == 0 && out && out->mode == OUTPUT_FORMAT_JSON) gpshell3_output_add_bool(out, "updated", true);
     sync_session_globals_from(session);
     return rc;
 }
@@ -6412,11 +7091,11 @@ int gpshell3_cmd_update_registry_cmd(gpshell3_session_t *session, cJSON *args, g
     return rc;
 }
 
-/* 35. move */
+/* 36. move */
 cJSON *gpshell3_cmd_move_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
-    gpshell3_schema_add_prop_string(s, "applicationAid", "Application AID (hex)", true);
-    gpshell3_schema_add_prop_string(s, "securityDomainAid", "Target SD AID (hex)", true);
+    gpshell3_schema_add_prop_string(s, "aid", "Application AID (hex)", true);
+    gpshell3_schema_add_prop_string(s, "newSd", "New Security Domain AID (hex)", true);
     return s;
 }
 cJSON *gpshell3_cmd_move_output_schema(void) {
@@ -6429,6 +7108,7 @@ int gpshell3_cmd_move_cli(gpshell3_session_t *session, int argc, char **argv, gp
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "move requires active session"); return -1; }
     sync_session_globals_to(session);
     int rc = cmd_move(session->ctx, session->info, &session->sec, argc, argv);
+    if (rc == 0 && out && out->mode == OUTPUT_FORMAT_JSON) gpshell3_output_add_bool(out, "moved", true);
     sync_session_globals_from(session);
     return rc;
 }
@@ -6439,16 +7119,23 @@ int gpshell3_cmd_move_cmd(gpshell3_session_t *session, cJSON *args, gpshell3_out
     return rc;
 }
 
-/* 36. put-key */
+/* 37. put-key */
 cJSON *gpshell3_cmd_put_key_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
-    gpshell3_schema_add_prop_int(s, "keySetVersion", "Current key set version", true);
-    gpshell3_schema_add_prop_int(s, "newKeySetVersion", "New key set version", true);
+    gpshell3_schema_add_prop_int(s, "keySetVersion", "Required. Existing Key Set Version to replace, or 0/1 to add a new key set.", true);
+    gpshell3_schema_add_prop_int(s, "newKeySetVersion", "Required. New Key Set Version to assign to the key set.", true);
+    gpshell3_schema_add_prop_int(s, "keyIndex", "Optional. Key index (default: 0 or 1).", false);
+    const char *ktypes[] = {"3des", "aes", "rsa", "ecc", "ecc-private"};
+    gpshell3_schema_add_prop_enum(s, "keyType", "Optional. Key type (default: aes).", ktypes, 5, false);
+    gpshell3_schema_add_prop_string(s, "key", "Hex key data (required for symmetric and ecc-private keys).", false);
+    gpshell3_schema_add_prop_string(s, "pem", "PEM file path with optional :passphrase (required for rsa and ecc keys).", false);
+    const char *ecc_modes[] = {"explicit", "reference"};
+    gpshell3_schema_add_prop_enum(s, "eccCurve", "Optional. ECC curve parameter mode (default: explicit).", ecc_modes, 2, false);
     return s;
 }
 cJSON *gpshell3_cmd_put_key_output_schema(void) {
     cJSON *s = gpshell3_schema_object();
-    gpshell3_schema_add_prop_bool(s, "updated", "True on success", true);
+    gpshell3_schema_add_prop_bool(s, "keysUpdated", "True on success", true);
     return s;
 }
 int gpshell3_cmd_put_key_cli(gpshell3_session_t *session, int argc, char **argv, gpshell3_output_ctx_t *out) {
@@ -6456,6 +7143,7 @@ int gpshell3_cmd_put_key_cli(gpshell3_session_t *session, int argc, char **argv,
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "put-key requires active session"); return -1; }
     sync_session_globals_to(session);
     int rc = cmd_put_key(session->ctx, session->info, &session->sec, argc, argv);
+    if (rc == 0 && out && out->mode == OUTPUT_FORMAT_JSON) gpshell3_output_add_bool(out, "keysUpdated", true);
     sync_session_globals_from(session);
     return rc;
 }
@@ -6466,15 +7154,16 @@ int gpshell3_cmd_put_key_cmd(gpshell3_session_t *session, cJSON *args, gpshell3_
     return rc;
 }
 
-/* 37. put-auth */
+/* 38. put-auth */
 cJSON *gpshell3_cmd_put_auth_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
-    gpshell3_schema_add_prop_int(s, "keySetVersion", "Key set version", false);
+    gpshell3_schema_add_prop_int(s, "keySetVersion", "Key set version", true);
+    gpshell3_schema_add_prop_string(s, "key", "Authentication key (hex)", true);
     return s;
 }
 cJSON *gpshell3_cmd_put_auth_output_schema(void) {
     cJSON *s = gpshell3_schema_object();
-    gpshell3_schema_add_prop_bool(s, "updated", "True on success", true);
+    gpshell3_schema_add_prop_bool(s, "authUpdated", "True on success", true);
     return s;
 }
 int gpshell3_cmd_put_auth_cli(gpshell3_session_t *session, int argc, char **argv, gpshell3_output_ctx_t *out) {
@@ -6482,6 +7171,7 @@ int gpshell3_cmd_put_auth_cli(gpshell3_session_t *session, int argc, char **argv
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "put-auth requires active session"); return -1; }
     sync_session_globals_to(session);
     int rc = cmd_put_auth(session->ctx, session->info, &session->sec, argc, argv);
+    if (rc == 0 && out && out->mode == OUTPUT_FORMAT_JSON) gpshell3_output_add_bool(out, "authUpdated", true);
     sync_session_globals_from(session);
     return rc;
 }
@@ -6492,15 +7182,16 @@ int gpshell3_cmd_put_auth_cmd(gpshell3_session_t *session, cJSON *args, gpshell3
     return rc;
 }
 
-/* 38. put-dm-token */
+/* 39. put-dm-token */
 cJSON *gpshell3_cmd_put_dm_token_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
-    gpshell3_schema_add_prop_string(s, "pemFile", "PEM file path", true);
+    gpshell3_schema_add_prop_int(s, "keySetVersion", "Key set version", true);
+    gpshell3_schema_add_prop_string(s, "pem", "PEM file path", true);
     return s;
 }
 cJSON *gpshell3_cmd_put_dm_token_output_schema(void) {
     cJSON *s = gpshell3_schema_object();
-    gpshell3_schema_add_prop_bool(s, "updated", "True on success", true);
+    gpshell3_schema_add_prop_bool(s, "tokenUpdated", "True on success", true);
     return s;
 }
 int gpshell3_cmd_put_dm_token_cli(gpshell3_session_t *session, int argc, char **argv, gpshell3_output_ctx_t *out) {
@@ -6508,6 +7199,7 @@ int gpshell3_cmd_put_dm_token_cli(gpshell3_session_t *session, int argc, char **
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "put-dm-token requires active session"); return -1; }
     sync_session_globals_to(session);
     int rc = cmd_put_dm_token(session->ctx, session->info, &session->sec, argc, argv);
+    if (rc == 0 && out && out->mode == OUTPUT_FORMAT_JSON) gpshell3_output_add_bool(out, "tokenUpdated", true);
     sync_session_globals_from(session);
     return rc;
 }
@@ -6518,15 +7210,16 @@ int gpshell3_cmd_put_dm_token_cmd(gpshell3_session_t *session, cJSON *args, gpsh
     return rc;
 }
 
-/* 39. put-dm-receipt */
+/* 40. put-dm-receipt */
 cJSON *gpshell3_cmd_put_dm_receipt_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
-    gpshell3_schema_add_prop_string(s, "receiptKey", "Receipt key in hex", true);
+    gpshell3_schema_add_prop_int(s, "keySetVersion", "Key set version", true);
+    gpshell3_schema_add_prop_string(s, "key", "Receipt key (hex)", true);
     return s;
 }
 cJSON *gpshell3_cmd_put_dm_receipt_output_schema(void) {
     cJSON *s = gpshell3_schema_object();
-    gpshell3_schema_add_prop_bool(s, "updated", "True on success", true);
+    gpshell3_schema_add_prop_bool(s, "receiptUpdated", "True on success", true);
     return s;
 }
 int gpshell3_cmd_put_dm_receipt_cli(gpshell3_session_t *session, int argc, char **argv, gpshell3_output_ctx_t *out) {
@@ -6534,6 +7227,7 @@ int gpshell3_cmd_put_dm_receipt_cli(gpshell3_session_t *session, int argc, char 
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "put-dm-receipt requires active session"); return -1; }
     sync_session_globals_to(session);
     int rc = cmd_put_dm_receipt(session->ctx, session->info, &session->sec, argc, argv);
+    if (rc == 0 && out && out->mode == OUTPUT_FORMAT_JSON) gpshell3_output_add_bool(out, "receiptUpdated", true);
     sync_session_globals_from(session);
     return rc;
 }
@@ -6544,15 +7238,16 @@ int gpshell3_cmd_put_dm_receipt_cmd(gpshell3_session_t *session, cJSON *args, gp
     return rc;
 }
 
-/* 40. put-dap-key */
+/* 41. put-dap-key */
 cJSON *gpshell3_cmd_put_dap_key_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
-    gpshell3_schema_add_prop_string(s, "keyValue", "Key value", true);
+    gpshell3_schema_add_prop_int(s, "keySetVersion", "Key set version", true);
+    gpshell3_schema_add_prop_string(s, "pem", "PEM file path", true);
     return s;
 }
 cJSON *gpshell3_cmd_put_dap_key_output_schema(void) {
     cJSON *s = gpshell3_schema_object();
-    gpshell3_schema_add_prop_bool(s, "updated", "True on success", true);
+    gpshell3_schema_add_prop_bool(s, "dapKeyUpdated", "True on success", true);
     return s;
 }
 int gpshell3_cmd_put_dap_key_cli(gpshell3_session_t *session, int argc, char **argv, gpshell3_output_ctx_t *out) {
@@ -6560,6 +7255,7 @@ int gpshell3_cmd_put_dap_key_cli(gpshell3_session_t *session, int argc, char **a
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "put-dap-key requires active session"); return -1; }
     sync_session_globals_to(session);
     int rc = cmd_put_dap_key(session->ctx, session->info, &session->sec, argc, argv);
+    if (rc == 0 && out && out->mode == OUTPUT_FORMAT_JSON) gpshell3_output_add_bool(out, "dapKeyUpdated", true);
     sync_session_globals_from(session);
     return rc;
 }
@@ -6570,7 +7266,7 @@ int gpshell3_cmd_put_dap_key_cmd(gpshell3_session_t *session, cJSON *args, gpshe
     return rc;
 }
 
-/* 41. del-key */
+/* 42. del-key */
 cJSON *gpshell3_cmd_del_key_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
     gpshell3_schema_add_prop_int(s, "keySetVersion", "Key set version", true);
@@ -6586,6 +7282,7 @@ int gpshell3_cmd_del_key_cli(gpshell3_session_t *session, int argc, char **argv,
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "del-key requires active session"); return -1; }
     sync_session_globals_to(session);
     int rc = cmd_del_key(session->ctx, session->info, &session->sec, argc, argv);
+    if (rc == 0 && out && out->mode == OUTPUT_FORMAT_JSON) gpshell3_output_add_bool(out, "deleted", true);
     sync_session_globals_from(session);
     return rc;
 }
@@ -6596,7 +7293,7 @@ int gpshell3_cmd_del_key_cmd(gpshell3_session_t *session, cJSON *args, gpshell3_
     return rc;
 }
 
-/* 42. apdu */
+/* 43. apdu */
 cJSON *gpshell3_cmd_apdu_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
     gpshell3_schema_add_prop_string(s, "apdu", "APDU hex string", true);
@@ -6605,13 +7302,16 @@ cJSON *gpshell3_cmd_apdu_input_schema(void) {
 cJSON *gpshell3_cmd_apdu_output_schema(void) {
     cJSON *s = gpshell3_schema_object();
     gpshell3_schema_add_prop_string(s, "response", "Response APDU hex string", true);
+    gpshell3_schema_add_prop_string(s, "statusWord", "4-digit hex Status Word (e.g. 9000)", false);
+    gpshell3_schema_add_prop_string(s, "data", "Response data hex without status word", false);
+    gpshell3_schema_add_prop_array(s, "responses", "Array of APDU responses if multiple sent", "object", false);
     return s;
 }
 int gpshell3_cmd_apdu_cli(gpshell3_session_t *session, int argc, char **argv, gpshell3_output_ctx_t *out) {
     gpshell3_output_set_command(out, "gpshell3_apdu");
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "apdu requires active session"); return -1; }
     sync_session_globals_to(session);
-    int rc = cmd_apdu(session->ctx, session->info, session->is_authenticated ? &session->sec : NULL, argc, argv);
+    int rc = cmd_apdu(session->ctx, session->info, session->is_authenticated ? &session->sec : NULL, argc, argv, out);
     sync_session_globals_from(session);
     return rc;
 }
@@ -6622,7 +7322,7 @@ int gpshell3_cmd_apdu_cmd(gpshell3_session_t *session, cJSON *args, gpshell3_out
     return rc;
 }
 
-/* 43. status */
+/* 44. status */
 cJSON *gpshell3_cmd_status_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
     const char *types[] = {"isd", "sd", "app", "sd-app"};
@@ -6642,6 +7342,7 @@ int gpshell3_cmd_status_cli(gpshell3_session_t *session, int argc, char **argv, 
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "status requires active session"); return -1; }
     sync_session_globals_to(session);
     int rc = cmd_status(session->ctx, session->info, &session->sec, argc, argv);
+    if (rc == 0 && out && out->mode == OUTPUT_FORMAT_JSON) gpshell3_output_add_bool(out, "updated", true);
     sync_session_globals_from(session);
     return rc;
 }
@@ -6652,7 +7353,7 @@ int gpshell3_cmd_status_cmd(gpshell3_session_t *session, cJSON *args, gpshell3_o
     return rc;
 }
 
-/* 44. store */
+/* 45. store */
 cJSON *gpshell3_cmd_store_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
     gpshell3_schema_add_prop_string(s, "data", "Raw data to store (hex)", true);
@@ -6668,6 +7369,7 @@ int gpshell3_cmd_store_cli(gpshell3_session_t *session, int argc, char **argv, g
     if (!session || !session->is_connected) { gpshell3_report_error(out, "SESSION_REQUIRED", "store requires active session"); return -1; }
     sync_session_globals_to(session);
     int rc = cmd_store(session->ctx, session->info, &session->sec, argc, argv);
+    if (rc == 0 && out && out->mode == OUTPUT_FORMAT_JSON) gpshell3_output_add_bool(out, "stored", true);
     sync_session_globals_from(session);
     return rc;
 }

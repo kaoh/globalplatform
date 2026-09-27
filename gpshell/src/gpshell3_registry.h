@@ -97,6 +97,7 @@ void gpshell3_schema_add_prop_int(cJSON *schema, const char *name, const char *d
 void gpshell3_schema_add_prop_bool(cJSON *schema, const char *name, const char *desc, bool required);
 void gpshell3_schema_add_prop_enum(cJSON *schema, const char *name, const char *desc, const char **enum_values, size_t count, bool required);
 void gpshell3_schema_add_prop_array(cJSON *schema, const char *name, const char *desc, const char *item_type, bool required);
+void gpshell3_schema_add_prop_object(cJSON *schema, const char *name, const char *desc, bool required);
 
 #ifdef __cplusplus
 }

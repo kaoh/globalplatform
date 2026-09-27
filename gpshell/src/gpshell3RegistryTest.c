@@ -48,7 +48,7 @@ static void test_registry_count_and_enumeration(void **state) {
     (void)state;
     gpshell3_registry_init();
     size_t count = gpshell3_registry_count();
-    assert_int_equal(count, 44);
+    assert_int_equal(count, 45);
 
     for (size_t i = 0; i < count; i++) {
         const gpshell3_cmd_def_t *def = gpshell3_registry_get(i);
@@ -59,6 +59,8 @@ static void test_registry_count_and_enumeration(void **state) {
         assert_true(strncmp(def->tool_name, "gpshell3_", 9) == 0);
         assert_non_null(def->description);
         assert_true(strlen(def->description) > 0);
+        assert_true(strncmp(def->description, "Use this when the user asks to ", 31) == 0);
+        assert_non_null(strstr(def->description, "Returns "));
         assert_non_null(def->execute_cmd);
         assert_non_null(def->execute_cli);
         assert_non_null(def->get_input_schema);
@@ -92,6 +94,13 @@ static void test_registry_lookup_by_name(void **state) {
     assert_false(def->requires_session);
     assert_false(def->is_destructive);
 
+    def = gpshell3_registry_find_by_name("inspect-card");
+    assert_non_null(def);
+    assert_string_equal(def->name, "inspect-card");
+    assert_string_equal(def->tool_name, "gpshell3_inspect_card");
+    assert_false(def->requires_session);
+    assert_false(def->is_destructive);
+
     assert_null(gpshell3_registry_find_by_name("non-existent-cmd"));
     assert_null(gpshell3_registry_find_by_name(NULL));
 }
@@ -107,6 +116,13 @@ static void test_registry_lookup_by_tool_name(void **state) {
     assert_non_null(def);
     assert_string_equal(def->name, "delete");
     assert_true(def->is_destructive);
+
+    def = gpshell3_registry_find_by_tool_name("gpshell3_inspect_card");
+    assert_non_null(def);
+    assert_string_equal(def->name, "inspect-card");
+    assert_string_equal(def->tool_name, "gpshell3_inspect_card");
+    assert_false(def->requires_session);
+    assert_false(def->is_destructive);
 
     assert_null(gpshell3_registry_find_by_tool_name("gpshell3_unknown_tool"));
     assert_null(gpshell3_registry_find_by_tool_name(NULL));
@@ -302,6 +318,46 @@ static void test_card_commands_require_session(void **state) {
     }
 }
 
+static void test_put_key_and_update_registry_input_schemas(void **state) {
+    (void)state;
+    const gpshell3_cmd_def_t *put_key = gpshell3_registry_find_by_name("put-key");
+    assert_non_null(put_key);
+
+    cJSON *pk_in = put_key->get_input_schema();
+    assert_non_null(pk_in);
+    cJSON *pk_props = cJSON_GetObjectItemCaseSensitive(pk_in, "properties");
+    assert_non_null(pk_props);
+
+    assert_non_null(cJSON_GetObjectItemCaseSensitive(pk_props, "keySetVersion"));
+    assert_non_null(cJSON_GetObjectItemCaseSensitive(pk_props, "newKeySetVersion"));
+    assert_non_null(cJSON_GetObjectItemCaseSensitive(pk_props, "keyIndex"));
+    assert_non_null(cJSON_GetObjectItemCaseSensitive(pk_props, "keyType"));
+    assert_non_null(cJSON_GetObjectItemCaseSensitive(pk_props, "key"));
+    assert_non_null(cJSON_GetObjectItemCaseSensitive(pk_props, "pem"));
+    assert_non_null(cJSON_GetObjectItemCaseSensitive(pk_props, "eccCurve"));
+
+    cJSON *pk_req = cJSON_GetObjectItemCaseSensitive(pk_in, "required");
+    assert_non_null(pk_req);
+    assert_true(cJSON_IsArray(pk_req));
+    assert_int_equal(cJSON_GetArraySize(pk_req), 2);
+    cJSON_Delete(pk_in);
+
+    const gpshell3_cmd_def_t *upd_reg = gpshell3_registry_find_by_name("update-registry");
+    assert_non_null(upd_reg);
+
+    cJSON *ur_in = upd_reg->get_input_schema();
+    assert_non_null(ur_in);
+    cJSON *ur_props = cJSON_GetObjectItemCaseSensitive(ur_in, "properties");
+    assert_non_null(ur_props);
+
+    assert_non_null(cJSON_GetObjectItemCaseSensitive(ur_props, "aid"));
+    assert_non_null(cJSON_GetObjectItemCaseSensitive(ur_props, "sdAid"));
+    assert_non_null(cJSON_GetObjectItemCaseSensitive(ur_props, "privileges"));
+    assert_non_null(cJSON_GetObjectItemCaseSensitive(ur_props, "token"));
+
+    cJSON_Delete(ur_in);
+}
+
 int main(void) {
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_registry_count_and_enumeration),
@@ -313,6 +369,7 @@ int main(void) {
         cmocka_unit_test(test_command_execution_json_error),
         cmocka_unit_test(test_command_execution_hash_success),
         cmocka_unit_test(test_card_commands_require_session),
+        cmocka_unit_test(test_put_key_and_update_registry_input_schemas),
     };
     return cmocka_run_group_tests(tests, NULL, NULL);
 }

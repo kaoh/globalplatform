@@ -49,6 +49,7 @@
 #include "gpshell3_session.h"
 #include "gpshell3_registry.h"
 #include "gpshell3_output.h"
+#include "gpshell3_commands.h"
 
 #define MAX_READERS_BUF 4096
 #define MAX_PATH_BUF 4096
@@ -169,6 +170,7 @@ bool gpshell3_session_is_valid(const gpshell3_session_t *session, const char *se
 }
 
 int gpshell3_session_open(gpshell3_session_t *session, const gpshell3_session_params_t *params, gpshell3_output_ctx_t *out) {
+    gpshell3_clear_last_opgp_error();
     if (!session) {
         if (out) gpshell3_report_error(out, "INVALID_ARGUMENT", "Null session pointer");
         return -1;
@@ -185,7 +187,7 @@ int gpshell3_session_open(gpshell3_session_t *session, const gpshell3_session_pa
 
     int rc = gpshell3_connect_pcsc(session, reader_opt, proto_opt, params ? params->trace : 0, params ? params->verbose : 0);
     if (rc != 0) {
-        if (out) gpshell3_report_error(out, "NO_READERS", "Failed to connect to card reader");
+        if (out) gpshell3_propagate_last_opgp_error(out, "NO_READERS", "Failed to connect to card reader");
         return -1;
     }
 
@@ -193,7 +195,7 @@ int gpshell3_session_open(gpshell3_session_t *session, const gpshell3_session_pa
     const char *sd_opt = (params && params->sd[0] != '\0') ? params->sd : NULL;
     rc = gpshell3_select_isd(session, sd_opt);
     if (rc != 0) {
-        if (out) gpshell3_report_error(out, "SELECT_ISD_FAILED", "Failed to select Issuer Security Domain");
+        if (out) gpshell3_propagate_last_opgp_error(out, "SELECT_ISD_FAILED", "Failed to select Issuer Security Domain");
         gpshell3_session_close(session);
         return -1;
     }
@@ -252,7 +254,7 @@ int gpshell3_session_open(gpshell3_session_t *session, const gpshell3_session_pa
         OPENSSL_cleanse(dekKey, sizeof(dekKey));
 
         if (rc != 0) {
-            if (out) gpshell3_report_error(out, "MUTUAL_AUTH_FAILED", "Mutual authentication failed");
+            if (out) gpshell3_propagate_last_opgp_error(out, "MUTUAL_AUTH_FAILED", "Mutual authentication failed");
             gpshell3_session_close(session);
             return -1;
         }
@@ -354,29 +356,29 @@ int gpshell3_session_open_json(gpshell3_session_t *session, const cJSON *args, g
 
 cJSON *gpshell3_cmd_open_session_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
-    gpshell3_schema_add_prop_string(s, "reader", "Smart card reader name or index (e.g. 'ACS ACR122U 0' or '1')", false);
+    gpshell3_schema_add_prop_string(s, "reader", "Optional. Smart card reader name or 0-based index (e.g. 'Identiv uTrust 3700 F CL Reader 0' or '0'). Omit to automatically detect a connected card reader.", false);
     const char *protocols[] = {"auto", "t0", "t1"};
-    gpshell3_schema_add_prop_enum(s, "protocol", "Card communication protocol", protocols, 3, false);
-    gpshell3_schema_add_prop_string(s, "sd", "Target Issuer Security Domain AID in hex", false);
+    gpshell3_schema_add_prop_enum(s, "protocol", "Optional. Card communication protocol ('auto', 't0', 't1'). Defaults to 'auto'. Omit unless a specific protocol is required.", protocols, 3, false);
+    gpshell3_schema_add_prop_string(s, "sd", "Optional. Target Issuer Security Domain (ISD) or Security Domain AID in hex. Omit to select the default ISD.", false);
 
     cJSON *auth_schema = gpshell3_schema_object();
     const char *modes[] = {"none", "secure_channel"};
-    gpshell3_schema_add_prop_enum(auth_schema, "mode", "Authentication mode ('none' or 'secure_channel')", modes, 2, false);
-    gpshell3_schema_add_prop_int(auth_schema, "keySetVersion", "Key Set Version (e.g. 1)", false);
-    gpshell3_schema_add_prop_int(auth_schema, "keyIndex", "Key Index (e.g. 0)", false);
+    gpshell3_schema_add_prop_enum(auth_schema, "mode", "Optional. Authentication mode ('none' or 'secure_channel'). Defaults to 'none' if omitted, or 'secure_channel' when keys are provided.", modes, 2, false);
+    gpshell3_schema_add_prop_int(auth_schema, "keySetVersion", "Optional. Key Set Version (KVN, e.g. 1). Omit to automatically query the card's active key set version.", false);
+    gpshell3_schema_add_prop_int(auth_schema, "keyIndex", "Optional. Key Index (e.g. 0). Defaults to 0 if omitted.", false);
     const char *key_types[] = {"aes", "3des"};
-    gpshell3_schema_add_prop_enum(auth_schema, "keyType", "Key algorithm type", key_types, 2, false);
-    gpshell3_schema_add_prop_string(auth_schema, "key", "Base key hex string for mutual authentication", false);
-    gpshell3_schema_add_prop_string(auth_schema, "enc", "Static S-ENC key hex string", false);
-    gpshell3_schema_add_prop_string(auth_schema, "mac", "Static S-MAC key hex string", false);
-    gpshell3_schema_add_prop_string(auth_schema, "dek", "Static DEK key hex string", false);
+    gpshell3_schema_add_prop_enum(auth_schema, "keyType", "Optional. Key algorithm type ('aes', '3des'). Omit to auto-detect based on the card's SCP protocol.", key_types, 2, false);
+    gpshell3_schema_add_prop_string(auth_schema, "key", "Optional. Master/Base static key hex string (16 or 32 hex bytes) for mutual authentication. Omit for unauthenticated read-only card access.", false);
+    gpshell3_schema_add_prop_string(auth_schema, "enc", "Optional. Explicit static S-ENC key hex string. Omit unless static encryption key differs from master key.", false);
+    gpshell3_schema_add_prop_string(auth_schema, "mac", "Optional. Explicit static S-MAC key hex string. Omit unless static MAC key differs from master key.", false);
+    gpshell3_schema_add_prop_string(auth_schema, "dek", "Optional. Explicit static DEK key hex string for sensitive key encryption. Omit unless static DEK differs from master key.", false);
     const char *derivs[] = {"none", "emv", "visa2"};
-    gpshell3_schema_add_prop_enum(auth_schema, "derivation", "Key derivation algorithm", derivs, 3, false);
+    gpshell3_schema_add_prop_enum(auth_schema, "derivation", "Optional. Key derivation algorithm ('none', 'emv', 'visa2'). Defaults to 'none' unless using legacy derived key cards.", derivs, 3, false);
     const char *sec_levels[] = {"none", "mac", "mac+enc", "mac+rmac", "mac+enc+rmac"};
-    gpshell3_schema_add_prop_enum(auth_schema, "securityLevel", "Secure channel communication level", sec_levels, 5, false);
+    gpshell3_schema_add_prop_enum(auth_schema, "securityLevel", "Optional. Secure channel communication security level ('none', 'mac', 'mac+enc', 'mac+rmac', 'mac+enc+rmac'). Defaults to 'mac' if omitted.", sec_levels, 5, false);
     const char *scps[] = {"scp01", "scp02", "scp03", "scp11"};
-    gpshell3_schema_add_prop_enum(auth_schema, "scp", "Secure Channel Protocol version", scps, 4, false);
-    gpshell3_schema_add_prop_int(auth_schema, "scpImpl", "SCP implementation mode option bits", false);
+    gpshell3_schema_add_prop_enum(auth_schema, "scp", "Optional. Secure Channel Protocol ('scp01', 'scp02', 'scp03', 'scp11'). Omit to automatically detect and negotiate the card's supported SCP version.", scps, 4, false);
+    gpshell3_schema_add_prop_int(auth_schema, "scpImpl", "Optional. SCP implementation mode option bits (e.g. 0x70 for SCP03 i=0x70). Omit to auto-negotiate with the card.", false);
 
     cJSON *props = cJSON_GetObjectItemCaseSensitive(s, "properties");
     if (props) {
@@ -402,7 +404,7 @@ int gpshell3_cmd_open_session_cmd(gpshell3_session_t *session, cJSON *args, gpsh
 
 cJSON *gpshell3_cmd_close_session_input_schema(void) {
     cJSON *s = gpshell3_schema_object();
-    gpshell3_schema_add_prop_string(s, "sessionId", "Opaque session identifier token to close", false);
+    gpshell3_schema_add_prop_string(s, "sessionId", "Optional. Opaque 64-character session identifier token to close. Omit to close the active session.", false);
     return s;
 }
 

@@ -42,6 +42,7 @@
 #include "gpshell3_registry.h"
 #include "gpshell3_session.h"
 #include "gpshell3_output.h"
+#include "gpshell3_commands.h"
 
 #define JSONRPC_PARSE_ERROR -32700
 #define JSONRPC_INVALID_REQUEST -32600
@@ -133,6 +134,7 @@ static void handle_initialize(gpshell3_mcp_server_t *server, const cJSON *id, co
     cJSON *srv_info = cJSON_CreateObject();
     cJSON_AddStringToObject(srv_info, "name", GPSHELL3_MCP_SERVER_NAME);
     cJSON_AddStringToObject(srv_info, "version", GPSHELL3_MCP_SERVER_VERSION);
+    cJSON_AddStringToObject(srv_info, "description", "GlobalPlatform smart card shell & management tool for Java Card / GlobalPlatform applet lifecycle, security domains, keys, card queries, and APDU communication.");
     cJSON_AddItemToObject(result, "serverInfo", srv_info);
 
     cJSON_AddItemToObject(resp, "result", result);
@@ -168,7 +170,7 @@ static void handle_tools_list(gpshell3_mcp_server_t *server, const cJSON *id) {
     /* 1. gpshell3_open_session */
     cJSON *tool_open = cJSON_CreateObject();
     cJSON_AddStringToObject(tool_open, "name", "gpshell3_open_session");
-    cJSON_AddStringToObject(tool_open, "description", "Establish PC/SC connection, select ISD, and optionally perform mutual authentication to start a safe card session.");
+    cJSON_AddStringToObject(tool_open, "description", "Use this when the user asks to connect to a smart card reader and optionally authenticate a session. When called with empty arguments ({}), establishes an unauthenticated session (protocol and SCP parameters are auto-detected). To authenticate, keys must be explicitly provided in the 'authentication' argument. Returns session ID, connected reader name, and selected ISD AID.");
     cJSON_AddItemToObject(tool_open, "inputSchema", gpshell3_cmd_open_session_input_schema());
     cJSON *ann_open = cJSON_CreateObject();
     cJSON_AddBoolToObject(ann_open, "destructive", false);
@@ -179,7 +181,7 @@ static void handle_tools_list(gpshell3_mcp_server_t *server, const cJSON *id) {
     /* 2. gpshell3_close_session */
     cJSON *tool_close = cJSON_CreateObject();
     cJSON_AddStringToObject(tool_close, "name", "gpshell3_close_session");
-    cJSON_AddStringToObject(tool_close, "description", "Disconnect smart card, zeroize all cryptographic key material from memory, and release PC/SC context.");
+    cJSON_AddStringToObject(tool_close, "description", "Use this when the user asks to close, disconnect, or terminate an active smart card session. Releases PC/SC reader resources and securely zeroizes all cryptographic keys and session state from memory. Returns session closure status.");
     cJSON_AddItemToObject(tool_close, "inputSchema", gpshell3_cmd_close_session_input_schema());
     cJSON *ann_close = cJSON_CreateObject();
     cJSON_AddBoolToObject(ann_close, "destructive", false);
@@ -218,6 +220,7 @@ static void handle_tools_list(gpshell3_mcp_server_t *server, const cJSON *id) {
 }
 
 static void handle_tools_call(gpshell3_mcp_server_t *server, const cJSON *id, const cJSON *params) {
+    gpshell3_clear_last_opgp_error();
     if (!params || !cJSON_IsObject(params)) {
         send_jsonrpc_error(server, id, JSONRPC_INVALID_PARAMS, "Missing params for tools/call");
         return;
@@ -235,6 +238,7 @@ static void handle_tools_call(gpshell3_mcp_server_t *server, const cJSON *id, co
     FILE *stream_out = tmpfile();
     FILE *stream_err = tmpfile();
     gpshell3_output_init_stream(&out_ctx, OUTPUT_FORMAT_JSON, stream_out, stream_err);
+    gpshell3_output_set_command(&out_ctx, tool_name);
 
     int exec_rc = 0;
 
@@ -282,19 +286,23 @@ static void handle_tools_call(gpshell3_mcp_server_t *server, const cJSON *id, co
     cJSON *content_arr = cJSON_CreateArray();
 
     if (exec_rc != 0 || out_ctx.has_error) {
-        cJSON_AddBoolToObject(result, "isError", true);
-        const char *err_msg = "Command failed";
-        if (out_ctx.json_error) {
-            const char *m = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(out_ctx.json_error, "message"));
-            if (m) err_msg = m;
+        if (!out_ctx.has_error) {
+            gpshell3_propagate_last_opgp_error(&out_ctx, "COMMAND_FAILED", NULL);
         }
+        cJSON_AddBoolToObject(result, "isError", true);
+        char *err_str = gpshell3_output_render_string(&out_ctx, false);
         cJSON *text_node = cJSON_CreateObject();
         cJSON_AddStringToObject(text_node, "type", "text");
-        cJSON_AddStringToObject(text_node, "text", err_msg);
+        cJSON_AddStringToObject(text_node, "text", err_str ? err_str : "{\"ok\":false,\"error\":{\"code\":\"COMMAND_FAILED\",\"message\":\"Command failed\"}}");
         cJSON_AddItemToArray(content_arr, text_node);
+        if (err_str) free(err_str);
 
         if (out_ctx.json_error) {
             cJSON_AddItemToObject(result, "error", cJSON_Duplicate(out_ctx.json_error, true));
+            cJSON *structured_error = gpshell3_output_get_root(&out_ctx);
+            if (structured_error) {
+                cJSON_AddItemToObject(result, "structuredContent", cJSON_Duplicate(structured_error, true));
+            }
         }
     } else {
         cJSON_AddBoolToObject(result, "isError", false);

@@ -116,6 +116,28 @@ void gpshell3_output_cleanup(gpshell3_output_ctx_t *ctx);
 bool gpshell3_output_has_error(const gpshell3_output_ctx_t *ctx);
 
 /**
+ * Extract 16-bit ISO 7816 Status Word from an error code if present.
+ * \param errorCode 32-bit error code.
+ * \param sw_out Output pointer to receive 16-bit status word.
+ * \return true if a status word was extracted, false otherwise.
+ */
+bool gpshell3_extract_status_word(DWORD errorCode, unsigned short *sw_out);
+
+/**
+ * Map a 16-bit Status Word to a semantic error code identifier.
+ * \param sw 16-bit status word.
+ * \return Semantic error code string or NULL if unknown.
+ */
+const char *gpshell3_sw_to_error_code(unsigned short sw);
+
+/**
+ * Map a 16-bit Status Word to a descriptive explanation.
+ * \param sw 16-bit status word.
+ * \return Descriptive explanation string or NULL if unknown.
+ */
+const char *gpshell3_sw_to_message(unsigned short sw);
+
+/**
  * Report a generic error with an error code and formatted message.
  * In text mode, outputs formatted error to err_stream.
  * In JSON mode, constructs standardized error envelope.
@@ -125,6 +147,16 @@ bool gpshell3_output_has_error(const gpshell3_output_ctx_t *ctx);
  */
 void gpshell3_report_error(gpshell3_output_ctx_t *ctx, const char *code, const char *fmt, ...);
 void gpshell3_report_error_va(gpshell3_output_ctx_t *ctx, const char *code, const char *fmt, va_list args);
+
+/**
+ * Report an error with an explicit ISO 7816-4 / GP Status Word.
+ * \param ctx Output context.
+ * \param code High-level error code (or NULL to auto-derive from SW).
+ * \param sw 16-bit ISO 7816 status word (e.g. 0x6982).
+ * \param fmt Context message format string.
+ */
+void gpshell3_report_error_with_sw(gpshell3_output_ctx_t *ctx, const char *code, unsigned short sw, const char *fmt, ...);
+void gpshell3_report_error_with_sw_va(gpshell3_output_ctx_t *ctx, const char *code, unsigned short sw, const char *fmt, va_list args);
 
 /**
  * Report a GlobalPlatform library error with status and optional context message.
@@ -300,6 +332,13 @@ cJSON *gpshell3_json_create_hex_string(const unsigned char *bytes, size_t len);
  * \return cJSON array node or NULL.
  */
 cJSON *gpshell3_json_create_string_array(const char *const *strings, size_t count);
+
+/**
+ * Serialize an OPGP_CPLC structure into 42-byte big-endian wire format matching ISO/GP CPLC APDU payload.
+ * \param cplc Parsed CPLC structure.
+ * \param out_bytes Destination buffer of at least 42 bytes.
+ */
+void gpshell3_cplc_to_wire_bytes(const OPGP_CPLC *cplc, unsigned char out_bytes[42]);
 
 #ifdef __cplusplus
 }

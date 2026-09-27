@@ -217,6 +217,70 @@ static void test_session_close_cmd_execution(void **state) {
     fclose(err_stream);
 }
 
+static void test_session_reader_name_preservation(void **state) {
+    (void)state;
+    gpshell3_session_t session;
+    gpshell3_session_init(&session);
+    strncpy(session.connected_reader, "Identiv uTrust 3700 F CL Reader 0", sizeof(session.connected_reader) - 1);
+    session.is_connected = true;
+    snprintf(session.session_id, sizeof(session.session_id), "test_session_12345");
+
+    gpshell3_output_ctx_t out;
+    gpshell3_output_init(&out, OUTPUT_FORMAT_JSON);
+    gpshell3_output_set_command(&out, "gpshell3_open_session");
+    gpshell3_output_add_string(&out, "sessionId", session.session_id);
+    gpshell3_output_add_string(&out, "reader", session.connected_reader);
+    gpshell3_output_add_hex(&out, "selectedIsd", session.selected_isd, session.selected_isd_len);
+    gpshell3_output_add_bool(&out, "authenticated", session.is_authenticated);
+
+    char *json_str = gpshell3_output_render_string(&out, false);
+    assert_non_null(json_str);
+    cJSON *parsed = cJSON_Parse(json_str);
+    assert_non_null(parsed);
+
+    cJSON *res = cJSON_GetObjectItemCaseSensitive(parsed, "result");
+    assert_non_null(res);
+    cJSON *r = cJSON_GetObjectItemCaseSensitive(res, "reader");
+    assert_non_null(r);
+    assert_string_equal(r->valuestring, "Identiv uTrust 3700 F CL Reader 0");
+
+    free(json_str);
+    cJSON_Delete(parsed);
+    gpshell3_output_cleanup(&out);
+}
+
+static void test_session_auto_detected_reader_name(void **state) {
+    (void)state;
+    gpshell3_session_t session;
+    gpshell3_session_init(&session);
+    strncpy(session.connected_reader, "Broadcom Corp 58200 [Contacted SmartCard] (0123456789ABCD) 00 00", sizeof(session.connected_reader) - 1);
+    session.is_connected = true;
+    snprintf(session.session_id, sizeof(session.session_id), "d64e25f0d1a1953333b75eb1a6d14c6eacf1774ee36682dfb7814573f5ed0b25");
+
+    gpshell3_output_ctx_t out;
+    gpshell3_output_init(&out, OUTPUT_FORMAT_JSON);
+    gpshell3_output_set_command(&out, "gpshell3_open_session");
+    gpshell3_output_add_string(&out, "sessionId", session.session_id);
+    gpshell3_output_add_string(&out, "reader", session.connected_reader);
+    gpshell3_output_add_hex(&out, "selectedIsd", session.selected_isd, session.selected_isd_len);
+    gpshell3_output_add_bool(&out, "authenticated", session.is_authenticated);
+
+    char *json_str = gpshell3_output_render_string(&out, false);
+    assert_non_null(json_str);
+    cJSON *parsed = cJSON_Parse(json_str);
+    assert_non_null(parsed);
+
+    cJSON *res = cJSON_GetObjectItemCaseSensitive(parsed, "result");
+    assert_non_null(res);
+    cJSON *r = cJSON_GetObjectItemCaseSensitive(res, "reader");
+    assert_non_null(r);
+    assert_string_equal(r->valuestring, "Broadcom Corp 58200 [Contacted SmartCard] (0123456789ABCD) 00 00");
+
+    free(json_str);
+    cJSON_Delete(parsed);
+    gpshell3_output_cleanup(&out);
+}
+
 int main(void) {
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_session_init_and_defaults),
@@ -225,6 +289,8 @@ int main(void) {
         cmocka_unit_test(test_session_open_missing_auth_keys),
         cmocka_unit_test(test_session_mcp_tool_schemas),
         cmocka_unit_test(test_session_close_cmd_execution),
+        cmocka_unit_test(test_session_reader_name_preservation),
+        cmocka_unit_test(test_session_auto_detected_reader_name),
     };
     return cmocka_run_group_tests(tests, NULL, NULL);
 }

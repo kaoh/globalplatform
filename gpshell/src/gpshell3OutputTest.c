@@ -35,7 +35,9 @@
 #include <cmocka.h>
 
 #include "cJSON.h"
+#include <globalplatform/globalplatform.h>
 #include "gpshell3_output.h"
+#include "gpshell3_commands.h"
 
 static void test_cjson_basic(void **state) {
     (void)state;
@@ -245,6 +247,7 @@ static void test_output_json_mode_generic_error(void **state) {
     assert_string_equal(cJSON_GetObjectItem(err_item, "code")->valuestring, "AID_NOT_FOUND");
     assert_string_equal(cJSON_GetObjectItem(err_item, "message")->valuestring, "Application A000000001 not found on card");
     assert_string_equal(cJSON_GetObjectItem(err_item, "command")->valuestring, "gpshell3_delete");
+    assert_string_equal(cJSON_GetObjectItem(err_item, "operation")->valuestring, "gpshell3_delete");
 
     free(json_str);
     cJSON_Delete(parsed);
@@ -277,8 +280,103 @@ static void test_output_json_mode_opgp_error(void **state) {
     assert_string_equal(cJSON_GetObjectItem(err_item, "code")->valuestring, "CARD_COMMUNICATION_ERROR");
     assert_string_equal(cJSON_GetObjectItem(err_item, "opgpErrorCode")->valuestring, "0x8010006E");
     assert_string_equal(cJSON_GetObjectItem(err_item, "command")->valuestring, "gpshell3_list_keys");
+    assert_string_equal(cJSON_GetObjectItem(err_item, "operation")->valuestring, "gpshell3_list_keys");
     assert_non_null(strstr(cJSON_GetObjectItem(err_item, "message")->valuestring, "Failed to connect to reader"));
     assert_non_null(strstr(cJSON_GetObjectItem(err_item, "message")->valuestring, "Card not present in selected reader."));
+
+    free(json_str);
+    cJSON_Delete(parsed);
+    gpshell3_output_cleanup(&ctx);
+}
+
+static void test_output_status_word_extraction(void **state) {
+    (void)state;
+    unsigned short sw = 0;
+
+    assert_true(gpshell3_extract_status_word(0x80206982, &sw));
+    assert_int_equal(sw, 0x6982);
+
+    assert_true(gpshell3_extract_status_word(0x80216A81, &sw));
+    assert_int_equal(sw, 0x6A81);
+
+    assert_true(gpshell3_extract_status_word(0x80206A82, &sw));
+    assert_int_equal(sw, 0x6A82);
+
+    assert_true(gpshell3_extract_status_word(0x6985, &sw));
+    assert_int_equal(sw, 0x6985);
+
+    assert_true(gpshell3_extract_status_word(0x9000, &sw));
+    assert_int_equal(sw, 0x9000);
+
+    assert_false(gpshell3_extract_status_word(0x8010006E, &sw));
+    assert_false(gpshell3_extract_status_word(0x80301000, &sw));
+
+    assert_string_equal(gpshell3_sw_to_error_code(0x6982), "AUTHENTICATION_REQUIRED");
+    assert_string_equal(gpshell3_sw_to_error_code(0x6A81), "APPLET_NOT_SELECTABLE");
+    assert_string_equal(gpshell3_sw_to_error_code(0x6A82), "NOT_FOUND");
+    assert_string_equal(gpshell3_sw_to_error_code(0x6985), "CONDITIONS_NOT_SATISFIED");
+    assert_string_equal(gpshell3_sw_to_error_code(0x6A88), "DATA_NOT_FOUND");
+    assert_null(gpshell3_sw_to_error_code(0x1234));
+}
+
+static void test_output_json_mode_sw_error_mapping(void **state) {
+    (void)state;
+    gpshell3_output_ctx_t ctx;
+    gpshell3_output_init(&ctx, OUTPUT_FORMAT_JSON);
+    gpshell3_output_set_command(&ctx, "gpshell3_list_apps");
+
+    OPGP_ERROR_STATUS status;
+    OPGP_ERROR_CREATE_ERROR(status, 0x80206982, _T("Security status not satisfied"));
+    gpshell3_report_opgp_error(&ctx, NULL, status, NULL);
+    assert_true(gpshell3_output_has_error(&ctx));
+
+    char *json_str = gpshell3_output_render_string(&ctx, false);
+    assert_non_null(json_str);
+
+    cJSON *parsed = cJSON_Parse(json_str);
+    assert_non_null(parsed);
+
+    cJSON *ok_item = cJSON_GetObjectItem(parsed, "ok");
+    assert_non_null(ok_item);
+    assert_true(cJSON_IsFalse(ok_item));
+
+    cJSON *err_item = cJSON_GetObjectItem(parsed, "error");
+    assert_non_null(err_item);
+    assert_string_equal(cJSON_GetObjectItem(err_item, "code")->valuestring, "AUTHENTICATION_REQUIRED");
+    assert_string_equal(cJSON_GetObjectItem(err_item, "statusWord")->valuestring, "6982");
+    assert_string_equal(cJSON_GetObjectItem(err_item, "opgpErrorCode")->valuestring, "0x80206982");
+    assert_string_equal(cJSON_GetObjectItem(err_item, "operation")->valuestring, "gpshell3_list_apps");
+    assert_string_equal(cJSON_GetObjectItem(err_item, "command")->valuestring, "gpshell3_list_apps");
+    assert_non_null(strstr(cJSON_GetObjectItem(err_item, "message")->valuestring, "The card requires an authenticated session."));
+
+    free(json_str);
+    cJSON_Delete(parsed);
+    gpshell3_output_cleanup(&ctx);
+}
+
+static void test_output_report_error_with_sw(void **state) {
+    (void)state;
+    gpshell3_output_ctx_t ctx;
+    gpshell3_output_init(&ctx, OUTPUT_FORMAT_JSON);
+    gpshell3_output_set_command(&ctx, "gpshell3_apdu");
+
+    gpshell3_report_error_with_sw(&ctx, NULL, 0x6A82, "Select applet failed");
+    assert_true(gpshell3_output_has_error(&ctx));
+
+    char *json_str = gpshell3_output_render_string(&ctx, false);
+    assert_non_null(json_str);
+
+    cJSON *parsed = cJSON_Parse(json_str);
+    assert_non_null(parsed);
+
+    cJSON *err_item = cJSON_GetObjectItem(parsed, "error");
+    assert_non_null(err_item);
+    assert_string_equal(cJSON_GetObjectItem(err_item, "code")->valuestring, "NOT_FOUND");
+    assert_string_equal(cJSON_GetObjectItem(err_item, "statusWord")->valuestring, "6A82");
+    assert_string_equal(cJSON_GetObjectItem(err_item, "opgpErrorCode")->valuestring, "0x80206A82");
+    assert_string_equal(cJSON_GetObjectItem(err_item, "operation")->valuestring, "gpshell3_apdu");
+    assert_string_equal(cJSON_GetObjectItem(err_item, "command")->valuestring, "gpshell3_apdu");
+    assert_non_null(strstr(cJSON_GetObjectItem(err_item, "message")->valuestring, "Select applet failed"));
 
     free(json_str);
     cJSON_Delete(parsed);
@@ -327,6 +425,132 @@ static void test_output_helpers_and_edge_cases(void **state) {
     gpshell3_output_cleanup(&ctx);
 }
 
+static void test_output_apdu_structured_response(void **state) {
+    (void)state;
+    gpshell3_output_ctx_t ctx;
+    gpshell3_output_init(&ctx, OUTPUT_FORMAT_JSON);
+    gpshell3_output_set_command(&ctx, "gpshell3_apdu");
+
+    const char *resp_hex = "6F108408A000000151000000A5049F6501FF9000";
+    const char *data_hex = "6F108408A000000151000000A5049F6501FF";
+    const char *sw_hex = "9000";
+
+    gpshell3_output_add_string(&ctx, "response", resp_hex);
+    gpshell3_output_add_string(&ctx, "statusWord", sw_hex);
+    gpshell3_output_add_string(&ctx, "data", data_hex);
+
+    char *rendered = gpshell3_output_render_string(&ctx, false);
+    assert_non_null(rendered);
+
+    cJSON *root = cJSON_Parse(rendered);
+    assert_non_null(root);
+    assert_true(cJSON_IsTrue(cJSON_GetObjectItem(root, "ok")));
+
+    cJSON *res = cJSON_GetObjectItem(root, "result");
+    assert_non_null(res);
+    assert_string_equal(cJSON_GetObjectItem(res, "response")->valuestring, resp_hex);
+    assert_string_equal(cJSON_GetObjectItem(res, "statusWord")->valuestring, sw_hex);
+    assert_string_equal(cJSON_GetObjectItem(res, "data")->valuestring, data_hex);
+
+    free(rendered);
+    cJSON_Delete(root);
+    gpshell3_output_cleanup(&ctx);
+}
+
+static void test_output_list_keys_structured_response(void **state) {
+    (void)state;
+    gpshell3_output_ctx_t ctx;
+    gpshell3_output_init(&ctx, OUTPUT_FORMAT_JSON);
+    gpshell3_output_set_command(&ctx, "gpshell3_list_keys");
+
+    cJSON *keys_arr = cJSON_CreateArray();
+    cJSON *key1 = cJSON_CreateObject();
+    cJSON_AddNumberToObject(key1, "keySetVersion", 1);
+    cJSON_AddNumberToObject(key1, "keyIndex", 1);
+    cJSON_AddStringToObject(key1, "keyType", "AES");
+    cJSON_AddNumberToObject(key1, "keyLength", 16);
+    cJSON_AddStringToObject(key1, "keyUsage", "SENSITIVE");
+    cJSON_AddStringToObject(key1, "keyAccess", "SECURITY_DOMAIN");
+    cJSON_AddItemToArray(keys_arr, key1);
+
+    gpshell3_output_add_array(&ctx, "keys", keys_arr);
+
+    char *rendered = gpshell3_output_render_string(&ctx, false);
+    assert_non_null(rendered);
+
+    cJSON *root = cJSON_Parse(rendered);
+    assert_non_null(root);
+    assert_true(cJSON_IsTrue(cJSON_GetObjectItem(root, "ok")));
+
+    cJSON *res = cJSON_GetObjectItem(root, "result");
+    assert_non_null(res);
+    cJSON *keys = cJSON_GetObjectItem(res, "keys");
+    assert_non_null(keys);
+    assert_true(cJSON_IsArray(keys));
+    assert_int_equal(cJSON_GetArraySize(keys), 1);
+
+    cJSON *item = cJSON_GetArrayItem(keys, 0);
+    assert_int_equal((int)cJSON_GetObjectItem(item, "keySetVersion")->valuedouble, 1);
+    assert_int_equal((int)cJSON_GetObjectItem(item, "keyIndex")->valuedouble, 1);
+    assert_string_equal(cJSON_GetObjectItem(item, "keyType")->valuestring, "AES");
+    assert_int_equal((int)cJSON_GetObjectItem(item, "keyLength")->valuedouble, 16);
+
+    free(rendered);
+    cJSON_Delete(root);
+    gpshell3_output_cleanup(&ctx);
+}
+
+static void test_output_cplc_wire_format(void **state) {
+    (void)state;
+    OPGP_CPLC cplc;
+    memset(&cplc, 0, sizeof(cplc));
+    cplc.icFabricator = 0x4790;
+    cplc.icType = 0xD600;
+    cplc.operatingSystemId = 0x4700;
+    cplc.operatingSystemReleaseDate = 0x0000;
+    cplc.operatingSystemReleaseLevel = 0x0000;
+    cplc.icFabricationDate = 0x3244;
+    cplc.icSerialNumberHigh = 0x3429;
+    cplc.icSerialNumberLow = 0x5420;
+    cplc.icBatchIdentifier = 0x8448;
+    cplc.icModuleFabricator = 0x0000;
+    cplc.icModulePackagingDate = 0x0000;
+    cplc.iccManufacturer = 0x0000;
+    cplc.icEmbeddingDate = 0x0000;
+    cplc.icPrePersonalizer = 0x1525;
+    cplc.icPrePersonalizationEquipmentDate = 0x8234;
+    cplc.icPrePersonalizationEquipmentId = 0x32393534;
+    cplc.icPersonalizer = 0x0000;
+    cplc.icPersonalizationDate = 0x0000;
+    cplc.icPersonalizationEquipmentId = 0x00000000;
+
+    BYTE wire[42] = {0};
+    gpshell3_cplc_to_wire_bytes(&cplc, wire);
+
+    /* Verify big-endian wire bytes */
+    assert_int_equal(wire[0], 0x47);
+    assert_int_equal(wire[1], 0x90);
+    assert_int_equal(wire[2], 0xD6);
+    assert_int_equal(wire[3], 0x00);
+    assert_int_equal(wire[4], 0x47);
+    assert_int_equal(wire[5], 0x00);
+
+    /* Roundtrip through OPGP_parse_cplc */
+    OPGP_CPLC parsed;
+    OPGP_ERROR_STATUS status = OPGP_parse_cplc(wire, sizeof(wire), &parsed);
+    assert_int_equal(status.errorStatus, OPGP_ERROR_STATUS_SUCCESS);
+    assert_int_equal(parsed.icFabricator, 0x4790);
+    assert_int_equal(parsed.icType, 0xD600);
+    assert_int_equal(parsed.operatingSystemId, 0x4700);
+    assert_int_equal(parsed.icFabricationDate, 0x3244);
+    assert_int_equal(parsed.icSerialNumberHigh, 0x3429);
+    assert_int_equal(parsed.icSerialNumberLow, 0x5420);
+    assert_int_equal(parsed.icBatchIdentifier, 0x8448);
+    assert_int_equal(parsed.icPrePersonalizer, 0x1525);
+    assert_int_equal(parsed.icPrePersonalizationEquipmentDate, 0x8234);
+    assert_int_equal(parsed.icPrePersonalizationEquipmentId, 0x32393534);
+}
+
 int main(void) {
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_cjson_basic),
@@ -335,7 +559,13 @@ int main(void) {
         cmocka_unit_test(test_output_json_mode_success_envelope),
         cmocka_unit_test(test_output_json_mode_generic_error),
         cmocka_unit_test(test_output_json_mode_opgp_error),
+        cmocka_unit_test(test_output_status_word_extraction),
+        cmocka_unit_test(test_output_json_mode_sw_error_mapping),
+        cmocka_unit_test(test_output_report_error_with_sw),
         cmocka_unit_test(test_output_helpers_and_edge_cases),
+        cmocka_unit_test(test_output_apdu_structured_response),
+        cmocka_unit_test(test_output_list_keys_structured_response),
+        cmocka_unit_test(test_output_cplc_wire_format),
     };
     return cmocka_run_group_tests_name("gpshell3_output", tests, NULL, NULL);
 }
