@@ -150,6 +150,40 @@ static void test_session_open_missing_auth_keys(void **state) {
     fclose(err_stream);
 }
 
+static void test_session_open_auth_key_auto_mode(void **state) {
+    (void)state;
+    gpshell3_session_t session;
+    gpshell3_session_init(&session);
+
+    gpshell3_output_ctx_t out;
+    FILE *out_stream = tmpfile();
+    FILE *err_stream = tmpfile();
+    gpshell3_output_init_stream(&out, OUTPUT_FORMAT_JSON, out_stream, err_stream);
+
+    /* Open session with authentication.key without explicit mode -> should auto-enable secure_channel */
+    cJSON *args = cJSON_CreateObject();
+    cJSON *auth = cJSON_CreateObject();
+    cJSON_AddStringToObject(auth, "key", "404142434445464748494A4B4C4D4E4F");
+    cJSON_AddItemToObject(args, "authentication", auth);
+
+    int rc = gpshell3_session_open_json(&session, args, &out);
+    cJSON_Delete(args);
+
+    assert_int_equal(rc, -1);
+    assert_true(out.has_error);
+    assert_non_null(out.json_error);
+
+    cJSON *err_code = cJSON_GetObjectItemCaseSensitive(out.json_error, "code");
+    assert_non_null(err_code);
+    /* Expect connection attempt failure when no card/reader is connected, not AUTHENTICATION_ERROR */
+    assert_true(strcmp(err_code->valuestring, "NO_READERS") == 0 ||
+                strcmp(err_code->valuestring, "CONTEXT_FAILED") == 0);
+
+    gpshell3_output_cleanup(&out);
+    fclose(out_stream);
+    fclose(err_stream);
+}
+
 static void test_session_mcp_tool_schemas(void **state) {
     (void)state;
     /* Open session schemas */
@@ -287,6 +321,7 @@ int main(void) {
         cmocka_unit_test(test_session_id_validation),
         cmocka_unit_test(test_session_credential_zeroization),
         cmocka_unit_test(test_session_open_missing_auth_keys),
+        cmocka_unit_test(test_session_open_auth_key_auto_mode),
         cmocka_unit_test(test_session_mcp_tool_schemas),
         cmocka_unit_test(test_session_close_cmd_execution),
         cmocka_unit_test(test_session_reader_name_preservation),

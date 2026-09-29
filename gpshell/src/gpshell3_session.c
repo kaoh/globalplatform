@@ -307,6 +307,8 @@ int gpshell3_session_open_json(gpshell3_session_t *session, const cJSON *args, g
             const char *mode = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(auth, "mode"));
             if (mode && !strcmp(mode, "secure_channel")) {
                 params.auth_mode = GPSHELL3_AUTH_MODE_SECURE_CHANNEL;
+            } else if (mode && !strcmp(mode, "none")) {
+                params.auth_mode = GPSHELL3_AUTH_MODE_NONE;
             }
 
             cJSON *kv = cJSON_GetObjectItemCaseSensitive(auth, "keySetVersion");
@@ -344,6 +346,11 @@ int gpshell3_session_open_json(gpshell3_session_t *session, const cJSON *args, g
 
             cJSON *impl = cJSON_GetObjectItemCaseSensitive(auth, "scpImpl");
             if (impl && cJSON_IsNumber(impl)) snprintf(params.scp_impl, sizeof(params.scp_impl), "%d", (int)impl->valuedouble);
+
+            /* If mode was omitted (not explicitly specified) and key material is present, auto-enable secure_channel */
+            if (!mode && (params.key[0] || params.enc[0] || params.mac[0] || params.dek[0])) {
+                params.auth_mode = GPSHELL3_AUTH_MODE_SECURE_CHANNEL;
+            }
         }
     }
 
