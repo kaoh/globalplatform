@@ -131,6 +131,7 @@ static int from_opgp_string(const TCHAR *src, char *dst, size_t dst_len) {
 }
 static int status_ok(OPGP_ERROR_STATUS s, bool print_error) {
     if (s.errorStatus != OPGP_ERROR_STATUS_SUCCESS) {
+        gpshell3_set_last_opgp_error(s);
         if (print_error) {
             _ftprintf(stderr, _T("Error 0x%08X: %s\n"), (unsigned int)s.errorCode, s.errorMessage);
         }
@@ -6131,6 +6132,7 @@ static int cmd_inspect_card(const char *reader_opt, gpshell3_output_ctx_t *out) 
     if (out && out->mode == OUTPUT_FORMAT_JSON) {
         gpshell3_output_add_bool(out, "cardPresent", true);
         if (connected_reader_utf8[0]) gpshell3_output_add_string(out, "reader", connected_reader_utf8);
+        if (card_info.ATRLength > 0) gpshell3_output_add_hex(out, "atr", card_info.ATR, card_info.ATRLength);
         if (isd_hex[0]) gpshell3_output_add_string(out, "selectedIsd", isd_hex);
         gpshell3_output_add_bool(out, "requiresAuthentication", requires_auth);
         gpshell3_output_add_string(out, "applicationsStatus", requires_auth ? "AUTHENTICATION_REQUIRED" : "AVAILABLE");
@@ -6164,6 +6166,13 @@ static int cmd_inspect_card(const char *reader_opt, gpshell3_output_ctx_t *out) 
         gpshell3_output_add_array(out, "applications", apps_arr);
     } else {
         printf("Card present in reader : %s\n", connected_reader_utf8);
+        if (card_info.ATRLength > 0) {
+            char *atr_hex = gpshell3_bytes_to_hex(card_info.ATR, card_info.ATRLength);
+            if (atr_hex) {
+                printf("Card ATR               : %s\n", atr_hex);
+                free(atr_hex);
+            }
+        }
         if (isd_hex[0]) printf("Selected ISD AID       : %s\n", isd_hex);
         printf("Requires Authentication: %s\n", requires_auth ? "yes (SW 6982)" : "no");
         printf("Applications Status    : %s\n", requires_auth ? "AUTHENTICATION_REQUIRED" : "AVAILABLE");
@@ -6192,6 +6201,7 @@ cJSON *gpshell3_cmd_inspect_card_output_schema(void) {
     cJSON *s = gpshell3_schema_object();
     gpshell3_schema_add_prop_bool(s, "cardPresent", "Whether a card is present", true);
     gpshell3_schema_add_prop_string(s, "reader", "Connected reader name", false);
+    gpshell3_schema_add_prop_string(s, "atr", "Card Answer To Reset (ATR) in hex", false);
     gpshell3_schema_add_prop_string(s, "selectedIsd", "Selected ISD AID (hex)", false);
     gpshell3_schema_add_prop_bool(s, "requiresAuthentication", "Whether card requires authenticated session for further ops", false);
     gpshell3_schema_add_prop_string(s, "applicationsStatus", "Status of application list retrieval ('AVAILABLE', 'AUTHENTICATION_REQUIRED')", false);

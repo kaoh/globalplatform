@@ -260,7 +260,7 @@ static const gpshell3_cmd_def_t s_command_registry[] = {
 
     /* Card Query commands (13) */
     CMD_ENTRY("list-apps", "gpshell3_list_apps",
-              "Use this when the user asks to list, query, or inspect installed applications, Security Domains, Executable Load Files (packages), and executable modules on the connected card. Returns lists of Security Domains, applications, and load files with life cycle states and privileges. Requires an open card session; the card may require authentication.",
+              "Use this when the user asks to list, query, or inspect installed applications, Security Domains, Executable Load Files (packages), and executable modules on the connected card. Returns lists of Security Domains, applications, and load files with life cycle states and privileges. Requires an open card session; the card may require authentication. Sessions persist across commands by default; if status word 6982 (AUTHENTICATION_REQUIRED) occurs (e.g. after a package deletion or card security reset), re-authenticate via gpshell3_open_session.",
               true, false, list_apps),
 
     CMD_ENTRY("list-keys", "gpshell3_list_keys",
@@ -329,7 +329,7 @@ static const gpshell3_cmd_def_t s_command_registry[] = {
               true, true, scp11_store_ca_id),
 
     CMD_ENTRY("install", "gpshell3_install",
-              "Use this when the user asks to load and/or install a Java Card CAP file, create applet instances, or set application privileges and install parameters. Returns installation success status. Requires an open card session; the card may require authentication.",
+              "Use this when the user asks to load and/or install a Java Card CAP file, create applet instances, or set application privileges and install parameters. Returns installation success status. Requires an open card session; the card may require authentication. If a preceding lifecycle reset caused error 6982 (AUTHENTICATION_REQUIRED), re-authenticate with gpshell3_open_session first.",
               true, true, install),
 
     CMD_ENTRY("install-sd", "gpshell3_install_sd",
@@ -337,7 +337,7 @@ static const gpshell3_cmd_def_t s_command_registry[] = {
               true, true, install_sd),
 
     CMD_ENTRY("delete", "gpshell3_delete",
-              "Use this when the user asks to delete an application instance, Security Domain, or Executable Load File (package) from the smart card by AID. Returns deletion success status. Requires an open card session; the card may require authentication.",
+              "Use this when the user asks to delete an application instance, Security Domain, or Executable Load File (package) from the smart card by AID. Returns deletion success status. Requires an open card session; the card may require authentication. Note: Sessions normally persist across multiple commands, but deleting an Executable Load File (package) or default-selected applet may cause certain cards to reset their security state. If subsequent commands fail with status word 6982 (AUTHENTICATION_REQUIRED), re-authenticate by calling gpshell3_open_session.",
               true, true, delete),
 
     CMD_ENTRY("update-registry", "gpshell3_update_registry",
@@ -349,7 +349,7 @@ static const gpshell3_cmd_def_t s_command_registry[] = {
               true, true, move),
 
     CMD_ENTRY("put-key", "gpshell3_put_key",
-              "Use this when the user asks to add or replace cryptographic keys (symmetric AES/3DES or asymmetric RSA/ECC) in a Security Domain. Returns key update success status. Requires an open card session; the card may require authentication.",
+              "Use this when the user asks to add or replace cryptographic keys (symmetric AES/3DES or asymmetric RSA/ECC) in a Security Domain. Returns key update success status. Requires an open card session; the card may require authentication. If status word 6982 (AUTHENTICATION_REQUIRED) occurs, renew authentication via gpshell3_open_session.",
               true, true, put_key),
 
     CMD_ENTRY("put-auth", "gpshell3_put_auth",

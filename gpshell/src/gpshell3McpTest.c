@@ -171,6 +171,17 @@ static void test_mcp_tools_list(void **state) {
         cJSON *ann = cJSON_GetObjectItemCaseSensitive(tool, "annotations");
         assert_non_null(ann);
         assert_true(cJSON_IsObject(ann));
+
+        if (strcmp(name->valuestring, "gpshell3_open_session") == 0) {
+            assert_non_null(strstr(desc->valuestring, "re-authenticate"));
+            assert_non_null(strstr(desc->valuestring, "persists across multiple commands"));
+        } else if (strcmp(name->valuestring, "gpshell3_delete") == 0) {
+            assert_non_null(strstr(desc->valuestring, "AUTHENTICATION_REQUIRED"));
+            assert_non_null(strstr(desc->valuestring, "gpshell3_open_session"));
+        } else if (strcmp(name->valuestring, "gpshell3_list_apps") == 0) {
+            assert_non_null(strstr(desc->valuestring, "6982"));
+            assert_non_null(strstr(desc->valuestring, "gpshell3_open_session"));
+        }
     }
 
     cJSON_Delete(resp);
@@ -262,12 +273,13 @@ static void test_mcp_tools_call_inspect_card_no_card(void **state) {
     assert_non_null(msg);
     assert_true(msg->valuestring && strlen(msg->valuestring) > 0);
 
-    /* Verify output schema contains applicationsStatus */
+    /* Verify output schema contains applicationsStatus and atr */
     cJSON *out_schema = gpshell3_cmd_inspect_card_output_schema();
     assert_non_null(out_schema);
     cJSON *schema_props = cJSON_GetObjectItemCaseSensitive(out_schema, "properties");
     assert_non_null(schema_props);
     assert_non_null(cJSON_GetObjectItemCaseSensitive(schema_props, "applicationsStatus"));
+    assert_non_null(cJSON_GetObjectItemCaseSensitive(schema_props, "atr"));
     cJSON_Delete(out_schema);
 
     cJSON_Delete(resp);
@@ -661,6 +673,38 @@ static void test_mcp_apdu_invalid_argument_error(void **state) {
     fclose(err_s);
 }
 
+static void test_status_ok_records_opgp_error(void **state) {
+    (void)state;
+    gpshell3_clear_last_opgp_error();
+
+    /* Simulate a GP failure with ISO 7816-4 SW 0x6A80 (Incorrect parameters in data field) */
+    OPGP_ERROR_STATUS status;
+    OPGP_ERROR_CREATE_ERROR(status, 0x80206A80, _T("Incorrect parameters in data field"));
+    gpshell3_set_last_opgp_error(status);
+
+    gpshell3_output_ctx_t out;
+    gpshell3_output_init(&out, OUTPUT_FORMAT_JSON);
+    gpshell3_output_set_command(&out, "gpshell3_install");
+
+    gpshell3_propagate_last_opgp_error(&out, "COMMAND_FAILED", "Installation failed");
+    assert_true(out.has_error);
+    assert_non_null(out.json_error);
+
+    cJSON *code = cJSON_GetObjectItemCaseSensitive(out.json_error, "code");
+    assert_non_null(code);
+    assert_string_equal(code->valuestring, "WRONG_DATA");
+
+    cJSON *sw = cJSON_GetObjectItemCaseSensitive(out.json_error, "statusWord");
+    assert_non_null(sw);
+    assert_string_equal(sw->valuestring, "6A80");
+
+    cJSON *opgp_err = cJSON_GetObjectItemCaseSensitive(out.json_error, "opgpErrorCode");
+    assert_non_null(opgp_err);
+    assert_string_equal(opgp_err->valuestring, "0x80206A80");
+
+    gpshell3_output_cleanup(&out);
+}
+
 int main(void) {
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_mcp_initialize),
@@ -675,6 +719,7 @@ int main(void) {
         cmocka_unit_test(test_mcp_error_handling),
         cmocka_unit_test(test_mcp_open_session_description_clarity),
         cmocka_unit_test(test_mcp_apdu_invalid_argument_error),
+        cmocka_unit_test(test_status_ok_records_opgp_error),
     };
     return cmocka_run_group_tests(tests, NULL, NULL);
 }

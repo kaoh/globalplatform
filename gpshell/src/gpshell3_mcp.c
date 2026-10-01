@@ -170,7 +170,7 @@ static void handle_tools_list(gpshell3_mcp_server_t *server, const cJSON *id) {
     /* 1. gpshell3_open_session */
     cJSON *tool_open = cJSON_CreateObject();
     cJSON_AddStringToObject(tool_open, "name", "gpshell3_open_session");
-    cJSON_AddStringToObject(tool_open, "description", "Use this when the user asks to connect to a smart card reader and optionally authenticate a session. When called with empty arguments ({}), establishes an unauthenticated session (protocol and SCP parameters are auto-detected). To authenticate, keys must be explicitly provided in the 'authentication' argument. Returns session ID, connected reader name, and selected ISD AID.");
+    cJSON_AddStringToObject(tool_open, "description", "Use this when the user asks to connect to a smart card reader and optionally authenticate a session, or to re-authenticate after a security status reset (e.g. following package deletion or error 6982). An established session persists across multiple commands by default. When called with empty arguments ({}), establishes an unauthenticated session (protocol and SCP parameters are auto-detected). To authenticate or re-authenticate, keys must be explicitly provided in the 'authentication' argument. Returns session ID, connected reader name, and selected ISD AID.");
     cJSON_AddItemToObject(tool_open, "inputSchema", gpshell3_cmd_open_session_input_schema());
     cJSON *ann_open = cJSON_CreateObject();
     cJSON_AddBoolToObject(ann_open, "destructive", false);

@@ -238,7 +238,7 @@ int gpshell3_session_open(gpshell3_session_t *session, const gpshell3_session_pa
 
         const char *scp_opt = (params->scp[0] != '\0') ? params->scp : NULL;
         const char *scp_impl_opt = (params->scp_impl[0] != '\0') ? params->scp_impl : NULL;
-        const char *sec_level_opt = (params->sec_level[0] != '\0') ? params->sec_level : "mac";
+        const char *sec_level_opt = (params->sec_level[0] != '\0') ? params->sec_level : "auto";
         const char *scp11_cert = (params->scp11_cert_file[0] != '\0') ? params->scp11_cert_file : NULL;
         const char *scp11_sd_pub = (params->scp11_sd_public_key[0] != '\0') ? params->scp11_sd_public_key : NULL;
 
@@ -266,6 +266,9 @@ int gpshell3_session_open(gpshell3_session_t *session, const gpshell3_session_pa
         if (out->mode == OUTPUT_FORMAT_JSON) {
             gpshell3_output_add_string(out, "sessionId", session->session_id);
             gpshell3_output_add_string(out, "reader", session->connected_reader);
+            if (session->info.ATRLength > 0) {
+                gpshell3_output_add_hex(out, "atr", session->info.ATR, session->info.ATRLength);
+            }
             gpshell3_output_add_hex(out, "selectedIsd", session->selected_isd, session->selected_isd_len);
             gpshell3_output_add_bool(out, "authenticated", session->is_authenticated);
             if (session->is_authenticated) {
@@ -276,6 +279,13 @@ int gpshell3_session_open(gpshell3_session_t *session, const gpshell3_session_pa
         } else {
             FILE *f = out->out_stream ? out->out_stream : stdout;
             fprintf(f, "Connected to reader: %s\n", session->connected_reader);
+            if (session->info.ATRLength > 0) {
+                char *atr_hex = gpshell3_bytes_to_hex(session->info.ATR, session->info.ATRLength);
+                if (atr_hex) {
+                    fprintf(f, "Card ATR: %s\n", atr_hex);
+                    free(atr_hex);
+                }
+            }
             fprintf(f, "Session ID: %s\n", session->session_id);
             if (session->is_authenticated) {
                 fprintf(f, "Authenticated via SCP%02d (impl=0x%02X)\n", session->current_scp, session->current_scp_impl);
@@ -381,8 +391,8 @@ cJSON *gpshell3_cmd_open_session_input_schema(void) {
     gpshell3_schema_add_prop_string(auth_schema, "dek", "Optional. Explicit static DEK key hex string for sensitive key encryption. Omit unless static DEK differs from master key.", false);
     const char *derivs[] = {"none", "emv", "visa2"};
     gpshell3_schema_add_prop_enum(auth_schema, "derivation", "Optional. Key derivation algorithm ('none', 'emv', 'visa2'). Defaults to 'none' unless using legacy derived key cards.", derivs, 3, false);
-    const char *sec_levels[] = {"none", "mac", "mac+enc", "mac+rmac", "mac+enc+rmac"};
-    gpshell3_schema_add_prop_enum(auth_schema, "securityLevel", "Optional. Secure channel communication security level ('none', 'mac', 'mac+enc', 'mac+rmac', 'mac+enc+rmac'). Defaults to 'mac' if omitted.", sec_levels, 5, false);
+    const char *sec_levels[] = {"auto", "none", "mac", "mac+enc", "mac+rmac", "mac+enc+rmac"};
+    gpshell3_schema_add_prop_enum(auth_schema, "securityLevel", "Optional. Secure channel communication security level ('auto', 'none', 'mac', 'mac+enc', 'mac+rmac', 'mac+enc+rmac'). Defaults to 'auto', which automatically selects the appropriate level based on SCP protocol and implementation mode.", sec_levels, 6, false);
     const char *scps[] = {"scp01", "scp02", "scp03", "scp11"};
     gpshell3_schema_add_prop_enum(auth_schema, "scp", "Optional. Secure Channel Protocol ('scp01', 'scp02', 'scp03', 'scp11'). Omit to automatically detect and negotiate the card's supported SCP version.", scps, 4, false);
     gpshell3_schema_add_prop_int(auth_schema, "scpImpl", "Optional. SCP implementation mode option bits (e.g. 0x70 for SCP03 i=0x70). Omit to auto-negotiate with the card.", false);
@@ -398,6 +408,7 @@ cJSON *gpshell3_cmd_open_session_output_schema(void) {
     cJSON *s = gpshell3_schema_object();
     gpshell3_schema_add_prop_string(s, "sessionId", "Opaque 64-character session identifier token", true);
     gpshell3_schema_add_prop_string(s, "reader", "Connected PC/SC reader name", true);
+    gpshell3_schema_add_prop_string(s, "atr", "Card Answer To Reset (ATR) in hex", false);
     gpshell3_schema_add_prop_string(s, "selectedIsd", "Selected ISD AID in hex", true);
     gpshell3_schema_add_prop_bool(s, "authenticated", "Whether mutual authentication was established", true);
     gpshell3_schema_add_prop_string(s, "protocol", "Negotiated SCP secure channel protocol", false);
