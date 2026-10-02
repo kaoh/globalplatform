@@ -61,6 +61,13 @@ static void test_registry_count_and_enumeration(void **state) {
         assert_true(strlen(def->description) > 0);
         assert_true(strncmp(def->description, "Use this when the user asks to ", 31) == 0);
         assert_non_null(strstr(def->description, "Returns "));
+        assert_non_null(strstr(def->description, "gpshell"));
+        assert_non_null(strstr(def->description, "gpshell3"));
+
+        if (def->requires_session) {
+            assert_non_null(strstr(def->description, "gpshell3_open_session"));
+        }
+
         assert_non_null(def->execute_cmd);
         assert_non_null(def->execute_cli);
         assert_non_null(def->get_input_schema);

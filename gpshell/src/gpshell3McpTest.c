@@ -163,6 +163,8 @@ static void test_mcp_tools_list(void **state) {
         assert_true(desc->valuestring && strlen(desc->valuestring) > 0);
         assert_true(strncmp(desc->valuestring, "Use this when the user asks to ", 31) == 0);
         assert_non_null(strstr(desc->valuestring, "Returns "));
+        assert_non_null(strstr(desc->valuestring, "gpshell"));
+        assert_non_null(strstr(desc->valuestring, "gpshell3"));
 
         cJSON *schema = cJSON_GetObjectItemCaseSensitive(tool, "inputSchema");
         assert_non_null(schema);
@@ -175,6 +177,7 @@ static void test_mcp_tools_list(void **state) {
         if (strcmp(name->valuestring, "gpshell3_open_session") == 0) {
             assert_non_null(strstr(desc->valuestring, "re-authenticate"));
             assert_non_null(strstr(desc->valuestring, "persists across multiple commands"));
+            assert_non_null(strstr(desc->valuestring, "prerequisite tool"));
         } else if (strcmp(name->valuestring, "gpshell3_delete") == 0) {
             assert_non_null(strstr(desc->valuestring, "AUTHENTICATION_REQUIRED"));
             assert_non_null(strstr(desc->valuestring, "gpshell3_open_session"));
@@ -597,6 +600,9 @@ static void test_mcp_open_session_description_clarity(void **state) {
     assert_non_null(open_tool);
     cJSON *desc = cJSON_GetObjectItemCaseSensitive(open_tool, "description");
     assert_non_null(desc);
+    assert_non_null(strstr(desc->valuestring, "gpshell"));
+    assert_non_null(strstr(desc->valuestring, "gpshell3"));
+    assert_non_null(strstr(desc->valuestring, "prerequisite tool"));
     assert_non_null(strstr(desc->valuestring, "unauthenticated session"));
     assert_non_null(strstr(desc->valuestring, "authentication"));
 

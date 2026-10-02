@@ -203,185 +203,185 @@ void gpshell3_schema_add_prop_object(cJSON *schema, const char *name, const char
 static const gpshell3_cmd_def_t s_command_registry[] = {
     /* Offline / Token / Receipt commands (14) */
     CMD_ENTRY("list-readers", "gpshell3_list_readers",
-              "Use this when the user asks to list, detect, or discover available smart card readers connected to the system. Returns a list of reader names. Offline tool; does not require an active card session.",
+              "Use this when the user asks to list, detect, or discover available smart card readers connected to the system using gpshell / gpshell3. Returns a list of reader names. Offline tool; does not require an active card session.",
               false, false, list_readers),
 
     CMD_ENTRY("inspect-card", "gpshell3_inspect_card",
-              "Use this when the user asks to inspect, detect, identify, or discover a connected smart card without requiring a session ID or authentication. Returns card presence, reader name, ISD AID, CPLC hardware lifecycle data, card recognition info, and accessible applications. Discovers connected cards automatically; does not require an existing session.",
+              "Use this when the user asks to inspect, detect, identify, or discover a connected smart card using gpshell / gpshell3 without requiring a session ID or authentication. Returns card presence, reader name, ISD AID, CPLC hardware lifecycle data, card recognition info, and accessible applications. Discovers connected cards automatically; does not require an existing session.",
               false, false, inspect_card),
 
     CMD_ENTRY("hash", "gpshell3_hash",
-              "Use this when the user asks to compute the cryptographic hash (SHA-1, SHA-256, SHA-384, SHA-512, SM3) of a Java Card CAP file's load-file data block for DAP signatures or tokens. Returns the hex-encoded hash. Offline tool; does not require a card connection.",
+              "Use this when the user asks to compute the cryptographic hash (SHA-1, SHA-256, SHA-384, SHA-512, SM3) of a Java Card CAP file's load-file data block for DAP signatures or tokens in gpshell / gpshell3. Returns the hex-encoded hash. Offline tool; does not require a card connection.",
               false, false, hash),
 
     CMD_ENTRY("sign-dap", "gpshell3_sign_dap",
-              "Use this when the user asks to generate a Data Authentication Pattern (DAP) signature over a CAP file or precomputed hash using an RSA, ECC, or AES private key. Returns the hex-encoded DAP signature block. Offline tool; does not require a card connection.",
+              "Use this when the user asks to generate a Data Authentication Pattern (DAP) signature over a CAP file or precomputed hash using an RSA, ECC, or AES private key in gpshell / gpshell3. Returns the hex-encoded DAP signature block. Offline tool; does not require a card connection.",
               false, false, sign_dap),
 
     CMD_ENTRY("sign-load-token", "gpshell3_sign_load_token",
-              "Use this when the user asks to generate a Delegated Management (DM) Load Token for loading an Executable Load File (ELF) onto a card using an RSA or ECC private key. Returns the hex-encoded token. Offline tool; does not require a card connection.",
+              "Use this when the user asks to generate a Delegated Management (DM) Load Token for loading an Executable Load File (ELF) onto a card using an RSA or ECC private key in gpshell / gpshell3. Returns the hex-encoded token. Offline tool; does not require a card connection.",
               false, false, sign_load_token),
 
     CMD_ENTRY("sign-install-token", "gpshell3_sign_install_token",
-              "Use this when the user asks to generate a Delegated Management (DM) Install Token for installing an application or Security Domain instance using an RSA or ECC private key. Returns the hex-encoded token. Offline tool; does not require a card connection.",
+              "Use this when the user asks to generate a Delegated Management (DM) Install Token for installing an application or Security Domain instance using an RSA or ECC private key in gpshell / gpshell3. Returns the hex-encoded token. Offline tool; does not require a card connection.",
               false, false, sign_install_token),
 
     CMD_ENTRY("sign-extradition-token", "gpshell3_sign_extradition_token",
-              "Use this when the user asks to generate a Delegated Management (DM) Extradition (Move) Token for transferring an application or SD to a target Security Domain using an RSA or ECC private key. Returns the hex-encoded token. Offline tool; does not require a card connection.",
+              "Use this when the user asks to generate a Delegated Management (DM) Extradition (Move) Token for transferring an application or SD to a target Security Domain using an RSA or ECC private key in gpshell / gpshell3. Returns the hex-encoded token. Offline tool; does not require a card connection.",
               false, false, sign_extradition_token),
 
     CMD_ENTRY("sign-update-registry-token", "gpshell3_sign_update_registry_token",
-              "Use this when the user asks to generate a Delegated Management (DM) Update Registry Token for modifying application privileges or life cycle state using an RSA or ECC private key. Returns the hex-encoded token. Offline tool; does not require a card connection.",
+              "Use this when the user asks to generate a Delegated Management (DM) Update Registry Token for modifying application privileges or life cycle state using an RSA or ECC private key in gpshell / gpshell3. Returns the hex-encoded token. Offline tool; does not require a card connection.",
               false, false, sign_update_registry_token),
 
     CMD_ENTRY("sign-delete-token", "gpshell3_sign_delete_token",
-              "Use this when the user asks to generate a Delegated Management (DM) Delete Token for deleting an applet instance or package using an RSA or ECC private key. Returns the hex-encoded token. Offline tool; does not require a card connection.",
+              "Use this when the user asks to generate a Delegated Management (DM) Delete Token for deleting an applet instance or package using an RSA or ECC private key in gpshell / gpshell3. Returns the hex-encoded token. Offline tool; does not require a card connection.",
               false, false, sign_delete_token),
 
     CMD_ENTRY("verify-delete-receipt", "gpshell3_verify_delete_receipt",
-              "Use this when the user asks to verify a Delegated Management (DM) Delete Receipt returned by the card against an ECDSA, RSA, or AES key. Returns verification validity. Offline tool; does not require a card connection.",
+              "Use this when the user asks to verify a Delegated Management (DM) Delete Receipt returned by the card against an ECDSA, RSA, or AES key in gpshell / gpshell3. Returns verification validity. Offline tool; does not require a card connection.",
               false, false, verify_delete_receipt),
 
     CMD_ENTRY("verify-load-receipt", "gpshell3_verify_load_receipt",
-              "Use this when the user asks to verify a Delegated Management (DM) Load Receipt returned by the card against an ECDSA, RSA, or AES key. Returns verification validity. Offline tool; does not require a card connection.",
+              "Use this when the user asks to verify a Delegated Management (DM) Load Receipt returned by the card against an ECDSA, RSA, or AES key in gpshell / gpshell3. Returns verification validity. Offline tool; does not require a card connection.",
               false, false, verify_load_receipt),
 
     CMD_ENTRY("verify-install-receipt", "gpshell3_verify_install_receipt",
-              "Use this when the user asks to verify a Delegated Management (DM) Install Receipt returned by the card against an ECDSA, RSA, or AES key. Returns verification validity. Offline tool; does not require a card connection.",
+              "Use this when the user asks to verify a Delegated Management (DM) Install Receipt returned by the card against an ECDSA, RSA, or AES key in gpshell / gpshell3. Returns verification validity. Offline tool; does not require a card connection.",
               false, false, verify_install_receipt),
 
     CMD_ENTRY("verify-registry-update-receipt", "gpshell3_verify_registry_update_receipt",
-              "Use this when the user asks to verify a Delegated Management (DM) Update Registry Receipt returned by the card against an ECDSA, RSA, or AES key. Returns verification validity. Offline tool; does not require a card connection.",
+              "Use this when the user asks to verify a Delegated Management (DM) Update Registry Receipt returned by the card against an ECDSA, RSA, or AES key in gpshell / gpshell3. Returns verification validity. Offline tool; does not require a card connection.",
               false, false, verify_registry_update_receipt),
 
     CMD_ENTRY("verify-move-receipt", "gpshell3_verify_move_receipt",
-              "Use this when the user asks to verify a Delegated Management (DM) Extradition (Move) Receipt returned by the card against an ECDSA, RSA, or AES key. Returns verification validity. Offline tool; does not require a card connection.",
+              "Use this when the user asks to verify a Delegated Management (DM) Extradition (Move) Receipt returned by the card against an ECDSA, RSA, or AES key in gpshell / gpshell3. Returns verification validity. Offline tool; does not require a card connection.",
               false, false, verify_move_receipt),
 
     /* Card Query commands (13) */
     CMD_ENTRY("list-apps", "gpshell3_list_apps",
-              "Use this when the user asks to list, query, or inspect installed applications, Security Domains, Executable Load Files (packages), and executable modules on the connected card. Returns lists of Security Domains, applications, and load files with life cycle states and privileges. Requires an open card session; the card may require authentication. Sessions persist across commands by default; if status word 6982 (AUTHENTICATION_REQUIRED) occurs (e.g. after a package deletion or card security reset), re-authenticate via gpshell3_open_session.",
+              "Use this when the user asks to perform a gpshell / gpshell3 list-apps command to query or inspect installed applications, Security Domains, Executable Load Files (packages), and executable modules on the connected card. Returns lists of Security Domains, applications, and load files with life cycle states and privileges. Requires an open card session created via prerequisite tool gpshell3_open_session (use empty arguments for unauthenticated enumeration); if status word 6982 (AUTHENTICATION_REQUIRED) occurs, re-authenticate via gpshell3_open_session.",
               true, false, list_apps),
 
     CMD_ENTRY("list-keys", "gpshell3_list_keys",
-              "Use this when the user asks to list, query, or inspect cryptographic keys stored in the current Security Domain. Returns key set versions (KVN), key identifiers, key types, and key lengths. Requires an open card session; the card may require authentication.",
+              "Use this when the user asks to perform a gpshell / gpshell3 list-keys command to list, query, or inspect cryptographic keys stored in the current Security Domain. Returns key set versions (KVN), key identifiers, key types, and key lengths. Requires an open card session created via prerequisite tool gpshell3_open_session; the card may require authentication.",
               true, false, list_keys),
 
     CMD_ENTRY("cplc", "gpshell3_cplc",
-              "Use this when the user asks to read Card Production Life Cycle (CPLC) data from the smart card. Returns IC fabricator, IC type, OS ID, fabrication dates, and serial numbers. Requires an open card session.",
+              "Use this when the user asks to perform a gpshell / gpshell3 cplc command to read Card Production Life Cycle (CPLC) data from the smart card. Returns IC fabricator, IC type, OS ID, fabrication dates, and serial numbers. Requires an open card session created via prerequisite tool gpshell3_open_session.",
               true, false, cplc),
 
     CMD_ENTRY("card-data", "gpshell3_card_data",
-              "Use this when the user asks to read comprehensive card identification and status data (tag 0x0066). Returns IIN, CIN, CPLC, card recognition data, capabilities, and sequence counters. Requires an open card session.",
+              "Use this when the user asks to perform a gpshell / gpshell3 card-data command to read comprehensive card identification and status data (tag 0x0066). Returns IIN, CIN, CPLC, card recognition data, capabilities, and sequence counters. Requires an open card session created via prerequisite tool gpshell3_open_session.",
               true, false, card_data),
 
     CMD_ENTRY("iin", "gpshell3_iin",
-              "Use this when the user asks to retrieve the Issuer Identification Number (IIN) from the smart card. Returns the IIN hex string. Requires an open card session.",
+              "Use this when the user asks to perform a gpshell / gpshell3 iin command to retrieve the Issuer Identification Number (IIN) from the smart card. Returns the IIN hex string. Requires an open card session created via prerequisite tool gpshell3_open_session.",
               true, false, iin),
 
     CMD_ENTRY("cin", "gpshell3_cin",
-              "Use this when the user asks to retrieve the Card Image Number (CIN) from the smart card. Returns the CIN hex string. Requires an open card session.",
+              "Use this when the user asks to perform a gpshell / gpshell3 cin command to retrieve the Card Image Number (CIN) from the smart card. Returns the CIN hex string. Requires an open card session created via prerequisite tool gpshell3_open_session.",
               true, false, cin),
 
     CMD_ENTRY("card-info", "gpshell3_card_info",
-              "Use this when the user asks to retrieve Card Recognition Data from the smart card. Returns GlobalPlatform version, card management type, and supported SCP options. Requires an open card session.",
+              "Use this when the user asks to perform a gpshell / gpshell3 card-info command to retrieve Card Recognition Data from the smart card. Returns GlobalPlatform version, card management type, and supported SCP options. Requires an open card session created via prerequisite tool gpshell3_open_session.",
               true, false, card_info),
 
     CMD_ENTRY("card-cap", "gpshell3_card_capability",
-              "Use this when the user asks to retrieve Card Capability Information from the smart card. Returns card capability descriptors and supported features. Requires an open card session.",
+              "Use this when the user asks to perform a gpshell / gpshell3 card-cap command to retrieve Card Capability Information from the smart card. Returns card capability descriptors and supported features. Requires an open card session created via prerequisite tool gpshell3_open_session.",
               true, false, card_cap),
 
     CMD_ENTRY("card-resources", "gpshell3_card_resources",
-              "Use this when the user asks to check smart card memory and resource availability. Returns installed applications count, free non-volatile memory (NVM/Flash), and free volatile memory (RAM). Requires an open card session.",
+              "Use this when the user asks to perform a gpshell / gpshell3 card-resources command to check smart card memory and resource availability. Returns installed applications count, free non-volatile memory (NVM/Flash), and free volatile memory (RAM). Requires an open card session created via prerequisite tool gpshell3_open_session.",
               true, false, card_resources),
 
     CMD_ENTRY("div-data", "gpshell3_diversification",
-              "Use this when the user asks to retrieve Key Diversification Data from the smart card. Returns key diversification data bytes used for diversified key calculations. Requires an open card session.",
+              "Use this when the user asks to perform a gpshell / gpshell3 div-data command to retrieve Key Diversification Data from the smart card. Returns key diversification data bytes used for diversified key calculations. Requires an open card session created via prerequisite tool gpshell3_open_session.",
               true, false, div_data),
 
     CMD_ENTRY("seq-counter", "gpshell3_seq_counter",
-              "Use this when the user asks to retrieve the Sequence Counter from the smart card. Returns the sequence counter hex string for key derivation or transaction tracking. Requires an open card session.",
+              "Use this when the user asks to perform a gpshell / gpshell3 seq-counter command to retrieve the Sequence Counter from the smart card. Returns the sequence counter hex string for key derivation or transaction tracking. Requires an open card session created via prerequisite tool gpshell3_open_session.",
               true, false, seq_counter),
 
     CMD_ENTRY("confirm-counter", "gpshell3_confirm_counter",
-              "Use this when the user asks to retrieve the Confirmation Counter from the smart card. Returns the confirmation counter hex string for delegated management receipt verification. Requires an open card session.",
+              "Use this when the user asks to perform a gpshell / gpshell3 confirm-counter command to retrieve the Confirmation Counter from the smart card. Returns the confirmation counter hex string for delegated management receipt verification. Requires an open card session created via prerequisite tool gpshell3_open_session.",
               true, false, confirm_counter),
 
     CMD_ENTRY("scp11-cert-data", "gpshell3_scp11_cert_data",
-              "Use this when the user asks to retrieve and decode SCP11 Security Domain certificates (CERT.SD.ECKA, CERT.SD.AUT) stored on the smart card. Returns decoded certificate data. Requires an open card session.",
+              "Use this when the user asks to perform a gpshell / gpshell3 scp11-cert-data command to retrieve and decode SCP11 Security Domain certificates (CERT.SD.ECKA, CERT.SD.AUT) stored on the smart card. Returns decoded certificate data. Requires an open card session created via prerequisite tool gpshell3_open_session.",
               true, false, scp11_cert_data),
 
     /* Card Mutation & Personalization commands (18) */
     CMD_ENTRY("store-iin", "gpshell3_store_iin",
-              "Use this when the user asks to store or personalize the Issuer Identification Number (IIN) on the smart card. Returns operation success status. Requires an open card session; the card may require authentication.",
+              "Use this when the user asks to perform a gpshell / gpshell3 store-iin command to store or personalize the Issuer Identification Number (IIN) on the smart card. Returns operation success status. Requires an open card session created via prerequisite tool gpshell3_open_session; the card may require authentication.",
               true, true, store_iin),
 
     CMD_ENTRY("store-cin", "gpshell3_store_cin",
-              "Use this when the user asks to store or personalize the Card Image Number (CIN) on the smart card. Returns operation success status. Requires an open card session; the card may require authentication.",
+              "Use this when the user asks to perform a gpshell / gpshell3 store-cin command to store or personalize the Card Image Number (CIN) on the smart card. Returns operation success status. Requires an open card session created via prerequisite tool gpshell3_open_session; the card may require authentication.",
               true, true, store_cin),
 
     CMD_ENTRY("scp11-store-cert", "gpshell3_scp11_store_cert",
-              "Use this when the user asks to store an SCP11 ECKA or AUT certificate file on the smart card for a specific key set version and key index. Returns storage success status. Requires an open card session; the card may require authentication.",
+              "Use this when the user asks to perform a gpshell / gpshell3 scp11-store-cert command to store an SCP11 ECKA or AUT certificate file on the smart card for a specific key set version and key index. Returns storage success status. Requires an open card session created via prerequisite tool gpshell3_open_session; the card may require authentication.",
               true, true, scp11_store_cert),
 
     CMD_ENTRY("scp11-store-ca-id", "gpshell3_scp11_store_ca_id",
-              "Use this when the user asks to store a Certificate Authority Identifier (CA ID / KL-OC) on the smart card for SCP11 trust anchoring. Returns storage success status. Requires an open card session; the card may require authentication.",
+              "Use this when the user asks to perform a gpshell / gpshell3 scp11-store-ca-id command to store a Certificate Authority Identifier (CA ID / KL-OC) on the smart card for SCP11 trust anchoring. Returns storage success status. Requires an open card session created via prerequisite tool gpshell3_open_session; the card may require authentication.",
               true, true, scp11_store_ca_id),
 
     CMD_ENTRY("install", "gpshell3_install",
-              "Use this when the user asks to load and/or install a Java Card CAP file, create applet instances, or set application privileges and install parameters. Returns installation success status. Requires an open card session; the card may require authentication. If a preceding lifecycle reset caused error 6982 (AUTHENTICATION_REQUIRED), re-authenticate with gpshell3_open_session first.",
+              "Use this when the user asks to perform a gpshell / gpshell3 install command to load and/or install a Java Card CAP file, create applet instances, or set application privileges and install parameters. Returns installation success status. Requires an open card session created via prerequisite tool gpshell3_open_session; the card may require authentication. If a preceding lifecycle reset caused error 6982 (AUTHENTICATION_REQUIRED), re-authenticate with gpshell3_open_session first.",
               true, true, install),
 
     CMD_ENTRY("install-sd", "gpshell3_install_sd",
-              "Use this when the user asks to instantiate a Security Domain (SD) from an already loaded package with specific privileges and policies. Returns installation success status. Requires an open card session; the card may require authentication.",
+              "Use this when the user asks to perform a gpshell / gpshell3 install-sd command to instantiate a Security Domain (SD) from an already loaded package with specific privileges and policies. Returns installation success status. Requires an open card session created via prerequisite tool gpshell3_open_session; the card may require authentication.",
               true, true, install_sd),
 
     CMD_ENTRY("delete", "gpshell3_delete",
-              "Use this when the user asks to delete an application instance, Security Domain, or Executable Load File (package) from the smart card by AID. Returns deletion success status. Requires an open card session; the card may require authentication. Note: Sessions normally persist across multiple commands, but deleting an Executable Load File (package) or default-selected applet may cause certain cards to reset their security state. If subsequent commands fail with status word 6982 (AUTHENTICATION_REQUIRED), re-authenticate by calling gpshell3_open_session.",
+              "Use this when the user asks to perform a gpshell / gpshell3 delete command to delete an application instance, Security Domain, or Executable Load File (package) from the smart card by AID. Returns deletion success status. Requires an open card session created via prerequisite tool gpshell3_open_session; the card may require authentication. Note: Sessions normally persist across multiple commands, but deleting an Executable Load File (package) or default-selected applet may cause certain cards to reset their security state. If subsequent commands fail with status word 6982 (AUTHENTICATION_REQUIRED), re-authenticate by calling gpshell3_open_session.",
               true, true, delete),
 
     CMD_ENTRY("update-registry", "gpshell3_update_registry",
-              "Use this when the user asks to update privileges or life cycle state of an application or Security Domain in the GlobalPlatform registry. Returns update success status. Requires an open card session; the card may require authentication.",
+              "Use this when the user asks to perform a gpshell / gpshell3 update-registry command to update privileges or life cycle state of an application or Security Domain in the GlobalPlatform registry. Returns update success status. Requires an open card session created via prerequisite tool gpshell3_open_session; the card may require authentication.",
               true, true, update_registry),
 
     CMD_ENTRY("move", "gpshell3_move",
-              "Use this when the user asks to extradite (move) an application or Security Domain to a target Security Domain. Returns extradition success status. Requires an open card session; the card may require authentication.",
+              "Use this when the user asks to perform a gpshell / gpshell3 move command to extradite (move) an application or Security Domain to a target Security Domain. Returns extradition success status. Requires an open card session created via prerequisite tool gpshell3_open_session; the card may require authentication.",
               true, true, move),
 
     CMD_ENTRY("put-key", "gpshell3_put_key",
-              "Use this when the user asks to add or replace cryptographic keys (symmetric AES/3DES or asymmetric RSA/ECC) in a Security Domain. Returns key update success status. Requires an open card session; the card may require authentication. If status word 6982 (AUTHENTICATION_REQUIRED) occurs, renew authentication via gpshell3_open_session.",
+              "Use this when the user asks to perform a gpshell / gpshell3 put-key command to add or replace cryptographic keys (symmetric AES/3DES or asymmetric RSA/ECC) in a Security Domain. Returns key update success status. Requires an open card session created via prerequisite tool gpshell3_open_session; the card may require authentication. If status word 6982 (AUTHENTICATION_REQUIRED) occurs, renew authentication via gpshell3_open_session.",
               true, true, put_key),
 
     CMD_ENTRY("put-auth", "gpshell3_put_auth",
-              "Use this when the user asks to store authentication credentials (e.g. password, PIN, or token data) on the smart card. Returns credential storage success status. Requires an open card session; the card may require authentication.",
+              "Use this when the user asks to perform a gpshell / gpshell3 put-auth command to store authentication credentials (e.g. password, PIN, or token data) on the smart card. Returns credential storage success status. Requires an open card session created via prerequisite tool gpshell3_open_session; the card may require authentication.",
               true, true, put_auth),
 
     CMD_ENTRY("put-dm-token", "gpshell3_put_dm_token",
-              "Use this when the user asks to store a Delegated Management token verification public key (RSA or ECC) in the Security Domain. Returns key storage success status. Requires an open card session; the card may require authentication.",
+              "Use this when the user asks to perform a gpshell / gpshell3 put-dm-token command to store a Delegated Management token verification public key (RSA or ECC) in the Security Domain. Returns key storage success status. Requires an open card session created via prerequisite tool gpshell3_open_session; the card may require authentication.",
               true, true, put_dm_token),
 
     CMD_ENTRY("put-dm-receipt", "gpshell3_put_dm_receipt",
-              "Use this when the user asks to store a Delegated Management receipt generation key (private or secret key) in the Security Domain. Returns key storage success status. Requires an open card session; the card may require authentication.",
+              "Use this when the user asks to perform a gpshell / gpshell3 put-dm-receipt command to store a Delegated Management receipt generation key (private or secret key) in the Security Domain. Returns key storage success status. Requires an open card session created via prerequisite tool gpshell3_open_session; the card may require authentication.",
               true, true, put_dm_receipt),
 
     CMD_ENTRY("put-dap-key", "gpshell3_put_dap_key",
-              "Use this when the user asks to store a Data Authentication Pattern (DAP) verification key (RSA, ECC, or AES) on the smart card. Returns key storage success status. Requires an open card session; the card may require authentication.",
+              "Use this when the user asks to perform a gpshell / gpshell3 put-dap-key command to store a Data Authentication Pattern (DAP) verification key (RSA, ECC, or AES) on the smart card. Returns key storage success status. Requires an open card session created via prerequisite tool gpshell3_open_session; the card may require authentication.",
               true, true, put_dap_key),
 
     CMD_ENTRY("del-key", "gpshell3_del_key",
-              "Use this when the user asks to delete a cryptographic key or an entire key set from the Security Domain. Returns key deletion success status. Requires an open card session; the card may require authentication.",
+              "Use this when the user asks to perform a gpshell / gpshell3 del-key command to delete a cryptographic key or an entire key set from the Security Domain. Returns key deletion success status. Requires an open card session created via prerequisite tool gpshell3_open_session; the card may require authentication.",
               true, true, del_key),
 
     CMD_ENTRY("apdu", "gpshell3_apdu",
-              "Use this when the user asks to transmit a raw ISO 7816-4 / GlobalPlatform APDU command to the connected smart card. Returns response data bytes and Status Word (SW). Requires an open card session.",
+              "Use this when the user asks to perform a gpshell / gpshell3 apdu command to transmit a raw ISO 7816-4 / GlobalPlatform APDU command to the connected smart card. Returns response data bytes and Status Word (SW). Requires an open card session created via prerequisite tool gpshell3_open_session.",
               true, true, apdu),
 
     CMD_ENTRY("status", "gpshell3_status",
-              "Use this when the user asks to set the life cycle status of an application, Security Domain, or the smart card (e.g. LOCK, UNLOCK, TERMINATE). Returns status update success. Requires an open card session; the card may require authentication.",
+              "Use this when the user asks to perform a gpshell / gpshell3 status command to set the life cycle status of an application, Security Domain, or the smart card (e.g. LOCK, UNLOCK, TERMINATE). Returns status update success. Requires an open card session created via prerequisite tool gpshell3_open_session; the card may require authentication.",
               true, true, status),
 
     CMD_ENTRY("store", "gpshell3_store",
-              "Use this when the user asks to execute a STORE DATA command to store raw BER-TLV or DGI data blocks on the smart card. Returns store success status. Requires an open card session; the card may require authentication.",
+              "Use this when the user asks to perform a gpshell / gpshell3 store command to execute a STORE DATA command to store raw BER-TLV or DGI data blocks on the smart card. Returns store success status. Requires an open card session created via prerequisite tool gpshell3_open_session; the card may require authentication.",
               true, true, store)
 };
 
