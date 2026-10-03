@@ -72,6 +72,12 @@ Unless otherwise specified, `gpshell3` will:
 --enc <hex>, --mac <hex>, --dek <hex>
 :  Explicit S-ENC, S-MAC and DEK keys (hex) for mutual authentication. If provided together, `--key` is ignored.
 
+--output <text|json>
+:  Output format. Default: `text`. In `json` mode, outputs structured machine-readable JSON envelopes containing `{ "ok": true, "command": "...", "result": { ... } }` or `{ "ok": false, "error": { "code": "...", "message": "..." } }`.
+
+--mcp
+:  Start the embedded Model Context Protocol (MCP) server over standard I/O (STDIO) using JSON-RPC 2.0. In this mode, `gpshell3` exposes typed tools with full JSON Schemas for AI agents and IDE workflows (IntelliJ, Claude, etc.).
+
 -v, --verbose
 :  Verbose output. Sets `GLOBALPLATFORM_DEBUG=1` and `GLOBALPLATFORM_LOGFILE=stderr`.
 
@@ -109,6 +115,30 @@ gpshell3 list-keys
 ## list-readers
 
 List available PC/SC readers.
+
+## inspect-card
+
+Inspect and identify a connected smart card without requiring an active session or authentication keys.
+
+Automatically scans for connected smart cards, selects the default Issuer Security Domain (ISD), retrieves the Answer To Reset (ATR), reads Card Production Life Cycle (CPLC) hardware data, queries Card Recognition Data, and retrieves accessible applications. If the card requires authentication to list applications (SW 6982), it gracefully returns the unauthenticated hardware, ATR, and recognition data.
+
+Synopsis:
+```
+gpshell3 inspect-card [--reader <name|index>]
+```
+
+Options:
+
+- `--reader <name|index>`: Smart card reader name or 0-based index. If omitted, automatically scans for a reader with an inserted card.
+
+Examples:
+```
+# Auto-detect and inspect the connected card
+gpshell3 inspect-card
+
+# Inspect a specific reader in JSON format
+gpshell3 --output json inspect-card --reader "Identiv uTrust 3700 F CL Reader 0"
+```
 
 ## install
 
@@ -842,6 +872,139 @@ gpshell3 --scp 3 --kv 0xFF --key 404142434445464748494A4B4C4D4E4F \
 ```
 
 If any chained command fails, execution stops immediately (subsequent `then` commands are not run).
+
+# MODEL CONTEXT PROTOCOL (MCP)
+
+gpshell3 includes a native, self-contained Model Context Protocol (MCP) server that exposes all smart card commands as first-class, typed JSON tools over standard I/O (STDIO) using JSON-RPC 2.0.
+
+### Starting the Server
+
+```sh
+gpshell3 --mcp
+```
+
+### Protocol Capabilities
+
+- **JSON-RPC 2.0**: Conforms to MCP specifications `2025-06-18` and `2025-11-25`.
+- **Tool Discovery (`tools/list`)**: Exposes all 47 commands as typed tools (`gpshell3_<cmd_name>`), complete with strict parameter schemas, descriptions, and risk annotations (`destructive`, `readOnly`).
+- **Session Lifecycle**: Explicit session management via `gpshell3_open_session` (unauthenticated by default when called with `{}`, or authenticated when `authentication` keys are provided) and `gpshell3_close_session`. Returns the card ATR, connected reader, selected ISD, and an opaque `session_id` to maintain card state across chained tool calls without guessing keys. An established session persists across multiple commands by default; if a card resets its security status during lifecycle operations (such as package deletion) and returns status word `6982` (`AUTHENTICATION_REQUIRED`), calling `gpshell3_open_session` with credentials renews the session.
+- **Credential Protection**: Cryptographic keys, PINs, and sensitive passphrases passed to `open_session` or `put-key` are never reflected in tool output, error responses, or diagnostic streams.
+- **Safety & Elicitation**: Mutating card operations (`install`, `delete`, `put-key`, `move`, `update-registry`, `apdu`) trigger user confirmation (MCP Elicitation) before any physical card modification occurs.
+
+### Persistent AI Agent Preferences & Configuration
+
+When configuring AI coding assistants (such as OpenAI Codex, Claude Code, Cursor, Windsurf, GitHub Copilot, or JetBrains Junie) to interact with smart cards, add the following instruction snippet to your project's `AGENTS.md`, `~/.codex/AGENTS.md`, `CLAUDE.md`, `.cursorrules`, `.github/copilot-instructions.md`, or the assistant's instructions:
+
+```text
+For smart-card, GlobalPlatform, gpshell, or gpshell3 tasks, discover
+and prefer the gpshell3 MCP tools before invoking CLI commands. For
+application enumeration, open an unauthenticated session and use
+gpshell3_list_apps.
+
+Start reader discovery with gpshell3_list_readers or inspect the card
+with gpshell3_inspect_card. Prefer gpshell3 MCP tools over opensc-tool,
+gp, gpshell, pcsc_scan, or custom APDU scripts. Use shell fallbacks
+only when the relevant MCP capability is unavailable or insufficient.
+
+Authentication errors are not evidence that the MCP server is
+unavailable. Never guess card keys. An established session persists
+across commands; if status word 6982 (AUTHENTICATION_REQUIRED) occurs
+after lifecycle changes, re-authenticate via gpshell3_open_session.
+```
+
+#### Client Configuration Examples
+
+##### 1. Standard `.mcp.json` / VS Code / Cursor / JetBrains IDEs
+
+In project root `.mcp.json` or `.vscode/mcp.json`:
+```json
+{
+  "mcpServers": {
+    "gpshell3": {
+      "command": "gpshell3",
+      "args": ["--mcp"]
+    }
+  }
+}
+```
+
+##### 2. OpenAI Codex CLI
+
+Register via CLI:
+```sh
+codex mcp add gpshell3 -- gpshell3 --mcp
+```
+Or configure in `~/.codex/config.toml` (global) or `.codex/config.toml` (project):
+```toml
+[mcp_servers.gpshell3]
+command = "gpshell3"
+args = ["--mcp"]
+```
+Place agent instructions in `~/.codex/AGENTS.md` or `.codex/AGENTS.md`.
+
+##### 3. Claude Desktop
+
+In `claude_desktop_config.json`:
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+- Linux: `~/.config/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "gpshell3": {
+      "command": "gpshell3",
+      "args": ["--mcp"]
+    }
+  }
+}
+```
+
+##### 4. Claude Code CLI
+
+```sh
+claude mcp add --scope user gpshell3 -- gpshell3 --mcp
+```
+
+### IDE & Client Integration (IntelliJ, VS Code, Cursor, Claude Desktop, Codex CLI, etc.)
+
+To configure `gpshell3` in an MCP client configuration (such as `.mcp.json`, `.vscode/mcp.json`, or IntelliJ AI Assistant settings):
+
+```json
+{
+  "mcpServers": {
+    "gpshell3": {
+      "command": "gpshell3",
+      "args": ["--mcp"]
+    }
+  }
+}
+```
+
+For Claude Desktop, configure `claude_desktop_config.json`:
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+- Linux: `~/.config/Claude/claude_desktop_config.json`
+
+For Claude Code CLI, register `gpshell3` using `claude mcp add`:
+
+```sh
+claude mcp add gpshell3 -- gpshell3 --mcp
+```
+
+For OpenAI Codex CLI, register `gpshell3` using `codex mcp add`:
+
+```sh
+codex mcp add gpshell3 -- gpshell3 --mcp
+```
+
+Or configure in `~/.codex/config.toml` (or `.codex/config.toml`):
+
+```toml
+[mcp_servers.gpshell3]
+command = "gpshell3"
+args = ["--mcp"]
+```
 
 # EXAMPLES
 
