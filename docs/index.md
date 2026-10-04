@@ -44,7 +44,7 @@
 
 ## Summary
 
-GlobalPlatform is an open-source C library and command-line tooling for managing
+[GlobalPlatform](https://github.com/kaoh/globalplatform) is an open-source C library and command-line tooling for managing
 OpenPlatform and GlobalPlatform smart cards. It is used to inspect cards, manage
 Security Domains and keys, load Java Card CAP files, and exchange APDUs through
 PC/SC readers.
@@ -84,6 +84,17 @@ and [legacy GPShell scripts](https://github.com/kaoh/globalplatform/tree/master/
 are included with the release packages.
 
 [GPShell3 demonstration playlist](https://www.youtube.com/watch?v=igqlIvuOB5o&list=PLg46pyBZ2z-wF8acSL1nWvWFU0WPmhwlD)
+
+### MCP Server
+
+`gpshell3` includes an embedded, native Model Context Protocol (MCP) server
+(`gpshell3 --mcp`) communicating over standard input/output (STDIO) using
+JSON-RPC 2.0 to expose typed smart card management operations (reader
+listing, card inspection, applet lifecycle, sessions, and APDU exchange) to
+AI tools and IDEs (JetBrains, VS Code, Cursor, Claude Desktop, OpenAI Codex).
+
+See the [Model Context Protocol (MCP) Integration](https://github.com/kaoh/globalplatform#model-context-protocol-mcp-integration)
+guide in the project README for setup instructions and IDE configuration details.
 
 ## Support And Consulting
 

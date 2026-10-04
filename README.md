@@ -38,6 +38,173 @@ A quick demo video showcasing the most useful features in action:
 The current GPShell3 walkthroughs are collected in the
 [GPShell YouTube playlist](https://www.youtube.com/watch?v=igqlIvuOB5o&list=PLg46pyBZ2z-wF8acSL1nWvWFU0WPmhwlD).
 
+# Model Context Protocol (MCP) Integration
+
+`gpshell3` includes an embedded, native Model Context Protocol (MCP) server (`gpshell3 --mcp`) communicating over standard input/output (STDIO) using JSON-RPC 2.0. This allows AI assistants and developer environments (such as JetBrains IDEs, VS Code, Cursor, Claude Desktop, and OpenAI Codex) to discover and execute smart card operations as first-class, typed tools.
+
+## Configuration
+
+`gpshell3` supports the standard `mcpServers` JSON configuration across IDEs and AI assistants, as well as native CLI registration commands.
+
+### Standard JSON Configuration (VS Code, Cursor, JetBrains IDEs)
+
+IDEs and extensions supporting standard `mcpServers` JSON configuration files (e.g., `.vscode/mcp.json`, `.cursor/mcp.json`, `.idea/mcp.json`, or Cline/Roo Code settings) use:
+
+```json
+{
+  "mcpServers": {
+    "gpshell3": {
+      "command": "gpshell3",
+      "args": ["--mcp"]
+    }
+  }
+}
+```
+
+On Windows (if `gpshell3` is not in `PATH`):
+
+```json
+{
+  "mcpServers": {
+    "gpshell3": {
+      "command": "C:\\Program Files\\GlobalPlatform\\gpshell3.exe",
+      "args": ["--mcp"]
+    }
+  }
+}
+```
+
+### Claude Desktop
+
+For Claude Desktop, add the `gpshell3` server configuration to `claude_desktop_config.json`:
+
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+- **Linux**: `~/.config/Claude/claude_desktop_config.json`
+
+### Claude Code CLI
+
+For Claude Code CLI (`claude`), you can register `gpshell3` using the `claude mcp add` command:
+
+```sh
+claude mcp add gpshell3 -- gpshell3 --mcp
+```
+
+Or for global user scope:
+
+```sh
+claude mcp add --scope user gpshell3 -- gpshell3 --mcp
+```
+
+On Windows (if `gpshell3` is not in `PATH`):
+
+```sh
+claude mcp add gpshell3 -- "C:\Program Files\GlobalPlatform\gpshell3.exe" --mcp
+```
+
+To verify that the server is configured, run `claude mcp list`.
+
+### JetBrains IDEs (IntelliJ IDEA, CLion) Settings UI
+
+Alternatively, you can configure the MCP server via the JetBrains settings dialog:
+
+1. Open **Settings / Preferences** (`Ctrl+Alt+S` on Linux/Windows, `Cmd+,` on macOS).
+2. Navigate to **Tools** → **Model Context Protocol (MCP)** or **AI Assistant** → **MCP Servers**.
+3. Click **+** (**Add Server**) and select **Command** (STDIO transport):
+   - **Name**: `gpshell3`
+   - **Command**: `gpshell3` (or full path, e.g. `/usr/local/bin/gpshell3` or `C:\Program Files\GlobalPlatform\gpshell3.exe`)
+   - **Arguments**: `--mcp`
+4. Click **Apply** / **OK**. The IDE automatically connects to `gpshell3 --mcp` and registers all smart card tools.
+
+### Codex CLI
+
+For OpenAI Codex CLI, you can add `gpshell3` using the `codex mcp add` command:
+
+```sh
+codex mcp add gpshell3 -- gpshell3 --mcp
+```
+
+On Windows (if `gpshell3` is not in `PATH`):
+
+```sh
+codex mcp add gpshell3 -- "C:\Program Files\GlobalPlatform\gpshell3.exe" --mcp
+```
+
+Alternatively, configure it in `~/.codex/config.toml` (global) or `.codex/config.toml` (project):
+
+```toml
+[mcp_servers.gpshell3]
+command = "gpshell3"
+args = ["--mcp"]
+```
+
+To verify that the server is configured and active, run `codex mcp list` or type `/mcp` inside an interactive Codex session.
+
+### Persistent AI Agent Preferences & Configuration
+
+To make AI coding assistants consistently discover and prioritize `gpshell3` MCP tools over raw CLI commands or external utilities, configure persistent preferences across your AI tools.
+
+#### Recommended Agent Instruction Snippet
+
+Add the following standard snippet to your assistant's global or project-level instruction files:
+
+```text
+For smart-card, GlobalPlatform, gpshell, or gpshell3 tasks, discover
+and prefer the gpshell3 MCP tools before invoking CLI commands. For
+application enumeration, open an unauthenticated session and use
+gpshell3_list_apps.
+
+Start reader discovery with gpshell3_list_readers or inspect the card
+with gpshell3_inspect_card. Prefer gpshell3 MCP tools over opensc-tool,
+gp, gpshell, pcsc_scan, or custom APDU scripts. Use shell fallbacks
+only when the relevant MCP capability is unavailable or insufficient.
+
+Authentication errors are not evidence that the MCP server is
+unavailable. Never guess card keys. An established session persists
+across commands; if status word 6982 (AUTHENTICATION_REQUIRED) occurs
+after lifecycle changes, re-authenticate via gpshell3_open_session.
+```
+
+#### Assistant-Specific Configuration Guide
+
+- **OpenAI Codex CLI**:
+  - **Global Persistent Preference**: Add the snippet to `~/.codex/AGENTS.md` (applied across all sessions).
+  - **Project-Level Preference**: Add to `.codex/AGENTS.md` or `AGENTS.md` at repository root.
+  - **MCP Registration**: Run `codex mcp add gpshell3 -- gpshell3 --mcp` or add to `~/.codex/config.toml`.
+- **Claude Code CLI (`claude`)**:
+  - **Project Instructions**: Add the snippet to `CLAUDE.md` at repository root.
+  - **Global Instructions**: Add to `~/.claude/CLAUDE.md`.
+  - **MCP Registration**: Run `claude mcp add gpshell3 -- gpshell3 --mcp` (or with `--scope user`).
+- **Cursor & Windsurf**:
+  - **Cursor**: Add the snippet to `.cursorrules` or create `.cursor/rules/gpshell.mdc`. Configure MCP in `.cursor/mcp.json`.
+  - **Windsurf**: Add the snippet to `.windsurfrules` at repository root. Configure MCP in `~/.codeium/windsurf/mcp_config.json`.
+- **GitHub Copilot**:
+  - **Project Instructions**: Add the snippet to `.github/copilot-instructions.md`.
+- **JetBrains IDEs (IntelliJ IDEA, CLion) & Junie**:
+  - **Project Instructions**: `AGENTS.md` at repository root is automatically detected and prioritized.
+  - **AI Assistant UI**: Paste the snippet into **Settings / Preferences** → **Tools** → **AI Assistant** → **User Prompt / System Instructions**.
+
+**Key Agent Rules & Best Practices**:
+- **Tool Prioritization**: Always prefer embedded `gpshell3` MCP tools over external CLI tools (`opensc-tool`, `gp`, `gpshell`, `pcsc_scan`, or raw APDU scripts).
+- **Discovery**: Start with `gpshell3_list_readers` or zero-friction `gpshell3_inspect_card` to discover connected card readers and inspect unauthenticated hardware/applet state.
+- **Session Lifecycle**: Use `gpshell3_open_session` as the prerequisite tool to establish a smart card session (unauthenticated by default when called with `{}`, or authenticated when `authentication` keys are provided) for card management operations (`gpshell3_list_apps`, `gpshell3_install`, `gpshell3_delete`, `gpshell3_put_key`), and close the session with `gpshell3_close_session`.
+- **Structured Error Handling**: Pay attention to returned ISO status words (e.g., SW `6982` / `AUTHENTICATION_REQUIRED`). Missing authentication indicates that key-based authentication is required, not that the MCP server or card reader failed; never guess authentication keys. If card state resets after lifecycle changes (such as package deletion), re-authenticate with `gpshell3_open_session`.
+
+> **Note**: For standard installations (Homebrew, DEB/RPM packages, Windows installers), the PC/SC connection plugin and required libraries are bundled or located in standard system search paths, so no additional environment variables (`OPGP_PLUGIN_PATH` or `DYLD_LIBRARY_PATH`) are required. (Setting `OPGP_PLUGIN_PATH` is only needed when running directly against an uninstalled source/build tree).
+
+## Available Tools & Safety Architecture
+
+- **Session Management**:
+  - `gpshell3_open_session`: Connects to a PC/SC reader, selects the ISD, and optionally performs mutual authentication (SCP01, SCP02, SCP03, SCP11), returning an opaque `session_id`.
+  - `gpshell3_close_session`: Closes the card channel and securely wipes cryptographic keys from process memory.
+- **Card Inspection (Read-Only)**:
+  - `gpshell3_list_readers`, `gpshell3_list_apps`, `gpshell3_list_keys`, `gpshell3_cplc`, `gpshell3_card_data`, `gpshell3_card_info`, `gpshell3_card_cap`, `gpshell3_card_resources`, etc.
+- **Card Mutation & Key Management (State-Changing)**:
+  - `gpshell3_install`, `gpshell3_delete`, `gpshell3_put_key`, `gpshell3_update_registry`, `gpshell3_move`, `gpshell3_apdu`, etc.
+- **Safety Safeguards**:
+  - State-changing tools require explicit operator confirmation (via MCP Elicitation or IDE prompt) before executing destructive operations against a physical card.
+  - Raw cryptographic keys and PINs are strictly redacted from MCP results, error envelopes, and diagnostics.
+
 # Support and Consulting
 
 Consulting for GlobalPlatform integration, smart-card deployment, and secure
