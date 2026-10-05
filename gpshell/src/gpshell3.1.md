@@ -966,7 +966,13 @@ In `claude_desktop_config.json`:
 claude mcp add --scope user gpshell3 -- gpshell3 --mcp
 ```
 
-### IDE & Client Integration (IntelliJ, VS Code, Cursor, Claude Desktop, Codex CLI, etc.)
+##### 5. OpenCode CLI
+
+```sh
+opencode mcp add gpshell3 --global -- gpshell3 --mcp
+```
+
+### IDE & Client Integration (IntelliJ, VS Code, Cursor, Claude Desktop, Codex CLI, OpenCode CLI, etc.)
 
 To configure `gpshell3` in an MCP client configuration (such as `.mcp.json`, `.vscode/mcp.json`, or IntelliJ AI Assistant settings):
 
@@ -996,6 +1002,12 @@ For OpenAI Codex CLI, register `gpshell3` using `codex mcp add`:
 
 ```sh
 codex mcp add gpshell3 -- gpshell3 --mcp
+```
+
+For OpenCode CLI, register `gpshell3` using `opencode mcp add`:
+
+```sh
+opencode mcp add gpshell3 --global -- gpshell3 --mcp
 ```
 
 Or configure in `~/.codex/config.toml` (or `.codex/config.toml`):

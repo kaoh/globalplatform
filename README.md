@@ -40,7 +40,7 @@ The current GPShell3 walkthroughs are collected in the
 
 # Model Context Protocol (MCP) Integration
 
-`gpshell3` includes an embedded, native Model Context Protocol (MCP) server (`gpshell3 --mcp`) communicating over standard input/output (STDIO) using JSON-RPC 2.0. This allows AI assistants and developer environments (such as JetBrains IDEs, VS Code, Cursor, Claude Desktop, and OpenAI Codex) to discover and execute smart card operations as first-class, typed tools.
+`gpshell3` includes an embedded, native Model Context Protocol (MCP) server (`gpshell3 --mcp`) communicating over standard input/output (STDIO) using JSON-RPC 2.0. This allows AI assistants and developer environments (such as JetBrains IDEs, VS Code, Cursor, Claude Desktop, OpenAI Codex, and OpenCode) to discover and execute smart card operations as first-class, typed tools.
 
 ## Configuration
 
@@ -140,6 +140,14 @@ args = ["--mcp"]
 
 To verify that the server is configured and active, run `codex mcp list` or type `/mcp` inside an interactive Codex session.
 
+### OpenCode CLI
+
+For OpenCode CLI (`opencode`), add `gpshell3` using the `opencode mcp add` command:
+
+```sh
+opencode mcp add gpshell3 --global -- gpshell3 --mcp
+```
+
 ### Persistent AI Agent Preferences & Configuration
 
 To make AI coding assistants consistently discover and prioritize `gpshell3` MCP tools over raw CLI commands or external utilities, configure persistent preferences across your AI tools.
@@ -171,6 +179,8 @@ after lifecycle changes, re-authenticate via gpshell3_open_session.
   - **Global Persistent Preference**: Add the snippet to `~/.codex/AGENTS.md` (applied across all sessions).
   - **Project-Level Preference**: Add to `.codex/AGENTS.md` or `AGENTS.md` at repository root.
   - **MCP Registration**: Run `codex mcp add gpshell3 -- gpshell3 --mcp` or add to `~/.codex/config.toml`.
+- **OpenCode CLI (`opencode`)**:
+  - **MCP Registration**: Run `opencode mcp add gpshell3 --global -- gpshell3 --mcp`.
 - **Claude Code CLI (`claude`)**:
   - **Project Instructions**: Add the snippet to `CLAUDE.md` at repository root.
   - **Global Instructions**: Add to `~/.claude/CLAUDE.md`.

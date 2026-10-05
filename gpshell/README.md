@@ -174,11 +174,19 @@ command = "gpshell3"
 args = ["--mcp"]
 ```
 
+#### OpenCode CLI
+
+For OpenCode CLI (`opencode`), add `gpshell3` via the `opencode mcp add` command:
+
+```sh
+opencode mcp add gpshell3 --global -- gpshell3 --mcp
+```
+
 > **Note**: For standard installations (Homebrew, Linux packages, Windows installers), the PC/SC connection plugin and libraries are bundled and detected automatically without requiring extra environment variables (`OPGP_PLUGIN_PATH` or `DYLD_LIBRARY_PATH`).
 
 #### Persistent AI Agent Preferences & Configuration
 
-When configuring AI coding assistants (such as OpenAI Codex, Claude Code, Cursor, Windsurf, GitHub Copilot, or JetBrains Junie) to interact with smart cards, add the following instruction snippet to your project's `AGENTS.md`, `~/.codex/AGENTS.md`, `CLAUDE.md`, `.cursorrules`, `.github/copilot-instructions.md`, or the assistant's instructions:
+When configuring AI coding assistants (such as OpenAI Codex, Claude Code, OpenCode, Cursor, Windsurf, GitHub Copilot, or JetBrains Junie) to interact with smart cards, add the following instruction snippet to your project's `AGENTS.md`, `~/.codex/AGENTS.md`, `CLAUDE.md`, `.cursorrules`, `.github/copilot-instructions.md`, or the assistant's instructions:
 
 ```text
 For smart-card, GlobalPlatform, gpshell, or gpshell3 tasks, discover
