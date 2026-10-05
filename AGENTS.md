@@ -77,7 +77,7 @@ cmake --build out/build/dev --target test-integration
 
 Important: unsuccessful mutual-authentication attempts can lock real cards. Do not run integration tests, example scripts, or commands that authenticate against a card unless the user explicitly confirms the card, keys, and protocol.
 
-Unit-test coverage is mainly in `globalplatform/src/*Test.c`. Linux unit tests include mocked SCP tests for `scp01Test`, `scp02Test`, and `scp03Test`, plus cmocka tests such as `scp11Test`, `cryptoTest`, `statusTest`, `installDataTest`, `getDataTest`, and `storeDataTest`.
+Unit-test coverage is mainly in `globalplatform/src/*Test.c`. Linux unit tests include mocked SCP tests for `scp01Test`, `scp02Test`, and `scp03Test`, plus cmocka tests such as `scp11Test`, `cryptoTest`, `statusTest`, `installDataTest`, `getDataTest`, and `storeDataTest`. In `gpshell/src/`, CMocka unit tests validate the MCP JSON-RPC server, command registry schemas, dual-format output engine, and session lifecycle (`gpshell3OutputTest`, `gpshell3RegistryTest`, `gpshell3SessionTest`, `gpshell3McpTest`).
 
 ## Code Conventions
 
@@ -111,6 +111,36 @@ Unit-test coverage is mainly in `globalplatform/src/*Test.c`. Linux unit tests i
 - Existing PEM/CAP files under source directories are test fixtures unless the user says otherwise.
 - `GLOBALPLATFORM_DEBUG=1` and `GLOBALPLATFORM_LOGFILE=<file>` enable verbose logs; these logs may contain sensitive key or APDU material.
 - Treat GPShell examples as potentially destructive against real cards if they install, delete, put keys, or authenticate.
+
+## Smart Card & MCP Operations
+
+- `gpshell3` is the primary GlobalPlatform smart card shell and application management tool for Java Card and GlobalPlatform operations (applet lifecycle, Security Domains, key management, card inspection/CPLC, and APDU communication).
+- For smart-card, GlobalPlatform, gpshell, or gpshell3 tasks, discover and prefer the gpshell3 MCP tools before invoking CLI commands. For application enumeration, open an unauthenticated session and use gpshell3_list_apps.
+- Start reader discovery with `gpshell3_list_readers` or inspect the card with `gpshell3_inspect_card`. Prefer `gpshell3` MCP tools over `opensc-tool`, `gp`, `gpshell`, `pcsc_scan`, or custom APDU scripts. Use shell fallbacks only when the relevant MCP capability is unavailable or insufficient.
+- Authentication errors (e.g. status word `6982` / `AUTHENTICATION_REQUIRED`) are not evidence that the MCP server is unavailable. Never guess card keys.
+- When calling `gpshell3_open_session` with empty arguments (`{}`), an unauthenticated session is opened (protocol, ISD, and SCP parameters are auto-detected). To establish an authenticated session, authentication keys must be explicitly provided in the `authentication` parameter.
+- **Session Persistence & Lifecycle Recovery**: Established sessions persist across multiple commands by default (e.g. `gpshell3_install`, `gpshell3_list_apps`, and `gpshell3_delete` can be run sequentially within the same session without repeating `gpshell3_open_session`). However, certain card operations (such as deleting an Executable Load File / package or default-selected applet) may cause the card to reset its internal security status. If a subsequent command fails with status word `6982` (`AUTHENTICATION_REQUIRED`), recover by calling `gpshell3_open_session` with the appropriate authentication keys to renew the session.
+
+### Recommended Agent Instruction Snippet
+
+When configuring AI coding assistants (e.g. in `~/.codex/AGENTS.md`, `.codex/AGENTS.md`, `CLAUDE.md`, `.cursorrules`, `.github/copilot-instructions.md`, or system prompt instructions):
+
+```text
+For smart-card, GlobalPlatform, gpshell, or gpshell3 tasks, discover
+and prefer the gpshell3 MCP tools before invoking CLI commands. For
+application enumeration, open an unauthenticated session and use
+gpshell3_list_apps.
+
+Start reader discovery with gpshell3_list_readers or inspect the card
+with gpshell3_inspect_card. Prefer gpshell3 MCP tools over opensc-tool,
+gp, gpshell, pcsc_scan, or custom APDU scripts. Use shell fallbacks
+only when the relevant MCP capability is unavailable or insufficient.
+
+Authentication errors are not evidence that the MCP server is
+unavailable. Never guess card keys. An established session persists
+across commands; if status word 6982 (AUTHENTICATION_REQUIRED) occurs
+after lifecycle changes, re-authenticate via gpshell3_open_session.
+```
 
 ## Java Card Applet
 
